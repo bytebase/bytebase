@@ -468,7 +468,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	return migrationHistoryList, nil
 }
 
-// FormatError formats schema migration errors
+// FormatError formats schema migration errors.
 func FormatError(err error) error {
 	if err == nil {
 		return nil
@@ -483,7 +483,7 @@ func FormatError(err error) error {
 	return err
 }
 
-// NonSemanticPrefix is the prefix for non-semantic version
+// NonSemanticPrefix is the prefix for non-semantic version.
 const NonSemanticPrefix = "0000.0000.0000-"
 
 // ToStoredVersion converts semantic or non-semantic version to stored version format.

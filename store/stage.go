@@ -50,7 +50,7 @@ func (raw *stageRaw) toStage() *api.Stage {
 	}
 }
 
-// CreateStage creates an instance of Stage
+// CreateStage creates an instance of Stage.
 func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.Stage, error) {
 	stageRaw, err := s.createStageRaw(ctx, create)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.
 	return stage, nil
 }
 
-// FindStage finds a list of Stage instances
+// FindStage finds a list of Stage instances.
 func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
 	stageRawList, err := s.findStageRaw(ctx, find)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) composeStageValidateOnly(ctx context.Context, stage *api.Stage) 
 	return nil
 }
 
-// Note: MUST keep in sync with composeStageValidateOnly
+// Note: MUST keep in sync with composeStageValidateOnly.
 func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, error) {
 	stage := raw.toStage()
 

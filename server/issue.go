@@ -78,6 +78,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
 
+		for _, issue := range issueList {
+			s.setTaskProgressForIssue(issue)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue list response").SetInternal(err)
@@ -99,6 +103,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
+
+		s.setTaskProgressForIssue(issue)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
@@ -934,7 +940,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
-// creates PITR TaskCreate list and dependency
+// creates PITR TaskCreate list and dependency.
 func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 
@@ -980,7 +986,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-// creates gh-ost TaskCreate list and dependency
+// creates gh-ost TaskCreate list and dependency.
 func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	// task "sync"
@@ -1314,4 +1320,14 @@ func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) 
 	}
 
 	return similarDB
+}
+
+func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if progress, ok := s.TaskScheduler.taskProgress.Load(task.ID); ok {
+				task.Progress = progress.(api.Progress)
+			}
+		}
+	}
 }

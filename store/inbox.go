@@ -32,7 +32,7 @@ func (raw *inboxRaw) toInbox() *api.Inbox {
 	}
 }
 
-// CreateInbox creates an instance of Inbox
+// CreateInbox creates an instance of Inbox.
 func (s *Store) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.Inbox, error) {
 	inboxRaw, err := s.createInboxRaw(ctx, create)
 	if err != nil {
@@ -45,7 +45,7 @@ func (s *Store) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.
 	return inbox, nil
 }
 
-// GetInboxByID gets an instance of Inbox
+// GetInboxByID gets an instance of Inbox.
 func (s *Store) GetInboxByID(ctx context.Context, id int) (*api.Inbox, error) {
 	find := &api.InboxFind{ID: &id}
 	inboxRaw, err := s.getInboxRawByID(ctx, find)
@@ -62,7 +62,7 @@ func (s *Store) GetInboxByID(ctx context.Context, id int) (*api.Inbox, error) {
 	return inbox, nil
 }
 
-// FindInbox finds a list of Inbox instances
+// FindInbox finds a list of Inbox instances.
 func (s *Store) FindInbox(ctx context.Context, find *api.InboxFind) ([]*api.Inbox, error) {
 	inboxRawList, err := s.findInboxRaw(ctx, find)
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *Store) FindInbox(ctx context.Context, find *api.InboxFind) ([]*api.Inbo
 	return inboxList, nil
 }
 
-// PatchInbox patches an instance of Inbox
+// PatchInbox patches an instance of Inbox.
 func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inbox, error) {
 	inboxRaw, err := s.patchInboxRaw(ctx, patch)
 	if err != nil {
@@ -92,7 +92,7 @@ func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inb
 	return inbox, nil
 }
 
-// FindInboxSummary returns the inbox summary for a particular principal
+// FindInboxSummary returns the inbox summary for a particular principal.
 func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.InboxSummary, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -128,7 +128,7 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 // private function
 //
 
-// composeInbox composes an instance of Inbox by inboxRaw
+// composeInbox composes an instance of Inbox by inboxRaw.
 func (s *Store) composeInbox(ctx context.Context, raw *inboxRaw) (*api.Inbox, error) {
 	inbox := raw.toInbox()
 

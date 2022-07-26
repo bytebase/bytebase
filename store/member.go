@@ -49,7 +49,7 @@ func (raw *memberRaw) toMember() *api.Member {
 	}
 }
 
-// CreateMember creates an instance of Member
+// CreateMember creates an instance of Member.
 func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.Member, error) {
 	memberRaw, err := s.createMemberRaw(ctx, create)
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*ap
 	return member, nil
 }
 
-// FindMember finds a list of Member instances
+// FindMember finds a list of Member instances.
 func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
 	memberRawList, err := s.findMemberRaw(ctx, find)
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Me
 	return memberList, nil
 }
 
-// GetMemberByPrincipalID gets an instance of Member
+// GetMemberByPrincipalID gets an instance of Member.
 func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member, error) {
 	find := &api.MemberFind{PrincipalID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
@@ -96,7 +96,7 @@ func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member
 	return member, nil
 }
 
-// GetMemberByID gets an instance of Member
+// GetMemberByID gets an instance of Member.
 func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) {
 	find := &api.MemberFind{ID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
@@ -113,7 +113,7 @@ func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) 
 	return member, nil
 }
 
-// PatchMember patches an instance of Member
+// PatchMember patches an instance of Member.
 func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
 	memberRaw, err := s.patchMemberRaw(ctx, patch)
 	if err != nil {
@@ -270,7 +270,7 @@ func (s *Store) patchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*me
 	return member, nil
 }
 
-// composeMember composes an instance of Member by memberRaw
+// composeMember composes an instance of Member by memberRaw.
 func (s *Store) composeMember(ctx context.Context, raw *memberRaw) (*api.Member, error) {
 	member := raw.toMember()
 

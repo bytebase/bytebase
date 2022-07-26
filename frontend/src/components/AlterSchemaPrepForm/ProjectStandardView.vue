@@ -7,13 +7,17 @@
       {{ $t("alter-schema.alter-multiple-db-info") }}
     </div>
     <div class="space-y-4">
-      <div v-for="(environment, envIndex) in environmentList" :key="envIndex">
+      <div
+        v-for="{
+          environment,
+          databaseList: databaseListInEnvironment,
+        } in databaseListGroupByEnvironment"
+        :key="environment.id"
+      >
         <div class="mb-2 mt-4">{{ environment.name }}</div>
         <div class="relative bg-white rounded-md -space-y-px">
           <template
-            v-for="(database, dbIndex) in databaseList.filter(
-              (item) => item.instance.environment.id == environment.id
-            )"
+            v-for="(database, dbIndex) in databaseListInEnvironment"
             :key="dbIndex"
           >
             <label
@@ -61,21 +65,6 @@
               </p>
             </label>
           </template>
-          <label
-            class="border-control-border relative border p-3 flex flex-col cursor-pointer md:pl-4 md:pr-6 md:grid md:grid-cols-3"
-          >
-            <div class="radio space-x-2 text-sm">
-              <input
-                type="radio"
-                class="btn"
-                :checked="isNoneDatabaseSelectedForEnvironment(environment.id)"
-                @input="clearDatabaseIdForEnvironment(environment.id)"
-              />
-              <span class="ml-3 font-medium text-main uppercase">{{
-                $t("common.skip")
-              }}</span>
-            </div>
-          </label>
         </div>
       </div>
     </div>
@@ -94,7 +83,7 @@
 
 <script lang="ts">
 /* eslint-disable vue/no-mutating-props */
-import { defineComponent, watch, PropType } from "vue";
+import { defineComponent, watch, PropType, computed } from "vue";
 import {
   Database,
   DatabaseId,
@@ -151,6 +140,20 @@ export default defineComponent({
       }
     );
 
+    const databaseListGroupByEnvironment = computed(() => {
+      const listByEnv = props.environmentList.map((environment) => {
+        const databaseList = props.databaseList.filter(
+          (db) => db.instance.environment.id === environment.id
+        );
+        return {
+          environment,
+          databaseList,
+        };
+      });
+
+      return listByEnv.filter((group) => group.databaseList.length > 0);
+    });
+
     const toggleDatabaseIdForEnvironment = (
       databaseId: DatabaseId,
       environmentId: EnvironmentId,
@@ -178,10 +181,6 @@ export default defineComponent({
       }
     };
 
-    const clearDatabaseIdForEnvironment = (environmentId: EnvironmentId) => {
-      props.state.selectedDatabaseIdListForEnvironment.delete(environmentId);
-    };
-
     const isDatabaseSelectedForEnvironment = (
       databaseId: DatabaseId,
       environmentId: EnvironmentId
@@ -191,23 +190,14 @@ export default defineComponent({
       return list.includes(databaseId);
     };
 
-    const isNoneDatabaseSelectedForEnvironment = (
-      environmentId: EnvironmentId
-    ) => {
-      const map = props.state.selectedDatabaseIdListForEnvironment;
-      const list = map.get(environmentId) || [];
-      return list.length === 0;
-    };
-
     const selectDatabase = (db: Database) => {
       emit("select-database", db);
     };
 
     return {
+      databaseListGroupByEnvironment,
       toggleDatabaseIdForEnvironment,
-      clearDatabaseIdForEnvironment,
       isDatabaseSelectedForEnvironment,
-      isNoneDatabaseSelectedForEnvironment,
       selectDatabase,
     };
   },

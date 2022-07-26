@@ -9,6 +9,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*TableNoFKAdvisor)(nil)
+	_ ast.Visitor     = (*tableNoFKChecker)(nil)
 )
 
 func init() {
@@ -58,7 +59,7 @@ type tableNoFKChecker struct {
 	title      string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
@@ -88,7 +89,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (*tableNoFKChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

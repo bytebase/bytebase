@@ -55,7 +55,7 @@ func (raw *dbExtensionRaw) toDBExtension() *api.DBExtension {
 	}
 }
 
-// FindDBExtension finds a list of dbExtension instances
+// FindDBExtension finds a list of dbExtension instances.
 func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) ([]*api.DBExtension, error) {
 	dbExtensionRawList, err := s.findDBExtensionRaw(ctx, find)
 	if err != nil {
@@ -112,7 +112,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 }
 
 //
-// private functions
+// private functions.
 //
 func generateDBExtensionActions(oldDBExtensionRawList []*dbExtensionRaw, extensionList []db.Extension, databaseID int) ([]*api.DBExtensionDelete, []*api.DBExtensionCreate) {
 	var newDBExtensionList []*api.DBExtensionCreate

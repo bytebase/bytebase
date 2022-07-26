@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*ColumnNoNullAdvisor)(nil)
+	_ ast.Visitor     = (*columnNoNullChecker)(nil)
 )
 
 func init() {

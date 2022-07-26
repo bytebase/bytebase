@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingFKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingFKConventionChecker)(nil)
 )
 
 func init() {
@@ -77,7 +78,7 @@ type indexMetaData struct {
 	metaData  map[string]string
 }
 
-// Visit implements ast.Visitor interface
+// Visit implements ast.Visitor interface.
 func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 	indexDataList := getMetaDataList(in)
 

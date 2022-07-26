@@ -10,7 +10,7 @@ type Code int
 
 // Application error codes.
 const (
-	// 0 ~ 99 general error
+	// 0 ~ 99 general error.
 	Ok             Code = 0
 	Internal       Code = 1
 	NotAuthorized  Code = 2
@@ -19,12 +19,12 @@ const (
 	Conflict       Code = 5
 	NotImplemented Code = 6
 
-	// 101 ~ 199 db error
+	// 101 ~ 199 db error.
 	DbConnectionFailure Code = 101
 	DbExecutionError    Code = 102
 
 	// 201 db migration error
-	// Db migration is a core feature, so we separate it from the db error
+	// Db migration is a core feature, so we separate it from the db error.
 	MigrationSchemaMissing   Code = 201
 	MigrationAlreadyApplied  Code = 202
 	MigrationOutOfOrder      Code = 203
@@ -32,7 +32,7 @@ const (
 	MigrationPending         Code = 205
 	MigrationFailed          Code = 206
 
-	// 301 task error
+	// 301 task error.
 	TaskTimingNotAllowed Code = 301
 )
 

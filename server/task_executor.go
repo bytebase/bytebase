@@ -27,11 +27,13 @@ type TaskExecutor interface {
 	// usually indicates a transient error and will make scheduler retry later.
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
-	// IsCompleted tells the scheduler if the task execution has completed
+	// IsCompleted tells the scheduler if the task execution has completed.
 	IsCompleted() bool
+	// GetProgress returns the task progress.
+	GetProgress() api.Progress
 }
 
-// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery
+// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {

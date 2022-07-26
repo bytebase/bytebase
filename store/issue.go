@@ -64,7 +64,7 @@ func (raw *issueRaw) toIssue() *api.Issue {
 	}
 }
 
-// CreateIssue creates an instance of Issue
+// CreateIssue creates an instance of Issue.
 func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.Issue, error) {
 	issueRaw, err := s.createIssueRaw(ctx, create)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.
 	return issue, nil
 }
 
-// GetIssueByID gets an instance of Issue
+// GetIssueByID gets an instance of Issue.
 func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	find := &api.IssueFind{ID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
@@ -94,7 +94,7 @@ func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	return issue, nil
 }
 
-// GetIssueByPipelineID gets an instance of Issue
+// GetIssueByPipelineID gets an instance of Issue.
 func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, error) {
 	find := &api.IssueFind{PipelineID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
@@ -111,7 +111,7 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 	return issue, nil
 }
 
-// FindIssue finds a list of Issue instances
+// FindIssue finds a list of Issue instances.
 func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
 	if err != nil {
@@ -128,7 +128,7 @@ func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issu
 	return issueList, nil
 }
 
-// PatchIssue patches an instance of Issue
+// PatchIssue patches an instance of Issue.
 func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Issue, error) {
 	issueRaw, err := s.patchIssueRaw(ctx, patch)
 	if err != nil {
@@ -178,7 +178,7 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 }
 
 // CreateIssueValidateOnly creates an issue for validation purpose
-// Do NOT write to the database
+// Do NOT write to the database.
 func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	issue := &api.Issue{
 		CreatorID:   creatorID,
@@ -203,7 +203,7 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipel
 }
 
 // CreatePipelineValidateOnly creates a pipeline for validation purpose
-// Do NOT write to the database
+// Do NOT write to the database.
 func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
 	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
 	// jsonapi resource relationships will collide different resources into the same bucket.
@@ -322,7 +322,7 @@ func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) 
 	return nil
 }
 
-// Note: MUST keep in sync with composeIssueValidateOnly
+// Note: MUST keep in sync with composeIssueValidateOnly.
 func (s *Store) composeIssue(ctx context.Context, raw *issueRaw) (*api.Issue, error) {
 	issue := raw.toIssue()
 

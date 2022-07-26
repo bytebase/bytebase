@@ -162,7 +162,7 @@ type UpdateSchemaContext struct {
 	VCSPushEvent *vcs.PushEvent
 }
 
-// UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost
+// UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.
 type UpdateSchemaGhostDetail struct {
 	// DatabaseID is the ID of a database.
 	DatabaseID int `json:"databaseId"`

@@ -75,7 +75,7 @@ func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCrea
 	return dataSource, nil
 }
 
-// GetDataSource gets an instance of DataSource
+// GetDataSource gets an instance of DataSource.
 func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
 	dataSourceRaw, err := s.getDataSourceRaw(ctx, find)
 	if err != nil {
@@ -91,7 +91,7 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	return dataSource, nil
 }
 
-// FindDataSource finds a list of DataSource instances
+// FindDataSource finds a list of DataSource instances.
 func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([
 	return dataSourceList, nil
 }
 
-// PatchDataSource patches an instance of DataSource
+// PatchDataSource patches an instance of DataSource.
 func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
 	if err != nil {

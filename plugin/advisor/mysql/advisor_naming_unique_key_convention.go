@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingUKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingUKConventionChecker)(nil)
 )
 
 func init() {
@@ -71,7 +72,7 @@ type namingUKConventionChecker struct {
 	database     *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -107,7 +108,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (*namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

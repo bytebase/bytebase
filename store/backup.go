@@ -113,7 +113,7 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 	}
 }
 
-// CreateBackup creates an instance of Backup
+// CreateBackup creates an instance of Backup.
 func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.Backup, error) {
 	backupRaw, err := s.createBackupRaw(ctx, create)
 	if err != nil {
@@ -126,7 +126,7 @@ func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*ap
 	return backup, nil
 }
 
-// GetBackupByID gets an instance of Backup by ID
+// GetBackupByID gets an instance of Backup by ID.
 func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) {
 	backupRaw, err := s.getBackupRawByID(ctx, id)
 	if err != nil {
@@ -142,7 +142,7 @@ func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) 
 	return backupSetting, nil
 }
 
-// FindBackup finds a list of Backup instances
+// FindBackup finds a list of Backup instances.
 func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
 	backupRawList, err := s.findBackupRaw(ctx, find)
 	if err != nil {
@@ -159,7 +159,7 @@ func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Ba
 	return backupList, nil
 }
 
-// PatchBackup patches an instance of Backup
+// PatchBackup patches an instance of Backup.
 func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.Backup, error) {
 	backupRaw, err := s.patchBackupRaw(ctx, patch)
 	if err != nil {
@@ -189,7 +189,7 @@ func (s *Store) FindBackupSetting(ctx context.Context, find api.BackupSettingFin
 	return backupSettingList, nil
 }
 
-// GetBackupSettingByDatabaseID gets an instance of BackupSetting by ID
+// GetBackupSettingByDatabaseID gets an instance of BackupSetting by ID.
 func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.getBackupSettingRaw(ctx, &api.BackupSettingFind{DatabaseID: &id})
 	if err != nil {
@@ -205,7 +205,7 @@ func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.
 	return backupSetting, nil
 }
 
-// UpsertBackupSetting upserts an instance of backup setting
+// UpsertBackupSetting upserts an instance of backup setting.
 func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.upsertBackupSettingRaw(ctx, upsert)
 	if err != nil {
@@ -218,7 +218,7 @@ func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSetti
 	return backup, nil
 }
 
-// FindBackupSettingsMatch finds a list of backup setting instances with match conditions
+// FindBackupSettingsMatch finds a list of backup setting instances with match conditions.
 func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
 	if err != nil {
@@ -239,7 +239,7 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 // private functions
 //
 
-// composeBackup composes an instance of Backup by backupRaw
+// composeBackup composes an instance of Backup by backupRaw.
 func (s *Store) composeBackup(ctx context.Context, raw *backupRaw) (*api.Backup, error) {
 	backup := raw.toBackup()
 

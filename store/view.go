@@ -53,7 +53,7 @@ func (raw *viewRaw) toView() *api.View {
 	}
 }
 
-// FindView finds a list of View instances
+// FindView finds a list of View instances.
 func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, error) {
 	viewRawList, err := s.findViewRaw(ctx, find)
 	if err != nil {
@@ -105,7 +105,7 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 }
 
 //
-// private functions
+// private functions.
 //
 func generateViewActions(oldViewRawList []*viewRaw, viewList []db.View, databaseID int) ([]*api.ViewDelete, []*api.ViewCreate) {
 	var viewCreateList []*api.ViewCreate

@@ -60,9 +60,14 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}, nil
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *PITRRestoreTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (*PITRRestoreTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
 }
 
 func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {

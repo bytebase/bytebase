@@ -180,7 +180,7 @@ type TaskCheckRunStatusPatch struct {
 	Result string
 }
 
-// ConvertToAdvisorDBType will convert db type into advisor db type
+// ConvertToAdvisorDBType will convert db type into advisor db type.
 func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
 	switch dbType {
 	case db.MySQL:

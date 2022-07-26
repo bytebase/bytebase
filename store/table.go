@@ -68,7 +68,7 @@ func (raw *tableRaw) toTable() *api.Table {
 	}
 }
 
-// GetTable gets an instance of Table
+// GetTable gets an instance of Table.
 func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
 	tableRaw, err := s.getTableRaw(ctx, find)
 	if err != nil {
@@ -84,7 +84,7 @@ func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, 
 	return table, nil
 }
 
-// FindTable finds a list of Table instances
+// FindTable finds a list of Table instances.
 func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Table, error) {
 	tableRawList, err := s.findTableRaw(ctx, find)
 	if err != nil {

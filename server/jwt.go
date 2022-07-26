@@ -20,7 +20,7 @@ const (
 	accessTokenAudienceFmt  = "bb.user.access.%s"
 	refreshTokenAudienceFmt = "bb.user.refresh.%s"
 
-	// Cookie section
+	// Cookie section.
 	accessTokenCookieName  = "access-token"
 	refreshTokenCookieName = "refresh-token"
 
@@ -28,7 +28,7 @@ const (
 	// have 1 version. But it will be used to maintain backward compatibility if we change the signing mechanism.
 	keyID = "v1"
 
-	// Expiration section
+	// Expiration section.
 	refreshThresholdDuration = 1 * time.Hour
 	accessTokenDuration      = 24 * time.Hour
 	refreshTokenDuration     = 7 * 24 * time.Hour
@@ -36,7 +36,7 @@ const (
 	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
 	// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
 	// 1. The access token is about to expire in <<refreshThresholdDuration>>
-	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through
+	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
 	cookieExpDuration = refreshTokenDuration - 1*time.Minute
 
 	// Context section

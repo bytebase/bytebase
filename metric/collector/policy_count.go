@@ -17,14 +17,14 @@ type policyCountCollector struct {
 	store *store.Store
 }
 
-// NewPolicyCountCollector creates a new instance of policyCollector
+// NewPolicyCountCollector creates a new instance of policyCollector.
 func NewPolicyCountCollector(store *store.Store) metric.Collector {
 	return &policyCountCollector{
 		store: store,
 	}
 }
 
-// Collect will collect the metric for policy
+// Collect will collect the metric for policy.
 func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 

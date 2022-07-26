@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingTableConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingTableConventionChecker)(nil)
 )
 
 func init() {
