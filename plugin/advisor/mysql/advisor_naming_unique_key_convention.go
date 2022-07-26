@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingUKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingUKConventionChecker)(nil)
 )
 
 func init() {
@@ -23,7 +24,7 @@ type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -71,7 +72,7 @@ type namingUKConventionChecker struct {
 	database     *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -107,8 +108,8 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (checker *namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
@@ -140,19 +141,19 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				_, indexList := checker.database.FindIndex(&catalog.IndexFind{
+				_, index := checker.database.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})
-				if len(indexList) == 0 {
+				if index == nil {
 					continue
 				}
-				if !indexList[0].Unique {
+				if !index.Unique {
 					// Index naming convention should in advisor_naming_index_convention.go
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

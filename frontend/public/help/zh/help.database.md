@@ -1,5 +1,5 @@
 ---
-title: 如何设置「数据库」？
+title: 什么是「数据库」？
 ---
 
 - 每个 Bytebase 数据库都映射到由「CREATE DATABASE xxx」创建的一个数据库。

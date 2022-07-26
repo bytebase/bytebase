@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*DatabaseAllowDropIfEmptyAdvisor)(nil)
+	_ ast.Visitor     = (*allowDropEmptyDBChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (adv *DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -60,7 +61,7 @@ type allowDropEmptyDBChecker struct {
 	database   *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
 		if v.database.Name != node.Name {
@@ -82,7 +83,7 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *allowDropEmptyDBChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*allowDropEmptyDBChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

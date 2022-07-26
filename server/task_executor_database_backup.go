@@ -23,9 +23,14 @@ type DatabaseBackupTaskExecutor struct {
 	completed int32
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (*DatabaseBackupTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
 }
 
 // RunOnce will run database backup once.
@@ -75,7 +80,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
 	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return "", err

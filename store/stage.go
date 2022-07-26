@@ -50,7 +50,7 @@ func (raw *stageRaw) toStage() *api.Stage {
 	}
 }
 
-// CreateStage creates an instance of Stage
+// CreateStage creates an instance of Stage.
 func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.Stage, error) {
 	stageRaw, err := s.createStageRaw(ctx, create)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.
 	return stage, nil
 }
 
-// FindStage finds a list of Stage instances
+// FindStage finds a list of Stage instances.
 func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
 	stageRawList, err := s.findStageRaw(ctx, find)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) composeStageValidateOnly(ctx context.Context, stage *api.Stage) 
 	return nil
 }
 
-// Note: MUST keep in sync with composeStageValidateOnly
+// Note: MUST keep in sync with composeStageValidateOnly.
 func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, error) {
 	stage := raw.toStage()
 
@@ -180,7 +180,7 @@ func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stage
 }
 
 // createStageImpl creates a new stage.
-func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*stageRaw, error) {
+func (*Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*stageRaw, error) {
 	query := `
 		INSERT INTO stage (
 			creator_id,
@@ -217,7 +217,7 @@ func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.Sta
 	return &stageRaw, nil
 }
 
-func (s *Store) findStageImpl(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*stageRaw, error) {
+func (*Store) findStageImpl(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*stageRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

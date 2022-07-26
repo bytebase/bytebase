@@ -21,7 +21,7 @@ type PostgreSQLParser struct {
 }
 
 // Parse implements the parser.Parser interface.
-func (p *PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, error) {
+func (*PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err

@@ -51,19 +51,15 @@
       </div>
     </div>
 
-    <HelpTriggerIcon
-      v-if="currentRoute.name in routeHelpNameMap"
-      :id="routeHelpNameMap[currentRoute.name]"
-      :is-guide="true"
-    />
+    <HelpTriggerIcon v-if="helpName" :id="helpName" :is-guide="true" />
   </nav>
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, defineComponent } from "vue";
+import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
+import { Bookmark, UNKNOWN_ID, BookmarkCreate, RouteMapList } from "../types";
 import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
@@ -74,7 +70,6 @@ import {
   useProjectStore,
 } from "@/store";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
-import routeHelpNameMap from "../../public/help/routeMap.json";
 
 interface BreadcrumbItem {
   name: string;
@@ -94,6 +89,19 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
+
+    const routeHelpNameMapList = ref<RouteMapList>([]);
+    const helpName = computed(
+      () =>
+        routeHelpNameMapList.value.find(
+          (pair) => pair.routeName === currentRoute.value.name
+        )?.helpName
+    );
+
+    onMounted(async () => {
+      const res = await fetch("/help/routeMapList.json");
+      routeHelpNameMapList.value = await res.json();
+    });
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       bookmarkStore.bookmarkByUserAndLink(
@@ -215,7 +223,7 @@ export default defineComponent({
       breadcrumbList,
       toggleBookmark,
       currentRoute,
-      routeHelpNameMap,
+      helpName,
     };
   },
 });

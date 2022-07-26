@@ -17,11 +17,11 @@ type reporter struct {
 }
 
 const (
-	// metricValueField is the property key for value
+	// metricValueField is the property key for value.
 	metricValueField = "value"
 )
 
-// NewReporter creates a new instance of segment
+// NewReporter creates a new instance of segment.
 func NewReporter(key string, identifier string) metric.Reporter {
 	client := analytics.New(key)
 

@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*TableDropNamingConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingDropTableConventionChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type TableDropNamingConventionAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (adv *TableDropNamingConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -64,7 +65,7 @@ type namingDropTableConventionChecker struct {
 	format     *regexp.Regexp
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropTableStmt); ok {
 		for _, table := range node.Tables {
@@ -82,7 +83,7 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *namingDropTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingDropTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

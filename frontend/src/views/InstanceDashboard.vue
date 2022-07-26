@@ -23,14 +23,7 @@
 </template>
 
 <script lang="ts">
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  defineComponent,
-} from "vue";
+import { computed, onMounted, reactive, ref, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
@@ -45,7 +38,6 @@ import {
   useEnvironmentList,
   useInstanceList,
   useInstanceStore,
-  useHelpStore,
 } from "@/store";
 
 interface LocalState {
@@ -61,12 +53,10 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
-    const mountedTimer = ref();
 
     const instanceStore = useInstanceStore();
     const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
-    const helpStore = useHelpStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -85,19 +75,12 @@ export default defineComponent({
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.help.instance")) {
-        mountedTimer.value = setTimeout(() => {
-          helpStore.showHelp("help.instance", true);
-          uiStateStore.saveIntroStateByKey({
-            key: "instance.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("instance.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "instance.visit",
+          newState: true,
+        });
       }
-    });
-
-    onUnmounted(() => {
-      clearTimeout(mountedTimer.value);
     });
 
     const selectEnvironment = (environment: Environment) => {

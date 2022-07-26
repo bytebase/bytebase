@@ -60,15 +60,7 @@
 </template>
 
 <script lang="ts">
-import {
-  onMounted,
-  onUnmounted,
-  computed,
-  reactive,
-  watch,
-  defineComponent,
-  ref,
-} from "vue";
+import { onMounted, computed, reactive, watch, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
@@ -91,7 +83,6 @@ import {
   usePolicyStore,
   useEnvironmentStore,
   useEnvironmentList,
-  useHelpStore,
 } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
@@ -133,9 +124,7 @@ export default defineComponent({
     const environmentStore = useEnvironmentStore();
     const uiStateStore = useUIStateStore();
     const policyStore = usePolicyStore();
-    const helpStore = useHelpStore();
     const router = useRouter();
-    const mountedTimer = ref();
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
@@ -165,19 +154,12 @@ export default defineComponent({
     onMounted(() => {
       selectEnvironmentOnHash();
 
-      if (!uiStateStore.getIntroStateByKey("guide.help.environment")) {
-        mountedTimer.value = setTimeout(() => {
-          helpStore.showHelp("help.environment", true);
-          uiStateStore.saveIntroStateByKey({
-            key: "environment.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("environment.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "environment.visit",
+          newState: true,
+        });
       }
-    });
-
-    onUnmounted(() => {
-      clearTimeout(mountedTimer.value);
     });
 
     useRegisterCommand({

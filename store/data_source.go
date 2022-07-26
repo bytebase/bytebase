@@ -75,7 +75,7 @@ func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCrea
 	return dataSource, nil
 }
 
-// GetDataSource gets an instance of DataSource
+// GetDataSource gets an instance of DataSource.
 func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
 	dataSourceRaw, err := s.getDataSourceRaw(ctx, find)
 	if err != nil {
@@ -91,7 +91,7 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	return dataSource, nil
 }
 
-// FindDataSource finds a list of DataSource instances
+// FindDataSource finds a list of DataSource instances.
 func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([
 	return dataSourceList, nil
 }
 
-// PatchDataSource patches an instance of DataSource
+// PatchDataSource patches an instance of DataSource.
 func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 }
 
 // createDataSourceImpl creates a new dataSource.
-func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
+func (*Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
 	// Insert row into dataSource.
 	query := `
 		INSERT INTO data_source (
@@ -289,7 +289,7 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 	return &dataSourceRaw, nil
 }
 
-func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
+func (*Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -363,7 +363,7 @@ func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.Da
 }
 
 // patchDataSourceImpl updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
+func (*Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {

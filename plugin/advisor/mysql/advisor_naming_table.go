@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingTableConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingTableConventionChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -65,7 +66,7 @@ type namingTableConventionChecker struct {
 	maxLength  int
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var tableNames []string
 	switch node := in.(type) {
@@ -109,7 +110,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

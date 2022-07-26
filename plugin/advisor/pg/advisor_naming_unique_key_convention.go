@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingUKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingUKConventionChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for unique key naming convention.
-func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -73,7 +74,7 @@ type namingUKConventionChecker struct {
 	database     *catalog.Database
 }
 
-// Visit implements ast.Visitor interface
+// Visit implements ast.Visitor interface.
 func (checker *namingUKConventionChecker) Visit(in ast.Node) ast.Visitor {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -156,10 +157,10 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameConstraintStmt:
-		tableName, indexList := checker.findIndex(node.Table.Schema, node.Table.Name, node.ConstraintName)
-		if len(indexList) != 0 && indexList[0].Unique && !indexList[0].Primary {
+		tableName, index := checker.findIndex(node.Table.Schema, node.Table.Name, node.ConstraintName)
+		if index != nil && index.Unique && !index.Primary {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{
@@ -170,10 +171,10 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		}
 	case *ast.RenameIndexStmt:
 		// "ALTER INDEX name RENAME TO new_name" doesn't take a table name
-		tableName, indexList := checker.findIndex(node.Table.Schema, "", node.IndexName)
-		if len(indexList) != 0 && indexList[0].Unique && !indexList[0].Primary {
+		tableName, index := checker.findIndex(node.Table.Schema, "", node.IndexName)
+		if index != nil && index.Unique && !index.Primary {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{
@@ -200,10 +201,10 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 			metaData:  metaData,
 		}
 	case ast.ConstraintTypeUniqueUsingIndex:
-		tableName, indexList := checker.findIndex(schemaName, tableName, constraint.IndexName)
-		if len(indexList) != 0 {
+		tableName, index := checker.findIndex(schemaName, tableName, constraint.IndexName)
+		if index != nil {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			return &indexMetaData{
@@ -216,8 +217,8 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 	return nil
 }
 
-// findIndex returns index found in catalogs, nil if not found
-func (checker *namingUKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, []*catalog.Index) {
+// findIndex returns index found in catalogs, nil if not found.
+func (checker *namingUKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.Index) {
 	return checker.database.FindIndex(&catalog.IndexFind{
 		SchemaName: normalizeSchemaName(schemaName),
 		TableName:  tableName,

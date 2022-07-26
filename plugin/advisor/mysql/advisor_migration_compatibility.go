@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*CompatibilityAdvisor)(nil)
+	_ ast.Visitor     = (*compatibilityChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type CompatibilityAdvisor struct {
 }
 
 // Check checks schema backward compatibility.
-func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -58,7 +59,7 @@ type compatibilityChecker struct {
 	title      string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
@@ -157,7 +158,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *compatibilityChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*compatibilityChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

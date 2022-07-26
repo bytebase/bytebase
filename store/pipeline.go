@@ -46,7 +46,7 @@ func (raw *pipelineRaw) toPipeline() *api.Pipeline {
 	}
 }
 
-// CreatePipeline creates an instance of Pipeline
+// CreatePipeline creates an instance of Pipeline.
 func (s *Store) CreatePipeline(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
 	pipelineRaw, err := s.createPipelineRaw(ctx, create)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *Store) CreatePipeline(ctx context.Context, create *api.PipelineCreate) 
 	return pipeline, nil
 }
 
-// GetPipelineByID gets an instance of Pipeline
+// GetPipelineByID gets an instance of Pipeline.
 func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
 	find := &api.PipelineFind{ID: &id}
 	pipelineRaw, err := s.getPipelineRaw(ctx, find)
@@ -76,7 +76,7 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 	return pipeline, nil
 }
 
-// FindPipeline finds a list of Pipeline instances
+// FindPipeline finds a list of Pipeline instances.
 func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, returnOnErr bool) ([]*api.Pipeline, error) {
 	pipelineRawList, err := s.findPipelineRaw(ctx, find)
 	if err != nil {
@@ -100,7 +100,7 @@ func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, return
 	return pipelineList, nil
 }
 
-// PatchPipeline patches an instance of Pipeline
+// PatchPipeline patches an instance of Pipeline.
 func (s *Store) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.Pipeline, error) {
 	pipelineRaw, err := s.patchPipelineRaw(ctx, patch)
 	if err != nil {
@@ -139,7 +139,7 @@ func (s *Store) composePipelineValidateOnly(ctx context.Context, pipeline *api.P
 	return nil
 }
 
-// Note: MUST keep in sync with composePipelineValidateOnly
+// Note: MUST keep in sync with composePipelineValidateOnly.
 func (s *Store) composePipeline(ctx context.Context, raw *pipelineRaw) (*api.Pipeline, error) {
 	pipeline := raw.toPipeline()
 
@@ -196,7 +196,7 @@ func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findPipelineImpl(ctx, tx.PTx, find)
+	list, err := s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 	}
 	defer tx.PTx.Rollback()
 
-	pipelineRawList, err := findPipelineImpl(ctx, tx.PTx, find)
+	pipelineRawList, err := s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) 
 }
 
 // createPipelineImpl creates a new pipeline.
-func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
+func (*Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
 	query := `
 		INSERT INTO pipeline (
 			creator_id,
@@ -307,7 +307,7 @@ func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.
 	return &pipelineRaw, nil
 }
 
-func findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
+func (*Store) findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -361,7 +361,7 @@ func findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) (
 }
 
 // patchPipelineImpl updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (s *Store) patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*pipelineRaw, error) {
+func (*Store) patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*pipelineRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Status; v != nil {

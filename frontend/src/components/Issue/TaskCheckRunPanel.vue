@@ -52,12 +52,10 @@
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableColumn } from "../../bbkit/types";
 import {
   TaskCheckStatus,
   TaskCheckRun,
   TaskCheckResult,
-  ErrorCode,
   GeneralErrorCode,
   ruleTemplateMap,
   getRuleLocalization,
@@ -66,7 +64,7 @@ import {
   RuleType,
 } from "@/types";
 
-const columnList: BBTableColumn[] = [
+const columnList = computed(() => [
   {
     title: "",
   },
@@ -76,7 +74,7 @@ const columnList: BBTableColumn[] = [
   {
     title: "Detail",
   },
-];
+]);
 
 interface ErrorCodeLink {
   title: string;

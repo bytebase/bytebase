@@ -30,7 +30,7 @@ const (
 	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
 	ActivityPipelineTaskEarliestAllowedTimeUpdate ActivityType = "bb.pipeline.task.general.earliest-allowed-time.update"
 
-	// Member related
+	// Member related.
 
 	// ActivityMemberCreate is the type for creating members.
 	ActivityMemberCreate ActivityType = "bb.member.create"
@@ -41,7 +41,7 @@ const (
 	// ActivityMemberDeactivate is the type for deactivating members.
 	ActivityMemberDeactivate ActivityType = "bb.member.deactivate"
 
-	// Project related
+	// Project related.
 
 	// ActivityProjectRepositoryPush is the type for pushing repositories.
 	ActivityProjectRepositoryPush ActivityType = "bb.project.repository.push"
@@ -54,12 +54,12 @@ const (
 	// ActivityProjectMemberRoleUpdate is the type for updating project member roles.
 	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
 
-	// SQL Editor related
+	// SQL Editor related.
 
 	// ActivitySQLEditorQuery is the type for executing query.
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
 
-	// Database related
+	// Database related.
 
 	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
 	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"

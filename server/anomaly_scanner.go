@@ -20,7 +20,7 @@ const (
 	anomalyScanInterval = time.Duration(10) * time.Minute
 )
 
-// NewAnomalyScanner creates a anomaly scanner
+// NewAnomalyScanner creates a anomaly scanner.
 func NewAnomalyScanner(server *Server) *AnomalyScanner {
 	return &AnomalyScanner{
 
