@@ -145,6 +145,7 @@ export interface SQLReviewPolicyTemplate {
   ruleList: RuleTemplate[];
 }
 
+// Build the frontend template list based on schema and template.
 export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
   const ruleSchemaMap = (sqlReviewSchema.ruleList as RuleTemplate[]).reduce(
     (map, ruleSchema) => {
@@ -171,6 +172,7 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
         continue;
       }
 
+      // Using template rule payload to override the component list.
       const componentList = ruleTemplate.componentList.map((component) => {
         if (rule.payload && rule.payload[component.key]) {
           return {
