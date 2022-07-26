@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/stretchr/testify/require"
 
-	// embed expected output
+	// embed expected output.
 	_ "embed"
 )
 

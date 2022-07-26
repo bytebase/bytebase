@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	// 32 MiB
+	// 32 MiB.
 	cacheSize                  = 1024 * 1024 * 32
 	_         api.CacheService = (*CacheService)(nil)
 )

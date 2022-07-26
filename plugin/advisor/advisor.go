@@ -44,7 +44,7 @@ const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
 
-	// MySQL Advisor
+	// MySQL Advisor.
 
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
@@ -97,7 +97,7 @@ const (
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
-	// PostgreSQL Advisor
+	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
@@ -107,6 +107,9 @@ const (
 
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
+
+	// PostgreSQLNamingUKConvention is an advisor type for PostgreSQL unique key naming convention.
+	PostgreSQLNamingUKConvention Type = "bb.plugin.advisor.postgresql.naming.uk"
 
 	// PostgreSQLNamingFKConvention is an advisor type for PostgreSQL foreign key naming convention.
 	PostgreSQLNamingFKConvention Type = "bb.plugin.advisor.postgresql.naming.fk"
@@ -156,8 +159,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *SQLReviewRule
-	Catalog catalog.Catalog
+	Rule     *SQLReviewRule
+	Database *catalog.Database
 }
 
 // Advisor is the interface for advisor.

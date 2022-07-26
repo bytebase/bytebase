@@ -60,7 +60,7 @@ func (raw *taskCheckRunRaw) toTaskCheckRun() *api.TaskCheckRun {
 	}
 }
 
-// CreateTaskCheckRunIfNeeded creates an instance of TaskCheckRun if needed
+// CreateTaskCheckRunIfNeeded creates an instance of TaskCheckRun if needed.
 func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
 	taskCheckRunRaw, err := s.createTaskCheckRunRawIfNeeded(ctx, create)
 	if err != nil {
@@ -73,7 +73,7 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.Task
 	return taskCheckRun, nil
 }
 
-// FindTaskCheckRun finds a list of TaskCheckRun instances
+// FindTaskCheckRun finds a list of TaskCheckRun instances.
 func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	taskCheckRunRawList, err := s.findTaskCheckRunRaw(ctx, find)
 	if err != nil {
@@ -90,7 +90,7 @@ func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind
 	return taskCheckRunList, nil
 }
 
-// PatchTaskCheckRunStatus patches an instance of TaskCheckRunStatus
+// PatchTaskCheckRunStatus patches an instance of TaskCheckRunStatus.
 func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
 	taskCheckRunRaw, err := s.patchTaskCheckRunRawStatus(ctx, patch)
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *api.TaskChec
 // private functions
 //
 
-// composeTaskCheckRun composes an instance of TaskCheckRun by taskCheckRunRaw
+// composeTaskCheckRun composes an instance of TaskCheckRun by taskCheckRunRaw.
 func (s *Store) composeTaskCheckRun(ctx context.Context, raw *taskCheckRunRaw) (*api.TaskCheckRun, error) {
 	taskCheckRun := raw.toTaskCheckRun()
 
@@ -126,7 +126,7 @@ func (s *Store) composeTaskCheckRun(ctx context.Context, raw *taskCheckRunRaw) (
 	return taskCheckRun, nil
 }
 
-// createTaskCheckRunRawIfNeeded creates a new taskCheckRun. See interface for the expected behavior
+// createTaskCheckRunRawIfNeeded creates a new taskCheckRun. See interface for the expected behavior.
 func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

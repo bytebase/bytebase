@@ -2,12 +2,10 @@ package pg
 
 import (
 	"fmt"
-
-	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 const (
-	// PostgreSQLPublicSchema is the string for PostgreSQL public schema
+	// PostgreSQLPublicSchema is the string for PostgreSQL public schema.
 	PostgreSQLPublicSchema = "public"
 )
 
@@ -27,10 +25,9 @@ func (c columnName) normalizeTableName() string {
 
 type columnMap map[columnName]bool
 
-func getTableNameWithSchema(table *ast.TableDef) string {
-	schema := table.Schema
-	if schema == "" {
-		schema = "public"
+func normalizeSchemaName(name string) string {
+	if name != "" {
+		return name
 	}
-	return fmt.Sprintf("%s.%s", schema, table.Name)
+	return "public"
 }

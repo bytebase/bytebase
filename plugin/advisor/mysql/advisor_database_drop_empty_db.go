@@ -1,9 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"fmt"
-	"log"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
@@ -12,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*DatabaseAllowDropIfEmptyAdvisor)(nil)
+	_ ast.Visitor     = (*allowDropEmptyDBChecker)(nil)
 )
 
 func init() {
@@ -36,9 +35,9 @@ func (adv *DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, statement
 	}
 
 	checker := &allowDropEmptyDBChecker{
-		level:   level,
-		title:   string(ctx.Rule.Type),
-		catalog: ctx.Catalog,
+		level:    level,
+		title:    string(ctx.Rule.Type),
+		database: ctx.Database,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -59,25 +58,20 @@ type allowDropEmptyDBChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	catalog    catalog.Catalog
+	database   *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
-		ctx := context.Background()
-		tableList, err := v.catalog.FindTable(ctx, &catalog.TableFind{
-			DatabaseName: node.Name,
-		})
-
-		if err != nil {
-			log.Printf(
-				"Cannot find table in database %s with error %v\n",
-				node.Name,
-				err,
-			)
-		}
-		if len(tableList) > 0 {
+		if v.database.Name != node.Name {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    advisor.NotCurrentDatabase,
+				Title:   v.title,
+				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.database.Name),
+			})
+		} else if !v.database.HasNoTable() {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.DatabaseNotEmpty,
@@ -89,7 +83,7 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

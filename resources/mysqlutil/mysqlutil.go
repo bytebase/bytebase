@@ -16,9 +16,9 @@ import (
 type binaryName string
 
 const (
-	// MySQL is the name of mysql binary
+	// MySQL is the name of mysql binary.
 	MySQL binaryName = "mysql"
-	// MySQLBinlog is the name of mysqlbinlog binary
+	// MySQLBinlog is the name of mysqlbinlog binary.
 	MySQLBinlog binaryName = "mysqlbinlog"
 )
 
@@ -111,7 +111,7 @@ func Install(resourceDir string) (*Instance, error) {
 	}, nil
 }
 
-// install installs mysqlutil in resourceDir
+// install installs mysqlutil in resourceDir.
 func install(resourceDir, mysqlutilDir, tarName, version string) error {
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpDir); err != nil {

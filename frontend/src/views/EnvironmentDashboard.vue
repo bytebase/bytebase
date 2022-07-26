@@ -60,18 +60,9 @@
 </template>
 
 <script lang="ts">
-import {
-  onMounted,
-  onUnmounted,
-  computed,
-  reactive,
-  watch,
-  defineComponent,
-  inject,
-  ref,
-} from "vue";
+import { onMounted, computed, reactive, watch, defineComponent } from "vue";
 import { useRouter } from "vue-router";
-import { array_swap, Event } from "../utils";
+import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
@@ -83,7 +74,6 @@ import {
   DefaultSchedulePolicy,
   PipelineApporvalPolicyPayload,
   BackupPlanPolicyPayload,
-  EventType,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
 import {
@@ -135,8 +125,6 @@ export default defineComponent({
     const uiStateStore = useUIStateStore();
     const policyStore = usePolicyStore();
     const router = useRouter();
-    const event = inject<Event>("event");
-    const mountedTimer = ref();
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
@@ -166,19 +154,12 @@ export default defineComponent({
     onMounted(() => {
       selectEnvironmentOnHash();
 
-      if (!uiStateStore.getIntroStateByKey("guide.help.environment")) {
-        mountedTimer.value = setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.environment", true);
-          uiStateStore.saveIntroStateByKey({
-            key: "environment.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("environment.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "environment.visit",
+          newState: true,
+        });
       }
-    });
-
-    onUnmounted(() => {
-      clearTimeout(mountedTimer.value);
     });
 
     useRegisterCommand({

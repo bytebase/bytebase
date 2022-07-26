@@ -143,6 +143,8 @@ const vcsBranchUrl = computed((): string => {
   if (pushEvent.value) {
     if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
       return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
+    } else if (pushEvent.value.vcsType == "GITHUB_COM") {
+      return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
     }
   }
   return "";

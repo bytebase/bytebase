@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
-// Dump and restore
+// Dump and restore.
 const (
 	databaseHeaderFmt = "" +
 		"--\n" +
@@ -90,7 +90,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 			}
 		}
 		if !exist {
-			return common.Errorf(common.NotFound, fmt.Errorf("database %s not found", database))
+			return common.Errorf(common.NotFound, "database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {

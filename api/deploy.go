@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/bytebase/bytebase/common"
 )
@@ -110,31 +109,31 @@ func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, erro
 
 	for _, d := range schedule.Deployments {
 		if d.Name == "" {
-			return nil, common.Errorf(common.Invalid, fmt.Errorf("Deployment name must not be empty"))
+			return nil, common.Errorf(common.Invalid, "Deployment name must not be empty")
 		}
 		hasEnv := false
 		for _, e := range d.Spec.Selector.MatchExpressions {
 			switch e.Operator {
 			case InOperatorType:
 				if len(e.Values) == 0 {
-					return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q with %q operator should have at least one value", e.Key, e.Operator))
+					return nil, common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
 				}
 			case ExistsOperatorType:
 				if len(e.Values) > 0 {
-					return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q with %q operator shouldn't have values", e.Key, e.Operator))
+					return nil, common.Errorf(common.Invalid, "expression key %q with %q operator shouldn't have values", e.Key, e.Operator)
 				}
 			default:
-				return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q has invalid operator %q", e.Key, e.Operator))
+				return nil, common.Errorf(common.Invalid, "expression key %q has invalid operator %q", e.Key, e.Operator)
 			}
 			if e.Key == EnvironmentKeyName {
 				hasEnv = true
 				if e.Operator != InOperatorType || len(e.Values) != 1 {
-					return nil, common.Errorf(common.Invalid, fmt.Errorf("label %q should must use operator %q with exactly one value", EnvironmentKeyName, InOperatorType))
+					return nil, common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", EnvironmentKeyName, InOperatorType)
 				}
 			}
 		}
 		if !hasEnv {
-			return nil, common.Errorf(common.Invalid, fmt.Errorf("deployment should contain %q label", EnvironmentKeyName))
+			return nil, common.Errorf(common.Invalid, "deployment should contain %q label", EnvironmentKeyName)
 		}
 	}
 	return schedule, nil

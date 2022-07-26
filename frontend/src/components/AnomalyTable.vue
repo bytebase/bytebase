@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :section-data-source="anomalySectionList"
     :compact-section="compactSection"
     :show-header="true"
@@ -11,12 +11,12 @@
       <BBTableHeaderCell
         :left-padding="4"
         class="w-4"
-        :title="COLUMN_LIST[0].title"
+        :title="columnList[0].title"
       />
-      <BBTableHeaderCell :title="COLUMN_LIST[1].title" />
-      <BBTableHeaderCell :title="COLUMN_LIST[2].title" />
-      <BBTableHeaderCell :title="COLUMN_LIST[3].title" />
-      <BBTableHeaderCell :title="COLUMN_LIST[4].title" />
+      <BBTableHeaderCell :title="columnList[1].title" />
+      <BBTableHeaderCell :title="columnList[2].title" />
+      <BBTableHeaderCell :title="columnList[3].title" />
+      <BBTableHeaderCell :title="columnList[4].title" />
     </template>
     <template #body="{ rowData: anomaly }">
       <BBTableCell :left-padding="4">
@@ -73,12 +73,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { CodeDiff } from "v-code-diff";
 import { useI18n } from "vue-i18n";
-
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+import { BBTableSectionDataSource } from "../bbkit/types";
 import {
   Anomaly,
   AnomalyDatabaseBackupMissingPayload,
@@ -122,7 +121,7 @@ export default defineComponent({
       showModal: false,
     });
 
-    const COLUMN_LIST: BBTableColumn[] = reactive([
+    const columnList = computed(() => [
       {
         title: "",
       },
@@ -279,7 +278,7 @@ export default defineComponent({
     };
 
     return {
-      COLUMN_LIST,
+      columnList,
       state,
       typeName,
       detail,

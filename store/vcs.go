@@ -51,7 +51,7 @@ func (raw *vcsRaw) toVCS() *api.VCS {
 	}
 }
 
-// CreateVCS creates an instance of VCS
+// CreateVCS creates an instance of VCS.
 func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS, error) {
 	vcsRaw, err := s.createVCSRaw(ctx, create)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS,
 	return vcs, nil
 }
 
-// FindVCS finds a list of VCS instances
+// FindVCS finds a list of VCS instances.
 func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
 	vcsRawList, err := s.findVCSRaw(ctx, find)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, err
 	return vcsList, nil
 }
 
-// GetVCSByID gets a composesd instance of VCS by ID
+// GetVCSByID gets a composesd instance of VCS by ID.
 func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	vcsRaw, err := s.getVCSRaw(ctx, id)
 	if err != nil {
@@ -98,7 +98,7 @@ func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	return vcs, nil
 }
 
-// PatchVCS patches an instance of VCS
+// PatchVCS patches an instance of VCS.
 func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, error) {
 	vcsRaw, err := s.patchVCSRaw(ctx, patch)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, er
 	return vcs, nil
 }
 
-// DeleteVCS deletes an instance of VCS
+// DeleteVCS deletes an instance of VCS.
 func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
 	if err := s.deleteVCSRaw(ctx, delete); err != nil {
 		return fmt.Errorf("failed to delete VCS with VCSDelete[%+v], error: %w", delete, err)

@@ -23,21 +23,13 @@
 </template>
 
 <script lang="ts">
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  defineComponent,
-  inject,
-} from "vue";
+import { computed, onMounted, reactive, ref, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import { Environment, Instance, EventType } from "../types";
+import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
-import { sortInstanceList, Event } from "../utils";
+import { sortInstanceList } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   useUIStateStore,
@@ -61,8 +53,6 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
-    const mountedTimer = ref();
-    const event = inject<Event>("event");
 
     const instanceStore = useInstanceStore();
     const subscriptionStore = useSubscriptionStore();
@@ -85,19 +75,12 @@ export default defineComponent({
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.help.instance")) {
-        mountedTimer.value = setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.instance", true);
-          uiStateStore.saveIntroStateByKey({
-            key: "instance.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("instance.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "instance.visit",
+          newState: true,
+        });
       }
-    });
-
-    onUnmounted(() => {
-      clearTimeout(mountedTimer.value);
     });
 
     const selectEnvironment = (environment: Environment) => {

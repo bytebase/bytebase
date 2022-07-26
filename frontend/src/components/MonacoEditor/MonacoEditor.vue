@@ -35,6 +35,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  autoFocus: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits<{
@@ -159,7 +163,7 @@ onMounted(async () => {
   editorInstanceRef.value = editorInstance;
 
   // set the editor focus when the tab is selected
-  if (!readOnly.value) {
+  if (!readOnly.value && props.autoFocus) {
     editorInstance.focus();
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
