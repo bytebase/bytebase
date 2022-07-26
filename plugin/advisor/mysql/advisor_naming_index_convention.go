@@ -148,19 +148,19 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				_, indexList := checker.database.FindIndex(&catalog.IndexFind{
+				_, index := checker.database.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})
-				if len(indexList) == 0 {
+				if index == nil {
 					continue
 				}
-				if indexList[0].Unique {
+				if index.Unique {
 					// Unique index naming convention should in advisor_naming_unique_key_convention.go
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

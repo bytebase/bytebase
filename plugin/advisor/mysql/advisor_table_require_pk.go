@@ -158,14 +158,14 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 	if _, ok := v.tables[table]; !ok {
 		v.tables[table] = make(columnSet)
-		_, pkList := v.database.FindIndex(&catalog.IndexFind{
+		_, pk := v.database.FindIndex(&catalog.IndexFind{
 			TableName: table,
 			IndexName: primaryKeyName,
 		})
-		if len(pkList) == 0 {
+		if pk == nil {
 			return
 		}
-		v.tables[table] = newColumnSet(catalog.GetColumnListForIndex(pkList))
+		v.tables[table] = newColumnSet(pk.ExpressionList)
 	}
 
 	delete(v.tables[table], column)
