@@ -6,10 +6,10 @@ import "github.com/bytebase/bytebase/plugin/advisor"
 type SQLReviewTemplateID string
 
 const (
-	// TemplateForMySQLProd is the template id for mysql.prod
-	TemplateForMySQLProd SQLReviewTemplateID = "mysql.prod"
-	// TemplateForMySQLDev is the template id for mysql.dev
-	TemplateForMySQLDev SQLReviewTemplateID = "mysql.dev"
+	// TemplateForMySQLProd is the template id for mysql prod template
+	TemplateForMySQLProd SQLReviewTemplateID = "bb.sql-review.mysql.prod"
+	// TemplateForMySQLDev is the template id for mysql dev template
+	TemplateForMySQLDev SQLReviewTemplateID = "bb.sql-review.mysql.dev"
 )
 
 // SQLReviewConfiguration is the API message for SQL review config.

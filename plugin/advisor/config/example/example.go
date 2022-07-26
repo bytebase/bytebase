@@ -1,3 +1,4 @@
+// This is an example of writing the customized SQL check config YAML file to override rules
 package main
 
 import (

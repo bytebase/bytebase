@@ -41,7 +41,7 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Tags  Schema Review
 // @Produce  json
 // @Param  statement     query  string  true   "The SQL statement."
-// @Param  config        query  string  false  "The sql check config string in YAML format."
+// @Param  config        query  string  false  "The SQL check config string in YAML format."
 // @Param  environment   query  string  false  "The environment name. Required if config is not specified. Case sensitive."
 // @Param  databaseType  query  string  false  "The database type. Required if the port, host and database name is not specified."  Enums(MySQL, PostgreSQL, TiDB)
 // @Param  host          query  string  false  "The instance host."
@@ -104,7 +104,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			catalog,
 		)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run the SQL check").SetInternal(err)
 		}
 	} else {
 		if envName == "" {
@@ -115,13 +115,13 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			Name: &envName,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
 		}
 		if len(envList) != 1 {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
 		}
 
-		_, adviceList, err = s.findPolicyThenCheckSQL(
+		_, adviceList, err = s.checkSQLForEnvironment(
 			ctx,
 			advisorDBType,
 			"utf8mb4",
@@ -131,7 +131,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			catalog,
 		)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run the SQL check").SetInternal(err)
 		}
 	}
 

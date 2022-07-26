@@ -200,7 +200,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			db := dbList[0]
 
-			adviceLevel, adviceList, err = s.findPolicyThenCheckSQL(
+			adviceLevel, adviceList, err = s.checkSQLForEnvironment(
 				ctx,
 				dbType,
 				db.CharacterSet,
@@ -646,7 +646,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 	return nil
 }
 
-func (s *Server) findPolicyThenCheckSQL(
+func (s *Server) checkSQLForEnvironment(
 	ctx context.Context,
 	dbType advisor.DBType,
 	dbCharacterSet string,

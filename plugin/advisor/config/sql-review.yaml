@@ -8,7 +8,7 @@ categoryList:
   - COLUMN
   - DATABASE
 templateList:
-  - id: mysql.prod
+  - id: bb.sql-review.mysql.prod
     ruleList:
       - type: engine.mysql.use-innodb
         category: ENGINE
@@ -154,7 +154,7 @@ templateList:
         engine: COMMON
         level: ERROR
         componentList: []
-  - id: mysql.dev
+  - id: bb.sql-review.mysql.dev
     ruleList:
       - type: engine.mysql.use-innodb
         category: ENGINE
