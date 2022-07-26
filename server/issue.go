@@ -1323,10 +1323,13 @@ func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) 
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
+<<<<<<< HEAD
 	if s.TaskScheduler == nil {
 		// readonly server doesn't have a TaskScheduler.
 		return
 	}
+=======
+>>>>>>> 4e953c6000c5398f01f821f91bc359364338aca3
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if progress, ok := s.TaskScheduler.taskProgress.Load(task.ID); ok {
