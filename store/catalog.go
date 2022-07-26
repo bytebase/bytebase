@@ -193,11 +193,12 @@ func convertIndexList(list []*api.Index) []*catalog.Index {
 	index := convertIndexExceptExpression(list[0])
 	for _, expression := range list {
 		if expression.Name != index.Name {
+			res = append(res, index)
 			index = convertIndexExceptExpression(expression)
-		} else {
-			index.ExpressionList = append(index.ExpressionList, expression.Expression)
 		}
+		index.ExpressionList = append(index.ExpressionList, expression.Expression)
 	}
+	res = append(res, index)
 	return res
 }
 
