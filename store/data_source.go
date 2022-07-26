@@ -127,8 +127,8 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 
 // createDataSourceRawTx creates an instance of DataSource.
 // This uses an existing transaction object.
-func createDataSourceRawTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) error {
-	_, err := createDataSourceImpl(ctx, tx, create)
+func (s *Store) createDataSourceRawTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) error {
+	_, err := s.createDataSourceImpl(ctx, tx, create)
 	if err != nil {
 		return fmt.Errorf("failed to create data source with DataSourceCreate[%+v], error: %w", create, err)
 	}
@@ -161,7 +161,7 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 	}
 	defer tx.PTx.Rollback()
 
-	dataSource, err := createDataSourceImpl(ctx, tx.PTx, create)
+	dataSource, err := s.createDataSourceImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 	}
 	defer tx.PTx.Rollback()
 
-	dataSource, err := patchDataSourceImpl(ctx, tx.PTx, patch)
+	dataSource, err := s.patchDataSourceImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -233,7 +233,7 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 }
 
 // createDataSourceImpl creates a new dataSource.
-func createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
+func (*Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
 	// Insert row into dataSource.
 	query := `
 		INSERT INTO data_source (
@@ -363,7 +363,7 @@ func findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.DataSourceFin
 }
 
 // patchDataSourceImpl updates a dataSource by ID. Returns the new state of the dataSource after update.
-func patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
+func (*Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {

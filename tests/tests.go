@@ -1373,7 +1373,7 @@ func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
 
 // schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
 // If the schema review task check is not done, return nil, false, nil.
-func schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+func (*controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
 	var result []api.TaskCheckResult
 	var latestTs int64
 	for _, stage := range issue.Pipeline.StageList {
@@ -1424,7 +1424,7 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 			return nil, fmt.Errorf("the status of issue %v is not pending approval", id)
 		}
 
-		result, yes, err := schemaReviewTaskCheckRunFinished(issue)
+		result, yes, err := ctl.schemaReviewTaskCheckRunFinished(issue)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get schema review result for issue %v: %w", id, err)
 		}

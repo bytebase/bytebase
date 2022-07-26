@@ -290,7 +290,7 @@ func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (
 	}
 	defer tx.PTx.Rollback()
 
-	backupRaw, err := createBackupImpl(ctx, tx.PTx, create)
+	backupRaw, err := s.createBackupImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error
 	}
 	defer tx.PTx.Rollback()
 
-	backupRawList, err := findBackupImpl(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*bac
 	}
 	defer tx.PTx.Rollback()
 
-	backupRawList, err := findBackupImpl(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*ba
 	}
 	defer tx.PTx.Rollback()
 
-	backupRaw, err := patchBackupImpl(ctx, tx.PTx, patch)
+	backupRaw, err := s.patchBackupImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -404,7 +404,7 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 }
 
 // createBackupImpl creates a new backup.
-func createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
+func (*Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
 	// Insert row into backup.
 	query := `
 		INSERT INTO backup (
@@ -455,7 +455,7 @@ func createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate)
 	return &backupRaw, nil
 }
 
-func findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
+func (*Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -532,7 +532,7 @@ func findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*b
 }
 
 // patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
-func patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
+func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{}, []interface{}{}
 	set, args = append(set, fmt.Sprintf("updater_id = $%d", len(args)+1)), append(args, patch.UpdaterID)

@@ -120,7 +120,7 @@ func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.Deplo
 	}
 	defer tx.PTx.Rollback()
 
-	cfg, err := upsertDeploymentConfigImpl(ctx, tx.PTx, upsert)
+	cfg, err := s.upsertDeploymentConfigImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -201,7 +201,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	}
 }
 
-func upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
+func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}

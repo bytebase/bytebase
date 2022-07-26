@@ -78,7 +78,7 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 	}
 	defer tx.PTx.Rollback()
 
-	oldViewRawList, err := findViewImpl(ctx, tx.PTx, &api.ViewFind{
+	oldViewRawList, err := s.findViewImpl(ctx, tx.PTx, &api.ViewFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -92,7 +92,7 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 		}
 	}
 	for _, c := range creates {
-		if _, err := createViewImpl(ctx, tx.PTx, c); err != nil {
+		if _, err := s.createViewImpl(ctx, tx.PTx, c); err != nil {
 			return err
 		}
 	}
@@ -182,7 +182,7 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findViewImpl(ctx, tx.PTx, find)
+	list, err := s.findViewImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 }
 
 // createViewImpl creates a new view.
-func createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*viewRaw, error) {
+func (*Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*viewRaw, error) {
 	// Insert row into view.
 	query := `
 		INSERT INTO vw (
@@ -236,7 +236,7 @@ func createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*v
 	return &viewRaw, nil
 }
 
-func findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*viewRaw, error) {
+func (*Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*viewRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

@@ -172,7 +172,7 @@ func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreat
 	}
 	defer tx.PTx.Rollback()
 
-	pipeline, err := createPipelineImpl(ctx, tx.PTx, create)
+	pipeline, err := s.createPipelineImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findPipelineImpl(ctx, tx.PTx, find)
+	list, err := s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 	}
 	defer tx.PTx.Rollback()
 
-	pipelineRawList, err := findPipelineImpl(ctx, tx.PTx, find)
+	pipelineRawList, err := s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) 
 }
 
 // createPipelineImpl creates a new pipeline.
-func createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
+func (*Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
 	query := `
 		INSERT INTO pipeline (
 			creator_id,
@@ -307,7 +307,7 @@ func createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCre
 	return &pipelineRaw, nil
 }
 
-func findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
+func (*Store) findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
