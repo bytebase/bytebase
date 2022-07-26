@@ -19,22 +19,14 @@
 </template>
 
 <script lang="ts">
-import {
-  defineComponent,
-  ref,
-  inject,
-  onMounted,
-  onUnmounted,
-  reactive,
-} from "vue";
+import { defineComponent, ref, reactive, watch, computed } from "vue";
 import { NDrawer, NDrawerContent, DrawerPlacement } from "naive-ui";
 import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
 import yaml from "js-yaml";
-import { Event } from "@/utils";
+import { storeToRefs } from "pinia";
 import { useLanguage } from "@/composables/useLanguage";
-import { useUIStateStore } from "@/store";
-import { EventType } from "@/types";
+import { useUIStateStore, useHelpStore } from "@/store";
 
 interface State {
   frontmatter: Record<string, string>;
@@ -44,27 +36,24 @@ interface State {
 export default defineComponent({
   components: { NDrawer, NDrawerContent },
   setup() {
-    const event = inject("event") as Event;
-    const helpName = ref<string>("");
-    const isHelpGuide = ref<boolean>(false);
     const active = ref(false);
     const placement = ref<DrawerPlacement>("right");
     const { locale } = useLanguage();
     const uiStateStore = useUIStateStore();
+    const helpStore = useHelpStore();
+    const helpStoreState = storeToRefs(helpStore);
+    const helpId = computed(() => helpStoreState.currHelpId.value);
+    const isGuide = computed(() => helpStoreState.openByDefault.value);
 
     const state = reactive<State>({
       frontmatter: {},
       html: "",
     });
 
-    const showHelp = async (name: string, isGuide?: boolean) => {
-      if (name) {
-        helpName.value = name;
-        if (isGuide) {
-          isHelpGuide.value = true;
-        }
+    watch(helpId, async (id) => {
+      if (id) {
         const res = await fetch(
-          `/help/${locale.value === "zh-CN" ? "zh" : "en"}/${name}.md`
+          `/help/${locale.value === "zh-CN" ? "zh" : "en"}/${id}.md`
         );
         const markdown = await res.text();
         const ast: Node = Markdoc.parse(markdown);
@@ -78,26 +67,20 @@ export default defineComponent({
         state.html = DOMPurify.sanitize(html);
         activate("right");
       }
-    };
+    });
 
     const onClose = () => {
-      if (isHelpGuide.value) {
-        if (!uiStateStore.getIntroStateByKey(`guide.${helpName.value}`)) {
+      if (isGuide.value) {
+        if (!uiStateStore.getIntroStateByKey(`guide.${helpId.value}`)) {
           uiStateStore.saveIntroStateByKey({
-            key: `guide.${helpName.value}`,
+            key: `guide.${helpId.value}`,
             newState: true,
           });
         }
       }
-      // else do nth
+      helpStore.exitHelp();
     };
 
-    onMounted(() => {
-      event.on(EventType.EVENT_HELP, showHelp);
-    });
-    onUnmounted(() => {
-      event.off(EventType.EVENT_HELP);
-    });
     const activate = (place: DrawerPlacement) => {
       active.value = true;
       placement.value = place;

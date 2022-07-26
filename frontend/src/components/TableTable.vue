@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :data-source="mixedTableList"
     :show-header="true"
     :left-bordered="true"
@@ -41,7 +41,7 @@
     <template v-if="hasReservedTables && !state.showReservedTableList" #footer>
       <tfoot>
         <tr>
-          <td :colspan="COLUMN_LIST.length" class="p-0">
+          <td :colspan="columnList.length" class="p-0">
             <div
               class="flex items-center justify-center cursor-pointer hover:bg-gray-200 py-2 text-gray-400 text-sm"
               @click="state.showReservedTableList = true"
@@ -57,11 +57,10 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { BBTableColumn } from "../bbkit/types";
-import { Table } from "../types";
-import { bytesToString, databaseSlug } from "../utils";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { Table } from "@/types";
+import { bytesToString, databaseSlug } from "@/utils";
 
 type LocalState = {
   showReservedTableList: boolean;
@@ -83,7 +82,7 @@ export default defineComponent({
       showReservedTableList: false,
     });
 
-    const COLUMN_LIST: BBTableColumn[] = [
+    const columnList = computed(() => [
       {
         title: t("common.name"),
       },
@@ -102,7 +101,7 @@ export default defineComponent({
       {
         title: t("common.created-at"),
       },
-    ];
+    ]);
 
     const regularTableList = computed(() =>
       props.tableList.filter((table) => !isGhostTable(table))
@@ -134,7 +133,7 @@ export default defineComponent({
     };
 
     return {
-      COLUMN_LIST,
+      columnList,
       state,
       bytesToString,
       clickTable,

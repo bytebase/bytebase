@@ -57,6 +57,62 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 }
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
+	g.PATCH("/pipeline/:pipelineID/task/all", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		pipelineID, err := strconv.Atoi(c.Param("pipelineID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
+		}
+
+		taskPatch := &api.TaskPatch{
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
+		}
+
+		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+		}
+
+		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID: %d", pipelineID)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
+		}
+
+		if taskPatch.Statement != nil {
+			// check if all tasks can update statement
+			for _, stage := range issue.Pipeline.StageList {
+				for _, task := range stage.TaskList {
+					if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
+						return httpErr
+					}
+				}
+			}
+		}
+
+		var taskPatchedList []*api.Task
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				taskPatch := *taskPatch
+				taskPatch.ID = task.ID
+				taskPatched, httpErr := s.patchTask(ctx, task, &taskPatch, issue)
+				if httpErr != nil {
+					return httpErr
+				}
+				taskPatchedList = append(taskPatchedList, taskPatched)
+			}
+		}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", issue.Pipeline.Name)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.PATCH("/pipeline/:pipelineID/task/:taskID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
@@ -86,240 +142,26 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", task.PipelineID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID: %d", task.PipelineID)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", task.PipelineID))
 		}
 
-		oldStatement := ""
-		newStatement := ""
 		if taskPatch.Statement != nil {
-			// Tenant mode project don't allow updating SQL statement.
+			// Tenant mode project don't allow updating SQL statement for a single task.
 			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID: %d", issue.ProjectID)).SetInternal(err)
 			}
 			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
-				err := fmt.Errorf("cannot update schema update SQL statement for projects in tenant mode")
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-			}
-
-			if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
-				return httpErr
-			}
-			newStatement = *taskPatch.Statement
-
-			switch task.Type {
-			case api.TaskDatabaseSchemaUpdate:
-				payload := &api.TaskDatabaseSchemaUpdatePayload{}
-				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
-				}
-				oldStatement = payload.Statement
-				payload.Statement = *taskPatch.Statement
-				// We should update the schema version if we've updated the SQL, otherwise we will
-				// get migration history version conflict if the previous task has been attempted.
-				payload.SchemaVersion = common.DefaultMigrationVersion()
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-				}
-				payloadStr := string(bytes)
-				taskPatch.Payload = &payloadStr
-			case api.TaskDatabaseDataUpdate:
-				payload := &api.TaskDatabaseDataUpdatePayload{}
-				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
-				}
-				oldStatement = payload.Statement
-				payload.Statement = *taskPatch.Statement
-				// We should update the schema version if we've updated the SQL, otherwise we will
-				// get migration history version conflict if the previous task has been attempted.
-				payload.SchemaVersion = common.DefaultMigrationVersion()
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-				}
-				payloadStr := string(bytes)
-				taskPatch.Payload = &payloadStr
-			case api.TaskDatabaseCreate:
-				payload := &api.TaskDatabaseCreatePayload{}
-				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database create payload").SetInternal(err)
-				}
-				oldStatement = payload.Statement
-				payload.Statement = *taskPatch.Statement
-				// We should update the schema version if we've updated the SQL, otherwise we will
-				// get migration history version conflict if the previous task has been attempted.
-				payload.SchemaVersion = common.DefaultMigrationVersion()
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-				}
-				payloadStr := string(bytes)
-				taskPatch.Payload = &payloadStr
-
-			case api.TaskDatabaseSchemaUpdateGhostSync:
-				payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
-				}
-				oldStatement = payload.Statement
-				payload.Statement = *taskPatch.Statement
-				// We should update the schema version if we've updated the SQL, otherwise we will
-				// get migration history version conflict if the previous task has been attempted.
-				payload.SchemaVersion = common.DefaultMigrationVersion()
-				bytes, err := json.Marshal(payload)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-				}
-				payloadStr := string(bytes)
-				taskPatch.Payload = &payloadStr
+				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
 			}
 		}
 
-		taskPatched, err := s.store.PatchTask(ctx, taskPatch)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
-		}
-
-		// create an activity and trigger task check for statement update
-		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-			if oldStatement != newStatement {
-				// create an activity
-				if issue == nil {
-					err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
-					return echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
-				}
-
-				payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
-					TaskID:       taskPatched.ID,
-					OldStatement: oldStatement,
-					NewStatement: newStatement,
-					TaskName:     task.Name,
-					IssueName:    issue.Name,
-				})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
-				}
-				activityCreate := &api.ActivityCreate{
-					CreatorID:   taskPatched.CreatorID,
-					ContainerID: issue.ID,
-					Type:        api.ActivityPipelineTaskStatementUpdate,
-					Payload:     string(payload),
-					Level:       api.ActivityInfo,
-				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-					issue: issue,
-				})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
-				}
-
-				if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-					_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-						CreatorID:               taskPatched.CreatorID,
-						TaskID:                  task.ID,
-						Type:                    api.TaskCheckGhostSync,
-						SkipIfAlreadyTerminated: false,
-					})
-					if err != nil {
-						// It's OK if we failed to trigger a check, just emit an error log
-						log.Error("Failed to trigger gh-ost dry run after changing the task statement",
-							zap.Int("task_id", task.ID),
-							zap.String("task_name", task.Name),
-							zap.Error(err),
-						)
-					}
-				}
-
-				if api.IsSyntaxCheckSupported(task.Database.Instance.Engine, s.profile.Mode) {
-					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-						Statement: *taskPatch.Statement,
-						DbType:    task.Database.Instance.Engine,
-						Charset:   taskPatched.Database.CharacterSet,
-						Collation: taskPatched.Database.Collation,
-					})
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
-					}
-					_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-						CreatorID:               api.SystemBotID,
-						TaskID:                  task.ID,
-						Type:                    api.TaskCheckDatabaseStatementSyntax,
-						Payload:                 string(payload),
-						SkipIfAlreadyTerminated: false,
-					})
-					if err != nil {
-						// It's OK if we failed to trigger a check, just emit an error log
-						log.Error("Failed to trigger syntax check after changing the task statement",
-							zap.Int("task_id", task.ID),
-							zap.String("task_name", task.Name),
-							zap.Error(err),
-						)
-					}
-				}
-
-				if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
-					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
-					}
-				}
-			}
-
-		}
-		// create an activity and trigger task check for earliest allowed time update
-		if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
-			// create an activity
-			if issue == nil {
-				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
-				return echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
-			}
-
-			payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
-				TaskID:               taskPatched.ID,
-				OldEarliestAllowedTs: task.EarliestAllowedTs,
-				NewEarliestAllowedTs: taskPatched.EarliestAllowedTs,
-				TaskName:             task.Name,
-				IssueName:            issue.Name,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal earliest allowed time activity payload: %v, err: %w", task.Name, err))
-			}
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   taskPatched.CreatorID,
-				ContainerID: issue.ID,
-				Type:        api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
-				Payload:     string(payload),
-				Level:       api.ActivityInfo,
-			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-				issue: issue,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
-			}
-
-			// trigger task check
-			payload, err = json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
-				EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
-			}
-			_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               api.SystemBotID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
-				Payload:                 string(payload),
-				SkipIfAlreadyTerminated: false,
-			})
-			if err != nil {
-				// It's OK if we failed to trigger a check, just emit an error log
-				log.Error("Failed to trigger timing check after changing task earliest allowed time",
-					zap.Int("task_id", task.ID),
-					zap.String("task_name", task.Name),
-					zap.Error(err),
-				)
-			}
+		taskPatched, httpErr := s.patchTask(ctx, task, taskPatch, issue)
+		if httpErr != nil {
+			return httpErr
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -399,6 +241,231 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, *echo.HTTPError) {
+	oldStatement := ""
+	newStatement := ""
+	if taskPatch.Statement != nil {
+		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
+			return nil, httpErr
+		}
+		newStatement = *taskPatch.Statement
+
+		switch task.Type {
+		case api.TaskDatabaseSchemaUpdate:
+			payload := &api.TaskDatabaseSchemaUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
+			}
+			oldStatement = payload.Statement
+			payload.Statement = *taskPatch.Statement
+			// We should update the schema version if we've updated the SQL, otherwise we will
+			// get migration history version conflict if the previous task has been attempted.
+			payload.SchemaVersion = common.DefaultMigrationVersion()
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+			}
+			payloadStr := string(bytes)
+			taskPatch.Payload = &payloadStr
+		case api.TaskDatabaseDataUpdate:
+			payload := &api.TaskDatabaseDataUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
+			}
+			oldStatement = payload.Statement
+			payload.Statement = *taskPatch.Statement
+			// We should update the schema version if we've updated the SQL, otherwise we will
+			// get migration history version conflict if the previous task has been attempted.
+			payload.SchemaVersion = common.DefaultMigrationVersion()
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+			}
+			payloadStr := string(bytes)
+			taskPatch.Payload = &payloadStr
+		case api.TaskDatabaseCreate:
+			payload := &api.TaskDatabaseCreatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database create payload").SetInternal(err)
+			}
+			oldStatement = payload.Statement
+			payload.Statement = *taskPatch.Statement
+			// We should update the schema version if we've updated the SQL, otherwise we will
+			// get migration history version conflict if the previous task has been attempted.
+			payload.SchemaVersion = common.DefaultMigrationVersion()
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+			}
+			payloadStr := string(bytes)
+			taskPatch.Payload = &payloadStr
+		case api.TaskDatabaseSchemaUpdateGhostSync:
+			payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
+			}
+			oldStatement = payload.Statement
+			payload.Statement = *taskPatch.Statement
+			// We should update the schema version if we've updated the SQL, otherwise we will
+			// get migration history version conflict if the previous task has been attempted.
+			payload.SchemaVersion = common.DefaultMigrationVersion()
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+			}
+			payloadStr := string(bytes)
+			taskPatch.Payload = &payloadStr
+		}
+	}
+
+	taskPatched, err := s.store.PatchTask(ctx, taskPatch)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
+	}
+
+	// create an activity and trigger task check for statement update
+	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		if oldStatement != newStatement {
+			// create an activity
+			if issue == nil {
+				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+				return nil, echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
+			}
+
+			payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
+				TaskID:       taskPatched.ID,
+				OldStatement: oldStatement,
+				NewStatement: newStatement,
+				TaskName:     task.Name,
+				IssueName:    issue.Name,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
+			}
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   taskPatched.CreatorID,
+				ContainerID: issue.ID,
+				Type:        api.ActivityPipelineTaskStatementUpdate,
+				Payload:     string(payload),
+				Level:       api.ActivityInfo,
+			}
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
+				issue: issue,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+			}
+
+			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+					CreatorID:               taskPatched.CreatorID,
+					TaskID:                  task.ID,
+					Type:                    api.TaskCheckGhostSync,
+					SkipIfAlreadyTerminated: false,
+				})
+				if err != nil {
+					// It's OK if we failed to trigger a check, just emit an error log
+					log.Error("Failed to trigger gh-ost dry run after changing the task statement",
+						zap.Int("task_id", task.ID),
+						zap.String("task_name", task.Name),
+						zap.Error(err),
+					)
+				}
+			}
+
+			if api.IsSyntaxCheckSupported(task.Database.Instance.Engine, s.profile.Mode) {
+				payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+					Statement: *taskPatch.Statement,
+					DbType:    task.Database.Instance.Engine,
+					Charset:   taskPatched.Database.CharacterSet,
+					Collation: taskPatched.Database.Collation,
+				})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+				}
+				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+					CreatorID:               api.SystemBotID,
+					TaskID:                  task.ID,
+					Type:                    api.TaskCheckDatabaseStatementSyntax,
+					Payload:                 string(payload),
+					SkipIfAlreadyTerminated: false,
+				})
+				if err != nil {
+					// It's OK if we failed to trigger a check, just emit an error log
+					log.Error("Failed to trigger syntax check after changing the task statement",
+						zap.Int("task_id", task.ID),
+						zap.String("task_name", task.Name),
+						zap.Error(err),
+					)
+				}
+			}
+
+			if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
+				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
+				}
+			}
+		}
+	}
+
+	// create an activity and trigger task check for earliest allowed time update
+	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
+		// create an activity
+		if issue == nil {
+			err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+			return nil, echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
+		}
+
+		payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
+			TaskID:               taskPatched.ID,
+			OldEarliestAllowedTs: task.EarliestAllowedTs,
+			NewEarliestAllowedTs: taskPatched.EarliestAllowedTs,
+			TaskName:             task.Name,
+			IssueName:            issue.Name,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal earliest allowed time activity payload: %v, err: %w", task.Name, err))
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   taskPatched.CreatorID,
+			ContainerID: issue.ID,
+			Type:        api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+			Payload:     string(payload),
+			Level:       api.ActivityInfo,
+		}
+		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
+			issue: issue,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
+		}
+
+		// trigger task check
+		payload, err = json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
+			EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+		}
+		_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               api.SystemBotID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: false,
+		})
+		if err != nil {
+			// It's OK if we failed to trigger a check, just emit an error log
+			log.Error("Failed to trigger timing check after changing task earliest allowed time",
+				zap.Int("task_id", task.ID),
+				zap.String("task_name", task.Name),
+				zap.Error(err),
+			)
+		}
+	}
+	return taskPatched, nil
 }
 
 func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, pipelineID int) error {

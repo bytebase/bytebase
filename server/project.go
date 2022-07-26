@@ -244,7 +244,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		case vcsPlugin.GitHubCom:
 			webhookPost := github.WebhookCreateOrUpdate{
 				Config: github.WebhookConfig{
-					URL:         fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, githubWebhookPath, repositoryCreate.WebhookEndpointID),
+					URL:         fmt.Sprintf("%s/%s/%s", s.profile.BackendHost, githubWebhookPath, repositoryCreate.WebhookEndpointID),
 					ContentType: "json",
 					Secret:      repositoryCreate.WebhookSecretToken,
 					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate

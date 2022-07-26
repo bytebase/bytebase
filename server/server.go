@@ -35,7 +35,7 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// openAPIPrefix is the API prefix for Bytebase OpenAPI
+// openAPIPrefix is the API prefix for Bytebase OpenAPI.
 const openAPIPrefix = "/v1"
 
 // Server is the Bytebase server.
@@ -153,7 +153,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
@@ -200,35 +200,25 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
-		defaultExecutor := NewDefaultTaskExecutor()
-		taskScheduler.Register(api.TaskGeneral, defaultExecutor)
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
 
-		createDBExecutor := NewDatabaseCreateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseCreate, createDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
 
-		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, schemaUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
 
-		dataUpdateExecutor := NewDataUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, dataUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
-		backupDBExecutor := NewDatabaseBackupTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseBackup, backupDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
-		restoreDBExecutor := NewDatabaseRestoreTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseRestore, restoreDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
 
-		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, schemaUpdateGhostSyncExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
 
-		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, schemaUpdateGhostCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRRestore, pitrRestoreExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
 
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRCutover, pitrCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
 
 		s.TaskScheduler = taskScheduler
 

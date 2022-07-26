@@ -1,48 +1,23 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
 
-  <div v-if="project?.workflowType === 'UI'" class="my-2 textlabel -ml-1">
-    <div class="radio-set-row">
-      <div class="radio">
-        <label class="label">
-          <input
-            v-model="state.alterType"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="SINGLE_DB"
-          />
-          {{ $t("alter-schema.alter-single-db") }}
-        </label>
-      </div>
-      <div class="radio">
-        <label class="label">
-          <input
-            v-model="state.alterType"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="MULTI_DB"
-          />
-          {{ $t("alter-schema.alter-multiple-db") }}
-        </label>
-      </div>
-    </div>
-  </div>
-
   <template v-if="state.alterType === 'MULTI_DB'">
     <!-- multiple stage view -->
     <div class="textinfolabel">
       {{ $t("alter-schema.alter-multiple-db-info") }}
     </div>
     <div class="space-y-4">
-      <div v-for="(environment, envIndex) in environmentList" :key="envIndex">
+      <div
+        v-for="{
+          environment,
+          databaseList: databaseListInEnvironment,
+        } in databaseListGroupByEnvironment"
+        :key="environment.id"
+      >
         <div class="mb-2 mt-4">{{ environment.name }}</div>
         <div class="relative bg-white rounded-md -space-y-px">
           <template
-            v-for="(database, dbIndex) in databaseList.filter(
-              (item) => item.instance.environment.id == environment.id
-            )"
+            v-for="(database, dbIndex) in databaseListInEnvironment"
             :key="dbIndex"
           >
             <label
@@ -55,17 +30,15 @@
             >
               <div class="radio text-sm">
                 <input
-                  v-if="database.syncStatus == 'OK'"
-                  type="radio"
-                  class="btn"
+                  type="checkbox"
+                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                   :checked="
-                    state.selectedDatabaseIdForEnvironment.get(
+                    isDatabaseSelectedForEnvironment(
+                      database.id,
                       environment.id
-                    ) == database.id
+                    )
                   "
-                  @change="
-                    selectDatabaseIdForEnvironment(database.id, environment.id)
-                  "
+                  @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
                 />
                 <span
                   class="font-medium"
@@ -92,25 +65,6 @@
               </p>
             </label>
           </template>
-          <label
-            class="border-control-border relative border p-3 flex flex-col cursor-pointer md:pl-4 md:pr-6 md:grid md:grid-cols-3"
-          >
-            <div class="radio space-x-2 text-sm">
-              <input
-                type="radio"
-                class="btn"
-                :checked="
-                  state.selectedDatabaseIdForEnvironment.get(environment.id)
-                    ? false
-                    : true
-                "
-                @input="clearDatabaseIdForEnvironment(environment.id)"
-              />
-              <span class="ml-3 font-medium text-main uppercase">{{
-                $t("common.skip")
-              }}</span>
-            </div>
-          </label>
         </div>
       </div>
     </div>
@@ -128,7 +82,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+/* eslint-disable vue/no-mutating-props */
+import { defineComponent, watch, PropType, computed } from "vue";
 import {
   Database,
   DatabaseId,
@@ -141,7 +96,7 @@ export type AlterType = "SINGLE_DB" | "MULTI_DB";
 
 export type State = {
   alterType: AlterType;
-  selectedDatabaseIdForEnvironment: Map<EnvironmentId, DatabaseId>;
+  selectedDatabaseIdListForEnvironment: Map<EnvironmentId, DatabaseId[]>;
 };
 
 export default defineComponent({
@@ -166,18 +121,73 @@ export default defineComponent({
   },
   emits: ["select-database"],
   setup(props, { emit }) {
-    const selectDatabaseIdForEnvironment = (
+    // MULTI_DB now supports selecting one database, which can be a replacement
+    // of SINGLE_DB.
+    // So SINGLE_DB is only needed and available for VCS workflow.
+    // And we won't provide a radio button group for single/multi selection in
+    // the future.
+    watch(
+      () => props.project?.workflowType,
+      (type) => {
+        if (type === "VCS") {
+          props.state.alterType = "SINGLE_DB";
+        } else {
+          props.state.alterType = "MULTI_DB";
+        }
+      },
+      {
+        immediate: true,
+      }
+    );
+
+    const databaseListGroupByEnvironment = computed(() => {
+      const listByEnv = props.environmentList.map((environment) => {
+        const databaseList = props.databaseList.filter(
+          (db) => db.instance.environment.id === environment.id
+        );
+        return {
+          environment,
+          databaseList,
+        };
+      });
+
+      return listByEnv.filter((group) => group.databaseList.length > 0);
+    });
+
+    const toggleDatabaseIdForEnvironment = (
+      databaseId: DatabaseId,
+      environmentId: EnvironmentId,
+      selected: boolean
+    ) => {
+      const map = props.state.selectedDatabaseIdListForEnvironment;
+      const list = map.get(environmentId) || [];
+      const index = list.indexOf(databaseId);
+      if (selected) {
+        // push the databaseId in if needed
+        if (index < 0) {
+          list.push(databaseId);
+        }
+      } else {
+        // remove the databaseId if exists
+        if (index >= 0) {
+          list.splice(index, 1);
+        }
+      }
+      // Set or remove the list to the map
+      if (list.length > 0) {
+        map.set(environmentId, list);
+      } else {
+        map.delete(environmentId);
+      }
+    };
+
+    const isDatabaseSelectedForEnvironment = (
       databaseId: DatabaseId,
       environmentId: EnvironmentId
     ) => {
-      props.state.selectedDatabaseIdForEnvironment.set(
-        environmentId,
-        databaseId
-      );
-    };
-
-    const clearDatabaseIdForEnvironment = (environmentId: EnvironmentId) => {
-      props.state.selectedDatabaseIdForEnvironment.delete(environmentId);
+      const map = props.state.selectedDatabaseIdListForEnvironment;
+      const list = map.get(environmentId) || [];
+      return list.includes(databaseId);
     };
 
     const selectDatabase = (db: Database) => {
@@ -185,8 +195,9 @@ export default defineComponent({
     };
 
     return {
-      selectDatabaseIdForEnvironment,
-      clearDatabaseIdForEnvironment,
+      databaseListGroupByEnvironment,
+      toggleDatabaseIdForEnvironment,
+      isDatabaseSelectedForEnvironment,
       selectDatabase,
     };
   },

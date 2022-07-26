@@ -53,7 +53,7 @@ func (raw *activityRaw) toActivity() *api.Activity {
 	}
 }
 
-// CreateActivity creates an instance of Activity
+// CreateActivity creates an instance of Activity.
 func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) (*api.Activity, error) {
 	activityRaw, err := s.createActivityRaw(ctx, create)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) 
 	return activity, nil
 }
 
-// GetActivityByID gets an instance of Activity
+// GetActivityByID gets an instance of Activity.
 func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, error) {
 	activityRaw, err := s.getActivityRawByID(ctx, id)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, err
 	return activity, nil
 }
 
-// FindActivity finds a list of Activity instances
+// FindActivity finds a list of Activity instances.
 func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*api.Activity, error) {
 	activityRawList, err := s.findActivityRaw(ctx, find)
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*ap
 	return activityList, nil
 }
 
-// PatchActivity patches an instance of Activity
+// PatchActivity patches an instance of Activity.
 func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*api.Activity, error) {
 	activityRaw, err := s.patchActivityRaw(ctx, patch)
 	if err != nil {

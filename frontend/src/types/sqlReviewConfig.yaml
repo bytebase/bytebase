@@ -33,7 +33,7 @@ templateList:
           - key: name_format
             payload:
               type: STRING
-              default: "_delete$"
+              default: _del$
       - type: statement.select.no-select-all
         category: STATEMENT
         engine: COMMON
@@ -179,7 +179,7 @@ templateList:
           - key: name_format
             payload:
               type: STRING
-              default: "_delete$"
+              default: _del$
       - type: naming.table
         category: NAMING
         engine: COMMON

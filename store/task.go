@@ -80,7 +80,7 @@ func (raw *taskRaw) toTask() *api.Task {
 	return task
 }
 
-// CreateTask creates an instance of Task
+// CreateTask creates an instance of Task.
 func (s *Store) CreateTask(ctx context.Context, create *api.TaskCreate) (*api.Task, error) {
 	taskRaw, err := s.createTaskRaw(ctx, create)
 	if err != nil {
@@ -93,7 +93,7 @@ func (s *Store) CreateTask(ctx context.Context, create *api.TaskCreate) (*api.Ta
 	return task, nil
 }
 
-// GetTaskByID gets an instance of Task
+// GetTaskByID gets an instance of Task.
 func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 	find := &api.TaskFind{ID: &id}
 	taskRaw, err := s.getTaskRaw(ctx, find)
@@ -110,7 +110,7 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 	return task, nil
 }
 
-// FindTask finds a list of Task instances
+// FindTask finds a list of Task instances.
 func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bool) ([]*api.Task, error) {
 	taskRawList, err := s.findTaskRaw(ctx, find)
 	if err != nil {
@@ -133,7 +133,7 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bo
 	return taskList, nil
 }
 
-// PatchTask patches an instance of Task
+// PatchTask patches an instance of Task.
 func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
 	taskRaw, err := s.patchTaskRaw(ctx, patch)
 	if err != nil {
@@ -146,7 +146,7 @@ func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task,
 	return task, nil
 }
 
-// PatchTaskStatus patches an instance of TaskStatus
+// PatchTaskStatus patches an instance of TaskStatus.
 func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
 	taskRaw, err := s.patchTaskRawStatus(ctx, patch)
 	if err != nil {

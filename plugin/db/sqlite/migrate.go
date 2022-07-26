@@ -48,7 +48,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if setup {
@@ -268,5 +268,5 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, baseQuery)
+	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase)
 }

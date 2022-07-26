@@ -244,7 +244,7 @@ func Register(vcsType Type, f providerFunc) {
 	providers[vcsType] = f
 }
 
-// Get returns a vcs provider specified by its vcs type
+// Get returns a vcs provider specified by its vcs type.
 func Get(vcsType Type, providerConfig ProviderConfig) Provider {
 	providerMu.RLock()
 	f, ok := providers[vcsType]

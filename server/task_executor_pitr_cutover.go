@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -24,12 +25,14 @@ func NewPITRCutoverTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
+	completed int32
 	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR cutover task executor once.
 func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
+	defer atomic.StoreInt32(&exec.completed, 1)
 
 	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
 	if err != nil {
@@ -71,6 +74,16 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 
 	return terminated, result, nil
+}
+
+// IsCompleted tells the scheduler if the task execution has completed.
+func (exec *PITRCutoverTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (exec *PITRCutoverTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
 }
 
 // pitrCutover performs the PITR cutover algorithm:

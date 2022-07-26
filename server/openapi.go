@@ -22,15 +22,9 @@ var (
 // catalogService is the catalog service for sql check api.
 type catalogService struct{}
 
-// FindIndex is the API message for find index in catalog.
-// We will not connect to the user's database in the early version of sql check api
-func (c *catalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
-	return nil, nil
-}
-
-// FindTable is the API message for find table in catalog.
-// We will not connect to the user's database in the early version of sql check api
-func (c *catalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+// GetDatabase is the API message in catalog.
+// We will not connect to the user's database in the early version of sql check api.
+func (c *catalogService) GetDatabase(_ context.Context) (*catalog.Database, error) {
 	return nil, nil
 }
 
@@ -53,7 +47,7 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
-// @Router  /sql/advise  [get]
+// @Router  /sql/advise  [get].
 func (s *Server) sqlCheckController(c echo.Context) error {
 	envName := c.QueryParams().Get("environment")
 	if envName == "" {
@@ -79,7 +73,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return err
 		}
 		dbType = database.Instance.Engine
-		catalog = store.NewCatalog(&database.ID, s.store)
+		catalog = store.NewCatalog(&database.ID, s.store, dbType)
 	} else {
 		databaseType := c.QueryParams().Get("databaseType")
 		if databaseType == "" {

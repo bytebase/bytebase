@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/github/gh-ost/go/logic"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/github/gh-ost/go/logic"
 )
 
 // NewTaskCheckGhostSyncExecutor creates a task check gh-ost sync executor.
@@ -44,7 +45,7 @@ func (exec *TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server,
 	}()
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
+		return []api.TaskCheckResult{}, common.WithError(common.Internal, err)
 	}
 	if task == nil {
 		return []api.TaskCheckResult{
@@ -60,28 +61,28 @@ func (exec *TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server,
 
 	instance := task.Instance
 	if instance == nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("instance ID not found %v", task.InstanceID))
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "instance ID not found %v", task.InstanceID)
 	}
 
 	database := task.Database
 	if database == nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("database ID not found %v", task.DatabaseID))
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "database ID not found %v", task.DatabaseID)
 	}
 
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
 	}
 
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err))
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "invalid database schema update gh-ost sync payload: %w", err)
 	}
 
 	databaseName := database.Name
 	tableName, err := getTableNameFromStatement(payload.Statement)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to parse table name from statement, statement: %v, error: %w", payload.Statement, err))
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "failed to parse table name from statement, statement: %v, error: %w", payload.Statement, err)
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{
@@ -101,7 +102,7 @@ func (exec *TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server,
 		serverID: 20000000 + uint(taskCheckRun.ID),
 	})
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to create migration context, error: %w", err))
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "failed to create migration context, error: %w", err)
 	}
 
 	migrator := logic.NewMigrator(migrationContext)

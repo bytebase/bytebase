@@ -9,6 +9,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*ColumnNoNullAdvisor)(nil)
+	_ ast.Visitor     = (*columnNoNullChecker)(nil)
 )
 
 func init() {
@@ -62,7 +63,7 @@ type columnName struct {
 	columnName string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columns []columnName
 	switch node := in.(type) {
@@ -114,7 +115,7 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *columnNoNullChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

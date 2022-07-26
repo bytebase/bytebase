@@ -24,7 +24,12 @@
 </template>
 
 <script lang="ts">
-import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
+import {
+  useCurrentUser,
+  useUIStateStore,
+  useProjectStore,
+  useHelpStore,
+} from "@/store";
 import { useRouter } from "vue-router";
 import {
   watchEffect,
@@ -33,11 +38,9 @@ import {
   reactive,
   ref,
   defineComponent,
-  inject,
 } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
-import { Event } from "../utils";
-import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID, EventType } from "../types";
+import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 
 interface LocalState {
   projectList: Project[];
@@ -53,11 +56,11 @@ export default defineComponent({
     const router = useRouter();
     const searchField = ref();
     const mountedTimer = ref();
-    const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
+    const helpStore = useHelpStore();
 
     const state = reactive<LocalState>({
       projectList: [],
@@ -70,7 +73,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.help.project")) {
         mountedTimer.value = setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.project", true);
+          helpStore.showHelp("help.project", true);
           uiStateStore.saveIntroStateByKey({
             key: "project.visit",
             newState: true,

@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :data-source="viewList"
     :show-header="true"
     :left-bordered="true"
@@ -25,10 +25,9 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
-import { BBTableColumn } from "../bbkit/types";
-import { View } from "../types";
+import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
+import { View } from "@/types";
 
 export default {
   name: "ViewTable",
@@ -41,7 +40,7 @@ export default {
   },
   setup() {
     const { t } = useI18n();
-    const COLUMN_LIST: BBTableColumn[] = [
+    const columnList = computed(() => [
       {
         title: t("common.name"),
       },
@@ -54,9 +53,10 @@ export default {
       {
         title: t("common.created-at"),
       },
-    ];
+    ]);
+
     return {
-      COLUMN_LIST,
+      columnList,
     };
   },
 };

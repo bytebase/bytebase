@@ -107,7 +107,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		excludedDatabaseList[k] = true
 	}
 	// Query db info
-	databases, err := driver.getDatabases()
+	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -138,7 +138,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 	// Query db info
-	databases, err := driver.getDatabases()
+	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -156,7 +156,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("database %q not found", databaseName))
+		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)

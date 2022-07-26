@@ -5,13 +5,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/stretchr/testify/require"
 
-	// embed expected output
+	// embed expected output.
 	_ "embed"
 )
 
@@ -28,7 +27,7 @@ func TestMigrate(t *testing.T) {
 	mysql, stop := mysql.SetupTestInstance(t, PortTestMigrate)
 	defer stop()
 
-	err := mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr)
+	err := mysql.Import("testdata/mysql_test_schema/1_todo.sql")
 	require.NoError(t, err)
 
 	tt := []testTable{

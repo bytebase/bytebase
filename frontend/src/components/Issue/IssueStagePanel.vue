@@ -58,6 +58,6 @@ const mode = computed((): Mode => {
   if (isGhostMode.value) return "merged";
   if (isPITRMode.value) return "merged";
   if (isTenantMode.value) return "single";
-  return "normal";
+  return "single";
 });
 </script>

@@ -33,12 +33,12 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 }
 
-func newDriver(config db.DriverConfig) db.Driver {
+func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
 // Open opens a SQLite driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	// Host is the directory (instance) containing all SQLite databases.
 	driver.dir = config.Host
 
@@ -51,7 +51,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(context.Context) error {
 	if driver.db != nil {
 		return driver.db.Close()
 	}
@@ -65,7 +65,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 
 // GetDBConnection gets a database connection.
 // If database is empty, we will get a connect to in-memory database.
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
+func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if driver.db != nil {
 		if err := driver.db.Close(); err != nil {
 			return nil, err
