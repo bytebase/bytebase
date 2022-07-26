@@ -37,7 +37,7 @@
           type="button"
           class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 relative"
         >
-          {{ $t("issue.upload-file") }}
+          {{ $t("issue.upload-sql") }}
           <input
             type="file"
             accept=".sql,.txt,application/sql,text/plain"
@@ -72,7 +72,7 @@
             type="button"
             class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 relative"
           >
-            {{ $t("issue.upload-file") }}
+            {{ $t("issue.upload-sql") }}
             <input
               type="file"
               accept=".sql,.txt,application/sql,text/plain"
