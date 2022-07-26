@@ -25,7 +25,7 @@ type ColumnRequirementAdvisor struct {
 }
 
 // Check checks for the column requirement.
-func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmts, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil
