@@ -21,7 +21,6 @@ import {
   computed,
   watchEffect,
   onMounted,
-  onUnmounted,
   reactive,
   ref,
   defineComponent,
@@ -38,7 +37,6 @@ import {
   useEnvironmentList,
   useEnvironmentStore,
   useUIStateStore,
-  useHelpStore,
 } from "@/store";
 
 interface LocalState {
@@ -55,10 +53,8 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
-    const mountedTimer = ref();
 
     const uiStateStore = useUIStateStore();
-    const helpStore = useHelpStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -80,18 +76,11 @@ export default defineComponent({
       searchField.value.$el.querySelector("#search").focus();
 
       if (!uiStateStore.getIntroStateByKey("guide.help.database")) {
-        mountedTimer.value = setTimeout(() => {
-          helpStore.showHelp("help.database", true);
-          uiStateStore.saveIntroStateByKey({
-            key: "database.visit",
-            newState: true,
-          });
-        }, 1000);
+        uiStateStore.saveIntroStateByKey({
+          key: "database.visit",
+          newState: true,
+        });
       }
-    });
-
-    onUnmounted(() => {
-      clearTimeout(mountedTimer.value);
     });
 
     const prepareDatabaseList = () => {

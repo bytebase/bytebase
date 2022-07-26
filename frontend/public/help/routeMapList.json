@@ -1,0 +1,206 @@
+[
+  {
+    "routeName": "auth",
+    "helpName": ""
+  },
+  {
+    "routeName": "auth.signin",
+    "helpName": ""
+  },
+  {
+    "routeName": "auth.signup",
+    "helpName": ""
+  },
+  {
+    "routeName": "auth.password.forgot",
+    "helpName": ""
+  },
+  {
+    "routeName": "oauth-callback",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.home",
+    "helpName": ""
+  },
+  {
+    "routeName": "error.403",
+    "helpName": ""
+  },
+  {
+    "routeName": "error.404",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.inbox",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.anomaly-center",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.archive",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.profile",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.profile",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.general",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.label",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.agent",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.project",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.member",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.version-control",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.version-control.create",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.version-control.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.subscription",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.billing",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.integration.slack",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.sql-review",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.sql-review.create",
+    "helpName": ""
+  },
+  {
+    "routeName": "setting.workspace.sql-review.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.issue",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.environment",
+    "helpName": "help.environment"
+  },
+  {
+    "routeName": "workspace.environment.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.project",
+    "helpName": "help.project"
+  },
+  {
+    "routeName": "workspace.project.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.project.hook.create",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.project.hook.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.instance",
+    "helpName": "help.instance"
+  },
+  {
+    "routeName": "workspace.database",
+    "helpName": "help.database"
+  },
+  {
+    "routeName": "workspace.database.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.database.table.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.database.history.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.instance.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "workspace.issue.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "sql-editor",
+    "helpName": ""
+  },
+  {
+    "routeName": "sql-editor.home",
+    "helpName": ""
+  },
+  {
+    "routeName": "sql-editor.detail",
+    "helpName": ""
+  },
+  {
+    "routeName": "sql-editor.share",
+    "helpName": ""
+  },
+  {
+    "routeName": "sheets",
+    "helpName": ""
+  },
+  {
+    "routeName": "sheets.dashboard",
+    "helpName": ""
+  },
+  {
+    "routeName": "sheets.my",
+    "helpName": ""
+  },
+  {
+    "routeName": "sheets.shared",
+    "helpName": ""
+  },
+  {
+    "routeName": "sheets.starred",
+    "helpName": ""
+  }
+]
