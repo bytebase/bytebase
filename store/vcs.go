@@ -231,7 +231,7 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -398,7 +398,7 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 }
 
 // deleteVCSImpl permanently deletes a vcs by ID.
-func deleteVCSImpl(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
+func (*Store) deleteVCSImpl(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

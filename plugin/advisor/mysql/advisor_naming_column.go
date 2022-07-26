@@ -23,7 +23,7 @@ type NamingColumnConventionAdvisor struct {
 }
 
 // Check checks for column naming convention.
-func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -124,6 +124,6 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (v *namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

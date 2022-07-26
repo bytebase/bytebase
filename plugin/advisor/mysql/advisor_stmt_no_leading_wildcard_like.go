@@ -27,7 +27,7 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (adv *NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -93,6 +93,6 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (v *noLeadingWildcardLikeChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*noLeadingWildcardLikeChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

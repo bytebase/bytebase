@@ -23,7 +23,7 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (adv *DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -84,6 +84,6 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (v *allowDropEmptyDBChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*allowDropEmptyDBChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

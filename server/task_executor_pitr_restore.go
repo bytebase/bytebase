@@ -66,7 +66,7 @@ func (exec *PITRRestoreTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
+func (*PITRRestoreTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 

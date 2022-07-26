@@ -24,7 +24,7 @@ type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -109,7 +109,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (checker *namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
