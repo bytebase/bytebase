@@ -1,7 +1,10 @@
 import { defineStore } from "pinia";
 
 export const useHelpStore = defineStore("help", {
-  state: () => {
+  state: (): {
+    currHelpId: string;
+    openByDefault: boolean;
+  } => {
     return {
       currHelpId: "",
       openByDefault: false,

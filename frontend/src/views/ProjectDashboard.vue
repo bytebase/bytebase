@@ -24,21 +24,9 @@
 </template>
 
 <script lang="ts">
-import {
-  useCurrentUser,
-  useUIStateStore,
-  useProjectStore,
-  useHelpStore,
-} from "@/store";
+import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
 import { useRouter } from "vue-router";
-import {
-  watchEffect,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  defineComponent,
-} from "vue";
+import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
 import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 
@@ -55,12 +43,10 @@ export default defineComponent({
   setup() {
     const router = useRouter();
     const searchField = ref();
-    const mountedTimer = ref();
 
     const uiStateStore = useUIStateStore();
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
-    const helpStore = useHelpStore();
 
     const state = reactive<LocalState>({
       projectList: [],
@@ -72,18 +58,11 @@ export default defineComponent({
       searchField.value.$el.querySelector("#search").focus();
 
       if (!uiStateStore.getIntroStateByKey("guide.help.project")) {
-        mountedTimer.value = setTimeout(() => {
-          helpStore.showHelp("help.project", true);
-          uiStateStore.saveIntroStateByKey({
-            key: "project.visit",
-            newState: true,
-          });
-        }, 1000);
+        uiStateStore.saveIntroStateByKey({
+          key: "project.visit",
+          newState: true,
+        });
       }
-    });
-
-    onUnmounted(() => {
-      clearTimeout(mountedTimer.value);
     });
 
     const prepareProjectList = () => {
