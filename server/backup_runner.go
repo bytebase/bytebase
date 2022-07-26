@@ -86,7 +86,7 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 	log.Debug("Deleting expired backups.")
 	for _, bs := range backupSettingList {
 		if bs.RetentionPeriodTs == api.BackupRetentionPeriodUnset {
-			continue
+			continue // next database
 		}
 		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: &bs.DatabaseID})
 		if err != nil {
@@ -97,11 +97,17 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 			backupTime := time.Unix(backup.UpdatedTs, 0)
 			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs))
 			if time.Now().After(expireTime) {
-				backupPatch := api.BackupPatch{}
+				// update metadata
+				backupPatch := api.BackupPatch{
+					ID:     backup.ID,
+					Status: string(api.BackupStatusDeleted),
+				}
 				if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
-					log.Error("Failed to ")
+					log.Error("Failed to update status for deleted backup", zap.String("name", backup.Name), zap.String("database", bs.Database.Name))
+					continue // next backup
 				}
 
+				// delete backup file
 				backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, bs.DatabaseID, backup.Name)
 				if err := os.Remove(backupFilePath); err != nil {
 					log.Error("Failed to delete an expired backup file.", zap.String("path", backupFilePath), zap.Error(err))
