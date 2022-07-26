@@ -17,21 +17,20 @@ export const handleRouteChangedForHelp = async (
     routeMap = await res.json();
   }
 
+  // Clear timer after every route change.
+  if (timer) {
+    clearTimeout(timer);
+  }
+
   const helpName = routeMap?.find((pair) => pair.routeName === name)?.helpName;
 
-  if (helpName) {
-    if (!uiStateStore.getIntroStateByKey(`guide.${helpName}`)) {
-      if (timer) {
-        clearTimeout(timer);
-      }
-
-      timer = window.setTimeout(() => {
-        helpStore.showHelp(helpName, true);
-        uiStateStore.saveIntroStateByKey({
-          key: "environment.visit",
-          newState: true,
-        });
-      }, 1000);
-    }
+  if (helpName && !uiStateStore.getIntroStateByKey(`guide.${helpName}`)) {
+    timer = window.setTimeout(() => {
+      helpStore.showHelp(helpName, true);
+      uiStateStore.saveIntroStateByKey({
+        key: "environment.visit",
+        newState: true,
+      });
+    }, 1000);
   }
 };
