@@ -47,10 +47,11 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
 
 // GetProgress returns the task progress.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
-	if progress := exec.progress.Load(); progress != nil {
-		return progress.(api.Progress)
+	progress := exec.progress.Load()
+	if progress == nil {
+		return api.Progress{}
 	}
-	return api.Progress{}
+	return progress.(api.Progress)
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
