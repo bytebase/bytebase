@@ -1,21 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
-    <template v-if="isDemo && !isLiveDemo">
-      <BannerDemo />
-    </template>
-    <template v-if="showDebugBanner">
-      <BannerDebug />
-    </template>
-    <template v-else-if="isExpired || isTrialing">
-      <BannerSubscription />
-    </template>
-    <template v-else-if="isReadonly && !isLiveDemo">
-      <div
-        class="px-3 py-1 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
-      >
-        {{ $t("banner.readonly") }}
-      </div>
-    </template>
+    <BannersWrapper />
     <nav
       class="bg-white border-b border-block-border"
       data-label="bb-dashboard-header"
@@ -47,39 +32,25 @@
 </template>
 
 <script lang="ts">
-import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
-import DashboardHeader from "../views/DashboardHeader.vue";
-import BannerDemo from "../views/BannerDemo.vue";
-import BannerSubscription from "../views/BannerSubscription.vue";
-import BannerDebug from "../views/BannerDebug.vue";
-import { ServerInfo } from "../types";
-import { isDBAOrOwner } from "../utils";
-import { computed, defineComponent } from "vue";
-import {
-  pushNotification,
-  useActuatorStore,
-  useCurrentUser,
-  useDebugStore,
-  useSubscriptionStore,
-} from "@/store";
-import { storeToRefs } from "pinia";
+import { defineComponent } from "vue";
+import { ServerInfo } from "@/types";
+import { pushNotification, useActuatorStore } from "@/store";
+import DashboardHeader from "@/views/DashboardHeader.vue";
+import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
+import BannersWrapper from "@/components/BannersWrapper.vue";
 
 export default defineComponent({
   name: "DashboardLayout",
   components: {
-    ProvideDashboardContext,
     DashboardHeader,
-    BannerDemo,
-    BannerSubscription,
-    BannerDebug,
+    ProvideDashboardContext,
+    BannersWrapper,
   },
   setup() {
     const actuatorStore = useActuatorStore();
-    const subscriptionStore = useSubscriptionStore();
-    const debugStore = useDebugStore();
 
     const ping = () => {
-      actuatorStore.fetchInfo().then((info: ServerInfo) => {
+      actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -88,28 +59,8 @@ export default defineComponent({
       });
     };
 
-    const { isDemo, isReadonly, isLiveDemo } = storeToRefs(actuatorStore);
-    const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
-
-    const { isDebug } = storeToRefs(debugStore);
-
-    const currentUser = useCurrentUser();
-
-    // For now, debug mode is a global setting and will affect all users.
-    // So we only allow DBA and Owner to toggle it and thus show a banner
-    // reminding them to turn off
-    const showDebugBanner = computed(() => {
-      return isDebug.value && isDBAOrOwner(currentUser.value.role);
-    });
-
     return {
       ping,
-      isDemo,
-      isReadonly,
-      isTrialing,
-      isExpired,
-      isLiveDemo,
-      showDebugBanner,
     };
   },
 });
