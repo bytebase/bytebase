@@ -1,9 +1,9 @@
 import { RouteLocationNormalized } from "vue-router";
 import { useUIStateStore, useHelpStore } from "@/store";
-import { RouteMap } from "@/types";
+import { RouteMapList } from "@/types";
 
 let timer: number | null = null;
-let routeMap: RouteMap | null = null;
+let RouteMapList: RouteMapList | null = null;
 
 export const handleRouteChangedForHelp = async (
   to: RouteLocationNormalized
@@ -12,9 +12,9 @@ export const handleRouteChangedForHelp = async (
   const uiStateStore = useUIStateStore();
   const helpStore = useHelpStore();
 
-  if (!routeMap) {
-    const res = await fetch("/help/routeMap.json");
-    routeMap = await res.json();
+  if (!RouteMapList) {
+    const res = await fetch("/help/routeMapList.json");
+    RouteMapList = await res.json();
   }
 
   // Clear timer after every route change.
@@ -22,7 +22,9 @@ export const handleRouteChangedForHelp = async (
     clearTimeout(timer);
   }
 
-  const helpName = routeMap?.find((pair) => pair.routeName === name)?.helpName;
+  const helpName = RouteMapList?.find(
+    (pair) => pair.routeName === name
+  )?.helpName;
 
   if (helpName && !uiStateStore.getIntroStateByKey(`guide.${helpName}`)) {
     timer = window.setTimeout(() => {

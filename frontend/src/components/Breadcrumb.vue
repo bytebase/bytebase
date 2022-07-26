@@ -59,7 +59,7 @@
 import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Bookmark, UNKNOWN_ID, BookmarkCreate, routeMap } from "../types";
+import { Bookmark, UNKNOWN_ID, BookmarkCreate, RouteMapList } from "../types";
 import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
@@ -90,17 +90,17 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    const routeHelpNameMap = ref<routeMap>([]);
+    const routeHelpNameMapList = ref<RouteMapList>([]);
     const helpName = computed(
       () =>
-        routeHelpNameMap.value.find(
+        routeHelpNameMapList.value.find(
           (pair) => pair.routeName === currentRoute.value.name
         )?.helpName
     );
 
     onMounted(async () => {
-      const res = await fetch("/help/routeMap.json");
-      routeHelpNameMap.value = await res.json();
+      const res = await fetch("/help/routeMapList.json");
+      routeHelpNameMapList.value = await res.json();
     });
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
