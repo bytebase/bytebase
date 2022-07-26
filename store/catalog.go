@@ -184,12 +184,7 @@ func convertIndexList(list []*api.Index) []*catalog.Index {
 	var res []*catalog.Index
 	indexMap := make(map[string][]*api.Index)
 	for _, expression := range list {
-		index, ok := indexMap[expression.Name]
-		if !ok {
-			index = []*api.Index{}
-		}
-		index = append(index, expression)
-		indexMap[expression.Name] = index
+		indexMap[expression.Name] = append(indexMap[expression.Name], expression)
 	}
 
 	for _, expressionList := range indexMap {
