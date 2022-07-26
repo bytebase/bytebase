@@ -47,5 +47,5 @@ func TestNoSelectAll(t *testing.T) {
 		Type:    advisor.SchemaRuleStatementNoSelectAll,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

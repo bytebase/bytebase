@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingColumnConventionChecker)(nil)
 )
 
 func init() {
@@ -69,7 +70,7 @@ type namingColumnConventionChecker struct {
 	tables     tableState
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []string
 	var tableName string
@@ -114,7 +115,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  v.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should within %d characters", tableName, column, v.maxLength),
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column, v.maxLength),
 			})
 		}
 	}
@@ -122,7 +123,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

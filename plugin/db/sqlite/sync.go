@@ -77,7 +77,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("database %q not found", databaseName))
+		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)

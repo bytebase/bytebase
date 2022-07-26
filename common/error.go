@@ -10,7 +10,7 @@ type Code int
 
 // Application error codes.
 const (
-	// 0 ~ 99 general error
+	// 0 ~ 99 general error.
 	Ok             Code = 0
 	Internal       Code = 1
 	NotAuthorized  Code = 2
@@ -19,12 +19,12 @@ const (
 	Conflict       Code = 5
 	NotImplemented Code = 6
 
-	// 101 ~ 199 db error
+	// 101 ~ 199 db error.
 	DbConnectionFailure Code = 101
 	DbExecutionError    Code = 102
 
 	// 201 db migration error
-	// Db migration is a core feature, so we separate it from the db error
+	// Db migration is a core feature, so we separate it from the db error.
 	MigrationSchemaMissing   Code = 201
 	MigrationAlreadyApplied  Code = 202
 	MigrationOutOfOrder      Code = 203
@@ -32,7 +32,7 @@ const (
 	MigrationPending         Code = 205
 	MigrationFailed          Code = 206
 
-	// 301 task error
+	// 301 task error.
 	TaskTimingNotAllowed Code = 301
 )
 
@@ -85,8 +85,17 @@ func ErrorMessage(err error) string {
 	return "Internal error."
 }
 
-// Errorf is a helper function to return an Error with a given code and error.
-func Errorf(code Code, err error) *Error {
+// Errorf is a helper function to return an Error with given code, format and
+// arguments.
+func Errorf(code Code, format string, args ...interface{}) *Error {
+	return &Error{
+		Code: code,
+		Err:  fmt.Errorf(format, args...),
+	}
+}
+
+// WithError is a helper function to return an Error with given code and error.
+func WithError(code Code, err error) *Error {
 	return &Error{
 		Code: code,
 		Err:  err,
@@ -95,5 +104,5 @@ func Errorf(code Code, err error) *Error {
 
 // FormatDBErrorEmptyRowWithQuery formats database error that query returns empty row.
 func FormatDBErrorEmptyRowWithQuery(query string) error {
-	return Errorf(DbExecutionError, fmt.Errorf("query %q returned empty row", query))
+	return Errorf(DbExecutionError, "query %q returned empty row", query)
 }

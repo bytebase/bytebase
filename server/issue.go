@@ -78,6 +78,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
 
+		for _, issue := range issueList {
+			s.setTaskProgressForIssue(issue)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue list response").SetInternal(err)
@@ -99,6 +103,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
+
+		s.setTaskProgressForIssue(issue)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
@@ -569,7 +575,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:          "Create database",
+					Name:          "Restore backup",
 					EnvironmentID: instance.EnvironmentID,
 					TaskList: []api.TaskCreate{
 						{
@@ -580,12 +586,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 							DatabaseName: payload.DatabaseName,
 							Payload:      string(bytes),
 						},
-					},
-				},
-				{
-					Name:          "Restore backup",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
 						{
 							InstanceID:   c.InstanceID,
 							Name:         fmt.Sprintf("Restore backup %v", backup.Name),
@@ -595,6 +595,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 							BackupID:     &c.BackupID,
 							Payload:      string(restoreBytes),
 						},
+					},
+					TaskIndexDAGList: []api.TaskIndexDAG{
+						{FromIndex: 0, ToIndex: 1},
 					},
 				},
 			},
@@ -779,7 +782,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				}
 
 				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
+					Name:          deployments[i].Name,
 					EnvironmentID: environmentID,
 					TaskList:      taskCreateList,
 				})
@@ -937,7 +940,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
-// creates PITR TaskCreate list and dependency
+// creates PITR TaskCreate list and dependency.
 func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 
@@ -983,7 +986,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-// creates gh-ost TaskCreate list and dependency
+// creates gh-ost TaskCreate list and dependency.
 func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	// task "sync"
@@ -1317,4 +1320,18 @@ func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) 
 	}
 
 	return similarDB
+}
+
+func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
+	if s.TaskScheduler == nil {
+		// readonly server doesn't have a TaskScheduler.
+		return
+	}
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if progress, ok := s.TaskScheduler.taskProgress.Load(task.ID); ok {
+				task.Progress = progress.(api.Progress)
+			}
+		}
+	}
 }

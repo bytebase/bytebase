@@ -375,7 +375,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		&schema.CharacterSet,
 		&schema.Collation); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, fmt.Errorf("database %q not found", databaseName))
+			return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 		}
 		return nil, err
 	}

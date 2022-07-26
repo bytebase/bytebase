@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingFKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingFKConventionChecker)(nil)
 )
 
 func init() {
@@ -77,7 +78,7 @@ type indexMetaData struct {
 	metaData  map[string]string
 }
 
-// Visit implements ast.Visitor interface
+// Visit implements ast.Visitor interface.
 func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -105,7 +106,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 				Status:  checker.level,
 				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should within %d characters`, indexData.indexName, indexData.tableName, checker.maxLength),
+				Content: fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, indexData.indexName, indexData.tableName, checker.maxLength),
 			})
 		}
 	}

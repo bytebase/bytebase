@@ -24,9 +24,14 @@ type DatabaseCreateTaskExecutor struct {
 	completed int32
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *DatabaseCreateTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (exec *DatabaseCreateTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
 }
 
 // RunOnce will run the database create task executor once.

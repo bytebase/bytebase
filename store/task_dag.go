@@ -56,7 +56,7 @@ func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*
 	return taskDAGList, nil
 }
 
-// GetTaskDAGByToTaskID gets a single TaskDAG by ToTaskID
+// GetTaskDAGByToTaskID gets a single TaskDAG by ToTaskID.
 func (s *Store) GetTaskDAGByToTaskID(ctx context.Context, id int) (*api.TaskDAG, error) {
 	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: id})
 	if err != nil {

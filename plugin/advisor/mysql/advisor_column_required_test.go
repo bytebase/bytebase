@@ -230,5 +230,5 @@ func TestColumnRequirement(t *testing.T) {
 		Type:    advisor.SchemaRuleRequiredColumn,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

@@ -31,7 +31,7 @@ const (
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
 
-	// BytebaseDatabase is the database installed in the controlled database server
+	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"
 )
 
@@ -381,6 +381,7 @@ type ConnectionContext struct {
 
 // Driver is the interface for database driver.
 type Driver interface {
+	// General execution
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
 	// So we pass the dbType to tell the exact engine.
 	Open(ctx context.Context, dbType Type, config ConnectionConfig, connCtx ConnectionContext) (Driver, error)
@@ -388,15 +389,18 @@ type Driver interface {
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
-	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
-	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string) error
 	// Used for execute readonly SELECT statement
 	// limit is the maximum row count returned. No limit enforced if limit <= 0
 	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)
+
+	// Sync schema
+	// SyncInstance syncs the instance metadata.
+	SyncInstance(ctx context.Context) (*InstanceMeta, error)
+	// SyncDBSchema syncs a single database schema.
+	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
 
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
@@ -436,7 +440,7 @@ func Register(dbType Type, f driverFunc) {
 	drivers[dbType] = f
 }
 
-// Open opens a database specified by its database driver type and connection config
+// Open opens a database specified by its database driver type and connection config.
 func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]

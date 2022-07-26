@@ -278,7 +278,13 @@ export default defineComponent({
       } else {
         issueNameParts.push(`[${selectedDatabaseList.length} databases]`);
       }
-      issueNameParts.push(isAlterSchema.value ? `Alter schema` : `Change data`);
+      if (mode === "online") {
+        issueNameParts.push("Online schema change");
+      } else {
+        issueNameParts.push(
+          isAlterSchema.value ? `Alter schema` : `Change data`
+        );
+      }
       issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
 
       const query: Record<string, any> = {
