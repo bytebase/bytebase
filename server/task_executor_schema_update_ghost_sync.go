@@ -44,7 +44,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
-// GetProgress returns the task progress
+// GetProgress returns the task progress.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
