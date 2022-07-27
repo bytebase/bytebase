@@ -469,7 +469,7 @@ func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issu
 }
 
 // createIssueImpl creates a new issue.
-func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*issueRaw, error) {
+func (*Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*issueRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -523,7 +523,7 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 	return &issueRaw, nil
 }
 
-func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
+func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -609,7 +609,7 @@ func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFi
 }
 
 // patchIssueImpl updates a issue by ID. Returns the new state of the issue after update.
-func (s *Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*issueRaw, error) {
+func (*Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*issueRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {

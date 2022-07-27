@@ -18,7 +18,7 @@ type TaskCheckMigrationSchemaExecutor struct {
 }
 
 // Run will run the task check migration schema executor once.
-func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (*TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.WithError(common.Internal, err)

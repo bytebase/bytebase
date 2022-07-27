@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"sort"
 )
 
 // Catalog is the service for catalog.
@@ -59,8 +58,7 @@ type Table struct {
 type Index struct {
 	Name string
 	// This could refer to a column or an expression.
-	Expression string
-	Position   int
+	ExpressionList []string
 	// Type isn't supported for SQLite.
 	Type    string
 	Unique  bool
@@ -125,9 +123,7 @@ type IndexFind struct {
 }
 
 // FindIndex finds the index.
-func (d *Database) FindIndex(find *IndexFind) (string, []*Index) {
-	tableName := ""
-	var indexList []*Index
+func (d *Database) FindIndex(find *IndexFind) (string, *Index) {
 	// notMatchTable is used for PostgreSQL. In PostgreSQL, the index name is unique in a schema, not a table.
 	notMatchTable := (d.DbType == Postgres && find.SchemaName != "" && find.TableName == "")
 	for _, schema := range d.SchemaList {
@@ -140,14 +136,10 @@ func (d *Database) FindIndex(find *IndexFind) (string, []*Index) {
 			}
 			for _, index := range table.IndexList {
 				if index.Name == find.IndexName {
-					tableName = table.Name
-					indexList = append(indexList, index)
+					return table.Name, index
 				}
 			}
 		}
 	}
-	sort.Slice(indexList, func(i, j int) bool {
-		return indexList[i].Position < indexList[j].Position
-	})
-	return tableName, indexList
+	return "", nil
 }

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -172,23 +173,47 @@ func convertTable(table *api.Table) *catalog.Table {
 		CreateOptions: table.CreateOptions,
 		Comment:       table.Comment,
 		ColumnList:    convertColumnList(table.ColumnList),
-		IndexList:     converIndexList(table.IndexList),
+		IndexList:     convertIndexList(table.IndexList),
 	}
 }
 
-func converIndexList(list []*api.Index) []*catalog.Index {
+func convertIndexList(list []*api.Index) []*catalog.Index {
+	if len(list) == 0 {
+		return nil
+	}
 	var res []*catalog.Index
-	for _, index := range list {
-		res = append(res, &catalog.Index{
-			Name:       index.Name,
-			Expression: index.Expression,
-			Position:   index.Position,
-			Type:       index.Type,
-			Unique:     index.Unique,
-			Primary:    index.Primary,
-			Visible:    index.Visible,
-			Comment:    index.Comment,
-		})
+	indexMap := make(map[string][]*api.Index)
+	for _, expression := range list {
+		indexMap[expression.Name] = append(indexMap[expression.Name], expression)
+	}
+
+	for _, expressionList := range indexMap {
+		res = append(res, convertIndexExceptExpression(expressionList))
+	}
+	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Name < res[j].Name
+	})
+	return res
+}
+
+func convertIndexExceptExpression(list []*api.Index) *catalog.Index {
+	if len(list) == 0 {
+		return nil
+	}
+	res := &catalog.Index{
+		Name:    list[0].Name,
+		Type:    list[0].Type,
+		Unique:  list[0].Unique,
+		Primary: list[0].Primary,
+		Visible: list[0].Visible,
+		Comment: list[0].Comment,
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Position < list[j].Position
+	})
+	for _, expression := range list {
+		res.ExpressionList = append(res.ExpressionList, expression.Expression)
 	}
 	return res
 }

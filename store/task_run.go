@@ -61,7 +61,7 @@ func (raw *taskRunRaw) toTaskRun() *api.TaskRun {
 }
 
 // createTaskRunImpl creates a new taskRun.
-func (s *Store) createTaskRunImpl(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*taskRunRaw, error) {
+func (*Store) createTaskRunImpl(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*taskRunRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -125,7 +125,7 @@ func (s *Store) getTaskRunRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskR
 }
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
-func (s *Store) patchTaskRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*taskRunRaw, error) {
+func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*taskRunRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
@@ -183,7 +183,7 @@ func (s *Store) patchTaskRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *a
 	return &taskRunRaw, nil
 }
 
-func (s *Store) findTaskRunImpl(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*taskRunRaw, error) {
+func (*Store) findTaskRunImpl(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*taskRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

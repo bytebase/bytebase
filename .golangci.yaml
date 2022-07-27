@@ -67,8 +67,6 @@ linters-settings:
       - name: early-return
         disabled: true
       # TODO(dragonly): Remove the rules below in the following PRs.
-      - name: unused-receiver
-        disabled: true
       - name: unhandled-error
         disabled: true
       - name: if-return
