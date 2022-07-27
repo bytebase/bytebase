@@ -76,6 +76,7 @@ type Backup struct {
 	ID int `jsonapi:"primary,backup"`
 
 	// Standard fields
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorID int
 	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
@@ -158,6 +159,7 @@ type BackupPatch struct {
 	ID int
 
 	// Standard fields
+	RowStatus *RowStatus
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 

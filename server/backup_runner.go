@@ -98,9 +98,10 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs))
 			if time.Now().After(expireTime) {
 				// update metadata
+				archive := api.Archived
 				backupPatch := api.BackupPatch{
-					ID:     backup.ID,
-					Status: string(api.BackupStatusDeleted),
+					ID:        backup.ID,
+					RowStatus: &archive,
 				}
 				if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
 					log.Error("Failed to update status for deleted backup", zap.String("name", backup.Name), zap.String("database", bs.Database.Name))
