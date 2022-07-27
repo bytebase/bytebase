@@ -24,8 +24,8 @@ func TestGetSafeName(t *testing.T) {
 		},
 		{
 			baseName: "normal_database_name",
-			suffix:   "old",
-			expected: "normal_database_name_old",
+			suffix:   "del",
+			expected: "normal_database_name_del",
 		},
 		{
 			baseName: "long_database_name1234567890123456789012345678901",
@@ -75,12 +75,12 @@ func TestGetPITROldDatabaseName(t *testing.T) {
 		{
 			database:  "normal_database_name",
 			timestamp: 1652237293,
-			expected:  "normal_database_name_pitr_1652237293_old",
+			expected:  "normal_database_name_pitr_1652237293_del",
 		},
 		{
 			database:  "long_database_name123456789012345678901234567890",
 			timestamp: 1652237293,
-			expected:  "long_database_name12345678901234567890123456_pitr_1652237293_old",
+			expected:  "long_database_name12345678901234567890123456_pitr_1652237293_del",
 		},
 	}
 

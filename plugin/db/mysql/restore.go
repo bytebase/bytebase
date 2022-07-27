@@ -4,8 +4,8 @@ package mysql
 // For example, the original database is `dbfoo`. The suffixTs, derived from the PITR issue's CreateTs, is 1653018005.
 // Bytebase will do the following:
 // 1. Create a database called `dbfoo_pitr_1653018005`, and do PITR restore to it.
-// 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
-// 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
+// 2. Create a database called `dbfoo_pitr_1653018005_del`, and move tables
+// 	  from `dbfoo` to `dbfoo_pitr_1653018005_del`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
 
 import (
 	"bufio"
@@ -479,9 +479,9 @@ func getPITRDatabaseName(database string, suffixTs int64) string {
 }
 
 // Composes a database name that we use as the target database for swapping out the original database.
-// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_old".
+// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_del".
 func getPITROldDatabaseName(database string, suffixTs int64) string {
-	suffix := fmt.Sprintf("pitr_%d_old", suffixTs)
+	suffix := fmt.Sprintf("pitr_%d_del", suffixTs)
 	return getSafeName(database, suffix)
 }
 
