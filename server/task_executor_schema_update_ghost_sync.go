@@ -241,8 +241,10 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 	go func() {
 		if err := migrator.Migrate(); err != nil {
 			log.Error("failed to run gh-ost migration", zap.Error(err))
-			// There could be an error in gh-ost migration after the syncDone channel returns which causes the outer function returns, too.
-			// Then there's no consumer of syncError, so we must make sending to syncError non-blocking.
+			// `migrator.Migrate` can return an error
+			// 1. before the point of closing `syncDone`, in this case `runGhostMigration` will receive from `syncError`.
+			// 2. after the point of closing `syncDone`, in this case `runGhostMigration` has received from `syncDone` and returned.
+			// Then there's no consumer of `syncError`, so we must send to `syncError` without blocking.
 			select {
 			case syncError <- fmt.Errorf("failed to run gh-ost migration, error: %w", err):
 			default:
