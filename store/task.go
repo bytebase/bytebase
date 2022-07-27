@@ -662,8 +662,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
 			return nil, err
 		}
-	}
-	if taskRunRaw != nil {
+	} else if taskRunRaw != nil {
 		if patch.Status == api.TaskRunning {
 			return nil, fmt.Errorf("task is already running: %v", taskRawObj.Name)
 		}
