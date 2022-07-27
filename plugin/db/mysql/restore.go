@@ -617,15 +617,14 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	if isLast {
 		// Case 1: It's the last binlog file we need (contains the targetTs).
 		// If it's the last (incomplete) binlog file on the MySQL server, it will grow as new writes hit the database server.
-		// We just need to check that the downloaded file size >= queried size, so it contains the targetTs event.
+		// Chances are that the latest binlog file size < size queried on the MySQL server, maybe because of some file sync issue.
+		// We can safely ignore this, because a later download will rewrite this binlog file, and it only causes the binlog replay to failed when the targetTs is just in the last not synced range.
 		if fileInfo.Size() < binlogFileToDownload.Size {
-			log.Error("Downloaded latest binlog file size is smaller than size queried on the MySQL server",
+			log.Warn("Downloaded latest binlog file size is smaller than size queried on the MySQL server",
 				zap.String("binlog", binlogFileToDownload.Name),
 				zap.Int64("sizeInfo", binlogFileToDownload.Size),
 				zap.Int64("downloadedSize", fileInfo.Size()),
 			)
-			_ = os.Remove(resultFilePath)
-			return fmt.Errorf("downloaded latest binlog file %q size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 		}
 	} else {
 		// Case 2: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
