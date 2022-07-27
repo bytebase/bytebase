@@ -250,7 +250,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 	}
 
 	// only schema update or data update task has required task check
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
 			return false, err
@@ -277,6 +277,16 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax)
+			if err != nil {
+				return false, err
+			}
+			if !pass {
+				return false, nil
+			}
+		}
+
+		if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckGhostSync)
 			if err != nil {
 				return false, err
 			}
