@@ -191,7 +191,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		for {
 			select {
 			case <-ticker.C:
-				progress := mysqlStdin.Count() / totalBinlogBytes
+				progress := mysqlStdin.Count() * 10000 / totalBinlogBytes
 				atomic.StoreUint64(&driver.replayBinlogProgress, progress)
 			case <-ctx.Done():
 				return
