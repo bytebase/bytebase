@@ -189,7 +189,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 }
 
 // createTaskCheckRunImpl creates a new taskCheckRun.
-func (s *Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
+func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -283,7 +283,7 @@ func (s *Store) patchTaskCheckRunRawStatus(ctx context.Context, patch *api.TaskC
 }
 
 // patchTaskCheckRunStatusImpl updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
+func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
 	// Build UPDATE clause.
 	if patch.Result == "" {
 		patch.Result = "{}"
@@ -329,7 +329,7 @@ func (s *Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, pat
 	return &taskCheckRunRaw, nil
 }
 
-func (s *Store) findTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
+func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

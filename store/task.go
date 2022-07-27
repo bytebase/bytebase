@@ -378,7 +378,7 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 }
 
 // createTaskImpl creates a new task.
-func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
+func (*Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
 	var row *sql.Row
 
 	if create.Payload == "" {
@@ -573,7 +573,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 }
 
 // patchTaskImpl updates a task by ID. Returns the new state of the task after update.
-func (s *Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatch) (*taskRaw, error) {
+func (*Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatch) (*taskRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.DatabaseID; v != nil {

@@ -13,8 +13,8 @@
     "database": "数据库"
   },
   "template": {
-    "mysql-prod": "针对生产环境的审核策略模板",
-    "mysql-dev": "针对开发环境的审核策略模板"
+    "bb-sql-review-mysql-prod": "针对生产环境的审核策略模板",
+    "bb-sql-review-mysql-dev": "针对开发环境的审核策略模板"
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -33,7 +33,7 @@
       "title": "待删除表的命名规范",
       "description": "只有符合命名规范的表才可以被删除，通过强制用户在删除前重命名来避免误删。默认情况下待删除表名必须以 \"_del\" 结尾。",
       "component": {
-        "name_format": {
+        "format": {
           "title": "命名规则（正则）"
         }
       }
@@ -42,10 +42,10 @@
       "title": "表名命名检查",
       "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
       "component": {
-        "name_format": {
+        "format": {
           "title": "表命名规则（正则）"
         },
-        "length_limit": {
+        "maxLength": {
           "title": "长度限制"
         }
       }
@@ -54,10 +54,10 @@
       "title": "列名命名检查",
       "description": "限制列名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
       "component": {
-        "name_format": {
+        "format": {
           "title": "列命名规则（正则）"
         },
-        "length_limit": {
+        "maxLength": {
           "title": "长度限制"
         }
       }
@@ -66,14 +66,14 @@
       "title": "唯一键命名检查",
       "description": "限制唯一键命名风格和长度，默认为 uk_<表名>_<主键包含的字段名组合>，且不超过 64 个字符。",
       "component": {
-        "name_format": {
+        "format": {
           "title": "唯一键命名规则",
           "template": {
             "table": "表名",
             "column_list": "索引包含的字段名，通过 _ 连接"
           }
         },
-        "length_limit": {
+        "maxLength": {
           "title": "长度限制"
         }
       }
@@ -82,7 +82,7 @@
       "title": "外键命名检查",
       "description": "限制外键命名风格和长度，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>，且不超过 64 个字符。",
       "component": {
-        "name_format": {
+        "format": {
           "title": "外键命名规则",
           "template": {
             "referencing_table": "目标表名",
@@ -91,7 +91,7 @@
             "referenced_column": "被引用的字段名"
           }
         },
-        "length_limit": {
+        "maxLength": {
           "title": "长度限制"
         }
       }
@@ -100,14 +100,14 @@
       "title": "索引命名检查",
       "description": "限制索引命名风格和长度，默认为 idx_<表名>_<索引包含的字段名组合>，且不超过 64 个字符。",
       "component": {
-        "name_format": {
+        "format": {
           "title": "索引命名规则",
           "template": {
             "table": "表名",
             "column_list": "索引包含的字段名，通过 _ 连接"
           }
         },
-        "length_limit": {
+        "maxLength": {
           "title": "长度限制"
         }
       }
@@ -116,7 +116,7 @@
       "title": "必须包含的字段",
       "description": "强制要求表中必须包含某些字段。",
       "component": {
-        "column_list": {
+        "columnList": {
           "title": "必须包含的字段名"
         }
       }

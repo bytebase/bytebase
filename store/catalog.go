@@ -182,35 +182,40 @@ func convertIndexList(list []*api.Index) []*catalog.Index {
 		return nil
 	}
 	var res []*catalog.Index
-	// sort index list by (name, position)
-	sort.Slice(list, func(i, j int) bool {
-		if list[i].Name != list[j].Name {
-			return list[i].Name < list[j].Name
-		}
-		return list[i].Position < list[j].Position
-	})
-
-	index := convertIndexExceptExpression(list[0])
+	indexMap := make(map[string][]*api.Index)
 	for _, expression := range list {
-		if expression.Name != index.Name {
-			res = append(res, index)
-			index = convertIndexExceptExpression(expression)
-		}
-		index.ExpressionList = append(index.ExpressionList, expression.Expression)
+		indexMap[expression.Name] = append(indexMap[expression.Name], expression)
 	}
-	res = append(res, index)
+
+	for _, expressionList := range indexMap {
+		res = append(res, convertIndexExceptExpression(expressionList))
+	}
+	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Name < res[j].Name
+	})
 	return res
 }
 
-func convertIndexExceptExpression(index *api.Index) *catalog.Index {
-	return &catalog.Index{
-		Name:    index.Name,
-		Type:    index.Type,
-		Unique:  index.Unique,
-		Primary: index.Primary,
-		Visible: index.Visible,
-		Comment: index.Comment,
+func convertIndexExceptExpression(list []*api.Index) *catalog.Index {
+	if len(list) == 0 {
+		return nil
 	}
+	res := &catalog.Index{
+		Name:    list[0].Name,
+		Type:    list[0].Type,
+		Unique:  list[0].Unique,
+		Primary: list[0].Primary,
+		Visible: list[0].Visible,
+		Comment: list[0].Comment,
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Position < list[j].Position
+	})
+	for _, expression := range list {
+		res.ExpressionList = append(res.ExpressionList, expression.Expression)
+	}
+	return res
 }
 
 func convertColumnList(list []*api.Column) []*catalog.Column {

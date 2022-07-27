@@ -30,7 +30,7 @@ func (exec *DatabaseCreateTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *DatabaseCreateTaskExecutor) GetProgress() api.Progress {
+func (*DatabaseCreateTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 

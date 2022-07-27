@@ -1,108 +1,55 @@
 <template>
-  <div
-    class="px-4 space-y-6"
-    :class="!state.selectedDatabase ? 'w-208' : 'w-112'"
+  <TransferSingleDatabaseForm
+    v-if="isTenantProject"
+    :project="project"
+    :transfer-source="state.transferSource"
+    :database-list="databaseList"
+    @dismiss="$emit('dismiss')"
+    @submit="(database, labels) => transferDatabase([database], labels)"
   >
-    <template v-if="!state.selectedDatabase">
-      <div v-if="projectId != DEFAULT_PROJECT_ID" class="textlabel">
-        <div
-          v-if="state.transferSource == 'DEFAULT'"
-          class="textinfolabel mb-2"
-        >
-          {{ $t("quick-action.default-db-hint") }}
-        </div>
-        <div class="radio-set-row">
-          <div class="flex flex-row">
-            <div class="radio">
-              <input
-                v-model="state.transferSource"
-                tabindex="-1"
-                type="radio"
-                class="btn"
-                value="DEFAULT"
-              />
-              <label class="label">
-                {{ $t("quick-action.from-default-project") }}
-              </label>
-            </div>
-          </div>
-          <div class="radio">
-            <input
-              v-model="state.transferSource"
-              tabindex="-1"
-              type="radio"
-              class="btn"
-              value="OTHER"
-            />
-            <label class="label">
-              {{ $t("quick-action.from-other-projects") }}
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <DatabaseTable
-        :mode="'ALL_SHORT'"
-        :bordered="true"
-        :custom-click="true"
-        :database-list="databaseList"
-        @select-database="selectDatabase"
+    <template #transfer-source-selector>
+      <TransferSourceSelector
+        :project="project"
+        :transfer-source="state.transferSource"
+        @change="state.transferSource = $event"
       />
-      <!-- Update button group -->
-      <div class="pt-4 border-t border-block-border flex justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="cancel"
-        >
-          {{ $t("common.cancel") }}
-        </button>
-      </div>
     </template>
+  </TransferSingleDatabaseForm>
 
-    <template v-else>
-      <SelectDatabaseLabel
-        :database="state.selectedDatabase"
-        :target-project-id="projectId"
-        @next="transferDatabase"
-      >
-        <template #buttons="{ next, valid }">
-          <div
-            class="w-full pt-4 mt-6 flex justify-end border-t border-block-border"
-          >
-            <button
-              type="button"
-              class="btn-normal py-2 px-4"
-              @click.prevent="state.selectedDatabase = undefined"
-            >
-              {{ $t("common.back") }}
-            </button>
-            <button
-              type="button"
-              class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-              :disabled="!valid"
-              @click.prevent="next"
-            >
-              {{ $t("common.transfer") }}
-            </button>
-          </div>
-        </template>
-      </SelectDatabaseLabel>
+  <TransferMultipleDatabaseForm
+    v-else
+    :project="project"
+    :transfer-source="state.transferSource"
+    :database-list="databaseList"
+    @dismiss="$emit('dismiss')"
+    @submit="(databaseList) => transferDatabase(databaseList)"
+  >
+    <template #transfer-source-selector>
+      <TransferSourceSelector
+        :project="project"
+        :transfer-source="state.transferSource"
+        @change="state.transferSource = $event"
+      />
     </template>
+  </TransferMultipleDatabaseForm>
+
+  <div
+    v-if="state.loading"
+    class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+  >
+    <BBSpin />
   </div>
 </template>
 
-<script lang="ts">
-import {
-  computed,
-  defineComponent,
-  PropType,
-  reactive,
-  watchEffect,
-} from "vue";
+<script lang="ts" setup>
+import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
 import { cloneDeep } from "lodash-es";
-import DatabaseTable from "../components/DatabaseTable.vue";
-import { SelectDatabaseLabel } from "../components/TransferDatabaseForm";
+import {
+  TransferSingleDatabaseForm,
+  TransferMultipleDatabaseForm,
+  TransferSource,
+  TransferSourceSelector,
+} from "@/components/TransferDatabaseForm";
 import {
   Database,
   ProjectId,
@@ -115,99 +62,100 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentList,
+  useProjectStore,
 } from "@/store";
 
-type TransferSource = "DEFAULT" | "OTHER";
-
 interface LocalState {
-  selectedDatabase?: Database;
   transferSource: TransferSource;
+  loading: boolean;
 }
 
-export default defineComponent({
-  name: "TransferDatabaseForm",
-  components: {
-    DatabaseTable,
-    SelectDatabaseLabel,
-  },
-  props: {
-    projectId: {
-      required: true,
-      type: Number as PropType<ProjectId>,
-    },
-  },
-  emits: ["submit", "dismiss"],
-  setup(props, { emit }) {
-    const databaseStore = useDatabaseStore();
-
-    const state = reactive<LocalState>({
-      transferSource:
-        props.projectId == DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
-    });
-
-    const currentUser = useCurrentUser();
-
-    const prepareDatabaseListForDefaultProject = () => {
-      databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
-    };
-
-    watchEffect(prepareDatabaseListForDefaultProject);
-
-    const environmentList = useEnvironmentList(["NORMAL"]);
-
-    const databaseList = computed(() => {
-      var list;
-      if (state.transferSource == "DEFAULT") {
-        list = cloneDeep(
-          databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)
-        );
-      } else {
-        list = cloneDeep(
-          databaseStore.getDatabaseListByPrincipalId(currentUser.value.id)
-        ).filter((item: Database) => item.project.id != props.projectId);
-      }
-
-      return sortDatabaseList(list, environmentList.value);
-    });
-
-    const selectedDatabaseName = computed(() => {
-      return state.selectedDatabase?.name;
-    });
-
-    const selectDatabase = (database: Database) => {
-      state.selectedDatabase = database;
-    };
-
-    const transferDatabase = (labels: DatabaseLabel[]) => {
-      databaseStore
-        .transferProject({
-          databaseId: state.selectedDatabase!.id,
-          projectId: props.projectId,
-          labels,
-        })
-        .then((updatedDatabase) => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: `Successfully transferred '${updatedDatabase.name}' to project '${updatedDatabase.project.name}'.`,
-          });
-          emit("dismiss");
-        });
-    };
-
-    const cancel = () => {
-      emit("dismiss");
-    };
-
-    return {
-      DEFAULT_PROJECT_ID,
-      state,
-      databaseList,
-      selectedDatabaseName,
-      selectDatabase,
-      transferDatabase,
-      cancel,
-    };
+const props = defineProps({
+  projectId: {
+    required: true,
+    type: Number as PropType<ProjectId>,
   },
 });
+
+const emit = defineEmits<{
+  (e: "dismiss"): void;
+}>();
+
+const databaseStore = useDatabaseStore();
+const projectStore = useProjectStore();
+const currentUser = useCurrentUser();
+
+const state = reactive<LocalState>({
+  transferSource: props.projectId === DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
+  loading: false,
+});
+
+const project = computed(() => projectStore.getProjectById(props.projectId));
+
+// Fetch project entity when initialize and props.projectId changes.
+watch(
+  () => props.projectId,
+  () => projectStore.fetchProjectById(props.projectId),
+  { immediate: true }
+);
+
+const isTenantProject = computed(() => project.value.tenantMode === "TENANT");
+
+const prepareDatabaseListForDefaultProject = () => {
+  databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
+};
+
+onBeforeMount(prepareDatabaseListForDefaultProject);
+
+const environmentList = useEnvironmentList(["NORMAL"]);
+
+const databaseList = computed(() => {
+  var list;
+  if (state.transferSource == "DEFAULT") {
+    list = cloneDeep(
+      databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)
+    );
+  } else {
+    list = cloneDeep(
+      databaseStore.getDatabaseListByPrincipalId(currentUser.value.id)
+    ).filter((item: Database) => item.project.id != props.projectId);
+  }
+
+  return sortDatabaseList(list, environmentList.value);
+});
+
+const transferDatabase = async (
+  databaseList: Database[],
+  labels?: DatabaseLabel[]
+) => {
+  const transferOneDatabase = (
+    database: Database,
+    labels?: DatabaseLabel[]
+  ) => {
+    return databaseStore.transferProject({
+      databaseId: database.id,
+      projectId: props.projectId,
+      labels, // Will keep all labels if not specified here
+    });
+  };
+
+  try {
+    state.loading = true;
+    const requests = databaseList.map((db) => transferOneDatabase(db, labels));
+    await Promise.all(requests);
+    const displayDatabaseName =
+      databaseList.length > 1
+        ? `${databaseList.length} databases`
+        : `'${databaseList[0].name}'`;
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: `Successfully transferred ${displayDatabaseName} to project '${project.value.name}'.`,
+    });
+    emit("dismiss");
+  } finally {
+    state.loading = false;
+  }
+};
 </script>

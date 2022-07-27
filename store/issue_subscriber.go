@@ -64,7 +64,7 @@ func (s *Store) DeleteIssueSubscriber(ctx context.Context, delete *api.IssueSubs
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteIssueSubscriberImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteIssueSubscriberImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -198,7 +198,7 @@ func findIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, find *api.IssueSub
 }
 
 // deleteIssueSubscriberImpl permanently deletes a issueSubscriber by ID.
-func deleteIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, delete *api.IssueSubscriberDelete) error {
+func (*Store) deleteIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, delete *api.IssueSubscriberDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id = $2`, delete.IssueID, delete.SubscriberID); err != nil {
 		return FormatError(err)

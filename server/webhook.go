@@ -380,7 +380,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	return string(createContext), nil
 }
 
-func (s *Server) createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, statement string) (string, error) {
+func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, statement string) (string, error) {
 	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
 	if mi.Environment != "" {
 		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
@@ -525,7 +525,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
-		createContext, err = s.createTenantSchemaUpdateIssue(mi, pushEvent, content)
+		createContext, err = createTenantSchemaUpdateIssue(mi, pushEvent, content)
 	} else {
 		createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, pushEvent, fileEscaped, content)
 	}

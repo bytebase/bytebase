@@ -125,7 +125,7 @@ func (s *Store) DeleteProjectWebhook(ctx context.Context, delete *api.ProjectWeb
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteProjectWebhookImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteProjectWebhookImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -411,7 +411,7 @@ func patchProjectWebhookImpl(ctx context.Context, tx *sql.Tx, patch *api.Project
 }
 
 // deleteProjectWebhookImpl permanently deletes a projectWebhook by ID.
-func deleteProjectWebhookImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectWebhookDelete) error {
+func (*Store) deleteProjectWebhookImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectWebhookDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
