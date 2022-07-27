@@ -8,11 +8,12 @@ import (
 	"path"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -272,7 +273,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 }
 
-func TestVCS(t *testing.T) {
+func TestVCS_GitLab(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -312,8 +313,8 @@ func TestVCS(t *testing.T) {
 	refreshToken := "refreshToken1"
 	gitlabProjectID := 121
 	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// create a gitlab project.
-	ctl.gitlab.CreateProject(gitlabProjectIDStr)
+	// create a vcsProvider project.
+	ctl.vcsProvider.CreateRepository(gitlabProjectIDStr)
 	_, err = ctl.createRepository(api.RepositoryCreate{
 		VCSID:              vcs.ID,
 		ProjectID:          project.ID,
@@ -373,10 +374,12 @@ func TestVCS(t *testing.T) {
 			},
 		},
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
+	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
 	a.NoError(err)
 
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
+	payload, err := json.Marshal(pushEvent)
+	a.NoError(err)
+	err = ctl.vcsProvider.SendWebhookPush(gitlabProjectIDStr, payload)
 	a.NoError(err)
 
 	// Get schema update issue.
@@ -416,10 +419,12 @@ func TestVCS(t *testing.T) {
 			},
 		},
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: dataUpdateStatement})
+	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: dataUpdateStatement})
 	a.NoError(err)
 
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
+	payload, err = json.Marshal(pushEvent)
+	a.NoError(err)
+	err = ctl.vcsProvider.SendWebhookPush(gitlabProjectIDStr, payload)
 	a.NoError(err)
 
 	// Get data update issue.

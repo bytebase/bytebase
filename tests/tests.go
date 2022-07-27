@@ -6,8 +6,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"strconv"
-
 	"io"
 	"io/fs"
 	"net/http"
@@ -15,8 +13,12 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
@@ -26,8 +28,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
-	"github.com/google/jsonapi"
-	"go.uber.org/zap"
 )
 
 //go:embed fake
@@ -100,10 +100,10 @@ var (
 )
 
 type controller struct {
-	server *server.Server
-	client *http.Client
-	cookie string
-	gitlab *fake.GitLab
+	server      *server.Server
+	client      *http.Client
+	cookie      string
+	vcsProvider fake.VCSProvider
 
 	rootURL   string
 	apiURL    string
@@ -117,15 +117,15 @@ func getTestPort(testName string) int {
 	tests := []string{
 		"TestServiceRestart",
 		"TestSchemaAndDataUpdate",
-		"TestVCS",
+		"TestVCS_GitLab",
 		"TestTenant",
-		"TestTenantVCS",
+		"TestTenantVCS_GitLab",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestBackupRestoreBasic",
-		"TestTenantVCSDatabaseNameTemplate",
+		"TestTenantVCSDatabaseNameTemplate_GitLab",
 		"TestBootWithExternalPg",
-		"TestSheetVCS",
+		"TestSheetVCS_GitLab",
 		"TestPrepare",
 
 		// PITR related cases
@@ -185,9 +185,9 @@ func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
-	// set up gitlab.
+	// set up vcsProvider.
 	gitlabPort := port + 2
-	ctl.gitlab = fake.NewGitLab(gitlabPort)
+	ctl.vcsProvider = fake.NewGitLab(gitlabPort)
 	ctl.gitURL = fmt.Sprintf("http://localhost:%d", gitlabPort)
 	ctl.gitAPIURL = fmt.Sprintf("%s/api/v4", ctl.gitURL)
 
@@ -200,16 +200,16 @@ func (ctl *controller) start(ctx context.Context, port int) error {
 	}()
 
 	go func() {
-		if err := ctl.gitlab.Run(); err != nil {
-			errChan <- fmt.Errorf("failed to run gitlab server, error: %w", err)
+		if err := ctl.vcsProvider.Run(); err != nil {
+			errChan <- fmt.Errorf("failed to run vcsProvider server, error: %w", err)
 		}
 	}()
 
 	if err := waitForServerStart(ctl.server, errChan); err != nil {
 		return fmt.Errorf("failed to wait for server to start, error: %w", err)
 	}
-	if err := waitForGitLabStart(ctl.gitlab, errChan); err != nil {
-		return fmt.Errorf("failed to wait for gitlab to start, error: %w", err)
+	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
+		return fmt.Errorf("failed to wait for vcsProvider to start, error: %w", err)
 	}
 
 	// initialize controller clients.
@@ -249,17 +249,14 @@ func waitForServerStart(s *server.Server, errChan <-chan error) error {
 	}
 }
 
-func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
+func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if g.Echo == nil {
-				continue
-			}
-			addr := g.Echo.ListenerAddr()
+			addr := p.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
 				return nil // was started
 			}
@@ -321,8 +318,8 @@ func (ctl *controller) Close(ctx context.Context) error {
 	if ctl.server != nil {
 		e = ctl.server.Shutdown(ctx)
 	}
-	if ctl.gitlab != nil {
-		if err := ctl.gitlab.Close(); err != nil {
+	if ctl.vcsProvider != nil {
+		if err := ctl.vcsProvider.Close(); err != nil {
 			e = err
 		}
 	}
