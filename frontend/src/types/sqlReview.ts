@@ -4,8 +4,8 @@ import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import sqlReviewSchema from "./sql-review-schema.yaml";
-import sqlReviewProdTemplate from "../../../plugin/advisor/config/sql-review.mysql.prod.yaml";
-import sqlReviewDevTemplate from "../../../plugin/advisor/config/sql-review.mysql.dev.yaml";
+import sqlReviewProdTemplate from "./sql-review.mysql.prod.yaml";
+import sqlReviewDevTemplate from "./sql-review.mysql.dev.yaml";
 
 // The engine type for rule template
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
