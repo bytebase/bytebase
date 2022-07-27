@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	// apiURL is the API URL.
-	apiURL = "https://api.github.com"
+	// githubComURL is URL for the GitHub.com.
+	githubComURL = "https://github.com"
+
 	// apiPageSize is the default page size when making API requests.
 	apiPageSize = 100
 )
@@ -33,7 +34,7 @@ func init() {
 
 var _ vcs.Provider = (*Provider)(nil)
 
-// Provider is a GitHub.com VCS provider.
+// Provider is a GitHub VCS provider.
 type Provider struct {
 	client *http.Client
 }
@@ -48,8 +49,13 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 }
 
 // APIURL returns the API URL path of GitHub.
-func (*Provider) APIURL(string) string {
-	return apiURL
+func (*Provider) APIURL(instanceURL string) string {
+	if instanceURL == githubComURL {
+		return "https://api.github.com"
+	}
+
+	// If it's not the GitHub.com, we use the API URL for the GitHub Enterprise Server.
+	return fmt.Sprintf("%s/api/v3", instanceURL)
 }
 
 // RepositoryRole is the role of the repository collaborator.
@@ -191,14 +197,15 @@ type WebhookPushEvent struct {
 
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
-func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {
-	url := fmt.Sprintf("%s/%s", apiURL, resourceURI)
+func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
+	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -229,8 +236,8 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 }
 
 // TryLogin tries to fetch the user info from the current OAuth context.
-func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, _ string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, "user")
+func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
+	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
 }
 
 // Commit represents a GitHub API response for a commit.
@@ -253,14 +260,15 @@ type FileCommit struct {
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
-func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, commitID string) (*vcs.Commit, error) {
-	url := fmt.Sprintf("%s/repos/%s/git/commits/%s", apiURL, repositoryID, commitID)
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -281,7 +289,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 
 	commit := &Commit{}
 	if err := json.Unmarshal([]byte(body), commit); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal commit data from GitHub.com, err: %w", err)
+		return nil, errors.Wrap(err, "unmarshal body")
 	}
 
 	return &vcs.Commit{
@@ -292,8 +300,8 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // FetchUserInfo fetches user info of given user ID.
-func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, _, username string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, fmt.Sprintf("users/%s", username))
+func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, username string) (*vcs.UserInfo, error) {
+	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", username))
 }
 
 func getRoleAndMappedRole(roleName string) (githubRole RepositoryRole, bytebaseRole common.ProjectRole) {
@@ -317,11 +325,11 @@ func getRoleAndMappedRole(roleName string) (githubRole RepositoryRole, bytebaseR
 // FetchRepositoryActiveMemberList fetch all active members of a repository
 //
 // Docs: https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators
-func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID string) ([]*vcs.RepositoryMember, error) {
+func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	var allCollaborators []RepositoryCollaborator
 	page := 1
 	for {
-		collaborators, hasNextPage, err := p.fetchPaginatedRepositoryCollaborators(ctx, oauthCtx, repositoryID, page)
+		collaborators, hasNextPage, err := p.fetchPaginatedRepositoryCollaborators(ctx, oauthCtx, instanceURL, repositoryID, page)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
@@ -336,7 +344,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 	var emptyEmailUserList []string
 	var allMembers []*vcs.RepositoryMember
 	for _, c := range allCollaborators {
-		userInfo, err := p.FetchUserInfo(ctx, oauthCtx, "", c.Login)
+		userInfo, err := p.FetchUserInfo(ctx, oauthCtx, githubComURL, c.Login)
 		if err != nil {
 			return nil, errors.Wrapf(err, "fetch user info, login: %s", c.Login)
 		}
@@ -369,14 +377,15 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 // fetchPaginatedRepositoryCollaborators fetches collaborators of a repository
 // in given page. It return the paginated results along with a boolean
 // indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, page int) (collaborators []RepositoryCollaborator, hasNextPage bool, err error) {
-	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=%d", apiURL, repositoryID, page, apiPageSize)
+func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, page int) (collaborators []RepositoryCollaborator, hasNextPage bool, err error) {
+	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -428,18 +437,18 @@ func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
 }
 
 // ExchangeOAuthToken exchanges OAuth content with the provided authorization code.
-func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
+func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
 	urlParams := &url.Values{}
 	urlParams.Set("client_id", oauthExchange.ClientID)
 	urlParams.Set("client_secret", oauthExchange.ClientSecret)
 	urlParams.Set("code", oauthExchange.Code)
 	urlParams.Set("redirect_uri", oauthExchange.RedirectURL)
-	url := fmt.Sprintf("https://github.com/login/oauth/access_token?%s", urlParams.Encode())
+	url := fmt.Sprintf("%s/login/oauth/access_token?%s", instanceURL, urlParams.Encode())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		urlParams.Set("client_secret", "**redacted**")
-		redactedURL := fmt.Sprintf("https://github.com/login/oauth/access_token?%s", urlParams.Encode())
+		redactedURL := fmt.Sprintf("%s/login/oauth/access_token?%s", instanceURL, urlParams.Encode())
 		return nil, errors.Wrapf(err, "construct POST %s", redactedURL)
 	}
 
@@ -472,11 +481,11 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 // has a owner role, which is required to create webhook in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, _ string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	var githubRepos []Repository
 	page := 1
 	for {
-		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, page)
+		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, instanceURL, page)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
@@ -505,16 +514,17 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // fetchPaginatedRepositoryList fetches repositories where the authenticated
 // user has a owner role in given page. It return the paginated results along
 // with a boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, page int) (repos []Repository, hasNextPage bool, err error) {
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/user/repos?affiliation=owner&page=%d&per_page=%d", apiURL, page, apiPageSize)
+	url := fmt.Sprintf("%s/user/repos?affiliation=owner&page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -557,14 +567,15 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 // TODO: GitHub returns truncated response if the number of items in the tree
 // array exceeded their maximum limit. It is not noted what exactly is the
 // maximum limit and requires making non-recursive request to each sub-tree.
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	url := fmt.Sprintf("%s/repos/%s/git/trees/%s?recursive=true", apiURL, repositoryID, ref)
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/trees/%s?recursive=true", p.APIURL(instanceURL), repositoryID, ref)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -616,7 +627,7 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 // CreateFile creates a file at given path in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(
 		FileCommit{
 			Message: fileCommitCreate.CommitMessage,
@@ -629,7 +640,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		return errors.Wrap(err, "marshal file commit")
 	}
 
-	url := fmt.Sprintf("%s/repos/%s/contents/%s", apiURL, repositoryID, url.QueryEscape(filePath))
+	url := fmt.Sprintf("%s/repos/%s/contents/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
 	code, _, err := oauth.Put(
 		ctx,
 		p.client,
@@ -637,6 +648,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		&oauthCtx.AccessToken,
 		bytes.NewReader(body),
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -671,8 +683,8 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	file, err := p.readFile(ctx, oauthCtx, repositoryID, filePath, ref)
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
+	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
 	}
@@ -688,8 +700,8 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (string, error) {
-	file, err := p.readFile(ctx, oauthCtx, repositoryID, filePath, ref)
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
+	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
 	if err != nil {
 		return "", errors.Wrap(err, "read file")
 	}
@@ -697,14 +709,15 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // readFile reads the given file in the repository.
-func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, repositoryID, filePath, ref string) (*File, error) {
-	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", apiURL, repositoryID, url.QueryEscape(filePath), ref)
+func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), ref)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -752,8 +765,8 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, r
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID string, payload []byte) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/hooks", apiURL, repositoryID)
+func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/hooks", p.APIURL(instanceURL), repositoryID)
 	code, body, err := oauth.Post(
 		ctx,
 		p.client,
@@ -761,6 +774,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		&oauthCtx.AccessToken,
 		bytes.NewReader(payload),
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -794,8 +808,8 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 // PatchWebhook patches the webhook in the repository with given payload.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#update-a-repository-webhook
-func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, webhookID string, payload []byte) error {
-	url := fmt.Sprintf("%s/repos/%s/hooks/%s", apiURL, repositoryID, webhookID)
+func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
+	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, body, err := oauth.Patch(
 		ctx,
 		p.client,
@@ -803,6 +817,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 		&oauthCtx.AccessToken,
 		bytes.NewReader(payload),
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -830,14 +845,15 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 // DeleteWebhook deletes the webhook from the repository.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, webhookID string) error {
-	url := fmt.Sprintf("%s/repos/%s/hooks/%s", apiURL, repositoryID, webhookID)
+func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
+	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, body, err := oauth.Delete(
 		ctx,
 		p.client,
 		url,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
+			instanceURL,
 			oauthContext{
 				ClientID:     oauthCtx.ClientID,
 				ClientSecret: oauthCtx.ClientSecret,
@@ -878,9 +894,9 @@ type refreshOAuthResponse struct {
 	// token_type, scope are not used.
 }
 
-func tokenRefresher(oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
+func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
-		url := fmt.Sprintf("%s/login/oauth/access_token", apiURL)
+		url := fmt.Sprintf("%s/login/oauth/access_token", instanceURL)
 		oauthCtx.GrantType = "refresh_token"
 		body, err := json.Marshal(oauthCtx)
 		if err != nil {

@@ -13,8 +13,8 @@
     "database": "Database"
   },
   "template": {
-    "mysql-prod": "Template for Prod Environment",
-    "mysql-dev": "Template for Dev Environment"
+    "bb-sql-review-mysql-prod": "Template for Prod Environment",
+    "bb-sql-review-mysql-dev": "Template for Dev Environment"
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -33,7 +33,7 @@
       "title": "Drop table with naming convention",
       "description": "Only tables named with specific patterns can be deleted. The requires users to do a rename before dropping the table. The table name must have \"_del\" suffix by default.",
       "component": {
-        "name_format": {
+        "format": {
           "title": "Table name format (regex)"
         }
       }
@@ -42,10 +42,10 @@
       "title": "Table naming check",
       "description": "Enforce the table name format and length limit. Default snake_lower_case with 64 characters.",
       "component": {
-        "name_format": {
+        "format": {
           "title": "Table name format (regex)"
         },
-        "length_limit": {
+        "maxLength": {
           "title": "Length limit"
         }
       }
@@ -54,10 +54,10 @@
       "title": "Column naming check",
       "description": "Enforce the column name format and length limit. Default snake_lower_case with 64 characters.",
       "component": {
-        "name_format": {
+        "format": {
           "title": "Column name format (regex)"
         },
-        "length_limit": {
+        "maxLength": {
           "title": "Length limit"
         }
       }
@@ -66,14 +66,14 @@
       "title": "Unique key naming check",
       "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> with 64 characters.",
       "component": {
-        "name_format": {
+        "format": {
           "title": "Unique key name format",
           "template": {
             "table": "The table name",
             "column_list": "Index column names, joined by _"
           }
         },
-        "length_limit": {
+        "maxLength": {
           "title": "Length limit"
         }
       }
@@ -82,7 +82,7 @@
       "title": "Foreign key naming check",
       "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> with 64 characters.",
       "component": {
-        "name_format": {
+        "format": {
           "title": "Foreign key name format",
           "template": {
             "referencing_table": "The referencing table name",
@@ -91,7 +91,7 @@
             "referenced_column": "The referenced column name"
           }
         },
-        "length_limit": {
+        "maxLength": {
           "title": "Length limit"
         }
       }
@@ -100,14 +100,14 @@
       "title": "Index naming check",
       "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> with 64 characters.",
       "component": {
-        "name_format": {
+        "format": {
           "title": "Index name format",
           "template": {
             "table": "The table name",
             "column_list": "Index column names, joined by _"
           }
         },
-        "length_limit": {
+        "maxLength": {
           "title": "Length limit"
         }
       }
@@ -116,7 +116,7 @@
       "title": "Required columns",
       "description": "Enforce the required columns in each table.",
       "component": {
-        "column_list": {
+        "columnList": {
           "title": "Required column names"
         }
       }

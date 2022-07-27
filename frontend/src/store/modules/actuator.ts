@@ -1,5 +1,5 @@
-import { defineStore } from "pinia";
 import axios from "axios";
+import { defineStore } from "pinia";
 import { ActuatorState, ServerInfo } from "@/types";
 
 export const useActuatorStore = defineStore("actuator", {
@@ -25,26 +25,18 @@ export const useActuatorStore = defineStore("actuator", {
     needAdminSetup: (state) => {
       return state.serverInfo?.needAdminSetup || false;
     },
-    isLiveDemo: (state) => {
-      return (
-        state.serverInfo?.demo &&
-        state.serverInfo?.demoName !== "" &&
-        state.serverInfo?.demoName !== "dev" &&
-        state.serverInfo?.demoName !== "prod"
-      );
-    },
   },
   actions: {
-    async fetchInfo() {
+    setServerInfo(serverInfo: ServerInfo) {
+      this.serverInfo = serverInfo;
+    },
+    async fetchServerInfo() {
       const serverInfo = (await axios.get(`/api/actuator/info`))
         .data as ServerInfo;
 
-      this.setInfo(serverInfo);
+      this.setServerInfo(serverInfo);
 
       return serverInfo;
-    },
-    setInfo(serverInfo: ServerInfo) {
-      this.serverInfo = serverInfo;
     },
   },
 });
