@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/stretchr/testify/require"
 )
 
-func TestSheetVCS(t *testing.T) {
+func TestSheetVCS_GitLab(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -50,8 +51,8 @@ func TestSheetVCS(t *testing.T) {
 	refreshToken := "refreshToken"
 	gitlabProjectID := 121
 	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// create a gitlab project.
-	ctl.gitlab.CreateProject(gitlabProjectIDStr)
+	// create a vcsProvider project.
+	ctl.vcsProvider.CreateRepository(gitlabProjectIDStr)
 	_, err = ctl.createRepository(api.RepositoryCreate{
 		VCSID:              vcs.ID,
 		ProjectID:          project.ID,
@@ -75,7 +76,7 @@ func TestSheetVCS(t *testing.T) {
 	gitFile := "sheet/all_employee.sql"
 	fileContent := "SELECT * FROM employee"
 	files[gitFile] = fileContent
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, files)
+	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, files)
 	a.NoError(err)
 
 	err = ctl.syncSheet(project.ID)

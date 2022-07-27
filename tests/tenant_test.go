@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -202,7 +203,7 @@ func TestTenant(t *testing.T) {
 	a.Equal(1, len(hm2))
 }
 
-func TestTenantVCS(t *testing.T) {
+func TestTenantVCS_GitLab(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -243,8 +244,8 @@ func TestTenantVCS(t *testing.T) {
 	refreshToken := "refreshToken1"
 	gitlabProjectID := 121
 	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// create a gitlab project.
-	ctl.gitlab.CreateProject(gitlabProjectIDStr)
+	// create a vcsProvider project.
+	ctl.vcsProvider.CreateRepository(gitlabProjectIDStr)
 	_, err = ctl.createRepository(api.RepositoryCreate{
 		VCSID:              vcs.ID,
 		ProjectID:          project.ID,
@@ -381,9 +382,11 @@ func TestTenantVCS(t *testing.T) {
 			},
 		},
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
+	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
 	a.NoError(err)
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
+	payload, err := json.Marshal(pushEvent)
+	a.NoError(err)
+	err = ctl.vcsProvider.SendWebhookPush(gitlabProjectIDStr, payload)
 	a.NoError(err)
 
 	// Get schema update issue.
@@ -581,7 +584,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	}
 }
 
-func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
+func TestTenantVCSDatabaseNameTemplate_GitLab(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -623,8 +626,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	refreshToken := "refreshToken1"
 	gitlabProjectID := 121
 	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// create a gitlab project.
-	ctl.gitlab.CreateProject(gitlabProjectIDStr)
+	// create a vcsProvider project.
+	ctl.vcsProvider.CreateRepository(gitlabProjectIDStr)
 	_, err = ctl.createRepository(api.RepositoryCreate{
 		VCSID:              vcs.ID,
 		ProjectID:          project.ID,
@@ -766,9 +769,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			},
 		},
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
+	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
 	a.NoError(err)
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
+	payload, err := json.Marshal(pushEvent)
+	a.NoError(err)
+	err = ctl.vcsProvider.SendWebhookPush(gitlabProjectIDStr, payload)
 	a.NoError(err)
 
 	// Get schema update issue.
@@ -825,7 +830,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	a.Equal(1, len(hm2))
 
 	// Check latestSchemaFile
-	files, err := ctl.gitlab.GetFiles(gitlabProjectIDStr, fmt.Sprintf("%s/.%s__LATEST.sql", baseDirectory, baseDatabaseName))
+	files, err := ctl.vcsProvider.GetFiles(gitlabProjectIDStr, fmt.Sprintf("%s/.%s__LATEST.sql", baseDirectory, baseDatabaseName))
 	a.NoError(err)
 	a.Equal(1, len(files))
 }
