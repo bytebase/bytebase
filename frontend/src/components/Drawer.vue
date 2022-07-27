@@ -10,7 +10,7 @@
       <header
         class="flex flex-row justify-between items-center w-full h-16 p-4 border-b"
       >
-        <h2 class="text-bold">{{ title }}</h2>
+        <h2 class="font-semibold">{{ title }}</h2>
 
         <i
           class="w-6 h-6 hover:bg-slate-200 hover:cursor-pointer rounded-md"
