@@ -38,7 +38,7 @@ type Driver struct {
 
 	// From 0 to 10000, representing the progress of binlog replay process.
 	// Note that this field is cleared each time replayBinlog is called, so it only shows the current replay binlog progress.
-	replayBinlogProgress uint32
+	replayBinlogProgress uint64
 }
 
 func newDriver(db.DriverConfig) db.Driver {

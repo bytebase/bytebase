@@ -165,15 +165,15 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		zap.String("mysqlbinlog", mysqlbinlogCmd.String()),
 		zap.String("mysql", mysqlCmd.String()))
 
-	mysqlbinlogOutput, err := mysqlbinlogCmd.StdoutPipe()
+	mysqlRead, err := mysqlbinlogCmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("cannot get mysqlbinlog stdout pipe, error: %w", err)
 	}
-	defer mysqlbinlogOutput.Close()
+	defer mysqlRead.Close()
 
 	mysqlbinlogCmd.Stderr = os.Stderr
 
-	mysqlStdin := common.NewCountingReader(mysqlbinlogOutput)
+	mysqlStdin := common.NewCountingReader(mysqlRead)
 	mysqlCmd.Stderr = os.Stderr
 	mysqlCmd.Stdout = os.Stderr
 	mysqlCmd.Stdin = mysqlStdin
