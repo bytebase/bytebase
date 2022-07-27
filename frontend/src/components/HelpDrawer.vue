@@ -1,32 +1,26 @@
 <template>
-  <n-drawer
-    v-model:show="active"
-    :width="380"
-    :placement="placement"
-    :on-after-leave="onClose"
+  <Drawer
+    :show="active"
+    :on-close="onClose"
+    :title="state.frontmatter.title"
+    @close-drawer="active = false"
   >
-    <n-drawer-content
-      :title="state.frontmatter.title"
-      closable
-      :native-scrollbar="false"
-    >
-      <template #default>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div v-if="state.html" v-html="state.html"></div>
-      </template>
-    </n-drawer-content>
-  </n-drawer>
+    <template #body>
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div v-if="state.html" v-html="state.html"></div>
+    </template>
+  </Drawer>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref, reactive, watch, computed } from "vue";
-import { NDrawer, NDrawerContent, DrawerPlacement } from "naive-ui";
 import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
 import yaml from "js-yaml";
 import { storeToRefs } from "pinia";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore, useHelpStore } from "@/store";
+import Drawer from "@/components/Drawer.vue";
 
 interface State {
   frontmatter: Record<string, string>;
@@ -34,10 +28,9 @@ interface State {
 }
 
 export default defineComponent({
-  components: { NDrawer, NDrawerContent },
+  components: { Drawer },
   setup() {
     const active = ref(false);
-    const placement = ref<DrawerPlacement>("right");
     const { locale } = useLanguage();
     const uiStateStore = useUIStateStore();
     const helpStore = useHelpStore();
@@ -65,7 +58,11 @@ export default defineComponent({
           ? (yaml.load(ast.attributes.frontmatter) as Record<string, string>)
           : {};
         state.html = DOMPurify.sanitize(html);
-        activate("right");
+        activate();
+      } else {
+        state.frontmatter = {};
+        state.html = "";
+        deactivate();
       }
     });
 
@@ -81,14 +78,12 @@ export default defineComponent({
       helpStore.exitHelp();
     };
 
-    const activate = (place: DrawerPlacement) => {
-      active.value = true;
-      placement.value = place;
-    };
+    const activate = () => (active.value = true);
+
+    const deactivate = () => (active.value = false);
+
     return {
       active,
-      placement,
-      activate,
       state,
       onClose,
     };
