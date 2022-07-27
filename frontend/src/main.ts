@@ -140,7 +140,7 @@ app
 // We use finally because we always want to mount the app regardless of the error.
 const initActuator = () => {
   const actuatorStore = useActuatorStore();
-  return actuatorStore.fetchInfo();
+  return actuatorStore.fetchServerInfo();
 };
 const initSubscription = () => {
   const subscriptionStore = useSubscriptionStore();
