@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	echoSwagger "github.com/swaggo/echo-swagger"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/labstack/echo-contrib/pprof"
@@ -21,6 +23,25 @@ type Server struct {
 	startedTs int64
 	secret    string
 }
+
+// Use following cmd to generate swagger doc
+// swag init -g ./server.go -d ./server --output docs/sql-review-service --parseDependency
+
+// @title Bytebase SQL Review Service
+// @version 1.0
+// @description The OpenAPI for Bytebase SQL Review Service.
+// @termsOfService https://www.bytebase.com/terms
+
+// @contact.name API Support
+// @contact.url https://github.com/bytebase/bytebase/
+// @contact.email support@bytebase.com
+
+// @license.name MIT
+// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
+
+// @host localhost:8081
+// @BasePath /v1/
+// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
@@ -55,7 +76,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if prof.Mode == common.ReleaseModeDev || prof.Debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
-				return !common.HasPrefixes(c.Path(), "/api")
+				return !common.HasPrefixes(c.Path(), "/v1")
 			},
 			Format: `{"time":"${time_rfc3339}",` +
 				`"method":"${method}","uri":"${uri}",` +
@@ -63,8 +84,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		}))
 	}
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{}))
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	apiGroup := e.Group("/api")
+	apiGroup := e.Group("/v1")
 	s.registerAdvisorRoutes(apiGroup)
 
 	// Register healthz endpoint.

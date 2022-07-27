@@ -254,14 +254,14 @@ type SQLReviewCheckContext struct {
 	Catalog   catalog.Catalog
 }
 
-// SchemaReviewCheck checks the statements with schema review policy.
-func SchemaReviewCheck(statements string, policy *SQLReviewPolicy, checkContext SQLReviewCheckContext) ([]Advice, error) {
+// SchemaReviewCheck checks the statements with schema review rules.
+func SchemaReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
 	database, err := checkContext.Catalog.GetDatabase(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database information from catalog: %w", err)
 	}
-	for _, rule := range policy.RuleList {
+	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
 		}
