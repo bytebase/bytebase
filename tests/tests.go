@@ -105,10 +105,9 @@ type controller struct {
 	cookie      string
 	vcsProvider fake.VCSProvider
 
-	rootURL   string
-	apiURL    string
-	gitURL    string
-	gitAPIURL string
+	rootURL string
+	apiURL  string
+	vcsURL  string
 }
 
 func getTestPort(testName string) int {
@@ -154,7 +153,7 @@ func getTestPort(testName string) int {
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int, pgUser, pgURL string) error {
 	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	server, err := server.NewServer(ctx, profile)
@@ -163,11 +162,11 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir st
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, port)
+	return ctl.start(ctx, vcsProviderCreator, port)
 }
 
 // StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
+func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int) error {
 	// start main server.
 	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfile(dataDir, port)
@@ -177,19 +176,18 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, port)
+	return ctl.start(ctx, vcsProviderCreator, port)
 }
 
-// start only called by StartServer() and StartServerWithExternalPg.
-func (ctl *controller) start(ctx context.Context, port int) error {
+// start only called by StartServer() and StartServerWithExternalPg().
+func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSProviderCreator, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
-	// set up vcsProvider.
-	gitlabPort := port + 2
-	ctl.vcsProvider = fake.NewGitLab(gitlabPort)
-	ctl.gitURL = fmt.Sprintf("http://localhost:%d", gitlabPort)
-	ctl.gitAPIURL = fmt.Sprintf("%s/api/v4", ctl.gitURL)
+	// Set up VCS provider.
+	vcsPort := port + 2
+	ctl.vcsProvider = vcsProviderCreator(vcsPort)
+	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
 
 	errChan := make(chan error, 1)
 
