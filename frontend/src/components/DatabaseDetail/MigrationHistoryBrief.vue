@@ -11,7 +11,6 @@
           class="normal-link flex items-center gap-x-1"
         >
           {{ migrationHistory.version }}
-          <heroicons-outline:external-link class="w-4 h-4" />
         </a>
       </div>
     </div>
@@ -27,7 +26,6 @@
           class="normal-link flex items-center gap-x-1"
         >
           {{ migrationHistory.issueId }}
-          <heroicons-outline:external-link class="w-4 h-4" />
         </a>
       </div>
     </div>
