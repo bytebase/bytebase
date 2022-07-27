@@ -247,7 +247,6 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 			case syncError <- fmt.Errorf("failed to run gh-ost migration, error: %w", err):
 			default:
 			}
-			return
 		}
 	}()
 
