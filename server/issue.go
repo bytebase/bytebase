@@ -1019,13 +1019,13 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		// no-op.
 	default:
 		if characterSet == "" {
-			return fmt.Errorf("character set missing for %s", dbType.String())
+			return fmt.Errorf("character set missing for %s", string(dbType))
 		}
 		// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
 		// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
 		// install it.
 		if collation == "" {
-			return fmt.Errorf("collation missing for %s", dbType.String())
+			return fmt.Errorf("collation missing for %s", string(dbType))
 		}
 	}
 	return nil
