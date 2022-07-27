@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	// BackupRetentionPeriodUnset is the unset value of a backup retention period in second.
+	// BackupRetentionPeriodUnset is the unset value of a backup retention period.
 	BackupRetentionPeriodUnset = 0
 )
 
