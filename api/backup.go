@@ -16,14 +16,12 @@ const (
 type BackupStatus string
 
 const (
-	// BackupStatusPendingCreate is the status for backup which is scheduled.
+	// BackupStatusPendingCreate is the status for PENDING_CREATE.
 	BackupStatusPendingCreate BackupStatus = "PENDING_CREATE"
-	// BackupStatusDone is the status for done backup.
+	// BackupStatusDone is the status for DONE.
 	BackupStatusDone BackupStatus = "DONE"
-	// BackupStatusFailed is the status for failed backup.
+	// BackupStatusFailed is the status for FAILED.
 	BackupStatusFailed BackupStatus = "FAILED"
-	// BackupStatusDeleted is the status for deleted backup by retention policy.
-	BackupStatusDeleted BackupStatus = "DELETED"
 )
 
 // BackupType is the type of a backup.
