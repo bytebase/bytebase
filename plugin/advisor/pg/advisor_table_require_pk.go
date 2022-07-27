@@ -1,7 +1,10 @@
 package pg
 
 import (
+	"fmt"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -25,30 +28,105 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 		return errAdvice, nil
 	}
 
-	_, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	checker := &tableRequirePKChecker{}
+	checker := &tableRequirePKChecker{
+		level:    level,
+		title:    string(ctx.Rule.Type),
+		database: ctx.Database,
+	}
 
 	for _, stmt := range stmts {
+		checker.text = stmt.Text()
 		ast.Walk(checker, stmt)
 	}
 
-	return []advisor.Advice{}, nil
+	if len(checker.adviceList) == 0 {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  advisor.Success,
+			Code:    advisor.Ok,
+			Title:   "OK",
+			Content: "",
+		})
+	}
+	return checker.adviceList, nil
 }
 
-// TODO(rebelice): fill the implementation to check table PK.
 type tableRequirePKChecker struct {
-	// adviceList []advisor.Advice
-	// level      advisor.Status
-	// title      string
-	// tables:  make(tablePK),
-	// catalog catalog.Catalog
+	adviceList []advisor.Advice
+	level      advisor.Status
+	title      string
+	database   *catalog.Database
+	text       string
 }
 
 // Visit implements the ast.Visitor interface.
-func (checker *tableRequirePKChecker) Visit(ast.Node) ast.Visitor {
+func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
+	var missingPK *ast.TableDef
+	switch n := node.(type) {
+	// CREATE TABLE
+	case *ast.CreateTableStmt:
+		hasPK := false
+		for _, column := range n.ColumnList {
+			if containPK(column.ConstraintList) {
+				hasPK = true
+			}
+		}
+		if containPK(n.ConstraintList) {
+			hasPK = true
+		}
+		if !hasPK {
+			missingPK = n.Name
+		}
+	// DROP CONSTRAINT
+	case *ast.DropConstraintStmt:
+		_, index := checker.database.FindIndex(&catalog.IndexFind{
+			SchemaName: normalizeSchemaName(n.Table.Schema),
+			TableName:  n.Table.Name,
+			IndexName:  n.ConstraintName,
+		})
+		if index != nil && index.Primary {
+			missingPK = n.Table
+		}
+	// DROP COLUMN
+	case *ast.DropColumnStmt:
+		pk := checker.database.FindPrimaryKey(&catalog.PrimaryKeyFind{
+			SchemaName: normalizeSchemaName(n.Table.Schema),
+			TableName:  n.Table.Name,
+		})
+		if pk != nil {
+			for _, column := range pk.ExpressionList {
+				if column == n.ColumnName {
+					missingPK = n.Table
+				}
+			}
+		}
+	}
+
+	if missingPK != nil {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status: checker.level,
+			Code:   advisor.TableNoPK,
+			Title:  checker.title,
+			Content: fmt.Sprintf("Table %q.%q requires PRIMARY KEY, related statement: %q",
+				normalizeSchemaName(missingPK.Schema),
+				missingPK.Name,
+				checker.text,
+			),
+		})
+	}
+
 	return checker
+}
+
+func containPK(list []*ast.ConstraintDef) bool {
+	for _, cons := range list {
+		if cons.Type == ast.ConstraintTypePrimary || cons.Type == ast.ConstraintTypePrimaryUsingIndex {
+			return true
+		}
+	}
+	return false
 }
