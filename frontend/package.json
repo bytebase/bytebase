@@ -2,14 +2,15 @@
   "name": "bytebase",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
-    "dev": "vite --mode dev",
-    "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
-    "dev-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
-    "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
+    "dev": "npm run copy-sql-review-file && vite --mode dev",
+    "release": "npm run copy-sql-review-file && vite build --mode release --outDir=../server/dist --emptyOutDir",
+    "dev-docker": "npm run copy-sql-review-file && export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
+    "release-docker": "npm run copy-sql-review-file && export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
     "test": "vitest",
-    "coverage": "vitest --coverage"
+    "coverage": "vitest --coverage",
+    "copy-sql-review-file": "sh ./scripts/copy_sql_review_files.sh"
   },
   "dependencies": {
     "@bytebase/vue-kbar": "^0.1.6",
