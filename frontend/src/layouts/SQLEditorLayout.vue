@@ -1,12 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
-    <template v-if="isDemo">
-      <BannerDemo />
-    </template>
-    <template v-else-if="isExpired || isTrialing">
-      <BannerSubscription />
-    </template>
-
+    <BannersWrapper />
     <nav class="bg-white border-b border-block-border">
       <div class="max-w-full mx-auto px-4">
         <EditorHeader />
@@ -36,22 +30,15 @@
 
 <script lang="ts" setup>
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
+import { ServerInfo } from "@/types";
+import { pushNotification, useActuatorStore } from "@/store";
 import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
-import BannerDemo from "@/views/BannerDemo.vue";
-import BannerSubscription from "@/views/BannerSubscription.vue";
-import { ServerInfo } from "../types";
-import {
-  pushNotification,
-  useActuatorStore,
-  useSubscriptionStore,
-} from "@/store";
-import { storeToRefs } from "pinia";
+import BannersWrapper from "@/components/BannersWrapper.vue";
 
 const actuatorStore = useActuatorStore();
-const subscriptionStore = useSubscriptionStore();
 
 const ping = () => {
-  actuatorStore.fetchInfo().then((info: ServerInfo) => {
+  actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -59,7 +46,4 @@ const ping = () => {
     });
   });
 };
-
-const { isDemo, isReadonly } = storeToRefs(actuatorStore);
-const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 </script>
