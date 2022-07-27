@@ -98,7 +98,7 @@ jobs:
       - name: Install dependencies
         run: go generate -tags ${{ matrix.release-tags }} ./...
       - name: Run all tests
-        run: go test -v ./... -tags=${{ matrix.release-tags }} -coverprofile=coverage.txt -covermode=atomic | tee test.log; exit ${PIPESTATUS[0]}
+        run: go test -v ./... -tags=${{ matrix.release-tags }} -coverprofile=coverage.txt -covermode=atomic -coverpkg=./... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
       - name: Pretty print tests running time
