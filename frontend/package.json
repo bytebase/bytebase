@@ -4,8 +4,8 @@
   "scripts": {
     "dev": "npm run copy-sql-review-file && vite --mode dev",
     "release": "npm run copy-sql-review-file && vite build --mode release --outDir=../server/dist --emptyOutDir",
-    "dev-docker": "npm run copy-sql-review-file && export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
-    "release-docker": "npm run copy-sql-review-file && export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
+    "dev-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
+    "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
     "test": "vitest",
