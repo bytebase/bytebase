@@ -11,14 +11,15 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"go.uber.org/zap"
 )
 
-// Dump and restore
+// Dump and restore.
 const (
 	databaseHeaderFmt = "" +
 		"--\n" +
@@ -189,7 +190,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			}
 		}
 		if !exist {
-			return common.Errorf(common.NotFound, fmt.Errorf("database %s not found", database))
+			return common.Errorf(common.NotFound, "database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {
@@ -668,7 +669,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 	defer txn.Rollback()
 
-	if err := driver.restoreTx(ctx, txn, sc); err != nil {
+	if err := restoreTx(ctx, txn, sc); err != nil {
 		return err
 	}
 
@@ -680,11 +681,11 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores a database in the given transaction.
-func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
-	return driver.restoreTx(ctx, tx, sc)
+func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+	return restoreTx(ctx, tx, sc)
 }
 
-func (driver *Driver) restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
 	fnExecuteStmt := func(stmt string) error {
 		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return err

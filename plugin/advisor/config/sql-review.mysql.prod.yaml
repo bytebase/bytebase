@@ -1,0 +1,58 @@
+id: bb.sql-review.mysql.prod
+ruleList:
+  - type: engine.mysql.use-innodb
+    level: ERROR
+  - type: table.require-pk
+    level: ERROR
+  - type: table.no-foreign-key
+    level: ERROR
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+  - type: statement.select.no-select-all
+    level: ERROR
+  - type: statement.where.require
+    level: ERROR
+  - type: statement.where.no-leading-wildcard-like
+    level: ERROR
+  - type: naming.table
+    level: WARNING
+    payload:
+      format: "^[a-z]+(_[a-z]+)*$"
+      maxLength: 64
+  - type: naming.column
+    level: WARNING
+    payload:
+      format: "^[a-z]+(_[a-z]+)*$"
+      maxLength: 64
+  - type: naming.index.uk
+    level: WARNING
+    payload:
+      format: "^uk_{{table}}_{{column_list}}$"
+      maxLength: 64
+  - type: naming.index.idx
+    level: WARNING
+    payload:
+      format: "^idx_{{table}}_{{column_list}}$"
+      maxLength: 64
+  - type: naming.index.fk
+    level: WARNING
+    payload:
+      format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$"
+      maxLength: 64
+  - type: column.required
+    level: WARNING
+    payload:
+      columnList:
+        - id
+        - created_ts
+        - updated_ts
+        - creator_id
+        - updater_id
+  - type: column.no-null
+    level: WARNING
+  - type: schema.backward-compatibility
+    level: WARNING
+  - type: database.drop-empty-database
+    level: ERROR

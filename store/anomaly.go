@@ -56,7 +56,7 @@ func (raw *anomalyRaw) toAnomaly() *api.Anomaly {
 	}
 }
 
-// UpsertActiveAnomaly upserts an instance of anomaly
+// UpsertActiveAnomaly upserts an instance of anomaly.
 func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	anomalyRaw, err := s.upsertActiveAnomalyRaw(ctx, upsert)
 	if err != nil {
@@ -69,7 +69,7 @@ func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpse
 	return anomaly, nil
 }
 
-// FindAnomaly finds a list of Anomaly instances
+// FindAnomaly finds a list of Anomaly instances.
 func (s *Store) FindAnomaly(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
 	anomalyRawList, err := s.findAnomalyRaw(ctx, find)
 	if err != nil {
@@ -335,7 +335,7 @@ type anomalyPatch struct {
 	Payload string
 }
 
-// patchAnomalyImpl patches an anomaly
+// patchAnomalyImpl patches an anomaly.
 func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*anomalyRaw, error) {
 	// Build UPDATE clause.
 	if patch.Payload == "" {

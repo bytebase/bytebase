@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver
+	// init() in pgx/v4/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/bytebase/bytebase/common"

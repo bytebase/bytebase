@@ -31,12 +31,12 @@ func (p PlanType) String() string {
 type FeatureType string
 
 const (
-	// Change Workflow
+	// Change Workflow.
 
 	// FeatureSchemaDrift detects if there occurs schema drift.
 	// See https://bytebase.com/docs/features/drift-detection
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
-	// FeatureTaskScheduleTime allows user to run task at a scheduled time
+	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
 	// FeatureMultiTenancy allows user to enable tenant mode for the project.
 	//
@@ -70,7 +70,7 @@ const (
 	// FeaturePITR allows user to perform point-in-time recovery for databases.
 	FeaturePITR FeatureType = "bb.feature.pitr"
 
-	// Policy Control
+	// Policy Control.
 
 	// FeatureApprovalPolicy allows user to specify approval policy for the environment
 	//
@@ -87,12 +87,12 @@ const (
 	// e.g. One can configure rules for database schema or SQL query.
 	FeatureSQLReviewPolicy FeatureType = "bb.feature.sql-review"
 
-	// Admin & Security
+	// Admin & Security.
 
 	// FeatureRBAC enables RBAC.
 	//
 	// - Workspace level RBAC
-	// - Project level RBAC
+	// - Project level RBAC.
 	FeatureRBAC FeatureType = "bb.feature.rbac"
 
 	// Feature3rdPartyAuth allows user to authenticate (login) and authorize (sync project member)
@@ -100,7 +100,7 @@ const (
 	// Currently, we only support GitLab EE/CE auth.
 	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 
-	// Branding
+	// Branding.
 
 	// FeatureBranding enables customized branding.
 	//
@@ -108,7 +108,7 @@ const (
 	FeatureBranding FeatureType = "bb.feature.branding"
 )
 
-// Name returns a readable name of the feature
+// Name returns a readable name of the feature.
 func (e FeatureType) Name() string {
 	switch e {
 	case FeatureSchemaDrift:
@@ -158,7 +158,7 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 	return ENTERPRISE
 }
 
-// FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
+// FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan.
 var FeatureMatrix = map[FeatureType][3]bool{
 	"bb.feature.schema-drift":       {false, true, true},
 	"bb.feature.task-schedule-time": {false, true, true},

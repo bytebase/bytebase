@@ -100,18 +100,18 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
 import { NPopover } from "naive-ui";
-import { Database, MigrationHistory } from "../types";
+import { computed, defineComponent, PropType } from "vue";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { Database, MigrationHistory } from "@/types";
+import { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   databaseSlug,
   migrationHistorySlug,
   nanosecondsToString,
-} from "../utils";
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+} from "@/utils";
 import MigrationHistoryStatusIcon from "./MigrationHistoryStatusIcon.vue";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
 
 type Mode = "DATABASE" | "PROJECT";
 
@@ -140,10 +140,9 @@ export default defineComponent({
 
     const { t } = useI18n();
 
-    const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
-      [
-        "DATABASE",
-        [
+    const columnList = computed(() => {
+      if (props.mode === "DATABASE") {
+        return [
           {
             title: "",
           },
@@ -168,11 +167,9 @@ export default defineComponent({
           {
             title: t("common.creator"),
           },
-        ],
-      ],
-      [
-        "PROJECT",
-        [
+        ];
+      } else if (props.mode === "PROJECT") {
+        return [
           { title: "" },
           {
             title: t("common.version"),
@@ -192,11 +189,13 @@ export default defineComponent({
           {
             title: t("common.creator"),
           },
-        ],
-      ],
-    ]);
+        ];
+      } else {
+        return [];
+      }
+    });
 
-    const clickHistory = function (section: number, row: number) {
+    const clickHistory = (section: number, row: number) => {
       const history = props.historySectionList[section].list[row];
       router.push(
         `/db/${databaseSlug(
@@ -206,7 +205,7 @@ export default defineComponent({
     };
 
     return {
-      columnList: columnListMap.get(props.mode)!,
+      columnList,
       nanosecondsToString,
       clickHistory,
     };

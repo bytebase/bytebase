@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingColumnConventionChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type NamingColumnConventionAdvisor struct {
 }
 
 // Check checks for column naming convention.
-func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -69,7 +70,7 @@ type namingColumnConventionChecker struct {
 	tables     tableState
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []string
 	var tableName string
@@ -122,7 +123,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

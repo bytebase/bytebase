@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingFKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingFKConventionChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type NamingFKConventionAdvisor struct {
 }
 
 // Check checks for foreign key naming convention.
-func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -77,7 +78,7 @@ type indexMetaData struct {
 	metaData  map[string]string
 }
 
-// Visit implements ast.Visitor interface
+// Visit implements ast.Visitor interface.
 func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -114,7 +115,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 }
 
 // getMetaDataList returns the list of foreign key with metadata.
-func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
+func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:

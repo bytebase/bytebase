@@ -9,6 +9,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NoSelectAllAdvisor)(nil)
+	_ ast.Visitor     = (*noSelectAllChecker)(nil)
 )
 
 func init() {
@@ -21,7 +22,7 @@ type NoSelectAllAdvisor struct {
 }
 
 // Check checks for no "select *".
-func (adv *NoSelectAllAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NoSelectAllAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -58,7 +59,7 @@ type noSelectAllChecker struct {
 	text       string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.SelectStmt); ok {
 		for _, field := range node.Fields.Fields {
@@ -77,7 +78,7 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *noSelectAllChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*noSelectAllChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

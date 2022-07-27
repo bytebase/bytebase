@@ -1,9 +1,7 @@
 package pg
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -13,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*ColumnNoNullAdvisor)(nil)
+	_ ast.Visitor     = (*columnNoNullChecker)(nil)
 )
 
 func init() {
@@ -24,7 +23,7 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmts, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -38,7 +37,7 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 	checker := &columnNoNullChecker{
 		level:           level,
 		title:           string(ctx.Rule.Type),
-		catalog:         ctx.Catalog,
+		database:        ctx.Database,
 		nullableColumns: make(columnMap),
 	}
 
@@ -53,7 +52,7 @@ type columnNoNullChecker struct {
 	adviceList      []advisor.Advice
 	level           advisor.Status
 	title           string
-	catalog         catalog.Catalog
+	database        *catalog.Database
 	nullableColumns columnMap
 }
 
@@ -146,24 +145,16 @@ func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.Tabl
 				checker.removeColumn(table, column)
 			}
 		case ast.ConstraintTypePrimaryUsingIndex:
-			index, err := checker.catalog.FindIndex(context.Background(), &catalog.IndexFind{
-				TableName: getTableNameWithSchema(table),
-				IndexName: constraint.IndexName,
+			_, index := checker.database.FindIndex(&catalog.IndexFind{
+				SchemaName: normalizeSchemaName(table.Schema),
+				TableName:  table.Name,
+				IndexName:  constraint.IndexName,
 			})
-			if err != nil {
-				log.Printf(
-					"Cannot find index %s in table %s with error %v\n",
-					constraint.IndexName,
-					getTableNameWithSchema(table),
-					err,
-				)
-				continue
-			}
 			if index == nil {
 				continue
 			}
-			for _, column := range index.ColumnExpressions {
-				checker.removeColumn(table, column)
+			for _, expression := range index.ExpressionList {
+				checker.removeColumn(table, expression)
 			}
 		}
 	}

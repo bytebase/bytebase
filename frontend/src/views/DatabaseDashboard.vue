@@ -21,17 +21,15 @@ import {
   computed,
   watchEffect,
   onMounted,
-  onUnmounted,
   reactive,
   ref,
   defineComponent,
-  inject,
 } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Environment, Database, UNKNOWN_ID, EventType } from "../types";
-import { sortDatabaseList, Event } from "../utils";
+import { Environment, Database, UNKNOWN_ID } from "../types";
+import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
   useCurrentUser,
@@ -55,8 +53,6 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
-    const mountedTimer = ref();
-    const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
     const router = useRouter();
@@ -79,19 +75,12 @@ export default defineComponent({
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.help.database")) {
-        mountedTimer.value = setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.database", true);
-          uiStateStore.saveIntroStateByKey({
-            key: "database.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("database.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "database.visit",
+          newState: true,
+        });
       }
-    });
-
-    onUnmounted(() => {
-      clearTimeout(mountedTimer.value);
     });
 
     const prepareDatabaseList = () => {

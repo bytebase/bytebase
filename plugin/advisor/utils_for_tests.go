@@ -1,8 +1,6 @@
 package advisor
 
 import (
-	"context"
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -12,58 +10,94 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockCatalogService is the mock catalog service for test.
-type MockCatalogService struct{}
-
 const (
 	// MockOldIndexName is the mock old index for test.
 	MockOldIndexName = "old_index"
 	// MockOldUKName is the mock old unique key for test.
 	MockOldUKName = "old_uk"
-	// MockOldPKName is the mock old foreign key for test.
-	MockOldPKName = "PRIMARY"
+	// MockOldMySQLPKName is the mock old primary key for MySQL test.
+	MockOldMySQLPKName = "PRIMARY"
+	// MockOldPostgreSQLPKName is the mock old primary key for PostgreSQL test.
+	MockOldPostgreSQLPKName = "old_pk"
+	// MockTableName is the mock table for test.
+	MockTableName = "tech_book"
 )
 
 var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
-
-	_ catalog.Catalog = (*MockCatalogService)(nil)
-)
-
-// FindIndex implements the catalog interface.
-func (*MockCatalogService) FindIndex(_ context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
-	switch find.IndexName {
-	case MockOldIndexName:
-		return &catalog.Index{
-			Name:              MockOldIndexName,
-			ColumnExpressions: MockIndexColumnList,
-		}, nil
-	case MockOldUKName:
-		return &catalog.Index{
-			Unique:            true,
-			Name:              MockOldIndexName,
-			ColumnExpressions: MockIndexColumnList,
-		}, nil
-	case MockOldPKName:
-		return &catalog.Index{
-			Unique:            true,
-			Name:              MockOldPKName,
-			ColumnExpressions: MockIndexColumnList,
-		}, nil
-	}
-	return nil, fmt.Errorf("cannot find index for %v", find)
-}
-
-// FindTable implements the catalog interface.
-func (*MockCatalogService) FindTable(_ context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
-	return []*catalog.Table{
-		{
-			Name:         "table",
-			DatabaseName: find.DatabaseName,
+	// MockMySQLDatabase is the mock MySQL database for test.
+	MockMySQLDatabase = &catalog.Database{
+		Name:   "test",
+		DbType: catalog.MySQL,
+		SchemaList: []*catalog.Schema{
+			{
+				TableList: []*catalog.Table{
+					{
+						Name: MockTableName,
+						ColumnList: []*catalog.Column{
+							{Name: "id"},
+							{Name: "name"},
+						},
+						IndexList: []*catalog.Index{
+							{
+								Name:           MockOldMySQLPKName,
+								ExpressionList: []string{"id", "name"},
+								Unique:         true,
+								Primary:        true,
+							},
+							{
+								Name:           MockOldUKName,
+								ExpressionList: []string{"id", "name"},
+								Unique:         true,
+							},
+							{
+								Name:           MockOldIndexName,
+								ExpressionList: []string{"id", "name"},
+							},
+						},
+					},
+				},
+			},
 		},
-	}, nil
-}
+	}
+	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
+	MockPostgreSQLDatabase = &catalog.Database{
+		Name:   "test",
+		DbType: catalog.Postgres,
+		SchemaList: []*catalog.Schema{
+			{
+				Name: "public",
+				TableList: []*catalog.Table{
+					{
+						Name: MockTableName,
+						ColumnList: []*catalog.Column{
+							{Name: "id"},
+							{Name: "name"},
+						},
+						IndexList: []*catalog.Index{
+							{
+								Name:           MockOldPostgreSQLPKName,
+								ExpressionList: []string{"id", "name"},
+								Unique:         true,
+								Primary:        true,
+							},
+							{
+								Name:           MockOldUKName,
+								ExpressionList: []string{"id", "name"},
+								Unique:         true,
+							},
+							{
+								Name:           MockOldIndexName,
+								ExpressionList: []string{"id", "name"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+)
 
 // TestCase is the data struct for test.
 type TestCase struct {
@@ -77,13 +111,13 @@ func RunSchemaReviewRuleTests(
 	tests []TestCase,
 	adv Advisor,
 	rule *SQLReviewRule,
-	catalog catalog.Catalog,
+	database *catalog.Database,
 ) {
 	ctx := Context{
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
-		Catalog:   catalog,
+		Database:  database,
 	}
 	for _, tc := range tests {
 		adviceList, err := adv.Check(ctx, tc.Statement)

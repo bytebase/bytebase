@@ -1,5 +1,5 @@
 ---
-title: How to setup 'Environment' ?
+title: What is 'Environment' ?
 ---
 
 - Each environment maps to one of your testing, staging, prod environment respectively.

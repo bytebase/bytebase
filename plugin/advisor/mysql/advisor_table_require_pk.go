@@ -1,9 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -17,6 +15,7 @@ const (
 
 var (
 	_ advisor.Advisor = (*TableRequirePKAdvisor)(nil)
+	_ ast.Visitor     = (*tableRequirePKChecker)(nil)
 )
 
 func init() {
@@ -29,7 +28,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -40,10 +39,10 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 		return nil, err
 	}
 	checker := &tableRequirePKChecker{
-		level:   level,
-		title:   string(ctx.Rule.Type),
-		tables:  make(tablePK),
-		catalog: ctx.Catalog,
+		level:    level,
+		title:    string(ctx.Rule.Type),
+		tables:   make(tablePK),
+		database: ctx.Database,
 	}
 
 	for _, stmtNode := range root {
@@ -58,10 +57,10 @@ type tableRequirePKChecker struct {
 	level      advisor.Status
 	title      string
 	tables     tablePK
-	catalog    catalog.Catalog
+	database   *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	// CREATE TABLE
@@ -110,8 +109,8 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *tableRequirePKChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*tableRequirePKChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
@@ -158,23 +157,15 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 	if _, ok := v.tables[table]; !ok {
-		ctx := context.Background()
-		pk, err := v.catalog.FindIndex(ctx, &catalog.IndexFind{
+		v.tables[table] = make(columnSet)
+		_, pk := v.database.FindIndex(&catalog.IndexFind{
 			TableName: table,
 			IndexName: primaryKeyName,
 		})
-		if err != nil {
-			log.Printf(
-				"Cannot find primary key in table %s with error %v\n",
-				table,
-				err,
-			)
-			return
-		}
 		if pk == nil {
 			return
 		}
-		v.tables[table] = newColumnSet(pk.ColumnExpressions)
+		v.tables[table] = newColumnSet(pk.ExpressionList)
 	}
 
 	delete(v.tables[table], column)

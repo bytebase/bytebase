@@ -18,5 +18,5 @@ func TestRequirePK(t *testing.T) {
 		Type:    advisor.SchemaRuleTableRequirePK,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockPostgreSQLDatabase)
 }

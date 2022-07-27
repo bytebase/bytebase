@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*WhereRequirementAdvisor)(nil)
+	_ ast.Visitor     = (*whereRequirementChecker)(nil)
 )
 
 func init() {
@@ -22,7 +23,7 @@ type WhereRequirementAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*WhereRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -59,7 +60,7 @@ type whereRequirementChecker struct {
 	text       string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
@@ -91,7 +92,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *whereRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*whereRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

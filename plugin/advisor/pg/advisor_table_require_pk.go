@@ -19,7 +19,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check parses the given statement and checks for errors.
-func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmts, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil

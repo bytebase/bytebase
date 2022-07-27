@@ -1,5 +1,5 @@
 ---
-title: How to setup 'project' ?
+title: What is 'project' ?
 ---
 
 - Bytebase project is similar to the project concept in other common dev tools.

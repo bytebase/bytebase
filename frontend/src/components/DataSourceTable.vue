@@ -94,8 +94,6 @@
 import { computed, reactive, PropType, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import DataSourceCreateForm from "../components/DataSourceCreateForm.vue";
-import { BBTableColumn } from "../bbkit/types";
-
 import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 import { useI18n } from "vue-i18n";
@@ -129,7 +127,7 @@ export default defineComponent({
     const { t } = useI18n();
     const dataSourceStore = useDataSourceStore();
 
-    const columnList: BBTableColumn[] = [
+    const columnList = computed(() => [
       {
         title: t("common.name"),
       },
@@ -148,7 +146,7 @@ export default defineComponent({
       {
         title: t("common.created-at"),
       },
-    ];
+    ]);
 
     const state = reactive<LocalState>({
       searchText: "",

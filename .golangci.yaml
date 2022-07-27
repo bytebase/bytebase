@@ -9,6 +9,8 @@ linters:
     - gocritic
     - sqlclosecheck
     - rowserrcheck
+    - nilerr
+    - godot
 
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
@@ -65,8 +67,6 @@ linters-settings:
       - name: early-return
         disabled: true
       # TODO(dragonly): Remove the rules below in the following PRs.
-      - name: unused-receiver
-        disabled: true
       - name: unhandled-error
         disabled: true
       - name: if-return
@@ -82,3 +82,8 @@ linters-settings:
   gocritic:
     disabled-checks:
       - ifElseChain
+  govet:
+    settings:
+      printf: # The name of the analyzer, run `go tool vet help` to see the list of all analyzers
+        funcs: # Run `go tool vet help printf` to see the full configuration of `printf`
+          - common.Errorf

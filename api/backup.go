@@ -96,10 +96,10 @@ type Backup struct {
 	Payload BackupPayload `jsonapi:"attr,payload"`
 }
 
-// ZapBackupArray is a helper to format zap.Array
+// ZapBackupArray is a helper to format zap.Array.
 type ZapBackupArray []*Backup
 
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
 func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for _, backup := range backups {
 		payload, err := json.Marshal(backup.Payload)

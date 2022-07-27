@@ -1,9 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -13,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingUKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingUKConventionChecker)(nil)
 )
 
 func init() {
@@ -25,7 +24,7 @@ type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -46,7 +45,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		catalog:      ctx.Catalog,
+		database:     ctx.Database,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -70,10 +69,10 @@ type namingUKConventionChecker struct {
 	format       string
 	maxLength    int
 	templateList []string
-	catalog      catalog.Catalog
+	database     *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -109,8 +108,8 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (checker *namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
@@ -142,20 +141,10 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				ctx := context.Background()
-				index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+				_, index := checker.database.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})
-				if err != nil {
-					log.Printf(
-						"Cannot find index %s in table %s with error %v\n",
-						node.Table.Name.String(),
-						spec.FromKey.String(),
-						err,
-					)
-					continue
-				}
 				if index == nil {
 					continue
 				}
@@ -164,7 +153,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

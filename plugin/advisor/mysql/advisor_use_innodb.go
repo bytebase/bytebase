@@ -16,6 +16,7 @@ const (
 
 var (
 	_ advisor.Advisor = (*UseInnoDBAdvisor)(nil)
+	_ ast.Visitor     = (*useInnoDBChecker)(nil)
 )
 
 func init() {
@@ -27,7 +28,7 @@ type UseInnoDBAdvisor struct {
 }
 
 // Check checks for using InnoDB engine.
-func (adv *UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -64,7 +65,7 @@ type useInnoDBChecker struct {
 	title      string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
@@ -123,7 +124,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *useInnoDBChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*useInnoDBChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

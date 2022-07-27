@@ -114,7 +114,7 @@ type PolicyDelete struct {
 	Type PolicyType
 }
 
-// PipelineApprovalPolicy is the policy configuration for pipeline approval
+// PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`
 }

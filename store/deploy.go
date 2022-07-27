@@ -50,7 +50,7 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 	}
 }
 
-// GetDeploymentConfigByProjectID gets an instance of DeploymentConfig
+// GetDeploymentConfigByProjectID gets an instance of DeploymentConfig.
 func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID in
 	return deploymentConfig, nil
 }
 
-// UpsertDeploymentConfig upserts an instance of DeploymentConfig
+// UpsertDeploymentConfig upserts an instance of DeploymentConfig.
 func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.upsertDeploymentConfigRaw(ctx, upsert)
 	if err != nil {
@@ -201,7 +201,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	}
 }
 
-func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
+func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}

@@ -30,7 +30,6 @@ import {
   projectSlug,
   sizeToFit,
   urlfy,
-  event,
 } from "./utils";
 import dataSourceType from "./directives/data-source-type";
 import App from "./App.vue";
@@ -130,7 +129,6 @@ app
   // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
   // to re-render the page and remove the event listener required for
   .directive("data-source-type", dataSourceType)
-  .provide("event", event)
   .use(highlight)
   .use(pinia)
   .use(router)
@@ -142,7 +140,7 @@ app
 // We use finally because we always want to mount the app regardless of the error.
 const initActuator = () => {
   const actuatorStore = useActuatorStore();
-  return actuatorStore.fetchInfo();
+  return actuatorStore.fetchServerInfo();
 };
 const initSubscription = () => {
   const subscriptionStore = useSubscriptionStore();

@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :data-source="instanceUserList"
     :show-header="true"
     :row-clickable="false"
@@ -19,8 +19,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
-import { BBTableColumn } from "../bbkit/types";
+import { computed, PropType } from "vue";
 import { InstanceUser } from "../types/InstanceUser";
 import { useI18n } from "vue-i18n";
 
@@ -35,16 +34,16 @@ export default {
   },
   setup() {
     const { t } = useI18n();
-    const COLUMN_LIST: BBTableColumn[] = [
+    const columnList = computed(() => [
       {
         title: t("common.User"),
       },
       {
         title: t("instance.grants"),
       },
-    ];
+    ]);
     return {
-      COLUMN_LIST,
+      columnList,
     };
   },
 };

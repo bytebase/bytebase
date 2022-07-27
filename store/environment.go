@@ -44,7 +44,7 @@ func (raw *environmentRaw) toEnvironment() *api.Environment {
 	}
 }
 
-// CreateEnvironment creates an instance of Environment
+// CreateEnvironment creates an instance of Environment.
 func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
 	environmentRaw, err := s.createEnvironmentRaw(ctx, create)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCr
 	return environment, nil
 }
 
-// FindEnvironment finds a list of Environment instances
+// FindEnvironment finds a list of Environment instances.
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
 	environmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 	return environmentList, nil
 }
 
-// PatchEnvironment patches an instance of Environment
+// PatchEnvironment patches an instance of Environment.
 func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	environmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
 	if err != nil {
@@ -87,7 +87,7 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatc
 	return environment, nil
 }
 
-// GetEnvironmentByID gets an instance of Environment by ID
+// GetEnvironmentByID gets an instance of Environment by ID.
 func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
 	envRaw, err := s.getEnvironmentByIDRaw(ctx, id)
 	if err != nil {
@@ -236,7 +236,7 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentP
 }
 
 // createEnvironmentImpl creates a new environment.
-func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *api.EnvironmentCreate) (*environmentRaw, error) {
+func (Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *api.EnvironmentCreate) (*environmentRaw, error) {
 	var order int
 	// The order is the MAX(order) + 1
 	if err := tx.QueryRowContext(ctx, `
@@ -286,7 +286,7 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 	return &envRaw, nil
 }
 
-func (s *Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*environmentRaw, error) {
+func (*Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*environmentRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -345,7 +345,7 @@ func (s *Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.E
 }
 
 // patchEnvironmentImpl updates a environment by ID. Returns the new state of the environment after update.
-func (s *Store) patchEnvironmentImpl(ctx context.Context, tx *sql.Tx, patch *api.EnvironmentPatch) (*environmentRaw, error) {
+func (*Store) patchEnvironmentImpl(ctx context.Context, tx *sql.Tx, patch *api.EnvironmentPatch) (*environmentRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

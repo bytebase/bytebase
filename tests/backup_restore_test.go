@@ -32,7 +32,7 @@ import (
 // 2. create a full backup
 // 3. clear data
 // 4. restore data
-// 5. validate
+// 5. validate.
 func TestBackupRestoreBasic(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

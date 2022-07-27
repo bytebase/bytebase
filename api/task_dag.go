@@ -2,7 +2,7 @@ package api
 
 // TaskDAG describes task dependency relationship.
 // FromTaskID blocks ToTaskID
-// It's rather DAGEdge than DAG
+// It's rather DAGEdge than DAG.
 type TaskDAG struct {
 	ID int
 
