@@ -7,3 +7,6 @@ title: What is 'Environment' ?
 - Environment is a global setting, one Bytebase deployment only contains a single set of environments.
 
 - Database instances are created under a particular environment.
+
+#### Learn more
+- [Set up Environments](https://www.bytebase.com/docs/get-started/configure-workspace/set-up-environments)
