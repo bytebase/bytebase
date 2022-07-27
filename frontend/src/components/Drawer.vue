@@ -59,7 +59,7 @@ const handleClose = () => {
 };
 </script>
 
-<style>
+<style scope>
 .slide-enter-active,
 .slide-leave-active {
   transition: all 0.3s ease;
