@@ -34,6 +34,7 @@ require (
 	github.com/xo/dburl v0.9.1
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -144,7 +145,6 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 // copied from pingcap/tidb

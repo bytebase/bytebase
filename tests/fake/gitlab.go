@@ -1,9 +1,11 @@
 package fake
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -17,10 +19,10 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
-// GitLab is a fake implementation of GitLab.
+// GitLab is a fake implementation of GitLab VCS provider.
 type GitLab struct {
 	port int
-	Echo *echo.Echo
+	echo *echo.Echo
 
 	client *http.Client
 
@@ -30,12 +32,13 @@ type GitLab struct {
 
 type projectData struct {
 	webhooks []*gitlab.WebhookCreate
-	// files is a map that the full file path is the key and the file content is the value.
+	// files is a map that the full file path is the key and the file content is the
+	// value.
 	files map[string]string
 }
 
-// NewGitLab creates a fake GitLab.
-func NewGitLab(port int) *GitLab {
+// NewGitLab creates a new fake implementation of GitLab VCS provider.
+func NewGitLab(port int) VCSProvider {
 	e := echo.New()
 	// Middleware
 	e.Use(middleware.Logger())
@@ -43,7 +46,7 @@ func NewGitLab(port int) *GitLab {
 
 	gl := &GitLab{
 		port:          port,
-		Echo:          e,
+		echo:          e,
 		client:        &http.Client{},
 		nextWebhookID: 20210113,
 		projects:      map[string]*projectData{},
@@ -62,18 +65,23 @@ func NewGitLab(port int) *GitLab {
 	return gl
 }
 
-// Run runs a GitLab server.
+// Run starts the GitLab VCS provider server.
 func (gl *GitLab) Run() error {
-	return gl.Echo.Start(fmt.Sprintf(":%d", gl.port))
+	return gl.echo.Start(fmt.Sprintf(":%d", gl.port))
 }
 
-// Close close a GitLab server.
+// Close shuts down the GitLab VCS provider server.
 func (gl *GitLab) Close() error {
-	return gl.Echo.Close()
+	return gl.echo.Close()
 }
 
-// CreateProject creates a GitLab project.
-func (gl *GitLab) CreateProject(id string) {
+// ListenerAddr returns the GitLab VCS provider server listener address.
+func (gl *GitLab) ListenerAddr() net.Addr {
+	return gl.echo.ListenerAddr()
+}
+
+// CreateRepository creates a GitLab project with given ID.
+func (gl *GitLab) CreateRepository(id string) {
 	gl.projects[id] = &projectData{
 		files: map[string]string{},
 	}
@@ -81,7 +89,7 @@ func (gl *GitLab) CreateProject(id string) {
 
 // createProjectHook creates a project webhook.
 func (gl *GitLab) createProjectHook(c echo.Context) error {
-	gitlabProjectID := c.Param("id")
+	projectID := c.Param("id")
 	c.Logger().Info("create webhook for project %q", c.Param("id"))
 	b, err := io.ReadAll(c.Request().Body)
 	if err != nil {
@@ -91,9 +99,9 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	if err := json.Unmarshal(b, webhookCreate); err != nil {
 		return fmt.Errorf("failed to unmarshal create project hook request body, error %w", err)
 	}
-	pd, ok := gl.projects[gitlabProjectID]
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
+		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 	pd.webhooks = append(pd.webhooks, webhookCreate)
 
@@ -109,11 +117,11 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 
 // readProjectTree reads a project file nodes.
 func (gl *GitLab) readProjectTree(c echo.Context) error {
-	gitlabProjectID := c.Param("id")
+	projectID := c.Param("id")
 	path := c.QueryParam("path")
-	pd, ok := gl.projects[gitlabProjectID]
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", projectID))
 	}
 
 	fileNodes := []*vcs.RepositoryTreeNode{}
@@ -137,16 +145,16 @@ func (gl *GitLab) readProjectTree(c echo.Context) error {
 
 // readProjectFile reads a project file.
 func (gl *GitLab) readProjectFile(c echo.Context) error {
-	gitlabProjectID := c.Param("id")
+	projectID := c.Param("id")
 	filePathEscaped := c.Param("filePath")
 	filePath, err := url.QueryUnescape(filePathEscaped)
 	if err != nil {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", filePathEscaped, err))
 	}
 
-	pd, ok := gl.projects[gitlabProjectID]
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", projectID))
 	}
 
 	content, ok := pd.files[filePath]
@@ -159,16 +167,16 @@ func (gl *GitLab) readProjectFile(c echo.Context) error {
 
 // readProjectFileMetadata reads a project file metadata.
 func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
-	gitlabProjectID := c.Param("id")
+	projectID := c.Param("id")
 	filePathEscaped := c.Param("filePath")
 	filePath, err := url.QueryUnescape(filePathEscaped)
 	if err != nil {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", filePathEscaped, err))
 	}
 
-	pd, ok := gl.projects[gitlabProjectID]
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", projectID))
 	}
 
 	if _, ok := pd.files[filePath]; !ok {
@@ -193,10 +201,10 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 
 // getFakeCommit get a fake commit data.
 func (gl *GitLab) getFakeCommit(c echo.Context) error {
-	gitlabProjectID := c.Param("id")
-	_, ok := gl.projects[gitlabProjectID]
+	projectID := c.Param("id")
+	_, ok := gl.projects[projectID]
 	if !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", projectID))
 	}
 
 	commit := gitlab.Commit{
@@ -214,7 +222,7 @@ func (gl *GitLab) getFakeCommit(c echo.Context) error {
 
 // createProjectFile creates a project file.
 func (gl *GitLab) createProjectFile(c echo.Context) error {
-	gitlabProjectID := c.Param("id")
+	projectID := c.Param("id")
 	filePathEscaped := c.Param("filePath")
 	filePath, err := url.QueryUnescape(filePathEscaped)
 	if err != nil {
@@ -229,9 +237,9 @@ func (gl *GitLab) createProjectFile(c echo.Context) error {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal create project file request body, error %v", err))
 	}
 
-	pd, ok := gl.projects[gitlabProjectID]
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", projectID))
 	}
 
 	// Save file.
@@ -240,21 +248,18 @@ func (gl *GitLab) createProjectFile(c echo.Context) error {
 	return c.String(http.StatusOK, "")
 }
 
-// SendCommits sends comments to webhooks.
-func (gl *GitLab) SendCommits(gitlabProjectID string, webhookPushEvent *gitlab.WebhookPushEvent) error {
-	pd, ok := gl.projects[gitlabProjectID]
+// SendWebhookPush sends out a webhook for a push event for the GitLab project
+// using given payload.
+func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
+		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Trigger webhooks.
 	for _, webhook := range pd.webhooks {
 		// Send post request.
-		buf, err := json.Marshal(webhookPushEvent)
-		if err != nil {
-			return fmt.Errorf("failed to marshal webhookPushEvent, error %w", err)
-		}
-		req, err := http.NewRequest("POST", webhook.URL, strings.NewReader(string(buf)))
+		req, err := http.NewRequest("POST", webhook.URL, bytes.NewReader(payload))
 		if err != nil {
 			return fmt.Errorf("fail to create a new POST request(%q), error: %w", webhook.URL, err)
 		}
@@ -271,17 +276,17 @@ func (gl *GitLab) SendCommits(gitlabProjectID string, webhookPushEvent *gitlab.W
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 		}
-		gl.Echo.Logger.Infof("SendCommits response body %s\n", body)
+		gl.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
 	}
 
 	return nil
 }
 
-// AddFiles add files to repository.
-func (gl *GitLab) AddFiles(gitlabProjectID string, files map[string]string) error {
-	pd, ok := gl.projects[gitlabProjectID]
+// AddFiles adds given files to the GitLab project.
+func (gl *GitLab) AddFiles(projectID string, files map[string]string) error {
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
+		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Save files
@@ -291,11 +296,11 @@ func (gl *GitLab) AddFiles(gitlabProjectID string, files map[string]string) erro
 	return nil
 }
 
-// GetFiles get files from repository.
-func (gl *GitLab) GetFiles(gitlabProjectID string, filePaths ...string) (map[string]string, error) {
-	pd, ok := gl.projects[gitlabProjectID]
+// GetFiles returns files with given paths from the GitLab project.
+func (gl *GitLab) GetFiles(projectID string, filePaths ...string) (map[string]string, error) {
+	pd, ok := gl.projects[projectID]
 	if !ok {
-		return nil, fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
+		return nil, fmt.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Get files
