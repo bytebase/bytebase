@@ -993,6 +993,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	return taskCreateList, taskIndexDAGList, nil
 }
 
+// checkCharacterSetCollationOwner checks if the charactes set, collation and owner are legal according to the dbType.
 func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, owner string) error {
 	switch dbType {
 	case db.ClickHouse:
@@ -1029,6 +1030,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	}
 	return nil
 }
+
 func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, schema string) (string, string) {
 	databaseName := createDatabaseContext.DatabaseName
 	// Snowflake needs to use upper case of DatabaseName.
