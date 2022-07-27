@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -177,6 +178,29 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	mysqlCmd.Stdout = os.Stderr
 	mysqlCmd.Stdin = mysqlStdin
 
+	// Update replay binlog progress
+	totalBinlogBytes, err := getFileSizeSum(replayBinlogPaths)
+	if err != nil {
+		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
+	}
+	driver.replayBinlogProgress = 0
+	stopChan := make(chan bool)
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				progress := mysqlStdin.Count() / totalBinlogBytes
+				atomic.StoreUint64(&driver.replayBinlogProgress, progress)
+			case <-ctx.Done():
+				return
+			case <-stopChan:
+				return
+			}
+		}
+	}()
+
 	if err := mysqlbinlogCmd.Start(); err != nil {
 		return fmt.Errorf("cannot start mysqlbinlog command, error: %w", err)
 	}
@@ -186,7 +210,20 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	if err := mysqlbinlogCmd.Wait(); err != nil {
 		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
 	}
+	stopChan <- true
 	return nil
+}
+
+func getFileSizeSum(fileNameList []string) (uint64, error) {
+	var sum uint64
+	for _, fileName := range fileNameList {
+		stat, err := os.Stat(fileName)
+		if err != nil {
+			return 0, err
+		}
+		sum += uint64(stat.Size())
+	}
+	return sum, nil
 }
 
 // RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
