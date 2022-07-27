@@ -128,6 +128,9 @@ watch(
     const uiStateStore = useUIStateStore();
     const helpStore = useHelpStore();
 
+    // Hide opened help drawer if route changed.
+    helpStore.exitHelp();
+
     if (!state.RouteMapList) {
       const res = await fetch("/help/routeMapList.json");
       state.RouteMapList = await res.json();
