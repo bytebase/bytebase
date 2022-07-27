@@ -81,7 +81,7 @@ func (gl *GitLab) ListenerAddr() net.Addr {
 }
 
 // APIURL returns the GitLab VCS provider API URL.
-func (gl *GitLab) APIURL(instanceURL string) string {
+func (*GitLab) APIURL(instanceURL string) string {
 	return instanceURL + "/api/v4"
 }
 
