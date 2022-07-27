@@ -82,7 +82,7 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchUserInfo(ctx, common.OauthContext{}, "", "octocat")
+	got, err := p.FetchUserInfo(ctx, common.OauthContext{}, githubComURL, "octocat")
 	require.NoError(t, err)
 
 	want := &vcs.UserInfo{
@@ -200,7 +200,7 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 		)
 
 		ctx := context.Background()
-		_, got := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "octocat/Hello-World")
+		_, got := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World")
 		want := "[ monalisa octocat ] did not configure their public email in GitHub, please make sure every members' public email is configured before syncing, see https://docs.github.com/en/account-and-profile"
 		assert.EqualError(t, got, want)
 	})
@@ -310,7 +310,7 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "octocat/Hello-World")
+	got, err := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World")
 	require.NoError(t, err)
 
 	want := []*vcs.RepositoryMember{
@@ -380,7 +380,7 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchCommitByID(ctx, common.OauthContext{}, "", "octocat/Hello-World", "7638417db6d59f3c431d3e1f261cc637155684cd")
+	got, err := p.FetchCommitByID(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "7638417db6d59f3c431d3e1f261cc637155684cd")
 	require.NoError(t, err)
 
 	want := &vcs.Commit{
@@ -418,7 +418,9 @@ func TestProvider_ExchangeOAuthToken(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ExchangeOAuthToken(ctx, "",
+	got, err := p.ExchangeOAuthToken(
+		ctx,
+		githubComURL,
 		&common.OAuthExchange{
 			ClientID:     "test_client_id",
 			ClientSecret: "test_client_secret",
@@ -579,7 +581,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, "")
+	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, githubComURL)
 	require.NoError(t, err)
 
 	want := []*vcs.Repository{
@@ -652,7 +654,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 
 	t.Run("no path prefix", func(t *testing.T) {
 		ctx := context.Background()
-		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "octocat/Hello-World", "main", "")
+		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "main", "")
 		require.NoError(t, err)
 
 		// Non-blob type should excluded
@@ -675,7 +677,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 
 	t.Run("has path prefix", func(t *testing.T) {
 		ctx := context.Background()
-		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "octocat/Hello-World", "main", "subdir")
+		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "main", "subdir")
 		require.NoError(t, err)
 
 		// Non-blob type should excluded
@@ -769,7 +771,7 @@ func TestProvider_CreateFile(t *testing.T) {
 	err := p.CreateFile(
 		ctx,
 		common.OauthContext{},
-		"",
+		githubComURL,
 		"octocat/Hello-World",
 		"notes/hello.txt",
 		vcs.FileCommitCreate{
@@ -861,7 +863,7 @@ func TestProvider_OverwriteFile(t *testing.T) {
 	err := p.OverwriteFile(
 		ctx,
 		common.OauthContext{},
-		"",
+		githubComURL,
 		"octocat/Hello-World",
 		"notes/hello.txt",
 		vcs.FileCommitCreate{
@@ -912,7 +914,7 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, "", "octocat/Hello-World", "README.md", "master")
+	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", "master")
 	require.NoError(t, err)
 
 	want := &vcs.FileMeta{
@@ -962,7 +964,7 @@ func TestProvider_ReadFileContent(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, "", "octocat/Hello-World", "README.md", "master")
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", "master")
 	require.NoError(t, err)
 
 	want := `# Sample GitLab Project
@@ -1023,7 +1025,7 @@ func TestProvider_CreateWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.CreateWebhook(ctx, common.OauthContext{}, "", "1", []byte(""))
+	got, err := p.CreateWebhook(ctx, common.OauthContext{}, githubComURL, "1", []byte(""))
 	require.NoError(t, err)
 	assert.Equal(t, "12345678", got)
 }
@@ -1046,7 +1048,7 @@ func TestProvider_PatchWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.PatchWebhook(ctx, common.OauthContext{}, "", "1", "1", []byte(""))
+	err := p.PatchWebhook(ctx, common.OauthContext{}, githubComURL, "1", "1", []byte(""))
 	require.NoError(t, err)
 }
 
@@ -1068,7 +1070,7 @@ func TestProvider_DeleteWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.DeleteWebhook(ctx, common.OauthContext{}, "", "1", "1")
+	err := p.DeleteWebhook(ctx, common.OauthContext{}, githubComURL, "1", "1")
 	require.NoError(t, err)
 }
 
@@ -1118,6 +1120,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 		"https://api.github.com/users/octocat",
 		&token,
 		tokenRefresher(
+			githubComURL,
 			oauthContext{},
 			refresher,
 		),
