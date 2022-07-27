@@ -23,7 +23,7 @@ func NewCountingReader(r io.Reader) *CountingReader {
 // Read implements the io.Reader interface.
 func (r *CountingReader) Read(buf []byte) (int, error) {
 	n, err := r.r.Read(buf)
-	if n >= 0 {
+	if n > 0 {
 		atomic.AddUint64(&r.count, uint64(n))
 	}
 	return n, err
