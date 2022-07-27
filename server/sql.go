@@ -261,7 +261,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		if queryErr != nil {
 			level = api.ActivityError
-			errMessage = err.Error()
+			errMessage = queryErr.Error()
 		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
 			Statement:    exec.Statement,
