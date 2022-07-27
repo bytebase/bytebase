@@ -58,7 +58,7 @@ export default defineComponent({
         const markdown = await res.text();
         const ast: Node = Markdoc.parse(markdown);
         const content = Markdoc.transform(ast) as Tag;
-        content.attributes.class = "prose"; // style help content
+        content.attributes.class = "markdown-body"; // style help content
         const html: string = Markdoc.renderers.html(content);
 
         state.frontmatter = ast.attributes.frontmatter
