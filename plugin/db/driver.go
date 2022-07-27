@@ -35,10 +35,6 @@ const (
 	BytebaseDatabase = "bytebase"
 )
 
-func (t Type) String() string {
-	return string(t)
-}
-
 // User is the database user.
 type User struct {
 	Name  string
