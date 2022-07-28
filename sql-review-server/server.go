@@ -114,7 +114,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Trying to stop Bytebase ....")
+	log.Info("Trying to stop Bytebase SQL Review Service ....")
 	log.Info("Trying to gracefully shutdown server")
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -127,7 +127,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	log.Info("Bytebase stopped properly")
+	log.Info("Bytebase SQL Review Service stopped properly")
 
 	return nil
 }

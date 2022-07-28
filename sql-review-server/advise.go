@@ -38,7 +38,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Param  statement     query  string  true   "The SQL statement."
 // @Param  databaseType  query  string  true   "The database type."  Enums(MySQL, PostgreSQL, TiDB)
 // @Param  template      query  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.mysql.prod, bb.sql-review.mysql.dev)
-// @Param  override      query  string  false  "The SQL check config override string in YAML format. Required if the template is not specified."
+// @Param  override      query  string  false  "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError

@@ -70,7 +70,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "The SQL check config override string in YAML format. Required if the template is not specified.",
+                        "description": "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified.",
                         "name": "override",
                         "in": "query"
                     }
