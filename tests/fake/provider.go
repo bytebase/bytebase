@@ -12,6 +12,8 @@ type VCSProvider interface {
 	Close() error
 	// ListenerAddr returns listener address of the server.
 	ListenerAddr() net.Addr
+	// APIURL returns the API URL of the VCS provider.
+	APIURL(instanceURL string) string
 
 	// CreateRepository creates a new repository with given ID.
 	CreateRepository(id string)
@@ -23,3 +25,6 @@ type VCSProvider interface {
 	// GetFiles returns files with given paths from the repository.
 	GetFiles(repositoryID string, filePaths ...string) (map[string]string, error)
 }
+
+// VCSProviderCreator a function to create a new VCSProvider.
+type VCSProviderCreator func(port int) VCSProvider

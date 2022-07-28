@@ -12,12 +12,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
-	"github.com/stretchr/testify/require"
+	"github.com/bytebase/bytebase/tests/fake"
 )
 
 func TestSQLReview(t *testing.T) {
@@ -256,7 +258,7 @@ func TestSQLReview(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	port := getTestPort(t.Name()) + 3
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()

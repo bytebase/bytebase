@@ -80,6 +80,11 @@ func (gl *GitLab) ListenerAddr() net.Addr {
 	return gl.echo.ListenerAddr()
 }
 
+// APIURL returns the GitLab VCS provider API URL.
+func (*GitLab) APIURL(instanceURL string) string {
+	return fmt.Sprintf("%s/api/v4", instanceURL)
+}
+
 // CreateRepository creates a GitLab project with given ID.
 func (gl *GitLab) CreateRepository(id string) {
 	gl.projects[id] = &projectData{
