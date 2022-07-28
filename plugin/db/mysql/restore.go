@@ -611,33 +611,21 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", resultFilePath))
 	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
-		_ = os.Remove(resultFilePath)
+		if err := os.Remove(resultFilePath); err != nil {
+			log.Error("Failed to get stat of the binlog file.", zap.String("path", resultFilePath), zap.Error(err))
+		}
 		return fmt.Errorf("cannot get file %q stat, error: %w", resultFilePath, err)
 	}
-	if isLast {
-		// Case 1: It's the last binlog file we need (contains the targetTs).
-		// If it's the last (incomplete) binlog file on the MySQL server, it will grow as new writes hit the database server.
-		// We just need to check that the downloaded file size >= queried size, so it contains the targetTs event.
-		if fileInfo.Size() < binlogFileToDownload.Size {
-			log.Error("Downloaded latest binlog file size is smaller than size queried on the MySQL server",
-				zap.String("binlog", binlogFileToDownload.Name),
-				zap.Int64("sizeInfo", binlogFileToDownload.Size),
-				zap.Int64("downloadedSize", fileInfo.Size()),
-			)
-			_ = os.Remove(resultFilePath)
-			return fmt.Errorf("downloaded latest binlog file %q size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
+	if !isLast && fileInfo.Size() != binlogFileToDownload.Size {
+		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server.",
+			zap.String("binlog", binlogFileToDownload.Name),
+			zap.Int64("sizeInfo", binlogFileToDownload.Size),
+			zap.Int64("downloadedSize", fileInfo.Size()),
+		)
+		if err := os.Remove(resultFilePath); err != nil {
+			log.Error("Failed to remove the inconsistent archived binlog file.", zap.String("path", resultFilePath), zap.Error(err))
 		}
-	} else {
-		// Case 2: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
-		if fileInfo.Size() != binlogFileToDownload.Size {
-			log.Error("Downloaded binlog file size is not equal to size queried on the MySQL server",
-				zap.String("binlog", binlogFileToDownload.Name),
-				zap.Int64("sizeInfo", binlogFileToDownload.Size),
-				zap.Int64("downloadedSize", fileInfo.Size()),
-			)
-			_ = os.Remove(resultFilePath)
-			return fmt.Errorf("downloaded binlog file %q size[%d] is not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
-		}
+		return fmt.Errorf("downloaded binlog file %q size %d is not equal to size %d queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 	}
 
 	return nil
