@@ -112,8 +112,13 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 	}
 
 	for _, instance := range instanceList {
+		if instance.Engine != db.MySQL {
+			log.Error("Instance is not a MySQL instance", zap.String("instance", instance.Name))
+			continue
+		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
 		if err != nil {
+			log.Error("Failed to get max retention period for MySQL instance", zap.String("instance", instance.Name), zap.Error(err))
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
@@ -128,9 +133,6 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 }
 
 func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
-	if instance.Engine != db.MySQL {
-		return 0, fmt.Errorf("instance %q is not a MySQL instance", instance.Name)
-	}
 	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
 	if err != nil {
 		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
@@ -149,7 +151,6 @@ func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error
 	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
 	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
-		log.Error("Failed to read backup directory.", zap.String("path", binlogDir), zap.Error(err))
 		return fmt.Errorf("failed to read backup directory %q, error: %w", binlogDir, err)
 	}
 	for _, binlogFileInfo := range binlogFileInfoList {
@@ -164,7 +165,8 @@ func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error
 		if time.Now().After(expireTime) {
 			binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
 			if err := os.Remove(binlogFilePath); err != nil {
-				log.Error("Failed to remove an expired binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
+				log.Warn("Failed to remove an expired binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
+				continue
 			}
 			log.Info("Deleted expired binlog file.", zap.String("path", binlogFilePath))
 		}
@@ -173,7 +175,6 @@ func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error
 }
 
 func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) error {
-	// update metadata
 	archive := api.Archived
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
@@ -184,7 +185,6 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 		return fmt.Errorf("failed to update status for deleted backup %q for database with ID %d, error: %w", backup.Name, backup.DatabaseID, err)
 	}
 
-	// delete backup file
 	backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, backup.DatabaseID, backup.Name)
 	if err := os.Remove(backupFilePath); err != nil {
 		log.Error("Failed to delete an expired backup file.", zap.String("path", backupFilePath), zap.Error(err))
