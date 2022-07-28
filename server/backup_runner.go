@@ -97,7 +97,9 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			backupTime := time.Unix(backup.UpdatedTs, 0)
 			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs) * time.Second)
 			if time.Now().After(expireTime) {
-				r.purgeBackup(ctx, backup)
+				if err := r.purgeBackup(ctx, backup); err != nil {
+					log.Error("Failed to purge backup", zap.String("backup", backup.Name), zap.Error(err))
+				}
 			}
 		}
 	}
@@ -119,7 +121,9 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			continue
 		}
 		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
-		r.purgeBinlogFiles(ctx, instance.ID, maxRetentionPeriodTs)
+		if err := r.purgeBinlogFiles(instance.ID, maxRetentionPeriodTs); err != nil {
+			log.Error("Failed to purge binlog files for instance", zap.String("instance", instance.Name), zap.Int("retentionPeriodTs", maxRetentionPeriodTs), zap.Error(err))
+		}
 	}
 }
 
@@ -141,7 +145,7 @@ func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Conte
 	return maxRetentionPeriodTs, nil
 }
 
-func (r *BackupRunner) purgeBinlogFiles(ctx context.Context, instanceID, retentionPeriodTs int) error {
+func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error {
 	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
 	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
