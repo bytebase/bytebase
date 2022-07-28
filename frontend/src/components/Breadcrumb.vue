@@ -51,7 +51,12 @@
       </div>
     </div>
 
-    <HelpTriggerIcon v-if="helpName" :id="helpName" :is-guide="true" />
+    <div class="tooltip-wrapper">
+      <span class="tooltip-left whitespace-nowrap">
+        {{ $t("common.show-help") }}
+      </span>
+      <HelpTriggerIcon v-if="helpName" :id="helpName" :is-guide="true" />
+    </div>
   </nav>
 </template>
 

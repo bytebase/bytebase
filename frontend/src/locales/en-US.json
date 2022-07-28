@@ -204,7 +204,8 @@
     "pitr": "PITR",
     "fix": "Fix",
     "go-now": "Go now",
-    "sync-now": "Sync Now"
+    "sync-now": "Sync Now",
+    "show-help": "Show help"
   },
   "error-page": {
     "go-back-home": "Go back home"

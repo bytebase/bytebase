@@ -26,8 +26,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from "vue";
-
 const props = defineProps({
   show: {
     type: Boolean,
@@ -59,7 +57,7 @@ const handleClose = () => {
 };
 </script>
 
-<style scope>
+<style scoped>
 .slide-enter-active,
 .slide-leave-active {
   transition: all 0.3s ease;
