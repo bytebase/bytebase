@@ -102,6 +102,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		defaultNumRetries                   = 60
 		cutoverLockTimeoutSeconds           = 3
 		exponentialBackoffMaxInterval       = 64
+		throttleHTTPIntervalMillis          = 100
+		throttleHTTPTimeoutMillis           = 1000
 	)
 	statement := strings.Join(strings.Fields(config.alterStatement), " ")
 	migrationContext := base.NewMigrationContext()
@@ -127,6 +129,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
 	migrationContext.CutOverType = base.CutOverAtomic
+	migrationContext.ThrottleHTTPIntervalMillis = throttleHTTPIntervalMillis
+	migrationContext.ThrottleHTTPTimeoutMillis = throttleHTTPTimeoutMillis
 
 	if migrationContext.AlterStatement == "" {
 		return nil, fmt.Errorf("alterStatement must be provided and must not be empty")
@@ -205,7 +209,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	migrator := logic.NewMigrator(migrationContext)
+	migrator := logic.NewMigrator(migrationContext, "bb")
 
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
