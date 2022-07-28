@@ -95,7 +95,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 		}
 		for _, backup := range backupList {
 			backupTime := time.Unix(backup.UpdatedTs, 0)
-			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs))
+			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs) * time.Second)
 			if time.Now().After(expireTime) {
 				r.purgeBackup(ctx, backup)
 			}
@@ -110,20 +110,20 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 	}
 
 	for _, instance := range instanceList {
-		maxRetentionPeriodForInstance, err := r.getMaxRetentionPeriodForMySQLInstance(ctx, instance)
+		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
 		if err != nil {
 			continue
 		}
-		if maxRetentionPeriodForInstance == math.MaxInt {
-			log.Debug("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
+		if maxRetentionPeriodTs == math.MaxInt {
+			log.Info("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
-		r.purgeBinlogFiles(ctx, instance.ID, maxRetentionPeriodForInstance)
+		r.purgeBinlogFiles(ctx, instance.ID, maxRetentionPeriodTs)
 	}
 }
 
-func (r *BackupRunner) getMaxRetentionPeriodForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
+func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
 	if instance.Engine != db.MySQL {
 		return 0, fmt.Errorf("instance %q is not a MySQL instance", instance.Name)
 	}
@@ -132,16 +132,16 @@ func (r *BackupRunner) getMaxRetentionPeriodForMySQLInstance(ctx context.Context
 		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
 		return 0, fmt.Errorf("failed to find backup settings for instance %q, error: %w", instance.Name, err)
 	}
-	maxRetentionPeriodForInstance := math.MaxInt
+	maxRetentionPeriodTs := math.MaxInt
 	for _, bs := range backupSettingList {
-		if bs.RetentionPeriodTs != api.BackupRetentionPeriodUnset && bs.RetentionPeriodTs < maxRetentionPeriodForInstance {
-			maxRetentionPeriodForInstance = bs.RetentionPeriodTs
+		if bs.RetentionPeriodTs != api.BackupRetentionPeriodUnset && bs.RetentionPeriodTs < maxRetentionPeriodTs {
+			maxRetentionPeriodTs = bs.RetentionPeriodTs
 		}
 	}
-	return maxRetentionPeriodForInstance, nil
+	return maxRetentionPeriodTs, nil
 }
 
-func (r *BackupRunner) purgeBinlogFiles(ctx context.Context, instanceID, retentionPeriod int) error {
+func (r *BackupRunner) purgeBinlogFiles(ctx context.Context, instanceID, retentionPeriodTs int) error {
 	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
 	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
@@ -153,7 +153,10 @@ func (r *BackupRunner) purgeBinlogFiles(ctx context.Context, instanceID, retenti
 			log.Warn("Found an irregular file in binlog directory.", zap.String("path", binlogFileInfo.Name()))
 			continue // next binlog file
 		}
-		expireTime := binlogFileInfo.ModTime().Add(time.Duration(retentionPeriod))
+		// We use modification time of local binlog files which is later than the modification time of that on the MySQL server,
+		// which in turn is later than the last event timestamp of the binlog file.
+		// This is not accurate and gives about 10 minutes (backup runner interval) more retention time to the binlog files, which is acceptable.
+		expireTime := binlogFileInfo.ModTime().Add(time.Duration(retentionPeriodTs) * time.Second)
 		if time.Now().After(expireTime) {
 			binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
 			if err := os.Remove(binlogFilePath); err != nil {
