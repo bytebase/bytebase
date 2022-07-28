@@ -537,7 +537,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 		} else if fileLocal.Size != fileOnServer.Size {
 			log.Debug("Deleting inconsistent local binlog file",
 				zap.String("path", path),
-				zap.Int64("sizeLocal", fileOnServer.Size),
+				zap.Int64("sizeLocal", fileLocal.Size),
 				zap.Int64("sizeOnServer", fileOnServer.Size))
 			if err := os.Remove(path); err != nil {
 				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
