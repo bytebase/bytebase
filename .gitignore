@@ -36,5 +36,5 @@ bytebase-build
 
 dist/
 docs/openapi/swagger.json
-frontend/src/types/sql-review.mysql.dev.yaml
-frontend/src/types/sql-review.mysql.prod.yaml
+docs/sqlservice/swagger.json
+frontend/src/types/sql-review.*.yaml
