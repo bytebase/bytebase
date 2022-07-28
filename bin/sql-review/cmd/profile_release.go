@@ -4,8 +4,6 @@
 package cmd
 
 import (
-	"time"
-
 	"github.com/bytebase/bytebase/common"
 	server "github.com/bytebase/bytebase/sql-server"
 )
