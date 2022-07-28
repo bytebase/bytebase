@@ -139,14 +139,14 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 			}, nil
 		case pgquery.ObjectType_OBJECT_INDEX:
 			return &ast.RenameIndexStmt{
-				Table:     convertRangeVarToIndexTableName(in.RenameStmt.Relation, ast.TableTypeNone),
+				Table:     convertRangeVarToIndexTableName(in.RenameStmt.Relation, ast.TableTypeUnknown),
 				IndexName: in.RenameStmt.Relation.Relname,
 				NewName:   in.RenameStmt.Newname,
 			}, nil
 		}
 	case *pgquery.Node_IndexStmt:
 		indexDef := &ast.IndexDef{
-			Table:  convertRangeVarToTableName(in.IndexStmt.Relation, ast.TableTypeNone),
+			Table:  convertRangeVarToTableName(in.IndexStmt.Relation, ast.TableTypeUnknown),
 			Name:   in.IndexStmt.Idxname,
 			Unique: in.IndexStmt.Unique,
 		}
@@ -180,7 +180,7 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 				if !ok {
 					return nil, parser.NewConvertErrorf("expected List but found %t", object.Node)
 				}
-				indexDef, err := convertListToIndexDef(list, ast.TableTypeNone)
+				indexDef, err := convertListToIndexDef(list, ast.TableTypeUnknown)
 				if err != nil {
 					return nil, err
 				}
@@ -581,6 +581,6 @@ func convertToTableType(relationType pgquery.ObjectType) (ast.TableType, error) 
 	case pgquery.ObjectType_OBJECT_VIEW:
 		return ast.TableTypeView, nil
 	default:
-		return ast.TableTypeNone, parser.NewConvertErrorf("expected TABLE or VIEW but found %s", relationType)
+		return ast.TableTypeUnknown, parser.NewConvertErrorf("expected TABLE or VIEW but found %s", relationType)
 	}
 }
