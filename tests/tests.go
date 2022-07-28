@@ -116,8 +116,8 @@ func getTestPort(testName string) int {
 	tests := []string{
 		"TestServiceRestart",
 		"TestSchemaAndDataUpdate",
-		"TestVCS_GitLab",
-		"TestVCS_GitHub",
+		"TestVCS/GitLab",
+		"TestVCS/GitHub",
 		"TestTenant",
 		"TestTenantVCS_GitLab",
 		"TestTenantVCS_GitHub",
