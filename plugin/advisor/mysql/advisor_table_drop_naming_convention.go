@@ -23,7 +23,7 @@ type TableDropNamingConventionAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (adv *TableDropNamingConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -84,6 +84,6 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (v *namingDropTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*namingDropTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

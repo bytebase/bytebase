@@ -6,8 +6,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"strconv"
-
 	"io"
 	"io/fs"
 	"net/http"
@@ -15,8 +13,12 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
@@ -26,8 +28,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
-	"github.com/google/jsonapi"
-	"go.uber.org/zap"
 )
 
 //go:embed fake
@@ -100,15 +100,14 @@ var (
 )
 
 type controller struct {
-	server *server.Server
-	client *http.Client
-	cookie string
-	gitlab *fake.GitLab
+	server      *server.Server
+	client      *http.Client
+	cookie      string
+	vcsProvider fake.VCSProvider
 
-	rootURL   string
-	apiURL    string
-	gitURL    string
-	gitAPIURL string
+	rootURL string
+	apiURL  string
+	vcsURL  string
 }
 
 func getTestPort(testName string) int {
@@ -117,15 +116,15 @@ func getTestPort(testName string) int {
 	tests := []string{
 		"TestServiceRestart",
 		"TestSchemaAndDataUpdate",
-		"TestVCS",
+		"TestVCS_GitLab",
 		"TestTenant",
-		"TestTenantVCS",
+		"TestTenantVCS_GitLab",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestBackupRestoreBasic",
-		"TestTenantVCSDatabaseNameTemplate",
+		"TestTenantVCSDatabaseNameTemplate_GitLab",
 		"TestBootWithExternalPg",
-		"TestSheetVCS",
+		"TestSheetVCS_GitLab",
 		"TestPrepare",
 
 		// PITR related cases
@@ -154,7 +153,7 @@ func getTestPort(testName string) int {
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int, pgUser, pgURL string) error {
 	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	server, err := server.NewServer(ctx, profile)
@@ -163,11 +162,11 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir st
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, port)
+	return ctl.start(ctx, vcsProviderCreator, port)
 }
 
 // StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
+func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int) error {
 	// start main server.
 	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfile(dataDir, port)
@@ -177,19 +176,18 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, port)
+	return ctl.start(ctx, vcsProviderCreator, port)
 }
 
-// start only called by StartServer() and StartServerWithExternalPg.
-func (ctl *controller) start(ctx context.Context, port int) error {
+// start only called by StartServer() and StartServerWithExternalPg().
+func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSProviderCreator, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
-	// set up gitlab.
-	gitlabPort := port + 2
-	ctl.gitlab = fake.NewGitLab(gitlabPort)
-	ctl.gitURL = fmt.Sprintf("http://localhost:%d", gitlabPort)
-	ctl.gitAPIURL = fmt.Sprintf("%s/api/v4", ctl.gitURL)
+	// Set up VCS provider.
+	vcsPort := port + 2
+	ctl.vcsProvider = vcsProviderCreator(vcsPort)
+	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
 
 	errChan := make(chan error, 1)
 
@@ -200,16 +198,16 @@ func (ctl *controller) start(ctx context.Context, port int) error {
 	}()
 
 	go func() {
-		if err := ctl.gitlab.Run(); err != nil {
-			errChan <- fmt.Errorf("failed to run gitlab server, error: %w", err)
+		if err := ctl.vcsProvider.Run(); err != nil {
+			errChan <- fmt.Errorf("failed to run vcsProvider server, error: %w", err)
 		}
 	}()
 
 	if err := waitForServerStart(ctl.server, errChan); err != nil {
 		return fmt.Errorf("failed to wait for server to start, error: %w", err)
 	}
-	if err := waitForGitLabStart(ctl.gitlab, errChan); err != nil {
-		return fmt.Errorf("failed to wait for gitlab to start, error: %w", err)
+	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
+		return fmt.Errorf("failed to wait for vcsProvider to start, error: %w", err)
 	}
 
 	// initialize controller clients.
@@ -249,17 +247,14 @@ func waitForServerStart(s *server.Server, errChan <-chan error) error {
 	}
 }
 
-func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
+func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if g.Echo == nil {
-				continue
-			}
-			addr := g.Echo.ListenerAddr()
+			addr := p.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
 				return nil // was started
 			}
@@ -321,8 +316,8 @@ func (ctl *controller) Close(ctx context.Context) error {
 	if ctl.server != nil {
 		e = ctl.server.Shutdown(ctx)
 	}
-	if ctl.gitlab != nil {
-		if err := ctl.gitlab.Close(); err != nil {
+	if ctl.vcsProvider != nil {
+		if err := ctl.vcsProvider.Close(); err != nil {
 			e = err
 		}
 	}
@@ -357,7 +352,7 @@ func (ctl *controller) Login() error {
 }
 
 // provisionSQLiteInstance provisions a SQLite instance (a directory).
-func (ctl *controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
+func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
 	p := path.Join(rootDir, name)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to make directory %q, error: %w", p, err)
@@ -1244,6 +1239,7 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
+	log.Debug("Waiting for backup.", zap.Int("id", backupID))
 	for range ticker.C {
 		backups, err := ctl.listBackups(databaseID)
 		if err != nil {
@@ -1373,7 +1369,7 @@ func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
 
 // schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
 // If the schema review task check is not done, return nil, false, nil.
-func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+func (*controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
 	var result []api.TaskCheckResult
 	var latestTs int64
 	for _, stage := range issue.Pipeline.StageList {

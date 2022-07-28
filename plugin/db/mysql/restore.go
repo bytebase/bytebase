@@ -4,8 +4,8 @@ package mysql
 // For example, the original database is `dbfoo`. The suffixTs, derived from the PITR issue's CreateTs, is 1653018005.
 // Bytebase will do the following:
 // 1. Create a database called `dbfoo_pitr_1653018005`, and do PITR restore to it.
-// 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
-// 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
+// 2. Create a database called `dbfoo_pitr_1653018005_del`, and move tables
+// 	  from `dbfoo` to `dbfoo_pitr_1653018005_del`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
 
 import (
 	"bufio"
@@ -62,7 +62,7 @@ type BinlogFile struct {
 }
 
 func newBinlogFile(name string, size int64) (BinlogFile, error) {
-	seq, err := getBinlogNameSeq(name)
+	seq, err := GetBinlogNameSeq(name)
 	if err != nil {
 		return BinlogFile{}, err
 	}
@@ -86,7 +86,7 @@ type binlogCoordinate struct {
 }
 
 func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
-	seq, err := getBinlogNameSeq(binlogFileName)
+	seq, err := GetBinlogNameSeq(binlogFileName)
 	if err != nil {
 		return binlogCoordinate{}, err
 	}
@@ -160,7 +160,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 
 	mysqlbinlogCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
 	mysqlCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
-	log.Debug("Start replay binlog commands",
+	log.Debug("Start replay binlog commands.",
 		zap.String("mysqlbinlog", mysqlbinlogCmd.String()),
 		zap.String("mysql", mysqlCmd.String()))
 
@@ -185,6 +185,8 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	if err := mysqlbinlogCmd.Wait(); err != nil {
 		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
 	}
+
+	log.Debug("Replayed binlog successfully.")
 	return nil
 }
 
@@ -241,7 +243,7 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 
 // getBinlogReplayList returns the path list of the binlog that need be replayed.
 func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
-	startBinlogSeq, err := getBinlogNameSeq(startBinlogInfo.FileName)
+	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name %q, error: %w", startBinlogInfo.FileName, err)
 	}
@@ -479,9 +481,9 @@ func getPITRDatabaseName(database string, suffixTs int64) string {
 }
 
 // Composes a database name that we use as the target database for swapping out the original database.
-// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_old".
+// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_del".
 func getPITROldDatabaseName(database string, suffixTs int64) string {
-	suffix := fmt.Sprintf("pitr_%d_old", suffixTs)
+	suffix := fmt.Sprintf("pitr_%d_del", suffixTs)
 	return getSafeName(database, suffix)
 }
 
@@ -537,7 +539,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 		} else if fileLocal.Size != fileOnServer.Size {
 			log.Debug("Deleting inconsistent local binlog file",
 				zap.String("path", path),
-				zap.Int64("sizeLocal", fileOnServer.Size),
+				zap.Int64("sizeLocal", fileLocal.Size),
 				zap.Int64("sizeOnServer", fileOnServer.Size))
 			if err := os.Remove(path); err != nil {
 				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
@@ -611,33 +613,21 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", resultFilePath))
 	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
-		_ = os.Remove(resultFilePath)
+		if err := os.Remove(resultFilePath); err != nil {
+			log.Error("Failed to get stat of the binlog file.", zap.String("path", resultFilePath), zap.Error(err))
+		}
 		return fmt.Errorf("cannot get file %q stat, error: %w", resultFilePath, err)
 	}
-	if isLast {
-		// Case 1: It's the last binlog file we need (contains the targetTs).
-		// If it's the last (incomplete) binlog file on the MySQL server, it will grow as new writes hit the database server.
-		// We just need to check that the downloaded file size >= queried size, so it contains the targetTs event.
-		if fileInfo.Size() < binlogFileToDownload.Size {
-			log.Error("Downloaded latest binlog file size is smaller than size queried on the MySQL server",
-				zap.String("binlog", binlogFileToDownload.Name),
-				zap.Int64("sizeInfo", binlogFileToDownload.Size),
-				zap.Int64("downloadedSize", fileInfo.Size()),
-			)
-			_ = os.Remove(resultFilePath)
-			return fmt.Errorf("downloaded latest binlog file %q size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
+	if !isLast && fileInfo.Size() != binlogFileToDownload.Size {
+		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server.",
+			zap.String("binlog", binlogFileToDownload.Name),
+			zap.Int64("sizeInfo", binlogFileToDownload.Size),
+			zap.Int64("downloadedSize", fileInfo.Size()),
+		)
+		if err := os.Remove(resultFilePath); err != nil {
+			log.Error("Failed to remove the inconsistent archived binlog file.", zap.String("path", resultFilePath), zap.Error(err))
 		}
-	} else {
-		// Case 2: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
-		if fileInfo.Size() != binlogFileToDownload.Size {
-			log.Error("Downloaded binlog file size is not equal to size queried on the MySQL server",
-				zap.String("binlog", binlogFileToDownload.Name),
-				zap.Int64("sizeInfo", binlogFileToDownload.Size),
-				zap.Int64("downloadedSize", fileInfo.Size()),
-			)
-			_ = os.Remove(resultFilePath)
-			return fmt.Errorf("downloaded binlog file %q size[%d] is not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
-		}
+		return fmt.Errorf("downloaded binlog file %q size %d is not equal to size %d queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 	}
 
 	return nil
@@ -716,7 +706,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		binlogFileTarget = &binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
 	log.Debug("Found potential binlog file containing targetTs", zap.String("binlogFile", binlogFileTarget.Name), zap.Int64("targetTs", targetTs), zap.Bool("isLastBinlogFile", isLastBinlogFile))
-	targetSeq, err := getBinlogNameSeq(binlogFileTarget.Name)
+	targetSeq, err := GetBinlogNameSeq(binlogFileTarget.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
 	}
@@ -868,9 +858,9 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 	return pos, nil
 }
 
-// getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
+// GetBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
 // For example: ("binlog.000001") => 1, ("binlog000001") => err.
-func getBinlogNameSeq(name string) (int64, error) {
+func GetBinlogNameSeq(name string) (int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
 		return 0, fmt.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))

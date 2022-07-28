@@ -26,7 +26,7 @@ type TaskCheckStatementAdvisorCompositeExecutor struct {
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
-func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	if taskCheckRun.Type != api.TaskCheckDatabaseStatementAdvise {
 		return nil, common.Errorf(common.Invalid, "invalid check statement advisor composite type: %v", taskCheckRun.Type)
 	}
@@ -67,7 +67,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, err
 	}
 
-	adviceList, err := advisor.SchemaReviewCheck(payload.Statement, policy, advisor.SQLReviewCheckContext{
+	adviceList, err := advisor.SchemaReviewCheck(payload.Statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   payload.Charset,
 		Collation: payload.Collation,
 		DbType:    dbType,

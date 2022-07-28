@@ -12,6 +12,11 @@ var (
 	_ parser.Parser = (*PostgreSQLParser)(nil)
 )
 
+const (
+	operatorLike    string = "~~"
+	operatorNotLike string = "!~~"
+)
+
 func init() {
 	parser.Register(parser.Postgres, &PostgreSQLParser{})
 }
@@ -21,7 +26,7 @@ type PostgreSQLParser struct {
 }
 
 // Parse implements the parser.Parser interface.
-func (p *PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, error) {
+func (*PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err

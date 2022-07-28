@@ -17,7 +17,7 @@ type SyntaxAdvisor struct {
 }
 
 // Check parses the given statement and checks for errors.
-func (adv *SyntaxAdvisor) Check(_ advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*SyntaxAdvisor) Check(_ advisor.Context, statement string) ([]advisor.Advice, error) {
 	var res []advisor.Advice
 	if _, errAdvice := parseStatement(statement); errAdvice != nil {
 		for _, advice := range errAdvice {

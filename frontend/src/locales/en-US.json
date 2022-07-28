@@ -204,7 +204,8 @@
     "pitr": "PITR",
     "fix": "Fix",
     "go-now": "Go now",
-    "sync-now": "Sync Now"
+    "sync-now": "Sync Now",
+    "show-help": "Show help"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -264,6 +265,16 @@
       "bb-task-database-schema-update-ghost-sync": "Sync data",
       "bb-task-database-schema-update-ghost-cutover": "Switch tables",
       "bb-task-database-schema-update-ghost-drop-original-table": "Drop original table"
+    },
+    "progress": {
+      "completed-units": "Completed {units}",
+      "total-units": "Total {units}",
+      "eta": "ETA",
+      "units": {
+        "unit": "units",
+        "row": "rows"
+      },
+      "counting": "Counting"
     }
   },
   "banner": {
@@ -827,7 +838,9 @@
       "target": "Restore to",
       "target-inplace": "In place",
       "target-new-db": "New database",
-      "will-overwrite-current-database": "Will overwrite current database"
+      "will-overwrite-current-database": "Will overwrite current database",
+      "restore-before-last-migration": "Restore to the point before last migration",
+      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}."
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
     "show-reserved-databases": "Show Bytebase reserved databases",

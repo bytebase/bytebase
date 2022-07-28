@@ -204,7 +204,8 @@
     "pitr": "PITR",
     "fix": "修复",
     "go-now": "立即前往",
-    "sync-now": "现在同步"
+    "sync-now": "现在同步",
+    "show-help": "查看帮助"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -264,6 +265,16 @@
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
       "bb-task-database-schema-update-ghost-drop-original-table": "删除原始表"
+    },
+    "progress": {
+      "completed-units": "已完成{units}",
+      "total-units": "总共{units}",
+      "eta": "预计完成时间",
+      "units": {
+        "unit": "单元数",
+        "row": "行数"
+      },
+      "counting": "统计中"
     }
   },
   "banner": {
@@ -828,7 +839,9 @@
       "target": "还原到",
       "target-inplace": "原数据库",
       "target-new-db": "新数据库",
-      "will-overwrite-current-database": "会覆盖现有数据库"
+      "will-overwrite-current-database": "会覆盖现有数据库",
+      "restore-before-last-migration": "恢复到上次变更历史之前",
+      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。{link}。"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
     "show-reserved-databases": "显示 Bytebase 保留的数据库",

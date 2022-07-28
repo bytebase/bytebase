@@ -261,7 +261,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		if queryErr != nil {
 			level = api.ActivityError
-			errMessage = err.Error()
+			errMessage = queryErr.Error()
 		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
 			Statement:    exec.Statement,
@@ -672,7 +672,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(statement, policy, advisor.SQLReviewCheckContext{
+	res, err := advisor.SchemaReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

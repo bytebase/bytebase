@@ -34,7 +34,7 @@ func (exec *DatabaseRestoreTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *DatabaseRestoreTaskExecutor) GetProgress() api.Progress {
+func (*DatabaseRestoreTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 
@@ -123,7 +123,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 }
 
 // restoreDatabase will restore the database from a backup.
-func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) error {
+func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) error {
 	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return err

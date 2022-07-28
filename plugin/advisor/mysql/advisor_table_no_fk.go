@@ -22,7 +22,7 @@ type TableNoFKAdvisor struct {
 }
 
 // Check checks table disallow foreign key.
-func (adv *TableNoFKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableNoFKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -90,6 +90,6 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (checker *tableNoFKChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*tableNoFKChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
