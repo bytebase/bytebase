@@ -19,6 +19,8 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/tests/fake"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -117,7 +119,7 @@ func TestPITR(t *testing.T) {
 	port := getTestPort(t.Name())
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, port)
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, port)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
