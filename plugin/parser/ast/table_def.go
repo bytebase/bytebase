@@ -1,9 +1,23 @@
 package ast
 
+// TableType is the type for table.
+type TableType int
+
+const (
+	// TableTypeNone is the type for table or view, which means we can't be sure of it.
+	TableTypeNone TableType = iota
+	// TableTypeBaseTable is the type for table.
+	TableTypeBaseTable
+	// TableTypeView is the type for view.
+	TableTypeView
+)
+
 // TableDef is the strcut for table.
 type TableDef struct {
 	node
 
+	// Type is the table type for table: base table or view.
+	Type TableType
 	// Database is the name of database.
 	// It's also called "catalog" in PostgreSQL.
 	Database string
