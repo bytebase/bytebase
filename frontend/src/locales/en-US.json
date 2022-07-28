@@ -265,6 +265,16 @@
       "bb-task-database-schema-update-ghost-sync": "Sync data",
       "bb-task-database-schema-update-ghost-cutover": "Switch tables",
       "bb-task-database-schema-update-ghost-drop-original-table": "Drop original table"
+    },
+    "progress": {
+      "completed-units": "Completed {units}",
+      "total-units": "Total {units}",
+      "eta": "ETA",
+      "units": {
+        "unit": "units",
+        "row": "rows"
+      },
+      "counting": "Counting"
     }
   },
   "banner": {
