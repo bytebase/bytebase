@@ -44,7 +44,7 @@ const shouldShowDemoBanner = computed(() => {
   const isFeatureDemo =
     demoName && !invalidFeatureDemoNameList.includes(demoName);
 
-  return isDemo && !isFeatureDemo;
+  return isDemo.value && !isFeatureDemo;
 });
 
 // For now, debug mode is a global setting and will affect all users.
@@ -55,10 +55,10 @@ const shouldShowDebugBanner = computed(() => {
 });
 
 const shouldShowSubscriptionBanner = computed(() => {
-  return isExpired || isTrialing;
+  return isExpired.value || isTrialing.value;
 });
 
 const shouldShowReadonlyBanner = computed(() => {
-  return !isDemo && isReadonly;
+  return !isDemo.value && isReadonly.value;
 });
 </script>
