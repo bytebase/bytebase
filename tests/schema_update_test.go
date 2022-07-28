@@ -301,9 +301,7 @@ func TestVCS(t *testing.T) {
 					CommitList: []gitlab.WebhookCommit{
 						{
 							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{
-								gitFile,
-							},
+							AddedList: []string{gitFile},
 						},
 					},
 				}
