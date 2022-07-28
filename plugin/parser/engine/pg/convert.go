@@ -198,6 +198,11 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 			}
 			return dropTable, nil
 		}
+	case *pgquery.Node_DropdbStmt:
+		return &ast.DropDatabaseStmt{
+			DatabaseName: in.DropdbStmt.Dbname,
+			IfExists:     in.DropdbStmt.MissingOk,
+		}, nil
 	case *pgquery.Node_SelectStmt:
 		return convertSelectStmt(in.SelectStmt)
 	}
@@ -463,8 +468,9 @@ func convertRangeVarToIndexTableName(in *pgquery.RangeVar) *ast.TableDef {
 
 func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) {
 	cons := &ast.ConstraintDef{
-		Name: in.Constraint.Conname,
-		Type: convertConstraintType(in.Constraint.Contype, in.Constraint.Indexname != ""),
+		Name:           in.Constraint.Conname,
+		Type:           convertConstraintType(in.Constraint.Contype, in.Constraint.Indexname != ""),
+		SkipValidation: in.Constraint.SkipValidation,
 	}
 
 	switch cons.Type {
@@ -498,6 +504,12 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 	case ast.ConstraintTypePrimaryUsingIndex, ast.ConstraintTypeUniqueUsingIndex:
 		cons.IndexName = in.Constraint.Indexname
+	case ast.ConstraintTypeCheck:
+		expression, _, _, err := convertExpressionNode(in.Constraint.RawExpr)
+		if err != nil {
+			return nil, err
+		}
+		cons.CheckExpression = expression
 	}
 
 	return cons, nil
@@ -522,6 +534,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeForeign
 	case pgquery.ConstrType_CONSTR_NOTNULL:
 		return ast.ConstraintTypeNotNull
+	case pgquery.ConstrType_CONSTR_CHECK:
+		return ast.ConstraintTypeCheck
 	}
 	return ast.ConstraintTypeUndefined
 }
