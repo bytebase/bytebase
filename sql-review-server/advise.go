@@ -40,7 +40,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Param  statement     query  string  true   "The SQL statement."
 // @Param  databaseType  query  string  true   "The database type."  Enums(MySQL, PostgreSQL, TiDB)
 // @Param  template      query  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.mysql.prod, bb.sql-review.mysql.dev)
-// @Param  config        query  string  false  "The SQL check config string in YAML format. Required if the template is not specified."
+// @Param  override      query  string  false  "The SQL check config override string in YAML format. Required if the template is not specified."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
@@ -62,7 +62,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	}
 
 	template := c.QueryParams().Get("template")
-	configOverrideYAMLStr := c.QueryParams().Get("config")
+	configOverrideYAMLStr := c.QueryParams().Get("override")
 	if template == "" && configOverrideYAMLStr == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required template or config")
 	}
@@ -70,7 +70,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	ruleOverride := &advisor.SQLReviewConfigOverride{}
 	if configOverrideYAMLStr != "" {
 		if err := yaml.Unmarshal([]byte(configOverrideYAMLStr), ruleOverride); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid config %v", configOverrideYAMLStr)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid config: %v", configOverrideYAMLStr)).SetInternal(err)
 		}
 		if template != "" && string(ruleOverride.Template) != template {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The config should extend from the same template. Found %s in config but also get %s template in request.", ruleOverride.Template, template))
@@ -81,7 +81,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 
 	ruleList, err := advisor.MergeSQLReviewRules(ruleOverride)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot merge the config for template %s", ruleOverride.Template)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot merge the config for template: %s", ruleOverride.Template)).SetInternal(err)
 	}
 
 	ctx := c.Request().Context()

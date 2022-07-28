@@ -70,8 +70,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "The SQL check config string in YAML format. Required if the template is not specified.",
-                        "name": "config",
+                        "description": "The SQL check config override string in YAML format. Required if the template is not specified.",
+                        "name": "override",
                         "in": "query"
                     }
                 ],

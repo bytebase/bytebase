@@ -59,10 +59,10 @@ paths:
         in: query
         name: template
         type: string
-      - description: The SQL check config string in YAML format. Required if the template
-          is not specified.
+      - description: The SQL check config override string in YAML format. Required
+          if the template is not specified.
         in: query
-        name: config
+        name: override
         type: string
       produces:
       - application/json
