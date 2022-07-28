@@ -265,7 +265,7 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 				return nil, nil, nil, parser.NewConvertErrorf("expected String or AStar but found %t", in.ColumnRef.Fields[0].Node)
 			}
 		default:
-			return nil, nil, nil, parser.NewConvertErrorf("failed to convert ColumnRef: %v", in)
+			return nil, nil, nil, parser.NewConvertErrorf("failed to convert ColumnRef, column name contains unexpected components: %v", in)
 		}
 		return columnName, nil, nil, nil
 	case *pgquery.Node_FuncCall:
