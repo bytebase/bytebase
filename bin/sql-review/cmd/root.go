@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/bytebase/bytebase/common"
@@ -63,10 +61,9 @@ ________________________________________________________________________________
 var (
 	flags struct {
 		// Used for Bytebase command line config
-		host    string
-		port    int
-		dataDir string
-		debug   bool
+		host  string
+		port  int
+		debug bool
 	}
 	rootCmd = &cobra.Command{
 		Use:   "sql-review",
@@ -87,33 +84,12 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
 	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
 
 // -----------------------------------Main Entry Point---------------------------------------------
-
-func checkDataDir() error {
-	// Convert to absolute path if relative path is supplied.
-	if !filepath.IsAbs(flags.dataDir) {
-		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + flags.dataDir)
-		if err != nil {
-			return err
-		}
-		flags.dataDir = absDir
-	}
-
-	// Trim trailing / in case user supplies
-	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
-
-	if _, err := os.Stat(flags.dataDir); err != nil {
-		return fmt.Errorf("unable to access --data %s, %w", flags.dataDir, err)
-	}
-
-	return nil
-}
 
 func start() {
 	if flags.debug {
@@ -124,10 +100,6 @@ func start() {
 	// check flags
 	if !common.HasPrefixes(flags.host, "http://", "https://") {
 		log.Error(fmt.Sprintf("--host %s must start with http:// or https://", flags.host))
-		return
-	}
-	if err := checkDataDir(); err != nil {
-		log.Error(err.Error())
 		return
 	}
 
@@ -152,7 +124,7 @@ func start() {
 
 	s, err := server.NewServer(ctx, activeProfile)
 	if err != nil {
-		fmt.Printf("cannot new server, error: %v\n", err)
+		fmt.Printf("Cannot new server, error: %v\n", err)
 		return
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", activeProfile.Version, activeProfile.BackendHost, activeProfile.BackendPort))
