@@ -459,55 +459,13 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
-	switch instance.Engine {
-	case db.ClickHouse:
-		// ClickHouse does not support character set and collation at the database level.
-		if c.CharacterSet != "" {
-			return nil, echo.NewHTTPError(
-				http.StatusBadRequest,
-				fmt.Sprintf("Failed to create issue, ClickHouse does not support character set, got %s\n", c.CharacterSet),
-			)
-		}
-		if c.Collation != "" {
-			return nil, echo.NewHTTPError(
-				http.StatusBadRequest,
-				fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", c.Collation),
-			)
-		}
-	case db.Snowflake:
-		if c.CharacterSet != "" {
-			return nil, echo.NewHTTPError(
-				http.StatusBadRequest,
-				fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", c.CharacterSet),
-			)
-		}
-		if c.Collation != "" {
-			return nil, echo.NewHTTPError(
-				http.StatusBadRequest,
-				fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", c.Collation),
-			)
-		}
+	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
+		return nil, err
+	}
+
+	if instance.Engine == db.Snowflake {
 		// Snowflake needs to use upper case of DatabaseName.
 		c.DatabaseName = strings.ToUpper(c.DatabaseName)
-	case db.Postgres:
-		if c.Owner == "" {
-			return nil, echo.NewHTTPError(
-				http.StatusBadRequest,
-				"Failed to create issue, database owner is required for postgres",
-			)
-		}
-	case db.SQLite:
-		// no-op.
-	default:
-		if c.CharacterSet == "" {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
-		}
-		// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
-		// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
-		// install it.
-		if instance.Engine != db.Postgres && c.Collation == "" {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
-		}
 	}
 
 	// Validate the labels. Labels are set upon task completion.
@@ -1033,6 +991,44 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		{FromIndex: 0, ToIndex: 1},
 	}
 	return taskCreateList, taskIndexDAGList, nil
+}
+
+// checkCharacterSetCollationOwner checks if the charactes set, collation and owner are legal according to the dbType.
+func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, owner string) error {
+	switch dbType {
+	case db.ClickHouse:
+		// ClickHouse does not support character set and collation at the database level.
+		if characterSet != "" {
+			return fmt.Errorf("ClickHouse does not support character set, but got %s", characterSet)
+		}
+		if collation != "" {
+			return fmt.Errorf("ClickHouse does not support collation, but got %s", collation)
+		}
+	case db.Snowflake:
+		if characterSet != "" {
+			return fmt.Errorf("Snowflake does not support character set, but got %s", characterSet)
+		}
+		if collation != "" {
+			return fmt.Errorf("Snowflake does not support collation, but got %s", collation)
+		}
+	case db.Postgres:
+		if owner == "" {
+			return fmt.Errorf("database owner is required for PostgreSQL")
+		}
+	case db.SQLite:
+		// no-op.
+	default:
+		if characterSet == "" {
+			return fmt.Errorf("character set missing for %s", string(dbType))
+		}
+		// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
+		// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
+		// install it.
+		if collation == "" {
+			return fmt.Errorf("collation missing for %s", string(dbType))
+		}
+	}
+	return nil
 }
 
 func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, schema string) (string, string) {
