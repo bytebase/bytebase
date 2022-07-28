@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/bytebase/bytebase/docs/sql-review-service" // initial the swagger doc
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/common"
