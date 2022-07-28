@@ -19,10 +19,10 @@ import (
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
 		api.TaskPendingApproval: {api.TaskPending},
-		api.TaskPending:         {api.TaskRunning},
+		api.TaskPending:         {api.TaskRunning, api.TaskPendingApproval},
 		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskRunning},
+		api.TaskFailed:          {api.TaskRunning, api.TaskPendingApproval},
 		api.TaskCanceled:        {api.TaskRunning},
 	}
 )
@@ -328,12 +328,12 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	// create an activity and trigger task check for statement update
 	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		if oldStatement != newStatement {
-			// create an activity
 			if issue == nil {
 				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 				return nil, echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
 			}
 
+			// create a task statement update activity
 			payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
 				TaskID:       taskPatched.ID,
 				OldStatement: oldStatement,
@@ -344,18 +344,30 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
 			}
-			activityCreate := &api.ActivityCreate{
+
+			if _, err = s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
 				CreatorID:   taskPatched.CreatorID,
 				ContainerID: issue.ID,
 				Type:        api.ActivityPipelineTaskStatementUpdate,
 				Payload:     string(payload),
 				Level:       api.ActivityInfo,
-			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
+			}, &ActivityMeta{
 				issue: issue,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+			}
+
+			// dismiss stale reviews and transfer the status to PendingApproval.
+			if taskPatched.Status != api.TaskPendingApproval {
+				t, err := s.changeTaskStatusWithPatch(ctx, taskPatched, &api.TaskStatusPatch{
+					ID:        taskPatch.ID,
+					UpdaterID: taskPatch.UpdaterID,
+					Status:    api.TaskPendingApproval,
+				})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+				}
+				taskPatched = t
 			}
 
 			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
@@ -490,6 +502,7 @@ func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, 
 	return nil
 }
 
+// TODO(p0ny): remove this function because it adds yet another layer of indirection when traveling in our codebase while doesn't seem useful to me.
 func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
 	taskStatusPatch := &api.TaskStatusPatch{
 		ID:        task.ID,
