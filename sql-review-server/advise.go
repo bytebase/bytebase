@@ -6,10 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
 )
@@ -55,16 +53,12 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	if databaseType == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
 	}
-	dbType := db.Type(strings.ToUpper(databaseType))
-	advisorDBType, err := api.ConvertToAdvisorDBType(dbType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
-	}
+	advisorDBType := advisor.DBType(strings.ToUpper(databaseType))
 
 	template := c.QueryParams().Get("template")
 	configOverrideYAMLStr := c.QueryParams().Get("override")
 	if template == "" && configOverrideYAMLStr == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing required template or config")
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing required template or override")
 	}
 
 	ruleOverride := &advisor.SQLReviewConfigOverride{}
@@ -73,7 +67,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid config: %v", configOverrideYAMLStr)).SetInternal(err)
 		}
 		if template != "" && string(ruleOverride.Template) != template {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The config should extend from the same template. Found %s in config but also get %s template in request.", ruleOverride.Template, template))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The config override should extend from the same template. Found %s in override but also get %s template in request.", ruleOverride.Template, template))
 		}
 	} else {
 		ruleOverride.Template = advisor.SQLReviewTemplateID(template)
