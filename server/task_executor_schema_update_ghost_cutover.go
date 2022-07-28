@@ -70,7 +70,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, socketFilename, postponeFilename, sharedGhost.migrator, sharedGhost.errCh)
 }
 
-func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, socketFilename, postponeFilename string, migrator *logic.Migrator, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, socketFilename, postponeFilename string, _ *logic.Migrator, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 
 	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
