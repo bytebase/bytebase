@@ -625,7 +625,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 		if err := os.Remove(resultFilePath); err != nil {
 			log.Error("Failed to remove the inconsistent archived binlog file.", zap.String("path", resultFilePath), zap.Error(err))
 		}
-		return fmt.Errorf("downloaded binlog file %q size[%d] is not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
+		return fmt.Errorf("downloaded binlog file %q size %d is not equal to size %d queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 	}
 
 	return nil
