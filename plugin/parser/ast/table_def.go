@@ -4,8 +4,8 @@ package ast
 type TableType int
 
 const (
-	// TableTypeNone is the type for table or view, which means we can't be sure of it.
-	TableTypeNone TableType = iota
+	// TableTypeUnknown is the type for table or view, which means we can't be sure of it.
+	TableTypeUnknown TableType = iota
 	// TableTypeBaseTable is the type for table.
 	TableTypeBaseTable
 	// TableTypeView is the type for view.
