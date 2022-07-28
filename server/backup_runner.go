@@ -113,7 +113,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 
 	for _, instance := range instanceList {
 		if instance.Engine != db.MySQL {
-			log.Error("Instance is not a MySQL instance", zap.String("instance", instance.Name))
+			log.Debug("Instance is not a MySQL instance. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
@@ -122,7 +122,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
-			log.Info("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
+			log.Debug("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
