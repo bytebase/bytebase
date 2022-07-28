@@ -72,7 +72,6 @@ import type {
 import { activeTask, activeTaskInStage, taskSlug } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseStore } from "@/store";
-import { BBProgressPie } from "@/bbkit";
 import PipelineStageList from "./PipelineStageList.vue";
 import TaskProgressPie from "./TaskProgressPie.vue";
 import { useIssueLogic } from "./logic";

@@ -65,6 +65,7 @@ import { computed, PropType } from "vue";
 import { NPopover } from "naive-ui";
 import type { Task, TaskProgress } from "@/types";
 import { empty } from "@/types";
+import { BBProgressPie } from "@/bbkit";
 
 type ProgressSummary = TaskProgress & {
   percent: number;
