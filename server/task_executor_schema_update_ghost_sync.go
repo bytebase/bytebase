@@ -166,12 +166,10 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 }
 
 func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	var (
-		syncDone     = make(chan struct{})
-		syncError    = make(chan error)
-		instance     = task.Instance
-		databaseName = task.Database.Name
-	)
+	syncDone := make(chan struct{})
+	syncError := make(chan error)
+	instance := task.Instance
+	databaseName := task.Database.Name
 
 	statement = strings.TrimSpace(statement)
 
