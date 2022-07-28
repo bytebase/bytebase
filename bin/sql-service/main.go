@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/bytebase/bytebase/bin/sql-review/cmd"
+	"github.com/bytebase/bytebase/bin/sql-service/cmd"
 )
 
 func main() {

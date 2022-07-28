@@ -19,9 +19,9 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version of Bytebase SQL Review",
+	Short: "Print the version of Bytebase SQL service",
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Printf("Bytebase SQL Review version: %s\n", version)
+		fmt.Printf("Bytebase SQL service version: %s\n", version)
 		fmt.Printf("Golang version: %s\n", goversion)
 		fmt.Printf("Git commit hash: %s\n", gitcommit)
 		fmt.Printf("Built on: %s\n", buildtime)

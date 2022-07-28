@@ -53,7 +53,10 @@ func (*Server) sqlCheckController(c echo.Context) error {
 	if databaseType == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
 	}
-	advisorDBType := advisor.DBType(strings.ToUpper(databaseType))
+	advisorDBType, err := convertToAdvisorDBType(strings.ToUpper(databaseType))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", databaseType))
+	}
 
 	template := c.QueryParams().Get("template")
 	configOverrideYAMLStr := c.QueryParams().Get("override")
@@ -91,6 +94,19 @@ func (*Server) sqlCheckController(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, adviceList)
+}
+
+func convertToAdvisorDBType(dbType string) (advisor.DBType, error) {
+	switch dbType {
+	case string(advisor.MySQL):
+		return advisor.MySQL, nil
+	case string(advisor.Postgres):
+		return advisor.Postgres, nil
+	case string(advisor.TiDB):
+		return advisor.TiDB, nil
+	}
+
+	return "", fmt.Errorf("unsupported db type %s for advisor", dbType)
 }
 
 func sqlCheck(
