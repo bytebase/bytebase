@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/bytebase/bytebase/docs/sql-review-service" // initial the swagger doc
+	_ "github.com/bytebase/bytebase/docs/sqlreviewservice" // initial the swagger doc
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/common"
@@ -26,7 +26,7 @@ type Server struct {
 }
 
 // Use following cmd to generate swagger doc
-// swag init -g ./server.go -d ./server --output docs/sql-review-service --parseDependency
+// swag init -g ./server.go -d ./sql-review-server --output docs/sqlreviewservice --parseDependency
 
 // @title Bytebase SQL Review Service
 // @version 1.0

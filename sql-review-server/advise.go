@@ -39,7 +39,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Produce  json
 // @Param  statement     query  string  true   "The SQL statement."
 // @Param  databaseType  query  string  true   "The database type."  Enums(MySQL, PostgreSQL, TiDB)
-// @Param  template      query  string  false  "The SQL check template id. Required if the config is not specified." Enums(sql-review.mysql.prod, sql-review.mysql.dev)
+// @Param  template      query  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.mysql.prod, bb.sql-review.mysql.dev)
 // @Param  config        query  string  false  "The SQL check config string in YAML format. Required if the template is not specified."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
@@ -81,7 +81,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 
 	ruleList, err := advisor.MergeSQLReviewRules(ruleOverride)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot merge config %v", configOverrideYAMLStr)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot merge the config for template %s", ruleOverride.Template)).SetInternal(err)
 	}
 
 	ctx := c.Request().Context()

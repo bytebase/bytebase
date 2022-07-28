@@ -60,8 +60,8 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "sql-review.mysql.prod",
-                            "sql-review.mysql.dev"
+                            "bb.sql-review.mysql.prod",
+                            "bb.sql-review.mysql.dev"
                         ],
                         "type": "string",
                         "description": "The SQL check template id. Required if the config is not specified.",
@@ -132,14 +132,14 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:     "1.0",
-	Host:        "localhost:8081",
-	BasePath:    "/v1/",
-	Schemes:     []string{ "http" },
-	Title:       "Bytebase SQL Review Service",
-	Description: "The OpenAPI for Bytebase SQL Review Service.",
+	Version:          "1.0",
+	Host:             "localhost:8081",
+	BasePath:         "/v1/",
+	Schemes:          []string{"http"},
+	Title:            "Bytebase SQL Review Service",
+	Description:      "The OpenAPI for Bytebase SQL Review Service.",
 	InfoInstanceName: "swagger",
-	SwaggerTemplate: docTemplate,
+	SwaggerTemplate:  docTemplate,
 }
 
 func init() {
