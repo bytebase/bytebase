@@ -83,7 +83,7 @@
       </template>
 
       <template v-else>
-        <div class="w-64 space-y-4">
+        <div class="w-[16.5rem] space-y-4">
           <div class="space-y-2">
             <label class="textlabel w-full flex items-baseline">
               <span>{{ $t("database.pitr.point-in-time") }}</span>
@@ -95,25 +95,25 @@
               type="datetime"
               :disabled="state.mode === 'LAST_MIGRATION'"
             />
-            <span v-if="pitrTimestampError" class="text-sm text-red-600">
+            <div v-if="pitrTimestampError" class="text-sm text-red-600">
               {{ pitrTimestampError }}
-            </span>
+            </div>
           </div>
 
           <div class="space-y-2">
             <label class="textlabel w-full flex flex-col gap-1">
               {{ $t("database.pitr.target") }}
             </label>
-            <div class="flex items-center gap-2 textlabel">
+            <div class="flex items-center gap-3 textlabel">
               <label class="flex items-center">
                 <input
                   type="radio"
                   :checked="state.target === 'IN-PLACE'"
                   @input="state.target = 'IN-PLACE'"
                 />
-                <span class="ml-2">{{
-                  $t("database.pitr.target-inplace")
-                }}</span>
+                <span class="ml-2">
+                  {{ $t("database.pitr.target-inplace") }}
+                </span>
                 <NTooltip>
                   <template #trigger>
                     <heroicons-outline:exclamation-circle
