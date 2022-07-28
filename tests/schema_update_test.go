@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/tests/fake"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -22,7 +23,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -279,7 +280,7 @@ func TestVCS_GitLab(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -293,8 +294,8 @@ func TestVCS_GitLab(t *testing.T) {
 	vcs, err := ctl.createVCS(api.VCSCreate{
 		Name:          "TestVCS",
 		Type:          vcs.GitLabSelfHost,
-		InstanceURL:   ctl.gitURL,
-		APIURL:        ctl.gitAPIURL,
+		InstanceURL:   ctl.vcsURL,
+		APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
 		ApplicationID: applicationID,
 		Secret:        applicationSecret,
 	})
@@ -313,14 +314,14 @@ func TestVCS_GitLab(t *testing.T) {
 	refreshToken := "refreshToken1"
 	gitlabProjectID := 121
 	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// create a vcsProvider project.
+	// Create a GitLab project.
 	ctl.vcsProvider.CreateRepository(gitlabProjectIDStr)
 	_, err = ctl.createRepository(api.RepositoryCreate{
 		VCSID:              vcs.ID,
 		ProjectID:          project.ID,
 		Name:               "Test Repository",
 		FullPath:           repositoryPath,
-		WebURL:             fmt.Sprintf("%s/%s", ctl.gitURL, repositoryPath),
+		WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repositoryPath),
 		BranchFilter:       "feature/foo",
 		BaseDirectory:      "bbtest",
 		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
