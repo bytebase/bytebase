@@ -16,6 +16,6 @@ func activeProfile() server.Profile {
 		Debug:               flags.debug,
 		Version:             version,
 		GitCommit:           gitcommit,
-		MetricConnectionKey: "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT",
+		MetricConnectionKey: "",
 	}
 }
