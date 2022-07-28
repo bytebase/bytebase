@@ -127,8 +127,8 @@ func getTestPort(testName string) int {
 		"TestTenantVCSDatabaseNameTemplate_GitLab",
 		"TestTenantVCSDatabaseNameTemplate_GitHub",
 		"TestBootWithExternalPg",
-		"TestSheetVCS_GitLab",
-		"TestSheetVCS_GitHub",
+		"TestSheetVCS/GitLab",
+		"TestSheetVCS/GitHub",
 		"TestPrepare",
 
 		// PITR related cases

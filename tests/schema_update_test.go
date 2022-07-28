@@ -361,16 +361,14 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			applicationID := "testApplicationID"
-			applicationSecret := "testApplicationSecret"
 			vcs, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
 					InstanceURL:   ctl.vcsURL,
 					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationID: applicationID,
-					Secret:        applicationSecret,
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
 				},
 			)
 			a.NoError(err)
@@ -385,7 +383,6 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Create a repository.
-			repositoryWebURL := fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath)
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
@@ -393,7 +390,7 @@ func TestVCS(t *testing.T) {
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
-					WebURL:             repositoryWebURL,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
 					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
