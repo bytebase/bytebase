@@ -168,42 +168,19 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	syncError := make(chan error)
-
-	go func() {
-		statement = strings.TrimSpace(statement)
-		err := exec.executeGhost(task, statement, syncDone)
-		if err != nil {
-			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
-			// There could be an error in gh-ost migration after the syncDone channel returns which causes the outer function returns, too.
-			// Then there's no consumer of syncError, so we must make sending to syncError non-blocking.
-			select {
-			case syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err):
-			default:
-			}
-			return
-		}
-	}()
-
-	select {
-	case <-syncDone:
-		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
-	case err := <-syncError:
-		return true, nil, err
-	}
-}
-
-func (exec *SchemaUpdateGhostSyncTaskExecutor) executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) error {
 	instance := task.Instance
 	databaseName := task.Database.Name
 
+	statement = strings.TrimSpace(statement)
+
 	tableName, err := getTableNameFromStatement(statement)
 	if err != nil {
-		return err
+		return true, nil, err
 	}
 
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{
@@ -223,7 +200,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) executeGhost(task *api.Task, stat
 		serverID: 10000000 + uint(task.ID),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to init migrationContext for gh-ost, error: %w", err)
+		return true, nil, fmt.Errorf("failed to init migrationContext for gh-ost, error: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -259,8 +236,24 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) executeGhost(task *api.Task, stat
 		}
 	}(ctx)
 
-	if err = migrator.Migrate(); err != nil {
-		return fmt.Errorf("failed to run gh-ost, error: %w", err)
+	go func() {
+		if err := migrator.Migrate(); err != nil {
+			log.Error("failed to run gh-ost migration", zap.Error(err))
+			// `migrator.Migrate` can return an error.
+			// 1. If the error is returned before closing `syncDone`,`runGhostMigration` will receive from `syncError`.
+			// 2. If it is returned after `syncDone` is closed, `runGhostMigration` would have received from `syncDone` and returned,
+			// and there's no consumer for `syncError`, so we must send to `syncError` without blocking.
+			select {
+			case syncError <- fmt.Errorf("failed to run gh-ost migration, error: %w", err):
+			default:
+			}
+		}
+	}()
+
+	select {
+	case <-syncDone:
+		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
+	case err := <-syncError:
+		return true, nil, err
 	}
-	return nil
 }
