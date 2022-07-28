@@ -165,7 +165,7 @@
   },
   {
     "routeName": "workspace.issue.detail",
-    "helpName": ""
+    "helpName": "help.issue.detail"
   },
   {
     "routeName": "sql-editor",

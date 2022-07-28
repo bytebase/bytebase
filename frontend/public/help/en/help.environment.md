@@ -9,4 +9,5 @@ title: What is 'Environment' ?
 - Database instances are created under a particular environment.
 
 #### Learn more
+
 - [Set up Environments](https://www.bytebase.com/docs/get-started/configure-workspace/set-up-environments)
