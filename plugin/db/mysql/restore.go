@@ -160,7 +160,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 
 	mysqlbinlogCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
 	mysqlCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
-	log.Debug("Start replay binlog commands",
+	log.Debug("Start replay binlog commands.",
 		zap.String("mysqlbinlog", mysqlbinlogCmd.String()),
 		zap.String("mysql", mysqlCmd.String()))
 
@@ -185,6 +185,8 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	if err := mysqlbinlogCmd.Wait(); err != nil {
 		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
 	}
+
+	log.Debug("Replayed binlog successfully.")
 	return nil
 }
 
