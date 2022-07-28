@@ -11,7 +11,11 @@
     @click-row="clickDatabase"
   >
     <template #body="{ rowData: database }: { rowData: Database }">
-      <BBTableCell :left-padding="4" class="w-[25%]">
+      <BBTableCell v-if="showSelectionColumn" class="w-[1%]">
+        <!-- width: 1% means as narrow as possible -->
+        <slot name="selection" :database="database" />
+      </BBTableCell>
+      <BBTableCell :left-padding="showSelectionColumn ? 2 : 4" class="w-[25%]">
         <div class="flex items-center space-x-2 tooltip-wrapper">
           <span>{{ database.name }}</span>
           <BBBadge
@@ -163,6 +167,10 @@ const props = defineProps({
   singleInstance: {
     default: true,
     type: Boolean,
+  },
+  showSelectionColumn: {
+    type: Boolean,
+    default: false,
   },
   rowClickable: {
     default: true,
@@ -339,6 +347,10 @@ const columnList = computed(() => {
     list = cloneDeep(list);
     list.push({ title: t("sql-editor.self") });
   }
+
+  if (props.showSelectionColumn) {
+    list.unshift({ title: "" });
+  }
   return list;
 });
 
@@ -396,7 +408,7 @@ const clickDatabase = (section: number, row: number, e: MouseEvent) => {
 
 function isPITRDatabase(db: Database): boolean {
   const { name } = db;
-  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_old
-  return !!name.match(/^(.+?)_pitr_(\d+)(_old)?$/);
+  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
+  return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
 }
 </script>

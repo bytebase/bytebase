@@ -14,6 +14,8 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/tests/fake"
+
 	ghostsql "github.com/github/gh-ost/go/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
@@ -69,7 +71,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()

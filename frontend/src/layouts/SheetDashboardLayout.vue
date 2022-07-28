@@ -49,7 +49,7 @@ const actuatorStore = useActuatorStore();
 const subscriptionStore = useSubscriptionStore();
 
 const ping = () => {
-  actuatorStore.fetchInfo().then((info: ServerInfo) => {
+  actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

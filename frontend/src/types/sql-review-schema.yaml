@@ -1,0 +1,137 @@
+categoryList:
+  - ENGINE
+  - NAMING
+  - STATEMENT
+  - TABLE
+  - SCHEMA
+  - COLUMN
+  - DATABASE
+ruleList:
+  - type: engine.mysql.use-innodb
+    category: ENGINE
+    engine: MYSQL
+    componentList: []
+  - type: table.require-pk
+    category: TABLE
+    engine: COMMON
+    componentList: []
+  - type: table.no-foreign-key
+    category: TABLE
+    engine: COMMON
+    componentList: []
+  - type: table.drop-naming-convention
+    category: TABLE
+    engine: COMMON
+    componentList:
+      - key: format
+        payload:
+          type: STRING
+          default: _del$
+  - type: statement.select.no-select-all
+    category: STATEMENT
+    engine: COMMON
+    componentList: []
+  - type: statement.where.require
+    category: STATEMENT
+    engine: COMMON
+    componentList: []
+  - type: statement.where.no-leading-wildcard-like
+    category: STATEMENT
+    engine: COMMON
+    componentList: []
+  - type: naming.table
+    category: NAMING
+    engine: COMMON
+    componentList:
+      - key: format
+        payload:
+          type: STRING
+          default: "^[a-z]+(_[a-z]+)*$"
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
+  - type: naming.column
+    category: NAMING
+    engine: COMMON
+    componentList:
+      - key: format
+        payload:
+          type: STRING
+          default: "^[a-z]+(_[a-z]+)*$"
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
+  - type: naming.index.uk
+    category: NAMING
+    engine: COMMON
+    componentList:
+      - key: format
+        payload:
+          type: TEMPLATE
+          default: "^uk_{{table}}_{{column_list}}$"
+          templateList:
+            - table
+            - column_list
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
+  - type: naming.index.idx
+    category: NAMING
+    engine: COMMON
+    componentList:
+      - key: format
+        payload:
+          type: TEMPLATE
+          default: "^idx_{{table}}_{{column_list}}$"
+          templateList:
+            - table
+            - column_list
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
+  - type: naming.index.fk
+    category: NAMING
+    engine: COMMON
+    componentList:
+      - key: format
+        payload:
+          type: TEMPLATE
+          default: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$"
+          templateList:
+            - referencing_table
+            - referencing_column
+            - referenced_table
+            - referenced_column
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
+  - type: column.required
+    category: COLUMN
+    engine: COMMON
+    componentList:
+      - key: columnList
+        payload:
+          type: STRING_ARRAY
+          default:
+            - id
+            - created_ts
+            - updated_ts
+            - creator_id
+            - updater_id
+  - type: column.no-null
+    category: COLUMN
+    engine: COMMON
+    componentList: []
+  - type: schema.backward-compatibility
+    category: SCHEMA
+    engine: MYSQL
+    componentList: []
+  - type: database.drop-empty-database
+    category: DATABASE
+    engine: COMMON
+    componentList: []

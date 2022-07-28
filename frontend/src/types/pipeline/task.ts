@@ -104,6 +104,18 @@ export type TaskPayload =
   | TaskDatabasePITRCutoverPayload
   | TaskDatabasePITRDeletePayload;
 
+export type TaskProgressPayload = {
+  comment: string;
+};
+
+export type TaskProgress = {
+  totalUnit: number;
+  completedUnit: number;
+  createdTs: number;
+  updatedTs: number;
+  payload?: TaskProgressPayload; // JSON encoded
+};
+
 export type Task = {
   id: TaskId;
 
@@ -131,6 +143,9 @@ export type Task = {
 
   // Task DAG
   blockedBy: Task[];
+
+  // Task progress
+  progress: TaskProgress;
 };
 
 export type TaskCreate = {
@@ -153,15 +168,14 @@ export type TaskPatch = {
   statement?: string;
   earliestAllowedTs?: number;
 
-  updatedTs: number;
+  updatedTs?: number;
 };
-
 export type TaskStatusPatch = {
   // Domain specific fields
   status: TaskStatus;
   comment?: string;
 
-  updatedTs: number;
+  updatedTs?: number;
 };
 
 // TaskRun is one run of a particular task

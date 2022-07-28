@@ -138,6 +138,6 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *SchemaUpdateGhostCutoverTaskExecutor) GetProgress() api.Progress {
+func (*SchemaUpdateGhostCutoverTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }

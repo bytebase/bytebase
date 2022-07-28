@@ -35,6 +35,7 @@ import dataSourceType from "./directives/data-source-type";
 import App from "./App.vue";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
+import "./assets/css/github-markdown-style.css";
 import "./plugins/demo/style.css";
 
 console.debug("dev:", isDev());
@@ -140,7 +141,7 @@ app
 // We use finally because we always want to mount the app regardless of the error.
 const initActuator = () => {
   const actuatorStore = useActuatorStore();
-  return actuatorStore.fetchInfo();
+  return actuatorStore.fetchServerInfo();
 };
 const initSubscription = () => {
   const subscriptionStore = useSubscriptionStore();

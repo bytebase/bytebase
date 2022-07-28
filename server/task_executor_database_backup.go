@@ -29,7 +29,7 @@ func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *DatabaseBackupTaskExecutor) GetProgress() api.Progress {
+func (*DatabaseBackupTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 
@@ -80,7 +80,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
 	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return "", err

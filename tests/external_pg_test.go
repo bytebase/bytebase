@@ -9,6 +9,8 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/tests/fake"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,7 +66,7 @@ func TestBootWithExternalPg(t *testing.T) {
 
 	ctl := &controller{}
 	dataTmpDir := t.TempDir()
-	err = ctl.StartServerWithExternalPg(ctx, dataTmpDir, serverPort, externalPg.pgUser, externalPg.pgURL)
+	err = ctl.StartServerWithExternalPg(ctx, dataTmpDir, fake.NewGitLab, serverPort, externalPg.pgUser, externalPg.pgURL)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 }

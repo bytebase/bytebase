@@ -128,6 +128,9 @@ watch(
     const uiStateStore = useUIStateStore();
     const helpStore = useHelpStore();
 
+    // Hide opened help drawer if route changed.
+    helpStore.exitHelp();
+
     if (!state.RouteMapList) {
       const res = await fetch("/help/routeMapList.json");
       state.RouteMapList = await res.json();
@@ -139,13 +142,17 @@ watch(
       state.helpTimer = null;
     }
 
-    const helpName = state.RouteMapList?.find(
+    const helpId = state.RouteMapList?.find(
       (pair) => pair.routeName === routeName
     )?.helpName;
 
-    if (helpName && !uiStateStore.getIntroStateByKey(`${helpName}`)) {
+    if (helpId && !uiStateStore.getIntroStateByKey(`${helpId}`)) {
       state.helpTimer = window.setTimeout(() => {
-        helpStore.showHelp(helpName, true);
+        helpStore.showHelp(helpId, true);
+        uiStateStore.saveIntroStateByKey({
+          key: `${helpId}`,
+          newState: true,
+        });
       }, 1000);
     }
   }

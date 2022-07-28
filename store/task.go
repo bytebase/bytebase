@@ -378,7 +378,7 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 }
 
 // createTaskImpl creates a new task.
-func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
+func (*Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
 	var row *sql.Row
 
 	if create.Payload == "" {
@@ -573,7 +573,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 }
 
 // patchTaskImpl updates a task by ID. Returns the new state of the task after update.
-func (s *Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatch) (*taskRaw, error) {
+func (*Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatch) (*taskRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.DatabaseID; v != nil {
@@ -640,21 +640,18 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task ID not found: %d", patch.ID)}
 	}
 
-	if !(taskRawObj.Status == api.TaskPendingApproval && patch.Status == api.TaskPending) {
-		taskRunFind := &api.TaskRunFind{
-			TaskID: &taskRawObj.ID,
-			StatusList: &[]api.TaskRunStatus{
-				api.TaskRunRunning,
-			},
-		}
-		taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
-		if err != nil {
-			return nil, err
-		}
-		if taskRunRaw == nil {
-			if patch.Status != api.TaskRunning {
-				return nil, fmt.Errorf("no applicable running task to change status")
-			}
+	taskRunFind := &api.TaskRunFind{
+		TaskID: &taskRawObj.ID,
+		StatusList: &[]api.TaskRunStatus{
+			api.TaskRunRunning,
+		},
+	}
+	taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
+	if err != nil {
+		return nil, err
+	}
+	if taskRunRaw == nil {
+		if patch.Status == api.TaskRunning {
 			taskRunCreate := &api.TaskRunCreate{
 				CreatorID: patch.UpdaterID,
 				TaskID:    taskRawObj.ID,
@@ -662,34 +659,35 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 				Type:      taskRawObj.Type,
 				Payload:   taskRawObj.Payload,
 			}
+			// insert a running taskRun
 			if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
 				return nil, err
 			}
-		} else {
-			if patch.Status == api.TaskRunning {
-				return nil, fmt.Errorf("task is already running: %v", taskRawObj.Name)
-			}
-			taskRunStatusPatch := &api.TaskRunStatusPatch{
-				ID:        &taskRunRaw.ID,
-				UpdaterID: patch.UpdaterID,
-				TaskID:    &patch.ID,
-				Code:      patch.Code,
-				Result:    patch.Result,
-				Comment:   patch.Comment,
-			}
-			switch patch.Status {
-			case api.TaskDone:
-				taskRunStatusPatch.Status = api.TaskRunDone
-			case api.TaskFailed:
-				taskRunStatusPatch.Status = api.TaskRunFailed
-			case api.TaskPending:
-			case api.TaskPendingApproval:
-			case api.TaskCanceled:
-				taskRunStatusPatch.Status = api.TaskRunCanceled
-			}
-			if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
-				return nil, err
-			}
+		}
+	} else {
+		if patch.Status == api.TaskRunning {
+			return nil, fmt.Errorf("task is already running: %v", taskRawObj.Name)
+		}
+		taskRunStatusPatch := &api.TaskRunStatusPatch{
+			ID:        &taskRunRaw.ID,
+			UpdaterID: patch.UpdaterID,
+			TaskID:    &patch.ID,
+			Code:      patch.Code,
+			Result:    patch.Result,
+			Comment:   patch.Comment,
+		}
+		switch patch.Status {
+		case api.TaskDone:
+			taskRunStatusPatch.Status = api.TaskRunDone
+		case api.TaskFailed:
+			taskRunStatusPatch.Status = api.TaskRunFailed
+		case api.TaskPending:
+		case api.TaskPendingApproval:
+		case api.TaskCanceled:
+			taskRunStatusPatch.Status = api.TaskRunCanceled
+		}
+		if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
+			return nil, err
 		}
 	}
 
@@ -729,10 +727,9 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	}
 	taskPatchedRaw = &taskRaw
 
-	taskRunFind := &api.TaskRunFind{
+	taskRunRawList, err := s.findTaskRunImpl(ctx, tx, &api.TaskRunFind{
 		TaskID: &taskRawObj.ID,
-	}
-	taskRunRawList, err := s.findTaskRunImpl(ctx, tx, taskRunFind)
+	})
 	if err != nil {
 		return nil, err
 	}
