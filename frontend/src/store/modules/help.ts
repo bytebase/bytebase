@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { useActuatorStore } from "@/store";
 
 export const useHelpStore = defineStore("help", {
   state: (): {
@@ -12,8 +13,16 @@ export const useHelpStore = defineStore("help", {
   },
   actions: {
     showHelp(id: string, openByDefault: boolean): void {
-      this.currHelpId = id;
-      this.openByDefault = openByDefault;
+      const actuatorStore = useActuatorStore();
+      const demoName = actuatorStore.serverInfo?.demoName;
+      const invalidFeatureDemoNameList = ["dev", "prod"];
+      const isFeatureDemo =
+        demoName && !invalidFeatureDemoNameList.includes(demoName);
+      if (!isFeatureDemo) {
+        // only show help when not in live demo
+        this.currHelpId = id;
+        this.openByDefault = openByDefault;
+      }
     },
     exitHelp() {
       this.currHelpId = "";
