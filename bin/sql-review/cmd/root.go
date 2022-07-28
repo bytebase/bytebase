@@ -10,7 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	server "github.com/bytebase/bytebase/sql-review-server"
+	server "github.com/bytebase/bytebase/sql-server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
@@ -66,8 +66,8 @@ var (
 		debug bool
 	}
 	rootCmd = &cobra.Command{
-		Use:   "sql-review",
-		Short: "Bytebase SQL Review is a database schema change and version control tool",
+		Use:   "sql",
+		Short: "Bytebase SQL Service is the API service for Bytebase SQL Review",
 		Run: func(_ *cobra.Command, _ []string) {
 			start()
 
@@ -82,8 +82,8 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
+	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "http://localhost", "host where Bytebase SQL service backend is accessed from, must start with http:// or https://.")
+	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase SQL service backend is accessed from.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 }
 

@@ -23,12 +23,12 @@ info:
     email: support@bytebase.com
     name: API Support
     url: https://github.com/bytebase/bytebase/
-  description: The OpenAPI for Bytebase SQL Review Service.
+  description: The OpenAPI for Bytebase SQL Service.
   license:
     name: MIT
     url: https://github.com/bytebase/bytebase/blob/main/LICENSE
   termsOfService: https://www.bytebase.com/terms
-  title: Bytebase SQL Review Service
+  title: Bytebase SQL Service
   version: "1.0"
 paths:
   /sql/advise:

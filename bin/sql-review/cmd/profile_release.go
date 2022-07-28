@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
-	server "github.com/bytebase/bytebase/sql-review-server"
+	server "github.com/bytebase/bytebase/sql-server"
 )
 
 func activeProfile() server.Profile {

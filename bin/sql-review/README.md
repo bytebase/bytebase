@@ -1,3 +1,3 @@
-# Bytebase SQL Review Service
+# Bytebase SQL Service
 
 The API service for Bytebase SQL Review

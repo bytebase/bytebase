@@ -1,4 +1,4 @@
-package sqlreviewserver
+package sqlserver
 
 import (
 	"context"

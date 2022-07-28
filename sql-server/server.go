@@ -1,4 +1,4 @@
-package sqlreviewserver
+package sqlserver
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/bytebase/bytebase/docs/sqlreviewservice" // initial the swagger doc
+	_ "github.com/bytebase/bytebase/docs/sqlservice" // initial the swagger doc
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/common"
@@ -25,11 +25,11 @@ type Server struct {
 }
 
 // Use following cmd to generate swagger doc
-// swag init -g ./server.go -d ./sql-review-server --output docs/sqlreviewservice --parseDependency
+// swag init -g ./server.go -d ./sql-server --output docs/sqlservice --parseDependency
 
-// @title Bytebase SQL Review Service
+// @title Bytebase SQL Service
 // @version 1.0
-// @description The OpenAPI for Bytebase SQL Review Service.
+// @description The OpenAPI for Bytebase SQL Service.
 // @termsOfService https://www.bytebase.com/terms
 
 // @contact.name API Support
@@ -113,7 +113,7 @@ func (s *Server) Run() error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Trying to stop Bytebase SQL Review Service ....")
+	log.Info("Trying to stop Bytebase SQL Service ....")
 	log.Info("Trying to gracefully shutdown server")
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -126,7 +126,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	log.Info("Bytebase SQL Review Service stopped properly")
+	log.Info("Bytebase SQL Service stopped properly")
 
 	return nil
 }
