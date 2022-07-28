@@ -617,7 +617,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 		return fmt.Errorf("cannot get file %q stat, error: %w", resultFilePath, err)
 	}
 	if !isLast && fileInfo.Size() != binlogFileToDownload.Size {
-		log.Error("Downloaded binlog file size is not equal to size queried on the MySQL server.",
+		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server.",
 			zap.String("binlog", binlogFileToDownload.Name),
 			zap.Int64("sizeInfo", binlogFileToDownload.Size),
 			zap.Int64("downloadedSize", fileInfo.Size()),
