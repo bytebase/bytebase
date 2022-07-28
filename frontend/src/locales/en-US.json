@@ -827,7 +827,7 @@
       "target": "Restore to",
       "target-inplace": "In place",
       "target-new-db": "New database",
-      "will-override-current-data": "Will override current data"
+      "will-overwrite-current-database": "Will overwrite current database"
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
     "show-reserved-databases": "Show Bytebase reserved databases",

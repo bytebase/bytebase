@@ -828,7 +828,7 @@
       "target": "还原到",
       "target-inplace": "原数据库",
       "target-new-db": "新数据库",
-      "will-override-current-data": "会覆盖现有数据"
+      "will-overwrite-current-database": "会覆盖现有数据库"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
     "show-reserved-databases": "显示 Bytebase 保留的数据库",

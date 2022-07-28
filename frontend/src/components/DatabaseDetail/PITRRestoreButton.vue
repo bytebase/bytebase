@@ -70,7 +70,7 @@
                   <heroicons-outline:exclamation-circle class="w-4 h-4 ml-1" />
                 </template>
                 <span class="whitespace-nowrap">
-                  {{ $t("database.pitr.will-override-current-data") }}
+                  {{ $t("database.pitr.will-overwrite-current-database") }}
                 </span>
               </NTooltip>
             </label>
