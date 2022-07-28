@@ -20,6 +20,8 @@ const (
 	ConstraintTypeUniqueUsingIndex
 	// ConstraintTypeNotNull is the not null constraint.
 	ConstraintTypeNotNull
+	// ConstraintTypeCheck is the check constraint.
+	ConstraintTypeCheck
 )
 
 // ConstraintDef is struct for constraint definition.
@@ -49,4 +51,9 @@ type ConstraintDef struct {
 	// IndexName is a ConstraintTypePrimaryUsingIndex or ConstraintTypeUniqueUsingIndex type specific field.
 	// See https://www.postgresql.org/docs/current/sql-altertable.html.
 	IndexName string
+	// For PG, the option SkipValidation is currently only allowed for foreign key and CHECK constraints.
+	// If SkipValidation is true, the constraint will only be enforced against subsequent inserts or updates.
+	SkipValidation bool
+	// CheckExpression is the expression for the check constraint.
+	CheckExpression ExpressionNode
 }
