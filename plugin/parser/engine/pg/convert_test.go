@@ -680,7 +680,19 @@ func TestPGSelectStmt(t *testing.T) {
 			},
 		},
 		{
-			stmt: "SELECT public.t.a, b, lower(a), b>a FROM t WHERE a > 0 and (c not LIKE 'xyz' or true) and b LIKE '%csdbc' and a in (SELECT * FROM t1 WHERE x LIKE b) UNION SELECT * FROM t",
+			stmt: `
+				SELECT
+					public.t.a, b, lower(a), b>a
+				FROM
+					t
+				WHERE
+					a > 0
+					AND (c not LIKE 'xyz' or true)
+					AND b LIKE '%csdbc'
+					AND a in
+						(SELECT * FROM t1 WHERE x LIKE b)
+				UNION
+				SELECT * FROM t`,
 			want: []ast.Node{
 				&ast.SelectStmt{
 					SetOperation: ast.SetOperationTypeUnion,
@@ -739,6 +751,18 @@ func TestPGSelectStmt(t *testing.T) {
 											ColumnName: "b",
 										},
 									},
+									PatternLikeList: []*ast.PatternLikeDef{
+										{
+											Expression: &ast.ColumnNameDef{
+												Table:      &ast.TableDef{},
+												ColumnName: "x",
+											},
+											Pattern: &ast.ColumnNameDef{
+												Table:      &ast.TableDef{},
+												ColumnName: "b",
+											},
+										},
+									},
 								},
 							},
 						},
@@ -755,7 +779,18 @@ func TestPGSelectStmt(t *testing.T) {
 				},
 			},
 			textList: []string{
-				"SELECT public.t.a, b, lower(a), b>a FROM t WHERE a > 0 and (c not LIKE 'xyz' or true) and b LIKE '%csdbc' and a in (SELECT * FROM t1 WHERE x LIKE b) UNION SELECT * FROM t",
+				`SELECT
+					public.t.a, b, lower(a), b>a
+				FROM
+					t
+				WHERE
+					a > 0
+					AND (c not LIKE 'xyz' or true)
+					AND b LIKE '%csdbc'
+					AND a in
+						(SELECT * FROM t1 WHERE x LIKE b)
+				UNION
+				SELECT * FROM t`,
 			},
 		},
 	}
