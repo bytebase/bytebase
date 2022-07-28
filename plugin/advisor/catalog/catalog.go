@@ -143,3 +143,29 @@ func (d *Database) FindIndex(find *IndexFind) (string, *Index) {
 	}
 	return "", nil
 }
+
+// PrimaryKeyFind is for find primary key.
+type PrimaryKeyFind struct {
+	SchemaName string
+	TableName  string
+}
+
+// FindPrimaryKey finds the primary key.
+func (d *Database) FindPrimaryKey(find *PrimaryKeyFind) *Index {
+	for _, schema := range d.SchemaList {
+		if schema.Name != find.SchemaName {
+			continue
+		}
+		for _, table := range schema.TableList {
+			if table.Name != find.TableName {
+				continue
+			}
+			for _, index := range table.IndexList {
+				if index.Primary {
+					return index
+				}
+			}
+		}
+	}
+	return nil
+}

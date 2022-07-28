@@ -8,11 +8,13 @@ import (
 	"path"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/stretchr/testify/require"
+	"github.com/bytebase/bytebase/tests/fake"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -21,7 +23,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -272,13 +274,13 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 }
 
-func TestVCS(t *testing.T) {
+func TestVCS_GitLab(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -292,8 +294,8 @@ func TestVCS(t *testing.T) {
 	vcs, err := ctl.createVCS(api.VCSCreate{
 		Name:          "TestVCS",
 		Type:          vcs.GitLabSelfHost,
-		InstanceURL:   ctl.gitURL,
-		APIURL:        ctl.gitAPIURL,
+		InstanceURL:   ctl.vcsURL,
+		APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
 		ApplicationID: applicationID,
 		Secret:        applicationSecret,
 	})
@@ -312,14 +314,14 @@ func TestVCS(t *testing.T) {
 	refreshToken := "refreshToken1"
 	gitlabProjectID := 121
 	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// create a gitlab project.
-	ctl.gitlab.CreateProject(gitlabProjectIDStr)
+	// Create a GitLab project.
+	ctl.vcsProvider.CreateRepository(gitlabProjectIDStr)
 	_, err = ctl.createRepository(api.RepositoryCreate{
 		VCSID:              vcs.ID,
 		ProjectID:          project.ID,
 		Name:               "Test Repository",
 		FullPath:           repositoryPath,
-		WebURL:             fmt.Sprintf("%s/%s", ctl.gitURL, repositoryPath),
+		WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repositoryPath),
 		BranchFilter:       "feature/foo",
 		BaseDirectory:      "bbtest",
 		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
@@ -373,10 +375,12 @@ func TestVCS(t *testing.T) {
 			},
 		},
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
+	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
 	a.NoError(err)
 
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
+	payload, err := json.Marshal(pushEvent)
+	a.NoError(err)
+	err = ctl.vcsProvider.SendWebhookPush(gitlabProjectIDStr, payload)
 	a.NoError(err)
 
 	// Get schema update issue.
@@ -416,10 +420,12 @@ func TestVCS(t *testing.T) {
 			},
 		},
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: dataUpdateStatement})
+	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: dataUpdateStatement})
 	a.NoError(err)
 
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
+	payload, err = json.Marshal(pushEvent)
+	a.NoError(err)
+	err = ctl.vcsProvider.SendWebhookPush(gitlabProjectIDStr, payload)
 	a.NoError(err)
 
 	// Get data update issue.

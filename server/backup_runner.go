@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math"
 	"net/http"
+	"os"
+	"path"
 	"sync"
 	"time"
 
@@ -60,7 +64,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 				r.startAutoBackups(ctx, runningTasks, &mu)
 				r.downloadBinlogFiles(ctx)
-
+				r.purgeExpiredBackupData(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			r.backupWg.Wait()
@@ -68,6 +72,127 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 	}
+}
+
+// TODO(dragonly): Make best effort to assure that users could recover to at least RetentionPeriodTs ago.
+// This may require pending deleting expired backup files and binlog files.
+func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
+	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{})
+	if err != nil {
+		log.Error("Failed to find all the backup settings.", zap.Error(err))
+		return
+	}
+
+	log.Debug("Deleting expired backups.")
+	for _, bs := range backupSettingList {
+		if bs.RetentionPeriodTs == api.BackupRetentionPeriodUnset {
+			continue // next database
+		}
+		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: &bs.DatabaseID})
+		if err != nil {
+			log.Error("Failed to get backups for database.", zap.Int("databaseID", bs.DatabaseID), zap.String("database", bs.Database.Name))
+			return
+		}
+		for _, backup := range backupList {
+			backupTime := time.Unix(backup.UpdatedTs, 0)
+			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs) * time.Second)
+			if time.Now().After(expireTime) {
+				if err := r.purgeBackup(ctx, backup); err != nil {
+					log.Error("Failed to purge backup", zap.String("backup", backup.Name), zap.Error(err))
+				}
+			}
+		}
+	}
+
+	log.Debug("Deleting expired MySQL binlog files.")
+	instanceList, err := r.server.store.FindInstance(ctx, &api.InstanceFind{})
+	if err != nil {
+		log.Error("Failed to find non-archived instances.", zap.Error(err))
+		return
+	}
+
+	for _, instance := range instanceList {
+		if instance.Engine != db.MySQL {
+			log.Error("Instance is not a MySQL instance", zap.String("instance", instance.Name))
+			continue
+		}
+		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
+		if err != nil {
+			log.Error("Failed to get max retention period for MySQL instance", zap.String("instance", instance.Name), zap.Error(err))
+			continue
+		}
+		if maxRetentionPeriodTs == math.MaxInt {
+			log.Info("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
+			continue
+		}
+		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
+		if err := r.purgeBinlogFiles(instance.ID, maxRetentionPeriodTs); err != nil {
+			log.Error("Failed to purge binlog files for instance", zap.String("instance", instance.Name), zap.Int("retentionPeriodTs", maxRetentionPeriodTs), zap.Error(err))
+		}
+	}
+}
+
+func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
+	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
+	if err != nil {
+		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
+		return 0, fmt.Errorf("failed to find backup settings for instance %q, error: %w", instance.Name, err)
+	}
+	maxRetentionPeriodTs := math.MaxInt
+	for _, bs := range backupSettingList {
+		if bs.RetentionPeriodTs != api.BackupRetentionPeriodUnset && bs.RetentionPeriodTs < maxRetentionPeriodTs {
+			maxRetentionPeriodTs = bs.RetentionPeriodTs
+		}
+	}
+	return maxRetentionPeriodTs, nil
+}
+
+func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error {
+	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
+	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
+	if err != nil {
+		return fmt.Errorf("failed to read backup directory %q, error: %w", binlogDir, err)
+	}
+	for _, binlogFileInfo := range binlogFileInfoList {
+		if _, err := mysql.GetBinlogNameSeq(binlogFileInfo.Name()); err != nil {
+			log.Warn("Found an irregular file in binlog directory.", zap.String("path", binlogFileInfo.Name()))
+			continue // next binlog file
+		}
+		// We use modification time of local binlog files which is later than the modification time of that on the MySQL server,
+		// which in turn is later than the last event timestamp of the binlog file.
+		// This is not accurate and gives about 10 minutes (backup runner interval) more retention time to the binlog files, which is acceptable.
+		expireTime := binlogFileInfo.ModTime().Add(time.Duration(retentionPeriodTs) * time.Second)
+		if time.Now().After(expireTime) {
+			binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
+			if err := os.Remove(binlogFilePath); err != nil {
+				log.Warn("Failed to remove an expired binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
+				continue
+			}
+			log.Info("Deleted expired binlog file.", zap.String("path", binlogFilePath))
+		}
+	}
+	return nil
+}
+
+func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) error {
+	archive := api.Archived
+	backupPatch := api.BackupPatch{
+		ID:        backup.ID,
+		RowStatus: &archive,
+	}
+	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
+		log.Error("Failed to update status for deleted backup.", zap.String("name", backup.Name), zap.Int("databaseId", backup.DatabaseID))
+		return fmt.Errorf("failed to update status for deleted backup %q for database with ID %d, error: %w", backup.Name, backup.DatabaseID, err)
+	}
+
+	backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, backup.DatabaseID, backup.Name)
+	if err := os.Remove(backupFilePath); err != nil {
+		log.Error("Failed to delete an expired backup file.", zap.String("path", backupFilePath), zap.Error(err))
+		return fmt.Errorf("failed to delete an expired backup file %q, error: %w", backupFilePath, err)
+	}
+	log.Info("Deleted expired backup file.", zap.String("path", backupFilePath))
+
+	return nil
 }
 
 func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {

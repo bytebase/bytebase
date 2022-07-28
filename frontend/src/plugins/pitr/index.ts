@@ -1,13 +1,24 @@
-import { computed, Ref } from "vue";
+import { computed, Ref, watch } from "vue";
 import semverCompare from "semver/functions/compare";
-import { Database, IssueCreate, PITRContext, SYSTEM_BOT_ID } from "@/types";
-import { useBackupListByDatabaseId, useIssueStore } from "@/store";
+import {
+  Database,
+  IssueCreate,
+  MigrationHistory,
+  PITRContext,
+  SYSTEM_BOT_ID,
+} from "@/types";
+import {
+  useBackupListByDatabaseId,
+  useInstanceStore,
+  useIssueStore,
+} from "@/store";
 import { useI18n } from "vue-i18n";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
 export const usePITRLogic = (database: Ref<Database>) => {
   const { t } = useI18n();
+  const instanceStore = useInstanceStore();
 
   const backupList = useBackupListByDatabaseId(
     computed(() => database.value.id)
@@ -37,6 +48,31 @@ export const usePITRLogic = (database: Ref<Database>) => {
         min_version: MIN_PITR_SUPPORT_MYSQL_VERSION,
       }),
     };
+  });
+
+  const prepareMigrationHistoryList = async () => {
+    const migration = await instanceStore.checkMigrationSetup(
+      database.value.instance.id
+    );
+    if (migration.status === "OK") {
+      instanceStore.fetchMigrationHistory({
+        instanceId: database.value.instance.id,
+        databaseName: database.value.name,
+      });
+    }
+  };
+
+  watch(database, prepareMigrationHistoryList, { immediate: true });
+
+  const migrationHistoryList = computed(() => {
+    return instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
+      database.value.instance.id,
+      database.value.name
+    );
+  });
+
+  const lastMigrationHistory = computed((): MigrationHistory | undefined => {
+    return migrationHistoryList.value[0];
   });
 
   const createPITRIssue = async (
@@ -70,6 +106,8 @@ export const usePITRLogic = (database: Ref<Database>) => {
     backupList,
     doneBackupList,
     pitrAvailable,
+    migrationHistoryList,
+    lastMigrationHistory,
     createPITRIssue,
   };
 };
