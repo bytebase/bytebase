@@ -43,7 +43,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/advise  [get].
-func (s *Server) sqlCheckController(c echo.Context) error {
+func (*Server) sqlCheckController(c echo.Context) error {
 	statement := c.QueryParams().Get("statement")
 	if statement == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
@@ -78,9 +78,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot merge the config for template: %s", ruleOverride.Template)).SetInternal(err)
 	}
 
-	ctx := c.Request().Context()
 	adviceList, err := sqlCheck(
-		ctx,
 		advisorDBType,
 		"utf8mb4",
 		"utf8mb4_general_ci",
@@ -96,7 +94,6 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 }
 
 func sqlCheck(
-	ctx context.Context,
 	dbType advisor.DBType,
 	dbCharacterSet string,
 	dbCollation string,

@@ -22,7 +22,6 @@ type Server struct {
 	profile   Profile
 	e         *echo.Echo
 	startedTs int64
-	secret    string
 }
 
 // Use following cmd to generate swagger doc
@@ -105,7 +104,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 }
 
 // Run will run the server.
-func (s *Server) Run(ctx context.Context) error {
+func (s *Server) Run() error {
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
