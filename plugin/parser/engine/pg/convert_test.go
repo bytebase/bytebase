@@ -445,6 +445,28 @@ func TestPGDropConstraintStmt(t *testing.T) {
 func TestPGAddConstraintStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{Name: "tech_book"},
+							Constraint: &ast.ConstraintDef{
+								Type:            ast.ConstraintTypeCheck,
+								Name:            "check_a_bigger_than_b",
+								SkipValidation:  true,
+								CheckExpression: &ast.UnconvertedExpressionDef{},
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
+			},
+		},
+		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
@@ -791,6 +813,36 @@ func TestPGSelectStmt(t *testing.T) {
 						(SELECT * FROM t1 WHERE x LIKE b)
 				UNION
 				SELECT * FROM t`,
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGDropDatabaseStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP DATABASE test",
+			want: []ast.Node{
+				&ast.DropDatabaseStmt{
+					DatabaseName: "test",
+				},
+			},
+			textList: []string{
+				"DROP DATABASE test",
+			},
+		},
+		{
+			stmt: "DROP DATABASE IF EXISTS test",
+			want: []ast.Node{
+				&ast.DropDatabaseStmt{
+					DatabaseName: "test",
+					IfExists:     true,
+				},
+			},
+			textList: []string{
+				"DROP DATABASE IF EXISTS test",
 			},
 		},
 	}
