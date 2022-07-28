@@ -265,6 +265,16 @@
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
       "bb-task-database-schema-update-ghost-drop-original-table": "删除原始表"
+    },
+    "progress": {
+      "completed-units": "已完成{units}",
+      "total-units": "总共{units}",
+      "eta": "预计完成时间",
+      "units": {
+        "unit": "单元数",
+        "row": "行数"
+      },
+      "counting": "统计中"
     }
   },
   "banner": {

@@ -11,7 +11,7 @@ import { Inbox } from "./inbox";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
 import { Member } from "./member";
-import { Pipeline, Stage, Task } from "./pipeline";
+import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import {
   Project,
@@ -128,6 +128,7 @@ export type ResourceType =
   | "PIPELINE"
   | "POLICY"
   | "STAGE"
+  | "TASK_PROGRESS"
   | "TASK"
   | "ACTIVITY"
   | "INBOX"
@@ -154,6 +155,7 @@ interface ResourceMaker {
   (type: "PIPELINE"): Pipeline;
   (type: "POLICY"): Policy;
   (type: "STAGE"): Stage;
+  (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
   (type: "ACTIVITY"): Activity;
   (type: "INBOX"): Inbox;
@@ -306,6 +308,7 @@ const makeUnknown = (type: ResourceType) => {
     hour: 0,
     dayOfWeek: 0,
     hookUrl: "",
+    retentionPeriodTs: 0,
   };
 
   const UNKNOWN_PIPELINE: Pipeline = {
@@ -362,6 +365,13 @@ const makeUnknown = (type: ResourceType) => {
     taskList: [],
   };
 
+  const UNKNOWN_TASK_PROGRESS: TaskProgress = {
+    totalUnit: 0,
+    completedUnit: 0,
+    createdTs: 0,
+    updatedTs: 0,
+  };
+
   const UNKNOWN_TASK: Task = {
     id: UNKNOWN_ID,
     pipeline: UNKNOWN_PIPELINE,
@@ -379,6 +389,7 @@ const makeUnknown = (type: ResourceType) => {
     taskRunList: [],
     taskCheckRunList: [],
     blockedBy: [],
+    progress: { ...UNKNOWN_TASK_PROGRESS },
   };
 
   const UNKNOWN_ACTIVITY: Activity = {
@@ -536,6 +547,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_POLICY;
     case "STAGE":
       return UNKNOWN_STAGE;
+    case "TASK_PROGRESS":
+      return UNKNOWN_TASK_PROGRESS;
     case "TASK":
       return UNKNOWN_TASK;
     case "ACTIVITY":
@@ -698,6 +711,7 @@ const makeEmpty = (type: ResourceType) => {
     hour: 0,
     dayOfWeek: 0,
     hookUrl: "",
+    retentionPeriodTs: 0,
   };
 
   const EMPTY_PIPELINE: Pipeline = {
@@ -754,6 +768,13 @@ const makeEmpty = (type: ResourceType) => {
     taskList: [],
   };
 
+  const EMPTY_TASK_PROGRESS: TaskProgress = {
+    totalUnit: 0,
+    completedUnit: 0,
+    createdTs: 0,
+    updatedTs: 0,
+  };
+
   const EMPTY_TASK: Task = {
     id: EMPTY_ID,
     pipeline: EMPTY_PIPELINE,
@@ -771,6 +792,7 @@ const makeEmpty = (type: ResourceType) => {
     taskCheckRunList: [],
     earliestAllowedTs: 0,
     blockedBy: [],
+    progress: { ...EMPTY_TASK_PROGRESS },
   };
 
   const EMPTY_ACTIVITY: Activity = {
@@ -928,6 +950,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_POLICY;
     case "STAGE":
       return EMPTY_STAGE;
+    case "TASK_PROGRESS":
+      return EMPTY_TASK_PROGRESS;
     case "TASK":
       return EMPTY_TASK;
     case "ACTIVITY":
