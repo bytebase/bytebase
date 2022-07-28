@@ -184,7 +184,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
 	}
 	driver.replayBinlogProgress = 0
-	stopChan := make(chan bool)
+	stopChan := make(chan struct{})
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -210,7 +210,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	if err := mysqlbinlogCmd.Wait(); err != nil {
 		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
 	}
-	stopChan <- true
+	close(stopChan)
 	return nil
 }
 
