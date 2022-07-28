@@ -204,7 +204,8 @@
     "pitr": "PITR",
     "fix": "修复",
     "go-now": "立即前往",
-    "sync-now": "现在同步"
+    "sync-now": "现在同步",
+    "show-help": "查看帮助"
   },
   "error-page": {
     "go-back-home": "回到主页"
