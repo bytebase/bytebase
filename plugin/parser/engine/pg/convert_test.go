@@ -35,6 +35,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				&ast.CreateTableStmt{
 					IfNotExists: false,
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techBook",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -70,6 +71,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				&ast.CreateTableStmt{
 					IfNotExists: true,
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -87,6 +89,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -112,6 +115,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -147,6 +151,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -158,7 +163,10 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 									Type:    ast.ConstraintTypeForeign,
 									KeyList: []string{"a"},
 									Foreign: &ast.ForeignDef{
-										Table:      &ast.TableDef{Name: "people"},
+										Table: &ast.TableDef{
+											Type: ast.TableTypeBaseTable,
+											Name: "people",
+										},
 										ColumnList: []string{"id"},
 									},
 								},
@@ -171,7 +179,10 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 							Type:    ast.ConstraintTypeForeign,
 							KeyList: []string{"a"},
 							Foreign: &ast.ForeignDef{
-								Table:      &ast.TableDef{Name: "people"},
+								Table: &ast.TableDef{
+									Type: ast.TableTypeBaseTable,
+									Name: "people",
+								},
 								ColumnList: []string{"b"},
 							},
 						},
@@ -194,11 +205,13 @@ func TestPGAddColumnStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					AlterItemList: []ast.Node{
 						&ast.AddColumnListStmt{
 							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
 								Name: "techbook",
 							},
 							ColumnList: []*ast.ColumnDef{
@@ -217,11 +230,13 @@ func TestPGAddColumnStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					AlterItemList: []ast.Node{
 						&ast.AddColumnListStmt{
 							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
 								Name: "techbook",
 							},
 							ColumnList: []*ast.ColumnDef{
@@ -256,6 +271,7 @@ func TestPGRenameTableStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.RenameTableStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					NewName: "techBook",
@@ -277,6 +293,7 @@ func TestPGRenameColumnStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.RenameColumnStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					ColumnName: "abc",
@@ -298,7 +315,10 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
 			want: []ast.Node{
 				&ast.RenameConstraintStmt{
-					Table:          &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					ConstraintName: "uk_tech_a",
 					NewName:        "UK_TECH_A",
 				},
@@ -424,10 +444,16 @@ func TestPGDropConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.DropConstraintStmt{
-							Table:          &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ConstraintName: "uk_tech_a",
 						},
 					},
@@ -448,10 +474,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:            ast.ConstraintTypeCheck,
 								Name:            "check_a_bigger_than_b",
@@ -470,10 +502,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:    ast.ConstraintTypeUnique,
 								Name:    "uk_tech_book_id",
@@ -491,10 +529,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:    ast.ConstraintTypePrimary,
 								Name:    "pk_tech_book_id",
@@ -512,16 +556,25 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:    ast.ConstraintTypeForeign,
 								Name:    "fk_tech_book_id",
 								KeyList: []string{"id"},
 								Foreign: &ast.ForeignDef{
-									Table:      &ast.TableDef{Name: "people"},
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
 									ColumnList: []string{"id"},
 								},
 							},
@@ -537,10 +590,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:      ast.ConstraintTypeUniqueUsingIndex,
 								Name:      "uk_tech_book_id",
@@ -558,10 +617,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:      ast.ConstraintTypePrimaryUsingIndex,
 								Name:      "pk_tech_book_id",
@@ -586,10 +651,16 @@ func TestPGDropColumnStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book DROP COLUMN a",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.DropColumnStmt{
-							Table:      &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ColumnName: "a",
 						},
 					},
@@ -612,9 +683,11 @@ func TestPGDropTableStmt(t *testing.T) {
 				&ast.DropTableStmt{
 					TableList: []*ast.TableDef{
 						{
+							Type: ast.TableTypeBaseTable,
 							Name: "tech_book",
 						},
 						{
+							Type:   ast.TableTypeBaseTable,
 							Schema: "xschema",
 							Name:   "user",
 						},
@@ -636,10 +709,16 @@ func TestPGNotNullStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.SetNotNullStmt{
-							Table:      &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ColumnName: "id",
 						},
 					},
@@ -653,10 +732,16 @@ func TestPGNotNullStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.DropNotNullStmt{
-							Table:      &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ColumnName: "id",
 						},
 					},

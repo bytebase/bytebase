@@ -18,7 +18,7 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 	switch in := node.Node.(type) {
 	case *pgquery.Node_AlterTableStmt:
 		alterTable := &ast.AlterTableStmt{
-			Table:         convertRangeVarToTableName(in.AlterTableStmt.Relation),
+			Table:         convertRangeVarToTableName(in.AlterTableStmt.Relation, ast.TableTypeBaseTable),
 			AlterItemList: []ast.Node{},
 		}
 		for _, cmd := range in.AlterTableStmt.Cmds {
@@ -94,7 +94,7 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 	case *pgquery.Node_CreateStmt:
 		table := &ast.CreateTableStmt{
 			IfNotExists: in.CreateStmt.IfNotExists,
-			Name:        convertRangeVarToTableName(in.CreateStmt.Relation),
+			Name:        convertRangeVarToTableName(in.CreateStmt.Relation, ast.TableTypeBaseTable),
 		}
 
 		for _, elt := range in.CreateStmt.TableElts {
@@ -117,32 +117,36 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 	case *pgquery.Node_RenameStmt:
 		switch in.RenameStmt.RenameType {
 		case pgquery.ObjectType_OBJECT_COLUMN:
+			tableType, err := convertToTableType(in.RenameStmt.RelationType)
+			if err != nil {
+				return nil, err
+			}
 			return &ast.RenameColumnStmt{
-				Table:      convertRangeVarToTableName(in.RenameStmt.Relation),
+				Table:      convertRangeVarToTableName(in.RenameStmt.Relation, tableType),
 				ColumnName: in.RenameStmt.Subname,
 				NewName:    in.RenameStmt.Newname,
 			}, nil
 		case pgquery.ObjectType_OBJECT_TABLE:
 			return &ast.RenameTableStmt{
-				Table:   convertRangeVarToTableName(in.RenameStmt.Relation),
+				Table:   convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable),
 				NewName: in.RenameStmt.Newname,
 			}, nil
 		case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
 			return &ast.RenameConstraintStmt{
-				Table:          convertRangeVarToTableName(in.RenameStmt.Relation),
+				Table:          convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable),
 				ConstraintName: in.RenameStmt.Subname,
 				NewName:        in.RenameStmt.Newname,
 			}, nil
 		case pgquery.ObjectType_OBJECT_INDEX:
 			return &ast.RenameIndexStmt{
-				Table:     convertRangeVarToIndexTableName(in.RenameStmt.Relation),
+				Table:     convertRangeVarToIndexTableName(in.RenameStmt.Relation, ast.TableTypeNone),
 				IndexName: in.RenameStmt.Relation.Relname,
 				NewName:   in.RenameStmt.Newname,
 			}, nil
 		}
 	case *pgquery.Node_IndexStmt:
 		indexDef := &ast.IndexDef{
-			Table:  convertRangeVarToTableName(in.IndexStmt.Relation),
+			Table:  convertRangeVarToTableName(in.IndexStmt.Relation, ast.TableTypeNone),
 			Name:   in.IndexStmt.Idxname,
 			Unique: in.IndexStmt.Unique,
 		}
@@ -176,7 +180,7 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 				if !ok {
 					return nil, parser.NewConvertErrorf("expected List but found %t", object.Node)
 				}
-				indexDef, err := convertListToIndexDef(list)
+				indexDef, err := convertListToIndexDef(list, ast.TableTypeNone)
 				if err != nil {
 					return nil, err
 				}
@@ -190,7 +194,7 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 				if !ok {
 					return nil, parser.NewConvertErrorf("expected List but found %t", object.Node)
 				}
-				tableDef, err := convertListToTableDef(list)
+				tableDef, err := convertListToTableDef(list, ast.TableTypeBaseTable)
 				if err != nil {
 					return nil, err
 				}
@@ -404,7 +408,7 @@ func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {
 	}
 }
 
-func convertListToTableDef(in *pgquery.Node_List) (*ast.TableDef, error) {
+func convertListToTableDef(in *pgquery.Node_List, tableType ast.TableType) (*ast.TableDef, error) {
 	stringList, err := convertListToStringList(in)
 	if err != nil {
 		return nil, err
@@ -412,17 +416,21 @@ func convertListToTableDef(in *pgquery.Node_List) (*ast.TableDef, error) {
 	switch len(in.List.Items) {
 	case 2:
 		return &ast.TableDef{
+			Type:   tableType,
 			Schema: stringList[0],
 			Name:   stringList[1],
 		}, nil
 	case 1:
-		return &ast.TableDef{Name: stringList[0]}, nil
+		return &ast.TableDef{
+			Type: tableType,
+			Name: stringList[0],
+		}, nil
 	default:
 		return nil, parser.NewConvertErrorf("expected length is 1 or 2, but found %d", len(in.List.Items))
 	}
 }
 
-func convertListToIndexDef(in *pgquery.Node_List) (*ast.IndexDef, error) {
+func convertListToIndexDef(in *pgquery.Node_List, tableType ast.TableType) (*ast.IndexDef, error) {
 	stringList, err := convertListToStringList(in)
 	if err != nil {
 		return nil, err
@@ -430,7 +438,10 @@ func convertListToIndexDef(in *pgquery.Node_List) (*ast.IndexDef, error) {
 	indexDef := &ast.IndexDef{}
 	switch len(in.List.Items) {
 	case 2:
-		indexDef.Table = &ast.TableDef{Schema: stringList[0]}
+		indexDef.Table = &ast.TableDef{
+			Type:   tableType,
+			Schema: stringList[0],
+		}
 		indexDef.Name = stringList[1]
 	case 1:
 		indexDef.Name = stringList[0]
@@ -452,16 +463,18 @@ func convertListToStringList(in *pgquery.Node_List) ([]string, error) {
 	return res, nil
 }
 
-func convertRangeVarToTableName(in *pgquery.RangeVar) *ast.TableDef {
+func convertRangeVarToTableName(in *pgquery.RangeVar, tableType ast.TableType) *ast.TableDef {
 	return &ast.TableDef{
+		Type:     tableType,
 		Database: in.Catalogname,
 		Schema:   in.Schemaname,
 		Name:     in.Relname,
 	}
 }
 
-func convertRangeVarToIndexTableName(in *pgquery.RangeVar) *ast.TableDef {
+func convertRangeVarToIndexTableName(in *pgquery.RangeVar, tableType ast.TableType) *ast.TableDef {
 	return &ast.TableDef{
+		Type:   tableType,
 		Schema: in.Schemaname,
 	}
 }
@@ -484,7 +497,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 	case ast.ConstraintTypeForeign:
 		cons.Foreign = &ast.ForeignDef{
-			Table: convertRangeVarToTableName(in.Constraint.Pktable),
+			Table: convertRangeVarToTableName(in.Constraint.Pktable, ast.TableTypeBaseTable),
 		}
 
 		for _, item := range in.Constraint.PkAttrs {
@@ -559,4 +572,15 @@ func convertColumnDef(in *pgquery.Node_ColumnDef) (*ast.ColumnDef, error) {
 	}
 
 	return column, nil
+}
+
+func convertToTableType(relationType pgquery.ObjectType) (ast.TableType, error) {
+	switch relationType {
+	case pgquery.ObjectType_OBJECT_TABLE:
+		return ast.TableTypeBaseTable, nil
+	case pgquery.ObjectType_OBJECT_VIEW:
+		return ast.TableTypeView, nil
+	default:
+		return ast.TableTypeNone, parser.NewConvertErrorf("expected TABLE or VIEW but found %s", relationType)
+	}
 }
