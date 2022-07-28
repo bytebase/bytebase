@@ -73,6 +73,11 @@ func getTableNameFromStatement(statement string) (string, error) {
 	return parser.GetExplicitTable(), nil
 }
 
+type ghostState struct {
+	migrator *logic.Migrator
+	errCh    <-chan error
+}
+
 type ghostConfig struct {
 	// serverID should be unique
 	serverID             uint
@@ -169,7 +174,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	syncError := make(chan error)
 	instance := task.Instance
@@ -210,6 +215,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	migrator := logic.NewMigrator(migrationContext, "bb")
+	sharedErrCh := make(chan error, 1)
 
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
@@ -241,7 +247,8 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 	}(ctx)
 
 	go func() {
-		if err := migrator.Migrate(); err != nil {
+		err := migrator.Migrate()
+		if err != nil {
 			log.Error("failed to run gh-ost migration", zap.Error(err))
 			// `migrator.Migrate` can return an error.
 			// 1. If the error is returned before closing `syncDone`,`runGhostMigration` will receive from `syncError`.
@@ -252,10 +259,12 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 			default:
 			}
 		}
+		sharedErrCh <- err
 	}()
 
 	select {
 	case <-syncDone:
+		server.TaskScheduler.sharedGhost.Store(task.ID, ghostState{migrator: migrator, errCh: sharedErrCh})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-syncError:
 		return true, nil, err

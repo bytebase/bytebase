@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/github/gh-ost/go/logic"
 )
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
@@ -56,10 +57,20 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	socketFilename := getSocketFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
-	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, socketFilename, postponeFilename)
+	value, ok := server.TaskScheduler.sharedGhost.Load(syncTaskID)
+	if !ok {
+		return true, nil, fmt.Errorf("failed to get gh-ost state from sync task")
+	}
+	sharedGhost := value.(ghostState)
+
+	defer func() {
+		server.TaskScheduler.sharedGhost.Delete(syncTaskID)
+	}()
+
+	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, socketFilename, postponeFilename, sharedGhost.migrator, sharedGhost.errCh)
 }
 
-func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, socketFilename, postponeFilename string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, socketFilename, postponeFilename string, migrator *logic.Migrator, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 
 	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
@@ -107,6 +118,10 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 
 		if err := os.Remove(postponeFilename); err != nil {
 			return -1, "", fmt.Errorf("failed to remove postpone flag file, error: %w", err)
+		}
+
+		if migrationErr := <-errCh; migrationErr != nil {
+			return -1, "", fmt.Errorf("failed to run gh-ost migration, err: %w", migrationErr)
 		}
 
 		ticker := time.NewTicker(time.Second * 1)
