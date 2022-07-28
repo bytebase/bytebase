@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"fmt"
+
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
@@ -9,7 +11,7 @@ import (
 // convert converts the pg_query.Node to ast.Node.
 func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 	defer func() {
-		if res != nil {
+		if err == nil && res != nil {
 			res.SetText(text)
 		}
 	}()
@@ -196,9 +198,205 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 			}
 			return dropTable, nil
 		}
+	case *pgquery.Node_SelectStmt:
+		return convertSelectStmt(in.SelectStmt)
 	}
 
 	return nil, nil
+}
+
+func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.PatternLikeDef, []*ast.SubqueryDef, error) {
+	if node == nil || node.Node == nil {
+		return &ast.UnconvertedExpressionDef{}, nil, nil, nil
+	}
+	switch in := node.Node.(type) {
+	case *pgquery.Node_AConst:
+		return convertExpressionNode(in.AConst.Val)
+	case *pgquery.Node_String_:
+		return &ast.StringDef{Value: in.String_.Str}, nil, nil, nil
+	case *pgquery.Node_ResTarget:
+		return convertExpressionNode(in.ResTarget.Val)
+	case *pgquery.Node_TypeCast:
+		_, likeList, subqueryList, err := convertExpressionNode(in.TypeCast.Arg)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return &ast.UnconvertedExpressionDef{}, likeList, subqueryList, nil
+	case *pgquery.Node_ColumnRef:
+		columnName := &ast.ColumnNameDef{Table: &ast.TableDef{}}
+		list := in.ColumnRef.Fields
+		// There are three cases for column name:
+		//   1. schemaName.tableName.columnName
+		//   2. tableName.columnName
+		//   3. columnName
+		// The pg parser will split them by ".", and use a list to define it.
+		// So we need to consider this three cases.
+		switch len(in.ColumnRef.Fields) {
+		// schemaName.tableName.columName
+		case 3:
+			schema, ok := list[0].Node.(*pgquery.Node_String_)
+			if !ok {
+				return nil, nil, nil, parser.NewConvertErrorf("expected String but found %t", in.ColumnRef.Fields[2].Node)
+			}
+			columnName.Table.Schema = schema.String_.Str
+			// need to convert tableName.columnName
+			list = list[1:]
+			fallthrough
+		// tableName.columnName
+		case 2:
+			table, ok := list[0].Node.(*pgquery.Node_String_)
+			if !ok {
+				return nil, nil, nil, parser.NewConvertErrorf("expected String but found %t", in.ColumnRef.Fields[1].Node)
+			}
+			columnName.Table.Name = table.String_.Str
+			// need to convert columnName
+			list = list[1:]
+			fallthrough
+		// columnName
+		case 1:
+			switch column := list[0].Node.(type) {
+			// column name
+			case *pgquery.Node_String_:
+				columnName.ColumnName = column.String_.Str
+			// e.g. SELECT * FROM t;
+			case *pgquery.Node_AStar:
+				columnName.ColumnName = "*"
+			default:
+				return nil, nil, nil, parser.NewConvertErrorf("expected String or AStar but found %t", in.ColumnRef.Fields[0].Node)
+			}
+		default:
+			return nil, nil, nil, parser.NewConvertErrorf("failed to convert ColumnRef, column name contains unexpected components: %v", in)
+		}
+		return columnName, nil, nil, nil
+	case *pgquery.Node_FuncCall:
+		var likeList []*ast.PatternLikeDef
+		var subqueryList []*ast.SubqueryDef
+		for _, arg := range in.FuncCall.Args {
+			_, interLike, interSubquery, err := convertExpressionNode(arg)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			likeList = append(likeList, interLike...)
+			subqueryList = append(subqueryList, interSubquery...)
+		}
+		return &ast.UnconvertedExpressionDef{}, likeList, subqueryList, nil
+	case *pgquery.Node_AExpr:
+		var likeList, interLike []*ast.PatternLikeDef
+		var subqueryList, interSubquery []*ast.SubqueryDef
+		var lExpr, rExpr ast.ExpressionNode
+		var err error
+		if in.AExpr.Lexpr != nil {
+			if lExpr, interLike, interSubquery, err = convertExpressionNode(in.AExpr.Lexpr); err != nil {
+				return nil, nil, nil, err
+			}
+			likeList = append(likeList, interLike...)
+			subqueryList = append(subqueryList, interSubquery...)
+		}
+		if in.AExpr.Rexpr != nil {
+			if rExpr, interLike, interSubquery, err = convertExpressionNode(in.AExpr.Rexpr); err != nil {
+				return nil, nil, nil, err
+			}
+			likeList = append(likeList, interLike...)
+			subqueryList = append(subqueryList, interSubquery...)
+		}
+		if len(in.AExpr.Name) == 1 {
+			name, ok := in.AExpr.Name[0].Node.(*pgquery.Node_String_)
+			if !ok {
+				return nil, nil, nil, parser.NewConvertErrorf("expected String but found %t", in.AExpr.Name[0].Node)
+			}
+			switch name.String_.Str {
+			// LIKE
+			case operatorLike, operatorNotLike:
+				like := &ast.PatternLikeDef{
+					Not:        (name.String_.Str == operatorNotLike),
+					Expression: lExpr,
+					Pattern:    rExpr,
+				}
+				likeList = append(likeList, like)
+				return like, likeList, interSubquery, nil
+			}
+		}
+		return &ast.UnconvertedExpressionDef{}, likeList, subqueryList, nil
+	case *pgquery.Node_BoolExpr:
+		var likeList []*ast.PatternLikeDef
+		var subqueryList []*ast.SubqueryDef
+		for _, arg := range in.BoolExpr.Args {
+			_, interLike, interSubquery, err := convertExpressionNode(arg)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			likeList = append(likeList, interLike...)
+			subqueryList = append(subqueryList, interSubquery...)
+		}
+		return &ast.UnconvertedExpressionDef{}, likeList, subqueryList, nil
+	case *pgquery.Node_SubLink:
+		if subselectNode, ok := in.SubLink.Subselect.Node.(*pgquery.Node_SelectStmt); ok {
+			subselect, err := convertSelectStmt(subselectNode.SelectStmt)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			subQuery := &ast.SubqueryDef{Select: subselect}
+			return subQuery, nil, []*ast.SubqueryDef{subQuery}, nil
+		}
+	}
+	return &ast.UnconvertedExpressionDef{}, nil, nil, nil
+}
+
+func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
+	selectStmt := &ast.SelectStmt{}
+
+	setOperation, err := convertSetOperation(in.Op)
+	if err != nil {
+		return nil, err
+	}
+
+	selectStmt.SetOperation = setOperation
+	if setOperation != ast.SetOperationTypeNone {
+		lQuery, err := convertSelectStmt(in.Larg)
+		if err != nil {
+			return nil, err
+		}
+		rQuery, err := convertSelectStmt(in.Rarg)
+		if err != nil {
+			return nil, err
+		}
+		selectStmt.LQuery = lQuery
+		selectStmt.RQuery = rQuery
+		return selectStmt, nil
+	}
+
+	// Convert target list
+	for _, node := range in.TargetList {
+		convertedNode, _, _, err := convertExpressionNode(node)
+		if err != nil {
+			return nil, err
+		}
+		selectStmt.FieldList = append(selectStmt.FieldList, convertedNode)
+	}
+	// Convert WHERE clause
+	if in.WhereClause != nil {
+		selectStmt.WhereClause = &ast.UnconvertedExpressionDef{}
+		var err error
+		if selectStmt.WhereClause, selectStmt.PatternLikeList, selectStmt.SubqueryList, err = convertExpressionNode(in.WhereClause); err != nil {
+			return nil, err
+		}
+	}
+	return selectStmt, nil
+}
+
+func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {
+	switch t {
+	case pgquery.SetOperation_SETOP_NONE:
+		return ast.SetOperationTypeNone, nil
+	case pgquery.SetOperation_SETOP_UNION:
+		return ast.SetOperationTypeUnion, nil
+	case pgquery.SetOperation_SETOP_INTERSECT:
+		return ast.SetOperationTypeIntersect, nil
+	case pgquery.SetOperation_SETOP_EXCEPT:
+		return ast.SetOperationTypeExcept, nil
+	default:
+		return 0, fmt.Errorf("failed to parse set operation: unknown type %s", t)
+	}
 }
 
 func convertListToTableDef(in *pgquery.Node_List) (*ast.TableDef, error) {

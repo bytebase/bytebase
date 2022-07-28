@@ -12,6 +12,11 @@ var (
 	_ parser.Parser = (*PostgreSQLParser)(nil)
 )
 
+const (
+	operatorLike    string = "~~"
+	operatorNotLike string = "!~~"
+)
+
 func init() {
 	parser.Register(parser.Postgres, &PostgreSQLParser{})
 }

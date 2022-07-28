@@ -648,3 +648,152 @@ func TestPGNotNullStmt(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestPGSelectStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "SELECT public.t.a, t.*, * FROM t",
+			want: []ast.Node{
+				&ast.SelectStmt{
+					SetOperation: ast.SetOperationTypeNone,
+					FieldList: []ast.ExpressionNode{
+						&ast.ColumnNameDef{
+							Table: &ast.TableDef{
+								Schema: "public",
+								Name:   "t",
+							},
+							ColumnName: "a",
+						},
+						&ast.ColumnNameDef{
+							Table:      &ast.TableDef{Name: "t"},
+							ColumnName: "*",
+						},
+						&ast.ColumnNameDef{
+							Table:      &ast.TableDef{},
+							ColumnName: "*",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"SELECT public.t.a, t.*, * FROM t",
+			},
+		},
+		{
+			stmt: `
+				SELECT
+					public.t.a, b, lower(a), b>a
+				FROM
+					t
+				WHERE
+					a > 0
+					AND (c not LIKE 'xyz' or true)
+					AND b LIKE '%csdbc'
+					AND a in
+						(SELECT * FROM t1 WHERE x LIKE b)
+				UNION
+				SELECT * FROM t`,
+			want: []ast.Node{
+				&ast.SelectStmt{
+					SetOperation: ast.SetOperationTypeUnion,
+					LQuery: &ast.SelectStmt{
+						SetOperation: ast.SetOperationTypeNone,
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table: &ast.TableDef{
+									Schema: "public",
+									Name:   "t",
+								},
+								ColumnName: "a",
+							},
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "b",
+							},
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+						},
+						WhereClause: &ast.UnconvertedExpressionDef{},
+						PatternLikeList: []*ast.PatternLikeDef{
+							{
+								Not: true,
+								Expression: &ast.ColumnNameDef{
+									Table:      &ast.TableDef{},
+									ColumnName: "c",
+								},
+								Pattern: &ast.StringDef{Value: "xyz"},
+							},
+							{
+								Expression: &ast.ColumnNameDef{
+									Table:      &ast.TableDef{},
+									ColumnName: "b",
+								},
+								Pattern: &ast.StringDef{Value: "%csdbc"},
+							},
+						},
+						SubqueryList: []*ast.SubqueryDef{
+							{
+								Select: &ast.SelectStmt{
+									SetOperation: ast.SetOperationTypeNone,
+									FieldList: []ast.ExpressionNode{
+										&ast.ColumnNameDef{
+											Table:      &ast.TableDef{},
+											ColumnName: "*",
+										},
+									},
+									WhereClause: &ast.PatternLikeDef{
+										Expression: &ast.ColumnNameDef{
+											Table:      &ast.TableDef{},
+											ColumnName: "x",
+										},
+										Pattern: &ast.ColumnNameDef{
+											Table:      &ast.TableDef{},
+											ColumnName: "b",
+										},
+									},
+									PatternLikeList: []*ast.PatternLikeDef{
+										{
+											Expression: &ast.ColumnNameDef{
+												Table:      &ast.TableDef{},
+												ColumnName: "x",
+											},
+											Pattern: &ast.ColumnNameDef{
+												Table:      &ast.TableDef{},
+												ColumnName: "b",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					RQuery: &ast.SelectStmt{
+						SetOperation: ast.SetOperationTypeNone,
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "*",
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				`SELECT
+					public.t.a, b, lower(a), b>a
+				FROM
+					t
+				WHERE
+					a > 0
+					AND (c not LIKE 'xyz' or true)
+					AND b LIKE '%csdbc'
+					AND a in
+						(SELECT * FROM t1 WHERE x LIKE b)
+				UNION
+				SELECT * FROM t`,
+			},
+		},
+	}
+
+	runTests(t, tests)
+}

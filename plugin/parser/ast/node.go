@@ -1,5 +1,9 @@
 package ast
 
+var (
+	_ Node = (*node)(nil)
+)
+
 // Node is the interface for node.
 type Node interface {
 	Text() string
