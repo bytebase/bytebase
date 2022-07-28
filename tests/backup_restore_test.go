@@ -574,11 +574,11 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backup.ID)
 		a.NoError(err)
 
+		log.Debug("Creating issue for the first PITR.")
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
-
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
 		targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
-		createCtx, err := json.Marshal(&api.PITRContext{
+		pitrIssueCtx, err := json.Marshal(&api.PITRContext{
 			DatabaseID:    database.ID,
 			PointInTimeTs: targetTs,
 		})
@@ -588,12 +588,11 @@ func TestPITR(t *testing.T) {
 			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
 			Type:          api.IssueDatabasePITR,
 			AssigneeID:    project.Creator.ID,
-			CreateContext: string(createCtx),
+			CreateContext: string(pitrIssueCtx),
 		})
 		a.NoError(err)
 
 		// Restore stage.
-		log.Debug("Waiting for the PITR restore task")
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
@@ -603,7 +602,6 @@ func TestPITR(t *testing.T) {
 		time.Sleep(time.Second)
 
 		// Cutover stage.
-		log.Debug("Waiting for the PITR cutover task")
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
@@ -611,13 +609,9 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 		validateTableUpdateRow(t, mysqlDB, databaseName)
+		log.Debug("First PITR done.")
 
-		// Preparing database mutation for second PITR
-		ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
-		targetTs = startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
-		insertRangeData(t, mysqlDB, numRowsTime1, numRowsTime2)
-
-		// Wait first PITR auto backup finish
+		log.Debug("Wait for the first PITR auto backup to finish.")
 		backups, err := ctl.listBackups(database.ID)
 		a.NoError(err)
 		a.Equal(2, len(backups))
@@ -627,18 +621,21 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backups[0].ID)
 		a.NoError(err)
 
-		createCtx, err = json.Marshal(&api.PITRContext{
+		log.Debug("Creating issue for the first PITR.")
+		ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
+		targetTs = startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
+		insertRangeData(t, mysqlDB, numRowsTime1, numRowsTime2)
+		pitrIssueCtx, err = json.Marshal(&api.PITRContext{
 			DatabaseID:    database.ID,
 			PointInTimeTs: targetTs,
 		})
 		a.NoError(err)
-
 		issue, err = ctl.createIssue(api.IssueCreate{
 			ProjectID:     project.ID,
 			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
 			Type:          api.IssueDatabasePITR,
 			AssigneeID:    project.Creator.ID,
-			CreateContext: string(createCtx),
+			CreateContext: string(pitrIssueCtx),
 		})
 		a.NoError(err)
 

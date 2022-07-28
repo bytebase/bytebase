@@ -1239,6 +1239,7 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
+	log.Debug("Waiting for backup.", zap.Int("id", backupID))
 	for range ticker.C {
 		backups, err := ctl.listBackups(databaseID)
 		if err != nil {
