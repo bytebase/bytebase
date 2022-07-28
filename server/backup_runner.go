@@ -97,23 +97,7 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 			backupTime := time.Unix(backup.UpdatedTs, 0)
 			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs))
 			if time.Now().After(expireTime) {
-				// update metadata
-				archive := api.Archived
-				backupPatch := api.BackupPatch{
-					ID:        backup.ID,
-					RowStatus: &archive,
-				}
-				if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
-					log.Error("Failed to update status for deleted backup", zap.String("name", backup.Name), zap.String("database", bs.Database.Name))
-					continue // next backup
-				}
-
-				// delete backup file
-				backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, bs.DatabaseID, backup.Name)
-				if err := os.Remove(backupFilePath); err != nil {
-					log.Error("Failed to delete an expired backup file.", zap.String("path", backupFilePath), zap.Error(err))
-				}
-				log.Info("Deleted expired backup file.", zap.String("path", backupFilePath))
+				r.purgeBackup(ctx, *backup)
 			}
 		}
 	}
@@ -167,6 +151,29 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func (r *BackupRunner) purgeBackup(ctx context.Context, backup api.Backup) error {
+	// update metadata
+	archive := api.Archived
+	backupPatch := api.BackupPatch{
+		ID:        backup.ID,
+		RowStatus: &archive,
+	}
+	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
+		log.Error("Failed to update status for deleted backup.", zap.String("name", backup.Name), zap.Int("databaseId", backup.DatabaseID))
+		return fmt.Errorf("failed to update status for deleted backup %q for database with ID %d, error: %w", backup.Name, backup.DatabaseID, err)
+	}
+
+	// delete backup file
+	backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, backup.DatabaseID, backup.Name)
+	if err := os.Remove(backupFilePath); err != nil {
+		log.Error("Failed to delete an expired backup file.", zap.String("path", backupFilePath), zap.Error(err))
+		return fmt.Errorf("failed to delete an expired backup file %q, error: %w", backupFilePath, err)
+	}
+	log.Info("Deleted expired backup file.", zap.String("path", backupFilePath))
+
+	return nil
 }
 
 func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
