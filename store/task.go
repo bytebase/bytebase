@@ -650,19 +650,21 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	if err != nil {
 		return nil, err
 	}
-	if taskRunRaw == nil && patch.Status == api.TaskRunning {
-		taskRunCreate := &api.TaskRunCreate{
-			CreatorID: patch.UpdaterID,
-			TaskID:    taskRawObj.ID,
-			Name:      fmt.Sprintf("%s %d", taskRawObj.Name, time.Now().Unix()),
-			Type:      taskRawObj.Type,
-			Payload:   taskRawObj.Payload,
+	if taskRunRaw == nil {
+		if patch.Status == api.TaskRunning {
+			taskRunCreate := &api.TaskRunCreate{
+				CreatorID: patch.UpdaterID,
+				TaskID:    taskRawObj.ID,
+				Name:      fmt.Sprintf("%s %d", taskRawObj.Name, time.Now().Unix()),
+				Type:      taskRawObj.Type,
+				Payload:   taskRawObj.Payload,
+			}
+			// insert a running taskRun
+			if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
+				return nil, err
+			}
 		}
-		// insert a running taskRun
-		if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
-			return nil, err
-		}
-	} else if taskRunRaw != nil {
+	} else {
 		if patch.Status == api.TaskRunning {
 			return nil, fmt.Errorf("task is already running: %v", taskRawObj.Name)
 		}

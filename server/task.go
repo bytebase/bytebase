@@ -345,7 +345,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
 			}
 
-			_, err = s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
+			if _, err = s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
 				CreatorID:   taskPatched.CreatorID,
 				ContainerID: issue.ID,
 				Type:        api.ActivityPipelineTaskStatementUpdate,
@@ -353,14 +353,13 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				Level:       api.ActivityInfo,
 			}, &ActivityMeta{
 				issue: issue,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 			}
 
 			// dismiss stale reviews and transfer the status to PendingApproval.
 			if taskPatched.Status != api.TaskPendingApproval {
-				taskPatchedPatched, err := s.changeTaskStatusWithPatch(ctx, taskPatched, &api.TaskStatusPatch{
+				t, err := s.changeTaskStatusWithPatch(ctx, taskPatched, &api.TaskStatusPatch{
 					ID:        taskPatch.ID,
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
@@ -368,7 +367,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 				}
-				taskPatched = taskPatchedPatched
+				taskPatched = t
 			}
 
 			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
