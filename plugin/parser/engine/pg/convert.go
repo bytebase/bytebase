@@ -225,27 +225,40 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 	case *pgquery.Node_ColumnRef:
 		columnName := &ast.ColumnNameDef{Table: &ast.TableDef{}}
 		list := in.ColumnRef.Fields
+		// There are three cases for column name:
+		//   1. schemaName.tableName.columnName
+		//   2. tableName.columnName
+		//   3. columnName
+		// The pg parser will split them by ".", and use a list to define it.
+		// So we need to consider this three cases.
 		switch len(in.ColumnRef.Fields) {
+		// schemaName.tableName.columName
 		case 3:
 			schema, ok := list[0].Node.(*pgquery.Node_String_)
 			if !ok {
 				return nil, nil, nil, parser.NewConvertErrorf("expected String but found %t", in.ColumnRef.Fields[2].Node)
 			}
 			columnName.Table.Schema = schema.String_.Str
+			// need to convert tableName.columnName
 			list = list[1:]
 			fallthrough
+		// tableName.columnName
 		case 2:
 			table, ok := list[0].Node.(*pgquery.Node_String_)
 			if !ok {
 				return nil, nil, nil, parser.NewConvertErrorf("expected String but found %t", in.ColumnRef.Fields[1].Node)
 			}
 			columnName.Table.Name = table.String_.Str
+			// need to convert columnName
 			list = list[1:]
 			fallthrough
+		// columnName
 		case 1:
 			switch column := list[0].Node.(type) {
+			// column name
 			case *pgquery.Node_String_:
 				columnName.ColumnName = column.String_.Str
+			// e.g. SELECT * FROM t;
 			case *pgquery.Node_AStar:
 				columnName.ColumnName = "*"
 			default:
@@ -358,7 +371,7 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 		if err != nil {
 			return nil, err
 		}
-		selectStmt.TargetList = append(selectStmt.TargetList, convertedNode)
+		selectStmt.FieldList = append(selectStmt.FieldList, convertedNode)
 	}
 	// Convert WHERE clause
 	if in.WhereClause != nil {

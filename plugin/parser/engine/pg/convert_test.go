@@ -656,7 +656,7 @@ func TestPGSelectStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.SelectStmt{
 					SetOperation: ast.SetOperationTypeNone,
-					TargetList: []ast.ExpressionNode{
+					FieldList: []ast.ExpressionNode{
 						&ast.ColumnNameDef{
 							Table: &ast.TableDef{
 								Schema: "public",
@@ -698,7 +698,7 @@ func TestPGSelectStmt(t *testing.T) {
 					SetOperation: ast.SetOperationTypeUnion,
 					LQuery: &ast.SelectStmt{
 						SetOperation: ast.SetOperationTypeNone,
-						TargetList: []ast.ExpressionNode{
+						FieldList: []ast.ExpressionNode{
 							&ast.ColumnNameDef{
 								Table: &ast.TableDef{
 									Schema: "public",
@@ -735,7 +735,7 @@ func TestPGSelectStmt(t *testing.T) {
 							{
 								Select: &ast.SelectStmt{
 									SetOperation: ast.SetOperationTypeNone,
-									TargetList: []ast.ExpressionNode{
+									FieldList: []ast.ExpressionNode{
 										&ast.ColumnNameDef{
 											Table:      &ast.TableDef{},
 											ColumnName: "*",
@@ -769,7 +769,7 @@ func TestPGSelectStmt(t *testing.T) {
 					},
 					RQuery: &ast.SelectStmt{
 						SetOperation: ast.SetOperationTypeNone,
-						TargetList: []ast.ExpressionNode{
+						FieldList: []ast.ExpressionNode{
 							&ast.ColumnNameDef{
 								Table:      &ast.TableDef{},
 								ColumnName: "*",

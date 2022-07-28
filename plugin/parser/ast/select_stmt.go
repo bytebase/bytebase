@@ -18,16 +18,21 @@ const (
 type SelectStmt struct {
 	node
 
-	// if SetOperation is SetOperatironTypeNode:
+	// if SetOperation is SetOperationTypeNode:
 	//   LQuery and RQuery is nil and SELECT fields is useful
 	// otherwise:
 	//   only use LQuery and RQuery
 	SetOperation SetOperationType
-	LQuery       *SelectStmt
-	RQuery       *SelectStmt
+	// LQuery and RQuery are used for set operation, such as UNION.
+	// In this case, we define the SQL as:
+	//   LQuery UNION RQuery;
+	// Easy to know, LQuery and RQuery are SELECT statement, also.
+	// Details at https://www.postgresql.org/docs/current/sql-select.html
+	LQuery *SelectStmt
+	RQuery *SelectStmt
 
 	// SELECT fields
-	TargetList  []ExpressionNode
+	FieldList   []ExpressionNode
 	WhereClause ExpressionNode
 
 	// TODO(rebelice): support all expression and remove them.
