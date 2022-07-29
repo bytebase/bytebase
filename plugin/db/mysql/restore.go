@@ -537,14 +537,10 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 				return fmt.Errorf("failed to download binlog file %q, error: %w", path, err)
 			}
 		} else if fileLocal.Size != fileOnServer.Size {
-			log.Debug("Deleting inconsistent local binlog file",
+			log.Debug("Found incomplete local binlog file",
 				zap.String("path", path),
 				zap.Int64("sizeLocal", fileLocal.Size),
 				zap.Int64("sizeOnServer", fileOnServer.Size))
-			if err := os.Remove(path); err != nil {
-				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return fmt.Errorf("failed to remove inconsistent local binlog file %q, error: %w", path, err)
-			}
 			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
 				return fmt.Errorf("failed to re-download inconsistent local binlog file %q, error: %w", path, err)
@@ -606,28 +602,22 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
 	resultFilePath := filepath.Join(resultFileDir, binlogFileToDownload.Name)
 	if err := cmd.Run(); err != nil {
-		_ = os.Remove(resultFilePath)
 		return fmt.Errorf("executing mysqlbinlog fails, error: %w", err)
 	}
 
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", resultFilePath))
 	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
-		if err := os.Remove(resultFilePath); err != nil {
-			log.Error("Failed to get stat of the binlog file.", zap.String("path", resultFilePath), zap.Error(err))
-		}
-		return fmt.Errorf("cannot get file %q stat, error: %w", resultFilePath, err)
+		log.Error("Failed to get stat of the binlog file.", zap.String("path", resultFilePath), zap.Error(err))
+		return fmt.Errorf("failed to get stat of the binlog file %q, error: %w", resultFilePath, err)
 	}
 	if !isLast && fileInfo.Size() != binlogFileToDownload.Size {
-		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server.",
+		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server earlier.",
 			zap.String("binlog", binlogFileToDownload.Name),
 			zap.Int64("sizeInfo", binlogFileToDownload.Size),
 			zap.Int64("downloadedSize", fileInfo.Size()),
 		)
-		if err := os.Remove(resultFilePath); err != nil {
-			log.Error("Failed to remove the inconsistent archived binlog file.", zap.String("path", resultFilePath), zap.Error(err))
-		}
-		return fmt.Errorf("downloaded binlog file %q size %d is not equal to size %d queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
+		return fmt.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 	}
 
 	return nil
