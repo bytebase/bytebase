@@ -374,8 +374,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 }
 
 // Returns true only if the task check run result is at least the minimum required level.
-// For auto-approval policy, the minimum level is SUCCESS
-// For manual-approval policy, the minimum level is WARN
+// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
+// For Pending->Running transitions, the minimum level is WARN.
 // TODO(dragonly): refactor arguments.
 func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, level api.TaskCheckStatus) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
