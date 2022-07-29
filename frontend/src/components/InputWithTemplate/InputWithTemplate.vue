@@ -183,7 +183,7 @@ const onTemplateAdd = (template: Template) => {
   });
 
   state.inputData = "";
-  if (inputRef.value && inputRef.value) {
+  if (inputRef.value) {
     inputRef.value.focus();
   }
 };
