@@ -13,9 +13,9 @@
 <script lang="ts" setup>
 import { onMounted, reactive } from "vue";
 import { fetchDemoDataWithName } from "../data";
+import useAppStore from "../store";
 import DemoDrawer from "./DemoDrawer.vue";
 import ProcessBar from "./ProcessBar.vue";
-import useAppStore from "../store";
 
 interface LocalState {
   showDemoDrawer: boolean;
