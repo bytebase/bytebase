@@ -25,7 +25,7 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 
 				policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to get approval policy for environment ID %d, error: %w", task.Instance.EnvironmentID, err)
 				}
 				if policy.Value == api.PipelineApprovalValueManualNever {
 					// transit into Pending for ManualNever (auto-approval) tasks.
