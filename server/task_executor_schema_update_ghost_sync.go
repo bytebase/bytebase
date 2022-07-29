@@ -176,7 +176,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 
 func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
-	migrationError := make(chan error, 1)
+	migrationError := make(chan error)
 	instance := task.Instance
 	databaseName := task.Database.Name
 
@@ -249,8 +249,10 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 		err := migrator.Migrate()
 		if err != nil {
 			log.Error("failed to run gh-ost migration", zap.Error(err))
+			migrationError <- err
+			return
 		}
-		migrationError <- err
+		migrationError <- nil
 	}()
 
 	select {
