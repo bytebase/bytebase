@@ -37,6 +37,19 @@ const (
 	TaskCheckStatusError TaskCheckStatus = "ERROR"
 )
 
+// Level returns the status level, ERROR=0, WARN=1, SUCCESS=2.
+func (t TaskCheckStatus) Level() int {
+	switch t {
+	case TaskCheckStatusSuccess:
+		return 2
+	case TaskCheckStatusWarn:
+		return 1
+	case TaskCheckStatusError:
+		return 0
+	}
+	return -1
+}
+
 // TaskCheckType is the type of a taskCheck.
 type TaskCheckType string
 

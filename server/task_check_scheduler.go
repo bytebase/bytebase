@@ -373,10 +373,11 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	return task, nil
 }
 
-// Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
-// But this method is used for gating the automatic run, so we are more cautious here.
+// Returns true only if the task check run result is at least the minimum required level.
+// For auto-approval policy, the minimum level is SUCCESS
+// For manual-approval policy, the minimum level is WARN
 // TODO(dragonly): refactor arguments.
-func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, level api.TaskCheckStatus) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &task.ID,
@@ -405,7 +406,7 @@ func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.Ta
 		return false, err
 	}
 	for _, result := range checkResult.ResultList {
-		if result.Status == api.TaskCheckStatusError {
+		if result.Status.Level() < level.Level() {
 			log.Debug("Task is waiting for check to pass",
 				zap.Int("task_id", task.ID),
 				zap.String("task_name", task.Name),

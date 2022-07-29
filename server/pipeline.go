@@ -18,7 +18,34 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 
 			skipIfAlreadyTerminated := true
 			if task.Status == api.TaskPendingApproval {
-				return s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, skipIfAlreadyTerminated)
+				task, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, skipIfAlreadyTerminated)
+				if err != nil {
+					return nil, err
+				}
+
+				policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
+				if err != nil {
+					return nil, err
+				}
+				if policy.Value == api.PipelineApprovalValueManualNever {
+					// transit into Pending for ManualNever (auto-approval) tasks only if
+					// 1. task checks all succeeded.
+					// 2. have no blocking tasks.
+					ok, err := s.TaskScheduler.canTransitPendingApprovalToPending(ctx, task)
+					if err != nil {
+						return nil, err
+					}
+					if ok {
+						if _, err := s.changeTaskStatusWithPatch(ctx, task, &api.TaskStatusPatch{
+							ID:        task.ID,
+							UpdaterID: api.SystemBotID,
+							Status:    api.TaskPending,
+						}); err != nil {
+							return nil, err
+						}
+					}
+				}
+				return task, nil
 			}
 
 			if task.Status == api.TaskPending {
