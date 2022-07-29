@@ -96,6 +96,9 @@ func (checker *compatibilityChecker) Visit(node ast.Node) ast.Visitor {
 			}
 		}
 	// ALTER TABLE ALTER COLUMN TYPE
+	case *ast.AlterColumnTypeStmt:
+		code = advisor.CompatibilityAlterColumn
+	// CREATE UNIQUE INDEX
 	case *ast.CreateIndexStmt:
 		if n.Index.Unique {
 			code = advisor.CompatibilityAddUniqueKey
