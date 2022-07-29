@@ -1071,6 +1071,34 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 func TestUpdateStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: "UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+			want: []ast.Node{
+				&ast.UpdateStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					WhereClause: &ast.UnconvertedExpressionDef{},
+					SubqueryList: []*ast.SubqueryDef{
+						{
+							Select: &ast.SelectStmt{
+								SetOperation: ast.SetOperationTypeNone,
+								FieldList: []ast.ExpressionNode{
+									&ast.ColumnNameDef{
+										Table:      &ast.TableDef{},
+										ColumnName: "*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+			},
+		},
+		{
 			stmt: "UPDATE tech_book SET a = 1",
 			want: []ast.Node{
 				&ast.UpdateStmt{
