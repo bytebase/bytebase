@@ -209,6 +209,17 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 		}, nil
 	case *pgquery.Node_SelectStmt:
 		return convertSelectStmt(in.SelectStmt)
+	case *pgquery.Node_DeleteStmt:
+		delete := &ast.DeleteStmt{
+			Table: convertRangeVarToTableName(in.DeleteStmt.Relation, ast.TableTypeBaseTable),
+		}
+		if in.DeleteStmt.WhereClause != nil {
+			var err error
+			if delete.WhereClause, delete.PatternLikeList, delete.SubqueryList, err = convertExpressionNode(in.DeleteStmt.WhereClause); err != nil {
+				return nil, err
+			}
+		}
+		return delete, nil
 	}
 
 	return nil, nil
@@ -384,7 +395,6 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 	}
 	// Convert WHERE clause
 	if in.WhereClause != nil {
-		selectStmt.WhereClause = &ast.UnconvertedExpressionDef{}
 		var err error
 		if selectStmt.WhereClause, selectStmt.PatternLikeList, selectStmt.SubqueryList, err = convertExpressionNode(in.WhereClause); err != nil {
 			return nil, err
