@@ -269,16 +269,47 @@ func TestPGRenameTableStmt(t *testing.T) {
 		{
 			stmt: "ALTER TABLE techbook RENAME TO \"techBook\"",
 			want: []ast.Node{
-				&ast.RenameTableStmt{
+				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
 						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
-					NewName: "techBook",
+					AlterItemList: []ast.Node{
+						&ast.RenameTableStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "techbook",
+							},
+							NewName: "techBook",
+						},
+					},
 				},
 			},
 			textList: []string{
 				"ALTER TABLE techbook RENAME TO \"techBook\"",
+			},
+		},
+		{
+			stmt: "ALTER VIEW techbook RENAME TO \"techBook\"",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "techbook",
+					},
+					AlterItemList: []ast.Node{
+						&ast.RenameTableStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeView,
+								Name: "techbook",
+							},
+							NewName: "techBook",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER VIEW techbook RENAME TO \"techBook\"",
 			},
 		},
 	}
@@ -291,17 +322,49 @@ func TestPGRenameColumnStmt(t *testing.T) {
 		{
 			stmt: "ALTER TABLE techbook RENAME abc TO \"ABC\"",
 			want: []ast.Node{
-				&ast.RenameColumnStmt{
+				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
 						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
-					ColumnName: "abc",
-					NewName:    "ABC",
+					AlterItemList: []ast.Node{
+						&ast.RenameColumnStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "techbook",
+							},
+							ColumnName: "abc",
+							NewName:    "ABC",
+						},
+					},
 				},
 			},
 			textList: []string{
 				"ALTER TABLE techbook RENAME abc TO \"ABC\"",
+			},
+		},
+		{
+			stmt: "ALTER VIEW techbook RENAME abc TO \"ABC\"",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "techbook",
+					},
+					AlterItemList: []ast.Node{
+						&ast.RenameColumnStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeView,
+								Name: "techbook",
+							},
+							ColumnName: "abc",
+							NewName:    "ABC",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER VIEW techbook RENAME abc TO \"ABC\"",
 			},
 		},
 	}
@@ -314,13 +377,21 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 		{
 			stmt: "ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
 			want: []ast.Node{
-				&ast.RenameConstraintStmt{
+				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
 						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
-					ConstraintName: "uk_tech_a",
-					NewName:        "UK_TECH_A",
+					AlterItemList: []ast.Node{
+						&ast.RenameConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ConstraintName: "uk_tech_a",
+							NewName:        "UK_TECH_A",
+						},
+					},
 				},
 			},
 			textList: []string{
@@ -698,6 +769,27 @@ func TestPGDropTableStmt(t *testing.T) {
 				"DROP TABLE tech_book, xschema.user",
 			},
 		},
+		{
+			stmt: "DROP VIEW tech_book, xschema.user",
+			want: []ast.Node{
+				&ast.DropTableStmt{
+					TableList: []*ast.TableDef{
+						{
+							Type: ast.TableTypeView,
+							Name: "tech_book",
+						},
+						{
+							Type:   ast.TableTypeView,
+							Schema: "xschema",
+							Name:   "user",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"DROP VIEW tech_book, xschema.user",
+			},
+		},
 	}
 
 	runTests(t, tests)
@@ -928,6 +1020,59 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 			},
 			textList: []string{
 				"DROP DATABASE IF EXISTS test",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestSetSchemaStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book SET SCHEMA new_schema",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.SetSchemaStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							NewSchema: "new_schema",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book SET SCHEMA new_schema",
+			},
+		},
+		{
+			stmt: "ALTER VIEW tech_book SET SCHEMA new_schema",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.SetSchemaStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeView,
+								Name: "tech_book",
+							},
+							NewSchema: "new_schema",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER VIEW tech_book SET SCHEMA new_schema",
 			},
 		},
 	}

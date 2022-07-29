@@ -121,21 +121,50 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 			if err != nil {
 				return nil, err
 			}
-			return &ast.RenameColumnStmt{
-				Table:      convertRangeVarToTableName(in.RenameStmt.Relation, tableType),
-				ColumnName: in.RenameStmt.Subname,
-				NewName:    in.RenameStmt.Newname,
+			table := convertRangeVarToTableName(in.RenameStmt.Relation, tableType)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.RenameColumnStmt{
+						Table:      table,
+						ColumnName: in.RenameStmt.Subname,
+						NewName:    in.RenameStmt.Newname,
+					},
+				},
 			}, nil
 		case pgquery.ObjectType_OBJECT_TABLE:
-			return &ast.RenameTableStmt{
-				Table:   convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable),
-				NewName: in.RenameStmt.Newname,
+			table := convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.RenameTableStmt{
+						Table:   table,
+						NewName: in.RenameStmt.Newname,
+					},
+				},
 			}, nil
 		case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
-			return &ast.RenameConstraintStmt{
-				Table:          convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable),
-				ConstraintName: in.RenameStmt.Subname,
-				NewName:        in.RenameStmt.Newname,
+			table := convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.RenameConstraintStmt{
+						Table:          table,
+						ConstraintName: in.RenameStmt.Subname,
+						NewName:        in.RenameStmt.Newname,
+					},
+				},
+			}, nil
+		case pgquery.ObjectType_OBJECT_VIEW:
+			view := convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeView)
+			return &ast.AlterTableStmt{
+				Table: view,
+				AlterItemList: []ast.Node{
+					&ast.RenameTableStmt{
+						Table:   view,
+						NewName: in.RenameStmt.Newname,
+					},
+				},
 			}, nil
 		case pgquery.ObjectType_OBJECT_INDEX:
 			return &ast.RenameIndexStmt{
@@ -201,6 +230,20 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 				dropTable.TableList = append(dropTable.TableList, tableDef)
 			}
 			return dropTable, nil
+		case pgquery.ObjectType_OBJECT_VIEW:
+			dropView := &ast.DropTableStmt{}
+			for _, object := range in.DropStmt.Objects {
+				list, ok := object.Node.(*pgquery.Node_List)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected List but found %t", object.Node)
+				}
+				viewDef, err := convertListToTableDef(list, ast.TableTypeView)
+				if err != nil {
+					return nil, err
+				}
+				dropView.TableList = append(dropView.TableList, viewDef)
+			}
+			return dropView, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -209,6 +252,31 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 		}, nil
 	case *pgquery.Node_SelectStmt:
 		return convertSelectStmt(in.SelectStmt)
+	case *pgquery.Node_AlterObjectSchemaStmt:
+		switch in.AlterObjectSchemaStmt.ObjectType {
+		case pgquery.ObjectType_OBJECT_TABLE:
+			table := convertRangeVarToTableName(in.AlterObjectSchemaStmt.Relation, ast.TableTypeBaseTable)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.SetSchemaStmt{
+						Table:     table,
+						NewSchema: in.AlterObjectSchemaStmt.Newschema,
+					},
+				},
+			}, nil
+		case pgquery.ObjectType_OBJECT_VIEW:
+			view := convertRangeVarToTableName(in.AlterObjectSchemaStmt.Relation, ast.TableTypeView)
+			return &ast.AlterTableStmt{
+				Table: view,
+				AlterItemList: []ast.Node{
+					&ast.SetSchemaStmt{
+						Table:     view,
+						NewSchema: in.AlterObjectSchemaStmt.Newschema,
+					},
+				},
+			}, nil
+		}
 	}
 
 	return nil, nil
