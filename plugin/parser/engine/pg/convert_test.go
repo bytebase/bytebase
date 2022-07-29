@@ -851,6 +851,47 @@ func TestPGNotNullStmt(t *testing.T) {
 func TestPGSelectStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+			want: []ast.Node{
+				&ast.SelectStmt{
+					SetOperation: ast.SetOperationTypeNone,
+					FieldList: []ast.ExpressionNode{
+						&ast.ColumnNameDef{
+							Table: &ast.TableDef{
+								Schema: "public",
+								Name:   "t",
+							},
+							ColumnName: "a",
+						},
+						&ast.ColumnNameDef{
+							Table:      &ast.TableDef{Name: "t"},
+							ColumnName: "*",
+						},
+						&ast.ColumnNameDef{
+							Table:      &ast.TableDef{Name: "t1"},
+							ColumnName: "*",
+						},
+					},
+					SubqueryList: []*ast.SubqueryDef{
+						{
+							Select: &ast.SelectStmt{
+								SetOperation: ast.SetOperationTypeNone,
+								FieldList: []ast.ExpressionNode{
+									&ast.ColumnNameDef{
+										Table:      &ast.TableDef{},
+										ColumnName: "*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+			},
+		},
+		{
 			stmt: "SELECT public.t.a, t.*, * FROM t",
 			want: []ast.Node{
 				&ast.SelectStmt{
@@ -1029,6 +1070,34 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 
 func TestUpdateStmt(t *testing.T) {
 	tests := []testData{
+		{
+			stmt: "UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+			want: []ast.Node{
+				&ast.UpdateStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					WhereClause: &ast.UnconvertedExpressionDef{},
+					SubqueryList: []*ast.SubqueryDef{
+						{
+							Select: &ast.SelectStmt{
+								SetOperation: ast.SetOperationTypeNone,
+								FieldList: []ast.ExpressionNode{
+									&ast.ColumnNameDef{
+										Table:      &ast.TableDef{},
+										ColumnName: "*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+			},
+		},
 		{
 			stmt: "UPDATE tech_book SET a = 1",
 			want: []ast.Node{
