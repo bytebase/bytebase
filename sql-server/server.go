@@ -3,10 +3,14 @@ package sqlserver
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
 	_ "github.com/bytebase/bytebase/docs/sqlservice" // initial the swagger doc
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/segment"
+	"github.com/google/uuid"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/common"
@@ -19,9 +23,10 @@ import (
 
 // Server is the Bytebase server.
 type Server struct {
-	profile   Profile
-	e         *echo.Echo
-	startedTs int64
+	profile        Profile
+	e              *echo.Echo
+	startedTs      int64
+	metricReporter metric.Reporter
 }
 
 // Use following cmd to generate swagger doc
@@ -45,9 +50,15 @@ type Server struct {
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
+	workspaceID, err := initWorkspace(prof.DataDir)
+	if err != nil {
+		return nil, err
+	}
+
 	s := &Server{
-		profile:   prof,
-		startedTs: time.Now().Unix(),
+		profile:        prof,
+		startedTs:      time.Now().Unix(),
+		metricReporter: segment.NewReporter(prof.MetricConnectionKey, workspaceID),
 	}
 
 	// Display config
@@ -55,6 +66,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	fmt.Printf("mode=%s\n", prof.Mode)
 	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
 	fmt.Printf("debug=%t\n", prof.Debug)
+	fmt.Printf("dataDir=%s\n", prof.DataDir)
 	fmt.Println("-----Config END-------")
 
 	serverStarted := false
@@ -87,6 +99,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	apiGroup := e.Group("/v1")
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return metricMiddleware(s, next)
+	})
 	s.registerAdvisorRoutes(apiGroup)
 
 	// Register healthz endpoint.
@@ -101,6 +116,20 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	serverStarted = true
 	return s, nil
+}
+
+func initWorkspace(dataDir string) (string, error) {
+	workspaceFile := fmt.Sprintf("%s/sql-service-workspace", dataDir)
+
+	id, err := ioutil.ReadFile(workspaceFile)
+	if err != nil {
+		id = []byte(uuid.New().String())
+		if err := ioutil.WriteFile(workspaceFile, id, 0644); err != nil {
+			return "", err
+		}
+	}
+
+	return string(id), nil
 }
 
 // Run will run the server.

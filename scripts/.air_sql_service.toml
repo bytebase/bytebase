@@ -2,7 +2,7 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  bin = "./.air/sql-service --port 8081"
+  bin = "./.air/sql-service --port 8081 --data ."
   cmd = """
   go build -gcflags=all=\"-N -l\" \
   -ldflags " \

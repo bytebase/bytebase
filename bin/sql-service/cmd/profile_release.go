@@ -8,13 +8,14 @@ import (
 	server "github.com/bytebase/bytebase/sql-server"
 )
 
-func activeProfile() server.Profile {
+func activeProfile(dataDir string) server.Profile {
 	return server.Profile{
 		Mode:                common.ReleaseModeProd,
 		BackendHost:         flags.host,
 		BackendPort:         flags.port,
 		Debug:               flags.debug,
 		Version:             version,
+		DataDir:             dataDir,
 		GitCommit:           gitcommit,
 		MetricConnectionKey: "",
 	}

@@ -10,6 +10,8 @@ type Profile struct {
 	BackendHost string
 	// BackendPort is the binding backend port for server.
 	BackendPort int
+	// DataDir is the directory stores the data.
+	DataDir string
 	// Debug decides the log level
 	Debug bool
 	// Version is the bytebase's version
