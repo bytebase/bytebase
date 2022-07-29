@@ -176,7 +176,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 
 func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
-	syncError := make(chan error)
+	migrationError := make(chan error, 1)
 	instance := task.Instance
 	databaseName := task.Database.Name
 
@@ -215,7 +215,6 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	migrator := logic.NewMigrator(migrationContext, "bb")
-	sharedErrCh := make(chan error, 1)
 
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
@@ -250,23 +249,15 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 		err := migrator.Migrate()
 		if err != nil {
 			log.Error("failed to run gh-ost migration", zap.Error(err))
-			// `migrator.Migrate` can return an error.
-			// 1. If the error is returned before closing `syncDone`,`runGhostMigration` will receive from `syncError`.
-			// 2. If it is returned after `syncDone` is closed, `runGhostMigration` would have received from `syncDone` and returned,
-			// and there's no consumer for `syncError`, so we must send to `syncError` without blocking.
-			select {
-			case syncError <- fmt.Errorf("failed to run gh-ost migration, error: %w", err):
-			default:
-			}
 		}
-		sharedErrCh <- err
+		migrationError <- err
 	}()
 
 	select {
 	case <-syncDone:
-		server.TaskScheduler.sharedTaskState.Store(task.ID, ghostState{migrator: migrator, errCh: sharedErrCh})
+		server.TaskScheduler.sharedTaskState.Store(task.ID, ghostState{migrator: migrator, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
-	case err := <-syncError:
+	case err := <-migrationError:
 		return true, nil, err
 	}
 }
