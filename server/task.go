@@ -45,7 +45,7 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %q state", task.Status))
 	}
 	if task.Status == api.TaskPending {
-		ok, err := s.TaskScheduler.canTransitPendingToRunning(ctx, task)
+		ok, err := s.TaskScheduler.canTransitTaskStatus(ctx, task, api.TaskCheckStatusWarn)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
 		}

@@ -229,20 +229,6 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() Ta
 	s.executorGetters[taskType] = executorGetter
 }
 
-// can transit PendingApproval -> Pending only if
-// 1. has no blocking tasks.
-// 2. task check results are all SUCCESS.
-func (s *TaskScheduler) canTransitPendingApprovalToPending(ctx context.Context, task *api.Task) (bool, error) {
-	return s.canTransitTaskStatus(ctx, task, api.TaskCheckStatusSuccess)
-}
-
-// can transit Pending -> Running only if
-// 1. has no blocking tasks.
-// 2. task check results are either SUCCESS or WARN.
-func (s *TaskScheduler) canTransitPendingToRunning(ctx context.Context, task *api.Task) (bool, error) {
-	return s.canTransitTaskStatus(ctx, task, api.TaskCheckStatusWarn)
-}
-
 func (s *TaskScheduler) canTransitTaskStatus(ctx context.Context, task *api.Task, level api.TaskCheckStatus) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
@@ -326,7 +312,7 @@ func (s *TaskScheduler) canTransitTaskStatus(ctx context.Context, task *api.Task
 // 1. its required check does not contain error in the latest run
 // 2. it has no blocking tasks.
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	schedule, err := s.canTransitPendingToRunning(ctx, task)
+	schedule, err := s.canTransitTaskStatus(ctx, task, api.TaskCheckStatusWarn)
 	if err != nil {
 		return nil, err
 	}
