@@ -21,7 +21,12 @@ import {
 import { useIssueLogic } from ".";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
-  const { create, activeTaskOfPipeline } = useIssueLogic();
+  const {
+    create,
+    activeTaskOfPipeline,
+    allowApplyIssueStatusTransition,
+    allowApplyTaskStatusTransition,
+  } = useIssueLogic();
   const currentUser = useCurrentUser();
 
   const getApplicableIssueStatusTransitionList = (
@@ -57,7 +62,11 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     }
 
     return list
-      .filter((item) => {
+      .map(
+        (type: IssueStatusTransitionType) =>
+          ISSUE_STATUS_TRANSITION_LIST.get(type)!
+      )
+      .filter((transition) => {
         const pipeline = issueEntity.pipeline;
         // Disallow any issue status transition if the active task is in RUNNING state.
         if (currentTask.status == "RUNNING") {
@@ -67,7 +76,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
         const taskList = allTaskList(pipeline);
         // Don't display the Resolve action if the last task is NOT in DONE status.
         if (
-          item == "RESOLVE" &&
+          transition.type == "RESOLVE" &&
           taskList.length > 0 &&
           (currentTask.id != taskList[taskList.length - 1].id ||
             currentTask.status != "DONE")
@@ -75,12 +84,8 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
           return false;
         }
 
-        return true;
+        return allowApplyIssueStatusTransition(issue, transition.to);
       })
-      .map(
-        (type: IssueStatusTransitionType) =>
-          ISSUE_STATUS_TRANSITION_LIST.get(type)!
-      )
       .reverse();
   };
 
@@ -96,18 +101,20 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       case "CANCELED":
         return [];
       case "OPEN": {
-        let list: TaskStatusTransition[] = [];
-
         // Allow assignee, or assignee is the system bot and current user is DBA or owner
         if (
           currentUser.value.id === issue.assignee?.id ||
           (issue.assignee?.id == SYSTEM_BOT_ID &&
             isDBAOrOwner(currentUser.value.role))
         ) {
-          list = applicableStageTransition(issue.pipeline);
+          const currentTask = activeTaskOfPipeline(issue.pipeline);
+          return applicableStageTransition(issue.pipeline).filter(
+            (transition) =>
+              allowApplyTaskStatusTransition(currentTask, transition.to)
+          );
         }
 
-        return list;
+        return [];
       }
     }
     console.assert(false, "Should never reach this line");
@@ -127,18 +134,19 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       case "CANCELED":
         return [];
       case "OPEN": {
-        let list: TaskStatusTransition[] = [];
-
         // Allow assignee, or assignee is the system bot and current user is DBA or owner
         if (
           currentUser.value.id === issue.assignee?.id ||
           (issue.assignee?.id == SYSTEM_BOT_ID &&
             isDBAOrOwner(currentUser.value.role))
         ) {
-          list = applicableTaskTransition(issue.pipeline);
+          const currentTask = activeTaskOfPipeline(issue.pipeline);
+          return applicableTaskTransition(issue.pipeline).filter((transition) =>
+            allowApplyTaskStatusTransition(currentTask, transition.to)
+          );
         }
 
-        return list;
+        return [];
       }
     }
     console.assert(false, "Should never reach this line");

@@ -186,6 +186,8 @@ const {
   selectTask,
   taskStatusOfStage,
   isValidStage,
+  allowApplyIssueStatusTransition,
+  allowApplyTaskStatusTransition,
 } = useBaseIssueLogic({ issue, create });
 
 const issueLogic = ref<IssueLogic>();
@@ -343,6 +345,8 @@ provideIssueLogic(
     selectTask,
     onStatusChanged,
     createIssue,
+    allowApplyIssueStatusTransition,
+    allowApplyTaskStatusTransition,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.

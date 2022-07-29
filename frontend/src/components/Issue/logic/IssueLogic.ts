@@ -4,6 +4,7 @@ import {
   Issue,
   IssueCreate,
   IssuePatch,
+  IssueStatus,
   Pipeline,
   Project,
   Stage,
@@ -68,6 +69,10 @@ type IssueLogic = {
     taskSlug?: string | undefined
   ) => void;
   selectTask: (task: Task) => void;
+
+  // status transition
+  allowApplyIssueStatusTransition(issue: Issue, to: IssueStatus): boolean;
+  allowApplyTaskStatusTransition(task: Task, to: TaskStatus): boolean;
 };
 
 export default IssueLogic;
