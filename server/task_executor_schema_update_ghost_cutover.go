@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/github/gh-ost/go/logic"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -65,10 +64,10 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 
 	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
 
-	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, socketFilename, postponeFilename, sharedGhost.migrator, sharedGhost.errCh)
+	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.errCh)
 }
 
-func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, socketFilename, postponeFilename string, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 
 	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
