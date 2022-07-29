@@ -53,7 +53,6 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 		return true, nil, fmt.Errorf("failed to parse table name from statement, error: %w", err)
 	}
 
-	socketFilename := getSocketFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
 	value, ok := server.TaskScheduler.sharedTaskState.Load(syncTaskID)
