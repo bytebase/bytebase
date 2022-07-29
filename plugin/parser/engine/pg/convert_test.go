@@ -1027,6 +1027,42 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 	runTests(t, tests)
 }
 
+func TestDeleteStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DELETE FROM tech_book",
+			want: []ast.Node{
+				&ast.DeleteStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+				},
+			},
+			textList: []string{
+				"DELETE FROM tech_book",
+			},
+		},
+		{
+			stmt: "DELETE FROM tech_book WHERE a > 1",
+			want: []ast.Node{
+				&ast.DeleteStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					WhereClause: &ast.UnconvertedExpressionDef{},
+				},
+			},
+			textList: []string{
+				"DELETE FROM tech_book WHERE a > 1",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestSetSchemaStmt(t *testing.T) {
 	tests := []testData{
 		{
