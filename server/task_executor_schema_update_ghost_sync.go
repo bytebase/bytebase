@@ -264,7 +264,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 
 	select {
 	case <-syncDone:
-		server.TaskScheduler.sharedGhost.Store(task.ID, ghostState{migrator: migrator, errCh: sharedErrCh})
+		server.TaskScheduler.sharedTaskState.Store(task.ID, ghostState{migrator: migrator, errCh: sharedErrCh})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-syncError:
 		return true, nil, err

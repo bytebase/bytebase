@@ -33,11 +33,8 @@ type TaskScheduler struct {
 	executorGetters  map[api.TaskType]func() TaskExecutor
 	runningExecutors map[int]TaskExecutor
 	taskProgress     sync.Map // map[taskID]api.Progress
-	// sharedGhost is to share states between gh-ost sync and cutover task.
-	// inserted by sync task.
-	// deleted by cutover task.
-	sharedGhost sync.Map // map[taskID]ghostState
-	server      *Server
+	sharedTaskState  sync.Map // map[taskID]interface{}
+	server           *Server
 }
 
 // Run will run the task scheduler.

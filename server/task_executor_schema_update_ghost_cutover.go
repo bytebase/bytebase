@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/github/gh-ost/go/logic"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -18,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/github/gh-ost/go/logic"
 )
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
@@ -57,15 +57,13 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	socketFilename := getSocketFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
-	value, ok := server.TaskScheduler.sharedGhost.Load(syncTaskID)
+	value, ok := server.TaskScheduler.sharedTaskState.Load(syncTaskID)
 	if !ok {
 		return true, nil, fmt.Errorf("failed to get gh-ost state from sync task")
 	}
 	sharedGhost := value.(ghostState)
 
-	defer func() {
-		server.TaskScheduler.sharedGhost.Delete(syncTaskID)
-	}()
+	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
 
 	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, socketFilename, postponeFilename, sharedGhost.migrator, sharedGhost.errCh)
 }
