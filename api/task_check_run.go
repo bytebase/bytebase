@@ -50,7 +50,7 @@ func (t TaskCheckStatus) level() int {
 }
 
 // LessThan helps judge if a task check status doesn't meet the minimum requirement.
-// For example, ERROR is LessThan WARN,
+// For example, ERROR is LessThan WARN.
 func (t TaskCheckStatus) LessThan(r TaskCheckStatus) bool {
 	return t.level() < r.level()
 }
