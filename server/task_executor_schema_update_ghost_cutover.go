@@ -38,7 +38,10 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to get a single taskDAG for schema update gh-ost cutover task, id: %v, error: %w", task.ID, err)
 	}
+
 	syncTaskID := taskDAG.FromTaskID
+	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
+
 	syncTask, err := server.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to get schema update gh-ost sync task for cutover task, error: %w", err)
@@ -53,13 +56,18 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 		return true, nil, fmt.Errorf("failed to parse table name from statement, error: %w", err)
 	}
 
-	socketFilename := getSocketFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
-	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, socketFilename, postponeFilename)
+	value, ok := server.TaskScheduler.sharedTaskState.Load(syncTaskID)
+	if !ok {
+		return true, nil, fmt.Errorf("failed to get gh-ost state from sync task")
+	}
+	sharedGhost := value.(sharedGhostState)
+
+	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.errCh)
 }
 
-func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, socketFilename, postponeFilename string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 
 	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
@@ -109,13 +117,8 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 			return -1, "", fmt.Errorf("failed to remove postpone flag file, error: %w", err)
 		}
 
-		ticker := time.NewTicker(time.Second * 1)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			if _, err := os.Stat(socketFilename); err != nil {
-				break
-			}
+		if migrationErr := <-errCh; migrationErr != nil {
+			return -1, "", fmt.Errorf("failed to run gh-ost migration, err: %w", migrationErr)
 		}
 
 		var afterSchemaBuf bytes.Buffer
