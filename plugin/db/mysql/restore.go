@@ -606,7 +606,8 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
 	resultFilePath := filepath.Join(resultFileDir, binlogFileToDownload.Name)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("executing mysqlbinlog fails, error: %w", err)
+		log.Error("Failed to execute mysqlbinlog binary", zap.Error(err))
+		return fmt.Errorf("failed to execute mysqlbinlog binary, error: %w", err)
 	}
 
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", resultFilePath))
