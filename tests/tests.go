@@ -116,15 +116,19 @@ func getTestPort(testName string) int {
 	tests := []string{
 		"TestServiceRestart",
 		"TestSchemaAndDataUpdate",
-		"TestVCS_GitLab",
+		"TestVCS/GitLab",
+		"TestVCS/GitHub",
 		"TestTenant",
-		"TestTenantVCS_GitLab",
+		"TestTenantVCS/GitLab",
+		"TestTenantVCS/GitHub",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestBackupRestoreBasic",
-		"TestTenantVCSDatabaseNameTemplate_GitLab",
+		"TestTenantVCSDatabaseNameTemplate/GitLab",
+		"TestTenantVCSDatabaseNameTemplate/GitHub",
 		"TestBootWithExternalPg",
-		"TestSheetVCS_GitLab",
+		"TestSheetVCS/GitLab",
+		"TestSheetVCS/GitHub",
 		"TestPrepare",
 
 		// PITR related cases
