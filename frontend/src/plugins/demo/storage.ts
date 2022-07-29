@@ -2,12 +2,12 @@
  * Define storage data type for guide
  */
 interface StorageData {
+  demo: {
+    name: string;
+  };
   guide: {
     name: string;
     stepIndex: number;
-  };
-  hint: {
-    name: string;
   };
   bytebase_options: {
     appearance: {

@@ -1,3 +1,13 @@
+export interface ProcessData {
+  url: string;
+  title: string | I18NText;
+  description: string | I18NText;
+}
+
+export interface DemoData {
+  process: ProcessData[];
+}
+
 type StepType = "click" | "change";
 
 export type Position =

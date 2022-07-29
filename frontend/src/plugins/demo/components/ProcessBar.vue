@@ -1,0 +1,132 @@
+<template>
+  <Transition name="slide">
+    <div v-if="!isLoading" class="process-bar-container">
+      <p v-if="currentProcessData" class="text-gray-800 w-full leading-7">
+        {{ currentProcessData.description }}
+      </p>
+      <p v-else class="text-gray-800 w-full leading-7">
+        Looks like you've got out of the demo process 🙁 <br />
+        Please follow these steps to continue 👇
+      </p>
+      <div
+        class="my-4 bg-gray-200 w-full flex flex-row justify-start items-center rounded-full overflow-hidden"
+      >
+        <div
+          class="h-2 bg-indigo-600 rounded-full transition-all"
+          :style="{
+            width: processBarWidth,
+          }"
+        ></div>
+      </div>
+      <div
+        class="w-full grid text-gray-400"
+        :class="`grid-cols-${processDataList.length}`"
+      >
+        <div
+          v-for="(processData, index) in processDataList"
+          :key="index"
+          class="text-center first:text-left last:text-right"
+          :class="
+            index <= currentProcessIndex
+              ? 'text-indigo-600 cursor-pointer hover:opacity-80'
+              : ''
+          "
+          @click="handleProcessItemClick(processData)"
+        >
+          {{ processData.title }}
+        </div>
+      </div>
+    </div>
+  </Transition>
+</template>
+
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import * as storage from "../storage";
+import { ProcessData } from "../types";
+import { fetchDemoDataWithName } from "../data";
+import { indexOf } from "lodash-es";
+
+const emit = defineEmits(["finish"]);
+
+const route = useRoute();
+const router = useRouter();
+
+const isLoading = ref(true);
+const processDataList = ref<ProcessData[]>([]);
+const currentProcessIndex = ref<number>(-1);
+const currentProcessData = computed(() => {
+  return currentProcessIndex.value >= 0
+    ? processDataList.value[currentProcessIndex.value]
+    : undefined;
+});
+const processBarWidth = computed(() => {
+  return (
+    Math.max(
+      (currentProcessIndex.value / (processDataList.value.length - 1)) * 100,
+      2
+    ) + "%"
+  );
+});
+
+onMounted(async () => {
+  const { demo } = storage.get(["demo"]);
+  if (demo) {
+    const demoData = await fetchDemoDataWithName(demo.name);
+    if (demoData) {
+      processDataList.value = demoData.process;
+      let matchedProcessDataIndex = -1;
+      for (let i = 0; i < processDataList.value.length; i++) {
+        const processData = processDataList.value[i];
+        if (window.location.href.includes(processData.url)) {
+          matchedProcessDataIndex = i;
+          break;
+        }
+      }
+      currentProcessIndex.value = matchedProcessDataIndex;
+    }
+  }
+  isLoading.value = false;
+});
+
+watch(
+  route,
+  () => {
+    let matchedProcessDataIndex = -1;
+    for (let i = 0; i < processDataList.value.length; i++) {
+      const processData = processDataList.value[i];
+      if (window.location.href.includes(processData.url)) {
+        matchedProcessDataIndex = i;
+        break;
+      }
+    }
+    currentProcessIndex.value = matchedProcessDataIndex;
+    if (
+      matchedProcessDataIndex >= 0 &&
+      matchedProcessDataIndex === processDataList.value.length - 1
+    ) {
+      emit("finish");
+    }
+  },
+  {
+    immediate: true,
+  }
+);
+
+const handleProcessItemClick = (processData: ProcessData) => {
+  const index = indexOf(processDataList.value, processData);
+  if (currentProcessIndex.value + 1 >= index) {
+    router.push(processData.url);
+  }
+};
+</script>
+
+<style scoped>
+.process-bar-container {
+  @apply fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-0 transition-transform duration-500 flex flex-col justify-start items-center bg-white px-8 py-6 rounded-lg;
+  min-width: 512px;
+  z-index: 10001;
+  box-shadow: 0 0 24px 8px rgb(0 0 0 / 20%);
+}
+</style>

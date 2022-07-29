@@ -10,34 +10,26 @@ import {
   waitForTargetElement,
 } from "./utils";
 
-const shownHintIndexSet = new Set<number>();
 const closedHintIndexSet = new Set<number>();
 
 export const showHints = async (hintDataList: HintData[]) => {
-  removeHint();
-  shownHintIndexSet.clear();
-
   const findTargetPromiseList = hintDataList.map(async (hintData) => {
     const index = indexOf(hintDataList, hintData);
-    if (
-      shownHintIndexSet.has(index) ||
-      closedHintIndexSet.has(index) ||
-      !checkUrlMatched(hintData.url)
-    ) {
+
+    if (closedHintIndexSet.has(index) || !checkUrlMatched(hintData.url)) {
+      removeHint(index);
       return;
     }
 
     const targetElement = await waitForTargetElement([[hintData.selector]]);
     if (targetElement) {
       renderHint(targetElement, hintData, index);
-      shownHintIndexSet.add(index);
     } else {
       removeHint(index);
-      shownHintIndexSet.delete(index);
     }
   });
 
-  Promise.all(findTargetPromiseList);
+  await Promise.all(findTargetPromiseList);
 };
 
 const renderHint = (
@@ -51,7 +43,7 @@ const renderHint = (
   }
 
   const hintWrapper = document.createElement("div");
-  hintWrapper.className = `bb-hint-wrapper bb-hint-${hintIndex}`;
+  hintWrapper.className = `bb-demo-element bb-hint-wrapper bb-hint-${hintIndex}`;
   if (hintData.type === "shield") {
     hintWrapper.classList.add("shield");
   }
@@ -105,6 +97,47 @@ const renderHint = (
   updateHintPosition(targetElement, hintData, hintIndex);
 };
 
+const renderCover = (targetElement: HTMLElement, hintIndex: number) => {
+  const coverElement = document.createElement("div");
+  coverElement.className = `bb-demo-element bb-hint-cover-wrapper bb-hint-${hintIndex}`;
+  const maxZIndex = getElementMaxZIndex(targetElement);
+  coverElement.style.zIndex = `${Math.max(maxZIndex - 1, 0)}`;
+  removeElementBySelector(`.bb-hint-cover-wrapper.bb-hint-${hintIndex}`);
+  document.body.appendChild(coverElement);
+  targetElement.classList.add("bb-hint-target-element");
+};
+
+const updateHintPosition = (
+  targetElement: HTMLElement,
+  hintData: HintData,
+  hintIndex: number
+) => {
+  const hintWrapper = document.body.querySelector(
+    `.bb-hint-wrapper.bb-hint-${hintIndex}`
+  ) as HTMLElement;
+
+  if (!targetElement || !hintWrapper) {
+    removeHint(hintIndex);
+    return;
+  }
+
+  const bounding = getElementBounding(targetElement);
+
+  if (bounding.width === 0 && bounding.height === 0) {
+    removeHint(hintIndex);
+    return;
+  }
+
+  hintWrapper.style.top = `${bounding.top}px`;
+  hintWrapper.style.left = `${bounding.left}px`;
+  hintWrapper.style.width = `${bounding.width}px`;
+  hintWrapper.style.height = `${bounding.height}px`;
+
+  requestAnimationFrame(() =>
+    updateHintPosition(targetElement, hintData, hintIndex)
+  );
+};
+
 const renderHintDialog = (
   targetElement: HTMLElement,
   hintData: HintData,
@@ -118,7 +151,7 @@ const renderHintDialog = (
     dialog: { title, description, position, alwaysShow },
   } = hintData;
   const hintDialogDiv = document.createElement("div");
-  hintDialogDiv.className = `bb-hint-dialog bb-hint-${hintIndex} ${
+  hintDialogDiv.className = `bb-demo-element bb-hint-dialog bb-hint-${hintIndex} ${
     position ?? "bottom"
   }`;
 
@@ -126,12 +159,12 @@ const renderHintDialog = (
     hintDialogDiv.classList.add("tooltip-dialog");
   }
 
-  const maxZIndex = getComputedStyle(targetElement, "z-index");
+  const maxZIndex = getStylePropertyValue(targetElement, "z-index");
   hintDialogDiv.style.zIndex = `${maxZIndex}`;
 
   if (!alwaysShow) {
     const closeButton = document.createElement("button");
-    closeButton.className = "bb-hint-close-button";
+    closeButton.className = "bb-demo-element bb-hint-close-button";
     closeButton.innerHTML = "&times;";
     closeButton.addEventListener("click", () => {
       removeHint(hintIndex);
@@ -142,13 +175,13 @@ const renderHintDialog = (
 
   if (getStringFromI18NText(title)) {
     const titleElement = document.createElement("p");
-    titleElement.className = "bb-hint-title-text";
+    titleElement.className = "bb-demo-element bb-hint-title-text";
     titleElement.innerText = getStringFromI18NText(title);
     hintDialogDiv.appendChild(titleElement);
   }
   if (getStringFromI18NText(description)) {
     const descriptionElement = document.createElement("p");
-    descriptionElement.className = "bb-hint-description-text";
+    descriptionElement.className = "bb-demo-element bb-hint-description-text";
     descriptionElement.innerText = getStringFromI18NText(description);
     hintDialogDiv.appendChild(descriptionElement);
   }
@@ -203,44 +236,18 @@ const adjustHintDialogPosition = (
   );
 };
 
-const updateHintPosition = (
-  targetElement: HTMLElement,
-  hintData: HintData,
-  hintIndex: number
-) => {
-  const hintWrapper = document.body.querySelector(
-    `.bb-hint-wrapper.bb-hint-${hintIndex}`
-  ) as HTMLElement;
-
-  if (!targetElement || !hintWrapper) {
-    removeHint(hintIndex);
-    return;
-  }
-
-  const bounding = getElementBounding(targetElement);
-
-  hintWrapper.style.top = `${bounding.top}px`;
-  hintWrapper.style.left = `${bounding.left}px`;
-  hintWrapper.style.width = `${bounding.width}px`;
-  hintWrapper.style.height = `${bounding.height}px`;
-
-  requestAnimationFrame(() =>
-    updateHintPosition(targetElement, hintData, hintIndex)
-  );
-};
-
 const renderTooltip = (
   targetElement: HTMLElement,
   hintData: HintData,
   hintIndex: number
 ) => {
   const tooltipWrapper = document.createElement("div");
-  tooltipWrapper.className = `bb-hint-tooltip-wrapper bb-hint-${hintIndex}`;
+  tooltipWrapper.className = `bb-demo-element bb-hint-tooltip-wrapper bb-hint-${hintIndex}`;
   const pingElement = document.createElement("span");
-  pingElement.className = "bb-hint-tooltip-ping";
+  pingElement.className = "bb-demo-element bb-hint-tooltip-ping";
   tooltipWrapper.appendChild(pingElement);
   const blockElement = document.createElement("span");
-  blockElement.className = "bb-hint-tooltip-block";
+  blockElement.className = "bb-demo-element bb-hint-tooltip-block";
   tooltipWrapper.appendChild(blockElement);
 
   tooltipWrapper.style.zIndex = `${getElementMaxZIndex(targetElement)}`;
@@ -251,23 +258,10 @@ const renderTooltip = (
   }
   removeElementBySelector(`.bb-hint-tooltip-wrapper.bb-hint-${hintIndex}`);
   document.body.appendChild(tooltipWrapper);
-
-  tooltipWrapper.addEventListener("mouseenter", () => {
-    const dialogElement = renderHintDialog(tooltipWrapper, hintData, hintIndex);
-    tooltipWrapper.addEventListener(
-      "mouseleave",
-      () => {
-        dialogElement?.remove();
-      },
-      {
-        once: true,
-      }
-    );
-  });
+  renderHintDialog(tooltipWrapper, hintData, hintIndex);
 
   tooltipWrapper.addEventListener("click", () => {
     targetElement.click();
-    closedHintIndexSet.add(hintIndex);
     removeHint(hintIndex);
   });
 
@@ -315,16 +309,6 @@ const updateTooltipPosition = (
   requestAnimationFrame(() =>
     updateTooltipPosition(targetElement, hintData, hintIndex)
   );
-};
-
-const renderCover = (targetElement: HTMLElement, hintIndex: number) => {
-  const coverElement = document.createElement("div");
-  coverElement.className = `bb-hint-cover-wrapper bb-hint-${hintIndex}`;
-  const maxZIndex = getElementMaxZIndex(targetElement);
-  coverElement.style.zIndex = `${Math.max(maxZIndex - 1, 0)}`;
-  removeElementBySelector(`.bb-hint-cover-wrapper.bb-hint-${hintIndex}`);
-  document.body.appendChild(coverElement);
-  targetElement.classList.add("bb-hint-target-element");
 };
 
 export const removeHint = (hintIndex?: number) => {

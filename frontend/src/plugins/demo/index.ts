@@ -1,25 +1,12 @@
 import axios from "axios";
 import { isNull } from "lodash-es";
-import { initGuideListeners, initHintListeners } from "./listener";
+import { createApp } from "vue";
+import { router } from "@/router";
 import * as storage from "./storage";
+import { initLocationListenerForDemo } from "./listener";
+import DemoWrapper from "./components/DemoWrapper.vue";
 
 const invalidDemoNameList = ["dev", "prod"];
-
-// TODO(steven): after we using help to replace the guide, we should remove this.
-// In live demo mode, we should not show the guide dialog.
-const hideConsoleGuides = () => {
-  const tempData = {
-    "database.visit": true,
-    "instance.visit": true,
-    "project.visit": true,
-    "environment.visit": true,
-    "guide.database": true,
-    "guide.instance": true,
-    "guide.project": true,
-    "guide.environment": true,
-  };
-  window.localStorage.setItem("ui.intro", JSON.stringify(tempData));
-};
 
 // initial guide listeners when window loaded
 window.addEventListener(
@@ -32,7 +19,7 @@ window.addEventListener(
       }>(`/api/actuator/info`)
     ).data;
 
-    // In online demo, we only show the hints.
+    // only show demo in feature demo mode.
     if (
       serverInfo.demo &&
       serverInfo.demoName &&
@@ -41,30 +28,20 @@ window.addEventListener(
       const demoName = serverInfo.demoName;
       if (demoName) {
         storage.set({
-          hint: {
+          demo: {
             name: demoName,
           },
         });
-        hideConsoleGuides();
-        initHintListeners();
-      }
-    } else {
-      // This is using for dev mainly.
-      const { guide: storageGuide, hint: storageHint } = storage.get([
-        "guide",
-        "hint",
-      ]);
-      const params = new URLSearchParams(window.location.search);
-      const paramGuide = params.get("guide");
-      const paramHint = params.get("hint");
 
-      if (paramGuide || storageGuide) {
-        hideConsoleGuides();
-        initGuideListeners();
-      }
-      if (paramHint || storageHint) {
-        hideConsoleGuides();
-        initHintListeners();
+        // mount the demo vue app
+        const demoDrawerContainer = document.createElement("div");
+        document.body.appendChild(demoDrawerContainer);
+        const app = createApp(DemoWrapper);
+        app.use(router);
+        app.mount(demoDrawerContainer);
+
+        // TODO(steven): refactor the pure js element into vue
+        await initLocationListenerForDemo();
       }
     }
 
@@ -72,7 +49,7 @@ window.addEventListener(
     const params = new URLSearchParams(window.location.search);
     const clearDemo = params.get("cleardemo");
     if (!isNull(clearDemo)) {
-      storage.remove(["guide", "hint"]);
+      storage.remove(["demo", "guide"]);
     }
   },
   {
