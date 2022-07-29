@@ -131,6 +131,8 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 
 	// Extract the SQL statements from the binlog and replay them to the pitrDatabase via the mysql client by pipe.
 	mysqlbinlogArgs := []string{
+		// Verify checksum binlog events.
+		"--verify-binlog-checksum",
 		// Disable binary logging.
 		"--disable-log-bin",
 		// Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database.
@@ -583,6 +585,8 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	args := []string{
 		binlogFileToDownload.Name,
 		"--read-from-remote-server",
+		// Verify checksum binlog events.
+		"--verify-binlog-checksum",
 		"--raw",
 		"--host", driver.connCfg.Host,
 		"--user", driver.connCfg.Username,
@@ -762,6 +766,8 @@ func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName
 	args := []string{
 		// Local binlog file path.
 		path.Join(driver.binlogDir, fileName),
+		// Verify checksum binlog events.
+		"--verify-binlog-checksum",
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 	}
@@ -803,6 +809,8 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 	args := []string{
 		// Local binlog file path.
 		path.Join(driver.binlogDir, binlogFile.Name),
+		// Verify checksum binlog events.
+		"--verify-binlog-checksum",
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
