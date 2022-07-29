@@ -108,6 +108,9 @@ const (
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
 
+	// PostgreSQLNamingIndexConvention is an advisor type for PostgreSQL index naming convention.
+	PostgreSQLNamingIndexConvention Type = "bb.plugin.advisor.postgresql.naming.index"
+
 	// PostgreSQLNamingUKConvention is an advisor type for PostgreSQL unique key naming convention.
 	PostgreSQLNamingUKConvention Type = "bb.plugin.advisor.postgresql.naming.uk"
 
