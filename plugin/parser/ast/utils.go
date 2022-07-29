@@ -89,6 +89,7 @@ func Walk(v Visitor, node Node) {
 			Walk(v, n.Table)
 		}
 	case *DropDatabaseStmt:
+		// No members to walk through.
 	case *DropIndexStmt:
 		for _, indexDef := range n.IndexList {
 			Walk(v, indexDef)
@@ -113,6 +114,7 @@ func Walk(v Visitor, node Node) {
 			Walk(v, keyDef)
 		}
 	case *IndexKeyDef:
+		// No members to walk through.
 	case *PatternLikeDef:
 		if n.Expression != nil {
 			Walk(v, n.Expression)
@@ -165,12 +167,15 @@ func Walk(v Visitor, node Node) {
 			Walk(v, n.Table)
 		}
 	case *StringDef:
+		// No members to walk through.
 	case *SubqueryDef:
 		if n.Select != nil {
 			Walk(v, n.Select)
 		}
 	case *TableDef:
+		// No members to walk through.
 	case *UnconvertedExpressionDef:
+		// No members to walk through.
 	case *UpdateStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)

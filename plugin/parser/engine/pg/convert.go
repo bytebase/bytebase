@@ -256,12 +256,26 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 		update := &ast.UpdateStmt{
 			Table: convertRangeVarToTableName(in.UpdateStmt.Relation, ast.TableTypeBaseTable),
 		}
+		// Convert FROM clause
+		// Here we only find the SELECT stmt in FROM clause
+		for _, item := range in.UpdateStmt.FromClause {
+			if node, ok := item.Node.(*pgquery.Node_RangeSubselect); ok {
+				subselect, err := convertRangeSubselect(node.RangeSubselect)
+				if err != nil {
+					return nil, err
+				}
+				update.SubqueryList = append(update.SubqueryList, subselect)
+			}
+		}
 		// Convert WHERE clause
 		if in.UpdateStmt.WhereClause != nil {
 			var err error
-			if update.WhereClause, update.PatternLikeList, update.SubqueryList, err = convertExpressionNode(in.UpdateStmt.WhereClause); err != nil {
+			var subqueryList []*ast.SubqueryDef
+			update.WhereClause, update.PatternLikeList, subqueryList, err = convertExpressionNode(in.UpdateStmt.WhereClause)
+			if err != nil {
 				return nil, err
 			}
+			update.SubqueryList = append(update.SubqueryList, subqueryList...)
 		}
 		return update, nil
 	case *pgquery.Node_DeleteStmt:
@@ -473,14 +487,40 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 		}
 		selectStmt.FieldList = append(selectStmt.FieldList, convertedNode)
 	}
+	// Convert FROM clause
+	// Here we only find the SELECT stmt in FROM clause
+	for _, item := range in.FromClause {
+		if node, ok := item.Node.(*pgquery.Node_RangeSubselect); ok {
+			subselect, err := convertRangeSubselect(node.RangeSubselect)
+			if err != nil {
+				return nil, err
+			}
+			selectStmt.SubqueryList = append(selectStmt.SubqueryList, subselect)
+		}
+	}
 	// Convert WHERE clause
 	if in.WhereClause != nil {
 		var err error
-		if selectStmt.WhereClause, selectStmt.PatternLikeList, selectStmt.SubqueryList, err = convertExpressionNode(in.WhereClause); err != nil {
+		var subqueryList []*ast.SubqueryDef
+		selectStmt.WhereClause, selectStmt.PatternLikeList, subqueryList, err = convertExpressionNode(in.WhereClause)
+		if err != nil {
 			return nil, err
 		}
+		selectStmt.SubqueryList = append(selectStmt.SubqueryList, subqueryList...)
 	}
 	return selectStmt, nil
+}
+
+func convertRangeSubselect(node *pgquery.RangeSubselect) (*ast.SubqueryDef, error) {
+	subselect, ok := node.Subquery.Node.(*pgquery.Node_SelectStmt)
+	if !ok {
+		return nil, parser.NewConvertErrorf("expected SELECT but found %t", node.Subquery.Node)
+	}
+	res, err := convertSelectStmt(subselect.SelectStmt)
+	if err != nil {
+		return nil, err
+	}
+	return &ast.SubqueryDef{Select: res}, nil
 }
 
 func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {
