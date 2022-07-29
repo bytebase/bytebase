@@ -61,7 +61,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	if !ok {
 		return true, nil, fmt.Errorf("failed to get gh-ost state from sync task")
 	}
-	sharedGhost := value.(ghostState)
+	sharedGhost := value.(sharedGhostState)
 
 	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
 
