@@ -25,4 +25,4 @@ fi
 
 echo "Starting Bytebase SQL Service in debug mode at ${ONLINE_DEMO_HOST}:${ONLINE_DEMO_PORT}..."
 
-sql --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --debug
+sql-service --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --debug
