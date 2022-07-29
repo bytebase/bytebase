@@ -38,7 +38,10 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to get a single taskDAG for schema update gh-ost cutover task, id: %v, error: %w", task.ID, err)
 	}
+
 	syncTaskID := taskDAG.FromTaskID
+	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
+
 	syncTask, err := server.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to get schema update gh-ost sync task for cutover task, error: %w", err)
@@ -60,8 +63,6 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 		return true, nil, fmt.Errorf("failed to get gh-ost state from sync task")
 	}
 	sharedGhost := value.(sharedGhostState)
-
-	server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
 
 	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.errCh)
 }
