@@ -76,7 +76,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			}
 		case api.PrincipalAuthProviderGitlabSelfHost, api.PrincipalAuthProviderGitHubCom:
 			{
-				login := &api.GitlabLogin{}
+				login := &api.VCSLogin{}
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformed login request").SetInternal(err)
 				}
