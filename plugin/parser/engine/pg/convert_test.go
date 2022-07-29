@@ -1219,3 +1219,33 @@ func TestSetSchemaStmt(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestAlterColumnType(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AlterColumnTypeStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}

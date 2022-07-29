@@ -87,6 +87,13 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropNotNull)
+				case pgquery.AlterTableType_AT_AlterColumnType:
+					alterColumType := &ast.AlterColumnTypeStmt{
+						Table:      alterTable.Table,
+						ColumnName: alterCmd.Name,
+					}
+
+					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
 				}
 			}
 		}
