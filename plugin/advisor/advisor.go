@@ -122,6 +122,9 @@ const (
 
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
 	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
+
+	// PostgreSQLWhereRequirement is an advisor type for PostgreSQL WHERE clause requirement.
+	PostgreSQLWhereRequirement Type = "bb.plugin.advisor.postgresql.where.require"
 )
 
 // Advice is the result of an advisor.
