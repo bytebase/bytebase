@@ -935,7 +935,7 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 	runTests(t, tests)
 }
 
-func TestDeleteStmt(t *testing.T) {
+func TestUpdateStmt(t *testing.T) {
 	tests := []testData{
 		{
 			stmt: "UPDATE tech_book SET a = 1",
