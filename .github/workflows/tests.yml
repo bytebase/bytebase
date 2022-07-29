@@ -29,6 +29,7 @@ jobs:
         with:
           version: v1.45.2
           args: -v
+          skip-cache: true
 
   # Copied from build-artifacts-and-draft-release.yml, should be consistent if updating build-artifacts-and-draft-release.yml.
   release-dry-run:
