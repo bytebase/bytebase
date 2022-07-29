@@ -253,6 +253,9 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 			return
 		}
 		migrationError <- nil
+		// we send to migrationError channel anyway because
+		// before syncDone, the gh-ost sync task will receive it.
+		// after syncDone, the gh-ost cutover task will receive it.
 	}()
 
 	select {
