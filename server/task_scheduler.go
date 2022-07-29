@@ -229,9 +229,16 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() Ta
 	s.executorGetters[taskType] = executorGetter
 }
 
+// can transit PendingApproval -> Pending only if
+// 1. has no blocking tasks.
+// 2. task check results are all SUCCESS.
 func (s *TaskScheduler) canTransitPendingApprovalToPending(ctx context.Context, task *api.Task) (bool, error) {
 	return s.canTransitTaskStatus(ctx, task, api.TaskCheckStatusSuccess)
 }
+
+// can transit Pending -> Running only if
+// 1. has no blocking tasks.
+// 2. task check results are either SUCCESS or WARN.
 func (s *TaskScheduler) canTransitPendingToRunning(ctx context.Context, task *api.Task) (bool, error) {
 	return s.canTransitTaskStatus(ctx, task, api.TaskCheckStatusWarn)
 }

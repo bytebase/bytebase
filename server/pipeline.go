@@ -28,9 +28,7 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 					return nil, err
 				}
 				if policy.Value == api.PipelineApprovalValueManualNever {
-					// transit into Pending for ManualNever (auto-approval) tasks only if
-					// 1. task checks all succeeded.
-					// 2. have no blocking tasks.
+					// transit into Pending for ManualNever (auto-approval) tasks.
 					ok, err := s.TaskScheduler.canTransitPendingApprovalToPending(ctx, task)
 					if err != nil {
 						return nil, err
