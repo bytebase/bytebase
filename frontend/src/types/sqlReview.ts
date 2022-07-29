@@ -224,7 +224,6 @@ export const convertToCategoryList = (
 
   const dict = ruleList.reduce((dict, rule) => {
     if (!dict[rule.category]) {
-      const id = rule.category.toLowerCase();
       dict[rule.category] = {
         id: rule.category,
         ruleList: [],
@@ -338,7 +337,7 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
-    case "column.required":
+    case "column.required": {
       const requiredColumnComponent = ruleTemplate.componentList[0];
       const requiredColumnPayload = {
         ...requiredColumnComponent.payload,
@@ -353,6 +352,7 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    }
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -419,7 +419,7 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
-    case "column.required":
+    case "column.required": {
       const stringArrayPayload = rule.componentList[0]
         .payload as StringArrayPayload;
       return {
@@ -428,6 +428,7 @@ export const convertRuleTemplateToPolicyRule = (
           columnList: stringArrayPayload.value ?? stringArrayPayload.default,
         },
       };
+    }
   }
 
   throw new Error(`Invalid rule ${rule.type}`);

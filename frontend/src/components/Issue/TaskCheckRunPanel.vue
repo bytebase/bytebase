@@ -156,7 +156,6 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.FK_IN_TABLE:
         case SQLReviewPolicyErrorCode.TABLE_DROP_NAMING_CONVENTION:
         case SQLReviewPolicyErrorCode.DATABASE_NOT_EMPTY:
-        // CompatibilityErrorCode
         case CompatibilityErrorCode.COMPATIBILITY_DROP_DATABASE:
         case CompatibilityErrorCode.COMPATIBILITY_RENAME_TABLE:
         case CompatibilityErrorCode.COMPATIBILITY_DROP_TABLE:
@@ -167,7 +166,7 @@ export default defineComponent({
         case CompatibilityErrorCode.COMPATIBILITY_ADD_FOREIGN_KEY:
         case CompatibilityErrorCode.COMPATIBILITY_ADD_CHECK:
         case CompatibilityErrorCode.COMPATIBILITY_ALTER_CHECK:
-        case CompatibilityErrorCode.COMPATIBILITY_ALTER_COLUMN:
+        case CompatibilityErrorCode.COMPATIBILITY_ALTER_COLUMN: {
           const rule = ruleTemplateMap.get(checkResult.title as RuleType);
 
           if (rule) {
@@ -179,6 +178,7 @@ export default defineComponent({
             title = checkResult.title;
           }
           break;
+        }
       }
 
       return title ? `${title} (${checkResult.code})` : checkResult.title;
@@ -196,7 +196,7 @@ export default defineComponent({
             target: "_self",
             url: "/setting/sql-review",
           };
-        default:
+        default: {
           const url = `https://www.bytebase.com/docs/reference/error-code/${
             checkResult.namespace === "bb.advisor" ? "advisor" : "core"
           }?source=console`;
@@ -205,6 +205,7 @@ export default defineComponent({
             target: "__blank",
             url: url,
           };
+        }
       }
     };
 
