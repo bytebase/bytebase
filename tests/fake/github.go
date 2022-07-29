@@ -64,7 +64,7 @@ func NewGitHub(port int) VCSProvider {
 }
 
 func (gh *GitHub) createRepositoryWebhook(c echo.Context) error {
-	repositoryID := c.Param("owner") + "/" + c.Param("repo")
+	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
 	r, ok := gh.repositories[repositoryID]
 	if !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
@@ -90,9 +90,8 @@ func (gh *GitHub) createRepositoryWebhook(c echo.Context) error {
 }
 
 func (gh *GitHub) getRepositoryCommit(c echo.Context) error {
-	repositoryID := c.Param("owner") + "/" + c.Param("repo")
-	_, ok := gh.repositories[repositoryID]
-	if !ok {
+	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
+	if _, ok := gh.repositories[repositoryID]; !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
 	}
 
@@ -112,7 +111,7 @@ func (gh *GitHub) getRepositoryCommit(c echo.Context) error {
 }
 
 func (gh *GitHub) getRepositoryTree(c echo.Context) error {
-	repositoryID := c.Param("owner") + "/" + c.Param("repo")
+	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
 	r, ok := gh.repositories[repositoryID]
 	if !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
@@ -139,7 +138,7 @@ func (gh *GitHub) getRepositoryTree(c echo.Context) error {
 }
 
 func (gh *GitHub) readRepositoryFile(c echo.Context) error {
-	repositoryID := c.Param("owner") + "/" + c.Param("repo")
+	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
 	r, ok := gh.repositories[repositoryID]
 	if !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
@@ -173,7 +172,7 @@ func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 }
 
 func (gh *GitHub) createRepositoryFile(c echo.Context) error {
-	repositoryID := c.Param("owner") + "/" + c.Param("repo")
+	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
 	r, ok := gh.repositories[repositoryID]
 	if !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
