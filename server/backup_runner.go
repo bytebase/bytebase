@@ -243,7 +243,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		return
 	}
 	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
-	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}
