@@ -165,6 +165,10 @@ func Walk(v Visitor, node Node) {
 			Walk(v, n.Table)
 		}
 	case *StringDef:
+	case *SubqueryDef:
+		if n.Select != nil {
+			Walk(v, n.Select)
+		}
 	case *TableDef:
 	case *UnconvertedExpressionDef:
 	case *UpdateStmt:
