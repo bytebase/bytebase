@@ -122,15 +122,6 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 			return -1, "", fmt.Errorf("failed to run gh-ost migration, err: %w", migrationErr)
 		}
 
-		ticker := time.NewTicker(time.Second * 1)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			if _, err := os.Stat(socketFilename); err != nil {
-				break
-			}
-		}
-
 		var afterSchemaBuf bytes.Buffer
 		if _, err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 			return -1, "", util.FormatError(err)
