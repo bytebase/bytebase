@@ -1,60 +1,58 @@
 <template>
-  <Transition name="slide">
-    <div v-if="!isLoading" class="process-bar-container">
-      <p v-if="currentProcessData" class="text-gray-800 w-full leading-7">
-        {{ currentProcessData.description }}
-      </p>
-      <p v-else class="text-gray-800 w-full leading-7">
-        Looks like you've got out of the demo process 🙁 <br />
-        Please follow these steps to continue 👇
-      </p>
+  <div class="process-bar-container">
+    <p v-if="currentProcessData" class="text-gray-800 w-full leading-7">
+      {{ currentProcessData.description }}
+    </p>
+    <p v-else class="text-gray-800 w-full leading-7">
+      Looks like you've got out of the demo process 🙁 <br />
+      Please follow these steps to continue 👇
+    </p>
+    <div
+      class="my-4 bg-gray-200 w-full flex flex-row justify-start items-center rounded-full overflow-hidden"
+    >
       <div
-        class="my-4 bg-gray-200 w-full flex flex-row justify-start items-center rounded-full overflow-hidden"
-      >
-        <div
-          class="h-2 bg-indigo-600 rounded-full transition-all"
-          :style="{
-            width: processBarWidth,
-          }"
-        ></div>
-      </div>
+        class="h-2 bg-indigo-600 rounded-full transition-all"
+        :style="{
+          width: processBarWidth,
+        }"
+      ></div>
+    </div>
+    <div
+      class="w-full grid text-gray-400"
+      :class="`grid-cols-${processDataList.length}`"
+    >
       <div
-        class="w-full grid text-gray-400"
-        :class="`grid-cols-${processDataList.length}`"
+        v-for="(processData, index) in processDataList"
+        :key="index"
+        class="text-center first:text-left last:text-right"
+        :class="
+          index <= currentProcessIndex
+            ? 'text-indigo-600 cursor-pointer hover:opacity-80'
+            : ''
+        "
+        @click="handleProcessItemClick(processData)"
       >
-        <div
-          v-for="(processData, index) in processDataList"
-          :key="index"
-          class="text-center first:text-left last:text-right"
-          :class="
-            index <= currentProcessIndex
-              ? 'text-indigo-600 cursor-pointer hover:opacity-80'
-              : ''
-          "
-          @click="handleProcessItemClick(processData)"
-        >
-          {{ processData.title }}
-        </div>
+        {{ processData.title }}
       </div>
     </div>
-  </Transition>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import * as storage from "../storage";
 import { ProcessData } from "../types";
-import { fetchDemoDataWithName } from "../data";
 import { indexOf } from "lodash-es";
+import useAppStore from "../store";
 
 const emit = defineEmits(["finish"]);
 
 const route = useRoute();
 const router = useRouter();
 
-const isLoading = ref(true);
-const processDataList = ref<ProcessData[]>([]);
+const store = useAppStore();
+const processDataList = computed(() => store.processDataList);
+
 const currentProcessIndex = ref<number>(-1);
 const currentProcessData = computed(() => {
   return currentProcessIndex.value >= 0
@@ -68,26 +66,6 @@ const processBarWidth = computed(() => {
       2
     ) + "%"
   );
-});
-
-onMounted(async () => {
-  const { demo } = storage.get(["demo"]);
-  if (demo) {
-    const demoData = await fetchDemoDataWithName(demo.name);
-    if (demoData) {
-      processDataList.value = demoData.process;
-      let matchedProcessDataIndex = -1;
-      for (let i = 0; i < processDataList.value.length; i++) {
-        const processData = processDataList.value[i];
-        if (window.location.href.includes(processData.url)) {
-          matchedProcessDataIndex = i;
-          break;
-        }
-      }
-      currentProcessIndex.value = matchedProcessDataIndex;
-    }
-  }
-  isLoading.value = false;
 });
 
 watch(

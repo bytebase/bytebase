@@ -3,6 +3,7 @@ import { isNull } from "lodash-es";
 import { createApp } from "vue";
 import { router } from "@/router";
 import * as storage from "./storage";
+import { piniaInstance } from "./store";
 import { initLocationListenerForDemo } from "./listener";
 import DemoWrapper from "./components/DemoWrapper.vue";
 
@@ -27,18 +28,13 @@ window.addEventListener(
     ) {
       const demoName = serverInfo.demoName;
       if (demoName) {
-        storage.set({
-          demo: {
-            name: demoName,
-          },
-        });
-
         // mount the demo vue app
         const demoDrawerContainer = document.createElement("div");
         document.body.appendChild(demoDrawerContainer);
-        const app = createApp(DemoWrapper);
-        app.use(router);
-        app.mount(demoDrawerContainer);
+        const app = createApp(DemoWrapper, {
+          demoName,
+        });
+        app.use(router).use(piniaInstance).mount(demoDrawerContainer);
 
         // TODO(steven): refactor the pure js element into vue
         await initLocationListenerForDemo();
