@@ -125,6 +125,9 @@ const (
 
 	// PostgreSQLNoLeadingWildcardLike is an advisor type for PostgreSQL no leading wildcard LIKE.
 	PostgreSQLNoLeadingWildcardLike Type = "bb.plugin.advisor.postgresql.where.no-leading-wildcard-like"
+
+	// PostgreSQLWhereRequirement is an advisor type for PostgreSQL WHERE clause requirement.
+	PostgreSQLWhereRequirement Type = "bb.plugin.advisor.postgresql.where.require"
 )
 
 // Advice is the result of an advisor.
