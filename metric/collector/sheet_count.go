@@ -15,14 +15,14 @@ type sheetCountCollector struct {
 	store *store.Store
 }
 
-// NewSheetCountCollector creates a new instance of sheetCountCollector
+// NewSheetCountCollector creates a new instance of sheetCountCollector.
 func NewSheetCountCollector(store *store.Store) metric.Collector {
 	return &sheetCountCollector{
 		store: store,
 	}
 }
 
-// Collect will collect the metric for sheet
+// Collect will collect the metric for sheet.
 func (c *sheetCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 

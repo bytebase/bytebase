@@ -13,8 +13,8 @@ type AuthProvider struct {
 	Secret string `jsonapi:"attr,secret"`
 }
 
-// GitlabLogin is the API message for logins via Gitlab.
-type GitlabLogin struct {
+// VCSLogin is the API message for logining via VCS.
+type VCSLogin struct {
 	// VCSID is the ID of the chosen VCS role provider.
 	VCSID int `jsonapi:"attr,vcsId"`
 	// Name is the user configured name of the role provider.

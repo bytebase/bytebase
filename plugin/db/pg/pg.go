@@ -5,13 +5,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"strings"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver
+	// init() in pgx/v4/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v4/stdlib"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -21,7 +21,6 @@ var (
 		"template0": true,
 		"template1": true,
 	}
-	ident                      = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_$]*$`)
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
 	// driverName is the driver name that our driver dependence register, now is "pgx".
@@ -55,7 +54,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
 		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
 		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
@@ -160,7 +159,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(context.Context) error {
 	return driver.db.Close()
 }
 
@@ -169,8 +168,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetDbConnection gets a database connection.
-func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
+// GetDBConnection gets a database connection.
+func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {
 		return nil, err
 	}
@@ -178,9 +177,9 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
+func (driver *Driver) getDatabases(ctx context.Context) ([]*pgDatabaseSchema, error) {
 	var dbs []*pgDatabaseSchema
-	rows, err := driver.db.Query("SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
+	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
 	if err != nil {
 		return nil, err
 	}
@@ -193,22 +192,21 @@ func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
 		}
 		dbs = append(dbs, &d)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return dbs, nil
 }
 
-// GetVersion gets the version of Postgres server.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version of Postgres server.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version"
-	versionRow, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	defer versionRow.Close()
-
 	var version string
-	versionRow.Next()
-	if err := versionRow.Scan(&version); err != nil {
-		return "", err
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 	return version, nil
 }
@@ -226,7 +224,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-			databases, err := driver.getDatabases()
+			databases, err := driver.getDatabases(ctx)
 			if err != nil {
 				return err
 			}
@@ -252,12 +250,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 				return err
 			}
 		} else if strings.HasPrefix(stmt, "\\connect ") {
-			// For the case of `\connect "dbname";`, we need to use GetDbConnection() instead of executing the statement.
+			// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
 			parts := strings.Split(stmt, `"`)
 			if len(parts) != 3 {
 				return fmt.Errorf("invalid statement %q", stmt)
 			}
-			if _, err = driver.GetDbConnection(ctx, parts[1]); err != nil {
+			if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
 				return err
 			}
 			// Update current owner
@@ -347,8 +345,11 @@ func (driver *Driver) getCurrentDatabaseOwner() (string, error) {
 		}
 		owner = o
 	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
 	if owner == "" {
-		return "", fmt.Errorf("Owner not found for the current database")
+		return "", fmt.Errorf("owner not found for the current database")
 	}
 	return owner, nil
 }

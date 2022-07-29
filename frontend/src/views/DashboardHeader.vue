@@ -32,6 +32,7 @@
             to="/db"
             class="bar-link px-2 py-2 rounded-md"
             :class="getRouteLinkClass('/db')"
+            data-label="bb-dashboard-header-database-entry"
             >{{ $t("common.databases") }}</router-link
           >
 
@@ -110,14 +111,6 @@
             {{ $t("common.role.developer") }}
           </div>
         </div>
-        <router-link to="/sql-editor">
-          <NTooltip>
-            <template #trigger>
-              <heroicons-outline:terminal class="w-6 h-6" />
-            </template>
-            {{ $t("sql-editor.self") }}
-          </NTooltip>
-        </router-link>
         <router-link to="/inbox" exact-active-class>
           <span
             v-if="inboxSummary.hasUnread"

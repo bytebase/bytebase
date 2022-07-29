@@ -11,7 +11,7 @@ import { Inbox } from "./inbox";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
 import { Member } from "./member";
-import { Pipeline, Stage, Task } from "./pipeline";
+import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import {
   Project,
@@ -24,7 +24,7 @@ import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
 import { DefaultApporvalPolicy } from "./policy";
 import { Sheet } from "./sheet";
-import { DatabaseSchemaReviewPolicy } from "./schemaSystem";
+import { SQLReviewPolicy } from "./sqlReview";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -73,7 +73,7 @@ export type RouterSlug = {
   vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
-  schemaReviewPolicySlug?: string;
+  sqlReviewPolicySlug?: string;
 };
 
 // Quick Action Type
@@ -128,6 +128,7 @@ export type ResourceType =
   | "PIPELINE"
   | "POLICY"
   | "STAGE"
+  | "TASK_PROGRESS"
   | "TASK"
   | "ACTIVITY"
   | "INBOX"
@@ -137,7 +138,7 @@ export type ResourceType =
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
   | "SHEET"
-  | "SCHEMA_REVIEW";
+  | "SQL_REVIEW";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
@@ -154,6 +155,7 @@ interface ResourceMaker {
   (type: "PIPELINE"): Pipeline;
   (type: "POLICY"): Policy;
   (type: "STAGE"): Stage;
+  (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
   (type: "ACTIVITY"): Activity;
   (type: "INBOX"): Inbox;
@@ -163,7 +165,7 @@ interface ResourceMaker {
   (type: "ANOMALY"): Anomaly;
   (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
-  (type: "SCHEMA_REVIEW"): DatabaseSchemaReviewPolicy;
+  (type: "SQL_REVIEW"): SQLReviewPolicy;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -306,6 +308,7 @@ const makeUnknown = (type: ResourceType) => {
     hour: 0,
     dayOfWeek: 0,
     hookUrl: "",
+    retentionPeriodTs: 0,
   };
 
   const UNKNOWN_PIPELINE: Pipeline = {
@@ -362,6 +365,13 @@ const makeUnknown = (type: ResourceType) => {
     taskList: [],
   };
 
+  const UNKNOWN_TASK_PROGRESS: TaskProgress = {
+    totalUnit: 0,
+    completedUnit: 0,
+    createdTs: 0,
+    updatedTs: 0,
+  };
+
   const UNKNOWN_TASK: Task = {
     id: UNKNOWN_ID,
     pipeline: UNKNOWN_PIPELINE,
@@ -379,6 +389,7 @@ const makeUnknown = (type: ResourceType) => {
     taskRunList: [],
     taskCheckRunList: [],
     blockedBy: [],
+    progress: { ...UNKNOWN_TASK_PROGRESS },
   };
 
   const UNKNOWN_ACTIVITY: Activity = {
@@ -495,7 +506,7 @@ const makeUnknown = (type: ResourceType) => {
     pinned: false,
   };
 
-  const UNKNOWN_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
+  const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
@@ -536,6 +547,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_POLICY;
     case "STAGE":
       return UNKNOWN_STAGE;
+    case "TASK_PROGRESS":
+      return UNKNOWN_TASK_PROGRESS;
     case "TASK":
       return UNKNOWN_TASK;
     case "ACTIVITY":
@@ -554,8 +567,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_DEPLOYMENT_CONFIG;
     case "SHEET":
       return UNKNOWN_SHEET;
-    case "SCHEMA_REVIEW":
-      return UNKNOWN_SCHEMA_REVIEW_POLICY;
+    case "SQL_REVIEW":
+      return UNKNOWN_SQL_REVIEW_POLICY;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -698,6 +711,7 @@ const makeEmpty = (type: ResourceType) => {
     hour: 0,
     dayOfWeek: 0,
     hookUrl: "",
+    retentionPeriodTs: 0,
   };
 
   const EMPTY_PIPELINE: Pipeline = {
@@ -754,6 +768,13 @@ const makeEmpty = (type: ResourceType) => {
     taskList: [],
   };
 
+  const EMPTY_TASK_PROGRESS: TaskProgress = {
+    totalUnit: 0,
+    completedUnit: 0,
+    createdTs: 0,
+    updatedTs: 0,
+  };
+
   const EMPTY_TASK: Task = {
     id: EMPTY_ID,
     pipeline: EMPTY_PIPELINE,
@@ -771,6 +792,7 @@ const makeEmpty = (type: ResourceType) => {
     taskCheckRunList: [],
     earliestAllowedTs: 0,
     blockedBy: [],
+    progress: { ...EMPTY_TASK_PROGRESS },
   };
 
   const EMPTY_ACTIVITY: Activity = {
@@ -887,7 +909,7 @@ const makeEmpty = (type: ResourceType) => {
     pinned: false,
   };
 
-  const EMPTY_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
+  const EMPTY_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: EMPTY_ID,
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
@@ -928,6 +950,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_POLICY;
     case "STAGE":
       return EMPTY_STAGE;
+    case "TASK_PROGRESS":
+      return EMPTY_TASK_PROGRESS;
     case "TASK":
       return EMPTY_TASK;
     case "ACTIVITY":
@@ -946,8 +970,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_DEPLOYMENT_CONFIG;
     case "SHEET":
       return EMPTY_SHEET;
-    case "SCHEMA_REVIEW":
-      return EMPTY_SCHEMA_REVIEW_POLICY;
+    case "SQL_REVIEW":
+      return EMPTY_SQL_REVIEW_POLICY;
   }
 };
 export const empty = makeEmpty as ResourceMaker;

@@ -10,23 +10,16 @@ import (
 type ProjectRoleProvider string
 
 const (
-	// ProjectRoleProviderBytebase is the role provider of a project.
+	// ProjectRoleProviderBytebase indicates the role provider is the Bytebase.
 	ProjectRoleProviderBytebase ProjectRoleProvider = "BYTEBASE"
-	// ProjectRoleProviderGitLabSelfHost is the role provider of a project.
+	// ProjectRoleProviderGitLabSelfHost indicates the role provider is the GitLab
+	// self-hosted.
 	ProjectRoleProviderGitLabSelfHost ProjectRoleProvider = "GITLAB_SELF_HOST"
+	// ProjectRoleProviderGitHubCom indicates the role provider is the GitHub.com.
+	ProjectRoleProviderGitHubCom ProjectRoleProvider = "GITHUB_COM"
 )
 
-func (e ProjectRoleProvider) String() string {
-	switch e {
-	case ProjectRoleProviderBytebase:
-		return "BYTEBASE"
-	case ProjectRoleProviderGitLabSelfHost:
-		return "GITLAB_SELF_HOST"
-	}
-	return ""
-}
-
-// ProjectRoleProviderPayload is the payload for role provider
+// ProjectRoleProviderPayload is the payload for role provider.
 type ProjectRoleProviderPayload struct {
 	VCSRole    string `json:"vcsRole"`
 	LastSyncTs int64  `json:"lastSyncTs"`

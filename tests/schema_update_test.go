@@ -7,12 +7,16 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/stretchr/testify/require"
+	"github.com/bytebase/bytebase/tests/fake"
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -21,7 +25,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -80,9 +84,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		ProjectID: &project.ID,
 	})
 	a.NoError(err)
-	a.Equal(len(databases), 1)
+	a.Equal(1, len(databases))
 	database := databases[0]
-	a.Equal(database.Instance.ID, instance.ID)
+	a.Equal(instance.ID, database.Instance.ID)
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
@@ -107,7 +111,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	result, err := ctl.query(instance, databaseName, bookTableQuery)
@@ -137,7 +141,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	status, err = ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Get migration history.
 	histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
@@ -179,7 +183,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: history.SchemaPrev,
 		}
 		want := wantHistories[i]
-		a.Equal(got, want)
+		a.Equal(want, got)
 		a.NotEqual(history.Version, "")
 	}
 
@@ -240,7 +244,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: history.SchemaPrev,
 		}
 		want := wantCloneHistories[i]
-		a.Equal(got, want)
+		a.Equal(want, got)
 	}
 
 	// Create a sheet to mock SQL editor new tab action with UNKNOWN ProjectID.
@@ -273,214 +277,267 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 }
 
 func TestVCS(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx := context.Background()
-	ctl := &controller{}
-	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
-	a.NoError(err)
-	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
-	err = ctl.setLicense()
-	a.NoError(err)
-
-	// Create a VCS.
-	applicationID := "testApplicationID"
-	applicationSecret := "testApplicationSecret"
-	vcs, err := ctl.createVCS(api.VCSCreate{
-		Name:          "TestVCS",
-		Type:          vcs.GitLabSelfHost,
-		InstanceURL:   ctl.gitURL,
-		APIURL:        ctl.gitAPIURL,
-		ApplicationID: applicationID,
-		Secret:        applicationSecret,
-	})
-	a.NoError(err)
-
-	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test VCS Project",
-		Key:  "TestVCSSchemaUpdate",
-	})
-	a.NoError(err)
-
-	// Create a repository.
-	repositoryPath := "test/schemaUpdate"
-	accessToken := "accessToken1"
-	refreshToken := "refreshToken1"
-	gitlabProjectID := 121
-	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// create a gitlab project.
-	ctl.gitlab.CreateProject(gitlabProjectIDStr)
-	_, err = ctl.createRepository(api.RepositoryCreate{
-		VCSID:              vcs.ID,
-		ProjectID:          project.ID,
-		Name:               "Test Repository",
-		FullPath:           repositoryPath,
-		WebURL:             fmt.Sprintf("%s/%s", ctl.gitURL, repositoryPath),
-		BranchFilter:       "feature/foo",
-		BaseDirectory:      "bbtest",
-		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-		SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
-		ExternalID:         gitlabProjectIDStr,
-		AccessToken:        accessToken,
-		ExpiresTs:          0,
-		RefreshToken:       refreshToken,
-	})
-	a.NoError(err)
-
-	// Provision an instance.
-	instanceRootDir := t.TempDir()
-	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
-	a.NoError(err)
-
-	environments, err := ctl.getEnvironments()
-	a.NoError(err)
-	prodEnvironment, err := findEnvironment(environments, "Prod")
-	a.NoError(err)
-
-	// Add an instance.
-	instance, err := ctl.addInstance(api.InstanceCreate{
-		EnvironmentID: prodEnvironment.ID,
-		Name:          instanceName,
-		Engine:        db.SQLite,
-		Host:          instanceDir,
-	})
-	a.NoError(err)
-
-	// Create an issue that creates a database.
-	databaseName := "testVCSSchemaUpdate"
-	err = ctl.createDatabase(project, instance, databaseName, nil /* labelMap */)
-	a.NoError(err)
-
-	// Simulate Git commits for schema update.
-	gitFile := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
-	pushEvent := &gitlab.WebhookPushEvent{
-		ObjectKind: gitlab.WebhookPush,
-		Ref:        "refs/heads/feature/foo",
-		Project: gitlab.WebhookProject{
-			ID: gitlabProjectID,
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(gitFile string) interface{}
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
 		},
-		CommitList: []gitlab.WebhookCommit{
-			{
-				Timestamp: "2021-01-13T13:14:00Z",
-				AddedList: []string{
-					gitFile,
-				},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return github.WebhookPushEvent{
+					Ref: "refs/heads/feature/foo",
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Added: []string{gitFile},
+						},
+					},
+				}
 			},
 		},
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
-	a.NoError(err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
-	a.NoError(err)
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			a.NoError(err)
+			defer func() { _ = ctl.Close(ctx) }()
 
-	// Get schema update issue.
-	openStatus := []api.IssueStatus{api.IssueOpen}
-	issues, err := ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
-	a.NoError(err)
-	a.Equal(len(issues), 1)
-	issue := issues[0]
-	status, err := ctl.waitIssuePipeline(issue.ID)
-	a.NoError(err)
-	a.Equal(status, api.TaskDone)
-	_, err = ctl.patchIssueStatus(api.IssueStatusPatch{
-		ID:     issue.ID,
-		Status: api.IssueDone,
-	})
-	a.NoError(err)
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
 
-	// Query schema.
-	result, err := ctl.query(instance, databaseName, bookTableQuery)
-	a.NoError(err)
-	a.Equal(bookSchemaSQLResult, result)
-
-	// Simulate Git commits for schema update.
-	gitFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
-	pushEvent = &gitlab.WebhookPushEvent{
-		ObjectKind: gitlab.WebhookPush,
-		Ref:        "refs/heads/feature/foo",
-		Project: gitlab.WebhookProject{
-			ID: gitlabProjectID,
-		},
-		CommitList: []gitlab.WebhookCommit{
-			{
-				Timestamp: "2021-01-13T13:14:00Z",
-				AddedList: []string{
-					gitFile,
+			// Create a VCS.
+			vcs, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
 				},
-			},
-		},
+			)
+			a.NoError(err)
+
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VCS Project",
+					Key:  "TestVCSSchemaUpdate",
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository.
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcs.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
+
+			// Provision an instance.
+			instanceName := "testInstance1"
+			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)
+			a.NoError(err)
+
+			environments, err := ctl.getEnvironments()
+			a.NoError(err)
+			prodEnvironment, err := findEnvironment(environments, "Prod")
+			a.NoError(err)
+
+			// Add an instance.
+			instance, err := ctl.addInstance(api.InstanceCreate{
+				EnvironmentID: prodEnvironment.ID,
+				Name:          instanceName,
+				Engine:        db.SQLite,
+				Host:          instanceDir,
+			})
+			a.NoError(err)
+
+			// Create an issue that creates a database.
+			databaseName := "testVCSSchemaUpdate"
+			err = ctl.createDatabase(project, instance, databaseName, nil /* labelMap */)
+			a.NoError(err)
+
+			// Simulate Git commits for schema update.
+			gitFile := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
+			a.NoError(err)
+
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get schema update issue.
+			openStatus := []api.IssueStatus{api.IssueOpen}
+			issues, err := ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: &openStatus,
+				},
+			)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue := issues[0]
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Query schema.
+			result, err := ctl.query(instance, databaseName, bookTableQuery)
+			a.NoError(err)
+			a.Equal(bookSchemaSQLResult, result)
+
+			// Simulate Git commits for schema update.
+			gitFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatement})
+			a.NoError(err)
+
+			payload, err = json.Marshal(test.newWebhookPushEvent(gitFile))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get data update issue.
+			openStatus = []api.IssueStatus{api.IssueOpen}
+			issues, err = ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: &openStatus,
+				},
+			)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue = issues[0]
+			status, err = ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Get migration history.
+			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
+			a.NoError(err)
+			wantHistories := []api.MigrationHistory{
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Data,
+					Status:     db.Done,
+					Schema:     dumpedSchema,
+					SchemaPrev: dumpedSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     dumpedSchema,
+					SchemaPrev: "",
+				},
+				{
+					Database:   databaseName,
+					Source:     db.UI,
+					Type:       db.Baseline,
+					Status:     db.Done,
+					Schema:     "",
+					SchemaPrev: "",
+				},
+			}
+			a.Equal(len(wantHistories), len(histories))
+
+			for i, history := range histories {
+				got := api.MigrationHistory{
+					Database:   history.Database,
+					Source:     history.Source,
+					Type:       history.Type,
+					Status:     history.Status,
+					Schema:     history.Schema,
+					SchemaPrev: history.SchemaPrev,
+				}
+				a.Equal(wantHistories[i], got)
+				a.NotEmpty(history.Version)
+			}
+			a.Equal(histories[0].Version, "ver2")
+			a.Equal(histories[1].Version, "ver1")
+		})
 	}
-	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: dataUpdateStatement})
-	a.NoError(err)
-
-	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
-	a.NoError(err)
-
-	// Get data update issue.
-	openStatus = []api.IssueStatus{api.IssueOpen}
-	issues, err = ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
-	a.NoError(err)
-	a.Equal(len(issues), 1)
-	issue = issues[0]
-	status, err = ctl.waitIssuePipeline(issue.ID)
-	a.NoError(err)
-	a.Equal(status, api.TaskDone)
-	_, err = ctl.patchIssueStatus(api.IssueStatusPatch{
-		ID:     issue.ID,
-		Status: api.IssueDone,
-	})
-	a.NoError(err)
-
-	// Get migration history.
-	histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
-	a.NoError(err)
-	wantHistories := []api.MigrationHistory{
-		{
-			Database:   databaseName,
-			Source:     db.VCS,
-			Type:       db.Data,
-			Status:     db.Done,
-			Schema:     dumpedSchema,
-			SchemaPrev: dumpedSchema,
-		},
-		{
-			Database:   databaseName,
-			Source:     db.VCS,
-			Type:       db.Migrate,
-			Status:     db.Done,
-			Schema:     dumpedSchema,
-			SchemaPrev: "",
-		},
-		{
-			Database:   databaseName,
-			Source:     db.UI,
-			Type:       db.Baseline,
-			Status:     db.Done,
-			Schema:     "",
-			SchemaPrev: "",
-		},
-	}
-	a.Equal(len(histories), len(wantHistories))
-
-	for i, history := range histories {
-		got := api.MigrationHistory{
-			Database:   history.Database,
-			Source:     history.Source,
-			Type:       history.Type,
-			Status:     history.Status,
-			Schema:     history.Schema,
-			SchemaPrev: history.SchemaPrev,
-		}
-		want := wantHistories[i]
-		a.Equal(got, want)
-		a.NotEqual(history.Version, "")
-	}
-	a.Equal(histories[0].Version, "ver2")
-	a.Equal(histories[1].Version, "ver1")
 }

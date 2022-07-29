@@ -9,6 +9,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*ColumnNoNullAdvisor)(nil)
+	_ ast.Visitor     = (*columnNoNullChecker)(nil)
 )
 
 func init() {
@@ -21,13 +22,13 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ type columnName struct {
 	columnName string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columns []columnName
 	switch node := in.(type) {
@@ -114,8 +115,8 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *columnNoNullChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*columnNoNullChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 

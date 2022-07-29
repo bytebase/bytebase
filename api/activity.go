@@ -30,7 +30,7 @@ const (
 	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
 	ActivityPipelineTaskEarliestAllowedTimeUpdate ActivityType = "bb.pipeline.task.general.earliest-allowed-time.update"
 
-	// Member related
+	// Member related.
 
 	// ActivityMemberCreate is the type for creating members.
 	ActivityMemberCreate ActivityType = "bb.member.create"
@@ -41,7 +41,7 @@ const (
 	// ActivityMemberDeactivate is the type for deactivating members.
 	ActivityMemberDeactivate ActivityType = "bb.member.deactivate"
 
-	// Project related
+	// Project related.
 
 	// ActivityProjectRepositoryPush is the type for pushing repositories.
 	ActivityProjectRepositoryPush ActivityType = "bb.project.repository.push"
@@ -54,58 +54,16 @@ const (
 	// ActivityProjectMemberRoleUpdate is the type for updating project member roles.
 	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
 
-	// SQL Editor related
+	// SQL Editor related.
 
 	// ActivitySQLEditorQuery is the type for executing query.
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
 
-	// Database related
+	// Database related.
 
 	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
 	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
 )
-
-func (e ActivityType) String() string {
-	switch e {
-	case ActivityIssueCreate:
-		return "bb.issue.create"
-	case ActivityIssueCommentCreate:
-		return "bb.issue.comment.create"
-	case ActivityIssueFieldUpdate:
-		return "bb.issue.field.update"
-	case ActivityIssueStatusUpdate:
-		return "bb.issue.status.update"
-	case ActivityPipelineTaskStatusUpdate:
-		return "bb.pipeline.task.status.update"
-	case ActivityPipelineTaskFileCommit:
-		return "bb.pipeline.task.file.commit"
-	case ActivityPipelineTaskStatementUpdate:
-		return "bb.pipeline.task.statement.update"
-	case ActivityMemberCreate:
-		return "bb.member.create"
-	case ActivityMemberRoleUpdate:
-		return "bb.member.role.update"
-	case ActivityMemberActivate:
-		return "bb.member.activate"
-	case ActivityMemberDeactivate:
-		return "bb.member.deactivate"
-	case ActivityProjectRepositoryPush:
-		return "bb.project.repository.push"
-	case ActivityProjectDatabaseTransfer:
-		return "bb.project.database.transfer"
-	case ActivityProjectMemberCreate:
-		return "bb.project.member.create"
-	case ActivityProjectMemberDelete:
-		return "bb.project.member.delete"
-	case ActivityProjectMemberRoleUpdate:
-		return "bb.project.member.role.update"
-	case ActivitySQLEditorQuery:
-		return "bb.sql-editor.query"
-	case ActivityDatabaseRecoveryPITRDone:
-		return "bb.database.recovery.pitr.done"
-	}
-	return "bb.activity.unknown"
-}
 
 // ActivityLevel is the level of activities.
 type ActivityLevel string
@@ -118,18 +76,6 @@ const (
 	// ActivityError is the ERROR level of activities.
 	ActivityError ActivityLevel = "ERROR"
 )
-
-func (e ActivityLevel) String() string {
-	switch e {
-	case ActivityInfo:
-		return "INFO"
-	case ActivityWarn:
-		return "WARN"
-	case ActivityError:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
 
 // ActivityIssueCreatePayload is the API message payloads for creating issues.
 // These payload types are only used when marshalling to the json format for saving into the database.
@@ -329,13 +275,4 @@ type ActivityPatch struct {
 
 	// Domain specific fields
 	Comment *string `jsonapi:"attr,comment"`
-}
-
-// ActivityDelete is the API message for deleting an activity.
-type ActivityDelete struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterID int
 }

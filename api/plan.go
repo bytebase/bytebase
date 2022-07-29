@@ -31,12 +31,12 @@ func (p PlanType) String() string {
 type FeatureType string
 
 const (
-	// Change Workflow
+	// Change Workflow.
 
 	// FeatureSchemaDrift detects if there occurs schema drift.
 	// See https://bytebase.com/docs/features/drift-detection
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
-	// FeatureTaskScheduleTime allows user to run task at a scheduled time
+	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
 	// FeatureMultiTenancy allows user to enable tenant mode for the project.
 	//
@@ -64,7 +64,13 @@ const (
 	// - Support defining extra data source for a database and exposing the related data source UI.
 	FeatureDataSource FeatureType = "bb.feature.data-source"
 
-	// Policy Control
+	// FeatureGhost allows user to use gh-ost for MySQL database migration.
+	FeatureGhost FeatureType = "bb.feature.ghost"
+
+	// FeaturePITR allows user to perform point-in-time recovery for databases.
+	FeaturePITR FeatureType = "bb.feature.pitr"
+
+	// Policy Control.
 
 	// FeatureApprovalPolicy allows user to specify approval policy for the environment
 	//
@@ -76,17 +82,17 @@ const (
 	// e.g. One can configure to NOT require backup for dev environment while require
 	//      weekly backup for staging and daily backup for production.
 	FeatureBackupPolicy FeatureType = "bb.feature.backup-policy"
-	// FeatureSchemaReviewPolicy allows user to specify schema policy for the environment
+	// FeatureSQLReviewPolicy allows user to specify schema policy for the environment
 	//
 	// e.g. One can configure rules for database schema or SQL query.
-	FeatureSchemaReviewPolicy FeatureType = "bb.feature.schema-review-policy"
+	FeatureSQLReviewPolicy FeatureType = "bb.feature.sql-review"
 
-	// Admin & Security
+	// Admin & Security.
 
 	// FeatureRBAC enables RBAC.
 	//
 	// - Workspace level RBAC
-	// - Project level RBAC
+	// - Project level RBAC.
 	FeatureRBAC FeatureType = "bb.feature.rbac"
 
 	// Feature3rdPartyAuth allows user to authenticate (login) and authorize (sync project member)
@@ -94,7 +100,7 @@ const (
 	// Currently, we only support GitLab EE/CE auth.
 	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 
-	// Branding
+	// Branding.
 
 	// FeatureBranding enables customized branding.
 	//
@@ -102,35 +108,7 @@ const (
 	FeatureBranding FeatureType = "bb.feature.branding"
 )
 
-func (e FeatureType) String() string {
-	switch e {
-	case FeatureSchemaDrift:
-		return "bb.feature.schema-drift"
-	case FeatureTaskScheduleTime:
-		return "bb.feature.task-schedule-time"
-	case FeatureMultiTenancy:
-		return "bb.feature.multi-tenancy"
-	case FeatureDBAWorkflow:
-		return "bb.feature.dba-workflow"
-	case FeatureDataSource:
-		return "bb.feature.data-source"
-	case FeatureApprovalPolicy:
-		return "bb.feature.approval-policy"
-	case FeatureBackupPolicy:
-		return "bb.feature.backup-policy"
-	case FeatureSchemaReviewPolicy:
-		return "bb.feature.schema-review-policy"
-	case FeatureRBAC:
-		return "bb.feature.rbac"
-	case Feature3rdPartyAuth:
-		return "bb.feature.3rd-party-auth"
-	case FeatureBranding:
-		return "bb.feature.branding"
-	}
-	return ""
-}
-
-// Name returns a readable name of the feature
+// Name returns a readable name of the feature.
 func (e FeatureType) Name() string {
 	switch e {
 	case FeatureSchemaDrift:
@@ -143,12 +121,16 @@ func (e FeatureType) Name() string {
 		return "DBA workflow"
 	case FeatureDataSource:
 		return "Data source"
+	case FeatureGhost:
+		return "gh-ost integration"
+	case FeaturePITR:
+		return "Point-in-time Recovery"
 	case FeatureApprovalPolicy:
 		return "Approval policy"
 	case FeatureBackupPolicy:
 		return "Backup policy"
-	case FeatureSchemaReviewPolicy:
-		return "Schema review policy"
+	case FeatureSQLReviewPolicy:
+		return "SQL review policy"
 	case FeatureRBAC:
 		return "RBAC"
 	case Feature3rdPartyAuth:
@@ -176,19 +158,21 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 	return ENTERPRISE
 }
 
-// FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
+// FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan.
 var FeatureMatrix = map[FeatureType][3]bool{
-	"bb.feature.schema-drift":         {false, true, true},
-	"bb.feature.task-schedule-time":   {false, true, true},
-	"bb.feature.multi-tenancy":        {false, true, true},
-	"bb.feature.dba-workflow":         {false, false, true},
-	"bb.feature.data-source":          {false, false, false},
-	"bb.feature.approval-policy":      {false, true, true},
-	"bb.feature.backup-policy":        {false, true, true},
-	"bb.feature.schema-review-policy": {false, true, true},
-	"bb.feature.rbac":                 {false, true, true},
-	"bb.feature.3rd-party-auth":       {false, true, true},
-	"bb.feature.branding":             {false, true, true},
+	"bb.feature.schema-drift":       {false, true, true},
+	"bb.feature.task-schedule-time": {false, true, true},
+	"bb.feature.multi-tenancy":      {false, true, true},
+	"bb.feature.dba-workflow":       {false, false, true},
+	"bb.feature.data-source":        {false, false, false},
+	"bb.feature.ghost":              {false, true, true},
+	"bb.feature.pitr":               {false, true, true},
+	"bb.feature.approval-policy":    {false, true, true},
+	"bb.feature.backup-policy":      {false, true, true},
+	"bb.feature.sql-review":         {false, true, true},
+	"bb.feature.rbac":               {false, true, true},
+	"bb.feature.3rd-party-auth":     {false, true, true},
+	"bb.feature.branding":           {false, true, true},
 }
 
 // Plan is the API message for a plan.

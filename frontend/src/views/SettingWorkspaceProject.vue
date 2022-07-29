@@ -10,13 +10,6 @@
       </div>
 
       <div class="flex justify-end items-center px-2 gap-x-2">
-        <button
-          v-if="allowCreate"
-          class="btn-primary"
-          @click="state.showCreateModal = true"
-        >
-          {{ $t("quick-action.new-project") }}
-        </button>
         <BBTableSearch
           ref="searchField"
           :placeholder="$t('project.dashboard.search-bar-placeholder')"
@@ -39,19 +32,11 @@
 </template>
 
 <script lang="ts">
-import { useCurrentUser, useProjectStore } from "@/store";
-import {
-  watchEffect,
-  onMounted,
-  reactive,
-  ref,
-  defineComponent,
-  computed,
-} from "vue";
+import { useProjectStore } from "@/store";
+import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import { Project } from "../types";
-import { isDBAOrOwner } from "@/utils";
 
 interface LocalState {
   projectList: Project[];
@@ -60,7 +45,7 @@ interface LocalState {
 }
 
 export default defineComponent({
-  name: "SettingWorkspaceMember",
+  name: "SettingWorkspaceProject",
   components: {
     ProjectCreate,
     ProjectTable,
@@ -69,16 +54,11 @@ export default defineComponent({
     const searchField = ref();
 
     const projectStore = useProjectStore();
-    const currentUser = useCurrentUser();
 
     const state = reactive<LocalState>({
       projectList: [],
       searchText: "",
       showCreateModal: false,
-    });
-
-    const allowCreate = computed(() => {
-      return isDBAOrOwner(currentUser.value.role);
     });
 
     onMounted(() => {
@@ -114,7 +94,6 @@ export default defineComponent({
     return {
       searchField,
       state,
-      allowCreate,
       filteredList,
       changeSearchText,
     };

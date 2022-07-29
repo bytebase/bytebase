@@ -128,9 +128,11 @@
               @click="onToggleAcceptTermsAndPolicyCheckbox"
             >
               <template #terms>
-                <a href="https://www.bytebase.com/terms?source=console" class="text-accent">{{
-                  $t("auth.sign-up.terms-of-service")
-                }}</a>
+                <a
+                  href="https://www.bytebase.com/terms?source=console"
+                  class="text-accent"
+                  >{{ $t("auth.sign-up.terms-of-service") }}</a
+                >
               </template>
               <template #policy>
                 <a
@@ -317,7 +319,7 @@ export default defineComponent({
             // we need to update the server info after setting up the first admin account so that the splash screen
             // won't display the UI for registering the first admin account again.
             if (needAdminSetup.value) {
-              await actuatorStore.fetchInfo();
+              await actuatorStore.fetchServerInfo();
             }
             router.push("/");
           });

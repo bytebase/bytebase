@@ -1,5 +1,5 @@
 <template>
-  <aside>
+  <aside class="pr-0.5">
     <h2 class="sr-only">Details</h2>
     <div class="grid gap-y-6 gap-x-6 grid-cols-3">
       <template v-if="!create">

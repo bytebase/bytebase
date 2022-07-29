@@ -1,9 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -14,6 +12,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingIndexConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingIndexConventionChecker)(nil)
 )
 
 func init() {
@@ -26,18 +25,18 @@ type NamingIndexConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +44,9 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 		level:        level,
 		title:        string(ctx.Rule.Type),
 		format:       format,
+		maxLength:    maxLength,
 		templateList: templateList,
-		catalog:      ctx.Catalog,
+		database:     ctx.Database,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -69,11 +69,12 @@ type namingIndexConventionChecker struct {
 	level        advisor.Status
 	title        string
 	format       string
+	maxLength    int
 	templateList []string
-	catalog      catalog.Catalog
+	database     *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -96,13 +97,21 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 				Content: fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
+		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.NamingIndexConventionMismatch,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+			})
+		}
 	}
 
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (checker *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
@@ -139,18 +148,11 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				ctx := context.Background()
-				index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+				_, index := checker.database.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})
-				if err != nil {
-					log.Printf(
-						"Cannot find index %s in table %s with error %v\n",
-						node.Table.Name.String(),
-						spec.FromKey.String(),
-						err,
-					)
+				if index == nil {
 					continue
 				}
 				if index.Unique {
@@ -158,7 +160,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

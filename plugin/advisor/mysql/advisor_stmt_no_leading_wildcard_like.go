@@ -14,6 +14,7 @@ const (
 
 var (
 	_ advisor.Advisor = (*NoLeadingWildcardLikeAdvisor)(nil)
+	_ ast.Visitor     = (*noLeadingWildcardLikeChecker)(nil)
 )
 
 func init() {
@@ -26,13 +27,13 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (adv *NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +73,7 @@ type noLeadingWildcardLikeChecker struct {
 	leadingWildcardLike bool
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.PatternLikeExpr); !v.leadingWildcardLike && ok {
 		pattern, err := restoreNode(node.Pattern, format.RestoreStringWithoutCharset)
@@ -91,7 +92,7 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *noLeadingWildcardLikeChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*noLeadingWildcardLikeChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

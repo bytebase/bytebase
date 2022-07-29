@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
-// Dump and restore
+// Dump and restore.
 const (
 	databaseHeaderFmt = "" +
 		"--\n" +
@@ -32,14 +32,14 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, _ bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return "", err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
+	if err := dumpTxn(ctx, txn, database, out); err != nil {
 		return "", err
 	}
 
@@ -51,9 +51,9 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 }
 
 // getDatabases gets all databases of an instance.
-func getDatabases(txn *sql.Tx) ([]string, error) {
+func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	var dbNames []string
-	rows, err := txn.Query("SELECT name FROM system.databases")
+	rows, err := txn.QueryContext(ctx, "SELECT name FROM system.databases")
 	if err != nil {
 		return nil, err
 	}
@@ -66,13 +66,16 @@ func getDatabases(txn *sql.Tx) ([]string, error) {
 		}
 		dbNames = append(dbNames, name)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return dbNames, nil
 }
 
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
-func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) error {
 	// Find all dumpable databases
-	dbNames, err := getDatabases(txn)
+	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
 		return fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -87,7 +90,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			}
 		}
 		if !exist {
-			return common.Errorf(common.NotFound, fmt.Errorf("database %s not found", database))
+			return common.Errorf(common.NotFound, "database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {
@@ -107,7 +110,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			if _, err := io.WriteString(out, header); err != nil {
 				return err
 			}
-			dbStmt, err := getDatabaseStmt(txn, dbName)
+			dbStmt, err := getDatabaseStmt(ctx, txn, dbName)
 			if err != nil {
 				return fmt.Errorf("failed to get database %q: %s", dbName, err)
 			}
@@ -122,7 +125,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := getTables(txn, dbName)
+		tables, err := getTables(ctx, txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
 		}
@@ -137,22 +140,16 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 }
 
 // getDatabaseStmt gets the create statement of a database.
-func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
+func getDatabaseStmt(ctx context.Context, txn *sql.Tx, dbName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS %s;", dbName)
-	rows, err := txn.Query(query)
-	if err != nil {
+	var stmt, unused string
+	if err := txn.QueryRowContext(ctx, query).Scan(&unused, &stmt); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var stmt, unused string
-		if err := rows.Scan(&unused, &stmt); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%s;\n", stmt), nil
-	}
-	return "", fmt.Errorf("query %q returned empty row", query)
+	return fmt.Sprintf("%s;\n", stmt), nil
 }
 
 // tableSchema describes the schema of a table or view.
@@ -163,10 +160,10 @@ type tableSchema struct {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
+func getTables(ctx context.Context, txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 	var tables []*tableSchema
 	query := fmt.Sprintf("SELECT name, engine, create_table_query FROM system.tables WHERE database='%s';", dbName)
-	rows, err := txn.Query(query)
+	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +175,9 @@ func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 			return nil, err
 		}
 		tables = append(tables, &tbl)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	for _, tbl := range tables {
@@ -211,14 +211,10 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }
 
 // RestoreTx restores the database in the given transaction.
-func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func (*Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
 	return fmt.Errorf("Unimplemented")
 }

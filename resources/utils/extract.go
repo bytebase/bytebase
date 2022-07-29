@@ -64,9 +64,19 @@ func extractTar(r io.Reader, targetDir string) error {
 			if err != nil {
 				return err
 			}
-			defer outFile.Close()
 
-			if _, err := io.Copy(outFile, tarReader); err != nil {
+			var totalWritten int64
+			for totalWritten < header.Size {
+				written, err := io.CopyN(outFile, tarReader, 1024)
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					return err
+				}
+				totalWritten += written
+			}
+			if err := outFile.Close(); err != nil {
 				return err
 			}
 		case tar.TypeDir:

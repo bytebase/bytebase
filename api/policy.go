@@ -114,7 +114,7 @@ type PolicyDelete struct {
 	Type PolicyType
 }
 
-// PipelineApprovalPolicy is the policy configuration for pipeline approval
+// PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`
 }
@@ -139,6 +139,8 @@ func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, e
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {
 	Schedule BackupPlanPolicySchedule `json:"schedule"`
+	// RetentionPeriodTs is the minimum allowed period that backup data is kept for databases in an environment.
+	RetentionPeriodTs int `json:"retentionPeriodTs"`
 }
 
 func (bp BackupPlanPolicy) String() (string, error) {
@@ -158,9 +160,9 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 	return &bp, nil
 }
 
-// UnmarshalSchemaReviewPolicy will unmarshal payload to schema review policy.
-func UnmarshalSchemaReviewPolicy(payload string) (*advisor.SchemaReviewPolicy, error) {
-	var sr advisor.SchemaReviewPolicy
+// UnmarshalSQLReviewPolicy will unmarshal payload to schema review policy.
+func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) {
+	var sr advisor.SQLReviewPolicy
 	if err := json.Unmarshal([]byte(payload), &sr); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema review policy %q: %q", payload, err)
 	}
@@ -194,7 +196,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
 	case PolicyTypeSchemaReview:
-		sr, err := UnmarshalSchemaReviewPolicy(payload)
+		sr, err := UnmarshalSQLReviewPolicy(payload)
 		if err != nil {
 			return err
 		}

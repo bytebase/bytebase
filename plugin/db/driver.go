@@ -14,6 +14,7 @@ import (
 )
 
 // Type is the type of a database.
+// nolint
 type Type string
 
 const (
@@ -30,7 +31,7 @@ const (
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
 
-	// BytebaseDatabase is the database installed in the controlled database server
+	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"
 )
 
@@ -65,8 +66,9 @@ type Index struct {
 	Expression string
 	Position   int
 	// Type isn't supported for SQLite.
-	Type   string
-	Unique bool
+	Type    string
+	Unique  bool
+	Primary bool
 	// Visible isn't supported for Postgres, SQLite.
 	Visible bool
 	// Comment isn't supported for SQLite.
@@ -117,6 +119,22 @@ type Table struct {
 	IndexList []Index
 }
 
+// InstanceMeta is the metadata for an instance.
+type InstanceMeta struct {
+	Version      string
+	UserList     []User
+	DatabaseList []DatabaseMeta
+}
+
+// DatabaseMeta is the metadata for a database.
+type DatabaseMeta struct {
+	Name string
+	// CharacterSet isn't supported for ClickHouse, Snowflake.
+	CharacterSet string
+	// Collation isn't supported for ClickHouse, Snowflake.
+	Collation string
+}
+
 // Schema is the database schema.
 type Schema struct {
 	Name string
@@ -124,7 +142,6 @@ type Schema struct {
 	CharacterSet string
 	// Collation isn't supported for ClickHouse, Snowflake.
 	Collation     string
-	UserList      []User
 	TableList     []Table
 	ViewList      []View
 	ExtensionList []Extension
@@ -154,18 +171,6 @@ const (
 	LIBRARY MigrationSource = "LIBRARY"
 )
 
-func (e MigrationSource) String() string {
-	switch e {
-	case UI:
-		return "UI"
-	case VCS:
-		return "VCS"
-	case LIBRARY:
-		return "LIBRARY"
-	}
-	return "UNKNOWN"
-}
-
 // MigrationType is the type of a migration.
 type MigrationType string
 
@@ -186,20 +191,6 @@ const (
 	Data MigrationType = "DATA"
 )
 
-func (e MigrationType) String() string {
-	switch e {
-	case Baseline:
-		return "BASELINE"
-	case Migrate:
-		return "MIGRATE"
-	case Branch:
-		return "BRANCH"
-	case Data:
-		return "DATA"
-	}
-	return "UNKNOWN"
-}
-
 // MigrationStatus is the status of migration.
 type MigrationStatus string
 
@@ -211,18 +202,6 @@ const (
 	// Failed is the migration status for FAILED.
 	Failed MigrationStatus = "FAILED"
 )
-
-func (e MigrationStatus) String() string {
-	switch e {
-	case Pending:
-		return "PENDING"
-	case Done:
-		return "DONE"
-	case Failed:
-		return "FAILED"
-	}
-	return "UNKNOWN"
-}
 
 // MigrationInfoPayload is the API message for migration info payload.
 type MigrationInfoPayload struct {
@@ -254,7 +233,7 @@ type MigrationInfo struct {
 	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
 	SemanticVersionSuffix string
 	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.
-	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retriable.
+	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retry-able.
 	// We don't use force option for DATA type of migrations yet till there's customer needs.
 	Force bool
 }
@@ -402,21 +381,26 @@ type ConnectionContext struct {
 
 // Driver is the interface for database driver.
 type Driver interface {
+	// General execution
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
 	// So we pass the dbType to tell the exact engine.
 	Open(ctx context.Context, dbType Type, config ConnectionConfig, connCtx ConnectionContext) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
-	GetVersion(ctx context.Context) (string, error)
-	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
+	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string) error
 	// Used for execute readonly SELECT statement
 	// limit is the maximum row count returned. No limit enforced if limit <= 0
 	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)
+
+	// Sync schema
+	// SyncInstance syncs the instance metadata.
+	SyncInstance(ctx context.Context) (*InstanceMeta, error)
+	// SyncDBSchema syncs a single database schema.
+	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
 
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
@@ -437,7 +421,7 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreTx resotres the database from sc in the given transaction.
+	// RestoreTx restores the database from sc in the given transaction.
 	RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error
 }
 
@@ -456,7 +440,7 @@ func Register(dbType Type, f driverFunc) {
 	drivers[dbType] = f
 }
 
-// Open opens a database specified by its database driver type and connection config
+// Open opens a database specified by its database driver type and connection config.
 func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]

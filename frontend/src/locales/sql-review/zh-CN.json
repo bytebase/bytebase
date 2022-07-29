@@ -1,0 +1,155 @@
+{
+  "engine": {
+    "mysql": "MySQL",
+    "common": "通用"
+  },
+  "category": {
+    "engine": "引擎",
+    "naming": "命名",
+    "statement": "语句",
+    "table": "表",
+    "column": "列",
+    "schema": "Schema",
+    "database": "数据库"
+  },
+  "template": {
+    "bb-sql-review-mysql-prod": "针对生产环境的审核策略模板",
+    "bb-sql-review-mysql-dev": "针对开发环境的审核策略模板"
+  },
+  "rule": {
+    "engine-mysql-use-innodb": {
+      "title": "使用 InnoDB 作为储存引擎",
+      "description": "强制要求使用 InnoDB 作为 MySQL 的储存引擎。"
+    },
+    "table-require-pk": {
+      "title": "强制主键",
+      "description": "要求每张表必须有一个主键。"
+    },
+    "table-no-foreign-key": {
+      "title": "禁止外键",
+      "description": "禁止给表创建外键。"
+    },
+    "table-drop-naming-convention": {
+      "title": "待删除表的命名规范",
+      "description": "只有符合命名规范的表才可以被删除，通过强制用户在删除前重命名来避免误删。默认情况下待删除表名必须以 \"_del\" 结尾。",
+      "component": {
+        "format": {
+          "title": "命名规则（正则）"
+        }
+      }
+    },
+    "naming-table": {
+      "title": "表名命名检查",
+      "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
+      "component": {
+        "format": {
+          "title": "表命名规则（正则）"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "naming-column": {
+      "title": "列名命名检查",
+      "description": "限制列名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
+      "component": {
+        "format": {
+          "title": "列命名规则（正则）"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "naming-index-uk": {
+      "title": "唯一键命名检查",
+      "description": "限制唯一键命名风格和长度，默认为 uk_<表名>_<主键包含的字段名组合>，且不超过 64 个字符。",
+      "component": {
+        "format": {
+          "title": "唯一键命名规则",
+          "template": {
+            "table": "表名",
+            "column_list": "索引包含的字段名，通过 _ 连接"
+          }
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "naming-index-fk": {
+      "title": "外键命名检查",
+      "description": "限制外键命名风格和长度，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>，且不超过 64 个字符。",
+      "component": {
+        "format": {
+          "title": "外键命名规则",
+          "template": {
+            "referencing_table": "目标表名",
+            "referencing_column": "目标字段名",
+            "referenced_table": "被引用的表名",
+            "referenced_column": "被引用的字段名"
+          }
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "naming-index-idx": {
+      "title": "索引命名检查",
+      "description": "限制索引命名风格和长度，默认为 idx_<表名>_<索引包含的字段名组合>，且不超过 64 个字符。",
+      "component": {
+        "format": {
+          "title": "索引命名规则",
+          "template": {
+            "table": "表名",
+            "column_list": "索引包含的字段名，通过 _ 连接"
+          }
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "column-required": {
+      "title": "必须包含的字段",
+      "description": "强制要求表中必须包含某些字段。",
+      "component": {
+        "columnList": {
+          "title": "必须包含的字段名"
+        }
+      }
+    },
+    "column-no-null": {
+      "title": "禁止字段为 NULL",
+      "description": "表中的字段不允许存在 NULL 值。"
+    },
+    "statement-select-no-select-all": {
+      "title": "禁止 \"SELECT *\"",
+      "description": "不允许使用 \"SELECT *\" 语句"
+    },
+    "statement-where-require": {
+      "title": "强制 \"WHERE\"",
+      "description": "必须使用 \"WHERE\" 语句"
+    },
+    "statement-where-no-leading-wildcard-like": {
+      "title": "禁止左模糊",
+      "description": "WHERE 语句中禁止使用左模糊匹配，例如禁止 LIKE foo = '%x'。"
+    },
+    "schema-backward-compatibility": {
+      "title": "向后兼容",
+      "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容"
+    },
+    "database-drop-empty-database": {
+      "title": "数据库删除限制",
+      "description": "只有当数据库内没有表时，才可以被删除。"
+    }
+  },
+  "level": {
+    "name": "错误等级",
+    "error": "错误",
+    "warning": "警告",
+    "disabled": "禁用"
+  }
+}

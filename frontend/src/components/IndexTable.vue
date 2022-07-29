@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :section-data-source="sectionList"
     :show-header="true"
     :compact-section="false"
@@ -9,12 +9,16 @@
       <BBTableHeaderCell
         :left-padding="4"
         class="w-16"
-        :title="COLUMN_LIST[0].title"
+        :title="columnList[0].title"
       />
-      <BBTableHeaderCell class="w-4" :title="COLUMN_LIST[1].title" />
-      <BBTableHeaderCell class="w-4" :title="COLUMN_LIST[2].title" />
-      <BBTableHeaderCell class="w-4" :title="COLUMN_LIST[3].title" />
-      <BBTableHeaderCell class="w-16" :title="COLUMN_LIST[4].title" />
+      <BBTableHeaderCell class="w-4" :title="columnList[1].title" />
+      <BBTableHeaderCell class="w-4" :title="columnList[2].title" />
+      <BBTableHeaderCell
+        v-if="showVisibleColumn"
+        class="w-4"
+        :title="columnList[3].title"
+      />
+      <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
     </template>
     <template #body="{ rowData: index }">
       <BBTableCell :left-padding="4">
@@ -26,7 +30,7 @@
       <BBTableCell>
         {{ index.unique }}
       </BBTableCell>
-      <BBTableCell>
+      <BBTableCell v-if="showVisibleColumn">
         {{ index.visible }}
       </BBTableCell>
       <BBTableCell>
@@ -38,8 +42,8 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
-import { TableIndex } from "../types";
+import { BBTableSectionDataSource } from "../bbkit/types";
+import { Database, TableIndex } from "../types";
 import { useI18n } from "vue-i18n";
 
 export default defineComponent({
@@ -50,10 +54,17 @@ export default defineComponent({
       required: true,
       type: Object as PropType<TableIndex[]>,
     },
+    database: {
+      required: true,
+      type: Object as PropType<Database>,
+    },
   },
   setup(props) {
     const { t } = useI18n();
-    const COLUMN_LIST: BBTableColumn[] = [
+    const showVisibleColumn = computed(() => {
+      return props.database.instance.engine !== "POSTGRES";
+    });
+    const columnList = computed(() => [
       {
         title: t("database.expression"),
       },
@@ -69,7 +80,7 @@ export default defineComponent({
       {
         title: t("database.comment"),
       },
-    ];
+    ]);
     const sectionList = computed(() => {
       const sectionList: BBTableSectionDataSource<TableIndex>[] = [];
 
@@ -89,8 +100,9 @@ export default defineComponent({
     });
 
     return {
-      COLUMN_LIST,
+      columnList,
       sectionList,
+      showVisibleColumn,
     };
   },
 });

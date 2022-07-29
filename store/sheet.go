@@ -70,7 +70,7 @@ func (raw *sheetRaw) toSheet() *api.Sheet {
 	}
 }
 
-// CreateSheet creates an instance of Sheet
+// CreateSheet creates an instance of Sheet.
 func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.Sheet, error) {
 	sheetRaw, err := s.createSheetRaw(ctx, create)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.
 	return sheet, nil
 }
 
-// GetSheet gets an instance of Sheet
+// GetSheet gets an instance of Sheet.
 func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*api.Sheet, error) {
 	sheetRaw, err := s.getSheetRaw(ctx, find)
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrinci
 	return sheet, nil
 }
 
-// FindSheet finds a list of Sheet instances
+// FindSheet finds a list of Sheet instances.
 func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) ([]*api.Sheet, error) {
 	sheetRawList, err := s.findSheetRaw(ctx, find)
 	if err != nil {
@@ -116,7 +116,7 @@ func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrinc
 	return sheetList, nil
 }
 
-// PatchSheet patches an instance of Sheet
+// PatchSheet patches an instance of Sheet.
 func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.Sheet, error) {
 	sheetRaw, err := s.patchSheetRaw(ctx, patch)
 	if err != nil {
@@ -180,7 +180,9 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 		}
 		res = append(res, &sheetCount)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return res, nil
 }
 
@@ -317,7 +319,7 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		create.Payload = "{}"
 	}
 
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -332,7 +334,10 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
-	`,
+	`
+	var sheetRaw sheetRaw
+	databaseID := sql.NullInt32{}
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -343,17 +348,7 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		create.Source,
 		create.Type,
 		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var sheetRaw sheetRaw
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
+	).Scan(
 		&sheetRaw.ID,
 		&sheetRaw.RowStatus,
 		&sheetRaw.CreatorID,
@@ -369,14 +364,15 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		&sheetRaw.Type,
 		&sheetRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	if databaseID.Valid {
 		value := int(databaseID.Int32)
 		sheetRaw.DatabaseID = &value
 	}
-
 	return &sheetRaw, nil
 }
 
@@ -404,52 +400,41 @@ func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*sh
 
 	args = append(args, patch.ID)
 
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	var sheetRaw sheetRaw
+	databaseID := sql.NullInt32{}
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
 	`, len(args)),
 		args...,
-	)
-
-	if err != nil {
+	).Scan(
+		&sheetRaw.ID,
+		&sheetRaw.RowStatus,
+		&sheetRaw.CreatorID,
+		&sheetRaw.CreatedTs,
+		&sheetRaw.UpdaterID,
+		&sheetRaw.UpdatedTs,
+		&sheetRaw.ProjectID,
+		&databaseID,
+		&sheetRaw.Name,
+		&sheetRaw.Statement,
+		&sheetRaw.Visibility,
+		&sheetRaw.Source,
+		&sheetRaw.Type,
+		&sheetRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var sheetRaw sheetRaw
-		databaseID := sql.NullInt32{}
-		if err := row.Scan(
-			&sheetRaw.ID,
-			&sheetRaw.RowStatus,
-			&sheetRaw.CreatorID,
-			&sheetRaw.CreatedTs,
-			&sheetRaw.UpdaterID,
-			&sheetRaw.UpdatedTs,
-			&sheetRaw.ProjectID,
-			&databaseID,
-			&sheetRaw.Name,
-			&sheetRaw.Statement,
-			&sheetRaw.Visibility,
-			&sheetRaw.Source,
-			&sheetRaw.Type,
-			&sheetRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if databaseID.Valid {
-			value := int(databaseID.Int32)
-			sheetRaw.DatabaseID = &value
-		}
-
-		return &sheetRaw, nil
+	if databaseID.Valid {
+		value := int(databaseID.Int32)
+		sheetRaw.DatabaseID = &value
 	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
-
+	return &sheetRaw, nil
 }
 
 func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*sheetRaw, error) {

@@ -20,6 +20,7 @@
           </div>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+            data-label="bb-database-detail-info-block"
           >
             <dt class="sr-only">{{ $t("common.environment") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -102,7 +103,18 @@
             </DatabaseLabelProps>
           </dl>
         </div>
-        <div class="flex items-center gap-x-2">
+        <div
+          class="flex items-center gap-x-2"
+          data-label="bb-database-detail-action-buttons-container"
+        >
+          <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
+          <button
+            type="button"
+            class="btn-normal"
+            @click.prevent="syncDatabaseSchema"
+          >
+            {{ $t("common.sync-now") }}
+          </button>
           <button
             v-if="allowChangeProject"
             type="button"
@@ -118,7 +130,7 @@
             v-if="allowEdit"
             type="button"
             class="btn-normal"
-            @click="changeData"
+            @click="createMigration('bb.issue.database.data.update')"
           >
             <span>{{ changeDataText }}</span>
             <heroicons-outline:external-link
@@ -131,7 +143,7 @@
             type="normal"
             tooltip-mode="DISABLED-ONLY"
             :disabled="!allowMigrate"
-            @click="alterSchema"
+            @click="createMigration('bb.issue.database.schema.update')"
           >
             <span>{{ alterSchemaText }}</span>
             <heroicons-outline:external-link
@@ -157,6 +169,7 @@
       :responsive="false"
       :tab-item-list="tabItemList"
       :selected-index="state.selectedIndex"
+      data-label="bb-database-detail-tab"
       @select-index="
         (index: number) => {
           selectTab(index);
@@ -299,6 +312,7 @@ import {
   baseDirectoryWebUrl,
   Database,
   DatabaseLabel,
+  SQLResultSet,
 } from "@/types";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
@@ -308,7 +322,9 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useRepositoryStore,
+  useSQLStore,
 } from "@/store";
+import dayjs from "dayjs";
 
 const OVERVIEW_TAB = 0;
 const MIGRATION_HISTORY_TAB = 1;
@@ -324,6 +340,7 @@ interface LocalState {
   showIncorrectProjectModal: boolean;
   editingProjectId: ProjectId;
   selectedIndex: number;
+  syncingSchema: boolean;
 }
 
 const props = defineProps({
@@ -335,6 +352,7 @@ const props = defineProps({
 
 const databaseStore = useDatabaseStore();
 const repositoryStore = useRepositoryStore();
+const sqlStore = useSQLStore();
 const router = useRouter();
 const { t } = useI18n();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -350,16 +368,13 @@ const state = reactive<LocalState>({
   showIncorrectProjectModal: false,
   editingProjectId: UNKNOWN_ID,
   selectedIndex: OVERVIEW_TAB,
+  syncingSchema: false,
 });
 
 const currentUser = useCurrentUser();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
-});
-
-const isTenantProject = computed(() => {
-  return database.value.project.tenantMode === "TENANT";
 });
 
 const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -483,48 +498,47 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
   return "normal";
 };
 
-const alterSchema = async () => {
+const createMigration = async (
+  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
+) => {
   if (database.value.project.workflowType == "UI") {
-    const mode = await isUsingGhostMigration([database.value]);
+    let mode: "online" | "normal" | false = "normal";
+    if (type === "bb.issue.database.schema.update") {
+      // Check and show a normal/online selection modal dialog if needed.
+      mode = await isUsingGhostMigration([database.value]);
+    }
     if (mode === false) return;
+
+    // Create a user friendly default issue name
+    const issueNameParts: string[] = [];
+    issueNameParts.push(`[${database.value.name}]`);
+    if (mode === "online") {
+      issueNameParts.push("Online schema change");
+    } else {
+      issueNameParts.push(
+        type === "bb.issue.database.schema.update"
+          ? `Alter schema`
+          : `Change data`
+      );
+    }
+    issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+
     const query: Record<string, any> = {
-      template: "bb.issue.database.schema.update",
-      name: `[${database.value.name}] Alter schema`,
+      template: type,
+      name: issueNameParts.join(" "),
       project: database.value.project.id,
       databaseList: database.value.id,
     };
     if (mode === "online") {
       query.ghost = "1";
     }
+
     router.push({
       name: "workspace.issue.detail",
       params: {
         issueSlug: "new",
       },
       query,
-    });
-  } else if (database.value.project.workflowType == "VCS") {
-    repositoryStore
-      .fetchRepositoryByProjectId(database.value.project.id)
-      .then((repository: Repository) => {
-        window.open(baseDirectoryWebUrl(repository), "_blank");
-      });
-  }
-};
-
-const changeData = () => {
-  if (database.value.project.workflowType == "UI") {
-    router.push({
-      name: "workspace.issue.detail",
-      params: {
-        issueSlug: "new",
-      },
-      query: {
-        template: "bb.issue.database.data.update",
-        name: `[${database.value.name}] Change data`,
-        project: database.value.project.id,
-        databaseList: database.value.id,
-      },
     });
   } else if (database.value.project.workflowType == "VCS") {
     repositoryStore
@@ -618,5 +632,38 @@ watch(
 const doTransfer = (labels: DatabaseLabel[]) => {
   updateProject(state.editingProjectId, labels);
   state.showTransferDatabaseModal = false;
+};
+
+const syncDatabaseSchema = () => {
+  state.syncingSchema = true;
+  sqlStore
+    .syncDatabaseSchema(database.value.id)
+    .then((resultSet: SQLResultSet) => {
+      state.syncingSchema = false;
+      if (resultSet.error) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t(
+            "db.failed-to-sync-schema-for-database-database-value-name",
+            [database.value.name]
+          ),
+          description: resultSet.error,
+        });
+      } else {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t(
+            "db.successfully-synced-schema-for-database-database-value-name",
+            [database.value.name]
+          ),
+          description: resultSet.error,
+        });
+      }
+    })
+    .catch(() => {
+      state.syncingSchema = false;
+    });
 };
 </script>

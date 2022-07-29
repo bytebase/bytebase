@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -16,7 +17,7 @@ import (
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
+func NewPITRCutoverTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
 		mysqlutil: instance,
 	}
@@ -24,15 +25,16 @@ func NewPITRCutoverTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
-	mysqlutil *mysqlutil.Instance
+	completed int32
+	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR cutover task executor once.
 func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
+	defer atomic.StoreInt32(&exec.completed, 1)
 
 	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
-
 	if err != nil {
 		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
 		return true, nil, err
@@ -74,50 +76,53 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return terminated, result, nil
 }
 
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+// IsCompleted tells the scheduler if the task execution has completed.
+func (exec *PITRCutoverTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
+}
+
+// pitrCutover performs the PITR cutover algorithm:
+// 1. Swap the current and PITR database.
+// 2. Create a backup with type PITR. The backup is scheduled asynchronously.
+// We must check the possible failed/ongoing PITR type backup in the recovery process.
+func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
 
-	connCfg, err := getConnectionConfig(ctx, task.Instance, task.Database.Name)
+	driverDB, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return true, nil, err
 	}
-
-	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
-	if err := createBinlogDir(server.profile.DataDir, task.Instance.ID); err != nil {
+	conn, err := driverDB.Conn(ctx)
+	if err != nil {
 		return true, nil, err
 	}
+	defer conn.Close()
 
-	mysqlDriver, ok := driver.(*mysql.Driver)
-	if !ok {
-		log.Error("failed to cast driver to mysql.Driver")
-		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
-	}
-
-	mysqlRestore := mysql.NewRestore(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
-
-	log.Info("Start swapping the original and PITR database",
-		zap.String("instance", task.Instance.Name),
-		zap.String("original_database", task.Database.Name),
-	)
-	pitrDatabaseName, pitrOldDatabaseName, err := mysqlRestore.SwapPITRDatabase(ctx, task.Database.Name, issue.CreatedTs)
+	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
+	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
 	if err != nil {
-		log.Error("Failed to swap the original and PITR database",
-			zap.Int("issueID", issue.ID),
-			zap.String("database", task.Database.Name),
-			zap.Error(err))
+		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
 	}
+	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
 
-	log.Info("Finish swapping the original and PITR database",
-		zap.String("original_database", task.Database.Name),
-		zap.String("pitr_database", pitrDatabaseName),
-		zap.String("old_database", pitrOldDatabaseName))
+	if server.profile.Mode == common.ReleaseModeDev {
+		backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
+		if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
+			return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
+		}
+	}
 
-	log.Info("Appending new migration history record...")
+	log.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
 		Version:        common.DefaultMigrationVersion(),
@@ -126,6 +131,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		Environment:    task.Database.Instance.Environment.Name,
 		Source:         db.MigrationSource(task.Database.Project.WorkflowType),
 		Type:           db.Baseline,
+		Status:         db.Done,
 		Description:    fmt.Sprintf("PITR: restoring database %s", task.Database.Name),
 		Creator:        task.Creator.Name,
 		IssueID:        strconv.Itoa(issue.ID),
@@ -137,7 +143,12 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 
 	// Sync database schema after restore is completed.
-	server.syncEngineVersionAndSchema(ctx, task.Database.Instance)
+	if err := server.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
+		log.Error("failed to sync database schema",
+			zap.String("instance", task.Database.Instance.Name),
+			zap.String("databaseName", task.Database.Name),
+		)
+	}
 
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),

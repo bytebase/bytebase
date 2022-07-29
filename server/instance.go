@@ -55,7 +55,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					zap.Error(err))
 			}
 			if instanceCreate.SyncSchema {
-				s.syncEngineVersionAndSchema(ctx, instance)
+				if err := s.syncEngineVersionAndSchema(ctx, instance); err != nil {
+					log.Warn("Failed to sync instance schema",
+						zap.Int("instance_id", instance.ID),
+						zap.Error(err))
+				}
 			}
 		}
 
@@ -145,13 +149,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			// Users can switch instance status from ARCHIVED to NORMAL.
 			// So we need to check the current instance count with NORMAL status for quota limitation.
-			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == api.Normal.String() {
+			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == string(api.Normal) {
 				if err := s.instanceCountGuard(ctx); err != nil {
 					return err
 				}
 			}
 			// Ensure all databases belong to this instance are under the default project before instance is archived.
-			if v := instancePatch.RowStatus; v != nil && *v == api.Archived.String() {
+			if v := instancePatch.RowStatus; v != nil && *v == string(api.Archived) {
 				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError,
@@ -189,7 +193,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 						zap.Error(err))
 				}
 				if instancePatch.SyncSchema {
-					s.syncEngineVersionAndSchema(ctx, instancePatched)
+					if err := s.syncEngineVersionAndSchema(ctx, instancePatched); err != nil {
+						log.Warn("Failed to sync instance schema",
+							zap.Int("instance_id", instancePatched.ID),
+							zap.Error(err))
+					}
 				}
 			}
 		}

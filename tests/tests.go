@@ -6,8 +6,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"strconv"
-
 	"io"
 	"io/fs"
 	"net/http"
@@ -15,8 +13,12 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
@@ -26,8 +28,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
-	"github.com/google/jsonapi"
-	"go.uber.org/zap"
 )
 
 //go:embed fake
@@ -100,15 +100,14 @@ var (
 )
 
 type controller struct {
-	server *server.Server
-	client *http.Client
-	cookie string
-	gitlab *fake.GitLab
+	server      *server.Server
+	client      *http.Client
+	cookie      string
+	vcsProvider fake.VCSProvider
 
-	rootURL   string
-	apiURL    string
-	gitURL    string
-	gitAPIURL string
+	rootURL string
+	apiURL  string
+	vcsURL  string
 }
 
 func getTestPort(testName string) int {
@@ -117,24 +116,35 @@ func getTestPort(testName string) int {
 	tests := []string{
 		"TestServiceRestart",
 		"TestSchemaAndDataUpdate",
-		"TestVCS",
+		"TestVCS/GitLab",
+		"TestVCS/GitHub",
 		"TestTenant",
-		"TestTenantVCS",
+		"TestTenantVCS/GitLab",
+		"TestTenantVCS/GitHub",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestBackupRestoreBasic",
-		"TestTenantVCSDatabaseNameTemplate",
+		"TestTenantVCSDatabaseNameTemplate/GitLab",
+		"TestTenantVCSDatabaseNameTemplate/GitHub",
 		"TestBootWithExternalPg",
-		"TestSheetVCS",
+		"TestSheetVCS/GitLab",
+		"TestSheetVCS/GitHub",
 		"TestPrepare",
 
 		// PITR related cases
 		"TestPITR",
+		"TestPITR/Buggy_Application",
+		"TestPITR/Schema_Migration_Failure",
+		"TestPITR/Drop_Database",
+		"TestPITR/Case_Sensitive",
+		"TestPITR/Invalid_Time_Point",
+		"TestPITR/PITR_Twice",
+
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
 		"TestFetchBinlogFiles",
 
-		"TestSchemaSystem",
+		"TestSQLReview",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -147,7 +157,7 @@ func getTestPort(testName string) int {
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int, pgUser, pgURL string) error {
 	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	server, err := server.NewServer(ctx, profile)
@@ -156,11 +166,11 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir st
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, port)
+	return ctl.start(ctx, vcsProviderCreator, port)
 }
 
 // StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
+func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int) error {
 	// start main server.
 	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfile(dataDir, port)
@@ -170,19 +180,18 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, port)
+	return ctl.start(ctx, vcsProviderCreator, port)
 }
 
-// start only called by StartServer() and StartServerWithExternalPg
-func (ctl *controller) start(ctx context.Context, port int) error {
+// start only called by StartServer() and StartServerWithExternalPg().
+func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSProviderCreator, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
-	// set up gitlab.
-	gitlabPort := port + 2
-	ctl.gitlab = fake.NewGitLab(gitlabPort)
-	ctl.gitURL = fmt.Sprintf("http://localhost:%d", gitlabPort)
-	ctl.gitAPIURL = fmt.Sprintf("%s/api/v4", ctl.gitURL)
+	// Set up VCS provider.
+	vcsPort := port + 2
+	ctl.vcsProvider = vcsProviderCreator(vcsPort)
+	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
 
 	errChan := make(chan error, 1)
 
@@ -193,16 +202,16 @@ func (ctl *controller) start(ctx context.Context, port int) error {
 	}()
 
 	go func() {
-		if err := ctl.gitlab.Run(); err != nil {
-			errChan <- fmt.Errorf("failed to run gitlab server, error: %w", err)
+		if err := ctl.vcsProvider.Run(); err != nil {
+			errChan <- fmt.Errorf("failed to run vcsProvider server, error: %w", err)
 		}
 	}()
 
 	if err := waitForServerStart(ctl.server, errChan); err != nil {
 		return fmt.Errorf("failed to wait for server to start, error: %w", err)
 	}
-	if err := waitForGitLabStart(ctl.gitlab, errChan); err != nil {
-		return fmt.Errorf("failed to wait for gitlab to start, error: %w", err)
+	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
+		return fmt.Errorf("failed to wait for vcsProvider to start, error: %w", err)
 	}
 
 	// initialize controller clients.
@@ -242,17 +251,14 @@ func waitForServerStart(s *server.Server, errChan <-chan error) error {
 	}
 }
 
-func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
+func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if g.Echo == nil {
-				continue
-			}
-			addr := g.Echo.ListenerAddr()
+			addr := p.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
 				return nil // was started
 			}
@@ -308,14 +314,14 @@ func (ctl *controller) waitForHealthz() error {
 
 }
 
-// Close closes long running resources
+// Close closes long running resources.
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {
 		e = ctl.server.Shutdown(ctx)
 	}
-	if ctl.gitlab != nil {
-		if err := ctl.gitlab.Close(); err != nil {
+	if ctl.vcsProvider != nil {
+		if err := ctl.vcsProvider.Close(); err != nil {
 			e = err
 		}
 	}
@@ -350,7 +356,7 @@ func (ctl *controller) Login() error {
 }
 
 // provisionSQLiteInstance provisions a SQLite instance (a directory).
-func (ctl *controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
+func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
 	p := path.Join(rootDir, name)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to make directory %q, error: %w", p, err)
@@ -811,77 +817,80 @@ func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) erro
 	return nil
 }
 
-// getAggregatedTaskStatus gets pipeline status.
-func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
-	running := false
+// getNextTaskStatus gets the next task status that needs to be handle.
+func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
-			switch task.Status {
-			case api.TaskPendingApproval:
-				return api.TaskPendingApproval, nil
-			case api.TaskFailed:
+			if task.Status == api.TaskDone {
+				continue
+			}
+			if task.Status == api.TaskFailed {
 				var runs []string
 				for _, run := range task.TaskRunList {
 					runs = append(runs, fmt.Sprintf("%+v", run))
 				}
 				return api.TaskFailed, fmt.Errorf("pipeline task %v failed runs: %v", task.ID, strings.Join(runs, ", "))
-			case api.TaskCanceled:
-				return api.TaskCanceled, nil
-			case api.TaskRunning:
-				running = true
-			case api.TaskPending:
-				running = true
 			}
+			return task.Status, nil
 		}
-	}
-	if running {
-		return api.TaskRunning, nil
 	}
 	return api.TaskDone, nil
 }
 
+// waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
+func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, true)
+}
+
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext)
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, false)
 }
 
 // waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueTasksWithStageApproval)
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueTasksWithStageApproval, false)
 }
 
-// waitIssuePipelineImpl waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api.Issue) error) (api.TaskStatus, error) {
+// waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(2 * time.Second)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
+	approved := false
 
+	log.Debug("Waiting for issue pipeline tasks.")
+	prevStatus := "UNKNOWN"
 	for range ticker.C {
 		issue, err := ctl.getIssue(id)
 		if err != nil {
 			return api.TaskFailed, err
 		}
 
-		status, err := getAggregatedTaskStatus(issue)
+		status, err := getNextTaskStatus(issue)
 		if err != nil {
 			return status, err
 		}
+		if string(status) != prevStatus {
+			log.Debug(fmt.Sprintf("Status changed: %s -> %s.", prevStatus, status))
+			prevStatus = string(status)
+		}
 		switch status {
 		case api.TaskPendingApproval:
+			if approveOnce && approved {
+				return api.TaskDone, nil
+			}
 			if err := approveFunc(issue); err != nil {
 				return api.TaskFailed, err
 			}
-		case api.TaskFailed:
+			approved = true
+		case api.TaskFailed, api.TaskDone, api.TaskCanceled:
 			return status, err
-		case api.TaskDone:
-			return status, err
-		case api.TaskCanceled:
-			return status, err
-		case api.TaskPending:
-		case api.TaskRunning:
-			// no-op, keep waiting
+		case api.TaskPending, api.TaskRunning:
+			approved = true
+			// keep waiting
 		}
 	}
 	return api.TaskDone, nil
@@ -988,7 +997,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 	if err != nil {
 		return fmt.Errorf("failed to create database creation issue, error: %v", err)
 	}
-	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
+	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
@@ -1036,7 +1045,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 	if err != nil {
 		return fmt.Errorf("failed to create database creation issue, error: %v", err)
 	}
-	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
+	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
@@ -1171,6 +1180,23 @@ func (ctl *controller) upsertDeploymentConfig(deploymentConfigUpsert api.Deploym
 	return deploymentConfig, nil
 }
 
+// disableAutomaticBackup disables the automatic backup of a database.
+func (ctl *controller) disableAutomaticBackup(databaseID int) error {
+	backupSetting := api.BackupSettingUpsert{
+		DatabaseID: databaseID,
+		Enabled:    false,
+	}
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &backupSetting); err != nil {
+		return fmt.Errorf("failed to marshal backupSetting, error: %w", err)
+	}
+
+	if _, err := ctl.patch(fmt.Sprintf("/database/%d/backup-setting", databaseID), buf); err != nil {
+		return err
+	}
+	return nil
+}
+
 // createBackup creates a backup.
 func (ctl *controller) createBackup(backupCreate api.BackupCreate) (*api.Backup, error) {
 	buf := new(bytes.Buffer)
@@ -1217,6 +1243,7 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
+	log.Debug("Waiting for backup.", zap.Int("id", backupID))
 	for range ticker.C {
 		backups, err := ctl.listBackups(databaseID)
 		if err != nil {
@@ -1336,7 +1363,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 }
 
 // deletePolicy deletes the archived policy.
-func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
+func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
 	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
 	if err != nil {
 		return err
@@ -1346,7 +1373,7 @@ func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
 
 // schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
 // If the schema review task check is not done, return nil, false, nil.
-func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+func (*controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
 	var result []api.TaskCheckResult
 	var latestTs int64
 	for _, stage := range issue.Pipeline.StageList {
@@ -1388,7 +1415,7 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 			return nil, err
 		}
 
-		status, err := getAggregatedTaskStatus(issue)
+		status, err := getNextTaskStatus(issue)
 		if err != nil {
 			return nil, err
 		}
@@ -1409,7 +1436,7 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 }
 
 // setDefaultSchemaReviewRulePayload sets the default payload for this rule.
-func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (string, error) {
+func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
@@ -1418,8 +1445,13 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 	case advisor.SchemaRuleStatementRequireWhere:
 	case advisor.SchemaRuleStatementNoLeadingWildcardLike:
 	case advisor.SchemaRuleTableRequirePK:
+	case advisor.SchemaRuleTableNoFK:
 	case advisor.SchemaRuleColumnNotNull:
 	case advisor.SchemaRuleSchemaBackwardCompatibility:
+	case advisor.SchemaRuleTableDropNamingConvention:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
+			Format: "_delete$",
+		})
 	case advisor.SchemaRuleTableNaming:
 		fallthrough
 	case advisor.SchemaRuleColumnNaming:
@@ -1460,9 +1492,9 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 
 // prodTemplateSchemaReviewPolicy returns the default schema review policy.
 func prodTemplateSchemaReviewPolicy() (string, error) {
-	policy := advisor.SchemaReviewPolicy{
+	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
-		RuleList: []*advisor.SchemaReviewRule{
+		RuleList: []*advisor.SQLReviewRule{
 			{
 				Type:  advisor.SchemaRuleMySQLEngine,
 				Level: advisor.SchemaRuleLevelError,
@@ -1501,6 +1533,14 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleTableRequirePK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableNoFK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableDropNamingConvention,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{

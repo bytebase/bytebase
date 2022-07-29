@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"go.uber.org/zap"
 )
 
 // TaskExecutor is the task executor.
@@ -26,9 +27,13 @@ type TaskExecutor interface {
 	// usually indicates a transient error and will make scheduler retry later.
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
+	// IsCompleted tells the scheduler if the task execution has completed.
+	IsCompleted() bool
+	// GetProgress returns the task progress.
+	GetProgress() api.Progress
 }
 
-// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery
+// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -139,8 +144,8 @@ func executeMigration(ctx context.Context, pgInstanceDir string, task *api.Task,
 	log.Debug("Start migration...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", databaseName),
-		zap.String("source", mi.Source.String()),
-		zap.String("type", mi.Type.String()),
+		zap.String("source", string(mi.Source)),
+		zap.String("type", string(mi.Type)),
 		zap.String("statement", statement),
 	)
 
@@ -149,7 +154,7 @@ func executeMigration(ctx context.Context, pgInstanceDir string, task *api.Task,
 		return 0, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 	}
 	if setup {
-		return 0, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
+		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 	}
 
 	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
@@ -336,7 +341,7 @@ func findRepositoryByTask(ctx context.Context, server *Server, task *api.Task) (
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
 func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
-	schemaFileMeta, err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	schemaFileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
@@ -373,6 +378,17 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		pushEvent.FileCommit.Message,
 	)
 
+	// Retrieve the latest AccessToken and RefreshToken as the previous VCS call may have
+	// updated the stored token pair. VCS will fetch and store the new token pair if the
+	// existing token pair has expired.
+	repo2, err := server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch repository for schema writeback: %v", err)
+	}
+	if repo2 == nil {
+		return "", fmt.Errorf("repository not found for schema writeback: %v", repository.ID)
+	}
+
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
 		Branch:        branch,
 		CommitMessage: fmt.Sprintf("%s\n\n%s", commitTitle, commitBody),
@@ -383,17 +399,17 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			zap.String("schema_file", latestSchemaFile),
 		)
 
-		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).CreateFile(
+		err := vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).CreateFile(
 			ctx,
 			common.OauthContext{
-				ClientID:     repository.VCS.ApplicationID,
-				ClientSecret: repository.VCS.Secret,
-				AccessToken:  repository.AccessToken,
-				RefreshToken: repository.RefreshToken,
-				Refresher:    server.refreshToken(ctx, repository.ID),
+				ClientID:     repo2.VCS.ApplicationID,
+				ClientSecret: repo2.VCS.Secret,
+				AccessToken:  repo2.AccessToken,
+				RefreshToken: repo2.RefreshToken,
+				Refresher:    server.refreshToken(ctx, repo2.ID),
 			},
-			repository.VCS.InstanceURL,
-			repository.ExternalID,
+			repo2.VCS.InstanceURL,
+			repo2.ExternalID,
 			latestSchemaFile,
 			schemaFileCommit,
 		)
@@ -407,17 +423,17 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		)
 
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
-		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).OverwriteFile(
+		err := vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{
-				ClientID:     repository.VCS.ApplicationID,
-				ClientSecret: repository.VCS.Secret,
-				AccessToken:  repository.AccessToken,
-				RefreshToken: repository.RefreshToken,
-				Refresher:    server.refreshToken(ctx, repository.ID),
+				ClientID:     repo2.VCS.ApplicationID,
+				ClientSecret: repo2.VCS.Secret,
+				AccessToken:  repo2.AccessToken,
+				RefreshToken: repo2.RefreshToken,
+				Refresher:    server.refreshToken(ctx, repo2.ID),
 			},
-			repository.VCS.InstanceURL,
-			repository.ExternalID,
+			repo2.VCS.InstanceURL,
+			repo2.ExternalID,
 			latestSchemaFile,
 			schemaFileCommit,
 		)
@@ -426,18 +442,28 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		}
 	}
 
+	// Retrieve the latest AccessToken and RefreshToken as the previous VCS call may have
+	// updated the stored token pair. VCS will fetch and store the new token pair if the
+	// existing token pair has expired.
+	repo2, err = server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch repository after schema writeback: %v", err)
+	}
+	if repo2 == nil {
+		return "", fmt.Errorf("repository not found after schema writeback: %v", repository.ID)
+	}
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
-	schemaFileMeta, err = vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	schemaFileMeta, err = vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
-			ClientID:     repository.VCS.ApplicationID,
-			ClientSecret: repository.VCS.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    server.refreshToken(ctx, repository.ID),
+			ClientID:     repo2.VCS.ApplicationID,
+			ClientSecret: repo2.VCS.Secret,
+			AccessToken:  repo2.AccessToken,
+			RefreshToken: repo2.RefreshToken,
+			Refresher:    server.refreshToken(ctx, repo2.ID),
 		},
-		repository.VCS.InstanceURL,
-		repository.ExternalID,
+		repo2.VCS.InstanceURL,
+		repo2.ExternalID,
 		latestSchemaFile,
 		branch,
 	)

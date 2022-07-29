@@ -9,6 +9,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -37,7 +38,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if setup {
@@ -75,24 +76,18 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 		SELECT MAX(version) FROM bytebase.migration_history
 		WHERE namespace = ? AND sequence >= ?
 	`
-	row, err := tx.QueryContext(ctx, getLargestVersionSinceLastBaselineQuery,
+	var version sql.NullString
+	if err := tx.QueryRowContext(ctx, getLargestVersionSinceLastBaselineQuery,
 		namespace, largestBaselineSequence,
-	)
-	if err != nil {
+	).Scan(&version); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
+		}
 		return nil, util.FormatErrorWithQuery(err, getLargestVersionSinceLastBaselineQuery)
 	}
-	defer row.Close()
-
-	var version sql.NullString
-	row.Next()
-	if err := row.Scan(&version); err != nil {
-		return nil, err
-	}
-
 	if version.Valid {
 		return &version.String, nil
 	}
-
 	return nil, nil
 }
 
@@ -104,26 +99,20 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	if baseline {
 		findLargestSequenceQuery = fmt.Sprintf("%s AND (type = '%s' OR type = '%s')", findLargestSequenceQuery, db.Baseline, db.Branch)
 	}
-	row, err := tx.QueryContext(ctx, findLargestSequenceQuery,
+	var sequence sql.NullInt32
+	if err := tx.QueryRowContext(ctx, findLargestSequenceQuery,
 		namespace,
-	)
-	if err != nil {
+	).Scan(&sequence); err != nil {
+		if err == sql.ErrNoRows {
+			return -1, common.FormatDBErrorEmptyRowWithQuery(findLargestSequenceQuery)
+		}
 		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
-	defer row.Close()
-
-	var sequence sql.NullInt32
-	row.Next()
-	if err := row.Scan(&sequence); err != nil {
-		return -1, err
+	if sequence.Valid {
+		return int(sequence.Int32), nil
 	}
-
-	if !sequence.Valid {
-		// Returns 0 if we haven't applied any migration for this namespace.
-		return 0, nil
-	}
-
-	return int(sequence.Int32), nil
+	// Returns 0 if we haven't applied any migration for this namespace.
+	return 0, nil
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
@@ -262,7 +251,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 	// TODO(zp):  modified param database of `util.FindMigrationHistoryList` when we support *mysql* database level.
-	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
+	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
 	if err != nil {
 		if !strings.Contains(err.Error(), "invalid stored version") {
@@ -271,13 +260,13 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
 			return nil, err
 		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
+		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase)
 	}
 	return history, err
 }
 
 func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
-	sqldb, err := driver.GetDbConnection(ctx, db.BytebaseDatabase)
+	sqldb, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
 		return err
 	}
@@ -286,6 +275,7 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	type ver struct {
 		id      int
 		version string
@@ -298,8 +288,8 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 		}
 		vers = append(vers, v)
 	}
-	if err := rows.Close(); err != nil {
-		return err
+	if err := rows.Err(); err != nil {
+		return util.FormatErrorWithQuery(err, query)
 	}
 
 	updateQuery := `

@@ -57,7 +57,7 @@ func (raw *projectWebhookRaw) toProjectWebhook() *api.ProjectWebhook {
 	return &projectWebhook
 }
 
-// CreateProjectWebhook creates an instance of ProjectWebhook
+// CreateProjectWebhook creates an instance of ProjectWebhook.
 func (s *Store) CreateProjectWebhook(ctx context.Context, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
 	projectWebhookRaw, err := s.createProjectWebhookRaw(ctx, create)
 	if err != nil {
@@ -70,7 +70,7 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, create *api.ProjectWeb
 	return projectWebhook, nil
 }
 
-// GetProjectWebhookByID gets an instance of ProjectWebhook
+// GetProjectWebhookByID gets an instance of ProjectWebhook.
 func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.ProjectWebhook, error) {
 	find := &api.ProjectWebhookFind{ID: &id}
 	projectWebhookRaw, err := s.getProjectWebhookRaw(ctx, find)
@@ -87,7 +87,7 @@ func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.Project
 	return projectWebhook, nil
 }
 
-// FindProjectWebhook finds a list of ProjectWebhook instances
+// FindProjectWebhook finds a list of ProjectWebhook instances.
 func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhookFind) ([]*api.ProjectWebhook, error) {
 	projectWebhookRawList, err := s.findProjectWebhookRaw(ctx, find)
 	if err != nil {
@@ -104,7 +104,7 @@ func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhook
 	return projectWebhookList, nil
 }
 
-// PatchProjectWebhook patches an instance of ProjectWebhook
+// PatchProjectWebhook patches an instance of ProjectWebhook.
 func (s *Store) PatchProjectWebhook(ctx context.Context, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
 	projectWebhookRaw, err := s.patchProjectWebhookRaw(ctx, patch)
 	if err != nil {
@@ -125,7 +125,7 @@ func (s *Store) DeleteProjectWebhook(ctx context.Context, delete *api.ProjectWeb
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteProjectWebhookImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteProjectWebhookImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -240,7 +240,7 @@ func (s *Store) patchProjectWebhookRaw(ctx context.Context, patch *api.ProjectWe
 // createProjectWebhookImpl creates a new projectWebhook.
 func createProjectWebhookImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectWebhookCreate) (*projectWebhookRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO project_webhook (
 			creator_id,
 			updater_id,
@@ -252,7 +252,10 @@ func createProjectWebhookImpl(ctx context.Context, tx *sql.Tx, create *api.Proje
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, type, name, url, activity_list
-	`,
+	`
+	var projectWebhookRaw projectWebhookRaw
+	var txtArray pgtype.TextArray
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -260,18 +263,7 @@ func createProjectWebhookImpl(ctx context.Context, tx *sql.Tx, create *api.Proje
 		create.Name,
 		create.URL,
 		create.ActivityList,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var projectWebhookRaw projectWebhookRaw
-	var txtArray pgtype.TextArray
-
-	if err := row.Scan(
+	).Scan(
 		&projectWebhookRaw.ID,
 		&projectWebhookRaw.CreatorID,
 		&projectWebhookRaw.CreatedTs,
@@ -283,13 +275,14 @@ func createProjectWebhookImpl(ctx context.Context, tx *sql.Tx, create *api.Proje
 		&projectWebhookRaw.URL,
 		&txtArray,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
 		return nil, FormatError(err)
 	}
-
 	return &projectWebhookRaw, nil
 }
 
@@ -384,51 +377,41 @@ func patchProjectWebhookImpl(ctx context.Context, tx *sql.Tx, patch *api.Project
 
 	args = append(args, patch.ID)
 
+	var projectWebhookRaw projectWebhookRaw
+	var txtArray pgtype.TextArray
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project_webhook
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, type, name, url, activity_list
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&projectWebhookRaw.ID,
+		&projectWebhookRaw.CreatorID,
+		&projectWebhookRaw.CreatedTs,
+		&projectWebhookRaw.UpdaterID,
+		&projectWebhookRaw.UpdatedTs,
+		&projectWebhookRaw.ProjectID,
+		&projectWebhookRaw.Type,
+		&projectWebhookRaw.Name,
+		&projectWebhookRaw.URL,
+		&txtArray,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var projectWebhookRaw projectWebhookRaw
-		var txtArray pgtype.TextArray
-
-		if err := row.Scan(
-			&projectWebhookRaw.ID,
-			&projectWebhookRaw.CreatorID,
-			&projectWebhookRaw.CreatedTs,
-			&projectWebhookRaw.UpdaterID,
-			&projectWebhookRaw.UpdatedTs,
-			&projectWebhookRaw.ProjectID,
-			&projectWebhookRaw.Type,
-			&projectWebhookRaw.Name,
-			&projectWebhookRaw.URL,
-			&txtArray,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &projectWebhookRaw, nil
+	if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
+		return nil, FormatError(err)
 	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", patch.ID)}
+	return &projectWebhookRaw, nil
 }
 
 // deleteProjectWebhookImpl permanently deletes a projectWebhook by ID.
-func deleteProjectWebhookImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectWebhookDelete) error {
+func (*Store) deleteProjectWebhookImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectWebhookDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM project_webhook WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

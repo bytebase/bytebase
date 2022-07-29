@@ -1,57 +1,70 @@
 <template>
-  <nav class="flex" aria-label="Breadcrumb">
-    <div v-for="(item, index) in breadcrumbList" :key="index">
-      <div class="flex items-center space-x-2">
-        <router-link
-          v-if="index == 0"
-          to="/"
-          class="text-control-light hover:text-control-light-hover"
-          active-class="link"
-          exact-active-class="link"
-        >
-          <!-- Heroicon name: solid/home -->
-          <heroicons-solid:home class="flex-shrink-0 h-4 w-4" />
-          <span class="sr-only">Home</span>
-        </router-link>
-        <heroicons-solid:chevron-right
-          class="ml-2 flex-shrink-0 h-4 w-4 text-control-light"
-        />
-        <router-link
-          v-if="item.path"
-          :to="item.path"
-          class="text-sm anchor-link max-w-prose truncate"
-          active-class="anchor-link"
-          exact-active-class="anchor-link"
-          >{{ item.name }}</router-link
-        >
-        <div v-else class="text-sm max-w-prose truncate">
-          {{ item.name }}
+  <nav
+    class="flex flex-row justify-between"
+    aria-label="Breadcrumb"
+    data-label="bb-breadcrumb"
+  >
+    <div class="flex flex-row grow items-center">
+      <div v-for="(item, index) in breadcrumbList" :key="index">
+        <div class="flex items-center space-x-2">
+          <router-link
+            v-if="index == 0"
+            to="/"
+            class="text-control-light hover:text-control-light-hover"
+            active-class="link"
+            exact-active-class="link"
+          >
+            <!-- Heroicon name: solid/home -->
+            <heroicons-solid:home class="flex-shrink-0 h-4 w-4" />
+            <span class="sr-only">Home</span>
+          </router-link>
+          <heroicons-solid:chevron-right
+            class="ml-2 flex-shrink-0 h-4 w-4 text-control-light"
+          />
+          <router-link
+            v-if="item.path"
+            :to="item.path"
+            class="text-sm anchor-link max-w-prose truncate"
+            active-class="anchor-link"
+            exact-active-class="anchor-link"
+            >{{ item.name }}</router-link
+          >
+          <div v-else class="text-sm max-w-prose truncate">
+            {{ item.name }}
+          </div>
+          <button
+            v-if="allowBookmark && index == breadcrumbList.length - 1"
+            class="relative focus:outline-none"
+            type="button"
+            @click.prevent="toggleBookmark"
+          >
+            <heroicons-solid:star
+              v-if="isBookmarked"
+              class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
+            />
+            <heroicons-solid:star
+              v-else
+              class="h-5 w-5 text-control-light hover:text-control-light-hover"
+            />
+          </button>
         </div>
-        <button
-          v-if="allowBookmark && index == breadcrumbList.length - 1"
-          class="relative focus:outline-none"
-          type="button"
-          @click.prevent="toggleBookmark"
-        >
-          <heroicons-solid:star
-            v-if="isBookmarked"
-            class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
-          />
-          <heroicons-solid:star
-            v-else
-            class="h-5 w-5 text-control-light hover:text-control-light-hover"
-          />
-        </button>
       </div>
+    </div>
+
+    <div class="tooltip-wrapper">
+      <span class="tooltip-left whitespace-nowrap">
+        {{ $t("common.show-help") }}
+      </span>
+      <HelpTriggerIcon v-if="helpName" :id="helpName" :is-guide="true" />
     </div>
   </nav>
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, defineComponent } from "vue";
+import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
+import { Bookmark, UNKNOWN_ID, BookmarkCreate, RouteMapList } from "../types";
 import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
@@ -61,6 +74,7 @@ import {
   useDatabaseStore,
   useProjectStore,
 } from "@/store";
+import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
 
 interface BreadcrumbItem {
   name: string;
@@ -68,8 +82,11 @@ interface BreadcrumbItem {
 }
 
 export default defineComponent({
+  // eslint-disable-next-line vue/multi-word-component-names
   name: "Breadcrumb",
-  components: {},
+  components: {
+    HelpTriggerIcon,
+  },
   setup() {
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
@@ -78,6 +95,19 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
+
+    const routeHelpNameMapList = ref<RouteMapList>([]);
+    const helpName = computed(
+      () =>
+        routeHelpNameMapList.value.find(
+          (pair) => pair.routeName === currentRoute.value.name
+        )?.helpName
+    );
+
+    onMounted(async () => {
+      const res = await fetch("/help/routeMapList.json");
+      routeHelpNameMapList.value = await res.json();
+    });
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       bookmarkStore.bookmarkByUserAndLink(
@@ -103,7 +133,7 @@ export default defineComponent({
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const migrationHistory = routeSlug.migrationHistorySlug;
       const versionControlSlug = routeSlug.vcsSlug;
-      const schemaReviewPolicySlug = routeSlug.schemaReviewPolicySlug;
+      const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -155,10 +185,10 @@ export default defineComponent({
           name: t("common.version-control"),
           path: "/setting/version-control",
         });
-      } else if (schemaReviewPolicySlug) {
+      } else if (sqlReviewPolicySlug) {
         list.push({
-          name: t("schema-review-policy.title"),
-          path: "/setting/schema-review-policy",
+          name: t("sql-review.title"),
+          path: "/setting/sql-review",
         });
       }
 
@@ -198,6 +228,8 @@ export default defineComponent({
       isBookmarked,
       breadcrumbList,
       toggleBookmark,
+      currentRoute,
+      helpName,
     };
   },
 });

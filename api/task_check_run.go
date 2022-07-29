@@ -25,20 +25,6 @@ const (
 	TaskCheckRunCanceled TaskCheckRunStatus = "CANCELED"
 )
 
-func (e TaskCheckRunStatus) String() string {
-	switch e {
-	case TaskCheckRunRunning:
-		return "RUNNING"
-	case TaskCheckRunDone:
-		return "DONE"
-	case TaskCheckRunFailed:
-		return "FAILED"
-	case TaskCheckRunCanceled:
-		return "CANCELED"
-	}
-	return "UNKNOWN"
-}
-
 // TaskCheckStatus is the status of a task check.
 type TaskCheckStatus string
 
@@ -50,18 +36,6 @@ const (
 	// TaskCheckStatusError is the task check status for ERROR.
 	TaskCheckStatusError TaskCheckStatus = "ERROR"
 )
-
-func (e TaskCheckStatus) String() string {
-	switch e {
-	case TaskCheckStatusSuccess:
-		return "SUCCESS"
-	case TaskCheckStatusWarn:
-		return "WARN"
-	case TaskCheckStatusError:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
 
 // TaskCheckType is the type of a taskCheck.
 type TaskCheckType string
@@ -79,6 +53,8 @@ const (
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
 	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
+	// TaskCheckGhostSync is the task check type for the gh-ost sync task.
+	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
 	// TaskCheckGeneralEarliestAllowedTime is the task check type for earliest allowed time.
 	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
 )
@@ -204,7 +180,7 @@ type TaskCheckRunStatusPatch struct {
 	Result string
 }
 
-// ConvertToAdvisorDBType will convert db type into advisor db type
+// ConvertToAdvisorDBType will convert db type into advisor db type.
 func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
 	switch dbType {
 	case db.MySQL:
@@ -219,21 +195,29 @@ func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType db.Type) bool {
-	advisorDB, err := ConvertToAdvisorDBType(dbType)
-	if err != nil {
-		return false
+func IsSyntaxCheckSupported(dbType db.Type, mode common.ReleaseMode) bool {
+	if mode == common.ReleaseModeDev || dbType == db.MySQL || dbType == db.TiDB {
+		advisorDB, err := ConvertToAdvisorDBType(dbType)
+		if err != nil {
+			return false
+		}
+
+		return advisor.IsSyntaxCheckSupported(advisorDB)
 	}
 
-	return advisor.IsSyntaxCheckSupported(advisorDB)
+	return false
 }
 
-// IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType db.Type) bool {
-	advisorDB, err := ConvertToAdvisorDBType(dbType)
-	if err != nil {
-		return false
+// IsSQLReviewSupported checks the engine type if schema review supports it.
+func IsSQLReviewSupported(dbType db.Type, mode common.ReleaseMode) bool {
+	if mode == common.ReleaseModeDev || dbType == db.MySQL || dbType == db.TiDB {
+		advisorDB, err := ConvertToAdvisorDBType(dbType)
+		if err != nil {
+			return false
+		}
+
+		return advisor.IsSQLReviewSupported(advisorDB)
 	}
 
-	return advisor.IsSchemaReviewSupported(advisorDB)
+	return false
 }

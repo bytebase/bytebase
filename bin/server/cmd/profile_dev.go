@@ -12,8 +12,15 @@ import (
 )
 
 func activeProfile(dataDir string) server.Profile {
+	// `flags.demo` always be true in dev mode
+	demoName := string(common.ReleaseModeDev)
+	if flags.demoName != "" {
+		demoName = flags.demoName
+	}
+	demoDataDir := fmt.Sprintf("demo/%s", demoName)
 	// Using flags.port + 1 as our datastore port
 	datastorePort := flags.port + 1
+
 	return server.Profile{
 		Mode:                 common.ReleaseModeDev,
 		BackendHost:          flags.host,
@@ -26,7 +33,7 @@ func activeProfile(dataDir string) server.Profile {
 		Debug:                flags.debug,
 		Demo:                 flags.demo,
 		DataDir:              dataDir,
-		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		DemoDataDir:          demoDataDir,
 		BackupRunnerInterval: 10 * time.Second,
 		Version:              version,
 		GitCommit:            gitcommit,

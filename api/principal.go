@@ -17,16 +17,6 @@ const (
 	BOT PrincipalType = "BOT"
 )
 
-func (e PrincipalType) String() string {
-	switch e {
-	case EndUser:
-		return "END_USER"
-	case BOT:
-		return "BOT"
-	}
-	return ""
-}
-
 // PrincipalAuthProvider is the type of an authentication provider.
 type PrincipalAuthProvider string
 
@@ -35,6 +25,8 @@ const (
 	PrincipalAuthProviderBytebase PrincipalAuthProvider = "BYTEBASE"
 	// PrincipalAuthProviderGitlabSelfHost is the self-hosted GitLab authentication provider.
 	PrincipalAuthProviderGitlabSelfHost PrincipalAuthProvider = "GITLAB_SELF_HOST"
+	// PrincipalAuthProviderGitHubCom is the GitHub.com authentication provider.
+	PrincipalAuthProviderGitHubCom PrincipalAuthProvider = "GITHUB_COM"
 )
 
 // Principal is the API message for principals.

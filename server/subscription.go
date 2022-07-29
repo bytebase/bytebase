@@ -31,6 +31,9 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		patch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
 		if err := s.LicenseService.StoreLicense(patch); err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
@@ -61,6 +64,7 @@ func (s *Server) loadSubscription() enterpriseAPI.Subscription {
 			StartedTs:     license.IssuedTs,
 			InstanceCount: license.InstanceCount,
 			Trialing:      license.Trialing,
+			OrgID:         license.OrgID(),
 		}
 	}
 

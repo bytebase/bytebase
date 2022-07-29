@@ -247,17 +247,24 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 	}
 
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		statement := ""
 
-		if task.Type == api.TaskDatabaseSchemaUpdate {
+		switch task.Type {
+		case api.TaskDatabaseSchemaUpdate:
 			taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 				return nil, fmt.Errorf("invalid database schema update payload: %w", err)
 			}
 			statement = taskPayload.Statement
-		} else {
+		case api.TaskDatabaseDataUpdate:
 			taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+				return nil, fmt.Errorf("invalid database data update payload: %w", err)
+			}
+			statement = taskPayload.Statement
+		case api.TaskDatabaseSchemaUpdateGhostSync:
+			taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 				return nil, fmt.Errorf("invalid database data update payload: %w", err)
 			}
@@ -292,7 +299,19 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
-		if api.IsSyntaxCheckSupported(database.Instance.Engine) {
+		if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGhostSync,
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
 				DbType:    database.Instance.Engine,
@@ -314,7 +333,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(database.Instance.Engine) {
+		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
 			policyID, err := s.server.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get schema review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)
@@ -357,7 +376,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 // Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
 // But this method is used for gating the automatic run, so we are more cautious here.
 // TODO(dragonly): refactor arguments.
-func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &task.ID,
@@ -366,7 +385,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 		Latest:     true,
 	}
 
-	taskCheckRunList, err := server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
 	if err != nil {
 		return false, err
 	}

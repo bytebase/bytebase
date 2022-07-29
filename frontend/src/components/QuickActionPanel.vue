@@ -234,9 +234,9 @@
         state.quickActionType == 'quickaction.bb.project.database.transfer'
       "
     >
-      <!-- eslint-disable vue/attribute-hyphenation -->
       <TransferDatabaseForm
-        :projectId="projectId"
+        v-if="projectId"
+        :project-id="projectId"
         @dismiss="state.showModal = false"
       />
     </template>

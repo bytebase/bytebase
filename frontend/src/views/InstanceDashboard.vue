@@ -20,22 +20,6 @@
     </div>
     <InstanceTable :instance-list="filteredList(instanceList)" />
   </div>
-
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('common.do-not-show-again')"
-    :cancel-text="$t('common.dismiss')"
-    :title="$t('instance.how-to-setup-instance')"
-    :description="$t('instance.how-to-setup-instance-description')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -59,7 +43,6 @@ import {
 interface LocalState {
   searchText: string;
   selectedEnvironment?: Environment;
-  showGuide: boolean;
 }
 
 export default defineComponent({
@@ -86,21 +69,17 @@ export default defineComponent({
             parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
-      showGuide: false,
     });
 
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.instance")) {
-        setTimeout(() => {
-          state.showGuide = true;
-          uiStateStore.saveIntroStateByKey({
-            key: "instance.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("instance.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "instance.visit",
+          newState: true,
+        });
       }
     });
 
@@ -118,14 +97,6 @@ export default defineComponent({
 
     const changeSearchText = (searchText: string) => {
       state.searchText = searchText;
-    };
-
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.instance",
-        newState: true,
-      });
-      state.showGuide = false;
     };
 
     const rawInstanceList = useInstanceList();
@@ -193,7 +164,6 @@ export default defineComponent({
       filteredList,
       selectEnvironment,
       changeSearchText,
-      doDismissGuide,
       remainingInstanceCount,
       instanceCountAttention,
     };

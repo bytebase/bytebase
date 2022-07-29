@@ -73,6 +73,10 @@ type InstanceFind struct {
 
 	// Related fields
 	EnvironmentID *int
+
+	// Domain specific fields
+	Host *string
+	Port *string
 }
 
 func (find *InstanceFind) String() string {
@@ -126,18 +130,6 @@ const (
 	InstanceMigrationSchemaNotExist InstanceMigrationSchemaStatus = "NOT_EXIST"
 )
 
-func (e InstanceMigrationSchemaStatus) String() string {
-	switch e {
-	case InstanceMigrationSchemaUnknown:
-		return "UNKNOWN"
-	case InstanceMigrationSchemaOK:
-		return "OK"
-	case InstanceMigrationSchemaNotExist:
-		return "NOT_EXIST"
-	}
-	return "UNKNOWN"
-}
-
 // InstanceMigration is the API message for instance migration.
 type InstanceMigration struct {
 	Status InstanceMigrationSchemaStatus `jsonapi:"attr,status"`
@@ -145,7 +137,7 @@ type InstanceMigration struct {
 }
 
 // MigrationHistory is stored in the instance instead of our own data file, so the field
-// format is a bit different from the standard format
+// format is a bit different from the standard format.
 type MigrationHistory struct {
 	ID int `jsonapi:"primary,migrationHistory"`
 

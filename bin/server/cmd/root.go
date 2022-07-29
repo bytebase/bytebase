@@ -35,9 +35,12 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
+
+	// Register postgres parser driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
-// -----------------------------------Global constant BEGIN----------------------------------------
+// -----------------------------------Global constant BEGIN----------------------------------------.
 const (
 
 	// greetingBanner is the greeting banner.
@@ -69,7 +72,7 @@ ________________________________________________________________________________
 
 // -----------------------------------Global constant END------------------------------------------
 
-// -----------------------------------Command Line Config BEGIN------------------------------------
+// -----------------------------------Command Line Config BEGIN------------------------------------.
 var (
 	flags struct {
 		// Used for Bytebase command line config
@@ -83,7 +86,11 @@ var (
 		// - Requests other than GET will be rejected
 		// - Any operations involving mutation will not start (e.g. Background schema syncer, task scheduler)
 		readonly bool
-		demo     bool
+		// demo is a flag to seed the database with demo data.
+		demo bool
+		// demoName is the name of the demo. It is only used when --demo is set,
+		// and should be one of the subpath name in the ./store/demo/ directory.
+		demoName string
 		debug    bool
 		// pgURL must follow PostgreSQL connection URIs pattern.
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
@@ -120,6 +127,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
+	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo-name", "", "name of the demo to use when running in demo mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
 	// 1. Currently, we will create a separate database "bytebase" to store the migration_history table, we need to put it inside the specified database here.
@@ -145,8 +153,7 @@ func checkDataDir() error {
 	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
-		error := fmt.Errorf("unable to access --data %s, %w", flags.dataDir, err)
-		return error
+		return fmt.Errorf("unable to access --data %s, %w", flags.dataDir, err)
 	}
 
 	return nil

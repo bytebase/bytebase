@@ -56,7 +56,7 @@ func (raw *anomalyRaw) toAnomaly() *api.Anomaly {
 	}
 }
 
-// UpsertActiveAnomaly upserts an instance of anomaly
+// UpsertActiveAnomaly upserts an instance of anomaly.
 func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	anomalyRaw, err := s.upsertActiveAnomalyRaw(ctx, upsert)
 	if err != nil {
@@ -69,7 +69,7 @@ func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpse
 	return anomaly, nil
 }
 
-// FindAnomaly finds a list of Anomaly instances
+// FindAnomaly finds a list of Anomaly instances.
 func (s *Store) FindAnomaly(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
 	anomalyRawList, err := s.findAnomalyRaw(ctx, find)
 	if err != nil {
@@ -109,7 +109,7 @@ func (s *Store) composeAnomaly(ctx context.Context, raw *anomalyRaw) (*api.Anoma
 }
 
 // upsertActiveAnomalyRaw would update the existing active anomaly if both database id and type match, otherwise create a new one.
-// Do not use ON CONFLICT (upsert syntax) as it will consume autoincrement id. Functional wise, this is fine, but
+// Do not use ON CONFLICT (upsert syntax) as it will consume auto-increment id. Functional wise, this is fine, but
 // from the UX perspective, it's not great, since user will see large id gaps.
 func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyUpsert) (*anomalyRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -200,7 +200,7 @@ func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpser
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO anomaly (
 			creator_id,
 			updater_id,
@@ -211,24 +211,17 @@ func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpser
 		)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
-	`,
+	`
+	var anomalyRaw anomalyRaw
+	var databaseID sql.NullInt32
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.CreatorID,
 		upsert.CreatorID,
 		upsert.InstanceID,
 		upsert.DatabaseID,
 		upsert.Type,
 		upsert.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var anomalyRaw anomalyRaw
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
+	).Scan(
 		&anomalyRaw.ID,
 		&anomalyRaw.CreatorID,
 		&anomalyRaw.CreatedTs,
@@ -239,6 +232,9 @@ func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpser
 		&anomalyRaw.Type,
 		&anomalyRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
 	if databaseID.Valid {
@@ -246,8 +242,7 @@ func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpser
 		anomalyRaw.DatabaseID = &value
 	}
 	anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
-
-	return &anomalyRaw, err
+	return &anomalyRaw, nil
 }
 
 func findAnomalyListImpl(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*anomalyRaw, error) {
@@ -340,7 +335,7 @@ type anomalyPatch struct {
 	Payload string
 }
 
-// patchAnomalyImpl patches an anomaly
+// patchAnomalyImpl patches an anomaly.
 func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*anomalyRaw, error) {
 	// Build UPDATE clause.
 	if patch.Payload == "" {
@@ -351,28 +346,16 @@ func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*an
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		UPDATE anomaly
-		SET `+strings.Join(set, ", ")+`
+		SET ` + strings.Join(set, ", ") + `
 		WHERE id = $3
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
-	`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
+	`
 	var anomalyRaw anomalyRaw
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
+	var databaseID sql.NullInt32
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+
 		&anomalyRaw.ID,
 		&anomalyRaw.CreatorID,
 		&anomalyRaw.CreatedTs,
@@ -383,6 +366,9 @@ func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*an
 		&anomalyRaw.Type,
 		&anomalyRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
 	if databaseID.Valid {
@@ -390,8 +376,7 @@ func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*an
 		anomalyRaw.DatabaseID = &value
 	}
 	anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
-
-	return &anomalyRaw, err
+	return &anomalyRaw, nil
 }
 
 // archiveAnomalyImpl archives an anomaly by ID.

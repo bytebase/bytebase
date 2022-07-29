@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
@@ -19,10 +20,22 @@ func NewDatabaseBackupTaskExecutor() TaskExecutor {
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
+	completed int32
+}
+
+// IsCompleted tells the scheduler if the task execution has completed.
+func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (*DatabaseBackupTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
 }
 
 // RunOnce will run database backup once.
 func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
@@ -42,22 +55,19 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	)
 
 	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstanceDir)
-	// Update the status of the backup.
-	newBackupStatus := string(api.BackupStatusDone)
-	comment := ""
-	if backupErr != nil {
-		newBackupStatus = string(api.BackupStatusFailed)
-		comment = backupErr.Error()
-		backupPayload = "{}"
-	}
-	if _, err := server.store.PatchBackup(ctx, &api.BackupPatch{
+	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
-		Status:    newBackupStatus,
+		Status:    string(api.BackupStatusDone),
 		UpdaterID: api.SystemBotID,
-		Comment:   comment,
+		Comment:   "",
 		Payload:   backupPayload,
-	}); err != nil {
-		return true, nil, fmt.Errorf("failed to patch backup: %w", err)
+	}
+	if backupErr != nil {
+		backupPatch.Status = string(api.BackupStatusFailed)
+		backupPatch.Comment = backupErr.Error()
+	}
+	if _, err := server.store.PatchBackup(ctx, &backupPatch); err != nil {
+		return true, nil, fmt.Errorf("failed to patch backup, error: %w", err)
 	}
 
 	if backupErr != nil {
@@ -70,7 +80,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
 	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return "", err

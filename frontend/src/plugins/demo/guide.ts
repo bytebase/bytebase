@@ -1,32 +1,59 @@
 import { merge } from "lodash-es";
-import { getElementBounding, waitForTargetElement } from "./utils";
+import {
+  checkUrlPathnameMatched,
+  getElementBounding,
+  getElementMaxZIndex,
+  isNullOrUndefined,
+  waitForTargetElement,
+} from "./utils";
 import * as storage from "./storage";
-import { GuidePosition, StepData } from "./types";
+import { DialogPosition, GuideData, StepData } from "./types";
+import { getStringFromI18NText, nextI18NText } from "./i18n";
 
-export const showGuideDialog = async (guideStep: StepData) => {
+// validateStepData will check if the step data is valid
+export const validateStepData = (stepData: StepData) => {
+  // type is required and must be one of ["click", "change"]
+  if (stepData.type !== "click" && stepData.type !== "change") {
+    return false;
+  }
+  // title is required
+  if (isNullOrUndefined(stepData.title)) {
+    return false;
+  }
+  // description is required
+  if (isNullOrUndefined(stepData.description)) {
+    return false;
+  }
+
+  return true;
+};
+
+export const showGuideDialog = async (
+  guideData: GuideData,
+  stepIndex: number
+) => {
   removeGuideDialog();
+  const guideStep = guideData.steps[stepIndex];
+  if (!guideStep) {
+    return;
+  }
+
+  if (guideStep.url && !checkUrlPathnameMatched(guideStep.url)) {
+    return;
+  }
+
   const targetElement = await waitForTargetElement(guideStep.selectors);
   if (targetElement) {
     // After got the targetElement, remove the guide dialog again
     // to ensure that only one guide dialog is shown at a time.
     removeGuideDialog();
-    if (guideStep.cover) {
-      renderCover();
-      targetElement.classList.add("bb-guide-target-element");
-    }
-    renderHighlight(targetElement);
-    renderGuideDialog(targetElement, guideStep);
-    requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
+    renderHighlight(targetElement, guideStep);
+    renderGuideDialog(targetElement, guideData, stepIndex);
+    requestAnimationFrame(() => updateDialogPosition(targetElement, guideStep));
   }
 };
 
-const renderCover = () => {
-  const coverElement = document.createElement("div");
-  coverElement.className = "bb-guide-cover-wrapper";
-  document.body.appendChild(coverElement);
-};
-
-const renderHighlight = (targetElement: HTMLElement) => {
+const renderHighlight = (targetElement: HTMLElement, guideStep: StepData) => {
   const highlightWrapper = document.createElement("div");
   highlightWrapper.className = "bb-guide-highlight-wrapper";
   document.body.appendChild(highlightWrapper);
@@ -35,9 +62,24 @@ const renderHighlight = (targetElement: HTMLElement) => {
   highlightWrapper.style.left = `${bounding.left}px`;
   highlightWrapper.style.width = `${bounding.width}px`;
   highlightWrapper.style.height = `${bounding.height}px`;
+
+  if (guideStep.cover) {
+    const maxZIndex = getElementMaxZIndex(targetElement);
+    highlightWrapper.classList.add("covered");
+    const coverElement = document.createElement("div");
+    coverElement.className = "bb-guide-cover-wrapper";
+    coverElement.style.zIndex = `${maxZIndex - 1}`;
+    document.body.appendChild(coverElement);
+    targetElement.classList.add("bb-guide-target-element");
+  }
 };
 
-const renderGuideDialog = (targetElement: HTMLElement, guideStep: StepData) => {
+const renderGuideDialog = (
+  targetElement: HTMLElement,
+  guideData: GuideData,
+  stepIndex: number
+) => {
+  const guideStep = guideData.steps[stepIndex];
   const { description, title, type } = guideStep;
   const guideDialogDiv = document.createElement("div");
   guideDialogDiv.className = "bb-guide-dialog";
@@ -51,54 +93,67 @@ const renderGuideDialog = (targetElement: HTMLElement, guideStep: StepData) => {
 
   const titleElement = document.createElement("p");
   titleElement.className = "bb-guide-title-text";
-  titleElement.innerText = title;
+  titleElement.innerText = getStringFromI18NText(title);
   guideDialogDiv.appendChild(titleElement);
   const descriptionElement = document.createElement("p");
   descriptionElement.className = "bb-guide-description-text";
-  descriptionElement.innerText = description;
+  descriptionElement.innerText = getStringFromI18NText(description);
   guideDialogDiv.appendChild(descriptionElement);
 
-  const buttonsContainer = document.createElement("div");
-  buttonsContainer.className = "bb-guide-btns-container";
+  if (!guideStep.hideNextButton) {
+    const buttonsContainer = document.createElement("div");
+    buttonsContainer.className = "bb-guide-btns-container";
+    const nextButton = document.createElement("button");
+    nextButton.className = "button";
+    if (stepIndex === guideData.steps.length - 1) {
+      nextButton.innerText = "Done";
+    } else {
+      nextButton.innerText = getStringFromI18NText(nextI18NText);
+    }
+    buttonsContainer.appendChild(nextButton);
+    guideDialogDiv.appendChild(buttonsContainer);
 
-  const nextButton = document.createElement("button");
-  nextButton.className = "button";
-  nextButton.innerText = "Next";
-  buttonsContainer.appendChild(nextButton);
-  guideDialogDiv.appendChild(buttonsContainer);
+    if (type === "click") {
+      nextButton.onclick = () => {
+        targetElement.click();
+      };
+    } else if (type === "change") {
+      nextButton.onclick = () => {
+        const value =
+          targetElement.textContent ||
+          targetElement.nodeValue ||
+          (targetElement as HTMLInputElement).value ||
+          "";
+
+        if (guideStep.value && RegExp(guideStep.value).test(value)) {
+          const { guide } = storage.get(["guide"]);
+          storage.set({
+            guide: merge(guide, {
+              stepIndex: stepIndex + 1,
+            }),
+          });
+          storage.emitStorageChangedEvent();
+        } else {
+          // show invalid value message by alert
+          alert(`invalid content value, should be like \`${guideStep.value}\``);
+        }
+      };
+    }
+  }
 
   if (type === "click") {
     targetElement.addEventListener("click", () => {
       const { guide } = storage.get(["guide"]);
       storage.set({
         guide: merge(guide, {
-          stepIndex: (guide?.stepIndex ?? 0) + 1,
+          stepIndex: stepIndex + 1,
         }),
       });
+      if (stepIndex + 1 >= guideData.steps.length) {
+        storage.remove(["guide"]);
+      }
       storage.emitStorageChangedEvent();
     });
-    nextButton.onclick = () => {
-      targetElement.click();
-    };
-  } else if (type === "change") {
-    nextButton.onclick = () => {
-      const value =
-        targetElement.textContent ||
-        targetElement.nodeValue ||
-        (targetElement as HTMLInputElement).value ||
-        "";
-      if (guideStep.value && RegExp(guideStep.value).test(value)) {
-        const { guide } = storage.get(["guide"]);
-        storage.set({
-          guide: merge(guide, {
-            stepIndex: (guide?.stepIndex ?? 0) + 1,
-          }),
-        });
-        storage.emitStorageChangedEvent();
-      } else {
-        // ...show invalid value message
-      }
-    };
   }
 
   document.body.appendChild(guideDialogDiv);
@@ -107,10 +162,11 @@ const renderGuideDialog = (targetElement: HTMLElement, guideStep: StepData) => {
 const adjustGuideDialogPosition = (
   targetElement: HTMLElement,
   guideDialogDiv: HTMLElement,
-  position: GuidePosition = "bottom"
+  position: DialogPosition = "bottom"
 ) => {
   const bounding = getElementBounding(targetElement);
   const guideDialogBounding = getElementBounding(guideDialogDiv);
+
   if (position === "bottom") {
     guideDialogDiv.style.top = `${bounding.top + bounding.height}px`;
     guideDialogDiv.style.left = `${bounding.left - 4}px`;
@@ -130,7 +186,7 @@ const adjustGuideDialogPosition = (
   }
 };
 
-const updateGuidePosition = (
+const updateDialogPosition = (
   targetElement: HTMLElement,
   guideStep: StepData
 ) => {
@@ -154,7 +210,7 @@ const updateGuidePosition = (
 
   adjustGuideDialogPosition(targetElement, guideDialogDiv, guideStep.position);
 
-  requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
+  requestAnimationFrame(() => updateDialogPosition(targetElement, guideStep));
 };
 
 export const removeGuideDialog = () => {

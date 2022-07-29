@@ -16,6 +16,7 @@
               @close="removeNotification"
             />
           </template>
+          <HelpDrawer />
         </KBarWrapper>
       </BBModalStack>
     </NDialogProvider>
@@ -23,18 +24,25 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watchEffect, onErrorCaptured } from "vue";
-import { useRouter } from "vue-router";
+import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import { isDev } from "./utils";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
+import HelpDrawer from "@/components/HelpDrawer.vue";
 
 import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { t } from "./plugins/i18n";
-import { useAuthStore, useNotificationStore } from "./store";
+import {
+  useAuthStore,
+  useNotificationStore,
+  useUIStateStore,
+  useHelpStore,
+} from "./store";
+import { RouteMapList } from "@/types";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
@@ -47,15 +55,20 @@ const CRITICAL_NOTIFICATION_DURATION = 10000;
 interface LocalState {
   notificationList: BBNotificationItem[];
   prevLoggedIn: boolean;
+  helpTimer: number | null;
+  RouteMapList: RouteMapList | null;
 }
 
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
+const route = useRoute();
 const router = useRouter();
 
 const state = reactive<LocalState>({
   notificationList: [],
   prevLoggedIn: authStore.isLoggedIn(),
+  helpTimer: null,
+  RouteMapList: null,
 });
 
 setInterval(() => {
@@ -107,6 +120,43 @@ const watchNotification = () => {
     }
   }
 };
+
+// watch route change for help
+watch(
+  () => route.name,
+  async (routeName) => {
+    const uiStateStore = useUIStateStore();
+    const helpStore = useHelpStore();
+
+    // Hide opened help drawer if route changed.
+    helpStore.exitHelp();
+
+    if (!state.RouteMapList) {
+      const res = await fetch("/help/routeMapList.json");
+      state.RouteMapList = await res.json();
+    }
+
+    // Clear timer after every route change.
+    if (state.helpTimer) {
+      clearTimeout(state.helpTimer);
+      state.helpTimer = null;
+    }
+
+    const helpId = state.RouteMapList?.find(
+      (pair) => pair.routeName === routeName
+    )?.helpName;
+
+    if (helpId && !uiStateStore.getIntroStateByKey(`${helpId}`)) {
+      state.helpTimer = window.setTimeout(() => {
+        helpStore.showHelp(helpId, true);
+        uiStateStore.saveIntroStateByKey({
+          key: `${helpId}`,
+          newState: true,
+        });
+      }, 1000);
+    }
+  }
+);
 
 watchEffect(watchNotification);
 

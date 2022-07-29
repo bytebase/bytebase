@@ -65,7 +65,7 @@ func (raw *databaseRaw) toDatabase() *api.Database {
 	}
 }
 
-// CreateDatabase creates an instance of Database
+// CreateDatabase creates an instance of Database.
 func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) (*api.Database, error) {
 	databaseRaw, err := s.createDatabaseRaw(ctx, create)
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) 
 	return database, nil
 }
 
-// FindDatabase finds a list of Database instances
+// FindDatabase finds a list of Database instances.
 func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
 	databaseRawList, err := s.findDatabaseRaw(ctx, find)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 	return databaseList, nil
 }
 
-// GetDatabase gets an instance of Database
+// GetDatabase gets an instance of Database.
 func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
 	databaseRaw, err := s.getDatabaseRaw(ctx, find)
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	return database, nil
 }
 
-// PatchDatabase patches an instance of Database
+// PatchDatabase patches an instance of Database.
 func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*api.Database, error) {
 	databaseRaw, err := s.patchDatabaseRaw(ctx, patch)
 	if err != nil {
@@ -137,7 +137,7 @@ func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*a
 	return database, nil
 }
 
-// CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled
+// CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
 func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -193,6 +193,9 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 			BackupSettingEnabled:     enabled,
 			Count:                    count,
 		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return databaseCountMetricList, nil
@@ -322,6 +325,16 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api
 			Hour:       rand.Intn(24),
 			HookURL:    "",
 		}
+		if s.db.mode == common.ReleaseModeDev {
+			backupSettingUpsert = &api.BackupSettingUpsert{
+				UpdaterID:         api.SystemBotID,
+				DatabaseID:        databaseRaw.ID,
+				Enabled:           true,
+				Hour:              rand.Intn(24),
+				RetentionPeriodTs: 7 * 24 * 3600,
+				HookURL:           "",
+			}
+		}
 		switch backupPlanPolicy.Schedule {
 		case api.BackupPlanPolicyScheduleDaily:
 			backupSettingUpsert.DayOfWeek = -1
@@ -428,9 +441,9 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 }
 
 // createDatabaseImpl creates a new database.
-func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
+func (*Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO db (
 			creator_id,
 			updater_id,
@@ -458,7 +471,9 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 			sync_status,
 			last_successful_sync_ts,
 			schema_version
-	`,
+	`
+	var databaseRaw databaseRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
@@ -467,15 +482,7 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 		create.CharacterSet,
 		create.Collation,
 		create.SchemaVersion,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var databaseRaw databaseRaw
-	if err := row.Scan(
+	).Scan(
 		&databaseRaw.ID,
 		&databaseRaw.CreatorID,
 		&databaseRaw.CreatedTs,
@@ -490,13 +497,15 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 		&databaseRaw.LastSuccessfulSyncTs,
 		&databaseRaw.SchemaVersion,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &databaseRaw, nil
 }
 
-func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
+func (*Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -580,7 +589,7 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 }
 
 // patchDatabaseImpl updates a database by ID. Returns the new state of the database after update.
-func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
+func (*Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.ProjectID; v != nil {
@@ -601,8 +610,10 @@ func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 
 	args = append(args, patch.ID)
 
+	var databaseRaw databaseRaw
+	var nullSourceBackupID sql.NullInt64
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
@@ -623,38 +634,29 @@ func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 			schema_version
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&databaseRaw.ID,
+		&databaseRaw.CreatorID,
+		&databaseRaw.CreatedTs,
+		&databaseRaw.UpdaterID,
+		&databaseRaw.UpdatedTs,
+		&databaseRaw.InstanceID,
+		&databaseRaw.ProjectID,
+		&nullSourceBackupID,
+		&databaseRaw.Name,
+		&databaseRaw.CharacterSet,
+		&databaseRaw.Collation,
+		&databaseRaw.SyncStatus,
+		&databaseRaw.LastSuccessfulSyncTs,
+		&databaseRaw.SchemaVersion,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var databaseRaw databaseRaw
-		var nullSourceBackupID sql.NullInt64
-		if err := row.Scan(
-			&databaseRaw.ID,
-			&databaseRaw.CreatorID,
-			&databaseRaw.CreatedTs,
-			&databaseRaw.UpdaterID,
-			&databaseRaw.UpdatedTs,
-			&databaseRaw.InstanceID,
-			&databaseRaw.ProjectID,
-			&nullSourceBackupID,
-			&databaseRaw.Name,
-			&databaseRaw.CharacterSet,
-			&databaseRaw.Collation,
-			&databaseRaw.SyncStatus,
-			&databaseRaw.LastSuccessfulSyncTs,
-			&databaseRaw.SchemaVersion,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if nullSourceBackupID.Valid {
-			databaseRaw.SourceBackupID = int(nullSourceBackupID.Int64)
-		}
-		return &databaseRaw, nil
+	if nullSourceBackupID.Valid {
+		databaseRaw.SourceBackupID = int(nullSourceBackupID.Int64)
 	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", patch.ID)}
+	return &databaseRaw, nil
 }

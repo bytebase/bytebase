@@ -64,6 +64,5 @@ func (find *ViewFind) String() string {
 
 // ViewDelete is the API message for deleting a view.
 type ViewDelete struct {
-	// Related fields
-	DatabaseID int
+	ID int
 }

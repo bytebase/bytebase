@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="state.columnList"
+    :column-list="columnList"
     :data-source="instanceList"
     :show-header="true"
     :left-bordered="false"
@@ -39,19 +39,13 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType, defineComponent } from "vue";
-import { useRouter } from "vue-router";
-import { BBTableColumn } from "../bbkit/types";
-import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import { urlfy, instanceSlug, environmentName } from "../utils";
-import { EnvironmentId, Instance } from "../types";
+import { PropType, defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { urlfy, instanceSlug, environmentName } from "@/utils";
+import { EnvironmentId, Instance } from "@/types";
 import { useEnvironmentStore } from "@/store";
-
-interface LocalState {
-  columnList: BBTableColumn[];
-  dataSource: any[];
-}
+import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 
 export default defineComponent({
   name: "InstanceTable",
@@ -65,8 +59,10 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
 
-    const state = reactive<LocalState>({
-      columnList: [
+    const router = useRouter();
+
+    const columnList = computed(() => {
+      return [
         {
           title: "",
         },
@@ -85,17 +81,10 @@ export default defineComponent({
         {
           title: t("common.created-at"),
         },
-      ],
-      dataSource: [],
+      ];
     });
 
-    const router = useRouter();
-
-    const clickInstance = function (
-      section: number,
-      row: number,
-      e: MouseEvent
-    ) {
+    const clickInstance = (section: number, row: number, e: MouseEvent) => {
       const instance = props.instanceList[row];
       const url = `/instance/${instanceSlug(instance)}`;
       if (e.ctrlKey || e.metaKey) {
@@ -105,7 +94,7 @@ export default defineComponent({
       }
     };
 
-    const environmentNameFromId = function (id: EnvironmentId) {
+    const environmentNameFromId = (id: EnvironmentId) => {
       const env = useEnvironmentStore().getEnvironmentById(id);
       return environmentName(env);
     };
@@ -122,7 +111,7 @@ export default defineComponent({
     };
 
     return {
-      state,
+      columnList,
       urlfy,
       clickInstance,
       environmentNameFromId,

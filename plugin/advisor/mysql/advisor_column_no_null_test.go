@@ -104,9 +104,9 @@ func TestColumnNoNull(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &ColumnNoNullAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &ColumnNoNullAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleColumnNotNull,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

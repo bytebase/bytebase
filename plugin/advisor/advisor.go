@@ -25,20 +25,8 @@ const (
 	SyntaxErrorTitle string = "Syntax error"
 )
 
-func (e Status) String() string {
-	switch e {
-	case Success:
-		return "INFO"
-	case Warn:
-		return "WARN"
-	case Error:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
-
-// NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
+// NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
+func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 	switch level {
 	case SchemaRuleLevelError:
 		return Error, nil
@@ -49,13 +37,14 @@ func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, erro
 }
 
 // Type is the type of advisor.
+// nolint
 type Type string
 
 const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
 
-	// MySQL Advisor
+	// MySQL Advisor.
 
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
@@ -99,7 +88,16 @@ const (
 	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
 	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
 
-	// PostgreSQL Advisor
+	// MySQLTableNoFK is an advisor type for MySQL table disallow foreign key.
+	MySQLTableNoFK Type = "bb.plugin.advisor.mysql.table.no-foreign-key"
+
+	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
+	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
+
+	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
+	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
+
+	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
@@ -109,11 +107,37 @@ const (
 
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
+
+	// PostgreSQLNamingUKConvention is an advisor type for PostgreSQL unique key naming convention.
+	PostgreSQLNamingUKConvention Type = "bb.plugin.advisor.postgresql.naming.uk"
+
+	// PostgreSQLNamingFKConvention is an advisor type for PostgreSQL foreign key naming convention.
+	PostgreSQLNamingFKConvention Type = "bb.plugin.advisor.postgresql.naming.fk"
+
+	// PostgreSQLColumnNoNull is an advisor type for PostgreSQL column no NULL value.
+	PostgreSQLColumnNoNull Type = "bb.plugin.advisor.postgresql.column.no-null"
+
+	// PostgreSQLColumnRequirement is an advisor type for PostgreSQL column requirement.
+	PostgreSQLColumnRequirement Type = "bb.plugin.advisor.postgresql.column.require"
+
+	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
+	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
+
+	// PostgreSQLNoLeadingWildcardLike is an advisor type for PostgreSQL no leading wildcard LIKE.
+	PostgreSQLNoLeadingWildcardLike Type = "bb.plugin.advisor.postgresql.where.no-leading-wildcard-like"
+
+	// PostgreSQLWhereRequirement is an advisor type for PostgreSQL WHERE clause requirement.
+	PostgreSQLWhereRequirement Type = "bb.plugin.advisor.postgresql.where.require"
+
+	// PostgreSQLNoSelectAll is an advisor type for PostgreSQL no select all.
+	PostgreSQLNoSelectAll Type = "bb.plugin.advisor.postgresql.select.no-select-all"
 )
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status `json:"status"`
+	// Status is the SQL check result. Could be "SUCCESS", "WARN", "ERROR"
+	Status Status `json:"status"`
+	// Code is the SQL check error code.
 	Code    Code   `json:"code"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
@@ -121,7 +145,7 @@ type Advice struct {
 
 // MarshalLogObject constructs a field that carries Advice.
 func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("status", a.Status.String())
+	enc.AddString("status", string(a.Status))
 	enc.AddInt("code", int(a.Code))
 	enc.AddString("title", a.Title)
 	enc.AddString("content", a.Content)
@@ -147,8 +171,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *SchemaReviewRule
-	Catalog catalog.Catalog
+	Rule     *SQLReviewRule
+	Database *catalog.Database
 }
 
 // Advisor is the interface for advisor.
@@ -202,15 +226,17 @@ func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB {
+	switch dbType {
+	case MySQL, TiDB, Postgres:
 		return true
 	}
 	return false
 }
 
-// IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+// IsSQLReviewSupported checks the engine type if schema review supports it.
+func IsSQLReviewSupported(dbType DBType) bool {
+	switch dbType {
+	case MySQL, TiDB, Postgres:
 		return true
 	}
 	return false

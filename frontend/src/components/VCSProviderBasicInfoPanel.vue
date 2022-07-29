@@ -21,7 +21,7 @@
         }}
       </label>
     </div>
-    <div v-if="isDev" class="radio space-x-2">
+    <div class="radio space-x-2">
       <input
         v-model="config.type"
         name="GitHub.com"

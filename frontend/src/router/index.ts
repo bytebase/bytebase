@@ -42,7 +42,7 @@ import {
   useVCSStore,
   useProjectWebhookStore,
   useDataSourceStore,
-  useSchemaSystemStore,
+  useSQLReviewStore,
   useProjectStore,
   useTableStore,
   useSQLEditorStore,
@@ -393,40 +393,40 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "schema-review-policy",
-                name: "setting.workspace.schema-review-policy",
+                path: "sql-review",
+                name: "setting.workspace.sql-review",
                 meta: {
-                  title: () => t("schema-review-policy.title"),
+                  title: () => t("sql-review.title"),
                 },
                 component: () =>
-                  import("../views/SettingWorkspaceSchemaReview.vue"),
+                  import("../views/SettingWorkspaceSQLReview.vue"),
                 props: true,
               },
               {
-                path: "schema-review-policy/new",
-                name: "setting.workspace.schema-review-policy.create",
+                path: "sql-review/new",
+                name: "setting.workspace.sql-review.create",
                 meta: {
-                  title: () => t("schema-review-policy.create.breadcrumb"),
+                  title: () => t("sql-review.create.breadcrumb"),
                 },
                 component: () =>
-                  import("../views/SettingWorkspaceSchemaReviewCreate.vue"),
+                  import("../views/SettingWorkspaceSQLReviewCreate.vue"),
                 props: true,
               },
               {
-                path: "schema-review-policy/:schemaReviewPolicySlug",
-                name: "setting.workspace.schema-review-policy.detail",
+                path: "sql-review/:sqlReviewPolicySlug",
+                name: "setting.workspace.sql-review.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.schemaReviewPolicySlug as string;
+                    const slug = route.params.sqlReviewPolicySlug as string;
                     return (
-                      useSchemaSystemStore().getReviewPolicyByEnvironmentId(
+                      useSQLReviewStore().getReviewPolicyByEnvironmentId(
                         idFromSlug(slug)
                       )?.name ?? ""
                     );
                   },
                 },
                 component: () =>
-                  import("../views/SettingWorkspaceSchemaReviewDetail.vue"),
+                  import("../views/SettingWorkspaceSQLReviewDetail.vue"),
                 props: true,
               },
             ],
@@ -941,9 +941,27 @@ router.beforeEach((to, from, next) => {
     return;
   } else {
     if (!isLoggedIn) {
-      next({ name: SIGNIN_MODULE, replace: true });
+      const query: any = {};
+      if (to.fullPath !== "/") {
+        query["redirect"] = to.fullPath;
+      }
+
+      next({
+        name: SIGNIN_MODULE,
+        query: query,
+        replace: true,
+      });
       return;
     }
+  }
+
+  // If there is a `redirect` in query param and prev page is signin or signup, redirect to the target route
+  if (
+    (from.name === SIGNIN_MODULE || from.name === SIGNUP_MODULE) &&
+    typeof from.query.redirect === "string"
+  ) {
+    window.location.href = from.query.redirect;
+    return;
   }
 
   const currentUser = authStore.currentUser;
@@ -1014,7 +1032,7 @@ router.beforeEach((to, from, next) => {
     to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail" &&
-      to.name?.toString() != "setting.workspace.schema-review-policy.detail")
+      to.name?.toString() != "setting.workspace.sql-review.detail")
   ) {
     next();
     return;
@@ -1041,7 +1059,7 @@ router.beforeEach((to, from, next) => {
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
-  const schemaReviewPolicySlug = routerSlug.schemaReviewPolicySlug;
+  const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
   if (principalId) {
     usePrincipalStore()
@@ -1250,9 +1268,9 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (schemaReviewPolicySlug) {
-    useSchemaSystemStore()
-      .fetchReviewPolicyByEnvironmentId(idFromSlug(schemaReviewPolicySlug))
+  if (sqlReviewPolicySlug) {
+    useSQLReviewStore()
+      .fetchReviewPolicyByEnvironmentId(idFromSlug(sqlReviewPolicySlug))
       .then(() => {
         next();
       })

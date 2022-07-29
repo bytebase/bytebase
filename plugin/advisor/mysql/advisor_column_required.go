@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*ColumnRequirementAdvisor)(nil)
+	_ ast.Visitor     = (*columnRequirementChecker)(nil)
 )
 
 func init() {
@@ -23,13 +24,13 @@ type ColumnRequirementAdvisor struct {
 }
 
 // Check checks for the column requirement.
-func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ type columnRequirementChecker struct {
 	tables          tableState
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	// CREATE TABLE
@@ -99,8 +100,8 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 

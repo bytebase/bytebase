@@ -50,7 +50,7 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 	}
 }
 
-// GetDeploymentConfigByProjectID gets an instance of DeploymentConfig
+// GetDeploymentConfigByProjectID gets an instance of DeploymentConfig.
 func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID in
 	return deploymentConfig, nil
 }
 
-// UpsertDeploymentConfig upserts an instance of DeploymentConfig
+// UpsertDeploymentConfig upserts an instance of DeploymentConfig.
 func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.upsertDeploymentConfigRaw(ctx, upsert)
 	if err != nil {
@@ -201,41 +201,34 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	}
 }
 
-func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
+func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
-	INSERT INTO deployment_config (
-		creator_id,
-		updater_id,
-		project_id,
-		name,
-		config
-	)
-	VALUES ($1, $2, $3, $4, $5)
-	ON CONFLICT(project_id) DO UPDATE SET
-		creator_id = excluded.creator_id,
-		updater_id = excluded.updater_id,
-		name = excluded.name,
-		config = excluded.config
-	RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
-	`,
+	query := `
+		INSERT INTO deployment_config (
+			creator_id,
+			updater_id,
+			project_id,
+			name,
+			config
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT(project_id) DO UPDATE SET
+			creator_id = excluded.creator_id,
+			updater_id = excluded.updater_id,
+			name = excluded.name,
+			config = excluded.config
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
+	`
+	var cfg deploymentConfigRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.ProjectID,
 		upsert.Name,
 		upsert.Payload,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-	defer row.Close()
-
-	row.Next()
-	var cfg deploymentConfigRaw
-	if err := row.Scan(
+	).Scan(
 		&cfg.ID,
 		&cfg.CreatorID,
 		&cfg.CreatedTs,
@@ -245,6 +238,9 @@ func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upse
 		&cfg.Name,
 		&cfg.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, err
 	}
 	return &cfg, nil

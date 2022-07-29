@@ -51,7 +51,7 @@ func (raw *vcsRaw) toVCS() *api.VCS {
 	}
 }
 
-// CreateVCS creates an instance of VCS
+// CreateVCS creates an instance of VCS.
 func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS, error) {
 	vcsRaw, err := s.createVCSRaw(ctx, create)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS,
 	return vcs, nil
 }
 
-// FindVCS finds a list of VCS instances
+// FindVCS finds a list of VCS instances.
 func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
 	vcsRawList, err := s.findVCSRaw(ctx, find)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, err
 	return vcsList, nil
 }
 
-// GetVCSByID gets a composesd instance of VCS by ID
+// GetVCSByID gets a composesd instance of VCS by ID.
 func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	vcsRaw, err := s.getVCSRaw(ctx, id)
 	if err != nil {
@@ -98,7 +98,7 @@ func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	return vcs, nil
 }
 
-// PatchVCS patches an instance of VCS
+// PatchVCS patches an instance of VCS.
 func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, error) {
 	vcsRaw, err := s.patchVCSRaw(ctx, patch)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, er
 	return vcs, nil
 }
 
-// DeleteVCS deletes an instance of VCS
+// DeleteVCS deletes an instance of VCS.
 func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
 	if err := s.deleteVCSRaw(ctx, delete); err != nil {
 		return fmt.Errorf("failed to delete VCS with VCSDelete[%+v], error: %w", delete, err)
@@ -231,7 +231,7 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -249,7 +249,7 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 // createVCSImpl creates a new vcs.
 func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcsRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO vcs (
 			creator_id,
 			updater_id,
@@ -262,7 +262,9 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
-	`,
+	`
+	var vcs vcsRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -271,16 +273,7 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		create.APIURL,
 		create.ApplicationID,
 		create.Secret,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var vcs vcsRaw
-	if err := row.Scan(
+	).Scan(
 		&vcs.ID,
 		&vcs.CreatorID,
 		&vcs.CreatedTs,
@@ -293,9 +286,11 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		&vcs.ApplicationID,
 		&vcs.Secret,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &vcs, nil
 }
 
@@ -372,46 +367,38 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 	}
 	args = append(args, patch.ID)
 
+	var vcs vcsRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&vcs.ID,
+		&vcs.CreatorID,
+		&vcs.CreatedTs,
+		&vcs.UpdaterID,
+		&vcs.UpdatedTs,
+		&vcs.Name,
+		&vcs.Type,
+		&vcs.InstanceURL,
+		&vcs.APIURL,
+		&vcs.ApplicationID,
+		&vcs.Secret,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var vcs vcsRaw
-		if err := row.Scan(
-			&vcs.ID,
-			&vcs.CreatorID,
-			&vcs.CreatedTs,
-			&vcs.UpdaterID,
-			&vcs.UpdatedTs,
-			&vcs.Name,
-			&vcs.Type,
-			&vcs.InstanceURL,
-			&vcs.APIURL,
-			&vcs.ApplicationID,
-			&vcs.Secret,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &vcs, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
+	return &vcs, nil
 }
 
 // deleteVCSImpl permanently deletes a vcs by ID.
-func deleteVCSImpl(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
+func (*Store) deleteVCSImpl(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

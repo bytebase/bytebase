@@ -79,7 +79,7 @@ func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizer
 }
 
 func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.SheetOrganizerUpsert) (*sheetOrganizerRaw, error) {
-	row, err := tx.QueryContext(ctx, `
+	query := `
 	  INSERT INTO sheet_organizer (
 			sheet_id,
 			principal_id,
@@ -91,29 +91,25 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.Sheet
 			starred = EXCLUDED.starred,
 			pinned = EXCLUDED.pinned
 		RETURNING id, sheet_id, principal_id, starred, pinned
-	`,
+	`
+	var sheetOrganizerRaw sheetOrganizerRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.SheetID,
 		upsert.PrincipalID,
 		upsert.Starred,
 		upsert.Pinned,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var sheetOrganizerRaw sheetOrganizerRaw
-	if err := row.Scan(
+	).Scan(
 		&sheetOrganizerRaw.ID,
 		&sheetOrganizerRaw.SheetID,
 		&sheetOrganizerRaw.PrincipalID,
 		&sheetOrganizerRaw.Starred,
 		&sheetOrganizerRaw.Pinned,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &sheetOrganizerRaw, nil
 }
 

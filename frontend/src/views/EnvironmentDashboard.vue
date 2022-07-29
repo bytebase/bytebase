@@ -52,22 +52,6 @@
     />
   </BBModal>
 
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('common.do-not-show-again')"
-    :cancel-text="$t('common.dismiss')"
-    :title="$t('environment.how-to-setup-environment')"
-    :description="$t('environment.how-to-setup-environment-description')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
-
   <FeatureModal
     v-if="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
@@ -124,7 +108,6 @@ interface LocalState {
   selectedIndex: number;
   showCreateModal: boolean;
   reorder: boolean;
-  showGuide: boolean;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
     | "bb.feature.backup-policy";
@@ -148,7 +131,6 @@ export default defineComponent({
       selectedIndex: -1,
       showCreateModal: false,
       reorder: false,
-      showGuide: false,
     });
 
     const selectEnvironmentOnHash = () => {
@@ -172,14 +154,11 @@ export default defineComponent({
     onMounted(() => {
       selectEnvironmentOnHash();
 
-      if (!uiStateStore.getIntroStateByKey("guide.environment")) {
-        setTimeout(() => {
-          state.showGuide = true;
-          uiStateStore.saveIntroStateByKey({
-            key: "environment.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("environment.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "environment.visit",
+          newState: true,
+        });
       }
     });
 
@@ -271,14 +250,6 @@ export default defineComponent({
         });
     };
 
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.environment",
-        newState: true,
-      });
-      state.showGuide = false;
-    };
-
     const startReorder = () => {
       state.reorderedEnvironmentList = [...environmentList.value];
       state.reorder = true;
@@ -343,7 +314,6 @@ export default defineComponent({
       createEnvironment,
       doCreate,
       doArchive,
-      doDismissGuide,
       reorderEnvironment,
       orderChanged,
       discardReorder,

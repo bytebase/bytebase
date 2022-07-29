@@ -9,6 +9,7 @@ import (
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -37,12 +38,12 @@ type Driver struct {
 	db *sql.DB
 }
 
-func newDriver(config db.DriverConfig) db.Driver {
+func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
 // Open opens a ClickHouse driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	port := config.Port
 	if port == "" {
 		port = "9000"
@@ -63,7 +64,9 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		},
 		TLS: tlsConfig,
 		Settings: clickhouse.Settings{
-			"max_execution_time": 60, // 60 seconds.
+			// Use a relative long value to avoid timeout on resource-intenstive query. Example failure:
+			// failed: code: 160, message: Estimated query execution time (xxx seconds) is too long. Maximum: yyy. Estimated rows to process: zzzzzzzzz
+			"max_execution_time": 300,
 		},
 		DialTimeout: 10 * time.Second,
 	})
@@ -82,7 +85,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(context.Context) error {
 	return driver.db.Close()
 }
 
@@ -91,24 +94,20 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetDbConnection gets a database connection.
-func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
+// GetDBConnection gets a database connection.
+func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
 	return driver.db, nil
 }
 
-// GetVersion gets the version.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
-	versionRow, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	defer versionRow.Close()
-
 	var version string
-	versionRow.Next()
-	if err := versionRow.Scan(&version); err != nil {
-		return "", err
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 	return version, nil
 }

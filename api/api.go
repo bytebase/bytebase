@@ -1,5 +1,10 @@
 package api
 
+import (
+	"fmt"
+	"strings"
+)
+
 // UnknownID is the ID for unknowns.
 const UnknownID = -1
 
@@ -13,16 +18,6 @@ const (
 	Archived RowStatus = "ARCHIVED"
 )
 
-func (e RowStatus) String() string {
-	switch e {
-	case Normal:
-		return "NORMAL"
-	case Archived:
-		return "ARCHIVED"
-	}
-	return ""
-}
-
 // SortOrder is the sort order for the returned list.
 type SortOrder string
 
@@ -33,12 +28,13 @@ const (
 	DESC SortOrder = "DESC"
 )
 
-func (e SortOrder) String() string {
-	switch e {
-	case ASC:
-		return "ASC"
-	case DESC:
-		return "DESC"
+// StringToSortOrder converts a valid string to SortOrder.
+func StringToSortOrder(s string) (SortOrder, error) {
+	switch strings.ToUpper(s) {
+	case string(ASC):
+		return ASC, nil
+	case string(DESC):
+		return DESC, nil
 	}
-	return ""
+	return SortOrder(""), fmt.Errorf("%q cannot be converted to SortOrder", s)
 }

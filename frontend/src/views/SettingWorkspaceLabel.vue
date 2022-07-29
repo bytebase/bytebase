@@ -5,7 +5,7 @@
         <template #link>
           <a
             class="normal-link inline-flex items-center"
-            href="https://bytebase.com/docs/features/tenant-database-management#labels?source=console"
+            href="https://bytebase.com/docs/tenant-database-management#labels?source=console"
             target="__BLANK"
           >
             {{ $t("common.learn-more") }}
@@ -17,7 +17,7 @@
     <div>
       <BBTable
         class="mt-2"
-        :column-list="COLUMN_LIST"
+        :column-list="columnList"
         :data-source="labelList"
         :show-header="true"
         :row-clickable="false"
@@ -123,7 +123,7 @@ export default defineComponent({
       });
     };
 
-    const COLUMN_LIST = computed((): BBTableColumn[] => [
+    const columnList = computed((): BBTableColumn[] => [
       {
         title: t("setting.label.key"),
       },
@@ -133,7 +133,7 @@ export default defineComponent({
     ]);
 
     return {
-      COLUMN_LIST,
+      columnList,
       labelList,
       hidePrefix,
       allowEdit,

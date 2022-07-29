@@ -7,6 +7,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	// BackupRetentionPeriodUnset is the unset value of a backup retention period.
+	BackupRetentionPeriodUnset = 0
+)
+
 // BackupStatus is the status of a backup.
 type BackupStatus string
 
@@ -19,37 +24,17 @@ const (
 	BackupStatusFailed BackupStatus = "FAILED"
 )
 
-func (e BackupStatus) String() string {
-	switch e {
-	case BackupStatusPendingCreate:
-		return "PENDING_CREATE"
-	case BackupStatusDone:
-		return "DONE"
-	case BackupStatusFailed:
-		return "FAILED"
-	}
-	return "UNKNOWN"
-}
-
 // BackupType is the type of a backup.
 type BackupType string
 
 const (
 	// BackupTypeAutomatic is the type for automatic backup.
 	BackupTypeAutomatic BackupType = "AUTOMATIC"
+	// BackupTypePITR is the type of backup taken at PITR cutover stage.
+	BackupTypePITR BackupType = "PITR"
 	// BackupTypeManual is the type for manual backup.
 	BackupTypeManual BackupType = "MANUAL"
 )
-
-func (e BackupType) String() string {
-	switch e {
-	case BackupTypeAutomatic:
-		return "AUTOMATIC"
-	case BackupTypeManual:
-		return "MANUAL"
-	}
-	return "UNKNOWN"
-}
 
 // BackupStorageBackend is the storage backend of a backup.
 type BackupStorageBackend string
@@ -64,20 +49,6 @@ const (
 	// BackupStorageBackendOSS is the AliCloud Object Storage Service (OSS) storage backend for a backup. Not used yet.
 	BackupStorageBackendOSS BackupStorageBackend = "OSS"
 )
-
-func (e BackupStorageBackend) String() string {
-	switch e {
-	case BackupStorageBackendLocal:
-		return "LOCAL"
-	case BackupStorageBackendS3:
-		return "S3"
-	case BackupStorageBackendGCS:
-		return "GCS"
-	case BackupStorageBackendOSS:
-		return "OSS"
-	}
-	return "UNKNOWN"
-}
 
 // BinlogInfo is the binlog coordination for MySQL.
 type BinlogInfo struct {
@@ -105,6 +76,7 @@ type Backup struct {
 	ID int `jsonapi:"primary,backup"`
 
 	// Standard fields
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorID int
 	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
@@ -130,10 +102,10 @@ type Backup struct {
 	Payload BackupPayload `jsonapi:"attr,payload"`
 }
 
-// ZapBackupArray is a helper to format zap.Array
+// ZapBackupArray is a helper to format zap.Array.
 type ZapBackupArray []*Backup
 
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
 func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for _, backup := range backups {
 		payload, err := json.Marshal(backup.Payload)
@@ -187,6 +159,7 @@ type BackupPatch struct {
 	ID int
 
 	// Standard fields
+	RowStatus *RowStatus
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
@@ -215,9 +188,13 @@ type BackupSetting struct {
 	Database *Database
 
 	// Domain specific fields
-	Enabled   bool `jsonapi:"attr,enabled"`
-	Hour      int  `jsonapi:"attr,hour"`
-	DayOfWeek int  `jsonapi:"attr,dayOfWeek"`
+	Enabled bool `jsonapi:"attr,enabled"`
+	// Schedule related fields
+	Hour      int `jsonapi:"attr,hour"`
+	DayOfWeek int `jsonapi:"attr,dayOfWeek"`
+	// RetentionPeriodTs is the period that backup data is kept for the database.
+	// 0 means unset and we do not delete data.
+	RetentionPeriodTs int `jsonapi:"attr,retentionPeriodTs"`
 	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 	HookURL string `jsonapi:"attr,hookUrl"`
 }
@@ -230,6 +207,7 @@ type BackupSettingFind struct {
 	DatabaseID *int
 
 	// Domain specific fields
+	InstanceID *int
 }
 
 // BackupSettingUpsert is the message to upsert a backup settings.
@@ -245,10 +223,11 @@ type BackupSettingUpsert struct {
 	EnvironmentID int
 
 	// Domain specific fields
-	Enabled   bool   `jsonapi:"attr,enabled"`
-	Hour      int    `jsonapi:"attr,hour"`
-	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
-	HookURL   string `jsonapi:"attr,hookUrl"`
+	Enabled           bool   `jsonapi:"attr,enabled"`
+	Hour              int    `jsonapi:"attr,hour"`
+	DayOfWeek         int    `jsonapi:"attr,dayOfWeek"`
+	RetentionPeriodTs int    `jsonapi:"attr,retentionPeriodTs"`
+	HookURL           string `jsonapi:"attr,hookUrl"`
 }
 
 // BackupSettingsMatch is the message to find backup settings matching the conditions.

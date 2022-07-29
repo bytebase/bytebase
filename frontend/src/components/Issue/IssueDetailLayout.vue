@@ -14,14 +14,12 @@
         </IssueHighlightPanel>
       </div>
 
-      <!-- Remind banner for bb.feature.schema-review-policy -->
+      <!-- Remind banner for bb.feature.sql-review -->
       <FeatureAttention
-        v-if="!hasSchemaReviewPolicyFeature"
+        v-if="!hasSQLReviewPolicyFeature"
         custom-class="m-5 mt-0"
-        feature="bb.feature.schema-review-policy"
-        :description="
-          $t('subscription.features.bb-feature-schema-review-policy.desc')
-        "
+        feature="bb.feature.sql-review"
+        :description="$t('subscription.features.bb-feature-sql-review.desc')"
       />
 
       <!-- Stage Flow Bar -->
@@ -188,6 +186,8 @@ const {
   selectTask,
   taskStatusOfStage,
   isValidStage,
+  allowApplyIssueStatusTransition,
+  allowApplyTaskStatusTransition,
 } = useBaseIssueLogic({ issue, create });
 
 const issueLogic = ref<IssueLogic>();
@@ -281,9 +281,7 @@ onMounted(() => {
   document.getElementById("issue-detail-top")!.scrollIntoView();
 });
 
-const hasSchemaReviewPolicyFeature = featureToRef(
-  "bb.feature.schema-review-policy"
-);
+const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 watch(
   [create, issue, () => route.query.sql as string, issueLogic],
@@ -347,6 +345,8 @@ provideIssueLogic(
     selectTask,
     onStatusChanged,
     createIssue,
+    allowApplyIssueStatusTransition,
+    allowApplyTaskStatusTransition,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.

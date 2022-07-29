@@ -197,7 +197,7 @@
         <div class="text-lg leading-6 font-medium text-main mb-4">
           {{ $t("database.indexes") }}
         </div>
-        <IndexTable :index-list="table.indexList" />
+        <IndexTable :index-list="table.indexList" :database="database" />
       </div>
     </main>
   </div>

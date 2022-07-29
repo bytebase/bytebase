@@ -53,7 +53,7 @@ func (raw *activityRaw) toActivity() *api.Activity {
 	}
 }
 
-// CreateActivity creates an instance of Activity
+// CreateActivity creates an instance of Activity.
 func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) (*api.Activity, error) {
 	activityRaw, err := s.createActivityRaw(ctx, create)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) 
 	return activity, nil
 }
 
-// GetActivityByID gets an instance of Activity
+// GetActivityByID gets an instance of Activity.
 func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, error) {
 	activityRaw, err := s.getActivityRawByID(ctx, id)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, err
 	return activity, nil
 }
 
-// FindActivity finds a list of Activity instances
+// FindActivity finds a list of Activity instances.
 func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*api.Activity, error) {
 	activityRawList, err := s.findActivityRaw(ctx, find)
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*ap
 	return activityList, nil
 }
 
-// PatchActivity patches an instance of Activity
+// PatchActivity patches an instance of Activity.
 func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*api.Activity, error) {
 	activityRaw, err := s.patchActivityRaw(ctx, patch)
 	if err != nil {
@@ -196,25 +196,6 @@ func (s *Store) patchActivityRaw(ctx context.Context, patch *api.ActivityPatch) 
 	return activity, nil
 }
 
-// DeleteActivity deletes an existing activity by ID.
-func (s *Store) DeleteActivity(ctx context.Context, delete *api.ActivityDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	if err := deleteActivityImpl(ctx, tx.PTx, delete); err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
-}
-
 func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Activity, error) {
 	activity := raw.toActivity()
 
@@ -239,7 +220,7 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO activity (
 			creator_id,
 			updater_id,
@@ -251,7 +232,9 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
-	`,
+	`
+	var activityRaw activityRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ContainerID,
@@ -259,16 +242,7 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 		create.Level,
 		create.Comment,
 		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var activityRaw activityRaw
-	if err := row.Scan(
+	).Scan(
 		&activityRaw.ID,
 		&activityRaw.CreatorID,
 		&activityRaw.CreatedTs,
@@ -280,9 +254,11 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 		&activityRaw.Comment,
 		&activityRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &activityRaw, nil
 }
 
@@ -320,15 +296,13 @@ func findActivityImpl(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 		FROM activity
 		WHERE ` + strings.Join(where, " AND ")
 	if v := find.Order; v != nil {
-		query += fmt.Sprintf(" ORDER BY created_ts %s", v.String())
+		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, query,
-		args...,
-	)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -372,48 +346,31 @@ func patchActivityImpl(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch
 
 	args = append(args, patch.ID)
 
+	var activityRaw activityRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE activity
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&activityRaw.ID,
+		&activityRaw.CreatorID,
+		&activityRaw.CreatedTs,
+		&activityRaw.UpdaterID,
+		&activityRaw.UpdatedTs,
+		&activityRaw.ContainerID,
+		&activityRaw.Type,
+		&activityRaw.Level,
+		&activityRaw.Comment,
+		&activityRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var activityRaw activityRaw
-		if err := row.Scan(
-			&activityRaw.ID,
-			&activityRaw.CreatorID,
-			&activityRaw.CreatedTs,
-			&activityRaw.UpdaterID,
-			&activityRaw.UpdatedTs,
-			&activityRaw.ContainerID,
-			&activityRaw.Type,
-			&activityRaw.Level,
-			&activityRaw.Comment,
-			&activityRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &activityRaw, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity ID not found: %d", patch.ID)}
-}
-
-// deleteActivityImpl permanently deletes a activity by ID.
-func deleteActivityImpl(ctx context.Context, tx *sql.Tx, delete *api.ActivityDelete) error {
-	// Remove row from activity.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM activity WHERE id = $1`, delete.ID); err != nil {
-		return FormatError(err)
-	}
-	return nil
+	return &activityRaw, nil
 }

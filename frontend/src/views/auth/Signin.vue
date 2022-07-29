@@ -230,15 +230,15 @@ export default defineComponent({
       if (payload.error) {
         return;
       }
-      const gitlabLoginInfo: VCSLoginInfo = {
+      const vcsLoginInfo: VCSLoginInfo = {
         vcsId: state.activeAuthProvider.id,
         name: state.activeAuthProvider.name,
         code: payload.code,
       };
       authStore
         .login({
-          authProvider: "GITLAB_SELF_HOST",
-          payload: gitlabLoginInfo,
+          authProvider: state.activeAuthProvider.type,
+          payload: vcsLoginInfo,
         })
         .then(() => {
           router.push("/");
@@ -263,6 +263,11 @@ export default defineComponent({
         apiPath: "oauth/authorize",
         // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
         iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
+      },
+      GITHUB_COM: {
+        apiPath: "login/oauth/authorize",
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../../assets/github-logo.svg", import.meta.url).href,
       },
     };
 

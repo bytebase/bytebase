@@ -64,7 +64,7 @@ func (raw *issueRaw) toIssue() *api.Issue {
 	}
 }
 
-// CreateIssue creates an instance of Issue
+// CreateIssue creates an instance of Issue.
 func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.Issue, error) {
 	issueRaw, err := s.createIssueRaw(ctx, create)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.
 	return issue, nil
 }
 
-// GetIssueByID gets an instance of Issue
+// GetIssueByID gets an instance of Issue.
 func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	find := &api.IssueFind{ID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
@@ -94,7 +94,7 @@ func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	return issue, nil
 }
 
-// GetIssueByPipelineID gets an instance of Issue
+// GetIssueByPipelineID gets an instance of Issue.
 func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, error) {
 	find := &api.IssueFind{PipelineID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
@@ -111,7 +111,7 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 	return issue, nil
 }
 
-// FindIssue finds a list of Issue instances
+// FindIssue finds a list of Issue instances.
 func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
 	if err != nil {
@@ -128,7 +128,7 @@ func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issu
 	return issueList, nil
 }
 
-// PatchIssue patches an instance of Issue
+// PatchIssue patches an instance of Issue.
 func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Issue, error) {
 	issueRaw, err := s.patchIssueRaw(ctx, patch)
 	if err != nil {
@@ -170,12 +170,15 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 		}
 		res = append(res, &metric)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 
 	return res, nil
 }
 
 // CreateIssueValidateOnly creates an issue for validation purpose
-// Do NOT write to the database
+// Do NOT write to the database.
 func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	issue := &api.Issue{
 		CreatorID:   creatorID,
@@ -200,7 +203,7 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipel
 }
 
 // CreatePipelineValidateOnly creates a pipeline for validation purpose
-// Do NOT write to the database
+// Do NOT write to the database.
 func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
 	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
 	// jsonapi resource relationships will collide different resources into the same bucket.
@@ -319,7 +322,7 @@ func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) 
 	return nil
 }
 
-// Note: MUST keep in sync with composeIssueValidateOnly
+// Note: MUST keep in sync with composeIssueValidateOnly.
 func (s *Store) composeIssue(ctx context.Context, raw *issueRaw) (*api.Issue, error) {
 	issue := raw.toIssue()
 
@@ -466,11 +469,11 @@ func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issu
 }
 
 // createIssueImpl creates a new issue.
-func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*issueRaw, error) {
+func (*Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*issueRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO issue (
 			creator_id,
 			updater_id,
@@ -485,7 +488,9 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 		)
 		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
-	`,
+	`
+	var issueRaw issueRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -495,16 +500,7 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 		create.Description,
 		create.AssigneeID,
 		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var issueRaw issueRaw
-	if err := row.Scan(
+	).Scan(
 		&issueRaw.ID,
 		&issueRaw.CreatorID,
 		&issueRaw.CreatedTs,
@@ -519,13 +515,15 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 		&issueRaw.AssigneeID,
 		&issueRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &issueRaw, nil
 }
 
-func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
+func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -611,7 +609,7 @@ func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFi
 }
 
 // patchIssueImpl updates a issue by ID. Returns the new state of the issue after update.
-func (s *Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*issueRaw, error) {
+func (*Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*issueRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -636,42 +634,34 @@ func (s *Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.Issue
 
 	args = append(args, patch.ID)
 
+	var issueRaw issueRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&issueRaw.ID,
+		&issueRaw.CreatorID,
+		&issueRaw.CreatedTs,
+		&issueRaw.UpdaterID,
+		&issueRaw.UpdatedTs,
+		&issueRaw.ProjectID,
+		&issueRaw.PipelineID,
+		&issueRaw.Name,
+		&issueRaw.Status,
+		&issueRaw.Type,
+		&issueRaw.Description,
+		&issueRaw.AssigneeID,
+		&issueRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var issueRaw issueRaw
-		if err := row.Scan(
-			&issueRaw.ID,
-			&issueRaw.CreatorID,
-			&issueRaw.CreatedTs,
-			&issueRaw.UpdaterID,
-			&issueRaw.UpdatedTs,
-			&issueRaw.ProjectID,
-			&issueRaw.PipelineID,
-			&issueRaw.Name,
-			&issueRaw.Status,
-			&issueRaw.Type,
-			&issueRaw.Description,
-			&issueRaw.AssigneeID,
-			&issueRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &issueRaw, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
+	return &issueRaw, nil
 }

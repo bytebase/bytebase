@@ -21,22 +21,6 @@
     </div>
     <ProjectTable :project-list="filteredList(state.projectList)" />
   </div>
-
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('project.dashboard.modal.confirm')"
-    :cancel-text="$t('project.dashboard.modal.cancel')"
-    :title="$t('project.dashboard.modal.title')"
-    :description="$t('project.dashboard.modal.content')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -49,7 +33,6 @@ import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 interface LocalState {
   projectList: Project[];
   searchText: string;
-  showGuide: boolean;
 }
 
 export default defineComponent({
@@ -68,21 +51,17 @@ export default defineComponent({
     const state = reactive<LocalState>({
       projectList: [],
       searchText: "",
-      showGuide: false,
     });
 
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.project")) {
-        setTimeout(() => {
-          state.showGuide = true;
-          uiStateStore.saveIntroStateByKey({
-            key: "project.visit",
-            newState: true,
-          });
-        }, 1000);
+      if (!uiStateStore.getIntroStateByKey("project.visit")) {
+        uiStateStore.saveIntroStateByKey({
+          key: "project.visit",
+          newState: true,
+        });
       }
     });
 
@@ -104,14 +83,6 @@ export default defineComponent({
 
     const changeSearchText = (searchText: string) => {
       state.searchText = searchText;
-    };
-
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.project",
-        newState: true,
-      });
-      state.showGuide = false;
     };
 
     const goDefaultProject = () => {
@@ -140,7 +111,6 @@ export default defineComponent({
       searchField,
       state,
       filteredList,
-      doDismissGuide,
       changeSearchText,
       goDefaultProject,
     };

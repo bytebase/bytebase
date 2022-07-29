@@ -27,6 +27,7 @@ import {
   UpdateSchemaDetail,
 } from "@/types";
 import { useIssueLogic } from "./index";
+import { taskCheckRunSummary } from "./utils";
 import { isDev } from "@/utils";
 
 export const useCommonLogic = () => {
@@ -113,15 +114,7 @@ export const useCommonLogic = () => {
       return false;
     }
 
-    // check `selectedTask`, expected to be PENDING or PENDING_APPROVAL or FAILED
-    const checkTask = (task: Task) => {
-      return (
-        task.status == "PENDING" ||
-        task.status == "PENDING_APPROVAL" ||
-        task.status == "FAILED"
-      );
-    };
-    return checkTask(selectedTask.value as Task);
+    return isTaskEditable(selectedTask.value as Task);
   });
 
   const selectedStatement = computed((): string => {
@@ -148,6 +141,7 @@ export const useCommonLogic = () => {
         task.id,
         {
           statement: maybeFormatStatementOnSave(newStatement, task.database),
+          updatedTs: task.updatedTs,
         },
         postUpdated
       );
@@ -186,9 +180,7 @@ export const useCommonLogic = () => {
     const issueCreate = cloneDeep(issue.value as IssueCreate);
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
-    const taskList = issueCreate.pipeline!.stageList.map(
-      (stage) => stage.taskList[0]
-    );
+    const taskList = flattenTaskList<TaskCreate>(issueCreate);
     const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
@@ -296,7 +288,26 @@ const statementOfTask = (task: Task) => {
       return "";
     case "bb.task.database.schema.update.ghost.sync":
     case "bb.task.database.schema.update.ghost.cutover":
-    case "bb.task.database.schema.update.ghost.drop-original-table":
       return ""; // should never reach here
   }
+};
+
+export const isTaskEditable = (task: Task): boolean => {
+  if (task.status === "PENDING_APPROVAL" || task.status === "FAILED") {
+    return true;
+  }
+  if (task.status === "PENDING") {
+    // If a task's status is "PENDING", its statement is editable if there
+    // are at least ONE ERROR task checks.
+    // Since once all its task checks are fulfilled, it might be queued by
+    // the scheduler.
+    // Editing a queued task's SQL statement is dangerous with kinds of race
+    // condition risks.
+    const summary = taskCheckRunSummary(task);
+    if (summary.errorCount > 0) {
+      return true;
+    }
+  }
+
+  return false;
 };

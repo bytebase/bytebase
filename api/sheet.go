@@ -16,18 +16,6 @@ const (
 	PublicSheet SheetVisibility = "PUBLIC"
 )
 
-func (v SheetVisibility) String() string {
-	switch v {
-	case PrivateSheet:
-		return "PRIVATE"
-	case ProjectSheet:
-		return "PROJECT"
-	case PublicSheet:
-		return "PUBLIC"
-	}
-	return ""
-}
-
 // SheetSource is the type of sheet origin source.
 type SheetSource string
 
@@ -40,19 +28,6 @@ const (
 	SheetFromGitHubCom SheetSource = "GITHUB_COM"
 )
 
-func (v SheetSource) String() string {
-	switch v {
-	case SheetFromBytebase:
-		return "BYTEBASE"
-	case SheetFromGitLabSelfHost:
-		return "GITLAB_SELF_HOST"
-	case SheetFromGitHubCom:
-		return "GITHUB_COM"
-	}
-	// Default sheet source is BYTEBASE.
-	return "BYTEBASE"
-}
-
 // SheetType is the type of sheet.
 type SheetType string
 
@@ -60,16 +35,6 @@ const (
 	// SheetForSQL is the sheet that used for saving SQL statements.
 	SheetForSQL SheetType = "SQL"
 )
-
-func (v SheetType) String() string {
-	switch v {
-	case SheetForSQL:
-		return "SQL"
-	default:
-		// Default sheet type is SQL.
-		return "SQL"
-	}
-}
 
 // SheetVCSPayload is the additional data payload of the VCS sheet.
 type SheetVCSPayload struct {

@@ -54,7 +54,7 @@ func (raw *projectMemberRaw) toProjectMember() *api.ProjectMember {
 	}
 }
 
-// CreateProjectMember creates an instance of ProjectMember
+// CreateProjectMember creates an instance of ProjectMember.
 func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.createProjectMemberRaw(ctx, create)
 	if err != nil {
@@ -67,7 +67,7 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 	return projectMember, nil
 }
 
-// FindProjectMember finds a list of ProjectMember instances
+// FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
 	if err != nil {
@@ -84,7 +84,7 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 	return projectMemberList, nil
 }
 
-// GetProjectMemberByID gets an instance of ProjectMember
+// GetProjectMemberByID gets an instance of ProjectMember.
 func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectMember, error) {
 	find := &api.ProjectMemberFind{ID: &id}
 	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
@@ -101,7 +101,7 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 	return projectMember, nil
 }
 
-// PatchProjectMember patches an instance of ProjectMember
+// PatchProjectMember patches an instance of ProjectMember.
 func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.patchProjectMemberRaw(ctx, patch)
 	if err != nil {
@@ -122,7 +122,7 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteProjectMemberImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteProjectMemberImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -133,7 +133,7 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 	return nil
 }
 
-// BatchUpdateProjectMember update the project member with provided project member list
+// BatchUpdateProjectMember update the project member with provided project member list.
 func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*api.ProjectMember, []*api.ProjectMember, error) {
 	createdMemberRawList, deletedMemberRawList, err := s.batchUpdateProjectMemberRaw(ctx, batchUpdate)
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.P
 // private functions
 //
 
-// composeProjectMember composes an instance of ProjectMember by projectMemberRaw
+// composeProjectMember composes an instance of ProjectMember by projectMemberRaw.
 func (s *Store) composeProjectMember(ctx context.Context, raw *projectMemberRaw) (*api.ProjectMember, error) {
 	projectMember := raw.toProjectMember()
 
@@ -264,7 +264,7 @@ func (s *Store) patchProjectMemberRaw(ctx context.Context, patch *api.ProjectMem
 	return projectMember, nil
 }
 
-// getBatchUpdatePrincipalIDList return the principal ID for each operation (this function may be a litter overhead, but it is easy to be tested)
+// getBatchUpdatePrincipalIDList return the principal ID for each operation (this function may be a litter overhead, but it is easy to be tested).
 func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList []int) (createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList []int) {
 	oldPrincipalIDSet := make(map[int]bool)
 	for _, id := range oldPrincipalIDList {
@@ -296,7 +296,7 @@ func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList 
 	return createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList
 }
 
-// batchUpdateProjectMemberRaw update the project member with provided project member list
+// batchUpdateProjectMemberRaw update the project member with provided project member list.
 func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*projectMemberRaw, []*projectMemberRaw, error) {
 	var createdMemberRawList []*projectMemberRaw
 	var deletedMemberRawList []*projectMemberRaw
@@ -369,7 +369,7 @@ func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *ap
 			ID:        deletedMember.ID,
 			DeleterID: batchUpdate.UpdaterID,
 		}
-		if err := deleteProjectMemberImpl(ctx, tx.PTx, memberDelete); err != nil {
+		if err := s.deleteProjectMemberImpl(ctx, tx.PTx, memberDelete); err != nil {
 			return nil, nil, FormatError(err)
 		}
 		deletedMemberRawList = append(deletedMemberRawList, deletedMember)
@@ -391,7 +391,7 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO project_member (
 			creator_id,
 			updater_id,
@@ -403,7 +403,9 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
-	`,
+	`
+	var projectMemberRaw projectMemberRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -411,16 +413,7 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 		create.PrincipalID,
 		create.RoleProvider,
 		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var projectMemberRaw projectMemberRaw
-	if err := row.Scan(
+	).Scan(
 		&projectMemberRaw.ID,
 		&projectMemberRaw.CreatorID,
 		&projectMemberRaw.CreatedTs,
@@ -432,9 +425,11 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 		&projectMemberRaw.RoleProvider,
 		&projectMemberRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &projectMemberRaw, nil
 }
 
@@ -520,45 +515,37 @@ func patchProjectMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectM
 
 	args = append(args, patch.ID)
 
+	var projectMemberRaw projectMemberRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&projectMemberRaw.ID,
+		&projectMemberRaw.CreatorID,
+		&projectMemberRaw.CreatedTs,
+		&projectMemberRaw.UpdaterID,
+		&projectMemberRaw.UpdatedTs,
+		&projectMemberRaw.ProjectID,
+		&projectMemberRaw.Role,
+		&projectMemberRaw.PrincipalID,
+		&projectMemberRaw.RoleProvider,
+		&projectMemberRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var projectMemberRaw projectMemberRaw
-		if err := row.Scan(
-			&projectMemberRaw.ID,
-			&projectMemberRaw.CreatorID,
-			&projectMemberRaw.CreatedTs,
-			&projectMemberRaw.UpdaterID,
-			&projectMemberRaw.UpdatedTs,
-			&projectMemberRaw.ProjectID,
-			&projectMemberRaw.Role,
-			&projectMemberRaw.PrincipalID,
-			&projectMemberRaw.RoleProvider,
-			&projectMemberRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &projectMemberRaw, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
+	return &projectMemberRaw, nil
 }
 
 // deleteProjectMemberImpl permanently deletes a projectMember by ID.
-func deleteProjectMemberImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectMemberDelete) error {
+func (*Store) deleteProjectMemberImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectMemberDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

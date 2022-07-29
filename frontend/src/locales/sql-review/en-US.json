@@ -1,0 +1,155 @@
+{
+  "engine": {
+    "mysql": "MySQL",
+    "common": "Common"
+  },
+  "category": {
+    "engine": "Engine",
+    "naming": "Naming",
+    "statement": "Statement",
+    "table": "Table",
+    "column": "Column",
+    "schema": "Schema",
+    "database": "Database"
+  },
+  "template": {
+    "bb-sql-review-mysql-prod": "Template for Prod Environment",
+    "bb-sql-review-mysql-dev": "Template for Dev Environment"
+  },
+  "rule": {
+    "engine-mysql-use-innodb": {
+      "title": "Use Innodb",
+      "description": "Require InnoDB as the storage engine for MySQL."
+    },
+    "table-require-pk": {
+      "title": "Require primary key",
+      "description": "Require the table to have a primary key."
+    },
+    "table-no-foreign-key": {
+      "title": "No foreign key",
+      "description": "Disallow the foreign key in the table."
+    },
+    "table-drop-naming-convention": {
+      "title": "Drop table with naming convention",
+      "description": "Only tables named with specific patterns can be deleted. The requires users to do a rename before dropping the table. The table name must have \"_del\" suffix by default.",
+      "component": {
+        "format": {
+          "title": "Table name format (regex)"
+        }
+      }
+    },
+    "naming-table": {
+      "title": "Table naming check",
+      "description": "Enforce the table name format and length limit. Default snake_lower_case with 64 characters.",
+      "component": {
+        "format": {
+          "title": "Table name format (regex)"
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
+    "naming-column": {
+      "title": "Column naming check",
+      "description": "Enforce the column name format and length limit. Default snake_lower_case with 64 characters.",
+      "component": {
+        "format": {
+          "title": "Column name format (regex)"
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
+    "naming-index-uk": {
+      "title": "Unique key naming check",
+      "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> with 64 characters.",
+      "component": {
+        "format": {
+          "title": "Unique key name format",
+          "template": {
+            "table": "The table name",
+            "column_list": "Index column names, joined by _"
+          }
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
+    "naming-index-fk": {
+      "title": "Foreign key naming check",
+      "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> with 64 characters.",
+      "component": {
+        "format": {
+          "title": "Foreign key name format",
+          "template": {
+            "referencing_table": "The referencing table name",
+            "referencing_column": "The referencing column name",
+            "referenced_table": "The referenced table name",
+            "referenced_column": "The referenced column name"
+          }
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
+    "naming-index-idx": {
+      "title": "Index naming check",
+      "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> with 64 characters.",
+      "component": {
+        "format": {
+          "title": "Index name format",
+          "template": {
+            "table": "The table name",
+            "column_list": "Index column names, joined by _"
+          }
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
+    "column-required": {
+      "title": "Required columns",
+      "description": "Enforce the required columns in each table.",
+      "component": {
+        "columnList": {
+          "title": "Required column names"
+        }
+      }
+    },
+    "column-no-null": {
+      "title": "Disallow NULL",
+      "description": "Columns cannot have NULL value."
+    },
+    "statement-select-no-select-all": {
+      "title": "Disallow \"SELECT *\"",
+      "description": "Disallow 'SELECT *' statement."
+    },
+    "statement-where-require": {
+      "title": "Require \"WHERE\"",
+      "description": "Require 'WHERE' clause."
+    },
+    "statement-where-no-leading-wildcard-like": {
+      "title": "Disallow leading wildcard like",
+      "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
+    },
+    "schema-backward-compatibility": {
+      "title": "Backward compatibility",
+      "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
+    },
+    "database-drop-empty-database": {
+      "title": "Drop database restriction",
+      "description": "Can only drop the database if there's no table in it."
+    }
+  },
+  "level": {
+    "name": "Error Level",
+    "error": "Error",
+    "warning": "Warning",
+    "disabled": "Disabled"
+  }
+}

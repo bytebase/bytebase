@@ -3,14 +3,19 @@ package server
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/labstack/echo/v4"
 )
 
+// demoDataPath is the path prefix for demo data.
+var demoDataPath = "demo/"
+
 func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		ctx := c.Request().Context()
+
 		serverInfo := api.ServerInfo{
 			Version:   s.profile.Version,
 			GitCommit: s.profile.GitCommit,
@@ -18,6 +23,10 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 			Demo:      s.profile.Demo,
 			Host:      s.profile.BackendHost,
 			Port:      strconv.Itoa(s.profile.BackendPort),
+		}
+
+		if s.profile.Demo && strings.HasPrefix(s.profile.DemoDataDir, demoDataPath) {
+			serverInfo.DemoName = strings.TrimPrefix(s.profile.DemoDataDir, demoDataPath)
 		}
 
 		findRole := api.Owner

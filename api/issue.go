@@ -127,6 +127,8 @@ type CreateDatabaseContext struct {
 	CharacterSet string `json:"characterSet"`
 	// Collation is the collation of the database.
 	Collation string `json:"collation"`
+	// Cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
+	Cluster string `json:"cluster"`
 	// Owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
 	Owner string `json:"owner"`
 	// BackupID is the ID of the backup.
@@ -160,7 +162,7 @@ type UpdateSchemaContext struct {
 	VCSPushEvent *vcs.PushEvent
 }
 
-// UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost
+// UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.
 type UpdateSchemaGhostDetail struct {
 	// DatabaseID is the ID of a database.
 	DatabaseID int `json:"databaseId"`
@@ -184,7 +186,9 @@ type UpdateSchemaGhostContext struct {
 
 // PITRContext is the issue create context for performing a PITR in a database.
 type PITRContext struct {
-	DatabaseID int `json:"databaseId"`
+	DatabaseID        int                    `json:"databaseId"`
+	CreateDatabaseCtx *CreateDatabaseContext `json:"createDatabaseContext"`
+
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
 	PointInTimeTs int64 `json:"pointInTimeTs"`

@@ -11,15 +11,16 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
 )
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
-	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
+	return common.Errorf(common.DbExecutionError, "failed to execute query %q, error: %w", query, err)
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
@@ -104,6 +105,9 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 	if rows.Next() {
 		return false, nil
 	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
 
 	return true, nil
 }
@@ -141,6 +145,9 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Phase 2 - Record migration history as PENDING
 	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
+		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
+			return insertedID, prevSchemaBuf.String(), nil
+		}
 		return -1, "", err
 	}
 
@@ -169,7 +176,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
-			if _, err := executor.GetDbConnection(ctx, m.Database); err != nil {
+			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
 				return -1, "", err
 			}
 		}
@@ -204,8 +211,8 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
-			return -1, common.Errorf(common.MigrationAlreadyApplied,
-				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
+			return int64(list[0].ID),
+				common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
 			log.Debug(err.Error())
@@ -213,7 +220,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			if m.Force {
 				return int64(list[0].ID), nil
 			}
-			return -1, common.Errorf(common.MigrationPending, err)
+			return -1, common.WithError(common.MigrationPending, err)
 		case db.Failed:
 			err := fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
 			log.Debug(err.Error())
@@ -221,11 +228,11 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			if m.Force {
 				return int64(list[0].ID), nil
 			}
-			return -1, common.Errorf(common.MigrationFailed, err)
+			return -1, common.WithError(common.MigrationFailed, err)
 		}
 	}
 
-	sqldb, err := executor.GetDbConnection(ctx, databaseName)
+	sqldb, err := executor.GetDBConnection(ctx, databaseName)
 	if err != nil {
 		return -1, err
 	}
@@ -246,7 +253,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		return -1, err
 	} else if version != nil && len(*version) > 0 && *version >= m.Version {
 		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
-		return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which >= %s", m.Database, *version, m.Version))
+		return -1, common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
 	}
 
 	// Phase 2 - Record migration history as PENDING.
@@ -268,7 +275,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
-	sqldb, err := executor.GetDbConnection(ctx, databaseName)
+	sqldb, err := executor.GetDBConnection(ctx, databaseName)
 	if err != nil {
 		return err
 	}
@@ -387,15 +394,18 @@ func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]i
 			break
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return []interface{}{columnNames, columnTypeNames, data}, nil
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
-	sqldb, err := driver.GetDbConnection(ctx, database)
+	sqldb, err := driver.GetDBConnection(ctx, database)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +468,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	return migrationHistoryList, nil
 }
 
-// FormatError formats schema migration errors
+// FormatError formats schema migration errors.
 func FormatError(err error) error {
 	if err == nil {
 		return nil
@@ -473,7 +483,7 @@ func FormatError(err error) error {
 	return err
 }
 
-// NonSemanticPrefix is the prefix for non-semantic version
+// NonSemanticPrefix is the prefix for non-semantic version.
 const NonSemanticPrefix = "0000.0000.0000-"
 
 // ToStoredVersion converts semantic or non-semantic version to stored version format.

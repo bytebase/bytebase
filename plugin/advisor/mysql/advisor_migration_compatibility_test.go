@@ -84,11 +84,11 @@ func TestBasic(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }
 
 func TestAlterTable(t *testing.T) {
@@ -258,11 +258,11 @@ func TestAlterTable(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }
 
 func TestAlterTableChangeColumnType(t *testing.T) {
@@ -324,9 +324,9 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

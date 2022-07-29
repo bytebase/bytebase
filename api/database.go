@@ -11,7 +11,7 @@ const (
 	DefaultCharactorSetName = "utf8mb4"
 	// DefaultCollationName is the default collation name.
 	// Use utf8mb4_general_ci instead of the new MySQL 8.0.1 default utf8mb4_0900_ai_ci
-	// because the former is compatible with more other MySQL flavors (e.g. MariaDB)
+	// because the former is compatible with more other MySQL flavors (e.g. MariaDB).
 	DefaultCollationName = "utf8mb4_general_ci"
 )
 
@@ -24,16 +24,6 @@ const (
 	// NotFound is the NOT_FOUND sync status.
 	NotFound SyncStatus = "NOT_FOUND"
 )
-
-func (e SyncStatus) String() string {
-	switch e {
-	case OK:
-		return "OK"
-	case NotFound:
-		return "NOT_FOUND"
-	}
-	return ""
-}
 
 // Database is the API message for a database.
 type Database struct {

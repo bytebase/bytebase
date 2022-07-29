@@ -157,7 +157,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 
 }
 
-// FindLabelKey finds a list of LabelKey instances
+// FindLabelKey finds a list of LabelKey instances.
 func (s *Store) FindLabelKey(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	labelKeyRawList, err := s.findLabelKeyRaw(ctx, find)
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *Store) FindLabelKey(ctx context.Context, find *api.LabelKeyFind) ([]*ap
 	return labelKeyList, nil
 }
 
-// PatchLabelKey patches an instance of LabelKey
+// PatchLabelKey patches an instance of LabelKey.
 func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*api.LabelKey, error) {
 	labelKeyRaw, err := s.patchLabelKeyRaw(ctx, patch)
 	if err != nil {
@@ -187,7 +187,7 @@ func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*a
 	return labelKey, nil
 }
 
-// FindDatabaseLabel finds a list of DatabaseLabel instances
+// FindDatabaseLabel finds a list of DatabaseLabel instances.
 func (s *Store) FindDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	labelKeyRawList, err := s.findDatabaseLabelRaw(ctx, find)
 	if err != nil {
@@ -208,7 +208,7 @@ func (s *Store) FindDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFi
 // private functions
 //
 
-// composeLabelKey composes an instance of LabelKey by labelKeyRaw
+// composeLabelKey composes an instance of LabelKey by labelKeyRaw.
 func (s *Store) composeLabelKey(ctx context.Context, raw *labelKeyRaw) (*api.LabelKey, error) {
 	labelKey := raw.toLabelKey()
 
@@ -227,7 +227,7 @@ func (s *Store) composeLabelKey(ctx context.Context, raw *labelKeyRaw) (*api.Lab
 	return labelKey, nil
 }
 
-// composeDatabaseLabel composes an instance of DatabaseLabel by databaseLabelRaw
+// composeDatabaseLabel composes an instance of DatabaseLabel by databaseLabelRaw.
 func (s *Store) composeDatabaseLabel(ctx context.Context, raw *databaseLabelRaw) (*api.DatabaseLabel, error) {
 	databaseLabel := raw.toDatabaseLabel()
 
@@ -266,7 +266,7 @@ func (s *Store) findLabelKeyRaw(ctx context.Context, find *api.LabelKeyFind) ([]
 	return ret, nil
 }
 
-func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.LabelKeyFind) ([]*labelKeyRaw, error) {
+func (*Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.LabelKeyFind) ([]*labelKeyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.RowStatus; v != nil {
@@ -287,6 +287,7 @@ func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.Labe
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	defer rows.Close()
 	// Iterate over result set and deserialize rows into list.
 	var labelKeyRawList []*labelKeyRaw
 	keymap := make(map[string]*labelKeyRaw)
@@ -307,9 +308,6 @@ func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.Labe
 		keymap[labelKeyRaw.Key] = &labelKeyRaw
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	if err := rows.Close(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -337,7 +335,7 @@ func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.Labe
 		}
 		labelKey, ok := keymap[key]
 		if !ok {
-			return nil, common.Errorf(common.Internal, fmt.Errorf("label value doesn't have a label key, key %q, value %q", key, value))
+			return nil, common.Errorf(common.Internal, "label value doesn't have a label key, key %q, value %q", key, value)
 		}
 		labelKey.ValueList = append(labelKey.ValueList, value)
 	}
@@ -374,7 +372,7 @@ func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) 
 		}
 	}
 	if labelKeyRaw == nil {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("label key not found with ID %v", patch.ID))
+		return nil, common.Errorf(common.NotFound, "label key not found with ID %v", patch.ID)
 	}
 
 	// Generate label value upserts.
@@ -418,7 +416,7 @@ func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) 
 	return labelKeyRaw, nil
 }
 
-func (s *Store) upsertLabelValueImpl(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
+func (*Store) upsertLabelValueImpl(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
 	// Upsert row into label_value
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO label_value (
@@ -465,7 +463,7 @@ func (s *Store) findDatabaseLabelRaw(ctx context.Context, find *api.DatabaseLabe
 	return databaseLabelList, nil
 }
 
-func (s *Store) findDatabaseLabelsImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseLabelFind) ([]*databaseLabelRaw, error) {
+func (*Store) findDatabaseLabelsImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseLabelFind) ([]*databaseLabelRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -524,9 +522,9 @@ func (s *Store) findDatabaseLabelsImpl(ctx context.Context, tx *sql.Tx, find *ap
 	return ret, nil
 }
 
-func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*databaseLabelRaw, error) {
+func (*Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*databaseLabelRaw, error) {
 	// Upsert row into db_label
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO db_label (
 			row_status,
 			creator_id,
@@ -542,23 +540,16 @@ func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert 
 			updater_id = excluded.updater_id,
 			value = excluded.value
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
-		`,
+	`
+	var dbLabelRaw databaseLabelRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.RowStatus,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.DatabaseID,
 		upsert.Key,
 		upsert.Value,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var dbLabelRaw databaseLabelRaw
-	if err := row.Scan(
+	).Scan(
 		&dbLabelRaw.ID,
 		&dbLabelRaw.RowStatus,
 		&dbLabelRaw.CreatorID,
@@ -569,8 +560,10 @@ func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert 
 		&dbLabelRaw.Key,
 		&dbLabelRaw.Value,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &dbLabelRaw, nil
 }

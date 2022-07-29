@@ -53,7 +53,7 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 	}
 }
 
-// UpsertPolicy upserts an instance of Policy
+// UpsertPolicy upserts an instance of Policy.
 func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	policyRaw, err := s.upsertPolicyRaw(ctx, upsert)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	return policy, nil
 }
 
-// GetPolicy gets a policy
+// GetPolicy gets a policy.
 func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
 	policyRaw, err := s.getPolicyRaw(ctx, find)
 	if err != nil {
@@ -109,7 +109,7 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
 	}
 
-	if err := deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -178,7 +178,7 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 }
 
 // GetNormalSchemaReviewPolicy will get the normal schema review policy for an environment.
-func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SchemaReviewPolicy, error) {
+func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SQLReviewPolicy, error) {
 	if find.ID != nil && *find.ID == api.DefaultPolicyID {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy not found with ID %d", *find.ID)}
 	}
@@ -195,7 +195,7 @@ func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.Polic
 	if policy.ID == api.DefaultPolicyID {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
 	}
-	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
+	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
 
 // GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
@@ -393,11 +393,11 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		upsert.Payload = &emptyPayload
 	}
 	if upsert.RowStatus == nil {
-		rowStatus := api.Normal.String()
+		rowStatus := string(api.Normal)
 		upsert.RowStatus = &rowStatus
 	}
 
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	query := fmt.Sprintf(`
 		INSERT INTO policy (
 			creator_id,
 			updater_id,
@@ -410,23 +410,16 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		ON CONFLICT(environment_id, type) DO UPDATE SET
 			%s
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
-		`, strings.Join(set, ",")),
+	`, strings.Join(set, ","))
+	var policyRaw policyRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.EnvironmentID,
 		upsert.Type,
 		upsert.Payload,
 		upsert.RowStatus,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var policyRaw policyRaw
-	if err := row.Scan(
+	).Scan(
 		&policyRaw.ID,
 		&policyRaw.CreatorID,
 		&policyRaw.CreatedTs,
@@ -437,14 +430,16 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		&policyRaw.Type,
 		&policyRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &policyRaw, nil
 }
 
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
-func deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
+func (*Store) deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
 	// Remove row from policy.
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM policy

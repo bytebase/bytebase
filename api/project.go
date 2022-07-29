@@ -22,16 +22,6 @@ const (
 	VCSWorkflow ProjectWorkflowType = "VCS"
 )
 
-func (e ProjectWorkflowType) String() string {
-	switch e {
-	case UIWorkflow:
-		return "UI"
-	case VCSWorkflow:
-		return "VCS"
-	}
-	return ""
-}
-
 // ProjectVisibility is the visibility of a project.
 type ProjectVisibility string
 
@@ -41,16 +31,6 @@ const (
 	// Private is the project visibility for PRIVATE.
 	Private ProjectVisibility = "PRIVATE"
 )
-
-func (e ProjectVisibility) String() string {
-	switch e {
-	case Public:
-		return "PUBLIC"
-	case Private:
-		return "PRIVATE"
-	}
-	return ""
-}
 
 // ProjectTenantMode is the tenant mode setting for project.
 type ProjectTenantMode string
@@ -150,7 +130,7 @@ var (
 	// TenantToken is the token for tenant.
 	TenantToken = "{{TENANT}}"
 
-	// boolean indicates whether it's an required or optional token
+	// boolean indicates whether it's an required or optional token.
 	repositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}":     true,
 		DBNameToken:       true,

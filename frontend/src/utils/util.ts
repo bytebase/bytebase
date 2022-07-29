@@ -172,3 +172,17 @@ export function defer<T = any>() {
   });
   return d;
 }
+
+// emitStorageChangedEvent is used to notify the storage changed event
+export function emitStorageChangedEvent() {
+  const iframeEl = document.createElement("iframe");
+  iframeEl.style.display = "none";
+  document.body.appendChild(iframeEl);
+
+  iframeEl.contentWindow?.localStorage.setItem("t", Date.now().toString());
+  iframeEl.remove();
+}
+
+export function removeElementBySelector(selector: string) {
+  document.body.querySelectorAll(selector).forEach((e) => e.remove());
+}

@@ -46,7 +46,7 @@ func (raw *settingRaw) toSetting() *api.Setting {
 	}
 }
 
-// CreateSettingIfNotExist creates an instance of Setting
+// CreateSettingIfNotExist creates an instance of Setting.
 func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, error) {
 	settingRaw, err := s.createSettingRawIfNotExist(ctx, create)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.Setting
 	return setting, nil
 }
 
-// FindSetting finds a list of Setting instances
+// FindSetting finds a list of Setting instances.
 func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
 	settingRawList, err := s.findSettingRaw(ctx, find)
 	if err != nil {
@@ -76,7 +76,7 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 	return settingList, nil
 }
 
-// PatchSetting patches an instance of Setting
+// PatchSetting patches an instance of Setting.
 func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api.Setting, error) {
 	settingRaw, err := s.patchSettingRaw(ctx, patch)
 	if err != nil {
@@ -205,7 +205,7 @@ func (s *Store) patchSettingRaw(ctx context.Context, patch *api.SettingPatch) (*
 // createSettingImpl creates a new setting.
 func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*settingRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO setting (
 			creator_id,
 			updater_id,
@@ -215,29 +215,25 @@ func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreat
 		)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING name, value, description
-	`,
+	`
+	var settingRaw settingRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
 		create.Value,
 		create.Description,
-	)
+	).Scan(
 
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var settingRaw settingRaw
-	if err := row.Scan(
 		&settingRaw.Name,
 		&settingRaw.Value,
 		&settingRaw.Description,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &settingRaw, nil
 }
 
@@ -299,36 +295,28 @@ func patchSettingImpl(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) 
 
 	args = append(args, patch.Name)
 
+	var settingRaw settingRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE setting
 		SET `+strings.Join(set, ", ")+`
 		WHERE name = $3
 		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
 	`,
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&settingRaw.CreatorID,
+		&settingRaw.CreatedTs,
+		&settingRaw.UpdaterID,
+		&settingRaw.UpdatedTs,
+		&settingRaw.Name,
+		&settingRaw.Value,
+		&settingRaw.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var settingRaw settingRaw
-		if err := row.Scan(
-			&settingRaw.CreatorID,
-			&settingRaw.CreatedTs,
-			&settingRaw.UpdaterID,
-			&settingRaw.UpdatedTs,
-			&settingRaw.Name,
-			&settingRaw.Value,
-			&settingRaw.Description,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &settingRaw, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
+	return &settingRaw, nil
 }

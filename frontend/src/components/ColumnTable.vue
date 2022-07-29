@@ -44,7 +44,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { BBTableColumn } from "../bbkit/types";
 import { Column, EngineType } from "../types";
 import { useI18n } from "vue-i18n";
 
@@ -63,7 +62,8 @@ export default defineComponent({
   },
   setup(props) {
     const { t } = useI18n();
-    const NORMAL_COLUMN_LIST: BBTableColumn[] = [
+
+    const NORMAL_COLUMN_LIST = computed(() => [
       {
         title: t("common.name"),
       },
@@ -85,8 +85,8 @@ export default defineComponent({
       {
         title: t("database.comment"),
       },
-    ];
-    const POSTGRES_COLUMN_LIST: BBTableColumn[] = [
+    ]);
+    const POSTGRES_COLUMN_LIST = computed(() => [
       {
         title: t("common.name"),
       },
@@ -105,9 +105,8 @@ export default defineComponent({
       {
         title: t("database.comment"),
       },
-    ];
-
-    const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST: BBTableColumn[] = [
+    ]);
+    const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed(() => [
       {
         title: t("common.name"),
       },
@@ -123,18 +122,20 @@ export default defineComponent({
       {
         title: t("database.comment"),
       },
-    ];
+    ]);
+
     const columnNameList = computed(() => {
       switch (props.engine) {
         case "POSTGRES":
-          return POSTGRES_COLUMN_LIST;
+          return POSTGRES_COLUMN_LIST.value;
         case "CLICKHOUSE":
         case "SNOWFLAKE":
-          return CLICKHOUSE_SNOWFLAKE_COLUMN_LIST;
+          return CLICKHOUSE_SNOWFLAKE_COLUMN_LIST.value;
         default:
-          return NORMAL_COLUMN_LIST;
+          return NORMAL_COLUMN_LIST.value;
       }
     });
+
     return {
       columnNameList,
     };

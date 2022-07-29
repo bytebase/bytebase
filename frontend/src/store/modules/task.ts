@@ -16,6 +16,7 @@ import {
   TaskCheckRun,
   TaskId,
   TaskPatch,
+  TaskProgress,
   TaskRun,
   TaskState,
   TaskStatusPatch,
@@ -87,6 +88,23 @@ function convertTaskCheckRun(
   };
 }
 
+function convertTaskProgress(attributes: any): TaskProgress {
+  if (!attributes) return unknown("TASK_PROGRESS");
+
+  const progress: TaskProgress = { ...attributes };
+  if (typeof attributes.comment === "string") {
+    try {
+      progress.payload = JSON.parse(attributes.comment);
+    } catch {
+      progress.payload = undefined;
+    }
+  } else {
+    progress.payload = undefined;
+  }
+
+  return progress;
+}
+
 function convertPartial(
   task: ResourceObject,
   includedList: ResourceObject[]
@@ -153,6 +171,7 @@ function convertPartial(
       database = databaseStore.convert(item, includedList);
     }
   }
+  const progress = convertTaskProgress(task.attributes.progress);
 
   return {
     ...(task.attributes as Omit<
@@ -167,6 +186,7 @@ function convertPartial(
       | "taskCheckRunList"
       | "pipeline"
       | "stage"
+      | "progress"
     >),
     id: parseInt(task.id),
     creator: getPrincipalFromIncludedList(
@@ -180,6 +200,7 @@ function convertPartial(
     payload,
     instance,
     database,
+    progress,
     taskRunList,
     taskCheckRunList,
   };
@@ -275,6 +296,24 @@ export const useTaskStore = defineStore("task", {
       useIssueStore().fetchIssueById(issueId);
 
       return task;
+    },
+    async patchAllTasksInIssue({
+      issueId,
+      pipelineId,
+      taskPatch,
+    }: {
+      issueId: IssueId;
+      pipelineId: PipelineId;
+      taskPatch: TaskPatch;
+    }) {
+      await axios.patch(`/api/pipeline/${pipelineId}/task/all`, {
+        data: {
+          type: "taskPatch",
+          attributes: taskPatch,
+        },
+      });
+
+      useIssueStore().fetchIssueById(issueId);
     },
     async runChecks({
       issueId,

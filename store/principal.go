@@ -52,7 +52,7 @@ func (raw *principalRaw) toPrincipal() *api.Principal {
 	}
 }
 
-// CreatePrincipal creates an instance of Principal
+// CreatePrincipal creates an instance of Principal.
 func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
 	principalRaw, err := s.createPrincipalRaw(ctx, create)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate
 	return principal, nil
 }
 
-// GetPrincipalList gets a list of Principal instances
+// GetPrincipalList gets a list of Principal instances.
 func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	principalRawList, err := s.findPrincipalRawList(ctx)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) 
 	return principalList, nil
 }
 
-// GetPrincipalByEmail gets an instance of Principal
+// GetPrincipalByEmail gets an instance of Principal.
 func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
 	find := &api.PrincipalFind{Email: &email}
 	principalRaw, err := s.getPrincipalRaw(ctx, find)
@@ -98,7 +98,7 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Pri
 	return principal, nil
 }
 
-// PatchPrincipal patches an instance of Principal
+// PatchPrincipal patches an instance of Principal.
 func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
 	principalRaw, err := s.patchPrincipalRaw(ctx, patch)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (
 	return principal, nil
 }
 
-// GetPrincipalByID gets an instance of Principal by ID
+// GetPrincipalByID gets an instance of Principal by ID.
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{ID: &id}
 	principalRaw, err := s.getPrincipalRaw(ctx, principalFind)
@@ -242,7 +242,7 @@ func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch
 	return principal, nil
 }
 
-// composePrincipal composes an instance of Principal by principalRaw
+// composePrincipal composes an instance of Principal by principalRaw.
 func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.Principal, error) {
 	principal := raw.toPrincipal()
 
@@ -270,7 +270,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 // createPrincipalImpl creates a new principal.
 func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*principalRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO principal (
 			creator_id,
 			updater_id,
@@ -281,23 +281,16 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 		)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
-	`,
+	`
+	var principalRaw principalRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Type,
 		create.Name,
 		create.Email,
 		create.PasswordHash,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var principalRaw principalRaw
-	if err := row.Scan(
+	).Scan(
 		&principalRaw.ID,
 		&principalRaw.CreatorID,
 		&principalRaw.CreatedTs,
@@ -308,9 +301,11 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 		&principalRaw.Email,
 		&principalRaw.PasswordHash,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &principalRaw, nil
 }
 
@@ -383,38 +378,30 @@ func patchPrincipalImpl(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPat
 
 	args = append(args, patch.ID)
 
+	var principalRaw principalRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE principal
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&principalRaw.ID,
+		&principalRaw.CreatorID,
+		&principalRaw.CreatedTs,
+		&principalRaw.UpdaterID,
+		&principalRaw.UpdatedTs,
+		&principalRaw.Type,
+		&principalRaw.Name,
+		&principalRaw.Email,
+		&principalRaw.PasswordHash,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var principalRaw principalRaw
-		if err := row.Scan(
-			&principalRaw.ID,
-			&principalRaw.CreatorID,
-			&principalRaw.CreatedTs,
-			&principalRaw.UpdaterID,
-			&principalRaw.UpdatedTs,
-			&principalRaw.Type,
-			&principalRaw.Name,
-			&principalRaw.Email,
-			&principalRaw.PasswordHash,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &principalRaw, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
+	return &principalRaw, nil
 }

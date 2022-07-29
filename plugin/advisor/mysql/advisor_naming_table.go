@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingTableConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingTableConventionChecker)(nil)
 )
 
 func init() {
@@ -22,24 +23,25 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, maxLength, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingTableConventionChecker{
-		level:  level,
-		title:  string(ctx.Rule.Type),
-		format: format,
+		level:     level,
+		title:     string(ctx.Rule.Type),
+		format:    format,
+		maxLength: maxLength,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -61,9 +63,10 @@ type namingTableConventionChecker struct {
 	level      advisor.Status
 	title      string
 	format     *regexp.Regexp
+	maxLength  int
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var tableNames []string
 	switch node := in.(type) {
@@ -95,11 +98,19 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
 			})
 		}
+		if v.maxLength > 0 && len(tableName) > v.maxLength {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    advisor.NamingTableConventionMismatch,
+				Title:   v.title,
+				Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, v.maxLength),
+			})
+		}
 	}
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

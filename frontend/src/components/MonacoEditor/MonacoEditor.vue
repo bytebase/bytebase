@@ -35,6 +35,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  autoFocus: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits<{
@@ -159,7 +163,7 @@ onMounted(async () => {
   editorInstanceRef.value = editorInstance;
 
   // set the editor focus when the tab is selected
-  if (!readOnly.value) {
+  if (!readOnly.value && props.autoFocus) {
     editorInstance.focus();
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
@@ -194,8 +198,32 @@ const getEditorContent = () => {
 };
 
 const setEditorContent = (content: string) => {
+  if (readOnly.value) {
+    // workaround: setContent doesn't work in readonly mode
+    // we temporarily set it to false
+    editorInstanceRef.value?.updateOptions({
+      readOnly: false,
+    });
+  }
+
   monacoInstanceRef.value?.setContent(editorInstanceRef.value!, content);
+
+  if (readOnly.value) {
+    // then set it back
+    editorInstanceRef.value?.updateOptions({
+      readOnly: true,
+    });
+  }
 };
+
+watch(
+  () => props.value,
+  (value) => {
+    if (value !== getEditorContent()) {
+      setEditorContent(value);
+    }
+  }
+);
 
 const getEditorContentHeight = () => {
   return editorInstanceRef.value?.getContentHeight();

@@ -22,16 +22,19 @@ const (
 // NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		executors: make(map[api.TaskType]TaskExecutor),
-		server:    server,
+		executorGetters:  make(map[api.TaskType]func() TaskExecutor),
+		runningExecutors: make(map[int]TaskExecutor),
+		server:           server,
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	executors map[api.TaskType]TaskExecutor
-
-	server *Server
+	executorGetters  map[api.TaskType]func() TaskExecutor
+	runningExecutors map[int]TaskExecutor
+	taskProgress     sync.Map // map[taskID]api.Progress
+	sharedTaskState  sync.Map // map[taskID]interface{}
+	server           *Server
 }
 
 // Run will run the task scheduler.
@@ -40,13 +43,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
-	tasks := struct {
-		running map[int]bool // task id set
-		mu      sync.RWMutex
-	}{
-		running: make(map[int]bool),
-		mu:      sync.RWMutex{},
-	}
 	for {
 		select {
 		case <-ticker.C:
@@ -62,6 +58,19 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
+
+				// Collect completed tasks
+				for i, executor := range s.runningExecutors {
+					if executor.IsCompleted() {
+						delete(s.runningExecutors, i)
+						s.taskProgress.Delete(i)
+					}
+				}
+
+				// Update task progress
+				for i, executor := range s.runningExecutors {
+					s.taskProgress.Store(i, executor.GetProgress())
+				}
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.PipelineOpen
@@ -109,7 +118,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					executor, ok := s.executors[task.Type]
+					executorGetter, ok := s.executorGetters[task.Type]
 					if !ok {
 						log.Error("Skip running task with unknown type",
 							zap.Int("id", task.ID),
@@ -119,106 +128,89 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					// Skip execution if has any dependency not finished.
-					isBlocked, err := s.isTaskBlocked(ctx, task)
-					if err != nil {
-						log.Error("failed to check if task is blocked",
-							zap.Int("id", task.ID),
-							zap.Error(err))
+					if _, ok := s.runningExecutors[task.ID]; ok {
 						continue
 					}
-					if isBlocked {
-						continue
-					}
+					s.runningExecutors[task.ID] = executorGetter()
 
-					tasks.mu.Lock()
-					if _, ok := tasks.running[task.ID]; ok {
-						tasks.mu.Unlock()
-						continue
-					}
-					tasks.running[task.ID] = true
-					tasks.mu.Unlock()
-
-					go func(task *api.Task) {
-						defer func() {
-							tasks.mu.Lock()
-							delete(tasks.running, task.ID)
-							tasks.mu.Unlock()
-						}()
+					go func(task *api.Task, executor TaskExecutor) {
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
-						if done {
-							if err == nil {
-								bytes, err := json.Marshal(*result)
-								if err != nil {
-									log.Error("Failed to marshal task run result",
-										zap.Int("task_id", task.ID),
-										zap.String("type", string(task.Type)),
-										zap.Error(err),
-									)
-									return
-								}
-								code := common.Ok
-								result := string(bytes)
-								taskStatusPatch := &api.TaskStatusPatch{
-									ID:        task.ID,
-									UpdaterID: api.SystemBotID,
-									Status:    api.TaskDone,
-									Code:      &code,
-									Result:    &result,
-								}
-								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
-								if err != nil {
-									log.Error("Failed to mark task as DONE",
-										zap.Int("id", task.ID),
-										zap.String("name", task.Name),
-										zap.Error(err),
-									)
-								}
-							} else {
-								log.Warn("Failed to run task",
-									zap.Int("id", task.ID),
-									zap.String("name", task.Name),
-									zap.String("type", string(task.Type)),
-									zap.Error(err),
-								)
-								bytes, marshalErr := json.Marshal(api.TaskRunResultPayload{
-									Detail: err.Error(),
-								})
-								if marshalErr != nil {
-									log.Error("Failed to marshal task run result",
-										zap.Int("task_id", task.ID),
-										zap.String("type", string(task.Type)),
-										zap.Error(marshalErr),
-									)
-									return
-								}
-								code := common.ErrorCode(err)
-								result := string(bytes)
-								taskStatusPatch := &api.TaskStatusPatch{
-									ID:        task.ID,
-									UpdaterID: api.SystemBotID,
-									Status:    api.TaskFailed,
-									Code:      &code,
-									Result:    &result,
-								}
-								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
-								if err != nil {
-									log.Error("Failed to mark task as FAILED",
-										zap.Int("id", task.ID),
-										zap.String("name", task.Name),
-										zap.Error(err),
-									)
-								}
-							}
-						} else if err != nil {
+						if !done && err != nil {
 							log.Debug("Encountered transient error running task, will retry",
 								zap.Int("id", task.ID),
 								zap.String("name", task.Name),
 								zap.String("type", string(task.Type)),
 								zap.Error(err),
 							)
+							return
 						}
-					}(task)
+						if done && err != nil {
+							log.Warn("Failed to run task",
+								zap.Int("id", task.ID),
+								zap.String("name", task.Name),
+								zap.String("type", string(task.Type)),
+								zap.Error(err),
+							)
+							bytes, marshalErr := json.Marshal(api.TaskRunResultPayload{
+								Detail: err.Error(),
+							})
+							if marshalErr != nil {
+								log.Error("Failed to marshal task run result",
+									zap.Int("task_id", task.ID),
+									zap.String("type", string(task.Type)),
+									zap.Error(marshalErr),
+								)
+								return
+							}
+							code := common.ErrorCode(err)
+							result := string(bytes)
+							taskStatusPatch := &api.TaskStatusPatch{
+								ID:        task.ID,
+								UpdaterID: api.SystemBotID,
+								Status:    api.TaskFailed,
+								Code:      &code,
+								Result:    &result,
+							}
+							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							if err != nil {
+								log.Error("Failed to mark task as FAILED",
+									zap.Int("id", task.ID),
+									zap.String("name", task.Name),
+									zap.Error(err),
+								)
+							}
+							return
+						}
+						if done && err == nil {
+							bytes, err := json.Marshal(*result)
+							if err != nil {
+								log.Error("Failed to marshal task run result",
+									zap.Int("task_id", task.ID),
+									zap.String("type", string(task.Type)),
+									zap.Error(err),
+								)
+								return
+							}
+							code := common.Ok
+							result := string(bytes)
+							taskStatusPatch := &api.TaskStatusPatch{
+								ID:        task.ID,
+								UpdaterID: api.SystemBotID,
+								Status:    api.TaskDone,
+								Code:      &code,
+								Result:    &result,
+							}
+							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							if err != nil {
+								log.Error("Failed to mark task as DONE",
+									zap.Int("id", task.ID),
+									zap.String("name", task.Name),
+									zap.Error(err),
+								)
+							}
+							return
+						}
+					}(task, s.runningExecutors[task.ID])
 				}
 			}()
 		case <-ctx.Done(): // if cancel() execute
@@ -227,76 +219,109 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// Register will register a task executor.
-func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
-	if executor == nil {
+// Register will register a task executor factory.
+func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() TaskExecutor) {
+	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
-	if _, dup := s.executors[taskType]; dup {
+	if _, dup := s.executorGetters[taskType]; dup {
 		panic("scheduler: Register called twice for task type: " + taskType)
 	}
-	s.executors[taskType] = executor
+	s.executorGetters[taskType] = executorGetter
 }
 
-// ScheduleIfNeeded schedules the task if its required check does not contain error in the latest run
-func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
+// canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING.
+func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bool, error) {
+	blocked, err := s.isTaskBlocked(ctx, task)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
+	}
+	if blocked {
+		return false, nil
+	}
 	// timing task check
 	if task.EarliestAllowedTs != 0 {
-		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if !pass {
-			return task, nil
+			return false, nil
 		}
 	}
 
-	// only schema update or data update task has required task check
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
-		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
+	// schema update, data update and gh-ost sync task have required task check.
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if !pass {
-			return task, nil
+			return false, nil
 		}
 
-		pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckInstanceMigrationSchema)
+		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if !pass {
-			return task, nil
+			return false, nil
 		}
 
 		instance, err := s.server.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if instance == nil {
-			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
+			return false, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
 
-		if api.IsSyntaxCheckSupported(instance.Engine) {
-			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
-				return nil, err
+				return false, err
 			}
 			if !pass {
-				return task, nil
+				return false, nil
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine) {
-			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
+		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
-				return nil, err
+				return false, err
 			}
 			if !pass {
-				return task, nil
+				return false, nil
 			}
 		}
 	}
+
+	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGhostSync)
+		if err != nil {
+			return false, err
+		}
+		if !pass {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// ScheduleIfNeeded schedules the task if
+// 1. its required check does not contain error in the latest run
+// 2. it has no blocking tasks.
+func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
+	schedule, err := s.canScheduleTask(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+	if !schedule {
+		return task, nil
+	}
+
 	updatedTask, err := s.server.changeTaskStatus(ctx, task, api.TaskRunning, api.SystemBotID)
 	if err != nil {
 		return nil, err

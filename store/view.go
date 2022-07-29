@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // viewRaw is the store model for an View.
@@ -51,20 +53,7 @@ func (raw *viewRaw) toView() *api.View {
 	}
 }
 
-// CreateView creates an instance of View
-func (s *Store) CreateView(ctx context.Context, create *api.ViewCreate) (*api.View, error) {
-	viewRaw, err := s.createViewRaw(ctx, create)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create View with ViewCreate[%+v], error: %w", create, err)
-	}
-	view, err := s.composeView(ctx, viewRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error: %w", viewRaw, err)
-	}
-	return view, nil
-}
-
-// FindView finds a list of View instances
+// FindView finds a list of View instances.
 func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, error) {
 	viewRawList, err := s.findViewRaw(ctx, find)
 	if err != nil {
@@ -81,16 +70,31 @@ func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, 
 	return viewList, nil
 }
 
-// DeleteView deletes an existing view by ID.
-func (s *Store) DeleteView(ctx context.Context, delete *api.ViewDelete) error {
+// SetViewList sets the views for a database.
+func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteViewImpl(ctx, tx.PTx, delete); err != nil {
+	oldViewRawList, err := s.findViewImpl(ctx, tx.PTx, &api.ViewFind{
+		DatabaseID: &databaseID,
+	})
+	if err != nil {
 		return FormatError(err)
+	}
+
+	deletes, creates := generateViewActions(oldViewRawList, schema.ViewList, databaseID)
+	for _, d := range deletes {
+		if err := s.deleteViewImpl(ctx, tx.PTx, d); err != nil {
+			return err
+		}
+	}
+	for _, c := range creates {
+		if _, err := s.createViewImpl(ctx, tx.PTx, c); err != nil {
+			return err
+		}
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
@@ -101,8 +105,50 @@ func (s *Store) DeleteView(ctx context.Context, delete *api.ViewDelete) error {
 }
 
 //
-// private functions
+// private functions.
 //
+func generateViewActions(oldViewRawList []*viewRaw, viewList []db.View, databaseID int) ([]*api.ViewDelete, []*api.ViewCreate) {
+	var viewCreateList []*api.ViewCreate
+	for _, view := range viewList {
+		viewCreateList = append(viewCreateList, &api.ViewCreate{
+			CreatorID:  api.SystemBotID,
+			CreatedTs:  view.CreatedTs,
+			UpdatedTs:  view.UpdatedTs,
+			DatabaseID: databaseID,
+			Name:       view.Name,
+			Definition: view.Definition,
+			Comment:    view.Comment,
+		})
+	}
+	oldViewMap := make(map[string]*viewRaw)
+	for _, v := range oldViewRawList {
+		oldViewMap[v.Name] = v
+	}
+	newViewMap := make(map[string]*api.ViewCreate)
+	for _, v := range viewCreateList {
+		newViewMap[v.Name] = v
+	}
+
+	var deletes []*api.ViewDelete
+	var creates []*api.ViewCreate
+	for _, oldValue := range oldViewRawList {
+		k := oldValue.Name
+		newValue, ok := newViewMap[k]
+		if !ok {
+			deletes = append(deletes, &api.ViewDelete{ID: oldValue.ID})
+		} else if ok && (oldValue.Definition != newValue.Definition || oldValue.Comment != newValue.Comment) {
+			deletes = append(deletes, &api.ViewDelete{ID: oldValue.ID})
+			creates = append(creates, newValue)
+		}
+	}
+	for _, newValue := range viewCreateList {
+		k := newValue.Name
+		if _, ok := oldViewMap[k]; !ok {
+			creates = append(creates, newValue)
+		}
+	}
+	return deletes, creates
+}
 
 func (s *Store) composeView(ctx context.Context, raw *viewRaw) (*api.View, error) {
 	view := raw.toView()
@@ -128,26 +174,6 @@ func (s *Store) composeView(ctx context.Context, raw *viewRaw) (*api.View, error
 	return view, nil
 }
 
-// createViewRaw creates a new view.
-func (s *Store) createViewRaw(ctx context.Context, create *api.ViewCreate) (*viewRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	view, err := s.createViewImpl(ctx, tx.PTx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return view, nil
-}
-
 // findViewRaw retrieves a list of views based on find.
 func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -165,9 +191,9 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 }
 
 // createViewImpl creates a new view.
-func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*viewRaw, error) {
+func (*Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*viewRaw, error) {
 	// Insert row into view.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO vw (
 			creator_id,
 			created_ts,
@@ -178,9 +204,11 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 			definition,
 			comment
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment"+`
-	`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)` +
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment" + `
+	`
+	var viewRaw viewRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -189,16 +217,7 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		create.Name,
 		create.Definition,
 		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var viewRaw viewRaw
-	if err := row.Scan(
+	).Scan(
 		&viewRaw.ID,
 		&viewRaw.CreatorID,
 		&viewRaw.CreatedTs,
@@ -209,13 +228,15 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		&viewRaw.Definition,
 		&viewRaw.Comment,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &viewRaw, nil
 }
 
-func (s *Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*viewRaw, error) {
+func (*Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*viewRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -277,9 +298,9 @@ func (s *Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind
 }
 
 // deleteViewImpl permanently deletes views from a database.
-func deleteViewImpl(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
+func (*Store) deleteViewImpl(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE database_id = $1`, delete.DatabaseID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil

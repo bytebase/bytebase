@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-// These are special onboarding tasks for demo purpose when bootstraping the workspace.
+// These are special onboarding tasks for demo purpose when bootstrapping the workspace.
 
 // OnboardingTaskID1 is the ID for onboarding task1.
 const OnboardingTaskID1 = 101
@@ -34,24 +34,6 @@ const (
 	TaskCanceled TaskStatus = "CANCELED"
 )
 
-func (e TaskStatus) String() string {
-	switch e {
-	case TaskPending:
-		return "PENDING"
-	case TaskPendingApproval:
-		return "PENDING_APPROVAL"
-	case TaskRunning:
-		return "RUNNING"
-	case TaskDone:
-		return "DONE"
-	case TaskFailed:
-		return "FAILED"
-	case TaskCanceled:
-		return "CANCELED"
-	}
-	return "UNKNOWN"
-}
-
 // TaskType is the type of a task.
 type TaskType string
 
@@ -66,8 +48,6 @@ const (
 	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
 	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.
 	TaskDatabaseSchemaUpdateGhostCutover TaskType = "bb.task.database.schema.update.ghost.cutover"
-	// TaskDatabaseSchemaUpdateGhostDropOriginalTable is the task type for dropping the original table.
-	TaskDatabaseSchemaUpdateGhostDropOriginalTable TaskType = "bb.task.database.schema.update.ghost.drop-original-table"
 	// TaskDatabaseDataUpdate is the task type for updating database data.
 	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
 	// TaskDatabaseBackup is the task type for creating database backups.
@@ -132,13 +112,6 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
 }
 
-// TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload is the task type for dropping the original table
-type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
-	DatabaseName string `json:"databaseName,omitempty"`
-	// TableName is like `_tablename_del`.
-	TableName string `json:"tableName,omitempty"`
-}
-
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
@@ -192,6 +165,23 @@ type Task struct {
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
+	// Progress is loaded from the task scheduler in memory, NOT from the database
+	Progress Progress `jsonapi:"attr,progress"`
+}
+
+// Progress is a generalized struct which can track the progress of a task.
+type Progress struct {
+	// TotalUnit is the total unit count of the task
+	TotalUnit int64 `json:"totalUnit"`
+	// CompletedUnit is the finished task units
+	CompletedUnit int64 `json:"completedUnit"`
+	// CreatedTs is when the task starts
+	CreatedTs int64 `json:"createdTs"`
+	// UpdatedTs is when the progress gets updated most recently
+	UpdatedTs int64 `json:"updatedTs"`
+	// Payload is reserved for the future
+	// Might be something like {comment:"postponing due to network lag"}
+	Payload string `json:"payload"`
 }
 
 // TaskCreate is the API message for creating a task.

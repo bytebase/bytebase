@@ -99,7 +99,11 @@
           @click.prevent="resetQuickstart"
           >{{ $t("common.quickstart") }}</a
         >
-        <a href="https://bytebase.com/docs?source=console" target="_blank" class="menu-item">
+        <a
+          href="https://bytebase.com/docs?source=console"
+          target="_blank"
+          class="menu-item"
+        >
           {{ $t("common.help") }}
         </a>
       </div>
@@ -166,7 +170,6 @@ export default defineComponent({
 
     const resetQuickstart = () => {
       const keys = [
-        "general.overview",
         "bookmark.create",
         "comment.create",
         "project.visit",
@@ -228,7 +231,7 @@ export default defineComponent({
     };
 
     const ping = () => {
-      actuatorStore.fetchInfo().then((info: ServerInfo) => {
+      actuatorStore.fetchServerInfo().then((info: ServerInfo) => {
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",

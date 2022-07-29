@@ -9,6 +9,8 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/tests/fake"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +20,7 @@ type fakeExternalPg struct {
 	pgUser string
 }
 
-// newFakeExternalPg will install postgres in tmpDir and listen on Unix domain socket with port
+// newFakeExternalPg will install postgres in tmpDir and listen on Unix domain socket with port.
 func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 	resourceDir := path.Join(tmpDir, "resources")
 	dataDir := path.Join(tmpDir, "pgdata")
@@ -64,7 +66,7 @@ func TestBootWithExternalPg(t *testing.T) {
 
 	ctl := &controller{}
 	dataTmpDir := t.TempDir()
-	err = ctl.StartServerWithExternalPg(ctx, dataTmpDir, serverPort, externalPg.pgUser, externalPg.pgURL)
+	err = ctl.StartServerWithExternalPg(ctx, dataTmpDir, fake.NewGitLab, serverPort, externalPg.pgUser, externalPg.pgURL)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 }

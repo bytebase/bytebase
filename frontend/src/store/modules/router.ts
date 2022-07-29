@@ -168,14 +168,14 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /setting/schema-review-policy/:schemaReviewPolicyId
+        // /setting/sql-review/:sqlReviewPolicyId
         // Total 2 elements, 2nd element is the schema review id
-        const schemaReviewComponents = currentRoute.path.match(
-          "/setting/schema-review-policy/([0-9a-zA-Z_-]+)"
+        const sqlReviewComponents = currentRoute.path.match(
+          "/setting/sql-review/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
-        if (schemaReviewComponents[1]) {
+        if (sqlReviewComponents[1]) {
           return {
-            schemaReviewPolicySlug: schemaReviewComponents[1],
+            sqlReviewPolicySlug: sqlReviewComponents[1],
           };
         }
       }

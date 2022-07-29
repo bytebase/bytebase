@@ -22,7 +22,6 @@ export type TaskType =
   | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
   | "bb.task.database.schema.update.ghost.cutover"
-  | "bb.task.database.schema.update.ghost.drop-original-table"
   | "bb.task.database.pitr.restore"
   | "bb.task.database.pitr.cutover"
   | "bb.task.database.pitr.delete";
@@ -67,11 +66,6 @@ export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
   // more input and output parameters in the future
 };
 
-export type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload = {
-  databaseName: string;
-  tableName: string;
-};
-
 export type TaskDatabasePITRRestorePayload = {
   projectId: ProjectId;
   pointInTimeTs: number; // UNIX timestamp
@@ -103,13 +97,24 @@ export type TaskPayload =
   | TaskDatabaseSchemaUpdatePayload
   | TaskDatabaseSchemaUpdateGhostSyncPayload
   | TaskDatabaseSchemaUpdateGhostCutoverPayload
-  | TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload
   | TaskDatabaseDataUpdatePayload
   | TaskDatabaseRestorePayload
   | TaskEarliestAllowedTimePayload
   | TaskDatabasePITRRestorePayload
   | TaskDatabasePITRCutoverPayload
   | TaskDatabasePITRDeletePayload;
+
+export type TaskProgressPayload = {
+  comment: string;
+};
+
+export type TaskProgress = {
+  totalUnit: number;
+  completedUnit: number;
+  createdTs: number;
+  updatedTs: number;
+  payload?: TaskProgressPayload; // JSON encoded
+};
 
 export type Task = {
   id: TaskId;
@@ -138,6 +143,9 @@ export type Task = {
 
   // Task DAG
   blockedBy: Task[];
+
+  // Task progress
+  progress: TaskProgress;
 };
 
 export type TaskCreate = {
@@ -159,12 +167,15 @@ export type TaskCreate = {
 export type TaskPatch = {
   statement?: string;
   earliestAllowedTs?: number;
-};
 
+  updatedTs?: number;
+};
 export type TaskStatusPatch = {
   // Domain specific fields
   status: TaskStatus;
   comment?: string;
+
+  updatedTs?: number;
 };
 
 // TaskRun is one run of a particular task
@@ -205,8 +216,7 @@ export type TaskCheckType =
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
   | "bb.task-check.general.earliest-allowed-time"
-  | "bb.task-check.database.schema.update.ghost"
-  | "bb.task-check.database.schema.update.ghost.cutover";
+  | "bb.task-check.database.ghost.sync";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;
@@ -226,11 +236,14 @@ export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
 
+export type TaskCheckNamespace = "bb.advisor" | "bb.core";
+
 export type TaskCheckResult = {
   status: TaskCheckStatus;
   code: ErrorCode;
   title: string;
   content: string;
+  namespace: TaskCheckNamespace;
 };
 
 export type TaskCheckRunResultPayload = {

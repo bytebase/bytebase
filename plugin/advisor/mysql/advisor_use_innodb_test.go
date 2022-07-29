@@ -86,9 +86,9 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 	}
-	advisor.RunSchemaReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleMySQLEngine,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

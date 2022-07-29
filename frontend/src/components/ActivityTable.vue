@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :data-source="activityList"
     :show-header="true"
     :row-clickable="false"
@@ -64,7 +64,7 @@ export default {
   setup() {
     const { t } = useI18n();
 
-    const COLUMN_LIST = computed((): BBTableColumn[] => [
+    const columnList = computed((): BBTableColumn[] => [
       {
         title: t("activity.name"),
       },
@@ -81,7 +81,7 @@ export default {
 
     return {
       activityName,
-      COLUMN_LIST,
+      columnList,
     };
   },
 };

@@ -7,6 +7,8 @@
 
 FROM node:14 as frontend
 
+ARG RELEASE="release"
+
 RUN npm i -g pnpm
 
 WORKDIR /frontend-build
@@ -16,19 +18,20 @@ COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY ./frontend/ .
+# Copy the SQL review config files to the frontend
+COPY ./plugin/advisor/config/ ./src/types
 
 # Build frontend
-RUN pnpm release-docker
+RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.16.5 as backend
+FROM golang:1.18.4 as backend
 
 ARG VERSION="development"
-ARG GO_VERSION="1.16.5"
+ARG GO_VERSION="1.18.4"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
-# Build in release mode so we will embed the frontend
 ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
@@ -41,10 +44,12 @@ COPY . .
 # Copy frontend asset
 COPY --from=frontend /frontend-build/dist ./server/dist
 
+COPY ./scripts/VERSION .
+
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-    --tags "${RELEASE}" \
+RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+    --tags "${RELEASE},embed_frontend" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./bin/server/main.go
@@ -64,7 +69,8 @@ LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 # Our HEALTHCHECK instruction in dockerfile needs curl.
-RUN apt-get update && apt-get install -y locales curl
+# Install psmisc to use killall command in demo.sh used by render.com.
+RUN apt-get update && apt-get install -y locales curl psmisc
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen

@@ -73,6 +73,27 @@ func TestPut(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestPatch(t *testing.T) {
+	ctx := context.Background()
+	client := &http.Client{
+		Transport: &common.MockRoundTripper{
+			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+				assert.Equal(t, http.MethodPatch, r.Method)
+				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				assert.Equal(t, "Bearer token", r.Header.Get("Authorization"))
+
+				body, err := io.ReadAll(r.Body)
+				require.NoError(t, err)
+				assert.Equal(t, "PATCH body", string(body))
+				return &http.Response{}, nil
+			},
+		},
+	}
+	token := "token"
+	_, _, err := Patch(ctx, client, "", &token, strings.NewReader("PATCH body"), nil)
+	require.NoError(t, err)
+}
+
 func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

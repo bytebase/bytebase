@@ -226,9 +226,9 @@ func TestColumnRequirement(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &ColumnRequirementAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &ColumnRequirementAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleRequiredColumn,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

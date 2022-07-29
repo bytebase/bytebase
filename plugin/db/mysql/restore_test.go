@@ -24,8 +24,8 @@ func TestGetSafeName(t *testing.T) {
 		},
 		{
 			baseName: "normal_database_name",
-			suffix:   "old",
-			expected: "normal_database_name_old",
+			suffix:   "del",
+			expected: "normal_database_name_del",
 		},
 		{
 			baseName: "long_database_name1234567890123456789012345678901",
@@ -75,12 +75,12 @@ func TestGetPITROldDatabaseName(t *testing.T) {
 		{
 			database:  "normal_database_name",
 			timestamp: 1652237293,
-			expected:  "normal_database_name_pitr_1652237293_old",
+			expected:  "normal_database_name_pitr_1652237293_del",
 		},
 		{
 			database:  "long_database_name123456789012345678901234567890",
 			timestamp: 1652237293,
-			expected:  "long_database_name12345678901234567890123456_pitr_1652237293_old",
+			expected:  "long_database_name12345678901234567890123456_pitr_1652237293_del",
 		},
 	}
 
@@ -163,8 +163,8 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		ext, err := getBinlogNameSeq(test.name)
-		a.EqualValues(ext, test.expect)
+		ext, err := GetBinlogNameSeq(test.name)
+		a.EqualValues(test.expect, ext)
 		if test.err {
 			a.Error(err)
 		} else {
@@ -265,9 +265,9 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		if test.err {
 			a.Error(err)
 		} else {
-			a.EqualValues(len(result), len(test.expect))
+			a.EqualValues(len(test.expect), len(result))
 			for idx := range test.expect {
-				a.EqualValues(result[idx], filepath.Join(tmpDir, test.expect[idx]))
+				a.EqualValues(filepath.Join(tmpDir, test.expect[idx]), result[idx])
 			}
 		}
 	}
@@ -300,7 +300,7 @@ func TestSortBinlogFiles(t *testing.T) {
 		sorted := sortBinlogFiles(test.binlogFileNames)
 		a.Equal(len(test.expect), len(sorted))
 		for i := range sorted {
-			a.Equal(sorted[i].Seq, test.expect[i].Seq)
+			a.Equal(test.expect[i].Seq, sorted[i].Seq)
 		}
 	}
 }

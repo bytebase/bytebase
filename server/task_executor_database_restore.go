@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -24,10 +25,22 @@ func NewDatabaseRestoreTaskExecutor() TaskExecutor {
 
 // DatabaseRestoreTaskExecutor is the task executor for database restore.
 type DatabaseRestoreTaskExecutor struct {
+	completed int32
+}
+
+// IsCompleted tells the scheduler if the task execution has completed.
+func (exec *DatabaseRestoreTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (*DatabaseRestoreTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
 }
 
 // RunOnce will run database restore once.
 func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
@@ -95,7 +108,12 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 
 	// Sync database schema after restore is completed.
-	server.syncEngineVersionAndSchema(ctx, targetDatabase.Instance)
+	if err := server.syncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
+		log.Error("failed to sync database schema",
+			zap.String("instance", targetDatabase.Instance.Name),
+			zap.String("databaseName", targetDatabase.Name),
+		)
+	}
 
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
@@ -104,8 +122,8 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}, nil
 }
 
-// restoreDatabase will restore the database from a backup
-func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) error {
+// restoreDatabase will restore the database from a backup.
+func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) error {
 	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return err
@@ -133,7 +151,7 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 // createBranchMigrationHistory creates a migration history with "BRANCH" type. We choose NOT to copy over
 // all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
-// Returns migration history id and the version on success
+// Returns migration history id and the version on success.
 func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
 	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, server.pgInstanceDir)
 	if err != nil {

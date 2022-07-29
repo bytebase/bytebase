@@ -11,14 +11,15 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"go.uber.org/zap"
 )
 
-// Dump and restore
+// Dump and restore.
 const (
 	databaseHeaderFmt = "" +
 		"--\n" +
@@ -88,22 +89,18 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if !schemaOnly {
 		log.Debug("flush tables in database with read locks",
 			zap.String("database", database))
-		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
+		if err := FlushTablesWithReadLock(ctx, conn, database); err != nil {
 			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
 
-		binlog, err := getBinlogInfo(ctx, conn)
+		binlog, err := GetBinlogInfo(ctx, conn)
 		if err != nil {
 			return "", err
 		}
-		log.Debug("binlog config at dump time",
-			zap.String("filename", binlog.FileName),
+		log.Debug("binlog coordinate at dump time",
+			zap.String("fileName", binlog.FileName),
 			zap.Int64("position", binlog.Position))
-
-		if err != nil {
-			return "", err
-		}
 
 		payload := api.BackupPayload{BinlogInfo: binlog}
 		payloadBytes, err = json.Marshal(payload)
@@ -126,7 +123,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	log.Debug("begin to dump database", zap.String("database", database))
+	log.Debug("begin to dump database", zap.String("database", database), zap.Bool("schemaOnly", schemaOnly))
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
 		return "", err
 	}
@@ -138,7 +135,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	return string(payloadBytes), nil
 }
 
-func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
+// FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.
+func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
 	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
 	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -150,7 +148,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	}
 	defer txn.Rollback()
 
-	tables, err := GetTablesTx(txn, database)
+	tables, err := getTablesTx(txn, database)
 	if err != nil {
 		return err
 	}
@@ -192,7 +190,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			}
 		}
 		if !exist {
-			return common.Errorf(common.NotFound, fmt.Errorf("database %s not found", database))
+			return common.Errorf(common.NotFound, "database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {
@@ -227,7 +225,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := GetTablesTx(txn, dbName)
+		tables, err := getTablesTx(txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get tables of database %q, error: %w", dbName, err)
 		}
@@ -290,40 +288,37 @@ func excludeSchemaAutoIncrementValue(s string) string {
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
 
-func getBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
-	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
-	if err != nil {
-		return api.BinlogInfo{}, err
-	}
-	defer rows.Close()
-
-	rows.Next()
+// GetBinlogInfo queries current binlog info from MySQL server.
+func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
+	query := "SHOW MASTER STATUS"
 	binlogInfo := api.BinlogInfo{}
 	var unused interface{}
-	if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
+	if err := conn.QueryRowContext(ctx, query).Scan(
+		&binlogInfo.FileName,
+		&binlogInfo.Position,
+		&unused,
+		&unused,
+		&unused,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return api.BinlogInfo{}, err
 	}
-
 	return binlogInfo, nil
 }
 
 // getDatabaseStmt gets the create statement of a database.
 func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS `%s`;", dbName)
-	rows, err := txn.Query(query)
-	if err != nil {
+	var stmt, unused string
+	if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var stmt, unused string
-		if err := rows.Scan(&unused, &stmt); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%s;\n", stmt), nil
-	}
-	return "", fmt.Errorf("query %q returned empty row", query)
+	return fmt.Sprintf("%s;\n", stmt), nil
 }
 
 // TableSchema describes the schema of a table or view.
@@ -352,14 +347,14 @@ type triggerSchema struct {
 	statement string
 }
 
-// GetTablesTx gets all tables of a database using the provided transaction.
-func GetTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+// getTablesTx gets all tables of a database using the provided transaction.
+func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	return getTablesImpl(txn, dbName)
 }
 
-// GetTables gets all tables of a database.
-func GetTables(ctx context.Context, db *sql.DB, dbName string) ([]*TableSchema, error) {
-	txn, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+// getTables gets all tables of a database.
+func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
+	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +378,9 @@ func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 		}
 		tables = append(tables, &tbl)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	for _, tbl := range tables {
 		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
@@ -398,41 +396,28 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 	switch tblType {
 	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
-		rows, err := txn.Query(query)
-		if err != nil {
+		var stmt, unused string
+		if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+			if err == sql.ErrNoRows {
+				return "", common.FormatDBErrorEmptyRowWithQuery(query)
+			}
 			return "", err
 		}
-		defer rows.Close()
-
-		if rows.Next() {
-			var stmt, unused string
-			if err := rows.Scan(&unused, &stmt); err != nil {
-				return "", err
-			}
-			return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
-		}
-		return "", fmt.Errorf("query %q returned invalid rows", query)
+		return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 	case viewTableType:
 		// This differs from mysqldump as it includes.
 		query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`;", dbName, tblName)
-		rows, err := txn.Query(query)
-		if err != nil {
+		var createStmt, unused string
+		if err := txn.QueryRow(query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
+			if err == sql.ErrNoRows {
+				return "", common.FormatDBErrorEmptyRowWithQuery(query)
+			}
 			return "", err
 		}
-		defer rows.Close()
-
-		if rows.Next() {
-			var createStmt, unused string
-			if err := rows.Scan(&unused, &createStmt, &unused, &unused); err != nil {
-				return "", err
-			}
-			return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
-		}
-		return "", fmt.Errorf("query %q returned invalid rows", query)
+		return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
 	default:
 		return "", fmt.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
-
 }
 
 // exportTableData gets the data of a table.
@@ -480,6 +465,9 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 			return err
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 	if _, err := io.WriteString(out, "\n"); err != nil {
 		return err
 	}
@@ -521,6 +509,9 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 
 			routines = append(routines, &r)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, r := range routines {
@@ -536,21 +527,21 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 // getRoutineStmt gets the create statement of a routine.
 func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE %s `%s`.`%s`;", routineType, dbName, routineName)
-	rows, err := txn.Query(query)
-	if err != nil {
+	var sqlmode, stmt, charset, collation, unused string
+	if err := txn.QueryRow(query).Scan(
+		&unused,
+		&sqlmode,
+		&stmt,
+		&charset,
+		&collation,
+		&unused,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var sqlmode, stmt, charset, collation, unused string
-		if err := rows.Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
-	}
-	return "", fmt.Errorf("query %q returned invalid rows", query)
-
+	return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
 }
 
 // getReadableRoutineType gets the printable routine type.
@@ -568,7 +559,8 @@ func getReadableRoutineType(s string) string {
 // getEvents gets all events of a database.
 func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 	var events []*eventSchema
-	rows, err := txn.Query(fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName))
+	query := fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -590,6 +582,9 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 		r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
 		events = append(events, &r)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
 
 	for _, r := range events {
 		stmt, err := getEventStmt(txn, dbName, r.name)
@@ -604,26 +599,21 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 // getEventStmt gets the create statement of an event.
 func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`;", dbName, eventName)
-	rows, err := txn.Query(query)
-	if err != nil {
+	var sqlmode, timezone, stmt, charset, collation, unused string
+	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var sqlmode, timezone, stmt, charset, collation, unused string
-		if err := rows.Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
-	}
-	return "", fmt.Errorf("query %q returned invalid rows", query)
+	return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
 }
 
 // getTriggers gets all triggers of a database.
 func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 	var triggers []*triggerSchema
-	rows, err := txn.Query(fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName))
+	query := fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -645,6 +635,9 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 		tr.name = fmt.Sprintf("%s", *values[0].(*interface{}))
 		triggers = append(triggers, &tr)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
 	for _, tr := range triggers {
 		stmt, err := getTriggerStmt(txn, dbName, tr.name)
 		if err != nil {
@@ -658,20 +651,14 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 // getTriggerStmt gets the create statement of a trigger.
 func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
-	rows, err := txn.Query(query)
-	if err != nil {
+	var sqlmode, stmt, charset, collation, unused string
+	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var sqlmode, stmt, charset, collation, unused string
-		if err := rows.Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
-	}
-	return "", fmt.Errorf("query %q returned invalid rows", query)
+	return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
 }
 
 // Restore restores a database.
@@ -682,7 +669,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 	defer txn.Rollback()
 
-	if err := driver.restoreTx(ctx, txn, sc); err != nil {
+	if err := restoreTx(ctx, txn, sc); err != nil {
 		return err
 	}
 
@@ -694,13 +681,13 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores a database in the given transaction.
-func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
-	return driver.restoreTx(ctx, tx, sc)
+func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+	return restoreTx(ctx, tx, sc)
 }
 
-func (driver *Driver) restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
 	fnExecuteStmt := func(stmt string) error {
-		if _, err := tx.Exec(stmt); err != nil {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return err
 		}
 		return nil

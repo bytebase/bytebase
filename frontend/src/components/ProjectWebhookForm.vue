@@ -179,7 +179,7 @@
             })
           }}
           <a
-            href="https://www.bytebase.com/docs/use-bytebase/webhook-integration/project-webhook#custom?source=console"
+            href="https://www.bytebase.com/docs/administration/webhook-integration/project-webhook#custom?source=console"
             target="__blank"
             class="normal-link"
             >{{

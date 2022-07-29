@@ -70,11 +70,16 @@ func (find *ColumnFind) String() string {
 	return string(str)
 }
 
-// ColumnPatch is the API message for patching a columns.
+// ColumnPatch is the API message for patching a column.
 type ColumnPatch struct {
 	ID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
+}
+
+// ColumnDelete is the API message for deleting a column.
+type ColumnDelete struct {
+	ID int
 }

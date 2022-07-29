@@ -9,6 +9,7 @@ import (
 )
 
 // Type is the type of a VCS.
+// nolint
 type Type string
 
 const (
@@ -17,14 +18,6 @@ const (
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
 )
-
-func (e Type) String() string {
-	switch e {
-	case GitLabSelfHost, GitHubCom:
-		return string(e)
-	}
-	return "UNKNOWN"
-}
 
 // OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
@@ -50,13 +43,14 @@ type Commit struct {
 
 // FileCommit is the API message for a VCS file commit.
 type FileCommit struct {
-	ID         string `json:"id"`
-	Title      string `json:"title"`
-	Message    string `json:"message"`
-	CreatedTs  int64  `json:"createdTs"`
-	URL        string `json:"url"`
-	AuthorName string `json:"authorName"`
-	Added      string `json:"added"`
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Message     string `json:"message"`
+	CreatedTs   int64  `json:"createdTs"`
+	URL         string `json:"url"`
+	AuthorName  string `json:"authorName"`
+	AuthorEmail string `json:"authorEmail"`
+	Added       string `json:"added"`
 }
 
 // FileCommitCreate is the payload for committing a new file.
@@ -250,7 +244,7 @@ func Register(vcsType Type, f providerFunc) {
 	providers[vcsType] = f
 }
 
-// Get returns a vcs provider specified by its vcs type
+// Get returns a vcs provider specified by its vcs type.
 func Get(vcsType Type, providerConfig ProviderConfig) Provider {
 	providerMu.RLock()
 	f, ok := providers[vcsType]

@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// These should be set via go build -ldflags -X 'xxxx'
+// These should be set via go build -ldflags -X 'xxxx'.
 var version = "development"
 var goversion = "unknown"
 var gitcommit = "unknown"

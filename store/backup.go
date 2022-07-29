@@ -80,9 +80,10 @@ type backupSettingRaw struct {
 	DatabaseID int
 
 	// Domain specific fields
-	Enabled   bool
-	Hour      int
-	DayOfWeek int
+	Enabled           bool
+	Hour              int
+	DayOfWeek         int
+	RetentionPeriodTs int
 	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 	HookURL string
 }
@@ -103,15 +104,16 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 		DatabaseID: raw.DatabaseID,
 
 		// Domain specific fields
-		Enabled:   raw.Enabled,
-		Hour:      raw.Hour,
-		DayOfWeek: raw.DayOfWeek,
+		Enabled:           raw.Enabled,
+		Hour:              raw.Hour,
+		DayOfWeek:         raw.DayOfWeek,
+		RetentionPeriodTs: raw.RetentionPeriodTs,
 		// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 		HookURL: raw.HookURL,
 	}
 }
 
-// CreateBackup creates an instance of Backup
+// CreateBackup creates an instance of Backup.
 func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.Backup, error) {
 	backupRaw, err := s.createBackupRaw(ctx, create)
 	if err != nil {
@@ -124,7 +126,7 @@ func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*ap
 	return backup, nil
 }
 
-// GetBackupByID gets an instance of Backup by ID
+// GetBackupByID gets an instance of Backup by ID.
 func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) {
 	backupRaw, err := s.getBackupRawByID(ctx, id)
 	if err != nil {
@@ -140,7 +142,7 @@ func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) 
 	return backupSetting, nil
 }
 
-// FindBackup finds a list of Backup instances
+// FindBackup finds a list of Backup instances.
 func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
 	backupRawList, err := s.findBackupRaw(ctx, find)
 	if err != nil {
@@ -157,7 +159,7 @@ func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Ba
 	return backupList, nil
 }
 
-// PatchBackup patches an instance of Backup
+// PatchBackup patches an instance of Backup.
 func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.Backup, error) {
 	backupRaw, err := s.patchBackupRaw(ctx, patch)
 	if err != nil {
@@ -170,7 +172,24 @@ func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.B
 	return backup, nil
 }
 
-// GetBackupSettingByDatabaseID gets an instance of BackupSetting by ID
+// FindBackupSetting finds a list of BackupSetting of databases in the instance.
+func (s *Store) FindBackupSetting(ctx context.Context, find api.BackupSettingFind) ([]*api.BackupSetting, error) {
+	backupSettingRawList, err := s.findBackupSettingRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find backup setting list with BackupSettingFind %+v, error: %w", find, err)
+	}
+	var backupSettingList []*api.BackupSetting
+	for _, raw := range backupSettingRawList {
+		backupSetting, err := s.composeBackupSetting(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose BackupSetting with backupSettingRaw %+v, error: %w", raw, err)
+		}
+		backupSettingList = append(backupSettingList, backupSetting)
+	}
+	return backupSettingList, nil
+}
+
+// GetBackupSettingByDatabaseID gets an instance of BackupSetting by ID.
 func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.getBackupSettingRaw(ctx, &api.BackupSettingFind{DatabaseID: &id})
 	if err != nil {
@@ -186,7 +205,7 @@ func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.
 	return backupSetting, nil
 }
 
-// UpsertBackupSetting upserts an instance of backup setting
+// UpsertBackupSetting upserts an instance of backup setting.
 func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.upsertBackupSettingRaw(ctx, upsert)
 	if err != nil {
@@ -199,7 +218,7 @@ func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSetti
 	return backup, nil
 }
 
-// FindBackupSettingsMatch finds a list of backup setting instances with match conditions
+// FindBackupSettingsMatch finds a list of backup setting instances with match conditions.
 func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
 	if err != nil {
@@ -220,7 +239,7 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 // private functions
 //
 
-// composeBackup composes an instance of Backup by backupRaw
+// composeBackup composes an instance of Backup by backupRaw.
 func (s *Store) composeBackup(ctx context.Context, raw *backupRaw) (*api.Backup, error) {
 	backup := raw.toBackup()
 
@@ -385,9 +404,9 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 }
 
 // createBackupImpl creates a new backup.
-func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
+func (*Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
 	// Insert row into backup.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO backup (
 			creator_id,
 			updater_id,
@@ -401,7 +420,9 @@ func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Ba
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
-	`,
+	`
+	var backupRaw backupRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.DatabaseID,
@@ -411,16 +432,7 @@ func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Ba
 		create.StorageBackend,
 		create.MigrationHistoryVersion,
 		create.Path,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var backupRaw backupRaw
-	if err := row.Scan(
+	).Scan(
 		&backupRaw.ID,
 		&backupRaw.CreatorID,
 		&backupRaw.CreatedTs,
@@ -435,13 +447,15 @@ func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Ba
 		&backupRaw.Path,
 		&backupRaw.Comment,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &backupRaw, nil
 }
 
-func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
+func (*Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -515,16 +529,18 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 	}
 
 	return backupRawList, nil
-
 }
 
 // patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
-func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
+func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{}, []interface{}{}
 	set, args = append(set, fmt.Sprintf("updater_id = $%d", len(args)+1)), append(args, patch.UpdaterID)
 	set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, patch.Status)
 	set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, patch.Comment)
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
 	if patch.Payload == "" {
 		patch.Payload = "{}"
 	}
@@ -532,47 +548,41 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 	set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, patch.Payload)
 	args = append(args, patch.ID)
 
+	var backupRaw backupRaw
+	var payload []byte
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE backup
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
 			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
 		`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&backupRaw.ID,
+		&backupRaw.CreatorID,
+		&backupRaw.CreatedTs,
+		&backupRaw.UpdaterID,
+		&backupRaw.UpdatedTs,
+		&backupRaw.DatabaseID,
+		&backupRaw.Name,
+		&backupRaw.Status,
+		&backupRaw.Type,
+		&backupRaw.StorageBackend,
+		&backupRaw.MigrationHistoryVersion,
+		&backupRaw.Path,
+		&backupRaw.Comment,
+		&payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var backupRaw backupRaw
-		var payload []byte
-		if err := row.Scan(
-			&backupRaw.ID,
-			&backupRaw.CreatorID,
-			&backupRaw.CreatedTs,
-			&backupRaw.UpdaterID,
-			&backupRaw.UpdatedTs,
-			&backupRaw.DatabaseID,
-			&backupRaw.Name,
-			&backupRaw.Status,
-			&backupRaw.Type,
-			&backupRaw.StorageBackend,
-			&backupRaw.MigrationHistoryVersion,
-			&backupRaw.Path,
-			&backupRaw.Comment,
-			&payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
-			return nil, err
-		}
-		return &backupRaw, nil
+	if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
+		return nil, err
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup ID not found: %d", patch.ID)}
+	return &backupRaw, nil
 }
 
 // getBackupSettingRaw finds the backup setting for a database.
@@ -597,6 +607,70 @@ func (s *Store) getBackupSettingRaw(ctx context.Context, find *api.BackupSetting
 	return list[0], nil
 }
 
+func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSettingFind) ([]*backupSettingRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.InstanceID; v != nil {
+		// Relation backup_setting do not have the column "instance_id", so we should join relation db to add the condition.
+		where, args = append(where, fmt.Sprintf("db.instance_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT
+			bs.id,
+			bs.creator_id,
+			bs.created_ts,
+			bs.updater_id,
+			bs.updated_ts,
+			bs.database_id,
+			bs.enabled,
+			bs.hour,
+			bs.day_of_week,
+			bs.retention_period_ts,
+			bs.hook_url
+		FROM backup_setting AS bs
+		JOIN db on db.id = bs.database_id
+		WHERE `+strings.Join(where, " AND "), args...)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	// Iterate over result set and deserialize rows into backupSettingRawList.
+	var backupSettingRawList []*backupSettingRaw
+	for rows.Next() {
+		var backupSettingRaw backupSettingRaw
+		if err := rows.Scan(
+			&backupSettingRaw.ID,
+			&backupSettingRaw.CreatorID,
+			&backupSettingRaw.CreatedTs,
+			&backupSettingRaw.UpdaterID,
+			&backupSettingRaw.UpdatedTs,
+			&backupSettingRaw.DatabaseID,
+			&backupSettingRaw.Enabled,
+			&backupSettingRaw.Hour,
+			&backupSettingRaw.DayOfWeek,
+			&backupSettingRaw.RetentionPeriodTs,
+			&backupSettingRaw.HookURL,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return backupSettingRawList, nil
+}
+
 func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*backupSettingRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -605,6 +679,57 @@ func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api
 	}
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	if s.db.mode == common.ReleaseModeDev {
+		rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		FROM backup_setting
+		WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into backupSettingRawList.
+		var backupSettingRawList []*backupSettingRaw
+		for rows.Next() {
+			var backupSettingRaw backupSettingRaw
+			if err := rows.Scan(
+				&backupSettingRaw.ID,
+				&backupSettingRaw.CreatorID,
+				&backupSettingRaw.CreatedTs,
+				&backupSettingRaw.UpdaterID,
+				&backupSettingRaw.UpdatedTs,
+				&backupSettingRaw.DatabaseID,
+				&backupSettingRaw.Enabled,
+				&backupSettingRaw.Hour,
+				&backupSettingRaw.DayOfWeek,
+				&backupSettingRaw.RetentionPeriodTs,
+				&backupSettingRaw.HookURL,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+		return backupSettingRawList, nil
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -659,7 +784,59 @@ func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api
 // upsertBackupSettingImpl updates an existing backup setting.
 func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
 	// Upsert row into backup_setting.
-	row, err := tx.QueryContext(ctx, `
+	if s.db.mode == common.ReleaseModeDev {
+		query := `
+		INSERT INTO backup_setting (
+			creator_id,
+			updater_id,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT(database_id) DO UPDATE SET
+				enabled = EXCLUDED.enabled,
+				hour = EXCLUDED.hour,
+				day_of_week = EXCLUDED.day_of_week,
+				retention_period_ts = EXCLUDED.retention_period_ts,
+				hook_url = EXCLUDED.hook_url
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, enabled, hour, day_of_week, retention_period_ts, hook_url
+	`
+		var backupSettingRaw backupSettingRaw
+		if err := tx.QueryRowContext(ctx, query,
+			upsert.UpdaterID,
+			upsert.UpdaterID,
+			upsert.DatabaseID,
+			upsert.Enabled,
+			upsert.Hour,
+			upsert.DayOfWeek,
+			upsert.RetentionPeriodTs,
+			upsert.HookURL,
+		).Scan(
+			&backupSettingRaw.ID,
+			&backupSettingRaw.CreatorID,
+			&backupSettingRaw.CreatedTs,
+			&backupSettingRaw.UpdaterID,
+			&backupSettingRaw.UpdatedTs,
+			&backupSettingRaw.DatabaseID,
+			&backupSettingRaw.Enabled,
+			&backupSettingRaw.Hour,
+			&backupSettingRaw.DayOfWeek,
+			&backupSettingRaw.RetentionPeriodTs,
+			&backupSettingRaw.HookURL,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return nil, FormatError(err)
+		}
+		return &backupSettingRaw, nil
+	}
+
+	query := `
 		INSERT INTO backup_setting (
 			creator_id,
 			updater_id,
@@ -676,7 +853,9 @@ func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert 
 				day_of_week = EXCLUDED.day_of_week,
 				hook_url = EXCLUDED.hook_url
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, enabled, hour, day_of_week, hook_url
-		`,
+	`
+	var backupSettingRaw backupSettingRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.DatabaseID,
@@ -684,16 +863,7 @@ func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert 
 		upsert.Hour,
 		upsert.DayOfWeek,
 		upsert.HookURL,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var backupSettingRaw backupSettingRaw
-	if err := row.Scan(
+	).Scan(
 		&backupSettingRaw.ID,
 		&backupSettingRaw.CreatorID,
 		&backupSettingRaw.CreatedTs,
@@ -705,9 +875,11 @@ func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert 
 		&backupSettingRaw.DayOfWeek,
 		&backupSettingRaw.HookURL,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &backupSettingRaw, nil
 }
 
@@ -718,6 +890,67 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
+
+	if s.db.mode == common.ReleaseModeDev {
+		rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		FROM backup_setting
+		WHERE
+			enabled = true
+			AND (
+				(hour = $1 AND day_of_week = $2)
+				OR
+				(hour = $3 AND day_of_week = -1)
+				OR
+				(hour = -1 AND day_of_week = $4)
+			)
+		`,
+			match.Hour, match.DayOfWeek, match.Hour, match.DayOfWeek,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into backupSettingRawList.
+		var backupSettingRawList []*backupSettingRaw
+		for rows.Next() {
+			var backupSettingRaw backupSettingRaw
+			if err := rows.Scan(
+				&backupSettingRaw.ID,
+				&backupSettingRaw.CreatorID,
+				&backupSettingRaw.CreatedTs,
+				&backupSettingRaw.UpdaterID,
+				&backupSettingRaw.UpdatedTs,
+				&backupSettingRaw.DatabaseID,
+				&backupSettingRaw.Enabled,
+				&backupSettingRaw.Hour,
+				&backupSettingRaw.DayOfWeek,
+				&backupSettingRaw.RetentionPeriodTs,
+				&backupSettingRaw.HookURL,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return backupSettingRawList, nil
+	}
 
 	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT

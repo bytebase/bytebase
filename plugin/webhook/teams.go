@@ -57,7 +57,7 @@ func init() {
 type TeamsReceiver struct {
 }
 
-func (receiver *TeamsReceiver) post(context Context) error {
+func (*TeamsReceiver) post(context Context) error {
 	factList := []TeamsWebhookSectionFact{}
 	for _, meta := range context.getMetaList() {
 		factList = append(factList, TeamsWebhookSectionFact(meta))

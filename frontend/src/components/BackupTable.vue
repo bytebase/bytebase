@@ -213,6 +213,7 @@ export default defineComponent({
     const backupSectionList = computed(() => {
       const manualList: Backup[] = [];
       const automaticList: Backup[] = [];
+      const pitrList: Backup[] = [];
       const sectionList: BBTableSectionDataSource<Backup>[] = [
         {
           title: t("common.manual"),
@@ -222,6 +223,10 @@ export default defineComponent({
           title: t("common.automatic"),
           list: automaticList,
         },
+        {
+          title: t("common.pitr"),
+          list: pitrList,
+        },
       ];
 
       for (const backup of props.backupList) {
@@ -229,6 +234,8 @@ export default defineComponent({
           manualList.push(backup);
         } else if (backup.type == "AUTOMATIC") {
           automaticList.push(backup);
+        } else if (backup.type === "PITR") {
+          pitrList.push(backup);
         }
       }
 

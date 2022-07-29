@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingColumnConventionChecker)(nil)
 )
 
 func init() {
@@ -22,25 +23,26 @@ type NamingColumnConventionAdvisor struct {
 }
 
 // Check checks for column naming convention.
-func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, maxLength, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingColumnConventionChecker{
-		level:  level,
-		title:  string(ctx.Rule.Type),
-		format: format,
-		tables: make(tableState),
+		level:     level,
+		title:     string(ctx.Rule.Type),
+		format:    format,
+		maxLength: maxLength,
+		tables:    make(tableState),
 	}
 
 	for _, stmtNode := range root {
@@ -64,10 +66,11 @@ type namingColumnConventionChecker struct {
 	level      advisor.Status
 	title      string
 	format     *regexp.Regexp
+	maxLength  int
 	tables     tableState
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []string
 	var tableName string
@@ -107,12 +110,20 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
 			})
 		}
+		if v.maxLength > 0 && len(column) > v.maxLength {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    advisor.NamingColumnConventionMismatch,
+				Title:   v.title,
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column, v.maxLength),
+			})
+		}
 	}
 
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
-func (v *namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+// Leave implements the ast.Visitor interface.
+func (*namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

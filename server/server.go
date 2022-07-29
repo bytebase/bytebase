@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -21,10 +20,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
@@ -33,6 +34,9 @@ import (
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/store"
 )
+
+// openAPIPrefix is the API prefix for Bytebase OpenAPI.
+const openAPIPrefix = "/v1"
 
 // Server is the Bytebase server.
 type Server struct {
@@ -52,7 +56,7 @@ type Server struct {
 
 	profile       Profile
 	e             *echo.Echo
-	mysqlutil     *mysqlutil.Instance
+	mysqlutil     mysqlutil.Instance
 	pgInstanceDir string
 	metaDB        *store.MetadataDB
 	store         *store.Store
@@ -74,6 +78,25 @@ var casbinDBAPolicy string
 
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
+
+// Use following cmd to generate swagger doc
+// swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
+
+// @title Bytebase OpenAPI
+// @version 1.0
+// @description The OpenAPI for bytebase.
+// @termsOfService https://www.bytebase.com/terms
+
+// @contact.name API Support
+// @contact.url https://github.com/bytebase/bytebase/
+// @contact.email support@bytebase.com
+
+// @license.name MIT
+// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
+
+// @host localhost:8080
+// @BasePath /v1/
+// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
@@ -110,7 +133,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlutil = mysqlutilIns
+	s.mysqlutil = *mysqlutilIns
 
 	// Install Postgres.
 	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
@@ -130,7 +153,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
@@ -154,7 +177,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	storeInstance := store.New(storeDB, cacheService)
 	s.store = storeInstance
 
-	config, err := s.initSetting(ctx, storeInstance)
+	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init config: %w", err)
 	}
@@ -177,38 +200,25 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
-		defaultExecutor := NewDefaultTaskExecutor()
-		taskScheduler.Register(api.TaskGeneral, defaultExecutor)
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
 
-		createDBExecutor := NewDatabaseCreateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseCreate, createDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
 
-		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, schemaUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
 
-		dataUpdateExecutor := NewDataUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, dataUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
-		backupDBExecutor := NewDatabaseBackupTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseBackup, backupDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
-		restoreDBExecutor := NewDatabaseRestoreTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseRestore, restoreDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
 
-		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, schemaUpdateGhostSyncExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
 
-		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, schemaUpdateGhostCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable, schemaUpdateGhostDropOriginalTableExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRRestore, pitrRestoreExecutor)
-
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRCutover, pitrCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
 
 		s.TaskScheduler = taskScheduler
 
@@ -227,6 +237,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor()
 		taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
+
+		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor()
+		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
 
 		timingExecutor := NewTaskCheckTimingExecutor()
 		taskCheckScheduler.Register(api.TaskCheckGeneralEarliestAllowedTime, timingExecutor)
@@ -258,11 +271,16 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		}))
 	}
 	e.Use(recoverMiddleware)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)
 
 	apiGroup := e.Group("/api")
+	openAPIGroup := e.Group(openAPIPrefix)
+	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return openAPIMetricMiddleware(s, next)
+	})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
@@ -307,6 +325,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
+	s.registerOpenAPIRoutes(openAPIGroup)
+
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")
@@ -317,11 +337,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
 	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
@@ -330,7 +345,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	s.initSubscription()
 
-	log.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	serverStarted = true
 	return s, nil
 }
@@ -357,7 +371,7 @@ func (s *Server) initMetricReporter(workspaceID string) {
 	}
 }
 
-func (s *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
+func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial branding
 	_, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
