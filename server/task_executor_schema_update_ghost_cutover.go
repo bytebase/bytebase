@@ -61,7 +61,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	}
 	sharedGhost := value.(sharedGhostState)
 
-	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
+	server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
 
 	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.errCh)
 }

@@ -246,16 +246,15 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 	}(ctx)
 
 	go func() {
-		err := migrator.Migrate()
-		if err != nil {
+		if err := migrator.Migrate(); err != nil {
 			log.Error("failed to run gh-ost migration", zap.Error(err))
 			migrationError <- err
 			return
 		}
 		migrationError <- nil
-		// we send to migrationError channel anyway because
-		// before syncDone, the gh-ost sync task will receive it.
-		// after syncDone, the gh-ost cutover task will receive it.
+		// we send to migrationError channel anyway because:
+		// 1. before syncDone, the gh-ost sync task will receive it.
+		// 2. after syncDone, the gh-ost cutover task will receive it.
 	}()
 
 	select {
