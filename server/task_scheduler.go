@@ -230,8 +230,7 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() Ta
 	s.executorGetters[taskType] = executorGetter
 }
 
-// canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING.
-func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bool, error) {
+func (s *TaskScheduler) canTransitTaskStatus(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
@@ -241,7 +240,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 	}
 	// timing task check
 	if task.EarliestAllowedTs != 0 {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -252,7 +251,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -260,7 +259,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 			return false, nil
 		}
 
-		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema)
+		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -277,7 +276,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -287,7 +286,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 		}
 
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -298,7 +297,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGhostSync)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGhostSync, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -314,7 +313,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 // 1. its required check does not contain error in the latest run
 // 2. it has no blocking tasks.
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	schedule, err := s.canScheduleTask(ctx, task)
+	schedule, err := s.canTransitTaskStatus(ctx, task, api.TaskCheckStatusWarn)
 	if err != nil {
 		return nil, err
 	}
