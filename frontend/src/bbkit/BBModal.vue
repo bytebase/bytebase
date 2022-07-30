@@ -45,7 +45,6 @@ import {
   ref,
   Ref,
   RenderFunction,
-  VNode,
 } from "vue";
 import { useModalStack } from "./BBModalStack.vue";
 

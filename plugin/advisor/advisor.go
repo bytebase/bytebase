@@ -122,6 +122,15 @@ const (
 
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
 	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
+
+	// PostgreSQLNoLeadingWildcardLike is an advisor type for PostgreSQL no leading wildcard LIKE.
+	PostgreSQLNoLeadingWildcardLike Type = "bb.plugin.advisor.postgresql.where.no-leading-wildcard-like"
+
+	// PostgreSQLWhereRequirement is an advisor type for PostgreSQL WHERE clause requirement.
+	PostgreSQLWhereRequirement Type = "bb.plugin.advisor.postgresql.where.require"
+
+	// PostgreSQLNoSelectAll is an advisor type for PostgreSQL no select all.
+	PostgreSQLNoSelectAll Type = "bb.plugin.advisor.postgresql.select.no-select-all"
 )
 
 // Advice is the result of an advisor.

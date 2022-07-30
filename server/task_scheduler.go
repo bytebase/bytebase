@@ -32,7 +32,8 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executorGetters  map[api.TaskType]func() TaskExecutor
 	runningExecutors map[int]TaskExecutor
-	taskProgress     sync.Map
+	taskProgress     sync.Map // map[taskID]api.Progress
+	sharedTaskState  sync.Map // map[taskID]interface{}
 	server           *Server
 }
 

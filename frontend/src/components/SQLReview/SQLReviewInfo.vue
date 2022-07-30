@@ -34,21 +34,21 @@
         "
         class="mb-5"
       />
-      <div class="flex flex-wrap gap-x-3" v-if="!isEdit">
+      <div v-if="!isEdit" class="flex flex-wrap gap-x-3">
         <div
           v-for="env in environmentList"
           :key="env.id"
           class="flex items-center"
         >
           <input
-            type="radio"
             :id="`${env.id}`"
+            type="radio"
             :value="env.id"
             :disabled="env.disabled"
             :checked="env.id === selectedEnvironment?.id"
-            @change="$emit('env-change', env)"
             class="text-accent disabled:text-accent-disabled focus:ring-accent"
             :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
+            @change="$emit('env-change', env)"
           />
           <label
             :for="`${env.id}`"
@@ -70,7 +70,7 @@
       />
     </div>
     <div>
-      <div class="mt-5" v-if="isEdit">
+      <div v-if="isEdit" class="mt-5">
         <div
           class="flex cursor-pointer items-center text-indigo-500"
           @click="state.openTemplate = !state.openTemplate"
@@ -88,8 +88,8 @@
           :required="false"
           :template-list="templateList"
           :selected-template-index="selectedTemplateIndex"
-          @select="(index) => $emit('select-template', index)"
           class="mx-5 mt-5"
+          @select="(index) => $emit('select-template', index)"
         />
       </div>
       <SQLReviewTemplates
@@ -169,6 +169,6 @@ const environmentList = computed((): LocalEnvironment[] => {
 });
 
 const onNameChange = (event: Event) => {
-  emit("name-change", (<HTMLInputElement>event.target).value);
+  emit("name-change", (event.target as HTMLInputElement).value);
 };
 </script>

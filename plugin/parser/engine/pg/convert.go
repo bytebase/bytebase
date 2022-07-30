@@ -87,6 +87,13 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropNotNull)
+				case pgquery.AlterTableType_AT_AlterColumnType:
+					alterColumType := &ast.AlterColumnTypeStmt{
+						Table:      alterTable.Table,
+						ColumnName: alterCmd.Name,
+					}
+
+					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
 				}
 			}
 		}
@@ -121,21 +128,50 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 			if err != nil {
 				return nil, err
 			}
-			return &ast.RenameColumnStmt{
-				Table:      convertRangeVarToTableName(in.RenameStmt.Relation, tableType),
-				ColumnName: in.RenameStmt.Subname,
-				NewName:    in.RenameStmt.Newname,
+			table := convertRangeVarToTableName(in.RenameStmt.Relation, tableType)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.RenameColumnStmt{
+						Table:      table,
+						ColumnName: in.RenameStmt.Subname,
+						NewName:    in.RenameStmt.Newname,
+					},
+				},
 			}, nil
 		case pgquery.ObjectType_OBJECT_TABLE:
-			return &ast.RenameTableStmt{
-				Table:   convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable),
-				NewName: in.RenameStmt.Newname,
+			table := convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.RenameTableStmt{
+						Table:   table,
+						NewName: in.RenameStmt.Newname,
+					},
+				},
 			}, nil
 		case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
-			return &ast.RenameConstraintStmt{
-				Table:          convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable),
-				ConstraintName: in.RenameStmt.Subname,
-				NewName:        in.RenameStmt.Newname,
+			table := convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeBaseTable)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.RenameConstraintStmt{
+						Table:          table,
+						ConstraintName: in.RenameStmt.Subname,
+						NewName:        in.RenameStmt.Newname,
+					},
+				},
+			}, nil
+		case pgquery.ObjectType_OBJECT_VIEW:
+			view := convertRangeVarToTableName(in.RenameStmt.Relation, ast.TableTypeView)
+			return &ast.AlterTableStmt{
+				Table: view,
+				AlterItemList: []ast.Node{
+					&ast.RenameTableStmt{
+						Table:   view,
+						NewName: in.RenameStmt.Newname,
+					},
+				},
 			}, nil
 		case pgquery.ObjectType_OBJECT_INDEX:
 			return &ast.RenameIndexStmt{
@@ -201,6 +237,20 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 				dropTable.TableList = append(dropTable.TableList, tableDef)
 			}
 			return dropTable, nil
+		case pgquery.ObjectType_OBJECT_VIEW:
+			dropView := &ast.DropTableStmt{}
+			for _, object := range in.DropStmt.Objects {
+				list, ok := object.Node.(*pgquery.Node_List)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected List but found %t", object.Node)
+				}
+				viewDef, err := convertListToTableDef(list, ast.TableTypeView)
+				if err != nil {
+					return nil, err
+				}
+				dropView.TableList = append(dropView.TableList, viewDef)
+			}
+			return dropView, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -209,6 +259,68 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 		}, nil
 	case *pgquery.Node_SelectStmt:
 		return convertSelectStmt(in.SelectStmt)
+	case *pgquery.Node_UpdateStmt:
+		update := &ast.UpdateStmt{
+			Table: convertRangeVarToTableName(in.UpdateStmt.Relation, ast.TableTypeBaseTable),
+		}
+		// Convert FROM clause
+		// Here we only find the SELECT stmt in FROM clause
+		for _, item := range in.UpdateStmt.FromClause {
+			if node, ok := item.Node.(*pgquery.Node_RangeSubselect); ok {
+				subselect, err := convertRangeSubselect(node.RangeSubselect)
+				if err != nil {
+					return nil, err
+				}
+				update.SubqueryList = append(update.SubqueryList, subselect)
+			}
+		}
+		// Convert WHERE clause
+		if in.UpdateStmt.WhereClause != nil {
+			var err error
+			var subqueryList []*ast.SubqueryDef
+			update.WhereClause, update.PatternLikeList, subqueryList, err = convertExpressionNode(in.UpdateStmt.WhereClause)
+			if err != nil {
+				return nil, err
+			}
+			update.SubqueryList = append(update.SubqueryList, subqueryList...)
+		}
+		return update, nil
+	case *pgquery.Node_DeleteStmt:
+		delete := &ast.DeleteStmt{
+			Table: convertRangeVarToTableName(in.DeleteStmt.Relation, ast.TableTypeBaseTable),
+		}
+		if in.DeleteStmt.WhereClause != nil {
+			var err error
+			if delete.WhereClause, delete.PatternLikeList, delete.SubqueryList, err = convertExpressionNode(in.DeleteStmt.WhereClause); err != nil {
+				return nil, err
+			}
+		}
+		return delete, nil
+	case *pgquery.Node_AlterObjectSchemaStmt:
+		switch in.AlterObjectSchemaStmt.ObjectType {
+		case pgquery.ObjectType_OBJECT_TABLE:
+			table := convertRangeVarToTableName(in.AlterObjectSchemaStmt.Relation, ast.TableTypeBaseTable)
+			return &ast.AlterTableStmt{
+				Table: table,
+				AlterItemList: []ast.Node{
+					&ast.SetSchemaStmt{
+						Table:     table,
+						NewSchema: in.AlterObjectSchemaStmt.Newschema,
+					},
+				},
+			}, nil
+		case pgquery.ObjectType_OBJECT_VIEW:
+			view := convertRangeVarToTableName(in.AlterObjectSchemaStmt.Relation, ast.TableTypeView)
+			return &ast.AlterTableStmt{
+				Table: view,
+				AlterItemList: []ast.Node{
+					&ast.SetSchemaStmt{
+						Table:     view,
+						NewSchema: in.AlterObjectSchemaStmt.Newschema,
+					},
+				},
+			}, nil
+		}
 	}
 
 	return nil, nil
@@ -382,15 +494,40 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 		}
 		selectStmt.FieldList = append(selectStmt.FieldList, convertedNode)
 	}
-	// Convert WHERE clause
-	if in.WhereClause != nil {
-		selectStmt.WhereClause = &ast.UnconvertedExpressionDef{}
-		var err error
-		if selectStmt.WhereClause, selectStmt.PatternLikeList, selectStmt.SubqueryList, err = convertExpressionNode(in.WhereClause); err != nil {
-			return nil, err
+	// Convert FROM clause
+	// Here we only find the SELECT stmt in FROM clause
+	for _, item := range in.FromClause {
+		if node, ok := item.Node.(*pgquery.Node_RangeSubselect); ok {
+			subselect, err := convertRangeSubselect(node.RangeSubselect)
+			if err != nil {
+				return nil, err
+			}
+			selectStmt.SubqueryList = append(selectStmt.SubqueryList, subselect)
 		}
 	}
+	// Convert WHERE clause
+	if in.WhereClause != nil {
+		var err error
+		var subqueryList []*ast.SubqueryDef
+		selectStmt.WhereClause, selectStmt.PatternLikeList, subqueryList, err = convertExpressionNode(in.WhereClause)
+		if err != nil {
+			return nil, err
+		}
+		selectStmt.SubqueryList = append(selectStmt.SubqueryList, subqueryList...)
+	}
 	return selectStmt, nil
+}
+
+func convertRangeSubselect(node *pgquery.RangeSubselect) (*ast.SubqueryDef, error) {
+	subselect, ok := node.Subquery.Node.(*pgquery.Node_SelectStmt)
+	if !ok {
+		return nil, parser.NewConvertErrorf("expected SELECT but found %t", node.Subquery.Node)
+	}
+	res, err := convertSelectStmt(subselect.SelectStmt)
+	if err != nil {
+		return nil, err
+	}
+	return &ast.SubqueryDef{Select: res}, nil
 }
 
 func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {

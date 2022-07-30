@@ -202,6 +202,16 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
+  const allowApplyIssueStatusTransition = () => {
+    // no extra logic by default
+    return true;
+  };
+
+  const allowApplyTaskStatusTransition = () => {
+    // no extra logic by default
+    return true;
+  };
+
   return {
     project,
     isTenantMode,
@@ -215,5 +225,7 @@ export const useBaseIssueLogic = (params: {
     selectTask,
     taskStatusOfStage,
     isValidStage,
+    allowApplyIssueStatusTransition,
+    allowApplyTaskStatusTransition,
   };
 };
