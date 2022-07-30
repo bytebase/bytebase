@@ -29,7 +29,7 @@ $ ./bytebase
 
 ### Bundling frontend
 
-Bytebase uses [Go's embedding](https://pkg.go.dev/embed) to bundle the frontend. It also uses Go's build tag to only embed for the release build. As for the development build, we need hot reloading and don't want to go through the full build cycle:
+Bytebase uses [Go's embedding](https://pkg.go.dev/embed) to bundle the frontend. It also uses [Go's build tag](https://pkg.go.dev/go/build#hdr-Build_Constraints) to only embed for the release build. As for the development build, we need hot reloading and don't want to go through the full build cycle:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/server_frontend_embed.go
 
@@ -61,23 +61,33 @@ https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/api/api_depen
 
 ### Namespacing
 
-To keep a modular design, the codebase uses [reverse domain name notation](https://en.wikipedia.org/wiki/Reverse_domain_name_notation) extensively:
+To keep a modular design, the codebase uses [reverse domain name notation](https://en.wikipedia.org/wiki/Reverse_domain_name_notation) extensively. Below defines the `Activity` types:
 
-https://sourcegraph.com/search?q=context:bytebase+repo:%5Egithub%5C.com/bytebase/bytebase%24+%22%5C%22bb.%22&patternType=regexp
+https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/api/activity.go?L10-66
+
+All Bytebase built-in types uses `bb.` namespace. This design allows 3rd party plugins to register their own types later.
 
 ## Life of a Schema Migration Change
+
+The rough sequence:
+
+1. Bytebase registers the schema migration handler on startup.
+1. Client requests the server to create a pipeline containing the schema migration task.
+1. The task check scheduler performs various pre-condition checks against the task in the active pipeline.
+1. The task scheduler schedules the task that has met the pre-conditions, which in turns invokes the schema migration handler.
+1. The schema migration handler invokes the particular db driver to perform the migration and records the migration history.
 
 ### Pipeline model
 
 At the Bytebase core, there is an exectuion engine consists of `Pipeline`, `Stage`, `Task` and `Task Run`.
 
-![Data Model](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png).
+![Data Model](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
 
 A pipeline cotnains multiple stages, and each stage contain multiple tasks. This is how Bytebase creates a Pipeline:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/issue.go?L371-401
 
-`Task` is the basic execution unit and each `Task Run` represents one particular exeuction. Upon startup, Bytebase registers the task type with a task executor. This registers the schema change task executor:
+`Task` is the basic execution unit and each `Task Run` represents one particular exeuction. Upon startup, Bytebase registers the task type with a task executor. Below registers the schema change task executor:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/server.go?L207
 
@@ -85,7 +95,7 @@ The task executor implements the `TaskExecutor` interface:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_executor.go?L20-34
 
-The schema change task executor core is to run the schema migration:
+The schema change task executor internally runs the schema migration:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_executor.go?L303-313
 
@@ -93,20 +103,28 @@ Bytebase records very detailed migration histories. The history is stored on the
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/plugin/db/mysql/mysql_migration_schema.sql?L5-44
 
-The detailed schema info enables Bytebase to implement powerful features like [Drift Detection](https://www.bytebase.com/docs/anomaly-detection/drift-detection), [Tenant Database Deployment](https://www.bytebase.com/docs/tenant-database-management).
+This detailed history schema info enables Bytebase to implement powerful features such as [Drift Detection](https://www.bytebase.com/docs/anomaly-detection/drift-detection), [Tenant Database Deployment](https://www.bytebase.com/docs/tenant-database-management).
 
-### How a task executor is invoked
-
-A background task scheduler periodically inspects all active pipelines, finds their next tasks, and executes and monitors their progress:
-
-https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_scheduler.go?L39-47
+### How a task check is scheduled
 
 Tasks may need to meet some pre-conditions before being scheduled. For example:
 
 1. The task needs to be [approved](https://www.bytebase.com/docs/administration/environment-policy/approval-policy).
 1. The SQL statement must conform to [defined policy](https://www.bytebase.com/docs/sql-review/review-rules/overview).
 
-These are implemented as `TaskCheckExecutor`:
+This pre-condition is modeled as `Task Check`. Task checks are created before when the correponding task becomes the next to-be-scheduled task in the pipeline:
+
+https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/pipeline.go?L9-37
+
+Task checks can also be created upon receiving the `POST /pipeline/:pipelineID/task/:taskID/check` request:
+
+https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task.go?L217-236
+
+The task check scheduler periodically inspects all created task checks and schedules them:
+
+https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_check_scheduler.go?L60-90
+
+Each task check implements the `TaskCheckExecutor` interface:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_check_executor.go?L9-13
 
@@ -114,9 +132,15 @@ The most comprehensive check is the SQL advisor check, it relies on the SQL advi
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_check_executor_statement_advisor_composite.go?L70-75
 
-A separate task check scheduler schedules all task checks:
+### How a task is scheduled
 
-https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_check_scheduler.go?L31-41
+The background task scheduler periodically inspects each active pipeline, finds its next task:
+
+https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_scheduler.go?L74-95
+
+The task will be scheduled if it has met all pre-conditions:
+
+https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_scheduler.go?L301-319
 
 ## Further Readings
 
