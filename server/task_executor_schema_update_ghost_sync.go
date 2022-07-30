@@ -74,8 +74,8 @@ func getTableNameFromStatement(statement string) (string, error) {
 }
 
 type sharedGhostState struct {
-	migrator *logic.Migrator
-	errCh    <-chan error
+	migrationContext *base.MigrationContext
+	errCh            <-chan error
 }
 
 type ghostConfig struct {
@@ -259,7 +259,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 
 	select {
 	case <-syncDone:
-		server.TaskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrator: migrator, errCh: migrationError})
+		server.TaskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-migrationError:
 		return true, nil, err
