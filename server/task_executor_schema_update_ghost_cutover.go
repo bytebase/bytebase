@@ -98,15 +98,9 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 
 		// wait for heartbeat lag.
 		// try to make the time gap between the migration history insertion and the actual cutover as close as possible.
-		for {
-			heartbeatLag := migrationContext.TimeSinceLastHeartbeatOnChangelog()
-			maxLagMillisecondsThrottle := time.Duration(atomic.LoadInt64(&migrationContext.MaxLagMillisecondsThrottleThreshold)) * time.Millisecond
-			cutOverLockTimeout := time.Duration(migrationContext.CutOverLockTimeoutSeconds) * time.Second
-			if heartbeatLag > maxLagMillisecondsThrottle || heartbeatLag > cutOverLockTimeout {
-				time.Sleep(time.Second)
-			} else {
-				break
-			}
+		cancelled := waitForCutover(ctx, migrationContext)
+		if cancelled {
+			return -1, "", fmt.Errorf("cutover poller cancelled")
 		}
 
 		insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
@@ -147,6 +141,24 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 	}
 
 	return postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
+}
+
+func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			heartbeatLag := migrationContext.TimeSinceLastHeartbeatOnChangelog()
+			maxLagMillisecondsThrottle := time.Duration(atomic.LoadInt64(&migrationContext.MaxLagMillisecondsThrottleThreshold)) * time.Millisecond
+			cutOverLockTimeout := time.Duration(migrationContext.CutOverLockTimeoutSeconds) * time.Second
+			if heartbeatLag <= maxLagMillisecondsThrottle && heartbeatLag <= cutOverLockTimeout {
+				return false
+			}
+		case <-ctx.Done(): // if cancel() execute
+			return true
+		}
+	}
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
