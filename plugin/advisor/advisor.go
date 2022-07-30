@@ -131,6 +131,9 @@ const (
 
 	// PostgreSQLNoSelectAll is an advisor type for PostgreSQL no select all.
 	PostgreSQLNoSelectAll Type = "bb.plugin.advisor.postgresql.select.no-select-all"
+
+	// PostgreSQLMigrationCompatibility is an advisor type for PostgreSQL migration compatibility.
+	PostgreSQLMigrationCompatibility Type = "bb.plugin.advisor.postgresql.migration-compatibility"
 )
 
 // Advice is the result of an advisor.
