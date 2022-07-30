@@ -37,6 +37,24 @@ const (
 	TaskCheckStatusError TaskCheckStatus = "ERROR"
 )
 
+func (t TaskCheckStatus) level() int {
+	switch t {
+	case TaskCheckStatusSuccess:
+		return 2
+	case TaskCheckStatusWarn:
+		return 1
+	case TaskCheckStatusError:
+		return 0
+	}
+	return -1
+}
+
+// LessThan helps judge if a task check status doesn't meet the minimum requirement.
+// For example, ERROR is LessThan WARN.
+func (t TaskCheckStatus) LessThan(r TaskCheckStatus) bool {
+	return t.level() < r.level()
+}
+
 // TaskCheckType is the type of a taskCheck.
 type TaskCheckType string
 
