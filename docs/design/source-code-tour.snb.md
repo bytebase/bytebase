@@ -89,7 +89,7 @@ The schema change task executor core is to run the schema migration:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_executor.go?L303-313
 
-Bytebase records very detailed migration histories, the history is stored on the targeting database instance. This is the history schema for MySQL:
+Bytebase records very detailed migration histories. The history is stored on the targeting database instance. This is the history schema for MySQL:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/plugin/db/mysql/mysql_migration_schema.sql?L5-44
 
@@ -97,7 +97,7 @@ The detailed schema info enables Bytebase to implement powerful features like [D
 
 ### How a task executor is invoked
 
-A background task scheduler periodically inspects all active pipelines, find their next tasks, execute and monitor their progress:
+A background task scheduler periodically inspects all active pipelines, finds their next tasks, and executes and monitors their progress:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/task_scheduler.go?L39-47
 
