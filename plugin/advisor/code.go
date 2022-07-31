@@ -39,6 +39,8 @@ const (
 	NamingUKConventionMismatch Code = 304
 	// 305 foreign key naming advisor error code.
 	NamingFKConventionMismatch Code = 305
+	// 306 primary key naming advisor error code.
+	NamingPKConventionMismatch Code = 306
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn Code = 401
