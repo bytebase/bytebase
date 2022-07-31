@@ -37,6 +37,8 @@ const (
 	SchemaRuleTableNaming SQLReviewRuleType = "naming.table"
 	// SchemaRuleColumnNaming enforce the column name format.
 	SchemaRuleColumnNaming SQLReviewRuleType = "naming.column"
+	// SchemaRulePKNaming enforce the primary key name format.
+	SchemaRulePKNaming SQLReviewRuleType = "naming.index.pk"
 	// SchemaRuleUKNaming enforce the unique key name format.
 	SchemaRuleUKNaming SQLReviewRuleType = "naming.index.uk"
 	// SchemaRuleFKNaming enforce the foreign key name format.
@@ -90,6 +92,10 @@ var (
 	// TemplateNamingTokens is the mapping for rule type to template token.
 	TemplateNamingTokens = map[SQLReviewRuleType]map[string]bool{
 		SchemaRuleIDXNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		SchemaRulePKNaming: {
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
 		},
