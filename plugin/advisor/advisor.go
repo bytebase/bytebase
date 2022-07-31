@@ -111,6 +111,9 @@ const (
 	// PostgreSQLNamingPKConvention is an advisor type for PostgreSQL primary key naming convention.
 	PostgreSQLNamingPKConvention Type = "bb.plugin.advisor.postgresql.naming.pk"
 
+	// PostgreSQLNamingIndexConvention is an advisor type for PostgreSQL index naming convention.
+	PostgreSQLNamingIndexConvention Type = "bb.plugin.advisor.postgresql.naming.index"
+
 	// PostgreSQLNamingUKConvention is an advisor type for PostgreSQL unique key naming convention.
 	PostgreSQLNamingUKConvention Type = "bb.plugin.advisor.postgresql.naming.uk"
 
@@ -134,6 +137,9 @@ const (
 
 	// PostgreSQLNoSelectAll is an advisor type for PostgreSQL no select all.
 	PostgreSQLNoSelectAll Type = "bb.plugin.advisor.postgresql.select.no-select-all"
+
+	// PostgreSQLMigrationCompatibility is an advisor type for PostgreSQL migration compatibility.
+	PostgreSQLMigrationCompatibility Type = "bb.plugin.advisor.postgresql.migration-compatibility"
 )
 
 // Advice is the result of an advisor.
