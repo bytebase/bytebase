@@ -65,7 +65,7 @@ To keep a modular design, the codebase uses [reverse domain name notation](https
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/api/activity.go?L10-66
 
-All Bytebase built-in types uses `bb.` namespace. This design allows 3rd party plugins to register their own types later.
+All Bytebase built-in types use `bb.` namespace. This design allows 3rd party plugins to register their own types later.
 
 ## Life of a Schema Migration Change
 
@@ -79,15 +79,15 @@ The rough sequence:
 
 ### Pipeline model
 
-At the Bytebase core, there is an exectuion engine consists of `Pipeline`, `Stage`, `Task` and `Task Run`.
+At the Bytebase core, there is an execution engine consisting of `Pipeline`, `Stage`, `Task` and `Task Run`.
 
 ![Data Model](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
 
-A pipeline cotnains multiple stages, and each stage contain multiple tasks. This is how Bytebase creates a Pipeline:
+A pipeline contains multiple stages, and each stage contain multiple tasks. This is how Bytebase creates a Pipeline:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/issue.go?L371-401
 
-`Task` is the basic execution unit and each `Task Run` represents one particular exeuction. Upon startup, Bytebase registers the task type with a task executor. Below registers the schema change task executor:
+`Task` is the basic execution unit and each `Task Run` represents one particular execution. Upon startup, Bytebase registers the task type with a task executor. Below registers the schema change task executor:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/server.go?L207
 
@@ -112,7 +112,7 @@ Tasks may need to meet some pre-conditions before being scheduled. For example:
 1. The task needs to be [approved](https://www.bytebase.com/docs/administration/environment-policy/approval-policy).
 1. The SQL statement must conform to [defined policy](https://www.bytebase.com/docs/sql-review/review-rules/overview).
 
-This pre-condition is modeled as `Task Check`. Task checks are created before when the correponding task becomes the next to-be-scheduled task in the pipeline:
+This pre-condition is modeled as `Task Check`. Task checks are created before when the corresponding task becomes the next to-be-scheduled task in the pipeline:
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/server/pipeline.go?L9-37
 
