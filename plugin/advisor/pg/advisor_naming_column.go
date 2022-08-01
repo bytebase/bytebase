@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -14,7 +15,7 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.Postgres, advisor.PostgreSQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column convention.

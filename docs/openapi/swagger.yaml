@@ -51,9 +51,9 @@ paths:
       - description: The database type. Required if the port, host and database name
           is not specified.
         enum:
-        - MySQL
-        - PostgreSQL
-        - TiDB
+        - MYSQL
+        - POSTGRES
+        - TIDB
         in: query
         name: databaseType
         type: string

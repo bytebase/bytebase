@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -13,7 +14,7 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.Postgres, advisor.PostgreSQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLWhereRequirement, &WhereRequirementAdvisor{})
 }
 
 // WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.
