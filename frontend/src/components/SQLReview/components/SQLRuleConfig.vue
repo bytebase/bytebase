@@ -14,11 +14,13 @@
           <h1 class="text-base font-semibold text-gray-900">
             {{ getRuleLocalization(selectedRule.type).title }}
           </h1>
-          <BBBadge
-            :text="$t(`sql-review.engine.${selectedRule.engine.toLowerCase()}`)"
-            :can-remove="false"
-          />
           <SQLRuleLevelBadge :level="selectedRule.level" />
+          <img
+            v-for="engine in selectedRule.engineList"
+            :key="engine"
+            class="h-4 w-auto"
+            :src="getEngineIcon(engine)"
+          />
         </div>
         <div class="text-sm text-gray-400 ml-7">
           {{ getRuleLocalization(selectedRule.type).description }}
@@ -130,6 +132,7 @@ import {
   RuleConfigComponent,
   getRuleLocalization,
   getRuleLocalizationKey,
+  SchemaRuleEngineType,
 } from "@/types/sqlReview";
 
 type PayloadValueList = (string | number | string[])[];
@@ -193,6 +196,10 @@ const pushToList = (i: number, e: any) => {
 const getStringPayload = (i: number): string => {
   return state.payload[i] as string;
 };
+
+const getEngineIcon = (engine: SchemaRuleEngineType) =>
+  new URL(`../../../assets/db-${engine.toLowerCase()}.png`, import.meta.url)
+    .href;
 </script>
 
 <style scoped>

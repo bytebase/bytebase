@@ -10,7 +10,7 @@ import (
 )
 
 var mockConfigOverrideYAMLStr = `
-template: bb.sql-review.mysql.prod # Provide the template id, then we can extend rules from the specific template.
+template: bb.sql-review.prod # Provide the template id, then we can extend rules from the specific template.
 ruleList:
   - type: statement.select.no-select-all
     level: DISABLED
