@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -36,6 +36,24 @@ const (
 	// TaskCheckStatusError is the task check status for ERROR.
 	TaskCheckStatusError TaskCheckStatus = "ERROR"
 )
+
+func (t TaskCheckStatus) level() int {
+	switch t {
+	case TaskCheckStatusSuccess:
+		return 2
+	case TaskCheckStatusWarn:
+		return 1
+	case TaskCheckStatusError:
+		return 0
+	}
+	return -1
+}
+
+// LessThan helps judge if a task check status doesn't meet the minimum requirement.
+// For example, ERROR is LessThan WARN.
+func (t TaskCheckStatus) LessThan(r TaskCheckStatus) bool {
+	return t.level() < r.level()
+}
 
 // TaskCheckType is the type of a taskCheck.
 type TaskCheckType string
@@ -180,24 +198,10 @@ type TaskCheckRunStatusPatch struct {
 	Result string
 }
 
-// ConvertToAdvisorDBType will convert db type into advisor db type.
-func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
-	switch dbType {
-	case db.MySQL:
-		return advisor.MySQL, nil
-	case db.Postgres:
-		return advisor.Postgres, nil
-	case db.TiDB:
-		return advisor.TiDB, nil
-	}
-
-	return "", fmt.Errorf("unsupported db type %s for advisor", dbType)
-}
-
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type, mode common.ReleaseMode) bool {
 	if mode == common.ReleaseModeDev || dbType == db.MySQL || dbType == db.TiDB {
-		advisorDB, err := ConvertToAdvisorDBType(dbType)
+		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
 		}
@@ -211,7 +215,7 @@ func IsSyntaxCheckSupported(dbType db.Type, mode common.ReleaseMode) bool {
 // IsSQLReviewSupported checks the engine type if schema review supports it.
 func IsSQLReviewSupported(dbType db.Type, mode common.ReleaseMode) bool {
 	if mode == common.ReleaseModeDev || dbType == db.MySQL || dbType == db.TiDB {
-		advisorDB, err := ConvertToAdvisorDBType(dbType)
+		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
 		}

@@ -230,7 +230,7 @@ export default defineComponent({
       if (payload.error) {
         return;
       }
-      const gitlabLoginInfo: VCSLoginInfo = {
+      const vcsLoginInfo: VCSLoginInfo = {
         vcsId: state.activeAuthProvider.id,
         name: state.activeAuthProvider.name,
         code: payload.code,
@@ -238,7 +238,7 @@ export default defineComponent({
       authStore
         .login({
           authProvider: state.activeAuthProvider.type,
-          payload: gitlabLoginInfo,
+          payload: vcsLoginInfo,
         })
         .then(() => {
           router.push("/");

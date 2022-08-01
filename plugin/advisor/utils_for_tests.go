@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +30,7 @@ var (
 	// MockMySQLDatabase is the mock MySQL database for test.
 	MockMySQLDatabase = &catalog.Database{
 		Name:   "test",
-		DbType: catalog.MySQL,
+		DbType: db.MySQL,
 		SchemaList: []*catalog.Schema{
 			{
 				TableList: []*catalog.Table{
@@ -64,7 +65,7 @@ var (
 	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
 	MockPostgreSQLDatabase = &catalog.Database{
 		Name:   "test",
-		DbType: catalog.Postgres,
+		DbType: db.Postgres,
 		SchemaList: []*catalog.Schema{
 			{
 				Name: "public",

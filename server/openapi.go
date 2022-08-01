@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
 	"github.com/labstack/echo/v4"
@@ -40,7 +39,7 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Produce  json
 // @Param  environment   query  string  true   "The environment name. Case sensitive."
 // @Param  statement     query  string  true   "The SQL statement."
-// @Param  databaseType  query  string  false  "The database type. Required if the port, host and database name is not specified."  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  databaseType  query  string  false  "The database type. Required if the port, host and database name is not specified."  Enums(MYSQL, POSTGRES, TIDB)
 // @Param  host          query  string  false  "The instance host."
 // @Param  port          query  string  false  "The instance port."
 // @Param  databaseName  query  string  false  "The database name in the instance."
@@ -60,7 +59,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	var dbType db.Type
+	var databaseType string
 	var catalog catalog.Catalog = &catalogService{}
 
 	databaseName := c.QueryParams().Get("databaseName")
@@ -72,19 +71,19 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-		dbType = database.Instance.Engine
+		dbType := database.Instance.Engine
+		databaseType = string(dbType)
 		catalog = store.NewCatalog(&database.ID, s.store, dbType)
 	} else {
-		databaseType := c.QueryParams().Get("databaseType")
+		databaseType = c.QueryParams().Get("databaseType")
 		if databaseType == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
 		}
-		dbType = db.Type(strings.ToUpper(databaseType))
 	}
 
-	advisorDBType, err := api.ConvertToAdvisorDBType(dbType)
+	advisorDBType, err := advisorDB.ConvertToAdvisorDBType(databaseType)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", databaseType))
 	}
 
 	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
@@ -115,7 +114,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			Name:  metricAPI.SQLAdviseAPIMetricName,
 			Value: 1,
 			Labels: map[string]string{
-				"database_type": string(dbType),
+				"database_type": databaseType,
 				"environment":   envName,
 			},
 		})

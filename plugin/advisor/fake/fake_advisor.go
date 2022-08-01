@@ -2,6 +2,7 @@ package fake
 
 import (
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 var (
@@ -9,9 +10,9 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.Fake, &Advisor{})
-	advisor.Register(advisor.Postgres, advisor.Fake, &Advisor{})
-	advisor.Register(advisor.TiDB, advisor.Fake, &Advisor{})
+	advisor.Register(db.MySQL, advisor.Fake, &Advisor{})
+	advisor.Register(db.Postgres, advisor.Fake, &Advisor{})
+	advisor.Register(db.TiDB, advisor.Fake, &Advisor{})
 }
 
 // Advisor is the fake sql advisor.

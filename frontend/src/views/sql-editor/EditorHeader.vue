@@ -106,16 +106,10 @@ import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
-import { storeToRefs } from "pinia";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
 import { isDBAOrOwner, isDev } from "@/utils";
-import {
-  hasFeature,
-  useCurrentUser,
-  useInboxStore,
-  useSubscriptionStore,
-} from "@/store";
+import { hasFeature, useCurrentUser, useInboxStore } from "@/store";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -127,7 +121,6 @@ export default defineComponent({
   setup() {
     const { t, availableLocales, locale } = useI18n();
     const inboxStore = useInboxStore();
-    const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -135,8 +128,6 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
-
-    const { currentPlan } = storeToRefs(subscriptionStore);
 
     const showDBAItem = computed((): boolean => {
       return (
