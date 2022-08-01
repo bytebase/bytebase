@@ -916,7 +916,7 @@
       "connection-failure": "连接失败",
       "missing-migration-schema": "缺少变更 Schema",
       "schema-drift": "Schema 偏差",
-      "backup-enforcement-viloation": "违反备份策略约束",
+      "backup-enforcement-violation": "违反备份策略约束",
       "missing-backup": "缺少备份"
     },
     "action": {
@@ -1053,7 +1053,7 @@
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "github-com-admin-requirement": "您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
-        "ouath-info-correct": "OAuth 信息验证成功",
+        "oauth-info-correct": "OAuth 信息验证成功",
         "check-oauth-info-match": "请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。",
         "add-success": "成功添加了 Git 提供方「{vcs}」",
         "choose": "选择 Git 提供方",
@@ -1187,7 +1187,7 @@
     "loading-databases": "加载数据库信息...",
     "close-pane": "关闭面板",
     "loading-data": "加载数据中...",
-    "table-empty-placehoder": "点击 ”运行“ 执行查询",
+    "table-empty-placeholder": "点击 ”运行“ 执行查询",
     "no-rows-found": "暂无数据",
     "download-as-csv": "下载为 CSV 格式",
     "download-as-json": "下载为 JSON 格式",
