@@ -1,7 +1,8 @@
 {
   "engine": {
     "mysql": "MySQL",
-    "common": "通用"
+    "tidb": "TiDB",
+    "postgres": "PostgreSQL"
   },
   "category": {
     "engine": "引擎",
@@ -13,8 +14,8 @@
     "database": "数据库"
   },
   "template": {
-    "bb-sql-review-mysql-prod": "针对生产环境的审核策略模板",
-    "bb-sql-review-mysql-dev": "针对开发环境的审核策略模板"
+    "bb-sql-review-prod": "针对生产环境的审核策略模板",
+    "bb-sql-review-dev": "针对开发环境的审核策略模板"
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -68,6 +69,22 @@
       "component": {
         "format": {
           "title": "唯一键命名规则",
+          "template": {
+            "table": "表名",
+            "column_list": "索引包含的字段名，通过 _ 连接"
+          }
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "naming-index-pk": {
+      "title": "主键命名检查",
+      "description": "限制主键命名风格和长度，默认为 pk_<表名>_<主键包含的字段名组合>，且不超过 64 个字符。",
+      "component": {
+        "format": {
+          "title": "主键命名规则",
           "template": {
             "table": "表名",
             "column_list": "索引包含的字段名，通过 _ 连接"
