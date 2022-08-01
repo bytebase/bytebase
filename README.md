@@ -177,7 +177,7 @@ working on the code:
    cd frontend && pnpm i && pnpm dev
    ```
 
-   Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
+   Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
 1. (*Optional*) Install [pre-commit](https://pre-commit.com/index.html#install).
 
