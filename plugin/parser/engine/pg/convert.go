@@ -286,16 +286,16 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 		}
 		return update, nil
 	case *pgquery.Node_DeleteStmt:
-		delete := &ast.DeleteStmt{
+		deleteStmt := &ast.DeleteStmt{
 			Table: convertRangeVarToTableName(in.DeleteStmt.Relation, ast.TableTypeBaseTable),
 		}
 		if in.DeleteStmt.WhereClause != nil {
 			var err error
-			if delete.WhereClause, delete.PatternLikeList, delete.SubqueryList, err = convertExpressionNode(in.DeleteStmt.WhereClause); err != nil {
+			if deleteStmt.WhereClause, deleteStmt.PatternLikeList, deleteStmt.SubqueryList, err = convertExpressionNode(in.DeleteStmt.WhereClause); err != nil {
 				return nil, err
 			}
 		}
-		return delete, nil
+		return deleteStmt, nil
 	case *pgquery.Node_AlterObjectSchemaStmt:
 		switch in.AlterObjectSchemaStmt.ObjectType {
 		case pgquery.ObjectType_OBJECT_TABLE:
