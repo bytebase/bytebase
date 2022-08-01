@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/bytebase/bytebase/common/log"
 	metricAPI "github.com/bytebase/bytebase/metric"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
@@ -41,7 +41,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Tags  Schema Review
 // @Produce  json
 // @Param  statement     query  string  true   "The SQL statement."
-// @Param  databaseType  query  string  true   "The database type."  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  databaseType  query  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB)
 // @Param  template      query  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.mysql.prod, bb.sql-review.mysql.dev)
 // @Param  override      query  string  false  "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified."
 // @Success  200  {array}   advisor.Advice
@@ -58,7 +58,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	if databaseType == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
 	}
-	advisorDBType, err := convertToAdvisorDBType(strings.ToUpper(databaseType))
+	advisorDBType, err := advisorDB.ConvertToAdvisorDBType(databaseType)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", databaseType))
 	}
@@ -115,21 +115,8 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	return c.JSON(http.StatusOK, adviceList)
 }
 
-func convertToAdvisorDBType(dbType string) (advisor.DBType, error) {
-	switch dbType {
-	case string(advisor.MySQL):
-		return advisor.MySQL, nil
-	case string(advisor.Postgres):
-		return advisor.Postgres, nil
-	case string(advisor.TiDB):
-		return advisor.TiDB, nil
-	}
-
-	return "", fmt.Errorf("unsupported db type %s for advisor", dbType)
-}
-
 func sqlCheck(
-	dbType advisor.DBType,
+	dbType advisorDB.Type,
 	dbCharacterSet string,
 	dbCollation string,
 	statement string,

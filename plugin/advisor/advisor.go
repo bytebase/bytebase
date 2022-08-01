@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -108,6 +109,12 @@ const (
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
 
+	// PostgreSQLNamingPKConvention is an advisor type for PostgreSQL primary key naming convention.
+	PostgreSQLNamingPKConvention Type = "bb.plugin.advisor.postgresql.naming.pk"
+
+	// PostgreSQLNamingIndexConvention is an advisor type for PostgreSQL index naming convention.
+	PostgreSQLNamingIndexConvention Type = "bb.plugin.advisor.postgresql.naming.index"
+
 	// PostgreSQLNamingUKConvention is an advisor type for PostgreSQL unique key naming convention.
 	PostgreSQLNamingUKConvention Type = "bb.plugin.advisor.postgresql.naming.uk"
 
@@ -131,6 +138,9 @@ const (
 
 	// PostgreSQLNoSelectAll is an advisor type for PostgreSQL no select all.
 	PostgreSQLNoSelectAll Type = "bb.plugin.advisor.postgresql.select.no-select-all"
+
+	// PostgreSQLMigrationCompatibility is an advisor type for PostgreSQL migration compatibility.
+	PostgreSQLMigrationCompatibility Type = "bb.plugin.advisor.postgresql.migration-compatibility"
 )
 
 // Advice is the result of an advisor.
@@ -182,13 +192,13 @@ type Advisor interface {
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[DBType]map[Type]Advisor)
+	advisors  = make(map[db.Type]map[Type]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType DBType, advType Type, f Advisor) {
+func Register(dbType db.Type, advType Type, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -208,7 +218,7 @@ func Register(dbType DBType, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice, error) {
+func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advice, error) {
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
@@ -225,18 +235,18 @@ func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType DBType) bool {
+func IsSyntaxCheckSupported(dbType db.Type) bool {
 	switch dbType {
-	case MySQL, TiDB, Postgres:
+	case db.MySQL, db.TiDB, db.Postgres:
 		return true
 	}
 	return false
 }
 
 // IsSQLReviewSupported checks the engine type if schema review supports it.
-func IsSQLReviewSupported(dbType DBType) bool {
+func IsSQLReviewSupported(dbType db.Type) bool {
 	switch dbType {
-	case MySQL, TiDB, Postgres:
+	case db.MySQL, db.TiDB, db.Postgres:
 		return true
 	}
 	return false
