@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -13,7 +14,7 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.Postgres, advisor.PostgreSQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

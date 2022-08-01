@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -13,8 +14,8 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
-	advisor.Register(advisor.TiDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".
