@@ -17,11 +17,11 @@ ruleList:
     componentList: []
   - type: table.no-foreign-key
     category: TABLE
-    engine: COMMON
+    engine: MYSQL
     componentList: []
   - type: table.drop-naming-convention
     category: TABLE
-    engine: COMMON
+    engine: MYSQL
     componentList:
       - key: format
         payload:
@@ -110,6 +110,21 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
+  - type: naming.index.pk
+    category: NAMING
+    engine: POSTGRES
+    componentList:
+      - key: format
+        payload:
+          type: TEMPLATE
+          default: "^pk_{{table}}_{{column_list}}$"
+          templateList:
+            - table
+            - column_list
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
   - type: column.required
     category: COLUMN
     engine: COMMON
@@ -129,9 +144,9 @@ ruleList:
     componentList: []
   - type: schema.backward-compatibility
     category: SCHEMA
-    engine: MYSQL
+    engine: COMMON
     componentList: []
   - type: database.drop-empty-database
     category: DATABASE
-    engine: COMMON
+    engine: MYSQL
     componentList: []
