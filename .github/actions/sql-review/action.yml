@@ -6,7 +6,7 @@ inputs:
     required: false
     default: ""
   database:
-    description: 'The database type, should be one of "MySQL", "PostgreSQL" or "TiDB".'
+    description: 'The database type, should be one of "MYSQL", "POSTGRES" or "TIDB".'
     required: true
 runs:
   using: "composite"
