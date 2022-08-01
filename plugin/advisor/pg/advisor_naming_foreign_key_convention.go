@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -15,7 +16,7 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.Postgres, advisor.PostgreSQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLNamingFKConvention, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
