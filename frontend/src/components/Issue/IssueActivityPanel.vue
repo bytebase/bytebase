@@ -532,7 +532,7 @@ const actionIcon = (activity: Activity): ActionIconType => {
         return "fail";
       }
       case "PENDING_APPROVAL": {
-        return "avatar"; // xxx dismissed stale approval
+        return "avatar"; // stale approval dismissed.
       }
     }
   } else if (activity.type == "bb.pipeline.task.file.commit") {
