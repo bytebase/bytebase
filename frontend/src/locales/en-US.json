@@ -714,9 +714,9 @@
       "tip": "The policy is not applied retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
-      "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
+      "manual-info": "Tasks will only be executed after being manually approved.",
       "auto": "Skip manual approval",
-      "auto-info": "Pending schema migration task will be executed automatically."
+      "auto-info": "Tasks will be approved and executed automatically if all task checks pass."
     },
     "backup": {
       "name": "Database backup schedule policy",
