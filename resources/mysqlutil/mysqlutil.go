@@ -99,6 +99,7 @@ func Install(resourceDir string) (*Instance, error) {
 		// and add libncurses.so.5 and libtinfo.so.5 to make mysqlbinlog run successfully.
 		// So we need to reinstall mysqlutil if the users upgrade from an older version that missing these shared libraries.
 		path.Join(mysqlutilDir, "lib", "private", "libncurses.so.5"),
+		path.Join(mysqlutilDir, "lib", "private", "libtinfo.so.5"),
 
 		// We embed mysqldump in version v1.2.3.
 		path.Join(mysqlutilDir, "bin", "mysqldump"),
