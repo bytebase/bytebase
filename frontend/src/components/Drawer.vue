@@ -2,7 +2,7 @@
   <Transition name="slide">
     <div
       v-if="show"
-      class="absolute top-0 right-0 h-screen bg-white shadow-xl outline-none"
+      class="fixed top-0 right-0 h-screen bg-white shadow-xl outline-none"
       :style="`width: ${width}px`"
       tabindex="0"
       @keyup.esc="handleClose"
