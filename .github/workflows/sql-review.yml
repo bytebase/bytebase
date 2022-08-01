@@ -10,4 +10,4 @@ jobs:
         uses: ./.github/actions/sql-review
         with:
           override: ./sql-review.yml
-          database: PostgreSQL
+          database: POSTGRES
