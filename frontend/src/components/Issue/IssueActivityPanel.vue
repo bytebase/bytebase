@@ -531,6 +531,9 @@ const actionIcon = (activity: Activity): ActionIconType => {
       case "FAILED": {
         return "fail";
       }
+      case "PENDING_APPROVAL": {
+        return "avatar"; // stale approval dismissed.
+      }
     }
   } else if (activity.type == "bb.pipeline.task.file.commit") {
     return "commit";
@@ -588,6 +591,16 @@ const actionSentence = (activity: Activity): string => {
   switch (activity.type) {
     case "bb.pipeline.task.status.update": {
       const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+      if (payload.newStatus === "PENDING_APPROVAL") {
+        // stale approval dismissed.
+
+        const task = findTaskById(issue.value.pipeline, payload.taskId);
+        const taskName = t("activity.sentence.task-name", { name: task.name });
+        return t("activity.sentence.dismissed-stale-approval", {
+          task: taskName,
+        });
+      }
+
       let str = t("activity.sentence.changed");
       switch (payload.newStatus) {
         case "PENDING": {
