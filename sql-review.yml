@@ -1,0 +1,14 @@
+template: bb.sql-review.mysql.prod
+ruleList:
+  - type: statement.select.no-select-all
+    level: DISABLED
+  - type: table.drop-naming-convention
+    level: WARNING
+  - type: table.require-pk
+    level: TEST
+  - type: naming.table
+    payload:
+      format: "^table_[a-z]+(_[a-z]+)*$"
+  - type: naming.column
+    payload:
+      maxLength: 24

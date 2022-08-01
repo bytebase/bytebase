@@ -1,0 +1,29 @@
+name: SQL-Review
+description: "Parse and check the SQL statement according to the schema review rules"
+inputs:
+  override:
+    description: "SQL check configuration override file path."
+    required: false
+    default: ""
+  database:
+    description: 'The database type, should be one of "MySQL", "PostgreSQL" or "TiDB".'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v23.2
+      with:
+        files: |
+          **/*.sql
+    - name: SQL Review
+      run: |
+        for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+          echo "Start check statement in file $file"
+          ./.github/actions/sql-review/sql-review.sh $file ${{ inputs.database }} ${{ inputs.override }}
+        done
+      shell: bash
+branding:
+  icon: "database"
+  color: "gray-dark"

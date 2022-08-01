@@ -1,0 +1,13 @@
+on: [pull_request]
+
+jobs:
+  sql-review:
+    runs-on: ubuntu-latest
+    name: SQL Review
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check SQL
+        uses: ./.github/actions/sql-review
+        with:
+          override: ./sql-review.yml
+          database: PostgreSQL
