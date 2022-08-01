@@ -1,7 +1,8 @@
 {
   "engine": {
     "mysql": "MySQL",
-    "common": "Common"
+    "tidb": "TiDB",
+    "postgres": "PostgreSQL"
   },
   "category": {
     "engine": "Engine",
@@ -13,8 +14,8 @@
     "database": "Database"
   },
   "template": {
-    "bb-sql-review-mysql-prod": "Template for Prod Environment",
-    "bb-sql-review-mysql-dev": "Template for Dev Environment"
+    "bb-sql-review-prod": "Template for Prod Environment",
+    "bb-sql-review-dev": "Template for Dev Environment"
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -68,6 +69,22 @@
       "component": {
         "format": {
           "title": "Unique key name format",
+          "template": {
+            "table": "The table name",
+            "column_list": "Index column names, joined by _"
+          }
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
+    "naming-index-pk": {
+      "title": "Primary key naming check",
+      "description": "Enforce the primary key name format and length limit. Default uk_<table_name>_<column_list> with 64 characters.",
+      "component": {
+        "format": {
+          "title": "Primary key name format",
           "template": {
             "table": "The table name",
             "column_list": "Index column names, joined by _"

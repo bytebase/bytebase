@@ -8,10 +8,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed config/sql-review.mysql.dev.yaml
+//go:embed config/sql-review.dev.yaml
 var sqlReviewDevTemplateStr string
 
-//go:embed config/sql-review.mysql.prod.yaml
+//go:embed config/sql-review.prod.yaml
 var sqlReviewProdTemplateStr string
 
 // SQLReviewTemplateID is the template id for SQL review rules.
@@ -19,9 +19,9 @@ type SQLReviewTemplateID string
 
 const (
 	// TemplateForMySQLProd is the template id for mysql prod template.
-	TemplateForMySQLProd SQLReviewTemplateID = "bb.sql-review.mysql.prod"
+	TemplateForMySQLProd SQLReviewTemplateID = "bb.sql-review.prod"
 	// TemplateForMySQLDev is the template id for mysql dev template.
-	TemplateForMySQLDev SQLReviewTemplateID = "bb.sql-review.mysql.dev"
+	TemplateForMySQLDev SQLReviewTemplateID = "bb.sql-review.dev"
 )
 
 // SQLReviewTemplateData is the API message for SQL review rule template.
