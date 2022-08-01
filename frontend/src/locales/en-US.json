@@ -431,7 +431,8 @@
       "completed": "completed",
       "failed": "failed",
       "task-name": " task {name}",
-      "committed-to-at": "committed {file} to{branch}{'@'}{repo}"
+      "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
+      "dismissed-stale-approval": "dismissed stale approvals of {task}"
     },
     "subject-prefix": {
       "task": "Task"

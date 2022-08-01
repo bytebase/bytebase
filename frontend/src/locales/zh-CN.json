@@ -432,7 +432,8 @@
       "completed": "完成",
       "failed": "失败",
       "task-name": "任务 {name}",
-      "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}"
+      "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销"
     },
     "subject-prefix": {
       "task": "任务"
