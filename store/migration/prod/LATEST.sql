@@ -538,7 +538,7 @@ CREATE TABLE backup (
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
+    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC', 'PITR')),
     storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
@@ -568,10 +568,13 @@ CREATE TABLE backup_setting (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
+    -- enable automatic backup schedule.
     enabled BOOLEAN NOT NULL,
     hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
     day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
+    -- retention_period_ts == 0 means unset retention period and we do not delete any data.
+    retention_period_ts INTEGER NOT NULL DEFAULT 0 CHECK (retention_period_ts >= 0),
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
