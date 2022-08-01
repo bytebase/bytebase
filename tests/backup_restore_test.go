@@ -169,7 +169,7 @@ func TestPITR(t *testing.T) {
 		})
 		a.NoError(err)
 
-		err = ctl.createDatabase(project, instance, databaseName, nil)
+		err = ctl.createDatabase(project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -254,7 +254,7 @@ func TestPITR(t *testing.T) {
 		})
 		a.NoError(err)
 
-		err = ctl.createDatabase(project, instance, databaseName, nil)
+		err = ctl.createDatabase(project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -345,7 +345,7 @@ func TestPITR(t *testing.T) {
 		})
 		a.NoError(err)
 
-		err = ctl.createDatabase(project, instance, databaseName, nil)
+		err = ctl.createDatabase(project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -445,7 +445,7 @@ func TestPITR(t *testing.T) {
 		})
 		a.NoError(err)
 
-		err = ctl.createDatabase(project, instance, databaseName, nil)
+		err = ctl.createDatabase(project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -545,7 +545,7 @@ func TestPITR(t *testing.T) {
 		})
 		a.NoError(err)
 
-		err = ctl.createDatabase(project, instance, databaseName, nil)
+		err = ctl.createDatabase(project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{
@@ -678,7 +678,7 @@ func TestPITR(t *testing.T) {
 		})
 		a.NoError(err)
 
-		err = ctl.createDatabase(project, instance, databaseName, nil)
+		err = ctl.createDatabase(project, instance, databaseName, "", nil)
 		a.NoError(err)
 
 		databases, err := ctl.getDatabases(api.DatabaseFind{

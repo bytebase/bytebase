@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"testing"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/utils"
@@ -241,4 +242,55 @@ func shouldSwitchUser() (int, int, bool, error) {
 		return 0, 0, false, err
 	}
 	return int(uid), int(gid), sameUser, nil
+}
+
+// StartForTest starts a postgres instance on localhost given port, outputs to stdout and stderr.
+//
+// If port is 0, then it will choose a random unused port.
+//
+// If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
+// Otherwise, returns immediately.
+func (i *Instance) StartForTest(port int, stdout, stderr io.Writer) (err error) {
+	pgbin := filepath.Join(i.BaseDir, "bin", "pg_ctl")
+
+	i.port = port
+
+	// See -p -k -h option definitions in the link below.
+	// https://www.postgresql.org/docs/current/app-postgres.html
+	p := exec.Command(pgbin, "start", "-w",
+		"-D", i.dataDir,
+		"-o", fmt.Sprintf(`-p %d -k %s -h 127.0.0.1`, i.port, common.GetPostgresSocketDir()))
+
+	p.Stdout = stdout
+	p.Stderr = stderr
+
+	if err := p.Run(); err != nil {
+		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+	}
+
+	return nil
+}
+
+// SetupTestInstance installs and starts a postgresql instance for testing,
+// returns the instance and the stop function.
+func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
+	basedir, datadir := t.TempDir(), t.TempDir()
+	t.Log("Installing PostgreSQL...")
+	i, err := Install(basedir, datadir, "root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("Starting PostgreSQL...")
+	if err := i.StartForTest(port, os.Stdout, os.Stderr); err != nil {
+		t.Fatal(err)
+	}
+
+	stopFn := func() {
+		t.Log("Stopping PostgreSQL...")
+		if err := i.Stop(os.Stdout, os.Stderr); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	return i, stopFn
 }
