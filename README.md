@@ -155,7 +155,7 @@ working on the code:
    git clone https://github.com/bytebase/bytebase
    ```
 
-1. Set up pre-commit hooks.
+1. (Optional) Set up pre-commit hooks.
 
    - Install [pre-commit](https://pre-commit.com/index.html#install)
 
