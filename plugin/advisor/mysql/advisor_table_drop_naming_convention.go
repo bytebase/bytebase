@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -14,8 +15,8 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-	advisor.Register(advisor.TiDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.

@@ -8,11 +8,12 @@ import (
 	"regexp"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 // How to add a schema review rule:
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
-//   2. Register this advisor in map[DBType][AdvisorType].(plugin/advisor.go)
+//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
 //   3. Add advisor error code if needed(plugin/advisor/code.go).
 //   4. Map SQLReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
@@ -256,7 +257,7 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 type SQLReviewCheckContext struct {
 	Charset   string
 	Collation string
-	DbType    DBType
+	DbType    db.Type
 	Catalog   catalog.Catalog
 }
 
@@ -311,46 +312,46 @@ func SchemaReviewCheck(statements string, ruleList []*SQLReviewRule, checkContex
 	return result, nil
 }
 
-func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine DBType) (Type, error) {
+func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, error) {
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLWhereRequirement, nil
 		case Postgres:
 			return PostgreSQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNoLeadingWildcardLike, nil
 		case Postgres:
 			return PostgreSQLNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNoSelectAll, nil
 		case Postgres:
 			return PostgreSQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLMigrationCompatibility, nil
 		case Postgres:
 			return PostgreSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingTableConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingIndexConvention, nil
 		case Postgres:
 			return PostgreSQLNamingIndexConvention, nil
@@ -361,63 +362,63 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine DBType) (Type, erro
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingUKConvention, nil
 		case Postgres:
 			return PostgreSQLNamingUKConvention, nil
 		}
 	case SchemaRuleFKNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingFKConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingFKConvention, nil
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingColumnConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingColumnConvention, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLColumnRequirement, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLColumnNoNull, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLTableRequirePK, nil
 		case Postgres:
 			return PostgreSQLTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleMySQLEngine:
-		if engine == MySQL {
+		if engine == db.MySQL {
 			return MySQLUseInnoDB, nil
 		}
 	case SchemaRuleDropEmptyDatabase:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	}
