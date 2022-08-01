@@ -28,5 +28,11 @@ func parseStatement(statement string) ([]ast.Node, []advisor.Advice) {
 			},
 		}
 	}
-	return nodes, nil
+	var res []ast.Node
+	for _, node := range nodes {
+		if node != nil {
+			res = append(res, node)
+		}
+	}
+	return res, nil
 }
