@@ -17,6 +17,6 @@ func activeProfile(dataDir string) server.Profile {
 		Version:             version,
 		DataDir:             dataDir,
 		GitCommit:           gitcommit,
-		MetricConnectionKey: "",
+		MetricConnectionKey: "46nEgegY1APWBz4NcQp0rCRJomDnLJyE",
 	}
 }
