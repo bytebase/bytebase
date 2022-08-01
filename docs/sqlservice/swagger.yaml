@@ -45,9 +45,9 @@ paths:
         type: string
       - description: The database type.
         enum:
-        - MySQL
-        - PostgreSQL
-        - TiDB
+        - MYSQL
+        - POSTGRES
+        - TIDB
         in: query
         name: databaseType
         required: true
