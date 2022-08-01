@@ -130,7 +130,7 @@ const data = computed(() => {
 });
 const notifyMessage = computed(() => {
   if (!queryResult.value) {
-    return t("sql-editor.table-empty-placehoder");
+    return t("sql-editor.table-empty-placeholder");
   }
   if (sqlEditorStore.isExecuting) {
     return t("sql-editor.loading-data");
