@@ -4,7 +4,7 @@ title: What is 'Member' ?
 
 A user in the Bytebase workspace is defined as a member.
 
-You can add new member, update their role and deactivate a member at the workspace level.
+You can add new members, update their roles and deactivate a member at the workspace level.
 
 #### Learn more
 
