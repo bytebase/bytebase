@@ -20,12 +20,15 @@ const (
 	MySQL binaryName = "mysql"
 	// MySQLBinlog is the name of mysqlbinlog binary.
 	MySQLBinlog binaryName = "mysqlbinlog"
+	// MySQLDump is the name of mysqldump binary.
+	MySQLDump binaryName = "mysqldump"
 )
 
 // Instance involve the path of all binaries binary.
 type Instance struct {
 	mysqlBinPath       string
 	mysqlbinlogBinPath string
+	mysqldumpBinPath   string
 }
 
 // GetPath returns the binary path specified by `binName`.
@@ -35,6 +38,8 @@ func (ins *Instance) GetPath(binName binaryName) string {
 		return ins.mysqlBinPath
 	case MySQLBinlog:
 		return ins.mysqlbinlogBinPath
+	case MySQLDump:
+		return ins.mysqldumpBinPath
 	}
 	return "UNKNOWN"
 }
@@ -48,6 +53,8 @@ func (ins *Instance) Version(binName binaryName) (string, error) {
 		cmd = exec.Command(ins.GetPath(MySQL), "-V")
 	case MySQLBinlog:
 		cmd = exec.Command(ins.GetPath(MySQLBinlog), "-V")
+	case MySQLDump:
+		cmd = exec.Command(ins.GetPath(MySQLDump), "-V")
 	default:
 		return "", fmt.Errorf("unknown binary name: %s", binName)
 	}
@@ -86,28 +93,39 @@ func Install(resourceDir string) (*Instance, error) {
 		}
 	}
 
-	// TODO(zp): remove this block in the next few months
-	// We change Dockerfile's base image from alpine to debian slim in v1.2.1,
-	// and add libncurses.so.5 and libtinfo.so.5 to make mysqlbinlog run successfully.
-	// So we need to reinstall mysqlutil if the users upgrade from an older version that missing these shared libraries.
-	libncursesPath := path.Join(mysqlutilDir, "lib", "private", "libncurses.so.5")
-	if _, err := os.Stat(libncursesPath); err != nil {
-		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to check libncurses library path %q, error: %w", libncursesPath, err)
-		}
-		// Remove mysqlutil of old version and reinstall it
-		if err := os.RemoveAll(mysqlutilDir); err != nil {
-			return nil, fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
-		}
-		// Install the current version
-		if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
-			return nil, fmt.Errorf("cannot install mysqlutil, error: %w", err)
+	checks := []string{
+		// TODO(zp): remove this line in the next few months
+		// We change Dockerfile's base image from alpine to debian slim in v1.2.1,
+		// and add libncurses.so.5 and libtinfo.so.5 to make mysqlbinlog run successfully.
+		// So we need to reinstall mysqlutil if the users upgrade from an older version that missing these shared libraries.
+		path.Join(mysqlutilDir, "lib", "private", "libncurses.so.5"),
+		path.Join(mysqlutilDir, "lib", "private", "libtinfo.so.5"),
+
+		// We embed mysqldump in version v1.2.3.
+		path.Join(mysqlutilDir, "bin", "mysqldump"),
+	}
+
+	for _, fp := range checks {
+		if _, err := os.Stat(fp); err != nil {
+			if !os.IsNotExist(err) {
+				return nil, fmt.Errorf("failed to check libncurses library path %q, error: %w", fp, err)
+			}
+			// Remove mysqlutil of old version and reinstall it
+			if err := os.RemoveAll(mysqlutilDir); err != nil {
+				return nil, fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
+			}
+			// Install the current version
+			if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
+				return nil, fmt.Errorf("cannot install mysqlutil, error: %w", err)
+			}
+			break
 		}
 	}
 
 	return &Instance{
 		mysqlBinPath:       filepath.Join(mysqlutilDir, "bin", "mysql"),
 		mysqlbinlogBinPath: filepath.Join(mysqlutilDir, "bin", "mysqlbinlog"),
+		mysqldumpBinPath:   filepath.Join(mysqlutilDir, "bin", "mysqldump"),
 	}, nil
 }
 
