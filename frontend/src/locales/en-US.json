@@ -431,7 +431,8 @@
       "completed": "completed",
       "failed": "failed",
       "task-name": " task {name}",
-      "committed-to-at": "committed {file} to{branch}{'@'}{repo}"
+      "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
+      "dismissed-stale-approval": "dismissed stale approvals of {task}"
     },
     "subject-prefix": {
       "task": "Task"
@@ -713,9 +714,9 @@
       "tip": "The policy is not applied retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
-      "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
+      "manual-info": "Tasks will only be executed after being manually approved.",
       "auto": "Skip manual approval",
-      "auto-info": "Pending schema migration task will be executed automatically."
+      "auto-info": "Tasks will be approved and executed automatically if all task checks pass."
     },
     "backup": {
       "name": "Database backup schedule policy",
@@ -1072,7 +1073,7 @@
           "gitlab-visit-admin-page": "Go to the Admin page by clicking the wrench icon, then navigate to \"Applications\" section and click \"New application\" button.",
           "gitlab-paste-oauth-info": "Paste the Application ID and Secret from that just created application into fields below.",
           "github-register-oauth-application": "Register Bytebase as a GitHub organization-wide OAuth application.",
-          "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organiztion Settings page).",
+          "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
           "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
           "direct-link": "Direct link",
@@ -1259,7 +1260,7 @@
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
   },
   "oauth": {
-    "unknown-event": "Unexpeted event type, OAuth failed."
+    "unknown-event": "Unexpected event type, OAuth failed."
   },
   "subscription": {
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
@@ -1318,7 +1319,7 @@
       },
       "bb-feature-approval-policy": {
         "title": "Approval policy",
-        "desc": "Approval policy controls whether the schama change task requires manual approval."
+        "desc": "Approval policy controls whether the schema change task requires manual approval."
       },
       "bb-feature-backup-policy": {
         "title": "Backup policy",
@@ -1334,7 +1335,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
-        "desc": "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
+        "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection"
       },
       "bb-feature-3rd-party-auth": {
         "title": "3rd party authentication & authorization",

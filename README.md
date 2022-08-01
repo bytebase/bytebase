@@ -129,15 +129,19 @@ working on the code:
 1. It requires zero config.
 1. 1 command to start backend and 1 command to start frontend, both with live reload support.
 
-**[Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)**
+### Learn the codebase
 
-**Tech Stack**
+* [Interactive code walkthrough](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
+* [Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)
 
-**Data Model**
+* Tech Stack
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
+   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
+
+* Data Model
+
+   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
 
 ### Prerequisites
 
@@ -153,16 +157,6 @@ working on the code:
 
    ```bash
    git clone https://github.com/bytebase/bytebase
-   ```
-
-1. (Optional) Set up pre-commit hooks.
-
-   - Install [pre-commit](https://pre-commit.com/index.html#install)
-
-   ```bash
-    cd bytebase
-    pre-commit install
-    pre-commit install --hook-type commit-msg
    ```
 
 1. Start backend using air (with live reload).
@@ -183,8 +177,15 @@ working on the code:
    cd frontend && pnpm i && pnpm dev
    ```
 
-Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
+   Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
 
+1. (*Optional*) Install [pre-commit](https://pre-commit.com/index.html#install).
+
+   ```bash
+   cd bytebase
+   pre-commit install
+   pre-commit install --hook-type commit-msg
+   ```
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)
