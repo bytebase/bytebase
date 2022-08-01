@@ -33,23 +33,20 @@ then
 fi
 
 result=0
-while read i; do
-    echo "::debug::$i"
-    status=$(jq -r '.status' <<< "$i")
-    code=$(jq -r '.code' <<< "$i")
-    title=$(jq -r '.title' <<< "$i")
-    content=$(jq -r '.content' <<< "$i")
+while read status code title content; do
+    text="status:$status,code:$code,title:$title,content:$content"
+    echo "::debug::$text"
 
     if [ -z "$content" ]; then
         content=$title
     fi
 
     if [ $code != 0 ]; then
-        echo $i
+        echo $text
         echo "::error file=$FILE,line=1,col=1,endColumn=2,title=$title::$content"
         result=$code
     fi
-done <<< "$(echo $body | jq -c '.[]')"
+done <<< "$(echo $body | jq -r '.[] | "\(.status) \(.code) \(.title) \(.content)"')"
 
 if [ $result != 0 ]; then
     exit 1
