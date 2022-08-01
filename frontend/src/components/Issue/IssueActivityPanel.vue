@@ -592,7 +592,7 @@ const actionSentence = (activity: Activity): string => {
     case "bb.pipeline.task.status.update": {
       const payload = activity.payload as ActivityTaskStatusUpdatePayload;
       if (payload.newStatus === "PENDING_APPROVAL") {
-        // xxx dismissed stale approval
+        // stale approval dismissed.
 
         const task = findTaskById(issue.value.pipeline, payload.taskId);
         const taskName = t("activity.sentence.task-name", { name: task.name });
