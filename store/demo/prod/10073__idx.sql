@@ -11,6 +11,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -25,6 +26,7 @@ VALUES
         'col1',
         1,
         'BTREE',
+        false,
         false,
         true,
         ''
@@ -43,6 +45,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -57,6 +60,7 @@ VALUES
         'col1',
         1,
         'BTREE',
+        false,
         false,
         true,
         ''
@@ -75,6 +79,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -90,6 +95,7 @@ VALUES
         1,
         'BTREE',
         true,
+        false,
         true,
         ''
     );
@@ -107,6 +113,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -122,6 +129,7 @@ VALUES
         1,
         'BTREE',
         true,
+        false,
         true,
         ''
     );
@@ -139,6 +147,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -153,6 +162,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -171,6 +181,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -185,6 +196,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -203,6 +215,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -217,6 +230,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -235,6 +249,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -249,6 +264,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -267,6 +283,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -281,6 +298,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -299,6 +317,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -313,6 +332,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -331,6 +351,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -345,6 +366,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -363,6 +385,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -377,6 +400,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -395,6 +419,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -409,6 +434,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -427,6 +453,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -441,6 +468,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -459,6 +487,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -473,6 +502,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -491,6 +521,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -505,6 +536,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -523,6 +555,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -537,6 +570,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
@@ -555,6 +589,7 @@ INSERT INTO
         position,
         type,
         "unique",
+        "primary",
         visible,
         comment
     )
@@ -569,6 +604,7 @@ VALUES
         'id',
         1,
         'BTREE',
+        true,
         true,
         true,
         ''
