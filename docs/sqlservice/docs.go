@@ -60,8 +60,8 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "bb.sql-review.mysql.prod",
-                            "bb.sql-review.mysql.dev"
+                            "bb.sql-review.prod",
+                            "bb.sql-review.dev"
                         ],
                         "type": "string",
                         "description": "The SQL check template id. Required if the config is not specified.",
