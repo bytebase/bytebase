@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -16,8 +17,8 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-	advisor.Register(advisor.TiDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
 }
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.

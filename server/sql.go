@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/store"
@@ -179,7 +180,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceList := []advisor.Advice{}
 
 		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) {
-			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
+			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
 			}
@@ -648,7 +649,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 
 func (s *Server) sqlCheck(
 	ctx context.Context,
-	dbType advisor.DBType,
+	dbType advisorDB.Type,
 	dbCharacterSet string,
 	dbCollation string,
 	environmentID int,
