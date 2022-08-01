@@ -671,7 +671,7 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 	return backupSettingRawList, nil
 }
 
-func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*backupSettingRaw, error) {
+func (*Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*backupSettingRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -732,7 +732,7 @@ func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api
 }
 
 // upsertBackupSettingImpl updates an existing backup setting.
-func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
+func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
 	// Upsert row into backup_setting.
 	query := `
 		INSERT INTO backup_setting (

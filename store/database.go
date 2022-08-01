@@ -319,13 +319,6 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api
 	// Enable automatic backup setting based on backup plan policy.
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		backupSettingUpsert := &api.BackupSettingUpsert{
-			UpdaterID:  api.SystemBotID,
-			DatabaseID: databaseRaw.ID,
-			Enabled:    true,
-			Hour:       rand.Intn(24),
-			HookURL:    "",
-		}
-		backupSettingUpsert = &api.BackupSettingUpsert{
 			UpdaterID:         api.SystemBotID,
 			DatabaseID:        databaseRaw.ID,
 			Enabled:           true,
