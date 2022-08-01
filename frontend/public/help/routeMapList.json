@@ -73,7 +73,7 @@
   },
   {
     "routeName": "setting.workspace.member",
-    "helpName": ""
+    "helpName": "help.member"
   },
   {
     "routeName": "setting.workspace.version-control",
