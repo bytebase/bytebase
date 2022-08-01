@@ -318,28 +318,28 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLWhereRequirement, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLNoLeadingWildcardLike, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLNoSelectAll, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLMigrationCompatibility, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
@@ -353,18 +353,18 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLNamingIndexConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingIndexConvention, nil
 		}
 	case SchemaRulePKNaming:
-		if engine == Postgres {
+		if engine == db.Postgres {
 			return PostgreSQLNamingPKConvention, nil
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLNamingUKConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingUKConvention, nil
 		}
 	case SchemaRuleFKNaming:
@@ -399,7 +399,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableRequirePK, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
