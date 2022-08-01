@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -105,21 +106,75 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.Equal(numRecords, i)
 }
 
+const (
+	numRowsTime0 = 10
+	numRowsTime1 = 20
+	numRowsTime2 = 30
+)
+
+func setUpForPITRTest(t *testing.T, ctl *controller, port, envID int, project *api.Project) (*sql.DB, *api.Database, func()) {
+	a := require.New(t)
+
+	baseName := strings.ReplaceAll(t.Name(), " ", "")
+	baseName = strings.ReplaceAll(baseName, "/", "")
+	databaseName := baseName + "Database"
+
+	_, stopInstance := resourcemysql.SetupTestInstance(t, port)
+	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+	instance, err := ctl.addInstance(api.InstanceCreate{
+		EnvironmentID: envID,
+		Name:          baseName + "Instance",
+		Engine:        db.MySQL,
+		Host:          connCfg.Host,
+		Port:          connCfg.Port,
+		Username:      connCfg.Username,
+	})
+	a.NoError(err)
+
+	err = ctl.createDatabase(project, instance, databaseName, nil)
+	a.NoError(err)
+
+	databases, err := ctl.getDatabases(api.DatabaseFind{
+		InstanceID: &instance.ID,
+	})
+	a.NoError(err)
+	a.Equal(1, len(databases))
+	database := databases[0]
+
+	err = ctl.disableAutomaticBackup(database.ID)
+	a.NoError(err)
+
+	mysqlDB, _ := initPITRDB(t, databaseName, port)
+
+	insertRangeData(t, mysqlDB, 0, numRowsTime0)
+
+	log.Debug("Create a full backup")
+	backup, err := ctl.createBackup(api.BackupCreate{
+		DatabaseID:     database.ID,
+		Name:           "first-backup",
+		Type:           api.BackupTypeManual,
+		StorageBackend: api.BackupStorageBackendLocal,
+	})
+	a.NoError(err)
+	err = ctl.waitBackup(database.ID, backup.ID)
+	a.NoError(err)
+
+	return mysqlDB, database, func() {
+		stopInstance()
+		mysqlDB.Close()
+	}
+}
+
 func TestPITR(t *testing.T) {
-	const (
-		numRowsTime0 = 10
-		numRowsTime1 = 20
-		numRowsTime2 = 30
-	)
 	t.Parallel()
 	a := require.New(t)
 	log.SetLevel(zapcore.DebugLevel)
 
 	ctx := context.Background()
-	port := getTestPort(t.Name())
+	serverPort := getTestPort(t.Name())
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, port)
+	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, serverPort)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -151,57 +206,14 @@ func TestPITR(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("Buggy Application", func(t *testing.T) {
-		log.Debug(t.Name())
-		databaseName := "buggy_application"
-
 		port := getTestPort(t.Name())
-		_, stopFn := resourcemysql.SetupTestInstance(t, port)
-		defer stopFn()
-
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
-		instance, err := ctl.addInstance(api.InstanceCreate{
-			EnvironmentID: prodEnvironment.ID,
-			Name:          "BuggyApplicationInstance",
-			Engine:        db.MySQL,
-			Host:          connCfg.Host,
-			Port:          connCfg.Port,
-			Username:      connCfg.Username,
-		})
-		a.NoError(err)
-
-		err = ctl.createDatabase(project, instance, databaseName, nil)
-		a.NoError(err)
-
-		databases, err := ctl.getDatabases(api.DatabaseFind{
-			InstanceID: &instance.ID,
-		})
-		a.NoError(err)
-		a.Equal(1, len(databases))
-		database := databases[0]
-
-		err = ctl.disableAutomaticBackup(database.ID)
-		a.NoError(err)
-
-		mysqlDB, _ := initPITRDB(t, databaseName, port)
-		defer mysqlDB.Close()
-
-		insertRangeData(t, mysqlDB, 0, numRowsTime0)
-
-		log.Debug("Create a full backup")
-		backup, err := ctl.createBackup(api.BackupCreate{
-			DatabaseID:     database.ID,
-			Name:           "first-backup",
-			Type:           api.BackupTypeManual,
-			StorageBackend: api.BackupStorageBackendLocal,
-		})
-		a.NoError(err)
-		err = ctl.waitBackup(database.ID, backup.ID)
-		a.NoError(err)
+		mysqlDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
+		defer cleanFn()
 
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
+		targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
 		createCtx, err := json.Marshal(&api.PITRContext{
 			DatabaseID:    database.ID,
 			PointInTimeTs: targetTs,
@@ -209,7 +221,7 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		issue, err := ctl.createIssue(api.IssueCreate{
 			ProjectID:     project.ID,
-			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
+			Name:          fmt.Sprintf("Restore database %s to the time %d", database.Name, targetTs),
 			Type:          api.IssueDatabasePITR,
 			AssigneeID:    project.Creator.ID,
 			CreateContext: string(createCtx),
@@ -230,9 +242,9 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		validateTableUpdateRow(t, mysqlDB, databaseName)
+		validateTbl0(t, mysqlDB, database.Name, numRowsTime1)
+		validateTbl1(t, mysqlDB, database.Name, numRowsTime1)
+		validateTableUpdateRow(t, mysqlDB, database.Name)
 	})
 
 	t.Run("Schema Migration Failure", func(t *testing.T) {
