@@ -39,7 +39,7 @@ Bytebase stores metadata in PostgreSQL. The Bytebase release binary includes the
 
 https://sourcegraph.com/github.com/bytebase/bytebase@d55481/-/blob/resources/postgres/postgres.go?L93-105
 
-The embeded PostgreSQL is handy during development and easy for user to get started. Alternatively, user can specify an external [--pg](https://www.bytebase.com/docs/get-started/install/external-postgres) to store the metadata there.
+The embedded PostgreSQL is handy during development and easy for user to get started. Alternatively, user can specify an external [--pg](https://www.bytebase.com/docs/get-started/install/external-postgres) to store the metadata there.
 
 ## Modular Design
 
