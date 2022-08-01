@@ -190,7 +190,7 @@ export default defineComponent({
                 module: "bytebase",
                 style: "SUCCESS",
                 title: t(
-                  "version-control.setting.add-git-provider.ouath-info-correct"
+                  "version-control.setting.add-git-provider.oauth-info-correct"
                 ),
               });
             } else {

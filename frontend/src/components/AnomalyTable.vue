@@ -146,7 +146,7 @@ export default defineComponent({
         case "bb.anomaly.instance.migration-schema":
           return t("anomaly.types.missing-migration-schema");
         case "bb.anomaly.database.backup.policy-violation":
-          return t("anomaly.types.backup-enforcement-viloation");
+          return t("anomaly.types.backup-enforcement-violation");
         case "bb.anomaly.database.backup.missing":
           return t("anomaly.types.missing-backup");
         case "bb.anomaly.database.connection":

@@ -914,7 +914,7 @@
     "types": {
       "connection-failure": "Connection failure",
       "missing-migration-schema": "Missing migration schema",
-      "backup-enforcement-viloation": "Backup enforcement violation",
+      "backup-enforcement-violation": "Backup enforcement violation",
       "missing-backup": "Missing backup",
       "schema-drift": "Schema drift"
     },
@@ -1052,7 +1052,7 @@
         "gitlab-self-host": "GitLab self-host",
         "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
-        "ouath-info-correct": "Verified OAuth info is correct",
+        "oauth-info-correct": "Verified OAuth info is correct",
         "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
         "add-success": "Successfully added Git provider {vcs}",
         "choose": "Choose Git provider",
@@ -1186,7 +1186,7 @@
     "loading-databases": "Loading Databases...",
     "close-pane": "Close Pane",
     "loading-data": "Loading Data...",
-    "table-empty-placehoder": "Click Run to execute the query.",
+    "table-empty-placeholder": "Click Run to execute the query.",
     "no-rows-found": "No rows found",
     "download-as-csv": "Download as CSV",
     "download-as-json": "Download as JSON",
