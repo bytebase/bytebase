@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -43,7 +44,7 @@ func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 		return nil, nil
 	}
 
-	dbType, err := convertToCatalogDBType(c.engineType)
+	dbType, err := advisorDB.ConvertToAdvisorDBType(string(c.engineType))
 	if err != nil {
 		return nil, err
 	}
@@ -233,17 +234,4 @@ func convertColumnList(list []*api.Column) []*catalog.Column {
 		})
 	}
 	return res
-}
-
-func convertToCatalogDBType(dbType db.Type) (catalog.DBType, error) {
-	switch dbType {
-	case db.MySQL:
-		return catalog.MySQL, nil
-	case db.Postgres:
-		return catalog.Postgres, nil
-	case db.TiDB:
-		return catalog.TiDB, nil
-	}
-
-	return "", fmt.Errorf("unsupported db type %s for catalog", dbType)
 }

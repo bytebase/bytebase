@@ -6,6 +6,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -15,7 +16,7 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.Postgres, advisor.PostgreSQLNamingPKConvention, &NamingPKConventionAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLNamingPKConvention, &NamingPKConventionAdvisor{})
 }
 
 // NamingPKConventionAdvisor is the advisor checking for primary key naming convention.

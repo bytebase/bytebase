@@ -55,9 +55,9 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "MySQL",
-                            "PostgreSQL",
-                            "TiDB"
+                            "MYSQL",
+                            "POSTGRES",
+                            "TIDB"
                         ],
                         "type": "string",
                         "description": "The database type. Required if the port, host and database name is not specified.",
