@@ -1,7 +1,7 @@
 {
   "engine": {
     "mysql": "MySQL",
-    "common": "通用",
+    "tidb": "TiDB",
     "postgres": "PostgreSQL"
   },
   "category": {

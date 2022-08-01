@@ -39,9 +39,11 @@
             </a>
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SQLRuleLevelBadge :level="rule.level" />
-              <BBBadge
-                :text="$t(`sql-review.engine.${rule.engine.toLowerCase()}`)"
-                :can-remove="false"
+              <img
+                v-for="engine in rule.engineList"
+                :key="engine"
+                class="h-4 w-auto"
+                :src="getEngineIcon(engine)"
               />
             </div>
           </div>
@@ -106,6 +108,7 @@ import {
   getRuleLocalizationKey,
   convertToCategoryList,
   Environment,
+  SchemaRuleEngineType,
 } from "@/types";
 import { environmentName } from "@/utils";
 
@@ -127,4 +130,7 @@ const props = withDefaults(
 const categoryList = computed(() => {
   return convertToCategoryList(props.selectedRuleList);
 });
+
+const getEngineIcon = (engine: SchemaRuleEngineType) =>
+  new URL(`../../assets/db-${engine.toLowerCase()}.png`, import.meta.url).href;
 </script>

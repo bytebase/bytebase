@@ -8,7 +8,7 @@ import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
 // The engine type for rule template
-export type SchemaRuleEngineType = "MYSQL" | "COMMON" | "POSTGRES";
+export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB";
 
 // The category type for rule template
 export type CategoryType =
@@ -135,7 +135,7 @@ export interface SQLReviewPolicy {
 export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
-  engine: SchemaRuleEngineType;
+  engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
 }

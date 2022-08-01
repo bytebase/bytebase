@@ -1,7 +1,7 @@
 {
   "engine": {
     "mysql": "MySQL",
-    "common": "Common",
+    "tidb": "TiDB",
     "postgres": "PostgreSQL"
   },
   "category": {
