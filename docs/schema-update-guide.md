@@ -13,8 +13,8 @@ Prod
 Dev
 
 - [dev](https://github.com/bytebase/bytebase/tree/main/store/migration/dev) schema.
-- `LATEST.sql` and `LATEST_DATA.sql` will only be used to view the latest schema. This is different Prod.
-- When a dev release binary starts, it will use the LATEST.sql in the release directory to initialize the database and then apply all the DDLs in the dev directory if not yet applied.
+- `LATEST.sql` and `LATEST_DATA.sql` will only be used to view the latest schema and data. This is different from the Prod.
+- When a dev release binary starts, it will use the `LATEST.sql` in the release directory to initialize the database and then apply all the DDLs in the dev directory if not yet applied.
 
 Demo Data
 
