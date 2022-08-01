@@ -225,9 +225,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
 	a.NoError(err)
 
-	// _, err = pgDB.Exec(fmt.Sprintf("CREATE DATABASE %v", databaseName))
-	// a.NoError(err)
-
 	_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
 	a.NoError(err)
 
