@@ -5,7 +5,7 @@ ruleList:
   - type: table.drop-naming-convention
     level: WARNING
   - type: table.require-pk
-    level: TEST
+    level: WARNING
   - type: naming.table
     payload:
       format: "^table_[a-z]+(_[a-z]+)*$"
