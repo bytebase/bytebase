@@ -63,11 +63,12 @@ while read status code title content; do
 
     if [ $code != 0 ]; then
         echo "::error::$text"
+        msg_status=`echo "$status" | awk '{print tolower($0)}'`
         title="$title ($code)"
         content="$content
 Doc: $DOC_URL#$code"
         content="${content//$'\n'/'%0A'}"
-        echo "::error file=$FILE,line=1,col=1,endColumn=2,title=$title::$content"
+        echo "::$msg_status file=$FILE,line=1,col=1,endColumn=2,title=$title::$content"
         result=$code
     fi
 done <<< "$(echo $body | jq -r '.[] | "\(.status) \(.code) \(.title) \(.content)"')"
