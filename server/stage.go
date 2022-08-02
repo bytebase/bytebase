@@ -44,7 +44,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		}
 		var tasksPatched []*api.Task
 		for _, task := range tasks {
-			taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, &api.TaskStatusPatch{
+			taskPatched, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
 				ID:        task.ID,
 				UpdaterID: stageAllTaskStatusPatch.UpdaterID,
 				Status:    stageAllTaskStatusPatch.Status,
