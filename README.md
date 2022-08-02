@@ -15,6 +15,10 @@
 </p>
 
 <p align="center">
+<a href="https://discord.gg/Fac9nmZ95j"><img alt="Discord" src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner2" /></a>
+</p>
+
+<p align="center">
 <img alt="status" src="https://img.shields.io/badge/status-beta-blue" />
 <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
     <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
@@ -43,7 +47,6 @@ A collaborative web-console to allow DBAs to manage database tasks and handle de
 ## For Tech Lead - Improve team velocity and reduce risk
 
 Teams using Bytebase will naturally adopt industry best practice for managing database schema changes. Tech leads will see an improved development velocity and reduced outages caused by database changes.
-
 
 ## Features
 
@@ -190,6 +193,6 @@ working on the code:
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)
 
-## We are hiring
+## Jobs
 
-We are looking for engineers and developer advocates, interns are also welcomed. Check out our [jobs page](https://bytebase.com/jobs?source=github).
+Check out our [jobs page](https://bytebase.com/jobs?source=github) for openings.
