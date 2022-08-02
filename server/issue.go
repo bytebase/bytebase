@@ -711,6 +711,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
+		maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaxmimumTask)
+		if int64(len(c.DetailList)) > maximumTaskLimit {
+			return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, len(c.DetailList)))
+		}
+
 		type envKey struct {
 			name  string
 			id    int
