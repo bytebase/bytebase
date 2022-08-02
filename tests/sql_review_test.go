@@ -47,24 +47,24 @@ type test struct {
 func TestSQLReviewForPostgreSQL(t *testing.T) {
 	var (
 		statements = []string{
-			"CREATE TABLE \"user\"(" +
-				"id INT," +
-				"name VARCHAR(255) NOT NULL," +
-				"room_id INT NOT NULL," +
-				"creator_id INT NOT NULL," +
-				"created_ts TIMESTAMP NOT NULL," +
-				"updater_id INT NOT NULL," +
-				"updated_ts TIMESTAMP NOT NULL," +
-				"CONSTRAINT pk_user_id PRIMARY KEY (id)," +
-				"CONSTRAINT uk_user_id_name UNIQUE (id, name)" +
-				")",
-			"CREATE TABLE \"userTable\"(" +
-				"id INT," +
-				"name VARCHAR(255)," +
-				"\"roomId\" INT," +
-				"CONSTRAINT uk1 UNIQUE (id, name)," +
-				"CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)" +
-				")",
+			`CREATE TABLE "user"(
+				id INT,
+				name VARCHAR(255) NOT NULL,
+				room_id INT NOT NULL,
+				creator_id INT NOT NULL,
+				created_ts TIMESTAMP NOT NULL,
+				updater_id INT NOT NULL,
+				updated_ts TIMESTAMP NOT NULL,
+				CONSTRAINT pk_user_id PRIMARY KEY (id),
+				CONSTRAINT uk_user_id_name UNIQUE (id, name)
+				)`,
+			`CREATE TABLE "userTable"(
+				id INT,
+				name VARCHAR(255),
+				"roomId" INT,
+				CONSTRAINT uk1 UNIQUE (id, name),
+				CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
+				)`,
 		}
 		databaseName = "testSQLReview"
 		tests        = []test{
@@ -128,7 +128,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.TableNoPK.Int(),
 						Title:     "table.require-pk",
-						Content:   "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(id INT,name VARCHAR(255),\\\"roomId\\\" INT,CONSTRAINT uk1 UNIQUE (id, name),CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id))\"",
+						Content:   "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n\\t\\t\\t\\tid INT,\\n\\t\\t\\t\\tname VARCHAR(255),\\n\\t\\t\\t\\t\\\"roomId\\\" INT,\\n\\t\\t\\t\\tCONSTRAINT uk1 UNIQUE (id, name),\\n\\t\\t\\t\\tCONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n\\t\\t\\t\\t)\"",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
