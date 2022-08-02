@@ -312,9 +312,25 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    case "naming.index.pk":
+      if (!templateComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
+      return {
+        ...res,
+        componentList: [
+          {
+            ...templateComponent,
+            payload: {
+              ...templateComponent.payload,
+              value: (policyRule.payload as NamingFormatPayload).format,
+            } as TemplatePayload,
+          },
+        ],
+      };
     case "naming.index.idx":
     case "naming.index.uk":
-    case "naming.index.pk":
     case "naming.index.fk":
       if (!templateComponent || !numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -408,9 +424,18 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
+    case "naming.index.pk":
+      if (!templatePayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          format: templatePayload.value ?? templatePayload.default,
+        },
+      };
     case "naming.index.idx":
     case "naming.index.uk":
-    case "naming.index.pk":
     case "naming.index.fk":
       if (!templatePayload || !numberPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
