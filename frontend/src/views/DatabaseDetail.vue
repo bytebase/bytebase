@@ -11,9 +11,16 @@
             <div>
               <div class="flex items-center">
                 <h1
-                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
+                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
                   {{ database.name }}
+
+                  <BBBadge
+                    v-if="isPITRDatabase(database)"
+                    text="PITR"
+                    :can-remove="false"
+                    class="text-xs"
+                  />
                 </h1>
               </div>
             </div>
@@ -138,11 +145,10 @@
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
           </button>
-          <BBTooltipButton
+          <button
             v-if="allowEdit"
-            type="normal"
-            tooltip-mode="DISABLED-ONLY"
-            :disabled="!allowMigrate"
+            type="button"
+            class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
           >
             <span>{{ alterSchemaText }}</span>
@@ -150,16 +156,7 @@
               v-if="database.project.workflowType == 'VCS'"
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
-            <template v-if="!allowMigrate" #tooltip>
-              <div class="w-48 whitespace-pre-wrap">
-                {{
-                  $t("issue.not-allowed-to-single-database-in-tenant-mode", {
-                    operation: alterSchemaText.toLowerCase(),
-                  })
-                }}
-              </div>
-            </template>
-          </BBTooltipButton>
+          </button>
         </div>
       </div>
     </main>
@@ -303,6 +300,7 @@ import {
   connectionSlug,
   hidePrefix,
   allowGhostMigration,
+  isPITRDatabase,
 } from "@/utils";
 import {
   ProjectId,
@@ -442,14 +440,6 @@ const allowEdit = computed(() => {
   return false;
 });
 
-const allowMigrate = computed(() => {
-  if (!allowEdit.value) return false;
-
-  // Migrating single database in tenant mode is not allowed
-  // Since this will probably cause different migration version across a group of tenant databases
-  return database.value.project.tenantMode === "DISABLED";
-});
-
 const allowEditDatabaseLabels = computed((): boolean => {
   // only allowed to edit database labels when allowAdmin
   return allowAdmin.value;
@@ -484,6 +474,11 @@ const tryTransferProject = () => {
 // 'online' -> online migration
 // false -> user clicked cancel button
 const isUsingGhostMigration = async (databaseList: Database[]) => {
+  if (database.value.project.tenantMode === "TENANT") {
+    // Not available for tenant mode now.
+    return "normal";
+  }
+
   // check if all selected databases supports gh-ost
   if (allowGhostMigration(databaseList)) {
     // open the dialog to ask the user
