@@ -47,7 +47,7 @@
           "title": "表命名规则（正则）"
         },
         "maxLength": {
-          "title": "长度限制"
+          "title": "长度限制（暂不支持 PostgreSQL）"
         }
       }
     },
@@ -59,7 +59,7 @@
           "title": "列命名规则（正则）"
         },
         "maxLength": {
-          "title": "长度限制"
+          "title": "长度限制（暂不支持 PostgreSQL）"
         }
       }
     },
@@ -75,13 +75,13 @@
           }
         },
         "maxLength": {
-          "title": "长度限制"
+          "title": "长度限制（暂不支持 PostgreSQL）"
         }
       }
     },
     "naming-index-pk": {
       "title": "主键命名检查",
-      "description": "限制主键命名风格和长度，默认为 pk_<表名>_<主键包含的字段名组合>，且不超过 64 个字符。",
+      "description": "限制主键命名风格和长度，默认为 pk_<表名>_<主键包含的字段名组合>。",
       "component": {
         "format": {
           "title": "主键命名规则",
@@ -89,9 +89,6 @@
             "table": "表名",
             "column_list": "索引包含的字段名，通过 _ 连接"
           }
-        },
-        "maxLength": {
-          "title": "长度限制"
         }
       }
     },
@@ -109,7 +106,7 @@
           }
         },
         "maxLength": {
-          "title": "长度限制"
+          "title": "长度限制（暂不支持 PostgreSQL）"
         }
       }
     },
@@ -125,7 +122,7 @@
           }
         },
         "maxLength": {
-          "title": "长度限制"
+          "title": "长度限制（暂不支持 PostgreSQL）"
         }
       }
     },
