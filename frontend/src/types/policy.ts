@@ -10,7 +10,7 @@ import {
 export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan"
-  | "bb.policy.schema-review";
+  | "bb.policy.sql-review";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"

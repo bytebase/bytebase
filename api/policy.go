@@ -110,7 +110,7 @@ type PolicyDelete struct {
 
 	// Domain specific fields
 	// Type is the policy type.
-	// Currently we only support delete operation for "bb.policy.schema-review", need it here for validation and update query.
+	// Currently we only support delete operation for "bb.policy.sql-review", need it here for validation and update query.
 	Type PolicyType
 }
 
