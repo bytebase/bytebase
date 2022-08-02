@@ -42,6 +42,7 @@ var (
 type test struct {
 	statement string
 	result    []api.TaskCheckResult
+	run       bool
 }
 
 func TestSQLReviewForPostgreSQL(t *testing.T) {
@@ -196,6 +197,40 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 					},
 				},
 			},
+			{
+				statement: `
+					CREATE TABLE tech_book(
+						id int,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
+					)
+				`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusSuccess,
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
+						Title:     "OK",
+						Content:   "",
+					},
+				},
+				run: true,
+			},
+			{
+				statement: `ALTER INDEX pk_tech_book_id RENAME TO pk1`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NamingPKConventionMismatch.Int(),
+						Title:     "naming.index.pk",
+						Content:   `Primary key in table "tech_book" mismatches the naming convention, expect "^pk_tech_book_id$" but found "pk1"`,
+					},
+				},
+			},
 		}
 	)
 
@@ -298,7 +333,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement, t.run)
 		a.Equal(t.result, result)
 	}
 
@@ -312,7 +347,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
@@ -322,7 +357,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
@@ -639,7 +674,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement, t.run)
 		a.Equal(t.result, result)
 	}
 
@@ -653,7 +688,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
@@ -663,11 +698,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
-func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string) []api.TaskCheckResult {
+func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string, wait bool) []api.TaskCheckResult {
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Migrate,
 		DetailList: []*api.UpdateSchemaDetail{
@@ -691,6 +726,14 @@ func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller,
 
 	result, err := ctl.GetSQLReviewResult(issue.ID)
 	a.NoError(err)
+
+	if wait {
+		a.Equal(1, len(result))
+		a.Equal(common.Ok.Int(), result[0].Code)
+		status, err := ctl.waitIssuePipeline(issue.ID)
+		a.NoError(err)
+		a.Equal(api.TaskDone, status)
+	}
 
 	return result
 }
