@@ -199,7 +199,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return err
 		}
 
-		taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+		taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
@@ -359,7 +359,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			// dismiss stale reviews and transfer the status to PendingApproval.
 			if taskPatched.Status != api.TaskPendingApproval {
-				t, err := s.changeTaskStatusWithPatch(ctx, taskPatched, &api.TaskStatusPatch{
+				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 					ID:        taskPatch.ID,
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
@@ -502,17 +502,7 @@ func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, 
 	return nil
 }
 
-// TODO(p0ny): remove this function because it adds yet another layer of indirection when traveling in our codebase while doesn't seem useful to me.
-func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
-	taskStatusPatch := &api.TaskStatusPatch{
-		ID:        task.ID,
-		UpdaterID: updaterID,
-		Status:    newStatus,
-	}
-	return s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
-}
-
-func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
 			log.Error("Failed to change task status.",
