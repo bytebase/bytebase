@@ -8,6 +8,9 @@ inputs:
   database:
     description: 'The database type, should be one of "MYSQL", "POSTGRES" or "TIDB".'
     required: true
+  template:
+    description: 'The SQL check template id, required if the override is not specified. Should be one of "bb.sql-review.prod", "bb.sql-review.dev".'
+    required: false
 runs:
   using: "composite"
   steps:
@@ -21,7 +24,7 @@ runs:
       run: |
         for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
           echo "Start check statement in file $file"
-          ./.github/actions/sql-review/sql-review.sh $file ${{ inputs.database }} ${{ inputs.override }}
+          ./.github/actions/sql-review/sql-review.sh $file ${{ inputs.database }} ${{ inputs.override }} ${{ inputs.template }}
         done
       shell: bash
 branding:

@@ -2,6 +2,10 @@
 FILE=$1
 DATABASE_TYPE=$2
 CONFIG=$3
+TEMPLATE_ID=$4
+
+API_URL=https://sql-service.onrender.com/v1/sql/advise
+DOC_URL=https://www.bytebase.com/docs/reference/error-code/advisor
 
 statement=`cat $FILE`
 if [ $? != 0 ]
@@ -17,10 +21,11 @@ fi
 
 
 # TODO: replace the url
-response=$(curl -s -w "%{http_code}" https://sql-service.onrender.com/v1/sql/advise \
+response=$(curl -s -w "%{http_code}" $API_URL \
   -G --data-urlencode "statement=$statement" \
   -G --data-urlencode "override=$override" \
-  -d databaseType=$DATABASE_TYPE)
+  -d databaseType=$DATABASE_TYPE \
+  -d template=$TEMPLATE_ID)
 http_code=$(tail -n1 <<< "$response")
 body=$(sed '$ d' <<< "$response")
 
@@ -43,6 +48,10 @@ while read status code title content; do
 
     if [ $code != 0 ]; then
         echo $text
+        title="$title ($code)"
+        content="$content
+Doc: $DOC_URL#$code"
+        content="${content//$'\n'/'%0A'}"
         echo "::error file=$FILE,line=1,col=1,endColumn=2,title=$title::$content"
         result=$code
     fi
