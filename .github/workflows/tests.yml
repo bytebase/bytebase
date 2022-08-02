@@ -99,7 +99,7 @@ jobs:
       - name: Install dependencies
         run: go generate -tags ${{ matrix.release-tags }} ./...
       - name: Run all tests
-        run: go test -v ./... -tags=${{ matrix.release-tags }} -p=4 | tee test.log; exit ${PIPESTATUS[0]}
+        run: go test -v ./... -tags=${{ matrix.release-tags }} -p=10 | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: TestVCS (15.04s)"
         # sed: remove unnecessary characters
