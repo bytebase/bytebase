@@ -4,11 +4,11 @@ import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import sqlReviewSchema from "./sql-review-schema.yaml";
-import sqlReviewProdTemplate from "./sql-review.mysql.prod.yaml";
-import sqlReviewDevTemplate from "./sql-review.mysql.dev.yaml";
+import sqlReviewProdTemplate from "./sql-review.prod.yaml";
+import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
 // The engine type for rule template
-export type SchemaRuleEngineType = "MYSQL" | "COMMON";
+export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB";
 
 // The category type for rule template
 export type CategoryType =
@@ -82,6 +82,7 @@ export type RuleType =
   | "naming.table"
   | "naming.column"
   | "naming.index.uk"
+  | "naming.index.pk"
   | "naming.index.fk"
   | "naming.index.idx"
   | "column.required"
@@ -134,7 +135,7 @@ export interface SQLReviewPolicy {
 export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
-  engine: SchemaRuleEngineType;
+  engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
 }
@@ -313,6 +314,7 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     case "naming.index.idx":
     case "naming.index.uk":
+    case "naming.index.pk":
     case "naming.index.fk":
       if (!templateComponent || !numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -408,6 +410,7 @@ export const convertRuleTemplateToPolicyRule = (
       };
     case "naming.index.idx":
     case "naming.index.uk":
+    case "naming.index.pk":
     case "naming.index.fk":
       if (!templatePayload || !numberPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
