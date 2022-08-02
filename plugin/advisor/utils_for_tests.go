@@ -106,8 +106,8 @@ type TestCase struct {
 	Want      []Advice
 }
 
-// RunSchemaReviewRuleTests helps to test the schema review rule.
-func RunSchemaReviewRuleTests(
+// RunSQLReviewRuleTests helps to test the SQL review rule.
+func RunSQLReviewRuleTests(
 	t *testing.T,
 	tests []TestCase,
 	adv Advisor,

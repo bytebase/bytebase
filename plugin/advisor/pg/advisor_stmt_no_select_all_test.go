@@ -43,7 +43,7 @@ func TestNoSelectAll(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &NoSelectAllAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NoSelectAllAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleStatementNoSelectAll,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",

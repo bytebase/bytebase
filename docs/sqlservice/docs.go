@@ -27,7 +27,7 @@ const docTemplate = `{
     "paths": {
         "/sql/advise": {
             "get": {
-                "description": "Parse and check the SQL statement according to the schema review rules.",
+                "description": "Parse and check the SQL statement according to the SQL review rules.",
                 "consumes": [
                     "*/*"
                 ],
@@ -35,7 +35,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Schema Review"
+                    "SQL review"
                 ],
                 "summary": "Check the SQL statement.",
                 "parameters": [

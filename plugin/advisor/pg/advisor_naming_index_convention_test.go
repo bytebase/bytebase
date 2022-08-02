@@ -89,7 +89,7 @@ func TestNamingIndexConvention(t *testing.T) {
 		MaxLength: 32,
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleIDXNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
