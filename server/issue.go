@@ -647,10 +647,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 
 		if d.DatabaseName == "" && d.DatabaseID > 0 {
-			// We only support data change for a single tenant for the moment.
-			if c.MigrationType != db.Data {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only data change is allowed for a single tenant database in tenant mode project.")
-			}
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
