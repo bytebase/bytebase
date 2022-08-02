@@ -8,9 +8,9 @@
           :dbl-click-splitter="false"
           @resized="handleResized"
         >
-          <Pane :size="databasePaneSzie"><DatabaseTree /></Pane>
+          <Pane :size="databasePaneSize"><DatabaseTree /></Pane>
           <Pane
-            :size="FULL_HEIGHT - databasePaneSzie"
+            :size="FULL_HEIGHT - databasePaneSize"
             :max-size="TABLE_SCHEMA_PANE_SIZE"
           >
             <TableSchema @close-pane="handleCloseTableSchemaPane" />
@@ -37,22 +37,22 @@ const DATABASE_PANE_SIZE = 60;
 const TABLE_SCHEMA_PANE_SIZE = FULL_HEIGHT - DATABASE_PANE_SIZE;
 
 const sqlEditorStore = useSQLEditorStore();
-const databasePaneSzie = ref(FULL_HEIGHT);
+const databasePaneSize = ref(FULL_HEIGHT);
 
 const handleResized = (data: any) => {
   const [top] = data;
-  databasePaneSzie.value = top.size;
+  databasePaneSize.value = top.size;
 };
 
 const handleCloseTableSchemaPane = () => {
-  databasePaneSzie.value = FULL_HEIGHT;
+  databasePaneSize.value = FULL_HEIGHT;
 };
 
 watch(
   () => sqlEditorStore.connectionContext.option,
   (option) => {
     if (option && option.type === "table") {
-      databasePaneSzie.value = DATABASE_PANE_SIZE;
+      databasePaneSize.value = DATABASE_PANE_SIZE;
     }
   }
 );
