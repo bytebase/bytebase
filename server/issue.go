@@ -711,7 +711,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
-		maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaxmimumTask)
+		maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaximumTask)
 		if int64(len(c.DetailList)) > maximumTaskLimit {
 			return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, len(c.DetailList)))
 		}
@@ -952,7 +952,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-// checkCharacterSetCollationOwner checks if the charactes set, collation and owner are legal according to the dbType.
+// checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
 func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, owner string) error {
 	switch dbType {
 	case db.ClickHouse:
