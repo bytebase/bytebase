@@ -1,6 +1,9 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // PlanType is the type for a plan.
 type PlanType int
@@ -183,4 +186,17 @@ type Plan struct {
 // PlanPatch is the API message for patching a plan.
 type PlanPatch struct {
 	Type PlanType `jsonapi:"attr,type"`
+}
+
+// PlanLimit is the type for plan limits.
+type PlanLimit int
+
+const (
+	// PlanLimitMaxmimumTask is the key name for maximum number of tasks for a plan.
+	PlanLimitMaxmimumTask PlanLimit = iota
+)
+
+// PlanLimitValues is the plan limit value mapping.
+var PlanLimitValues = map[PlanLimit][3]int64{
+	PlanLimitMaxmimumTask: {4, math.MaxInt64, math.MaxInt64},
 }

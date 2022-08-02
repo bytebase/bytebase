@@ -33,9 +33,9 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 
 // sqlCheckController godoc
 // @Summary  Check the SQL statement.
-// @Description  Parse and check the SQL statement according to the schema review policy.
+// @Description  Parse and check the SQL statement according to the SQL review policy.
 // @Accept  */*
-// @Tags  Schema Review
+// @Tags  SQL review
 // @Produce  json
 // @Param  environment   query  string  true   "The environment name. Case sensitive."
 // @Param  statement     query  string  true   "The SQL statement."
