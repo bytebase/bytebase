@@ -55,7 +55,7 @@ type Overrides = {
 type BBModalContext = {
   overrides: Ref<Overrides>;
 };
-const BB_MODAL_CONTEXT = Symbol("bb.modal.context");
+const BB_MODAL_CONTEXT = "bb.modal.context";
 
 export default defineComponent({
   name: "BBModal",
