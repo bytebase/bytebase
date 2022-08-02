@@ -11,9 +11,6 @@ inputs:
   template:
     description: 'The SQL check template id, required if the override is not specified. Should be one of "bb.sql-review.prod", "bb.sql-review.dev".'
     required: false
-  api:
-    description: "The SQL check API URL."
-    required: false
 runs:
   using: "composite"
   steps:
