@@ -11,7 +11,6 @@ ruleList:
     category: ENGINE
     engineList:
       - MYSQL
-      - TIDB
     componentList: []
   - type: table.require-pk
     category: TABLE
@@ -155,10 +154,6 @@ ruleList:
           templateList:
             - table
             - column_list
-      - key: maxLength
-        payload:
-          type: NUMBER
-          default: 64
   - type: column.required
     category: COLUMN
     engineList:
