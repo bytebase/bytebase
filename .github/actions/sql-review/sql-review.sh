@@ -10,13 +10,20 @@ DOC_URL=https://www.bytebase.com/docs/reference/error-code/advisor
 statement=`cat $FILE`
 if [ $? != 0 ]
 then
+    echo "::error::Cannot open file $FILE"
     exit 1
 fi
 
-override=`cat $CONFIG`
-if [ $? != 0 ]
+override=""
+if [ ! -z $CONFIG ]
 then
-    exit 1
+    override=`cat $CONFIG`
+
+    if [ $? != 0 ]
+    then
+        echo "::error::Cannot find SQL review config file"
+        exit 1
+    fi
 fi
 
 
@@ -33,7 +40,7 @@ echo "::debug::response code: $http_code, response body: $body"
 
 if [ $http_code != 200 ]
 then
-    echo "failed to check SQL with response code $http_code and body $body"
+    echo "::error::failed to check SQL with response code $http_code and body $body"
     exit 1
 fi
 

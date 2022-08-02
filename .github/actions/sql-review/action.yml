@@ -24,7 +24,7 @@ runs:
       run: |
         for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
           echo "Start check statement in file $file"
-          ./.github/actions/sql-review/sql-review.sh $file ${{ inputs.database }} ${{ inputs.override }} ${{ inputs.template }}
+          ./.github/actions/sql-review/sql-review.sh $file ${{ inputs.database }} "${{ inputs.override }}" "${{ inputs.template }}"
         done
       shell: bash
 branding:
