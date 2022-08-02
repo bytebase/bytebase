@@ -185,6 +185,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	}
 	driver.replayBinlogProgress = 0
 	stopChan := make(chan struct{})
+	defer func() { close(stopChan) }()
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -210,7 +211,6 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	if err := mysqlbinlogCmd.Wait(); err != nil {
 		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
 	}
-	close(stopChan)
 
 	log.Debug("Replayed binlog successfully.")
 	return nil
