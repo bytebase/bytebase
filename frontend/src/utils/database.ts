@@ -80,3 +80,9 @@ export function allowGhostMigration(databaseList: Database[]): boolean {
     );
   });
 }
+
+export function isPITRDatabase(db: Database): boolean {
+  const { name } = db;
+  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
+  return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
+}
