@@ -185,7 +185,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	}
 	driver.replayBinlogProgress = 0
 	stopChan := make(chan struct{})
-	defer func() { close(stopChan) }()
+	defer close(stopChan)
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
