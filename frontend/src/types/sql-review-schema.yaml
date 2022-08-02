@@ -9,19 +9,28 @@ categoryList:
 ruleList:
   - type: engine.mysql.use-innodb
     category: ENGINE
-    engine: MYSQL
+    engineList:
+      - MYSQL
+      - TIDB
     componentList: []
   - type: table.require-pk
     category: TABLE
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList: []
   - type: table.no-foreign-key
     category: TABLE
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
     componentList: []
   - type: table.drop-naming-convention
     category: TABLE
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
     componentList:
       - key: format
         payload:
@@ -29,19 +38,31 @@ ruleList:
           default: _del$
   - type: statement.select.no-select-all
     category: STATEMENT
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.where.require
     category: STATEMENT
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList: []
   - type: statement.where.no-leading-wildcard-like
     category: STATEMENT
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList: []
   - type: naming.table
     category: NAMING
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList:
       - key: format
         payload:
@@ -53,7 +74,10 @@ ruleList:
           default: 64
   - type: naming.column
     category: NAMING
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList:
       - key: format
         payload:
@@ -65,7 +89,10 @@ ruleList:
           default: 64
   - type: naming.index.uk
     category: NAMING
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList:
       - key: format
         payload:
@@ -80,7 +107,10 @@ ruleList:
           default: 64
   - type: naming.index.idx
     category: NAMING
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList:
       - key: format
         payload:
@@ -95,7 +125,10 @@ ruleList:
           default: 64
   - type: naming.index.fk
     category: NAMING
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList:
       - key: format
         payload:
@@ -110,9 +143,28 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
+  - type: naming.index.pk
+    category: NAMING
+    engineList:
+      - POSTGRES
+    componentList:
+      - key: format
+        payload:
+          type: TEMPLATE
+          default: "^pk_{{table}}_{{column_list}}$"
+          templateList:
+            - table
+            - column_list
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
   - type: column.required
     category: COLUMN
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList:
       - key: columnList
         payload:
@@ -125,13 +177,21 @@ ruleList:
             - updater_id
   - type: column.no-null
     category: COLUMN
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList: []
   - type: schema.backward-compatibility
     category: SCHEMA
-    engine: MYSQL
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
     componentList: []
   - type: database.drop-empty-database
     category: DATABASE
-    engine: COMMON
+    engineList:
+      - MYSQL
+      - TIDB
     componentList: []

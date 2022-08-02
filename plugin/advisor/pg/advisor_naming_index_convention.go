@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLNamingIndexConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
 }
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.
