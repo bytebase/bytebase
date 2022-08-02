@@ -192,11 +192,11 @@ type PlanPatch struct {
 type PlanLimit int
 
 const (
-	// PlanLimitMaxmimumTask is the key name for maximum number of tasks for a plan.
-	PlanLimitMaxmimumTask PlanLimit = iota
+	// PlanLimitMaximumTask is the key name for maximum number of tasks for a plan.
+	PlanLimitMaximumTask PlanLimit = iota
 )
 
 // PlanLimitValues is the plan limit value mapping.
 var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaxmimumTask: {4, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumTask: {4, math.MaxInt64, math.MaxInt64},
 }
