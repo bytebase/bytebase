@@ -76,7 +76,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabase(project, instance, databaseName, nil /* labelMap */)
+	err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
 	a.NoError(err)
 
 	// Expecting project to have 1 database.
@@ -421,7 +421,7 @@ func TestVCS(t *testing.T) {
 
 			// Create an issue that creates a database.
 			databaseName := "testVCSSchemaUpdate"
-			err = ctl.createDatabase(project, instance, databaseName, nil /* labelMap */)
+			err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
 			a.NoError(err)
 
 			// Simulate Git commits for schema update.
