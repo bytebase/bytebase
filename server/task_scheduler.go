@@ -171,7 +171,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							_, err = s.server.patchTaskStatus(ctx, task, taskStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task as FAILED",
 									zap.Int("id", task.ID),
@@ -200,7 +200,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							_, err = s.server.patchTaskStatus(ctx, task, taskStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task as DONE",
 									zap.Int("id", task.ID),
@@ -321,7 +321,11 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		return task, nil
 	}
 
-	updatedTask, err := s.server.changeTaskStatus(ctx, task, api.TaskRunning, api.SystemBotID)
+	updatedTask, err := s.server.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+		ID:        task.ID,
+		UpdaterID: api.SystemBotID,
+		Status:    api.TaskRunning,
+	})
 	if err != nil {
 		return nil, err
 	}
