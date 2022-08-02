@@ -144,7 +144,8 @@ func getTestPort(testName string) int {
 		"TestCheckServerVersionAndBinlogForPITR",
 		"TestFetchBinlogFiles",
 
-		"TestSQLReview",
+		"TestSQLReviewForMySQL",
+		"TestSQLReviewForPostgreSQL",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -969,19 +970,24 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 	return repository, nil
 }
 
-func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, labelMap map[string]string) error {
+func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.Name)
 	if err != nil {
 		return err
 	}
-
-	createContext, err := json.Marshal(&api.CreateDatabaseContext{
+	ctx := &api.CreateDatabaseContext{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
 		Labels:       labels,
 		CharacterSet: "utf8mb4",
 		Collation:    "utf8mb4_general_ci",
-	})
+	}
+	if instance.Engine == db.Postgres {
+		ctx.Owner = owner
+		ctx.CharacterSet = "UTF8"
+		ctx.Collation = "en_US.UTF-8"
+	}
+	createContext, err := json.Marshal(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
 	}
@@ -1371,9 +1377,9 @@ func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
 	return nil
 }
 
-// schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
-// If the schema review task check is not done, return nil, false, nil.
-func (*controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+// sqlReviewTaskCheckRunFinished will return SQL review task check result for next task.
+// If the SQL review task check is not done, return nil, false, nil.
+func (*controller) sqlReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
 	var result []api.TaskCheckResult
 	var latestTs int64
 	for _, stage := range issue.Pipeline.StageList {
@@ -1404,8 +1410,8 @@ func (*controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.Tas
 	return nil, true, nil
 }
 
-// getSchemaReviewResult will wait for next task schema review task check to finish and return the task check result.
-func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, error) {
+// GetSQLReviewResult will wait for next task SQL review task check to finish and return the task check result.
+func (ctl *controller) GetSQLReviewResult(id int) ([]api.TaskCheckResult, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -1424,9 +1430,9 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 			return nil, fmt.Errorf("the status of issue %v is not pending approval", id)
 		}
 
-		result, yes, err := ctl.schemaReviewTaskCheckRunFinished(issue)
+		result, yes, err := ctl.sqlReviewTaskCheckRunFinished(issue)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get schema review result for issue %v: %w", id, err)
+			return nil, fmt.Errorf("failed to get SQL review result for issue %v: %w", id, err)
 		}
 		if yes {
 			return result, nil
@@ -1435,8 +1441,8 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 	return nil, nil
 }
 
-// setDefaultSchemaReviewRulePayload sets the default payload for this rule.
-func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, error) {
+// setDefaultSQLReviewRulePayload sets the default payload for this rule.
+func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
@@ -1462,6 +1468,10 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string
 		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^idx_{{table}}_{{column_list}}$",
 		})
+	case advisor.SchemaRulePKNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
+			Format: "^pk_{{table}}_{{column_list}}$",
+		})
 	case advisor.SchemaRuleUKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^uk_{{table}}_{{column_list}}$",
@@ -1481,7 +1491,7 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string
 			},
 		})
 	default:
-		return "", fmt.Errorf("unknown schema review type for default payload: %s", ruleTp)
+		return "", fmt.Errorf("unknown SQL review type for default payload: %s", ruleTp)
 	}
 
 	if err != nil {
@@ -1490,8 +1500,8 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string
 	return string(payload), nil
 }
 
-// prodTemplateSchemaReviewPolicy returns the default schema review policy.
-func prodTemplateSchemaReviewPolicy() (string, error) {
+// prodTemplateSQLReviewPolicy returns the default SQL review policy.
+func prodTemplateSQLReviewPolicy() (string, error) {
 	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
 		RuleList: []*advisor.SQLReviewRule{
@@ -1509,6 +1519,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleIDXNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRulePKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
@@ -1559,7 +1573,7 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 	}
 
 	for _, rule := range policy.RuleList {
-		payload, err := setDefaultSchemaReviewRulePayload(rule.Type)
+		payload, err := setDefaultSQLReviewRulePayload(rule.Type)
 		if err != nil {
 			return "", err
 		}

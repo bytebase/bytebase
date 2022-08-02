@@ -644,11 +644,11 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 }
 
 func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
-	policyID, err := s.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 
 	if err != nil {
-		// It's OK if we failed to find the schema review policy, just emit an error log
-		log.Error("Failed to found schema review policy id for task",
+		// It's OK if we failed to find the SQL review policy, just emit an error log
+		log.Error("Failed to found SQL review policy id for task",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.Int("environment_id", task.Instance.EnvironmentID),

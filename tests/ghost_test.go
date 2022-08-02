@@ -130,7 +130,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Zero(len(databases))
 
-	err = ctl.createDatabase(project, instance, databaseName, nil)
+	err = ctl.createDatabase(project, instance, databaseName, "", nil)
 	a.NoError(err)
 
 	databases, err = ctl.getDatabases(api.DatabaseFind{

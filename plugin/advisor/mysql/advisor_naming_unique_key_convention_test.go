@@ -155,7 +155,7 @@ func TestNamingUKConvention(t *testing.T) {
 		MaxLength: 64,
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingUKConventionAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NamingUKConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleUKNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),

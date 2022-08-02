@@ -82,8 +82,8 @@ func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Polic
 // DeletePolicy deletes an existing ARCHIVED policy by PolicyDelete.
 func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) error {
 	// Validate policy.
-	// Currently we only support PolicyTypeSchemaReview type policy to delete by id
-	if delete.Type != api.PolicyTypeSchemaReview {
+	// Currently we only support PolicyTypeSQLReview type policy to delete by id
+	if delete.Type != api.PolicyTypeSQLReview {
 		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy type")}
 	}
 
@@ -177,30 +177,30 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
 }
 
-// GetNormalSchemaReviewPolicy will get the normal schema review policy for an environment.
-func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SQLReviewPolicy, error) {
+// GetNormalSQLReviewPolicy will get the normal SQL review policy for an environment.
+func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SQLReviewPolicy, error) {
 	if find.ID != nil && *find.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy not found with ID %d", *find.ID)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("SQL review policy not found with ID %d", *find.ID)}
 	}
 
-	pType := api.PolicyTypeSchemaReview
+	pType := api.PolicyTypeSQLReview
 	find.Type = &pType
 	policy, err := s.getPolicyRaw(ctx, find)
 	if err != nil {
 		return nil, err
 	}
 	if policy.RowStatus == api.Archived {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d is archived", policy.ID, policy.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("SQL review policy ID: %d for environment %d is archived", policy.ID, policy.EnvironmentID)}
 	}
 	if policy.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("SQL review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
 	}
 	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
 
-// GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
-func (s *Store) GetSchemaReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
-	pType := api.PolicyTypeSchemaReview
+// GetSQLReviewPolicyIDByEnvID will get the SQL review policy ID for an environment.
+func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
+	pType := api.PolicyTypeSQLReview
 	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
 		EnvironmentID: &environmentID,
 		Type:          &pType,
