@@ -95,6 +95,27 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 				return nil, err
 			}
 		}
+
+		// find index list
+		indexList, err := c.store.FindIndex(ctx, &api.IndexFind{
+			DatabaseID: c.databaseID,
+			TableID:    &table.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		tableData.IndexList = convertIndexList(indexList)
+
+		// find column list
+		columnList, err := c.store.FindColumn(ctx, &api.ColumnFind{
+			DatabaseID: c.databaseID,
+			TableID:    &table.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		tableData.ColumnList = convertColumnList(columnList)
+
 		schema := schemaSet.getOrCreateSchema(schemaName)
 		schema.TableList = append(schema.TableList, tableData)
 	}
@@ -173,8 +194,6 @@ func convertTable(table *api.Table) *catalog.Table {
 		DataFree:      table.DataFree,
 		CreateOptions: table.CreateOptions,
 		Comment:       table.Comment,
-		ColumnList:    convertColumnList(table.ColumnList),
-		IndexList:     convertIndexList(table.IndexList),
 	}
 }
 
@@ -220,6 +239,9 @@ func convertIndexExceptExpression(list []*api.Index) *catalog.Index {
 }
 
 func convertColumnList(list []*api.Column) []*catalog.Column {
+	if len(list) == 0 {
+		return nil
+	}
 	var res []*catalog.Column
 	for _, column := range list {
 		res = append(res, &catalog.Column{
