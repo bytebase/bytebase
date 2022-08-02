@@ -158,17 +158,11 @@ export const useBaseIssueLogic = (params: {
 
   const isTenantMode = computed((): boolean => {
     if (project.value.tenantMode !== "TENANT") return false;
-    const { type } = issue.value;
-    if (type === "bb.issue.database.schema.update") {
-      return true;
-    }
-    if (type === "bb.issue.database.data.update") {
-      // We support single database data change in tenant mode projects.
-      // So a data change pipeline should be tenant mode when it contains more
-      // than one tasks.
-      return flattenTaskList(issue.value).length > 1;
-    }
-    return false;
+
+    // We support single database migration in tenant mode projects.
+    // So a pipeline should be tenant mode when it contains more
+    // than one tasks.
+    return flattenTaskList(issue.value).length > 1;
   });
 
   const isGhostMode = computed((): boolean => {
