@@ -4,9 +4,11 @@ DATABASE_TYPE=$2
 CONFIG=$3
 TEMPLATE_ID=$4
 
+# Users can set their own SQL review API URL into the environment variable "BB_SQL_API"
 API_URL=$BB_SQL_API
 if [ -z $API_URL ]
 then
+    # TODO: replace the url
     API_URL=https://sql-service.onrender.com/v1/sql/advise
 fi
 DOC_URL=https://www.bytebase.com/docs/reference/error-code/advisor
@@ -30,8 +32,6 @@ then
     fi
 fi
 
-
-# TODO: replace the url
 response=$(curl -s -w "%{http_code}" $API_URL \
   -G --data-urlencode "statement=$statement" \
   -G --data-urlencode "override=$override" \
@@ -54,11 +54,12 @@ while read status code title content; do
     echo "::debug::$text"
 
     if [ -z "$content" ]; then
+        # The content cannot be empty. Otherwise action cannot output the error message in files.
         content=$title
     fi
 
     if [ $code != 0 ]; then
-        echo $text
+        echo "::error::$text"
         title="$title ($code)"
         content="$content
 Doc: $DOC_URL#$code"
