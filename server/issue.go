@@ -1070,7 +1070,11 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.changeTaskStatus(ctx, task, api.TaskCanceled, updaterID); err != nil {
+					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+						ID:        task.ID,
+						UpdaterID: updaterID,
+						Status:    api.TaskCanceled,
+					}); err != nil {
 						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
 					}
 				}
