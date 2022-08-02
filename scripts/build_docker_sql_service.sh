@@ -18,15 +18,15 @@ docker build -f ./Dockerfile.sql-service\
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)"\
     --build-arg BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"  \
     --build-arg BUILD_USER="$(id -u -n)" \
-    -t bytebase/sql-service .
+    -t bytebase/sql .
 
 echo "${GREEN}Completed building Bytebase SQL Service docker image ${VERSION}.${NC}"
 echo ""
 echo "Command to tag and push the image"
 echo ""
-echo "$ docker tag bytebase/sql-service bytebase/sql-service:${VERSION}; docker push bytebase/sql-service:${VERSION}"
+echo "$ docker tag bytebase/sql bytebase/sql:${VERSION}; docker push bytebase/sql:${VERSION}"
 echo ""
 echo "Command to start Bytebase SQL Service on http://localhost:8081"
 echo ""
-echo "$ docker run --init --name sql-service --restart always --publish 8081:8081 --volume ~/.sql-service/data:/var/opt/sql-service bytebase/sql-service:${VERSION} --host http://localhost --port 8081 --data /var/opt/sql-service"
+echo "$ docker run --init --name sql-service --restart always --publish 8081:8081 --volume ~/.sql-service/data:/var/opt/sql-service bytebase/sql:${VERSION} --host http://localhost --port 8081 --data /var/opt/sql-service"
 echo ""
