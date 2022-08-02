@@ -47,7 +47,7 @@
           "title": "Table name format (regex)"
         },
         "maxLength": {
-          "title": "Length limit (not support PostgreSQL)"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
@@ -59,7 +59,7 @@
           "title": "Column name format (regex)"
         },
         "maxLength": {
-          "title": "Length limit (not support PostgreSQL)"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
@@ -75,7 +75,7 @@
           }
         },
         "maxLength": {
-          "title": "Length limit (not support PostgreSQL)"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
@@ -106,7 +106,7 @@
           }
         },
         "maxLength": {
-          "title": "Length limit (not support PostgreSQL)"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
@@ -122,7 +122,7 @@
           }
         },
         "maxLength": {
-          "title": "Length limit (not support PostgreSQL)"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
