@@ -270,10 +270,6 @@ useOverrideSubtitle(() => {
 </script>
 
 <style scoped lang="postcss">
-.project-tenant-view {
-  @apply w-192;
-}
-
 .project-tenant-view :global(.n-collapse-item) {
   @apply mt-0 !important;
 }
