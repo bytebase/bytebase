@@ -47,7 +47,7 @@
           "title": "Table name format (regex)"
         },
         "maxLength": {
-          "title": "Length limit"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
@@ -59,7 +59,7 @@
           "title": "Column name format (regex)"
         },
         "maxLength": {
-          "title": "Length limit"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
@@ -75,13 +75,13 @@
           }
         },
         "maxLength": {
-          "title": "Length limit"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
     "naming-index-pk": {
       "title": "Primary key naming check",
-      "description": "Enforce the primary key name format and length limit. Default uk_<table_name>_<column_list> with 64 characters.",
+      "description": "Enforce the primary key name format and length limit. Default pk_<table_name>_<column_list>.",
       "component": {
         "format": {
           "title": "Primary key name format",
@@ -89,9 +89,6 @@
             "table": "The table name",
             "column_list": "Index column names, joined by _"
           }
-        },
-        "maxLength": {
-          "title": "Length limit"
         }
       }
     },
@@ -109,7 +106,7 @@
           }
         },
         "maxLength": {
-          "title": "Length limit"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
@@ -125,7 +122,7 @@
           }
         },
         "maxLength": {
-          "title": "Length limit"
+          "title": "Length limit (PostgreSQL is not supported)"
         }
       }
     },
