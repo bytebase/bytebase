@@ -5,7 +5,7 @@
         ref="button"
         class="btn-select relative pl-3 pr-10"
         :class="[
-          disabled && 'bg-control-bg opacity-50 cursor-not-allowed',
+          disabled && 'bg-control-bg opacity-50 !cursor-not-allowed',
           state.open && 'ring-1 ring-control border-control',
         ]"
         v-bind="$attrs"
@@ -21,6 +21,7 @@
             </slot>
           </template>
           <input
+            v-if="!disabled"
             v-model="state.query"
             type="text"
             class="absolute w-full h-full inset-0 p-0 border-none focus:border-transparent focus:ring-0"
@@ -168,6 +169,10 @@ const open = () => {
 };
 
 const toggle = () => {
+  if (props.disabled) {
+    return;
+  }
+
   if (!state.open) open();
   else close();
 };
@@ -266,6 +271,13 @@ const handleKeyEvent = (e: KeyboardEvent) => {
     }
   }
 };
+
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (!disabled) close();
+  }
+);
 </script>
 
 <script lang="ts">
