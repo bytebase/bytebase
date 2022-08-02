@@ -19,7 +19,7 @@ import { usePolicyStore } from "./policy";
 const convertToSQLReviewPolicy = (
   policy: Policy
 ): SQLReviewPolicy | undefined => {
-  if (policy.type !== "bb.policy.schema-review") {
+  if (policy.type !== "bb.policy.sql-review") {
     return;
   }
   const payload = policy.payload as SQLReviewPolicyPayload;
@@ -120,7 +120,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const policyStore = usePolicyStore();
       const policy = await policyStore.upsertPolicyByEnvironmentAndType({
         environmentId,
-        type: "bb.policy.schema-review",
+        type: "bb.policy.sql-review",
         policyUpsert: { payload },
       });
 
@@ -141,7 +141,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const policyStore = usePolicyStore();
       await policyStore.deletePolicyByEnvironmentAndType({
         environmentId: targetPolicy.environment.id,
-        type: "bb.policy.schema-review",
+        type: "bb.policy.sql-review",
       });
 
       pullAt(this.reviewPolicyList, index);
@@ -182,7 +182,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const policyStore = usePolicyStore();
       const policy = await policyStore.upsertPolicyByEnvironmentAndType({
         environmentId: targetPolicy.environment.id,
-        type: "bb.policy.schema-review",
+        type: "bb.policy.sql-review",
         policyUpsert,
       });
 
@@ -211,7 +211,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     async fetchReviewPolicyList(): Promise<SQLReviewPolicy[]> {
       const policyStore = usePolicyStore();
       const policyList = await policyStore.fetchPolicyListByType(
-        "bb.policy.schema-review"
+        "bb.policy.sql-review"
       );
 
       const reviewPolicyList = policyList.reduce((list, policy) => {
@@ -230,7 +230,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const policyStore = usePolicyStore();
       const policy = await policyStore.fetchPolicyByEnvironmentAndType({
         environmentId: environmentId,
-        type: "bb.policy.schema-review",
+        type: "bb.policy.sql-review",
       });
 
       if (!policy) {
