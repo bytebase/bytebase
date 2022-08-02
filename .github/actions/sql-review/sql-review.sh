@@ -33,6 +33,9 @@ then
 fi
 
 response=$(curl -s -w "%{http_code}" $API_URL \
+  -H "X-Platform: GitHub" \
+  -H "X-Repository: $GITHUB_REPOSITORY" \
+  -H "X-Actor: $GITHUB_ACTOR" \
   -G --data-urlencode "statement=$statement" \
   -G --data-urlencode "override=$override" \
   -d databaseType=$DATABASE_TYPE \
