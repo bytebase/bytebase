@@ -115,11 +115,11 @@ func TestTenant(t *testing.T) {
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
 	for i, stagingInstance := range stagingInstances {
-		err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
-		err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
@@ -402,11 +402,11 @@ func TestTenantVCS(t *testing.T) {
 			// Create issues that create databases.
 			databaseName := "testTenantVCSSchemaUpdate"
 			for i, stagingInstance := range stagingInstances {
-				err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
-				err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+				err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 
@@ -575,12 +575,12 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	baseDatabaseName := "testTenant"
 	for i := 0; i < stagingTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 
@@ -853,13 +853,13 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			for i, stagingInstance := range stagingInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: tenant})
+				err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: tenant})
+				err := ctl.createDatabase(project, prodInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
 				a.NoError(err)
 			}
 

@@ -144,7 +144,8 @@ func getTestPort(testName string) int {
 		"TestCheckServerVersionAndBinlogForPITR",
 		"TestFetchBinlogFiles",
 
-		"TestSQLReview",
+		"TestSQLReviewForMySQL",
+		"TestSQLReviewForPostgreSQL",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -969,19 +970,24 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 	return repository, nil
 }
 
-func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, labelMap map[string]string) error {
+func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.Name)
 	if err != nil {
 		return err
 	}
-
-	createContext, err := json.Marshal(&api.CreateDatabaseContext{
+	ctx := &api.CreateDatabaseContext{
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
 		Labels:       labels,
 		CharacterSet: "utf8mb4",
 		Collation:    "utf8mb4_general_ci",
-	})
+	}
+	if instance.Engine == db.Postgres {
+		ctx.Owner = owner
+		ctx.CharacterSet = "UTF8"
+		ctx.Collation = "en_US.UTF-8"
+	}
+	createContext, err := json.Marshal(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
 	}
@@ -1462,6 +1468,10 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string
 		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^idx_{{table}}_{{column_list}}$",
 		})
+	case advisor.SchemaRulePKNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
+			Format: "^pk_{{table}}_{{column_list}}$",
+		})
 	case advisor.SchemaRuleUKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^uk_{{table}}_{{column_list}}$",
@@ -1509,6 +1519,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleIDXNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRulePKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
