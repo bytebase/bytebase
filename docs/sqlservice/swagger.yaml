@@ -34,56 +34,57 @@ paths:
   /sql/advise:
     get:
       consumes:
-      - '*/*'
-      description: Parse and check the SQL statement according to the schema review
+        - "*/*"
+      description: Parse and check the SQL statement according to the SQL review
         rules.
       parameters:
-      - description: The SQL statement.
-        in: query
-        name: statement
-        required: true
-        type: string
-      - description: The database type.
-        enum:
-        - MYSQL
-        - POSTGRES
-        - TIDB
-        in: query
-        name: databaseType
-        required: true
-        type: string
-      - description: The SQL check template id. Required if the config is not specified.
-        enum:
-        - bb.sql-review.prod
-        - bb.sql-review.dev
-        in: query
-        name: template
-        type: string
-      - description: The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml
-          for example. Required if the template is not specified.
-        in: query
-        name: override
-        type: string
+        - description: The SQL statement.
+          in: query
+          name: statement
+          required: true
+          type: string
+        - description: The database type.
+          enum:
+            - MYSQL
+            - POSTGRES
+            - TIDB
+          in: query
+          name: databaseType
+          required: true
+          type: string
+        - description: The SQL check template id. Required if the config is not specified.
+          enum:
+            - bb.sql-review.prod
+            - bb.sql-review.dev
+          in: query
+          name: template
+          type: string
+        - description:
+            The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml
+            for example. Required if the template is not specified.
+          in: query
+          name: override
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/advisor.Advice'
+              $ref: "#/definitions/advisor.Advice"
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/echo.HTTPError'
+            $ref: "#/definitions/echo.HTTPError"
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/echo.HTTPError'
+            $ref: "#/definitions/echo.HTTPError"
       summary: Check the SQL statement.
       tags:
-      - Schema Review
+        - SQL review
 schemes:
-- http
+  - http
 swagger: "2.0"

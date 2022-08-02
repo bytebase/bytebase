@@ -108,7 +108,7 @@ const useExecuteSQL = () => {
       const sqlResultSet = await sqlEditorStore.executeQuery({
         statement: selectStatement,
       });
-      // TODO(steven): use BBModel instead of notify to show the advice from schema review.
+      // TODO(steven): use BBModel instead of notify to show the advice from SQL review.
       let adviceStatus = "SUCCESS";
       let adviceNotifyMessage = "";
       for (const advice of sqlResultSet.adviceList) {

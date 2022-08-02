@@ -31,9 +31,9 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 
 // sqlCheckController godoc
 // @Summary  Check the SQL statement.
-// @Description  Parse and check the SQL statement according to the schema review rules.
+// @Description  Parse and check the SQL statement according to the SQL review rules.
 // @Accept  */*
-// @Tags  Schema Review
+// @Tags  SQL review
 // @Produce  json
 // @Param  statement     query  string  true   "The SQL statement."
 // @Param  databaseType  query  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB)
@@ -106,7 +106,7 @@ func sqlCheck(
 ) ([]advisor.Advice, error) {
 	var adviceList []advisor.Advice
 
-	res, err := advisor.SchemaReviewCheck(statement, ruleList, advisor.SQLReviewCheckContext{
+	res, err := advisor.SQLReviewCheck(statement, ruleList, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

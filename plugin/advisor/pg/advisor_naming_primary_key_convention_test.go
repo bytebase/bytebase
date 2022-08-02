@@ -185,7 +185,7 @@ func TestNamingPKConvention(t *testing.T) {
 		MaxLength: maxLength,
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingPKConventionAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NamingPKConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRulePKNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),

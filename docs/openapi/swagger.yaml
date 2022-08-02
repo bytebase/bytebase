@@ -34,61 +34,62 @@ paths:
   /sql/advise:
     get:
       consumes:
-      - '*/*'
-      description: Parse and check the SQL statement according to the schema review
+        - "*/*"
+      description: Parse and check the SQL statement according to the SQL review
         policy.
       parameters:
-      - description: The environment name. Case sensitive.
-        in: query
-        name: environment
-        required: true
-        type: string
-      - description: The SQL statement.
-        in: query
-        name: statement
-        required: true
-        type: string
-      - description: The database type. Required if the port, host and database name
-          is not specified.
-        enum:
-        - MYSQL
-        - POSTGRES
-        - TIDB
-        in: query
-        name: databaseType
-        type: string
-      - description: The instance host.
-        in: query
-        name: host
-        type: string
-      - description: The instance port.
-        in: query
-        name: port
-        type: string
-      - description: The database name in the instance.
-        in: query
-        name: databaseName
-        type: string
+        - description: The environment name. Case sensitive.
+          in: query
+          name: environment
+          required: true
+          type: string
+        - description: The SQL statement.
+          in: query
+          name: statement
+          required: true
+          type: string
+        - description:
+            The database type. Required if the port, host and database name
+            is not specified.
+          enum:
+            - MYSQL
+            - POSTGRES
+            - TIDB
+          in: query
+          name: databaseType
+          type: string
+        - description: The instance host.
+          in: query
+          name: host
+          type: string
+        - description: The instance port.
+          in: query
+          name: port
+          type: string
+        - description: The database name in the instance.
+          in: query
+          name: databaseName
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/advisor.Advice'
+              $ref: "#/definitions/advisor.Advice"
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/echo.HTTPError'
+            $ref: "#/definitions/echo.HTTPError"
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/echo.HTTPError'
+            $ref: "#/definitions/echo.HTTPError"
       summary: Check the SQL statement.
       tags:
-      - Schema Review
+        - SQL review
 schemes:
-- http
+  - http
 swagger: "2.0"

@@ -27,13 +27,13 @@ import (
 )
 
 var (
-	schemaReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSQLReviewPolicy.AccessErrorMessage())
-	noSchemaReviewPolicy  = []api.TaskCheckResult{
+	sqlReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSQLReviewPolicy.AccessErrorMessage())
+	noSQLReviewPolicy  = []api.TaskCheckResult{
 		{
 			Status:    api.TaskCheckStatusWarn,
 			Namespace: api.AdvisorNamespace,
 			Code:      advisor.NotFound.Int(),
-			Title:     "Empty schema review policy or disabled",
+			Title:     "Empty SQL review policy or disabled",
 			Content:   "",
 		},
 	}
@@ -243,22 +243,22 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policyPayload, err := prodTemplateSchemaReviewPolicy()
+	policyPayload, err := prodTemplateSQLReviewPolicy()
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 	})
-	a.EqualError(err, schemaReviewAccessErr)
+	a.EqualError(err, sqlReviewAccessErr)
 
 	err = ctl.setLicense()
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 	})
 	a.NoError(err)
@@ -298,32 +298,32 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
-		result := createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
 		a.Equal(t.result, result)
 	}
 
-	// disable the schema review policy
+	// disable the SQL review policy
 	disable := string(api.Archived)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 		RowStatus:     &disable,
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
-	a.Equal(noSchemaReviewPolicy, result)
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	a.Equal(noSQLReviewPolicy, result)
 
-	// delete the schema review policy
+	// delete the SQL review policy
 	err = ctl.deletePolicy(api.PolicyDelete{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
-	a.Equal(noSchemaReviewPolicy, result)
+	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	a.Equal(noSQLReviewPolicy, result)
 }
 
 func TestSQLReviewForMySQL(t *testing.T) {
@@ -584,22 +584,22 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policyPayload, err := prodTemplateSchemaReviewPolicy()
+	policyPayload, err := prodTemplateSQLReviewPolicy()
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 	})
-	a.EqualError(err, schemaReviewAccessErr)
+	a.EqualError(err, sqlReviewAccessErr)
 
 	err = ctl.setLicense()
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 	})
 	a.NoError(err)
@@ -639,35 +639,35 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
-		result := createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
 		a.Equal(t.result, result)
 	}
 
-	// disable the schema review policy
+	// disable the SQL review policy
 	disable := string(api.Archived)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 		RowStatus:     &disable,
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
-	a.Equal(noSchemaReviewPolicy, result)
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	a.Equal(noSQLReviewPolicy, result)
 
-	// delete the schema review policy
+	// delete the SQL review policy
 	err = ctl.deletePolicy(api.PolicyDelete{
 		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeSchemaReview,
+		Type:          api.PolicyTypeSQLReview,
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
-	a.Equal(noSchemaReviewPolicy, result)
+	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	a.Equal(noSQLReviewPolicy, result)
 }
 
-func createIssueAndReturnSchemaReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string) []api.TaskCheckResult {
+func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string) []api.TaskCheckResult {
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Migrate,
 		DetailList: []*api.UpdateSchemaDetail{
@@ -689,7 +689,7 @@ func createIssueAndReturnSchemaReviewResult(a *require.Assertions, ctl *controll
 	})
 	a.NoError(err)
 
-	result, err := ctl.getSchemaReviewResult(issue.ID)
+	result, err := ctl.GetSQLReviewResult(issue.ID)
 	a.NoError(err)
 
 	return result

@@ -211,7 +211,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				store.NewCatalog(&db.ID, s.store, instance.Engine),
 			)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check SQL review policy").SetInternal(err)
 			}
 
 			if adviceLevel == advisor.Error {
@@ -657,14 +657,14 @@ func (s *Server) sqlCheck(
 	catalog catalog.Catalog,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
+	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			adviceList = []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NotFound,
-					Title:   "Schema review policy is not configured or disabled",
+					Title:   "SQL review policy is not configured or disabled",
 					Content: "",
 				},
 			}
@@ -673,7 +673,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
+	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

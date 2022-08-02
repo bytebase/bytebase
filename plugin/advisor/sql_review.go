@@ -11,13 +11,13 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-// How to add a schema review rule:
+// How to add a SQL review rule:
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
 //   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
 //   3. Add advisor error code if needed(plugin/advisor/code.go).
 //   4. Map SQLReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
-// SQLReviewRuleLevel is the error level for schema review rule.
+// SQLReviewRuleLevel is the error level for SQL review rule.
 type SQLReviewRuleLevel string
 
 // SQLReviewRuleType is the type of schema rule.
@@ -113,7 +113,7 @@ var (
 	}
 )
 
-// SQLReviewPolicy is the policy configuration for schema review.
+// SQLReviewPolicy is the policy configuration for SQL review.
 type SQLReviewPolicy struct {
 	Name     string           `json:"name"`
 	RuleList []*SQLReviewRule `json:"ruleList"`
@@ -132,7 +132,7 @@ func (policy *SQLReviewPolicy) Validate() error {
 	return nil
 }
 
-// SQLReviewRule is the rule for schema review policy.
+// SQLReviewRule is the rule for SQL review policy.
 type SQLReviewRule struct {
 	Type  SQLReviewRuleType  `json:"type"`
 	Level SQLReviewRuleLevel `json:"level"`
@@ -141,9 +141,9 @@ type SQLReviewRule struct {
 	Payload string `json:"payload"`
 }
 
-// Validate validates the schema review rule.
+// Validate validates the SQL review rule.
 func (rule *SQLReviewRule) Validate() error {
-	// TODO(rebelice): add other schema review rule validation.
+	// TODO(rebelice): add other SQL review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
 		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
@@ -253,7 +253,7 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 	return &rcr, nil
 }
 
-// SQLReviewCheckContext is the context for schema review check.
+// SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
 	Charset   string
 	Collation string
@@ -261,8 +261,8 @@ type SQLReviewCheckContext struct {
 	Catalog   catalog.Catalog
 }
 
-// SchemaReviewCheck checks the statements with schema review rules.
-func SchemaReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
+// SQLReviewCheck checks the statements with sql review rules.
+func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
 	database, err := checkContext.Catalog.GetDatabase(context.Background())
 	if err != nil {
@@ -422,5 +422,5 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	}
-	return Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
+	return Fake, fmt.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
 }

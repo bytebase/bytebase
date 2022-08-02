@@ -97,7 +97,7 @@ func TestNamingColumnConvention(t *testing.T) {
 		Format: "^[a-z]+(_[a-z]+)*$",
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleColumnNaming,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
