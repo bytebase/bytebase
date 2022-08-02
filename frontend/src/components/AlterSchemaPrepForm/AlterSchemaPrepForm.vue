@@ -368,14 +368,6 @@ export default defineComponent({
       if (project.id === UNKNOWN_ID) return;
 
       if (project.workflowType === "UI") {
-        // Create a user friendly default issue name
-        const issueNameParts: string[] = [];
-        issueNameParts.push(`[${state.selectedDatabaseName}]`);
-        issueNameParts.push(
-          isAlterSchema.value ? `Alter schema` : `Change data`
-        );
-        issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
-
         router.push({
           name: "workspace.issue.detail",
           params: {
