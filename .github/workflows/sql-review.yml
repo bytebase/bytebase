@@ -1,5 +1,8 @@
 on: [pull_request]
 
+env:
+  BB_SQL_API: ${{ secrets.BB_SQL_API }} # Optional. Users can provide their own SQL Review API URL
+
 jobs:
   sql-review:
     runs-on: ubuntu-latest
@@ -9,5 +12,6 @@ jobs:
       - name: Check SQL
         uses: ./.github/actions/sql-review
         with:
-          override: ./sql-review.yml
+          override: ./sql-review.yml # Optional, we can only provide the template id
           database: POSTGRES
+          template: "bb.sql-review.prod" # Optional. Required if the override is not specified.

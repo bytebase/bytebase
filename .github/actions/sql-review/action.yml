@@ -2,7 +2,7 @@ name: SQL-Review
 description: "Parse and check the SQL statement according to the schema review rules"
 inputs:
   override:
-    description: "SQL check configuration override file path."
+    description: "SQL check configuration override file path. Required if the template is not specified."
     required: false
     default: ""
   database:
@@ -10,6 +10,9 @@ inputs:
     required: true
   template:
     description: 'The SQL check template id, required if the override is not specified. Should be one of "bb.sql-review.prod", "bb.sql-review.dev".'
+    required: false
+  api:
+    description: "The SQL check API URL."
     required: false
 runs:
   using: "composite"

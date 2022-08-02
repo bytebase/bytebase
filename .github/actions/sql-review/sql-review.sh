@@ -4,7 +4,11 @@ DATABASE_TYPE=$2
 CONFIG=$3
 TEMPLATE_ID=$4
 
-API_URL=https://sql-service.onrender.com/v1/sql/advise
+API_URL=$BB_SQL_API
+if [ -z $API_URL ]
+then
+    API_URL=https://sql-service.onrender.com/v1/sql/advise
+fi
 DOC_URL=https://www.bytebase.com/docs/reference/error-code/advisor
 
 statement=`cat $FILE`
