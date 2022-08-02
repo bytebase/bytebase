@@ -32,7 +32,7 @@ func TestMySQLDatabaseAllowDropIfEmpty(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &DatabaseAllowDropIfEmptyAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &DatabaseAllowDropIfEmptyAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleDropEmptyDatabase,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",

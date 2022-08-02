@@ -82,7 +82,7 @@ func TestBasic(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
@@ -213,7 +213,7 @@ func TestAlterTable(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
@@ -235,7 +235,7 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
