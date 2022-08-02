@@ -1326,8 +1326,8 @@
         "desc": "Backup policy will auto-backup your database based on the schedule."
       },
       "bb-feature-sql-review": {
-        "title": "Schema review policy",
-        "desc": "Customize the schema review policy for different environments. @:{'subscription.trial'}."
+        "title": "SQL review policy",
+        "desc": "Customize the SQL review policy for different environments. @:{'subscription.trial'}."
       },
       "bb-feature-rbac": {
         "title": "Role management",
@@ -1376,7 +1376,7 @@
           "disaster-recovery-advanced": "Advanced",
           "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
           "archiving": "Archiving",
-          "sql-check": "SQL check / Schema review",
+          "sql-check": "SQL check / SQL review",
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
@@ -1485,7 +1485,7 @@
         "environments-select": "Select environments",
         "no-linked-environments": "No linked environment",
         "no-available-environment": "No available environment",
-        "no-available-environment-desc": "No available environment. One environment can only link one schema review policy.",
+        "no-available-environment-desc": "No available environment. One environment can only link one SQL review policy.",
         "choose-template": "Choose template"
       },
       "configure-rule": {

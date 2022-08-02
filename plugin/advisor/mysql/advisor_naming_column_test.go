@@ -168,7 +168,7 @@ func TestNamingColumnConvention(t *testing.T) {
 		MaxLength: 64,
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleColumnNaming,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),

@@ -169,7 +169,7 @@ export const useRouterStore = defineStore("router", {
 
       {
         // /setting/sql-review/:sqlReviewPolicyId
-        // Total 2 elements, 2nd element is the schema review id
+        // Total 2 elements, 2nd element is the SQL review id
         const sqlReviewComponents = currentRoute.path.match(
           "/setting/sql-review/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];

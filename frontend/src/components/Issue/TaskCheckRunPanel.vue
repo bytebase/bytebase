@@ -140,7 +140,7 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.EMPTY_POLICY:
           title = checkResult.title;
           break;
-        // SchemaReviewPolicyErrorCode
+        // SchemaSQLPolicyErrorCode
         case SQLReviewPolicyErrorCode.STATEMENT_NO_WHERE:
         case SQLReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
         case SQLReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
