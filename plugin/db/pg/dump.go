@@ -76,7 +76,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
 	}
-	cmd.Env = append(cmd.Env, "OPENSSL_CONF", "/etc/ssl/")
+	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
 	cmd.Stderr = os.Stderr
 	r, err := cmd.StdoutPipe()
 	if err != nil {
