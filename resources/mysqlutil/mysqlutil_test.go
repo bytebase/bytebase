@@ -20,17 +20,17 @@ func TestRunBinary(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("run mysql client", func(t *testing.T) {
-		_, err := version(MySQL, tmpDir)
+		_, err := getExecutableVersion(MySQL, tmpDir)
 		a.NoError(err)
 	})
 
 	t.Run("run mysqlbinlog", func(t *testing.T) {
-		_, err := version(MySQLBinlog, tmpDir)
+		_, err := getExecutableVersion(MySQLBinlog, tmpDir)
 		a.NoError(err)
 	})
 
 	t.Run("run mysqldump", func(t *testing.T) {
-		_, err := version(MySQLDump, tmpDir)
+		_, err := getExecutableVersion(MySQLDump, tmpDir)
 		a.NoError(err)
 	})
 }

@@ -42,8 +42,8 @@ func GetPath(binName binaryName, resourceDir string) string {
 	return "UNKNOWN_BINARY"
 }
 
-// version returns the raw output of ``binName` -V`.
-func version(binName binaryName, resourceDir string) (string, error) {
+// getExecutableVersion returns the raw output of ``binName` -V`.
+func getExecutableVersion(binName binaryName, resourceDir string) (string, error) {
 	var cmd *exec.Cmd
 	var version bytes.Buffer
 	switch binName {
