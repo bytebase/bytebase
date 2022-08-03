@@ -15,7 +15,6 @@ func activeProfile() server.Profile {
 		BackendPort:         flags.port,
 		Debug:               flags.debug,
 		Version:             version,
-		DataDir:             dataDir,
 		GitCommit:           gitcommit,
 		MetricConnectionKey: "46nEgegY1APWBz4NcQp0rCRJomDnLJyE",
 		WorkspaceID:         flags.workspaceID,
