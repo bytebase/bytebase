@@ -25,7 +25,9 @@
             class="text-xs"
           />
           <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
-            <span class="tooltip">
+            <span
+              class="tooltip text-justify w-[75%] transform -translate-x-[50%] -translate-y-[1.5rem]"
+            >
               {{
                 $t("database.last-sync-status-long", [
                   database.syncStatus,

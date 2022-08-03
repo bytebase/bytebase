@@ -86,7 +86,7 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 	}
-	advisor.RunSchemaReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleMySQLEngine,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",

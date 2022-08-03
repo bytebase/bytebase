@@ -888,7 +888,7 @@
     "configure-deploy": "Configure deploy",
     "choose-git-provider-description": "Choose the Git provider where your database schema scripts (.sql) are hosted. When you push the changed script to the Git repository, Bytebase will automatically create a pipeline to apply the schema change to the database.",
     "choose-git-provider-visit-workspace": "Visit {workspace} setting to add more Git providers.",
-    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, GitHub Enterprise and GitHub.com later.",
+    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, and GitHub Enterprise later.",
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
     "select-repository-search": "Search repository",
     "linked": "Linked repositories",
@@ -1326,8 +1326,8 @@
         "desc": "Backup policy will auto-backup your database based on the schedule."
       },
       "bb-feature-sql-review": {
-        "title": "Schema review policy",
-        "desc": "Customize the schema review policy for different environments. @:{'subscription.trial'}."
+        "title": "SQL review policy",
+        "desc": "Customize the SQL review policy for different environments. @:{'subscription.trial'}."
       },
       "bb-feature-rbac": {
         "title": "Role management",
@@ -1376,7 +1376,7 @@
           "disaster-recovery-advanced": "Advanced",
           "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
           "archiving": "Archiving",
-          "sql-check": "SQL check / Schema review",
+          "sql-check": "SQL check / SQL review",
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
@@ -1485,7 +1485,7 @@
         "environments-select": "Select environments",
         "no-linked-environments": "No linked environment",
         "no-available-environment": "No available environment",
-        "no-available-environment-desc": "No available environment. One environment can only link one schema review policy.",
+        "no-available-environment-desc": "No available environment. One environment can only link one SQL review policy.",
         "choose-template": "Choose template"
       },
       "configure-rule": {

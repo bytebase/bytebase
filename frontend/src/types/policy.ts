@@ -10,7 +10,7 @@ import {
 export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan"
-  | "bb.policy.schema-review";
+  | "bb.policy.sql-review";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
@@ -31,7 +31,7 @@ export type BackupPlanPolicyPayload = {
 
 export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
 
-// SQLReviewPolicyPayload is the payload for schema review policy in the backend.
+// SQLReviewPolicyPayload is the payload for SQL review policy in the backend.
 export type SQLReviewPolicyPayload = {
   name: string;
   ruleList: {
