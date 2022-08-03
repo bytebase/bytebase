@@ -68,7 +68,7 @@ const docTemplate = `{
                             "bb.sql-review.dev"
                         ],
                         "description": "The SQL check template id. Required if the config is not specified.",
-                        "name": "template",
+                        "name": "templateId",
                         "in": "body",
                         "schema": {
                             "type": "string"

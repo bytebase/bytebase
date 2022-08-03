@@ -30,7 +30,7 @@ func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, error)
 type sqlCheckRequestBody struct {
 	Statement    string                      `json:"statement"`
 	DatabaseType string                      `json:"databaseType"`
-	Template     advisor.SQLReviewTemplateID `json:"template"`
+	TemplateID   advisor.SQLReviewTemplateID `json:"templateId"`
 	Override     string                      `json:"override"`
 }
 
@@ -46,7 +46,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Produce  json
 // @Param  statement     body  string  true   "The SQL statement."
 // @Param  databaseType  body  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB)
-// @Param  template      body  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.prod, bb.sql-review.dev)
+// @Param  templateId    body  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.prod, bb.sql-review.dev)
 // @Param  override      body  string  false  "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
@@ -66,7 +66,7 @@ func (*Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
 	}
 
-	if request.Override == "" && request.Template == "" {
+	if request.Override == "" && request.TemplateID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required template or override")
 	}
 
@@ -80,11 +80,11 @@ func (*Server) sqlCheckController(c echo.Context) error {
 		if err := yaml.Unmarshal([]byte(request.Override), ruleOverride); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid config: %v", request.Override)).SetInternal(err)
 		}
-		if request.Template != "" && ruleOverride.Template != request.Template {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The config override should extend from the same template. Found %s in override but also get %s template in request.", ruleOverride.Template, request.Template))
+		if request.TemplateID != "" && ruleOverride.Template != request.TemplateID {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The config override should extend from the same template. Found %s in override but also get %s template in request.", ruleOverride.Template, request.TemplateID))
 		}
 	} else {
-		ruleOverride.Template = request.Template
+		ruleOverride.Template = request.TemplateID
 	}
 
 	ruleList, err := advisor.MergeSQLReviewRules(ruleOverride)
