@@ -152,37 +152,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	stopChan := make(chan struct{})
 	defer close(stopChan)
-	go func(ctx context.Context) {
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-		createdTs := time.Now().Unix()
-		exec.progress.Store(api.Progress{
-			TotalUnit:     backupFileBytes + totalBinlogBytes,
-			CompletedUnit: 0,
-			CreatedTs:     createdTs,
-			UpdatedTs:     createdTs,
-			Payload:       "{comment: \"Start to restore backup and replay binlog\"}",
-		})
-		for {
-			select {
-			case <-ticker.C:
-				progressPrev := exec.progress.Load().(api.Progress)
-				// TODO(dragonly): Calculate restored backup bytes when using mysqldump.
-				restoredBackupFileBytes := backupFileBytes
-				replayedBinlogBytes := mysqlDriver.GetReplayedBinlogBytes()
-				exec.progress.Store(api.Progress{
-					TotalUnit:     progressPrev.TotalUnit,
-					CompletedUnit: restoredBackupFileBytes + replayedBinlogBytes,
-					CreatedTs:     progressPrev.CreatedTs,
-					UpdatedTs:     time.Now().Unix(),
-				})
-			case <-ctx.Done():
-				return
-			case <-stopChan:
-				return
-			}
-		}
-	}(ctx)
+	go exec.updateProgress(ctx, mysqlDriver, stopChan, backupFileBytes, totalBinlogBytes)
 
 	if err := mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupFile), startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
@@ -193,6 +163,38 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	return nil
+}
+
+func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, stopChan chan struct{}, backupFileBytes, totalBinlogBytes int64) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	createdTs := time.Now().Unix()
+	exec.progress.Store(api.Progress{
+		TotalUnit:     backupFileBytes + totalBinlogBytes,
+		CompletedUnit: 0,
+		CreatedTs:     createdTs,
+		UpdatedTs:     createdTs,
+		Payload:       "{comment: \"Start to restore backup and replay binlog\"}",
+	})
+	for {
+		select {
+		case <-ticker.C:
+			progressPrev := exec.progress.Load().(api.Progress)
+			// TODO(dragonly): Calculate restored backup bytes when using mysqldump.
+			restoredBackupFileBytes := backupFileBytes
+			replayedBinlogBytes := driver.GetReplayedBinlogBytes()
+			exec.progress.Store(api.Progress{
+				TotalUnit:     progressPrev.TotalUnit,
+				CompletedUnit: restoredBackupFileBytes + replayedBinlogBytes,
+				CreatedTs:     progressPrev.CreatedTs,
+				UpdatedTs:     time.Now().Unix(),
+			})
+		case <-ctx.Done():
+			return
+		case <-stopChan:
+			return
+		}
+	}
 }
 
 func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*api.Issue, error) {
