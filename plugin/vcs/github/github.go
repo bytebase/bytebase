@@ -420,7 +420,7 @@ func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oa
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return collaborators, len(collaborators) >= 100, nil
+	return collaborators, len(collaborators) >= apiPageSize, nil
 }
 
 // oauthResponse is a GitHub OAuth response.
@@ -559,7 +559,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return repos, len(repos) >= 100, nil
+	return repos, len(repos) >= apiPageSize, nil
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree
