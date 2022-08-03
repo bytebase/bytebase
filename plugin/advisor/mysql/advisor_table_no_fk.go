@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -13,8 +14,8 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(advisor.TiDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.

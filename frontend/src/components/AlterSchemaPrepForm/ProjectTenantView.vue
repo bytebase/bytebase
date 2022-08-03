@@ -116,7 +116,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, watchEffect, watch, ref, h, useSlots } from "vue";
+import { computed, watchEffect, watch, ref, h } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 import { groupBy } from "lodash-es";
 import { Translation, useI18n } from "vue-i18n";
@@ -270,10 +270,6 @@ useOverrideSubtitle(() => {
 </script>
 
 <style scoped lang="postcss">
-.project-tenant-view {
-  @apply w-192;
-}
-
 .project-tenant-view :global(.n-collapse-item) {
   @apply mt-0 !important;
 }

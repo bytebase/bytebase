@@ -168,7 +168,7 @@ CREATE TABLE project (
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
-    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE'
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -217,7 +217,7 @@ CREATE TABLE project_member (
     project_id INTEGER NOT NULL REFERENCES project (id),
     role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST')) DEFAULT 'BYTEBASE',
+    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -423,8 +423,10 @@ CREATE TABLE idx (
     position INTEGER NOT NULL,
     type TEXT NOT NULL,
     "unique" BOOLEAN NOT NULL,
+    "primary" BOOLEAN NOT NULL,
     visible BOOLEAN NOT NULL,
-    comment TEXT NOT NULL
+    comment TEXT NOT NULL,
+    CONSTRAINT check_primary_must_unique CHECK(NOT "primary" OR ("primary" AND "unique"))
 );
 
 CREATE INDEX idx_idx_database_id_table_id ON idx(database_id, table_id);
@@ -536,7 +538,7 @@ CREATE TABLE backup (
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
+    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC', 'PITR')),
     storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
@@ -566,10 +568,13 @@ CREATE TABLE backup_setting (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
+    -- enable automatic backup schedule.
     enabled BOOLEAN NOT NULL,
     hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
     day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
+    -- retention_period_ts == 0 means unset retention period and we do not delete any data.
+    retention_period_ts INTEGER NOT NULL DEFAULT 0 CHECK (retention_period_ts >= 0),
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
@@ -870,7 +875,7 @@ CREATE TABLE vcs (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST')),
+    type TEXT NOT NULL CHECK (type IN ('GITLAB_SELF_HOST', 'GITHUB_COM')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
     application_id TEXT NOT NULL,

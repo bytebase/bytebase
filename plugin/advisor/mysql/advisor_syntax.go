@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 var (
@@ -9,8 +10,8 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.MySQLSyntax, &SyntaxAdvisor{})
-	advisor.Register(advisor.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLSyntax, &SyntaxAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
 }
 
 // SyntaxAdvisor is the advisor for checking syntax.

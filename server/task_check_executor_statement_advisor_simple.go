@@ -7,6 +7,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -41,7 +42,7 @@ func (*TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, _ *Server
 		}
 	}
 
-	dbType, err := api.ConvertToAdvisorDBType(payload.DbType)
+	dbType, err := advisorDB.ConvertToAdvisorDBType(string(payload.DbType))
 	if err != nil {
 		return nil, err
 	}

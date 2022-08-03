@@ -35,17 +35,15 @@
               {{ taskNameOfTask(task) }}
             </div>
           </div>
-          <div v-if="getTaskProgress(task) > 0">
-            <BBProgressPie
-              class="w-9 h-9 text-info"
-              :thickness="2"
-              :percent="getTaskProgress(task)"
-            >
-              <template #default="{ percent }">
-                <span class="text-xs scale-90">{{ percent }}%</span>
-              </template>
-            </BBProgressPie>
-          </div>
+
+          <TaskProgressPie
+            v-if="
+              !create &&
+              task.type === 'bb.task.database.schema.update.ghost.sync'
+            "
+            :task="(task as Task)"
+            unit-key="row"
+          />
         </div>
 
         <div
@@ -74,8 +72,8 @@ import type {
 import { activeTask, activeTaskInStage, taskSlug } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseStore } from "@/store";
-import { BBProgressPie } from "@/bbkit";
 import PipelineStageList from "./PipelineStageList.vue";
+import TaskProgressPie from "./TaskProgressPie.vue";
 import { useIssueLogic } from "./logic";
 
 const { t } = useI18n();
@@ -147,23 +145,6 @@ const selectedStageIdOrIndex = computed(() => {
     selectedStage.value as StageCreate
   );
 });
-
-const getTaskProgress = (task: Task | TaskCreate) => {
-  if (create.value) {
-    return 0;
-  }
-  if (task.type !== "bb.task.database.schema.update.ghost.sync") return 0;
-  const taskRun = (task as Task).taskRunList.find((run) => {
-    // TODO(Jim): find the correct taskRun which indicates the sync progress.
-    return false;
-  });
-  if (taskRun) {
-    // TODO(Jim): get progress from taskRun.result.detail
-  }
-
-  // nothing found
-  return 0;
-};
 
 const taskClass = (task: Task | TaskCreate): string[] => {
   const classes: string[] = [];

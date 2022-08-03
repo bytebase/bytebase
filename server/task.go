@@ -19,10 +19,10 @@ import (
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
 		api.TaskPendingApproval: {api.TaskPending},
-		api.TaskPending:         {api.TaskRunning},
+		api.TaskPending:         {api.TaskRunning, api.TaskPendingApproval},
 		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskRunning},
+		api.TaskFailed:          {api.TaskRunning, api.TaskPendingApproval},
 		api.TaskCanceled:        {api.TaskRunning},
 	}
 )
@@ -45,11 +45,11 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %q state", task.Status))
 	}
 	if task.Status == api.TaskPending {
-		canSchedule, err := s.TaskScheduler.canScheduleTask(ctx, task)
+		ok, err := s.TaskScheduler.canTransitTaskStatus(ctx, task, api.TaskCheckStatusWarn)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
 		}
-		if canSchedule {
+		if ok {
 			return echo.NewHTTPError(http.StatusBadRequest, "can not update the PENDING task because it can be running at any time")
 		}
 	}
@@ -199,7 +199,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return err
 		}
 
-		taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+		taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
@@ -328,12 +328,12 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	// create an activity and trigger task check for statement update
 	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		if oldStatement != newStatement {
-			// create an activity
 			if issue == nil {
 				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 				return nil, echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
 			}
 
+			// create a task statement update activity
 			payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
 				TaskID:       taskPatched.ID,
 				OldStatement: oldStatement,
@@ -344,18 +344,30 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
 			}
-			activityCreate := &api.ActivityCreate{
+
+			if _, err = s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
 				CreatorID:   taskPatched.CreatorID,
 				ContainerID: issue.ID,
 				Type:        api.ActivityPipelineTaskStatementUpdate,
 				Payload:     string(payload),
 				Level:       api.ActivityInfo,
-			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
+			}, &ActivityMeta{
 				issue: issue,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+			}
+
+			// dismiss stale reviews and transfer the status to PendingApproval.
+			if taskPatched.Status != api.TaskPendingApproval {
+				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+					ID:        taskPatch.ID,
+					UpdaterID: taskPatch.UpdaterID,
+					Status:    api.TaskPendingApproval,
+				})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+				}
+				taskPatched = t
 			}
 
 			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
@@ -490,16 +502,7 @@ func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, 
 	return nil
 }
 
-func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
-	taskStatusPatch := &api.TaskStatusPatch{
-		ID:        task.ID,
-		UpdaterID: updaterID,
-		Status:    newStatus,
-	}
-	return s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
-}
-
-func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
 			log.Error("Failed to change task status.",
@@ -631,11 +634,11 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 }
 
 func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
-	policyID, err := s.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 
 	if err != nil {
-		// It's OK if we failed to find the schema review policy, just emit an error log
-		log.Error("Failed to found schema review policy id for task",
+		// It's OK if we failed to find the SQL review policy, just emit an error log
+		log.Error("Failed to found SQL review policy id for task",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.Int("environment_id", task.Instance.EnvironmentID),

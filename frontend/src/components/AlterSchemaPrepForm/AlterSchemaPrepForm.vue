@@ -7,13 +7,33 @@
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
-            <ProjectTenantView
-              :state="state"
-              :database-list="databaseList"
-              :environment-list="environmentList"
-              :project="state.project"
-              @dismiss="cancel"
-            />
+            <NTabs v-model:value="state.alterType" type="line">
+              <NTabPane
+                :tab="$t('alter-schema.alter-multiple-db')"
+                name="MULTI_DB"
+              >
+                <ProjectTenantView
+                  :state="state"
+                  :database-list="databaseList"
+                  :environment-list="environmentList"
+                  :project="state.project"
+                  @dismiss="cancel"
+                />
+              </NTabPane>
+              <NTabPane
+                :tab="$t('alter-schema.alter-single-db')"
+                name="SINGLE_DB"
+              >
+                <!-- a simple table -->
+                <DatabaseTable
+                  mode="PROJECT_SHORT"
+                  :bordered="true"
+                  :custom-click="true"
+                  :database-list="databaseList"
+                  @select-database="selectDatabase"
+                />
+              </NTabPane>
+            </NTabs>
           </template>
           <template v-else>
             <!-- standard mode project, single/multiple databases ui -->
@@ -61,7 +81,7 @@
         {{ $t("common.cancel") }}
       </button>
       <button
-        v-if="state.alterType == 'MULTI_DB'"
+        v-if="showGenerateMultiDb"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowGenerateMultiDb"
         @click.prevent="generateMultiDb"
@@ -70,7 +90,7 @@
       </button>
 
       <button
-        v-if="isTenantProject || (!projectId && state.tab === 'tenant')"
+        v-if="showGenerateTenant"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowGenerateTenant"
         @click.prevent="generateTenant"
@@ -197,6 +217,12 @@ export default defineComponent({
       return state.project?.tenantMode === "TENANT";
     });
 
+    if (isTenantProject.value) {
+      // For tenant mode projects, alter multiple db via DeploymentConfig
+      // is the default suggested way.
+      state.alterType = "MULTI_DB";
+    }
+
     const environmentList = useEnvironmentList(["NORMAL"]);
 
     const databaseList = computed(() => {
@@ -231,6 +257,11 @@ export default defineComponent({
       return flattenDatabaseIdList;
     });
 
+    const showGenerateMultiDb = computed(() => {
+      if (isTenantProject.value) return false;
+      return state.alterType === "MULTI_DB";
+    });
+
     const allowGenerateMultiDb = computed(() => {
       return flattenSelectedDatabaseIdList.value.length > 0;
     });
@@ -239,6 +270,11 @@ export default defineComponent({
     // 'online' -> online migration
     // false -> user clicked cancel button
     const isUsingGhostMigration = async (databaseList: Database[]) => {
+      // Gh-ost is not available for tenant mode yet.
+      if (databaseList.some((db) => db.project.tenantMode === "TENANT")) {
+        return "normal";
+      }
+
       // never available for "bb.issue.database.data.update"
       if (props.type === "bb.issue.database.data.update") {
         return "normal";
@@ -271,25 +307,12 @@ export default defineComponent({
         return;
       }
 
-      // Create a user friendly default issue name
-      const issueNameParts: string[] = [];
-      if (selectedDatabaseList.length === 1) {
-        issueNameParts.push(`[${selectedDatabaseList[0].name}]`);
-      } else {
-        issueNameParts.push(`[${selectedDatabaseList.length} databases]`);
-      }
-      if (mode === "online") {
-        issueNameParts.push("Online schema change");
-      } else {
-        issueNameParts.push(
-          isAlterSchema.value ? `Alter schema` : `Change data`
-        );
-      }
-      issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
-
       const query: Record<string, any> = {
         template: props.type,
-        name: issueNameParts.join(" "),
+        name: generateIssueName(
+          selectedDatabaseList.map((db) => db.name),
+          mode === "online"
+        ),
         project: props.projectId,
         // The server-side will sort the databases by environment.
         // So we need not to sort them here.
@@ -306,6 +329,18 @@ export default defineComponent({
         query,
       });
     };
+
+    const showGenerateTenant = computed(() => {
+      // True when a tenant project is selected and "MULTI_DB" is selected.
+      if (isTenantProject.value && state.alterType === "MULTI_DB") {
+        return true;
+      }
+      // True when no project is selected and "Tenant" tab is selected.
+      if (!props.projectId && state.tab === "tenant") {
+        return true;
+      }
+      return false;
+    });
 
     const allowGenerateTenant = computed(() => {
       if (!state.selectedDatabaseName) return false;
@@ -340,9 +375,7 @@ export default defineComponent({
           },
           query: {
             template: props.type,
-            name: `[${state.selectedDatabaseName}] ${
-              isAlterSchema.value ? `Alter schema` : `Change data`
-            }`,
+            name: generateIssueName([state.selectedDatabaseName!], false),
             project: project.id,
             databaseName: state.selectedDatabaseName,
             mode: "tenant",
@@ -364,11 +397,10 @@ export default defineComponent({
           return;
         }
         emit("dismiss");
+
         const query: Record<string, any> = {
           template: props.type,
-          name: `[${database.name}] ${
-            isAlterSchema.value ? `Alter schema` : `Change data`
-          }`,
+          name: generateIssueName([database.name], mode === "online"),
           project: database.project.id,
           databaseList: database.id,
         };
@@ -407,6 +439,29 @@ export default defineComponent({
       }
     });
 
+    const generateIssueName = (
+      databaseNameList: string[],
+      isOnlineMode: boolean
+    ) => {
+      // Create a user friendly default issue name
+      const issueNameParts: string[] = [];
+      if (databaseNameList.length === 1) {
+        issueNameParts.push(`[${databaseNameList[0]}]`);
+      } else {
+        issueNameParts.push(`[${databaseNameList.length} databases]`);
+      }
+      if (isOnlineMode) {
+        issueNameParts.push("Online schema change");
+      } else {
+        issueNameParts.push(
+          isAlterSchema.value ? `Alter schema` : `Change data`
+        );
+      }
+      issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+
+      return issueNameParts.join(" ");
+    };
+
     return {
       wrapperClass,
       state,
@@ -417,8 +472,10 @@ export default defineComponent({
       databaseList,
       standardProjectDatabaseList,
       tenantProjectDatabaseList,
+      showGenerateMultiDb,
       allowGenerateMultiDb,
       generateMultiDb,
+      showGenerateTenant,
       allowGenerateTenant,
       generateTenant,
       selectDatabase,

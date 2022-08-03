@@ -113,7 +113,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 
 	for _, instance := range instanceList {
 		if instance.Engine != db.MySQL {
-			log.Error("Instance is not a MySQL instance", zap.String("instance", instance.Name))
+			log.Debug("Instance is not a MySQL instance. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
@@ -122,7 +122,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
-			log.Info("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
+			log.Debug("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
@@ -221,7 +221,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		r.downloadBinlogMu.Unlock()
 		r.downloadBinlogWg.Done()
 	}()
-	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */, common.GetResourceDir(r.server.profile.DataDir))
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
 			log.Warn("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
@@ -311,7 +311,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 
 func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, storageBackend api.BackupStorageBackend, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
+	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get admin database driver, error: %w", err)
 	}

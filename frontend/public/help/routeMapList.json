@@ -73,7 +73,7 @@
   },
   {
     "routeName": "setting.workspace.member",
-    "helpName": ""
+    "helpName": "help.member"
   },
   {
     "routeName": "setting.workspace.version-control",
@@ -165,7 +165,7 @@
   },
   {
     "routeName": "workspace.issue.detail",
-    "helpName": ""
+    "helpName": "help.issue.detail"
   },
   {
     "routeName": "sql-editor",

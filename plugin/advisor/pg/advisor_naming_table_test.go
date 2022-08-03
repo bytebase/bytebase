@@ -100,7 +100,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 		Format: "^[a-z]+(_[a-z]+)*$",
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleTableNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),

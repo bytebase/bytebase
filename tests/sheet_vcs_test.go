@@ -12,84 +12,108 @@ import (
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
-func TestSheetVCS_GitLab(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx := context.Background()
-	ctl := &controller{}
-	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
-	a.NoError(err)
-	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
-	err = ctl.setLicense()
-	a.NoError(err)
+func TestSheetVCS(t *testing.T) {
+	tests := []struct {
+		name               string
+		vcsProviderCreator fake.VCSProviderCreator
+		vcsType            vcs.Type
+		externalID         string
+		repositoryFullPath string
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Create a test VCS.
-	applicationID := "testApplicationID"
-	applicationSecret := "testApplicationSecret"
-	vcs, err := ctl.createVCS(api.VCSCreate{
-		Name:          "TestVCS",
-		Type:          vcs.GitLabSelfHost,
-		InstanceURL:   ctl.vcsURL,
-		APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-		ApplicationID: applicationID,
-		Secret:        applicationSecret,
-	})
-	a.NoError(err)
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			a.NoError(err)
+			defer func() { _ = ctl.Close(ctx) }()
 
-	// Create a project.
-	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test VCS Project",
-		Key:  "TestVCSSyncSheet",
-	})
-	a.NoError(err)
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
 
-	// Create a repository.
-	repositoryPath := "test/sync-sheet"
-	accessToken := "accessToken"
-	refreshToken := "refreshToken"
-	gitlabProjectID := 121
-	gitlabProjectIDStr := fmt.Sprintf("%d", gitlabProjectID)
-	// Create a GitLab project.
-	ctl.vcsProvider.CreateRepository(gitlabProjectIDStr)
-	_, err = ctl.createRepository(api.RepositoryCreate{
-		VCSID:              vcs.ID,
-		ProjectID:          project.ID,
-		Name:               "Test Repository",
-		FullPath:           repositoryPath,
-		WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repositoryPath),
-		BranchFilter:       "feature/foo",
-		BaseDirectory:      "bbtest",
-		FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-		SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
-		SheetPathTemplate:  "sheet/{{NAME}}.sql",
-		ExternalID:         gitlabProjectIDStr,
-		AccessToken:        accessToken,
-		ExpiresTs:          0,
-		RefreshToken:       refreshToken,
-	})
-	a.NoError(err)
+			// Create a VCS.
+			vcs, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
 
-	// Initial git files.
-	files := map[string]string{}
-	gitFile := "sheet/all_employee.sql"
-	fileContent := "SELECT * FROM employee"
-	files[gitFile] = fileContent
-	err = ctl.vcsProvider.AddFiles(gitlabProjectIDStr, files)
-	a.NoError(err)
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VCS Project",
+					Key:  "TestVCSSchemaUpdate",
+				},
+			)
+			a.NoError(err)
 
-	err = ctl.syncSheet(project.ID)
-	a.NoError(err)
+			// Create a repository.
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcs.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					SheetPathTemplate:  "sheet/{{NAME}}.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
 
-	sheets, err := ctl.listSheets(api.SheetFind{
-		ProjectID: &project.ID,
-	})
-	a.NoError(err)
-	a.Equal(1, len(sheets))
+			// Initial git files.
+			gitFile := "sheet/all_employee.sql"
+			fileContent := "SELECT * FROM employee"
+			files := map[string]string{
+				gitFile: fileContent,
+			}
+			files[gitFile] = fileContent
+			err = ctl.vcsProvider.AddFiles(test.externalID, files)
+			a.NoError(err)
 
-	sheetFromVCS := sheets[0]
-	a.Equal("all_employee", sheetFromVCS.Name)
-	a.Equal(fileContent, sheetFromVCS.Statement)
+			err = ctl.syncSheet(project.ID)
+			a.NoError(err)
+
+			sheets, err := ctl.listSheets(api.SheetFind{ProjectID: &project.ID})
+			a.NoError(err)
+			a.Len(sheets, 1)
+
+			sheetFromVCS := sheets[0]
+			a.Equal("all_employee", sheetFromVCS.Name)
+			a.Equal(fileContent, sheetFromVCS.Statement)
+		})
+	}
 }

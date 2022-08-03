@@ -73,6 +73,11 @@ func getTableNameFromStatement(statement string) (string, error) {
 	return parser.GetExplicitTable(), nil
 }
 
+type sharedGhostState struct {
+	migrationContext *base.MigrationContext
+	errCh            <-chan error
+}
+
 type ghostConfig struct {
 	// serverID should be unique
 	serverID             uint
@@ -102,6 +107,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		defaultNumRetries                   = 60
 		cutoverLockTimeoutSeconds           = 3
 		exponentialBackoffMaxInterval       = 64
+		throttleHTTPIntervalMillis          = 100
+		throttleHTTPTimeoutMillis           = 1000
 	)
 	statement := strings.Join(strings.Fields(config.alterStatement), " ")
 	migrationContext := base.NewMigrationContext()
@@ -127,6 +134,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
 	migrationContext.CutOverType = base.CutOverAtomic
+	migrationContext.ThrottleHTTPIntervalMillis = throttleHTTPIntervalMillis
+	migrationContext.ThrottleHTTPTimeoutMillis = throttleHTTPTimeoutMillis
 
 	if migrationContext.AlterStatement == "" {
 		return nil, fmt.Errorf("alterStatement must be provided and must not be empty")
@@ -165,9 +174,9 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
-	syncError := make(chan error)
+	migrationError := make(chan error)
 	instance := task.Instance
 	databaseName := task.Database.Name
 
@@ -205,7 +214,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	migrator := logic.NewMigrator(migrationContext)
+	migrator := logic.NewMigrator(migrationContext, "bb")
 
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
@@ -239,21 +248,20 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 	go func() {
 		if err := migrator.Migrate(); err != nil {
 			log.Error("failed to run gh-ost migration", zap.Error(err))
-			// `migrator.Migrate` can return an error.
-			// 1. If the error is returned before closing `syncDone`,`runGhostMigration` will receive from `syncError`.
-			// 2. If it is returned after `syncDone` is closed, `runGhostMigration` would have received from `syncDone` and returned,
-			// and there's no consumer for `syncError`, so we must send to `syncError` without blocking.
-			select {
-			case syncError <- fmt.Errorf("failed to run gh-ost migration, error: %w", err):
-			default:
-			}
+			migrationError <- err
+			return
 		}
+		migrationError <- nil
+		// we send to migrationError channel anyway because:
+		// 1. before syncDone, the gh-ost sync task will receive it.
+		// 2. after syncDone, the gh-ost cutover task will receive it.
 	}()
 
 	select {
 	case <-syncDone:
+		server.TaskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
-	case err := <-syncError:
+	case err := <-migrationError:
 		return true, nil, err
 	}
 }

@@ -94,8 +94,20 @@ func (s *Server) loadLicense() (*enterpriseAPI.License, error) {
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
-	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
-		return api.FeatureMatrix[feature][api.FREE]
+	return api.FeatureMatrix[feature][s.getEffectivePlan()]
+}
+
+func (s *Server) getPlanLimitValue(name api.PlanLimit) int64 {
+	v, ok := api.PlanLimitValues[name]
+	if !ok {
+		return 0
 	}
-	return api.FeatureMatrix[feature][s.subscription.Plan]
+	return v[s.getEffectivePlan()]
+}
+
+func (s *Server) getEffectivePlan() api.PlanType {
+	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return api.FREE
+	}
+	return s.subscription.Plan
 }
