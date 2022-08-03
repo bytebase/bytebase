@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="activity">
     <div class="divide-y divide-block-border">
       <div class="pb-4">
         <h2 id="activity-title" class="text-lg font-medium text-main">
@@ -9,8 +9,8 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(activity, index) in activityList" :key="index">
-            <div :id="'activity' + activity.id" class="relative pb-4">
+          <li v-for="(activity, index) in activityList" :key="activity.id">
+            <div :id="`#activity${activity.id}`" class="relative pb-4">
               <span
                 v-if="index != activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
@@ -303,8 +303,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, reactive, watchEffect, Ref } from "vue";
-import { useRouter } from "vue-router";
+import {
+  computed,
+  nextTick,
+  ref,
+  reactive,
+  watch,
+  watchEffect,
+  Ref,
+  onMounted,
+} from "vue";
+import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import type {
   Issue,
@@ -362,7 +371,7 @@ type ActionIconType =
 
 const { t } = useI18n();
 const activityStore = useActivityStore();
-const router = useRouter();
+const route = useRoute();
 
 const newComment = ref("");
 const newCommentTextArea = ref();
@@ -406,16 +415,6 @@ const prepareActivityList = () => {
 };
 
 watchEffect(prepareActivityList);
-
-// The activity list and its anchor is not immediately available when the issue shows up.
-// Thus the scrollBehavior set in the vue router won't work (also tried promise to resolve async with no luck either)
-// So we manually use scrollIntoView after rendering the activity list.
-nextTick(() => {
-  if (router.currentRoute.value.hash) {
-    const el = document.getElementById(router.currentRoute.value.hash.slice(1));
-    el?.scrollIntoView();
-  }
-});
 
 // Need to use computed to make list reactive to activity list changes.
 const activityList = computed((): Activity[] => {
@@ -668,4 +667,22 @@ const fileCommitActivityUrl = (activity: Activity) => {
   const payload = activity.payload as ActivityTaskFileCommitPayload;
   return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/-/commit/${payload.commitId}`;
 };
+
+onMounted(() => {
+  watch(
+    () => route.hash,
+    (hash) => {
+      if (hash.match(/^#activity(\d+)/)) {
+        // use '#activity' element as a fallback
+        const elem =
+          document.querySelector(hash) || document.querySelector("#activity");
+        // We use `setTimeout` here since this should be executed very late.
+        setTimeout(() => elem?.scrollIntoView());
+      }
+    },
+    {
+      immediate: true,
+    }
+  );
+});
 </script>
