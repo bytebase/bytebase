@@ -57,8 +57,8 @@ export const useBaseIssueLogic = (params: {
   };
 
   const selectedStage = computed((): Stage | StageCreate => {
-    const stageSlug = router.currentRoute.value.query.stage as string;
-    const taskSlug = router.currentRoute.value.query.task as string;
+    const stageSlug = route.query.stage as string;
+    const taskSlug = route.query.task as string;
     // For stage slug, we support both index based and id based.
     // Index based is used when creating the new task and is the one used when clicking the UI.
     // Id based is used when the context only has access to the stage id (e.g. Task only contains StageId)
@@ -105,10 +105,11 @@ export const useBaseIssueLogic = (params: {
     router.replace({
       name: "workspace.issue.detail",
       query: {
-        ...router.currentRoute.value.query,
+        ...route.query,
         stage: stageSlug(stageList[index].name, index),
         task: taskSlug,
       },
+      hash: route.hash,
     });
   };
 
