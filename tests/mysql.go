@@ -31,11 +31,17 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 }
 
 func getTestMySQLDriver(ctx context.Context, port, database string) (db.Driver, error) {
+	return getTestMySQLDriverWithResourceDir(ctx, port, database, "" /*resourceDir*/)
+}
+
+func getTestMySQLDriverWithResourceDir(ctx context.Context, port, database, resourceDir string) (db.Driver, error) {
 	connCfg := getMySQLConnectionConfig(port, database)
 	return db.Open(
 		ctx,
 		db.MySQL,
-		db.DriverConfig{},
+		db.DriverConfig{
+			ResourceDir: resourceDir,
+		},
 		connCfg,
 		db.ConnectionContext{},
 	)
