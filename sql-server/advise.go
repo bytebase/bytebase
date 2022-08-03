@@ -2,7 +2,9 @@ package sqlserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -25,55 +27,64 @@ func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, error)
 	return nil, nil
 }
 
+type sqlCheckRequestBody struct {
+	Statement    string                      `json:"statement"`
+	DatabaseType string                      `json:"databaseType"`
+	TemplateID   advisor.SQLReviewTemplateID `json:"templateId"`
+	Override     string                      `json:"override"`
+}
+
 func (s *Server) registerAdvisorRoutes(g *echo.Group) {
-	g.GET("/sql/advise", s.sqlCheckController)
+	g.POST("/sql/advise", s.sqlCheckController)
 }
 
 // sqlCheckController godoc
 // @Summary  Check the SQL statement.
 // @Description  Parse and check the SQL statement according to the SQL review rules.
-// @Accept  */*
+// @Accept  application/json
 // @Tags  SQL review
 // @Produce  json
-// @Param  statement     query  string  true   "The SQL statement."
-// @Param  databaseType  query  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB)
-// @Param  template      query  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.prod, bb.sql-review.dev)
-// @Param  override      query  string  false  "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified."
+// @Param  statement     body  string  true   "The SQL statement."
+// @Param  databaseType  body  string  true   "The database type."  Enums(MYSQL, POSTGRES, TIDB)
+// @Param  templateId    body  string  false  "The SQL check template id. Required if the config is not specified." Enums(bb.sql-review.prod, bb.sql-review.dev)
+// @Param  override      body  string  false  "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/advise  [get].
 func (*Server) sqlCheckController(c echo.Context) error {
-	statement := c.QueryParams().Get("statement")
-	if statement == "" {
+	request := &sqlCheckRequestBody{}
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+	if err := json.Unmarshal(body, request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Cannot format request body").SetInternal(err)
+	}
+
+	if request.Statement == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
 	}
 
-	databaseType := c.QueryParams().Get("databaseType")
-	if databaseType == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
-	}
-	advisorDBType, err := advisorDB.ConvertToAdvisorDBType(databaseType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", databaseType))
-	}
-
-	template := c.QueryParams().Get("template")
-	configOverrideYAMLStr := c.QueryParams().Get("override")
-	if template == "" && configOverrideYAMLStr == "" {
+	if request.Override == "" && request.TemplateID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required template or override")
 	}
 
+	advisorDBType, err := advisorDB.ConvertToAdvisorDBType(request.DatabaseType)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", request.DatabaseType))
+	}
+
 	ruleOverride := &advisor.SQLReviewConfigOverride{}
-	if configOverrideYAMLStr != "" {
-		if err := yaml.Unmarshal([]byte(configOverrideYAMLStr), ruleOverride); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid config: %v", configOverrideYAMLStr)).SetInternal(err)
+	if request.Override != "" {
+		if err := yaml.Unmarshal([]byte(request.Override), ruleOverride); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid config: %v", request.Override)).SetInternal(err)
 		}
-		if template != "" && string(ruleOverride.Template) != template {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The config override should extend from the same template. Found %s in override but also get %s template in request.", ruleOverride.Template, template))
+		if request.TemplateID != "" && ruleOverride.Template != request.TemplateID {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The config override should extend from the same template. Found %s in override but also get %s template in request.", ruleOverride.Template, request.TemplateID))
 		}
 	} else {
-		ruleOverride.Template = advisor.SQLReviewTemplateID(template)
+		ruleOverride.Template = request.TemplateID
 	}
 
 	ruleList, err := advisor.MergeSQLReviewRules(ruleOverride)
@@ -85,7 +96,7 @@ func (*Server) sqlCheckController(c echo.Context) error {
 		advisorDBType,
 		"utf8mb4",
 		"utf8mb4_general_ci",
-		statement,
+		request.Statement,
 		ruleList,
 		&catalogService{},
 	)

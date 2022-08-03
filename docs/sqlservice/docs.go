@@ -29,7 +29,7 @@ const docTemplate = `{
             "get": {
                 "description": "Parse and check the SQL statement according to the SQL review rules.",
                 "consumes": [
-                    "*/*"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -40,11 +40,13 @@ const docTemplate = `{
                 "summary": "Check the SQL statement.",
                 "parameters": [
                     {
-                        "type": "string",
                         "description": "The SQL statement.",
                         "name": "statement",
-                        "in": "query",
-                        "required": true
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "enum": [
@@ -52,27 +54,33 @@ const docTemplate = `{
                             "POSTGRES",
                             "TIDB"
                         ],
-                        "type": "string",
                         "description": "The database type.",
                         "name": "databaseType",
-                        "in": "query",
-                        "required": true
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "enum": [
                             "bb.sql-review.prod",
                             "bb.sql-review.dev"
                         ],
-                        "type": "string",
                         "description": "The SQL check template id. Required if the config is not specified.",
-                        "name": "template",
-                        "in": "query"
+                        "name": "templateId",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
-                        "type": "string",
                         "description": "The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml for example. Required if the template is not specified.",
                         "name": "override",
-                        "in": "query"
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
