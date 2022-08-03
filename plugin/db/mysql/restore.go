@@ -102,7 +102,7 @@ func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogD
 
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	replayBinlogPaths, err := getBinlogReplayList(startBinlogInfo, driver.binlogDir)
+	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, driver.binlogDir)
 	if err != nil {
 		return err
 	}
@@ -179,11 +179,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	mysqlCmd.Stdin = mysqlStdin
 
 	// Update replay binlog progress
-	totalBinlogBytes, err := getFileSizeSum(replayBinlogPaths)
-	if err != nil {
-		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
-	}
-	driver.replayBinlogProgress = 0
+	atomic.StoreInt64(&driver.replayedBinlogBytes, 0)
 	stopChan := make(chan struct{})
 	defer close(stopChan)
 	go func() {
@@ -192,8 +188,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		for {
 			select {
 			case <-ticker.C:
-				progress := mysqlStdin.Count() * 10000 / totalBinlogBytes
-				atomic.StoreUint64(&driver.replayBinlogProgress, progress)
+				atomic.StoreInt64(&driver.replayedBinlogBytes, mysqlStdin.Count())
 			case <-ctx.Done():
 				return
 			case <-stopChan:
@@ -216,16 +211,9 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	return nil
 }
 
-func getFileSizeSum(fileNameList []string) (uint64, error) {
-	var sum uint64
-	for _, fileName := range fileNameList {
-		stat, err := os.Stat(fileName)
-		if err != nil {
-			return 0, err
-		}
-		sum += uint64(stat.Size())
-	}
-	return sum, nil
+// GetReplayedBinlogBytes gets the replayed binlog bytes.
+func (driver *Driver) GetReplayedBinlogBytes() int64 {
+	return atomic.LoadInt64(&driver.replayedBinlogBytes)
 }
 
 // RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
@@ -279,8 +267,8 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 	return nil
 }
 
-// getBinlogReplayList returns the path list of the binlog that need be replayed.
-func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+// GetBinlogReplayList returns the path list of the binlog that need be replayed.
+func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
 	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name %q, error: %w", startBinlogInfo.FileName, err)
