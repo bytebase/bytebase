@@ -16,11 +16,11 @@ export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
   | "MANUAL_APPROVAL_ALWAYS";
 
-export type PipelineApporvalPolicyPayload = {
+export type PipelineApprovalPolicyPayload = {
   value: PipelineApprovalPolicyValue;
 };
 
-export const DefaultApporvalPolicy: PipelineApprovalPolicyValue =
+export const DefaultApprovalPolicy: PipelineApprovalPolicyValue =
   "MANUAL_APPROVAL_ALWAYS";
 
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
@@ -42,7 +42,7 @@ export type SQLReviewPolicyPayload = {
 };
 
 export type PolicyPayload =
-  | PipelineApporvalPolicyPayload
+  | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
   | SQLReviewPolicyPayload;
 
