@@ -428,6 +428,7 @@ func (s *Server) Run(ctx context.Context) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
+		s.runnerWG.Add(1)
 		go s.TaskScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
@@ -437,11 +438,10 @@ func (s *Server) Run(ctx context.Context) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
 
 		if s.MetricReporter != nil {
-			go s.MetricReporter.Run(ctx, &s.runnerWG)
 			s.runnerWG.Add(1)
+			go s.MetricReporter.Run(ctx, &s.runnerWG)
 		}
 	}
 
