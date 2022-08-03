@@ -16,21 +16,21 @@ func TestRunBinary(t *testing.T) {
 
 	a := require.New(t)
 	tmpDir := t.TempDir()
-	ins, err := Install(tmpDir)
+	err := Install(tmpDir)
 	a.NoError(err)
 
 	t.Run("run mysql client", func(t *testing.T) {
-		_, err := ins.Version(MySQL)
+		_, err := getExecutableVersion(MySQL, tmpDir)
 		a.NoError(err)
 	})
 
 	t.Run("run mysqlbinlog", func(t *testing.T) {
-		_, err := ins.Version(MySQLBinlog)
+		_, err := getExecutableVersion(MySQLBinlog, tmpDir)
 		a.NoError(err)
 	})
 
 	t.Run("run mysqldump", func(t *testing.T) {
-		_, err := ins.Version(MySQLDump)
+		_, err := getExecutableVersion(MySQLDump, tmpDir)
 		a.NoError(err)
 	})
 }
@@ -46,7 +46,7 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 
 	a := require.New(t)
 	tmpDir := t.TempDir()
-	instance, err := Install(tmpDir)
+	err := Install(tmpDir)
 	a.NoError(err)
 
 	baseDir := filepath.Join(tmpDir, "mysqlutil-8.0.28-linux-glibc2.17-x86_64" /*Hard code, don't care about this*/)
@@ -59,7 +59,7 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 		filepath.Join(binDir, "mysqldump"),
 	}
 
-	mysqlPath := instance.GetPath(MySQL)
+	mysqlPath := GetPath(MySQL, tmpDir)
 
 	for _, fp := range checks {
 		a.FileExists(fp)
@@ -68,7 +68,7 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 		a.NoError(err)
 		a.NoFileExists(fp)
 
-		_, err = Install(tmpDir)
+		err = Install(tmpDir)
 		a.NoError(err)
 		a.FileExists(fp)
 		a.FileExists(mysqlPath)
