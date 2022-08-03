@@ -29,7 +29,7 @@ func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, error)
 
 type sqlCheckRequestBody struct {
 	Statement    string                      `json:"statement"`
-	DatabaseType advisorDB.Type              `json:"databaseType"`
+	DatabaseType string                      `json:"databaseType"`
 	Template     advisor.SQLReviewTemplateID `json:"template"`
 	Override     string                      `json:"override"`
 }
@@ -70,6 +70,11 @@ func (*Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required template or override")
 	}
 
+	advisorDBType, err := advisorDB.ConvertToAdvisorDBType(request.DatabaseType)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", request.DatabaseType))
+	}
+
 	ruleOverride := &advisor.SQLReviewConfigOverride{}
 	if request.Override != "" {
 		if err := yaml.Unmarshal([]byte(request.Override), ruleOverride); err != nil {
@@ -88,7 +93,7 @@ func (*Server) sqlCheckController(c echo.Context) error {
 	}
 
 	adviceList, err := sqlCheck(
-		request.DatabaseType,
+		advisorDBType,
 		"utf8mb4",
 		"utf8mb4_general_ci",
 		request.Statement,
