@@ -94,8 +94,7 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 }
 
 // SetUpForPITR sets necessary fields for MySQL PITR recovery.
-func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogDir string) {
-	driver.mysqlutil = mysqlutilInstance
+func (driver *Driver) SetUpForPITR(binlogDir string) {
 	driver.binlogDir = binlogDir
 }
 
@@ -160,8 +159,8 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
 
-	mysqlbinlogCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
-	mysqlCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
+	mysqlbinlogCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), mysqlbinlogArgs...)
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
 	log.Debug("Start replay binlog commands.",
 		zap.String("mysqlbinlog", mysqlbinlogCmd.String()),
 		zap.String("mysql", mysqlCmd.String()))
@@ -373,7 +372,7 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 				"--base64-output=DECODE-ROWS",
 				filepath.Join(driver.binlogDir, fmt.Sprintf("binlog.%06d", targetBinlogCoordinate.Seq)),
 			}
-			cmd := exec.Command(driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+			cmd := exec.Command(mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 			var out bytes.Buffer
 			cmd.Stdout = &out
 			if err := cmd.Run(); err != nil {
@@ -597,7 +596,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 		args = append(args, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
 
-	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
@@ -770,7 +769,7 @@ func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 	}
-	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {
@@ -815,7 +814,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
 		"--start-datetime", formatDateTime(targetTs),
 	}
-	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {

@@ -14,22 +14,18 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
-	return &PITRRestoreTaskExecutor{
-		mysqlutil: instance,
-	}
+func NewPITRRestoreTaskExecutor() TaskExecutor {
+	return &PITRRestoreTaskExecutor{}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
 	completed int32
-	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.
@@ -70,7 +66,7 @@ func (*PITRRestoreTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
+func (*PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
 	instance := task.Instance
 	database := task.Database
 
@@ -96,7 +92,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		log.Error("Failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
+	mysqlDriver.SetUpForPITR(binlogDir)
 
 	log.Debug("Downloading all binlog files")
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */); err != nil {

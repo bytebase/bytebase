@@ -56,7 +56,6 @@ type Server struct {
 
 	profile       Profile
 	e             *echo.Echo
-	mysqlutil     mysqlutil.Instance
 	pgInstanceDir string
 	metaDB        *store.MetadataDB
 	store         *store.Store
@@ -129,11 +128,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
-	mysqlutilIns, err := mysqlutil.Install(resourceDir)
-	if err != nil {
+	if err := mysqlutil.Install(resourceDir); err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlutil = *mysqlutilIns
 
 	// Install Postgres.
 	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
@@ -216,9 +213,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
+		taskScheduler.Register(api.TaskDatabasePITRRestore, NewPITRRestoreTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
+		taskScheduler.Register(api.TaskDatabasePITRCutover, NewPITRCutoverTaskExecutor)
 
 		s.TaskScheduler = taskScheduler
 

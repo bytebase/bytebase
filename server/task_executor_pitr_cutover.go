@@ -12,21 +12,17 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
-	return &PITRCutoverTaskExecutor{
-		mysqlutil: instance,
-	}
+func NewPITRCutoverTaskExecutor() TaskExecutor {
+	return &PITRCutoverTaskExecutor{}
 }
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
 	completed int32
-	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR cutover task executor once.
