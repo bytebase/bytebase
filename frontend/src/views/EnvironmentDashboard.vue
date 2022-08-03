@@ -70,9 +70,9 @@ import {
   EnvironmentCreate,
   Policy,
   PolicyUpsert,
-  DefaultApporvalPolicy,
+  DefaultApprovalPolicy,
   DefaultSchedulePolicy,
-  PipelineApporvalPolicyPayload,
+  PipelineApprovalPolicyPayload,
   BackupPlanPolicyPayload,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
@@ -92,7 +92,7 @@ const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
   payload: {
-    value: DefaultApporvalPolicy,
+    value: DefaultApprovalPolicy,
   },
 };
 
@@ -213,8 +213,8 @@ export default defineComponent({
       backupPolicy: Policy
     ) => {
       if (
-        (approvalPolicy.payload as PipelineApporvalPolicyPayload).value !==
-          DefaultApporvalPolicy &&
+        (approvalPolicy.payload as PipelineApprovalPolicyPayload).value !==
+          DefaultApprovalPolicy &&
         !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
