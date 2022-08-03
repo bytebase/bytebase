@@ -41,9 +41,20 @@ func Walk(v Visitor, node Node) {
 			Walk(v, n.Column)
 		}
 	case *ColumnDef:
+		for _, cons := range n.ConstraintList {
+			Walk(v, cons)
+		}
+	case *ColumnNameDef:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
 	case *ConstraintDef:
 		if n.Foreign != nil {
 			Walk(v, n.Foreign)
+		}
+	case *CreateIndexStmt:
+		if n.Index != nil {
+			Walk(v, n.Index)
 		}
 	case *CreateTableStmt:
 		if n.Name != nil {
@@ -55,6 +66,20 @@ func Walk(v Visitor, node Node) {
 		for _, cons := range n.ConstraintList {
 			Walk(v, cons)
 		}
+	case *DeleteStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
+		if n.WhereClause != nil {
+			Walk(v, n.WhereClause)
+		}
+
+		for _, like := range n.PatternLikeList {
+			Walk(v, like)
+		}
+		for _, subquery := range n.SubqueryList {
+			Walk(v, subquery)
+		}
 	case *DropColumnStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
@@ -63,6 +88,8 @@ func Walk(v Visitor, node Node) {
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
+	case *DropDatabaseStmt:
+		// No members to walk through.
 	case *DropIndexStmt:
 		for _, indexDef := range n.IndexList {
 			Walk(v, indexDef)
@@ -87,6 +114,14 @@ func Walk(v Visitor, node Node) {
 			Walk(v, keyDef)
 		}
 	case *IndexKeyDef:
+		// No members to walk through.
+	case *PatternLikeDef:
+		if n.Expression != nil {
+			Walk(v, n.Expression)
+		}
+		if n.Pattern != nil {
+			Walk(v, n.Pattern)
+		}
 	case *RenameColumnStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
@@ -103,10 +138,57 @@ func Walk(v Visitor, node Node) {
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
+	case *SelectStmt:
+		if n.LQuery != nil {
+			Walk(v, n.LQuery)
+		}
+		if n.RQuery != nil {
+			Walk(v, n.RQuery)
+		}
+		for _, field := range n.FieldList {
+			Walk(v, field)
+		}
+		if n.WhereClause != nil {
+			Walk(v, n.WhereClause)
+		}
+
+		for _, like := range n.PatternLikeList {
+			Walk(v, like)
+		}
+		for _, subquery := range n.SubqueryList {
+			Walk(v, subquery)
+		}
 	case *SetNotNullStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
+	case *SetSchemaStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
+	case *StringDef:
+		// No members to walk through.
+	case *SubqueryDef:
+		if n.Select != nil {
+			Walk(v, n.Select)
+		}
 	case *TableDef:
+		// No members to walk through.
+	case *UnconvertedExpressionDef:
+		// No members to walk through.
+	case *UpdateStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
+		if n.WhereClause != nil {
+			Walk(v, n.WhereClause)
+		}
+
+		for _, like := range n.PatternLikeList {
+			Walk(v, like)
+		}
+		for _, subquery := range n.SubqueryList {
+			Walk(v, subquery)
+		}
 	}
 }

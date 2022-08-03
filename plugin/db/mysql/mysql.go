@@ -33,14 +33,17 @@ type Driver struct {
 	connCfg       db.ConnectionConfig
 	dbType        db.Type
 	mysqlutil     mysqlutil.Instance
+	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
 
 	replayedBinlogBytes int64
 }
 
-func newDriver(db.DriverConfig) db.Driver {
-	return &Driver{}
+func newDriver(dc db.DriverConfig) db.Driver {
+	return &Driver{
+		resourceDir: dc.ResourceDir,
+	}
 }
 
 // Open opens a MySQL driver.

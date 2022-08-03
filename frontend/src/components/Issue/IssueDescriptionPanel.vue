@@ -137,7 +137,8 @@ watch(
     nextTick(() => {
       sizeToFit(editDescriptionTextArea.value);
     });
-  }
+  },
+  { immediate: true }
 );
 
 const beginEdit = () => {

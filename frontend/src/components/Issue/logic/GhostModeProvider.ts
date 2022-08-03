@@ -7,6 +7,7 @@ import {
   Task,
   TaskCreate,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
+  TaskStatus,
   UpdateSchemaGhostContext,
 } from "@/types";
 import { useDatabaseStore } from "@/store";
@@ -14,7 +15,13 @@ import { useDatabaseStore } from "@/store";
 export default defineComponent({
   name: "GhostModeProvider",
   setup() {
-    const { create, issue, selectedTask, createIssue } = useIssueLogic();
+    const {
+      create,
+      issue,
+      selectedTask,
+      createIssue,
+      allowApplyTaskStatusTransition: baseAllowApplyTaskStatusTransition,
+    } = useIssueLogic();
     const databaseStore = useDatabaseStore();
 
     // In gh-ost mode, each stage can own its SQL statement
@@ -59,10 +66,27 @@ export default defineComponent({
       createIssue(issueCreate);
     };
 
+    const allowApplyTaskStatusTransition = (
+      task: Task,
+      to: TaskStatus
+    ): boolean => {
+      if (
+        task.type === "bb.task.database.schema.update.ghost.cutover" &&
+        task.status === "FAILED"
+      ) {
+        if (to === "PENDING" || to === "RUNNING") {
+          // RETRYing gh-ost cut-over task is not allowed (yet).
+          return false;
+        }
+      }
+      return baseAllowApplyTaskStatusTransition(task, to);
+    };
+
     const logic = {
       ...useCommonLogic(),
       selectedStatement,
       doCreate,
+      allowApplyTaskStatusTransition,
     };
     provideIssueLogic(logic);
     return logic;

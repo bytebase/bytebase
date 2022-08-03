@@ -242,9 +242,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 		case vcsPlugin.GitHubCom:
+			webhookHost := s.profile.BackendHost
+			if s.profile.BackendHost == "http://localhost" {
+				webhookHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
+			}
 			webhookPost := github.WebhookCreateOrUpdate{
 				Config: github.WebhookConfig{
-					URL:         fmt.Sprintf("%s/%s/%s", s.profile.BackendHost, githubWebhookPath, repositoryCreate.WebhookEndpointID),
+					URL:         fmt.Sprintf("%s/%s/%s", webhookHost, githubWebhookPath, repositoryCreate.WebhookEndpointID),
 					ContentType: "json",
 					Secret:      repositoryCreate.WebhookSecretToken,
 					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate

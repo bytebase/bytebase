@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -14,8 +15,8 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
-	advisor.Register(advisor.TiDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.

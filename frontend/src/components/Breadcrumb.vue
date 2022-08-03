@@ -82,6 +82,7 @@ interface BreadcrumbItem {
 }
 
 export default defineComponent({
+  // eslint-disable-next-line vue/multi-word-component-names
   name: "Breadcrumb",
   components: {
     HelpTriggerIcon,

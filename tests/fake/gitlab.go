@@ -95,7 +95,7 @@ func (gl *GitLab) CreateRepository(id string) {
 // createProjectHook creates a project webhook.
 func (gl *GitLab) createProjectHook(c echo.Context) error {
 	projectID := c.Param("id")
-	c.Logger().Info("create webhook for project %q", c.Param("id"))
+	c.Logger().Infof("Create webhook for project %q", c.Param("id"))
 	b, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return fmt.Errorf("failed to read create project hook request body, error %w", err)

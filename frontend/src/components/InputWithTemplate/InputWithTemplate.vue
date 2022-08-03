@@ -116,7 +116,7 @@ watchEffect(() => {
 });
 
 const onWindowResize = () => {
-  if (containerRef && containerRef.value) {
+  if (containerRef.value) {
     state.inputMaxWidth = containerRef.value.offsetWidth;
   }
 };
@@ -183,7 +183,7 @@ const onTemplateAdd = (template: Template) => {
   });
 
   state.inputData = "";
-  if (inputRef && inputRef.value) {
+  if (inputRef.value) {
     inputRef.value.focus();
   }
 };

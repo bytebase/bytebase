@@ -875,7 +875,7 @@ export const router = createRouter({
   routes,
   linkExactActiveClass: "bg-link-hover",
   scrollBehavior(to /*, from, savedPosition */) {
-    if (to.hash) {
+    if (to.hash && document.querySelector(to.hash)) {
       return {
         el: to.hash,
         behavior: "smooth",

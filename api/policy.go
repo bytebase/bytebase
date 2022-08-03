@@ -24,8 +24,8 @@ const (
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
-	// PolicyTypeSchemaReview is the schema review policy type.
-	PolicyTypeSchemaReview PolicyType = "bb.policy.schema-review"
+	// PolicyTypeSQLReview is the sql review policy type.
+	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -45,7 +45,7 @@ var (
 	PolicyTypes = map[PolicyType]bool{
 		PolicyTypePipelineApproval: true,
 		PolicyTypeBackupPlan:       true,
-		PolicyTypeSchemaReview:     true,
+		PolicyTypeSQLReview:        true,
 	}
 )
 
@@ -110,7 +110,7 @@ type PolicyDelete struct {
 
 	// Domain specific fields
 	// Type is the policy type.
-	// Currently we only support delete operation for "bb.policy.schema-review", need it here for validation and update query.
+	// Currently we only support delete operation for "bb.policy.sql-review", need it here for validation and update query.
 	Type PolicyType
 }
 
@@ -160,11 +160,11 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 	return &bp, nil
 }
 
-// UnmarshalSQLReviewPolicy will unmarshal payload to schema review policy.
+// UnmarshalSQLReviewPolicy will unmarshal payload to SQL review policy.
 func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) {
 	var sr advisor.SQLReviewPolicy
 	if err := json.Unmarshal([]byte(payload), &sr); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal schema review policy %q: %q", payload, err)
+		return nil, fmt.Errorf("failed to unmarshal SQL review policy %q: %q", payload, err)
 	}
 	return &sr, nil
 }
@@ -195,13 +195,13 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
 			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
-	case PolicyTypeSchemaReview:
+	case PolicyTypeSQLReview:
 		sr, err := UnmarshalSQLReviewPolicy(payload)
 		if err != nil {
 			return err
 		}
 		if err := sr.Validate(); err != nil {
-			return fmt.Errorf("invalid schema review policy: %w", err)
+			return fmt.Errorf("invalid SQL review policy: %w", err)
 		}
 	}
 	return nil
@@ -219,8 +219,8 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		return BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,
 		}.String()
-	case PolicyTypeSchemaReview:
-		// TODO(ed): we may need to define the default schema review policy payload in the PR of policy data migration.
+	case PolicyTypeSQLReview:
+		// TODO(ed): we may need to define the default SQL review policy payload in the PR of policy data migration.
 		return "{}", nil
 	}
 	return "", nil

@@ -186,6 +186,8 @@ const {
   selectTask,
   taskStatusOfStage,
   isValidStage,
+  allowApplyIssueStatusTransition,
+  allowApplyTaskStatusTransition,
 } = useBaseIssueLogic({ issue, create });
 
 const issueLogic = ref<IssueLogic>();
@@ -276,7 +278,11 @@ onMounted(() => {
   // The hypothesis is that because the scroll bar is in the nested
   // route, thus setting the scrollBehavior in the global router
   // won't work.
-  document.getElementById("issue-detail-top")!.scrollIntoView();
+  // BUT when we have a location.hash #activity(\d+) we won't scroll to the top,
+  // since #activity(\d+) is used as an activity anchor
+  if (!location.hash.match(/^#activity(\d+)/)) {
+    document.getElementById("issue-detail-top")!.scrollIntoView();
+  }
 });
 
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
@@ -343,6 +349,8 @@ provideIssueLogic(
     selectTask,
     onStatusChanged,
     createIssue,
+    allowApplyIssueStatusTransition,
+    allowApplyTaskStatusTransition,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.

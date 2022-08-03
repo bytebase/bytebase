@@ -129,9 +129,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo-name", "", "name of the demo to use when running in demo mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
-	// 1. Currently, we will create a separate database "bytebase" to store the migration_history table, we need to put it inside the specified database here.
-	// 2. We need to move the logic of creating Bytebase metadata db logic outside. Because with --pg option, the db has already been created.
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 

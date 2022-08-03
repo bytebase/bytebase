@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/store"
@@ -179,7 +180,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceList := []advisor.Advice{}
 
 		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) {
-			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
+			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
 			}
@@ -210,7 +211,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				store.NewCatalog(&db.ID, s.store, instance.Engine),
 			)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check SQL review policy").SetInternal(err)
 			}
 
 			if adviceLevel == advisor.Error {
@@ -648,7 +649,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 
 func (s *Server) sqlCheck(
 	ctx context.Context,
-	dbType advisor.DBType,
+	dbType advisorDB.Type,
 	dbCharacterSet string,
 	dbCollation string,
 	environmentID int,
@@ -656,14 +657,14 @@ func (s *Server) sqlCheck(
 	catalog catalog.Catalog,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
+	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			adviceList = []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NotFound,
-					Title:   "Schema review policy is not configured or disabled",
+					Title:   "SQL review policy is not configured or disabled",
 					Content: "",
 				},
 			}
@@ -672,7 +673,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(statement, policy, advisor.SQLReviewCheckContext{
+	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

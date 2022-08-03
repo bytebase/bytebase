@@ -99,7 +99,7 @@ export default defineComponent({
       },
       {
         name: computed(() => t("quick-start.add-a-comment")),
-        link: "/issue/hello-world-101#activity101",
+        link: "/issue/hello-world-101#activity14001",
         allowDBA: true,
         allowDeveloper: true,
         done: computed(() => uiStateStore.getIntroStateByKey("comment.create")),
