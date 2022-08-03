@@ -58,8 +58,7 @@ fi
 
 result=0
 while read status code title content; do
-    text="status:$status,code:$code,title:$title,content:$content"
-    echo "::debug::$text"
+    echo "::debug::status:$status,code:$code,title:$title,content:$content"
 
     if [ -z "$content" ]; then
         # The content cannot be empty. Otherwise action cannot output the error message in files.
@@ -67,8 +66,6 @@ while read status code title content; do
     fi
 
     if [ $code != 0 ]; then
-        echo "::error::$text"
-
         title="$title ($code)"
         content="$content
 Doc: $DOC_URL#$code"
@@ -79,13 +76,9 @@ Doc: $DOC_URL#$code"
             echo "::warning $error_msg"
         else
             echo "::error $error_msg"
+            result=$code
         fi
-        result=$code
     fi
 done <<< "$(echo $body | jq -r '.[] | "\(.status) \(.code) \(.title) \(.content)"')"
 
-if [ $result != 0 ]; then
-    exit 1
-fi
-
-exit 0
+exit $result
