@@ -1076,6 +1076,8 @@
           "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
           "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
+          "copy-homepage-url": "Homepage URL copied to clipboard. Paste to the corresponding field on the OAuth application form.",
+          "copy-redirect-uri": "Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.",
           "direct-link": "Direct link",
           "create-oauth-app": "Create your Bytebase OAuth application with the following info.",
           "gitlab-application-id-error": "Application ID must be a 64-character alphanumeric string",

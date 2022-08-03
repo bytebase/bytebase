@@ -1077,6 +1077,8 @@
           "github-login-as-admin": "以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。",
           "github-visit-admin-page": "进入组织 Settings 页面，然后导航到「Developer settings > OAuth Apps」分区，再点击「Register an application」。",
           "github-paste-oauth-info": "从刚创建好的应用上粘贴它的 Client ID 和 Client secret 到下面的字段。",
+          "copy-homepage-url": "Homepage URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。",
+          "copy-redirect-uri": "Redirect URI 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。",
           "direct-link": "直达链接",
           "create-oauth-app": "使用如下信息来创建您的 Bytebase OAuth 应用。",
           "gitlab-application-id-error": "应用 ID 必须是 64 个字母长度",
