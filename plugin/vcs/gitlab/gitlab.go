@@ -333,7 +333,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return repos, len(repos) >= 100, nil
+	return repos, len(repos) >= apiPageSize, nil
 }
 
 // fetchUserInfo fetches user information from the given resourceURI, which
@@ -562,7 +562,7 @@ func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context,
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return members, len(members) >= 100, nil
+	return members, len(members) >= apiPageSize, nil
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree
@@ -642,7 +642,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return treeNodes, len(treeNodes) >= 100, nil
+	return treeNodes, len(treeNodes) >= apiPageSize, nil
 }
 
 // CreateFile creates a file at given path in the repository.
