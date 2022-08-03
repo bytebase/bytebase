@@ -150,6 +150,8 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
 	}
 
+	stopChan := make(chan struct{})
+	defer close(stopChan)
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -175,6 +177,8 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 					UpdatedTs:     time.Now().Unix(),
 				})
 			case <-ctx.Done():
+				return
+			case <-stopChan:
 				return
 			}
 		}
