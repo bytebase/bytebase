@@ -114,6 +114,9 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		Value: 1,
 		Labels: map[string]string{
 			"database_type": string(advisorDBType),
+			"platform":      c.Request().Header.Get("X-Platform"),
+			"repository":    c.Request().Header.Get("X-Repository"),
+			"actor":         c.Request().Header.Get("X-Actor"),
 		},
 	}); err != nil {
 		log.Error(
