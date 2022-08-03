@@ -45,6 +45,9 @@
             <template v-if="pushEvent.vcsType.startsWith('GITLAB')">
               <img class="h-4 w-auto" src="../../assets/gitlab-logo.svg" />
             </template>
+            <template v-else-if="pushEvent.vcsType.startsWith('GITHUB')">
+              <img class="h-4 w-auto" src="../../assets/github-logo.svg" />
+            </template>
             <a :href="vcsBranchUrl" target="_blank" class="normal-link">{{
               `${vcsBranch}@${pushEvent.repositoryFullPath}`
             }}</a>
