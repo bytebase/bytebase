@@ -66,7 +66,7 @@ func (*PITRRestoreTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
+func (*PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
 	instance := task.Instance
 	database := task.Database
 
