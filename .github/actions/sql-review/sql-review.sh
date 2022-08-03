@@ -32,14 +32,19 @@ then
     fi
 fi
 
-response=$(curl -s -w "%{http_code}" $API_URL \
+request_body=$(jq -n \
+    --arg statement "$statement" \
+    --arg override "$override" \
+    --arg databaseType "$DATABASE_TYPE" \
+    --arg templateId "$TEMPLATE_ID" \
+    '$ARGS.named')
+response=$(curl -s -w "%{http_code}" -X POST $API_URL \
   -H "X-Platform: GitHub" \
   -H "X-Repository: $GITHUB_REPOSITORY" \
   -H "X-Actor: $GITHUB_ACTOR" \
-  -G --data-urlencode "statement=$statement" \
-  -G --data-urlencode "override=$override" \
-  -d databaseType=$DATABASE_TYPE \
-  -d template=$TEMPLATE_ID)
+  -H "Content-Type: application/json" \
+  -d "$request_body")
+
 http_code=$(tail -n1 <<< "$response")
 body=$(sed '$ d' <<< "$response")
 
