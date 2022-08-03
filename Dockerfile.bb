@@ -40,6 +40,8 @@ LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 COPY --from=bb /bb-build/bb /usr/local/bin/
 
+ENV OPENSSL_CONF /etc/ssl/
+
 CMD ["version"]
 
 ENTRYPOINT ["bb"]
