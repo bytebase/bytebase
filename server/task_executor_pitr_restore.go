@@ -139,7 +139,9 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	stopChan := make(chan struct{})
 	defer close(stopChan)
-	exec.updateProgress(ctx, mysqlDriver, stopChan, backupFile, startBinlogInfo, binlogDir)
+	if err := exec.updateProgress(ctx, mysqlDriver, stopChan, backupFile, startBinlogInfo, binlogDir); err != nil {
+		return fmt.Errorf("failed to setup progress update process, error: %w", err)
+	}
 
 	if err := mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupFile), startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
