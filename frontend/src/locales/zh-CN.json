@@ -889,7 +889,7 @@
     "configure-deploy": "配置部署",
     "choose-git-provider-description": "选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema 变更应用到数据库上。",
     "choose-git-provider-visit-workspace": "访问 {workspace} 设置以添加更多 Git 提供方.",
-    "choose-git-provider-contact-workspace-owner": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。",
+    "choose-git-provider-contact-workspace-owner": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
     "linked": "关联的仓库",
