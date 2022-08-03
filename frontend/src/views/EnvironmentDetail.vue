@@ -29,9 +29,9 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
-  DefaultApporvalPolicy,
+  DefaultApprovalPolicy,
   DefaultSchedulePolicy,
-  PipelineApporvalPolicyPayload,
+  PipelineApprovalPolicyPayload,
   BackupPlanPolicyPayload,
 } from "../types";
 import { idFromSlug } from "../utils";
@@ -142,8 +142,8 @@ export default defineComponent({
     ) => {
       if (
         type === "bb.policy.pipeline-approval" &&
-        (policy.payload as PipelineApporvalPolicyPayload).value !==
-          DefaultApporvalPolicy &&
+        (policy.payload as PipelineApprovalPolicyPayload).value !==
+          DefaultApprovalPolicy &&
         !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
