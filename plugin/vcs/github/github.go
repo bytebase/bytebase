@@ -85,10 +85,13 @@ type User struct {
 
 // Repository represents a GitHub API response for a repository.
 type Repository struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	FullName string `json:"full_name"`
-	HTMLURL  string `json:"html_url"`
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	FullName    string `json:"full_name"`
+	HTMLURL     string `json:"html_url"`
+	Permissions struct {
+		Admin bool `json:"admin"`
+	} `json:"permissions"`
 }
 
 // RepositoryTree represents a GitHub API response for a repository tree.
@@ -481,7 +484,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 }
 
 // FetchAllRepositoryList fetches all repositories where the authenticated user
-// has a owner role, which is required to create webhook in the repository.
+// has admin permissions, which is required to create webhook in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
@@ -502,6 +505,9 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 
 	var allRepos []*vcs.Repository
 	for _, r := range githubRepos {
+		if !r.Permissions.Admin {
+			continue
+		}
 		allRepos = append(allRepos,
 			&vcs.Repository{
 				ID:       r.ID,
@@ -515,12 +521,10 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 }
 
 // fetchPaginatedRepositoryList fetches repositories where the authenticated
-// user has a owner role in given page. It return the paginated results along
+// user has access to in given page. It return the paginated results along
 // with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
-	// We will use user's token to create webhook in the project, which requires the
-	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/user/repos?affiliation=owner&page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
+	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,

@@ -445,7 +445,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 						assert.Equal(t, "/user/repos", r.URL.Path)
 						return &http.Response{
 							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
+							// Example response derived from https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
 							Body: io.NopCloser(strings.NewReader(`
 [
   {
@@ -546,8 +546,8 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
     "created_at": "2011-01-26T19:01:12Z",
     "updated_at": "2011-01-26T19:14:43Z",
     "permissions": {
-      "admin": false,
-      "push": false,
+      "admin": true,
+      "push": true,
       "pull": true
     },
     "allow_rebase_merge": true,
@@ -570,6 +570,17 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
     "forks": 1,
     "open_issues": 1,
     "watchers": 1
+  },
+  {
+    "id": 1296270,
+    "name": "Hello-World2",
+    "full_name": "octocat/Hello-World2",
+    "html_url": "https://github.com/octocat/Hello-World2",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": true
+    }
   }
 ]
 `)),
@@ -584,6 +595,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, githubComURL)
 	require.NoError(t, err)
 
+	// Repositories without admin permissions should be excluded
 	want := []*vcs.Repository{
 		{
 			ID:       1296269,
@@ -680,7 +692,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "main", "subdir")
 		require.NoError(t, err)
 
-		// Non-blob type should excluded
+		// Non-blob type should be excluded
 		want := []*vcs.RepositoryTreeNode{
 			{
 				Path: "subdir/exec_file",

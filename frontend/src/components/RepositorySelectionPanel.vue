@@ -115,6 +115,8 @@ const repositoryList = computed(() => {
 const attentionText = computed((): string => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
     return "repository.select-repository-attention-gitlab";
+  } else if (props.config.vcs.type == "GITHUB_COM") {
+    return "repository.select-repository-attention-github";
   }
   return "";
 });
