@@ -128,8 +128,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
-	err = mysqlutil.Install(resourceDir)
-	if err != nil {
+	if err := mysqlutil.Install(resourceDir); err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
 
