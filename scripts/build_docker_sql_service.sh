@@ -28,5 +28,5 @@ echo "$ docker tag bytebase/sql bytebase/sql:${VERSION}; docker push bytebase/sq
 echo ""
 echo "Command to start Bytebase SQL Service on http://localhost:8081"
 echo ""
-echo "$ docker run --init --name sql-service --restart always --publish 8081:8081 --volume ~/.sql-service/data:/var/opt/sql-service bytebase/sql:${VERSION} --host http://localhost --port 8081 --data /var/opt/sql-service"
+echo "$ docker run --init --name sql-service --restart always --publish 8081:8081 --volume ~/.sql-service/data:/var/opt/sql-service bytebase/sql:${VERSION} --host http://localhost --port 8081"
 echo ""

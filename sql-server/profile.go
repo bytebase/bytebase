@@ -10,8 +10,6 @@ type Profile struct {
 	BackendHost string
 	// BackendPort is the binding backend port for server.
 	BackendPort int
-	// DataDir is the directory stores the data.
-	DataDir string
 	// Debug decides the log level
 	Debug bool
 	// Version is the bytebase's version
@@ -20,4 +18,6 @@ type Profile struct {
 	GitCommit string
 	// MetricConnectionKey is the connection key for metric.
 	MetricConnectionKey string
+	// WorkspaceID is the identifier for SQL Service, used by metric.
+	WorkspaceID string
 }

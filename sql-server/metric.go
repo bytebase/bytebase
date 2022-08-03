@@ -11,6 +11,25 @@ import (
 	"go.uber.org/zap"
 )
 
+type metricReporter struct {
+	workspaceID string
+	reporter    metric.Reporter
+}
+
+func (m *metricReporter) Report(metric *metric.Metric) {
+	if m.workspaceID == "" {
+		return
+	}
+
+	if err := m.reporter.Report(metric); err != nil {
+		log.Error(
+			"Failed to report metric",
+			zap.String("metric", string(metricAPI.OpenAPIMetricName)),
+			zap.Error(err),
+		)
+	}
+}
+
 func metricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) (err error) {
 		start := time.Now()
@@ -21,7 +40,7 @@ func metricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc {
 			requestPath := c.Path()
 			responseCode := c.Response().Status
 
-			if err := s.metricReporter.Report(&metric.Metric{
+			s.metricReporter.Report(&metric.Metric{
 				Name:  metricAPI.OpenAPIMetricName,
 				Value: 1,
 				Labels: map[string]string{
@@ -30,13 +49,7 @@ func metricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc {
 					"request_path":   requestPath,
 					"response_code":  strconv.Itoa(responseCode),
 				},
-			}); err != nil {
-				log.Error(
-					"Failed to report metric",
-					zap.String("metric", string(metricAPI.OpenAPIMetricName)),
-					zap.Error(err),
-				)
-			}
+			})
 		}()
 
 		if err := next(c); err != nil {

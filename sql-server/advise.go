@@ -7,9 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/bytebase/bytebase/common/log"
 	metricAPI "github.com/bytebase/bytebase/metric"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
@@ -109,7 +107,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
 	}
 
-	if err := s.metricReporter.Report(&metric.Metric{
+	s.metricReporter.Report(&metric.Metric{
 		Name:  metricAPI.SQLAdviseAPIMetricName,
 		Value: 1,
 		Labels: map[string]string{
@@ -118,13 +116,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			"repository":    c.Request().Header.Get("X-Repository"),
 			"actor":         c.Request().Header.Get("X-Actor"),
 		},
-	}); err != nil {
-		log.Error(
-			"Failed to report metric",
-			zap.String("metric", string(metricAPI.SQLAdviseAPIMetricName)),
-			zap.Error(err),
-		)
-	}
+	})
 
 	return c.JSON(http.StatusOK, adviceList)
 }

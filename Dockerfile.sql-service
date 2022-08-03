@@ -52,10 +52,10 @@ RUN apt-get update && apt-get install -y curl
 COPY --from=sql /sql-service-build/sql-service /usr/local/bin/
 COPY --from=sql /etc/ssl/certs /etc/ssl/certs
 
-# Directory to store the data, which can be referenced as the mounting point.
-RUN mkdir -p /var/opt/sql-service
+# Copy utility scripts
+COPY ./scripts /usr/local/bin/
 
-CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/sql-service"]
+CMD ["--host", "http://localhost", "--port", "80"]
 
 HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1
 
