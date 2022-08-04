@@ -5,8 +5,8 @@
 
 # example usages:
 # ./sql_service.sh
-# ./sql_service.sh --host=https://example.com
-# ./sql_service.sh --host=https://example.com --port=8080 --workspace-id=bytebase-sql-service
+# ./sql_service.sh --host https://example.com
+# ./sql_service.sh --host https://example.com --port 8080 --workspace-id bytebase-sql-service
 
 ONLINE_HOST='http://localhost'
 ONLINE_PORT='80'
@@ -16,17 +16,17 @@ WORKSPACE_ID=''
 for i in "$@"
 do
 case $i in
-    --host=*)
-    ONLINE_HOST="${i#*=}"
+    --host)
+    ONLINE_HOST="$2"
     shift
     ;;
-    --port=*)
-    ONLINE_PORT="${i#*=}"
+    --port)
+    ONLINE_PORT="$2"
     shift
     ;;
-    --workspace-id=*)
-    WORKSPACE_ID="${i#*=}"
-    shift
+    --workspace-id)
+    WORKSPACE_ID="$2"
+    shift # past argument
     ;;
     *) # unknown option
     ;;
