@@ -173,10 +173,11 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 
 	mysqlbinlogCmd.Stderr = os.Stderr
 
-	mysqlStdin := common.NewCountingReader(mysqlRead)
+	countingReader := common.NewCountingReader(mysqlRead)
 	mysqlCmd.Stderr = os.Stderr
 	mysqlCmd.Stdout = os.Stderr
-	mysqlCmd.Stdin = mysqlStdin
+	mysqlCmd.Stdin = countingReader
+	driver.replayBinlogCounter = countingReader
 
 	if err := mysqlbinlogCmd.Start(); err != nil {
 		return fmt.Errorf("cannot start mysqlbinlog command, error: %w", err)
@@ -194,6 +195,9 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 
 // GetReplayedBinlogBytes gets the replayed binlog bytes.
 func (driver *Driver) GetReplayedBinlogBytes() int64 {
+	if driver.replayBinlogCounter == nil {
+		return 0
+	}
 	return driver.replayBinlogCounter.Count()
 }
 
