@@ -18,4 +18,6 @@ type Profile struct {
 	GitCommit string
 	// MetricConnectionKey is the connection key for metric.
 	MetricConnectionKey string
+	// WorkspaceID is the identifier for SQL Service, used by metric.
+	WorkspaceID string
 }

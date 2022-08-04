@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
@@ -207,13 +206,13 @@ func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 	for _, instance := range instanceList {
 		if _, ok := r.downloadBinlogInstanceIDs[instance.ID]; !ok {
 			r.downloadBinlogInstanceIDs[instance.ID] = true
-			go r.downloadBinlogFilesForInstance(ctx, instance, r.server.profile.DataDir, r.server.mysqlutil)
+			go r.downloadBinlogFilesForInstance(ctx, instance, r.server.profile.DataDir)
 			r.downloadBinlogWg.Add(1)
 		}
 	}
 }
 
-func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
+func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string) {
 	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
 	defer func() {
 		r.downloadBinlogMu.Lock()
@@ -242,7 +241,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
+	mysqlDriver.SetUpForPITR(binlogDir)
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return

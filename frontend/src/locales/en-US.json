@@ -888,7 +888,7 @@
     "configure-deploy": "Configure deploy",
     "choose-git-provider-description": "Choose the Git provider where your database schema scripts (.sql) are hosted. When you push the changed script to the Git repository, Bytebase will automatically create a pipeline to apply the schema change to the database.",
     "choose-git-provider-visit-workspace": "Visit {workspace} setting to add more Git providers.",
-    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, GitHub Enterprise and GitHub.com later.",
+    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, and GitHub Enterprise later.",
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
     "select-repository-search": "Search repository",
     "linked": "Linked repositories",

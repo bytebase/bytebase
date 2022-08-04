@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
 )
@@ -32,7 +31,6 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
 	dbType        db.Type
-	mysqlutil     mysqlutil.Instance
 	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
