@@ -25,8 +25,8 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/sql/advise": {
-            "get": {
+        "/advise": {
+            "post": {
                 "description": "Parse and check the SQL statement according to the SQL review rules.",
                 "consumes": [
                     "application/json"
