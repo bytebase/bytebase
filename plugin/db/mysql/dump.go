@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
+	"github.com/pkg/errors"
 )
 
 // Dump and restore.
@@ -39,6 +40,7 @@ const (
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
+	var err error
 	// We must use the same MySQL connection to lock and unlock tables.
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
@@ -77,7 +79,14 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			return "", err
 		}
 		defer func() {
-			_ = unlockTables(ctx, conn)
+			// Errors in unlocking can have serious consequences, we need detailed error information.
+			if defererr := unlockTables(ctx, conn); defererr != nil {
+				if err != nil {
+					err = errors.Wrap(err, defererr.Error())
+				} else {
+					err = defererr
+				}
+			}
 		}()
 
 		binlog, err := GetBinlogInfo(ctx, conn)
@@ -113,7 +122,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		return "", fmt.Errorf("mysqldump command failed, error: %q", stderr.String())
 	}
 
-	return string(payloadBytes), nil
+	return string(payloadBytes), err
 }
 
 // unlockTables runs `UNLOCK TABLES`.
