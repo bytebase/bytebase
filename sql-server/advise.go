@@ -38,7 +38,7 @@ type sqlCheckRequestBody struct {
 }
 
 func (s *Server) registerAdvisorRoutes(g *echo.Group) {
-	g.POST("/sql/advise", s.sqlCheckController)
+	g.POST("/advise", s.sqlCheckController)
 }
 
 // sqlCheckController godoc
@@ -54,7 +54,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
-// @Router  /sql/advise  [get].
+// @Router  /advise  [post].
 func (s *Server) sqlCheckController(c echo.Context) error {
 	request := &sqlCheckRequestBody{}
 	body, err := io.ReadAll(c.Request().Body)
