@@ -137,9 +137,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	// database's migration history, and append a new BASELINE migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
 
-	stopChan := make(chan struct{})
-	defer close(stopChan)
-	if err := exec.updateProgress(ctx, mysqlDriver, stopChan, backupFile, startBinlogInfo, binlogDir); err != nil {
+	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
 		return fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}
 
@@ -154,7 +152,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	return nil
 }
 
-func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, stopChan chan struct{}, backupFile *os.File, startBinlogInfo api.BinlogInfo, binlogDir string) error {
+func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo api.BinlogInfo, binlogDir string) error {
 	backupFileInfo, err := backupFile.Stat()
 	if err != nil {
 		return fmt.Errorf("failed to get stat of backup file %q, error: %w", backupFile.Name(), err)
@@ -194,8 +192,6 @@ func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver 
 					UpdatedTs:     time.Now().Unix(),
 				})
 			case <-ctx.Done():
-				return
-			case <-stopChan:
 				return
 			}
 		}

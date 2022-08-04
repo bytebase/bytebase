@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -180,25 +179,6 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	mysqlCmd.Stdout = os.Stderr
 	mysqlCmd.Stdin = mysqlStdin
 
-	// Update replay binlog progress
-	atomic.StoreInt64(&driver.replayedBinlogBytes, 0)
-	stopChan := make(chan struct{})
-	defer close(stopChan)
-	go func() {
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				atomic.StoreInt64(&driver.replayedBinlogBytes, mysqlStdin.Count())
-			case <-ctx.Done():
-				return
-			case <-stopChan:
-				return
-			}
-		}
-	}()
-
 	if err := mysqlbinlogCmd.Start(); err != nil {
 		return fmt.Errorf("cannot start mysqlbinlog command, error: %w", err)
 	}
@@ -215,7 +195,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 
 // GetReplayedBinlogBytes gets the replayed binlog bytes.
 func (driver *Driver) GetReplayedBinlogBytes() int64 {
-	return atomic.LoadInt64(&driver.replayedBinlogBytes)
+	return driver.replayBinlogCounter.Count()
 }
 
 // RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.

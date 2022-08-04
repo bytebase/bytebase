@@ -37,7 +37,7 @@ type Driver struct {
 	binlogDir     string
 	db            *sql.DB
 
-	replayedBinlogBytes int64
+	replayBinlogCounter *common.CountingReader
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
