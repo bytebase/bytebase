@@ -31,8 +31,8 @@ info:
   title: Bytebase SQL Service
   version: "1.0"
 paths:
-  /sql/advise:
-    get:
+  /advise:
+    post:
       consumes:
       - application/json
       description: Parse and check the SQL statement according to the SQL review rules.
