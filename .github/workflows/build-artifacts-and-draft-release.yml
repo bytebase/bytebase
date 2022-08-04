@@ -41,7 +41,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: bytebase-darwin
+          name: bytebase-${{ matrix.os }}
           path: dist/bytebase*
 
   draft-release:
@@ -74,7 +74,7 @@ jobs:
       - name: Download linux binaries
         uses: actions/download-artifact@v3
         with:
-          name: bytebase-linux
+          name: bytebase-ubuntu
           path: ./bytebase-build/linux
       - name: Download darwin binaries
         uses: actions/download-artifact@v3
