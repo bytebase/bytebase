@@ -6,13 +6,8 @@ on:
       - "*.*.*"
 
 jobs:
-  build-binary:
-    strategy:
-      matrix:
-        os:
-          - "ubuntu"
-          - "macos"
-    runs-on: ${{ matrix.os }}-latest
+  build-linux-binary:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.1.0
@@ -35,7 +30,39 @@ jobs:
       - name: Build
         uses: goreleaser/goreleaser-action@v2
         with:
-          args: release --skip-publish --config .goreleaser-for-${{ matrix.os }}.yaml
+          args: release --skip-publish --config .goreleaser-for-linux.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: bytebase-linux
+          path: dist/bytebase*
+  build-darwin-binary:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.1.0
+        with:
+          version: 6.10.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm release
+        working-directory: frontend
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+          check-latest: true
+          cache: true
+      - name: Build
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          args: release --skip-publish --config .goreleaser-for-darwin.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload
@@ -43,10 +70,8 @@ jobs:
         with:
           name: bytebase-${{ matrix.os }}
           path: dist/bytebase*
-
   draft-release:
-    needs:
-      - build-binary
+    needs: [build-linux-binary, build-darwin-binary]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
