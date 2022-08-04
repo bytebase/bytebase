@@ -149,6 +149,7 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
         case SQLReviewPolicyErrorCode.UK_NAMING_DISMATCH:
         case SQLReviewPolicyErrorCode.FK_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.PK_NAMING_DISMATCH:
         case SQLReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
         case SQLReviewPolicyErrorCode.COLUMN_CANBE_NULL:
         case SQLReviewPolicyErrorCode.NOT_INNODB_ENGINE:
