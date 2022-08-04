@@ -7,9 +7,12 @@ import (
 	"io"
 	"net/http"
 
+	metricAPI "github.com/bytebase/bytebase/metric"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/yaml.v3"
 )
@@ -52,7 +55,7 @@ func (s *Server) registerAdvisorRoutes(g *echo.Group) {
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/advise  [get].
-func (*Server) sqlCheckController(c echo.Context) error {
+func (s *Server) sqlCheckController(c echo.Context) error {
 	request := &sqlCheckRequestBody{}
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
@@ -103,6 +106,17 @@ func (*Server) sqlCheckController(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
 	}
+
+	s.metricReporter.Report(&metric.Metric{
+		Name:  metricAPI.SQLAdviseAPIMetricName,
+		Value: 1,
+		Labels: map[string]string{
+			"database_type": string(advisorDBType),
+			"platform":      c.Request().Header.Get("X-Platform"),
+			"repository":    c.Request().Header.Get("X-Repository"),
+			"actor":         c.Request().Header.Get("X-Actor"),
+		},
+	})
 
 	return c.JSON(http.StatusOK, adviceList)
 }
