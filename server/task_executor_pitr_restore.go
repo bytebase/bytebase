@@ -171,7 +171,6 @@ func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver 
 			CompletedUnit: 0,
 			CreatedTs:     createdTs,
 			UpdatedTs:     createdTs,
-			Payload:       "{comment: \"Start to restore backup and replay binlog\"}",
 		})
 		for {
 			select {
