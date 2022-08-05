@@ -369,7 +369,6 @@ export default defineComponent({
     };
 
     const onConfirmToggleRoleProvider = () => {
-      // () => {
       state.showModal = false;
       // the current role provider is BYTEBASE, meaning switching role provider to VCS
       if (props.project.roleProvider === "BYTEBASE") {
@@ -395,7 +394,6 @@ export default defineComponent({
           .catch(() => {
             // nothing todo
           }); // mute error at browser;
-        // }
       }
     };
 
