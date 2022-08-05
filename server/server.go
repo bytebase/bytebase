@@ -132,33 +132,30 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
 
-	// Install Postgres.
-	var pgDataDir string
-	if prof.useEmbedDB() {
-		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
-	}
-	log.Info("-----Embedded Postgres Config BEGIN-----")
-	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
-	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
-	log.Info("-----Embedded Postgres Config END-----")
-	log.Info("Preparing embedded PostgreSQL instance...")
-	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
-	// to store Bytebase's own metadata.
-	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH))
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+	_, pgBinDir, err := postgres.GetPgTarNameAndBinDir(resourceDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get Postgres tar file name and bin directory, error: %w", err)
 	}
-	s.pgInstanceDir = pgInstance.BaseDir
+	s.pgInstanceDir = pgBinDir
 
-	// New MetadataDB instance.
+	// Install embedded Postgres.
 	if prof.useEmbedDB() {
+		pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+		log.Info("-----Embedded Postgres Config BEGIN-----")
+		log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
+		log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+		log.Info("-----Embedded Postgres Config END-----")
+		log.Info("Preparing embedded PostgreSQL instance...")
+		// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+		// to store Bytebase's own metadata.
+		log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH))
+		pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+		if err != nil {
+			return nil, err
+		}
 		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
+		s.metaDB = store.NewMetadataDBWithExternalPg(pgBinDir, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 
 	// New store.DB instance that represents the db connection.

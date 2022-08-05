@@ -17,11 +17,12 @@ import (
 type MetadataDB struct {
 	mode        common.ReleaseMode
 	demoDataDir string
-
-	embed bool
+	embed       bool
 
 	// Only for external pg
-	pgURL string
+	pgURL    string
+	pgBinDir string
+
 	// Only for embed postgres
 	pgUser     string
 	pgInstance *postgres.Instance
@@ -40,13 +41,13 @@ func NewMetadataDBWithEmbedPg(pgInstance *postgres.Instance, pgUser, demoDataDir
 }
 
 // NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance.
-func NewMetadataDBWithExternalPg(pgInstance *postgres.Instance, pgURL, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
+func NewMetadataDBWithExternalPg(pgBinDir, pgURL, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
 		mode:        mode,
 		demoDataDir: demoDataDir,
 		embed:       false,
 		pgURL:       pgURL,
-		pgInstance:  pgInstance,
+		pgBinDir:    pgBinDir,
 	}
 }
 
@@ -141,7 +142,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := NewDB(connCfg, m.pgInstance.BaseDir, m.demoDataDir, readonly, version, m.mode)
+	db := NewDB(connCfg, m.pgBinDir, m.demoDataDir, readonly, version, m.mode)
 	return db, nil
 }
 
@@ -151,9 +152,11 @@ func (m *MetadataDB) Close() error {
 		return nil
 	}
 
-	log.Info("Trying to shutdown postgresql server...")
-	if err := m.pgInstance.Stop(os.Stdout, os.Stderr); err != nil {
-		return err
+	if m.pgInstance != nil {
+		log.Info("Trying to shutdown embedded postgresql server...")
+		if err := m.pgInstance.Stop(os.Stdout, os.Stderr); err != nil {
+			return err
+		}
 	}
 	m.pgStarted = false
 	return nil

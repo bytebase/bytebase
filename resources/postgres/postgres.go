@@ -91,8 +91,8 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 	return p.Run()
 }
 
-// Install returns the postgres binary depending on the OS.
-func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
+// GetPgTarNameAndBinDir returns the tar file name and directory containing Postgres binaries.
+func GetPgTarNameAndBinDir(resourceDir string) (string, string, error) {
 	var tarName string
 	switch runtime.GOOS {
 	case "darwin":
@@ -100,15 +100,23 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	case "linux":
 		tarName = "postgres-linux-x86_64.txz"
 	default:
-		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
+		return "", "", fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
-	version := strings.TrimRight(tarName, ".txz")
-	pgBinDir := path.Join(resourceDir, version)
+	pgOsArch := strings.TrimRight(tarName, ".txz")
+	pgBinDir := path.Join(resourceDir, pgOsArch)
+	return tarName, pgBinDir, nil
+}
+
+// Install returns the postgres binary depending on the OS.
+func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
+	tarName, pgBinDir, err := GetPgTarNameAndBinDir(resourceDir)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO(d): remove this when pg_dump is populated to all users.
-	_, err := os.Stat(path.Join(pgBinDir, "bin", "pg_dump"))
 	pgDumpNotExist := false
-	if err != nil {
+	if _, err := os.Stat(path.Join(pgBinDir, "bin", "pg_dump")); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("failed to check pg_dump %q, error: %w", pgBinDir, err)
 		}
@@ -126,7 +134,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		}
 		// Install if not exist yet.
 		// The ordering below made Postgres installation atomic.
-		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
+		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", tarName))
 		if err := os.RemoveAll(tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
 		}

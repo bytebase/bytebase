@@ -63,7 +63,7 @@ type DB struct {
 	// Dir to load demo data
 	demoDataDir string
 
-	// Dir for postgres instance
+	// Dir for embedded postgres instance
 	pgBaseDir string
 
 	// If true, database will be opened in readonly mode
