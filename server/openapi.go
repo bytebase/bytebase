@@ -26,7 +26,7 @@ type catalogService struct{}
 // GetDatabase is the API message in catalog.
 // We will not connect to the user's database in the early version of sql check api.
 func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, error) {
-	return nil, nil
+	return &catalog.Database{}, nil
 }
 
 type sqlCheckRequestBody struct {
