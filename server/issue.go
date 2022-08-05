@@ -711,6 +711,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
+		maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaximumTask)
+		if int64(len(c.DetailList)) > maximumTaskLimit {
+			return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, len(c.DetailList)))
+		}
+
 		type envKey struct {
 			name  string
 			id    int
@@ -947,7 +952,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-// checkCharacterSetCollationOwner checks if the charactes set, collation and owner are legal according to the dbType.
+// checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
 func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, owner string) error {
 	switch dbType {
 	case db.ClickHouse:
@@ -1065,7 +1070,11 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.changeTaskStatus(ctx, task, api.TaskCanceled, updaterID); err != nil {
+					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+						ID:        task.ID,
+						UpdaterID: updaterID,
+						Status:    api.TaskCanceled,
+					}); err != nil {
 						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
 					}
 				}
@@ -1229,7 +1238,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", nil
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.pgInstanceDir)
+	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
 	if err != nil {
 		return "", "", err
 	}

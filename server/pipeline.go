@@ -38,7 +38,7 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 						return nil, err
 					}
 					if ok {
-						if _, err := s.changeTaskStatusWithPatch(ctx, task, &api.TaskStatusPatch{
+						if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
 							ID:        task.ID,
 							UpdaterID: api.SystemBotID,
 							Status:    api.TaskPending,

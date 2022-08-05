@@ -180,7 +180,7 @@ type Context struct {
 	Charset   string
 	Collation string
 
-	// Schema review rule special fields.
+	// SQL review rule special fields.
 	Rule     *SQLReviewRule
 	Database *catalog.Database
 }
@@ -243,7 +243,7 @@ func IsSyntaxCheckSupported(dbType db.Type) bool {
 	return false
 }
 
-// IsSQLReviewSupported checks the engine type if schema review supports it.
+// IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type) bool {
 	switch dbType {
 	case db.MySQL, db.TiDB, db.Postgres:

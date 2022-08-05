@@ -12,21 +12,17 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
-	return &PITRCutoverTaskExecutor{
-		mysqlutil: instance,
-	}
+func NewPITRCutoverTaskExecutor() TaskExecutor {
+	return &PITRCutoverTaskExecutor{}
 }
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
 	completed int32
-	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR cutover task executor once.
@@ -91,7 +87,7 @@ func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
 func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */, common.GetResourceDir(server.profile.DataDir))
 	if err != nil {
 		return true, nil, err
 	}

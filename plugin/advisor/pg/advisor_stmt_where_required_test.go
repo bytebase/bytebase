@@ -87,7 +87,7 @@ func TestWhereRequirement(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleStatementRequireWhere,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",

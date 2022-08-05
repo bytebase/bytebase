@@ -140,15 +140,16 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.EMPTY_POLICY:
           title = checkResult.title;
           break;
-        // SchemaReviewPolicyErrorCode
+        // SchemaSQLPolicyErrorCode
         case SQLReviewPolicyErrorCode.STATEMENT_NO_WHERE:
         case SQLReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
         case SQLReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
-        case SQLReviewPolicyErrorCode.TABLE_NAMING_DISMATCH:
-        case SQLReviewPolicyErrorCode.COLUMN_NAMING_DISMATCH:
-        case SQLReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
-        case SQLReviewPolicyErrorCode.UK_NAMING_DISMATCH:
-        case SQLReviewPolicyErrorCode.FK_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.TABLE_NAMING_MISMATCH:
+        case SQLReviewPolicyErrorCode.COLUMN_NAMING_MISMATCH:
+        case SQLReviewPolicyErrorCode.INDEX_NAMING_MISMATCH:
+        case SQLReviewPolicyErrorCode.UK_NAMING_MISMATCH:
+        case SQLReviewPolicyErrorCode.FK_NAMING_MISMATCH:
+        case SQLReviewPolicyErrorCode.PK_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
         case SQLReviewPolicyErrorCode.COLUMN_CANBE_NULL:
         case SQLReviewPolicyErrorCode.NOT_INNODB_ENGINE:

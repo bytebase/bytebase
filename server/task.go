@@ -199,7 +199,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return err
 		}
 
-		taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+		taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
@@ -359,7 +359,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			// dismiss stale reviews and transfer the status to PendingApproval.
 			if taskPatched.Status != api.TaskPendingApproval {
-				t, err := s.changeTaskStatusWithPatch(ctx, taskPatched, &api.TaskStatusPatch{
+				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 					ID:        taskPatch.ID,
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
@@ -502,17 +502,7 @@ func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, 
 	return nil
 }
 
-// TODO(p0ny): remove this function because it adds yet another layer of indirection when traveling in our codebase while doesn't seem useful to me.
-func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
-	taskStatusPatch := &api.TaskStatusPatch{
-		ID:        task.ID,
-		UpdaterID: updaterID,
-		Status:    newStatus,
-	}
-	return s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
-}
-
-func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
 			log.Error("Failed to change task status.",
@@ -644,11 +634,11 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 }
 
 func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
-	policyID, err := s.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 
 	if err != nil {
-		// It's OK if we failed to find the schema review policy, just emit an error log
-		log.Error("Failed to found schema review policy id for task",
+		// It's OK if we failed to find the SQL review policy, just emit an error log
+		log.Error("Failed to found SQL review policy id for task",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.Int("environment_id", task.Instance.EnvironmentID),

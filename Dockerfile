@@ -88,6 +88,8 @@ RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase 
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
 
+ENV OPENSSL_CONF /etc/ssl/
+
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
 
 HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1

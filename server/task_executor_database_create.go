@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
@@ -48,7 +49,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", server.pgInstanceDir)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", server.pgInstanceDir, common.GetResourceDir(server.profile.DataDir))
 	if err != nil {
 		return true, nil, err
 	}

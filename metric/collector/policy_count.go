@@ -54,9 +54,9 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 			}
 			value = string(payload.Schedule)
 			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
-		case api.PolicyTypeSchemaReview:
+		case api.PolicyTypeSQLReview:
 			key = fmt.Sprintf("%s_%s", policy.Type, policy.Environment.Name)
-			// schema review policy don't need to set the value.
+			// SQL review policy don't need to set the value.
 			value = ""
 		}
 

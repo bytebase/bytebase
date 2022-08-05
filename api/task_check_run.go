@@ -89,7 +89,7 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	Charset   string  `json:"charset,omitempty"`
 	Collation string  `json:"collation,omitempty"`
 
-	// Schema review special fields.
+	// SQL review special fields.
 	PolicyID int `json:"policyID,omitempty"`
 }
 
@@ -212,7 +212,7 @@ func IsSyntaxCheckSupported(dbType db.Type, _ common.ReleaseMode) bool {
 	return false
 }
 
-// IsSQLReviewSupported checks the engine type if schema review supports it.
+// IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type, _ common.ReleaseMode) bool {
 	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))

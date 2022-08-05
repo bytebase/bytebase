@@ -22,7 +22,8 @@ var (
 		// aws
 		"rdsadmin": true,
 		// gcp
-		"cloudsql": true,
+		"cloudsql":      true,
+		"cloudsqladmin": true,
 	}
 )
 
