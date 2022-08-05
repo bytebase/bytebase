@@ -1220,6 +1220,22 @@ func TestSetSchemaStmt(t *testing.T) {
 	runTests(t, tests)
 }
 
+func TestExplainStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "EXPLAIN SELECT * FROM tech_book",
+			want: []ast.Node{
+				&ast.ExplainStmt{},
+			},
+			textList: []string{
+				"EXPLAIN SELECT * FROM tech_book",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestAlterColumnType(t *testing.T) {
 	tests := []testData{
 		{
