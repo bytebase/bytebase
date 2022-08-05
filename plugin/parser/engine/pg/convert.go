@@ -321,6 +321,28 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 				},
 			}, nil
 		}
+	case *pgquery.Node_InsertStmt:
+		insertStmt := &ast.InsertStmt{
+			Table: convertRangeVarToTableName(in.InsertStmt.Relation, ast.TableTypeBaseTable),
+		}
+
+		if in.InsertStmt.SelectStmt != nil {
+			if selectNode, ok := in.InsertStmt.SelectStmt.Node.(*pgquery.Node_SelectStmt); ok {
+				if insertStmt.Select, err = convertSelectStmt(selectNode.SelectStmt); err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, parser.NewConvertErrorf("expected SelectStmt but found %t", in.InsertStmt.SelectStmt.Node)
+			}
+		}
+		return insertStmt, nil
+	case *pgquery.Node_CopyStmt:
+		copyStmt := ast.CopyStmt{
+			Table:    convertRangeVarToTableName(in.CopyStmt.Relation, ast.TableTypeBaseTable),
+			FilePath: in.CopyStmt.Filename,
+		}
+
+		return &copyStmt, nil
 	}
 
 	return nil, nil
