@@ -21,6 +21,7 @@ import { storeToRefs } from "pinia";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore, useHelpStore } from "@/store";
 import Drawer from "@/components/Drawer.vue";
+import { markdocConfig, DOMPurifyConfig } from "./config";
 
 interface State {
   frontmatter: Record<string, string>;
@@ -50,14 +51,15 @@ export default defineComponent({
         );
         const markdown = await res.text();
         const ast: Node = Markdoc.parse(markdown);
-        const content = Markdoc.transform(ast) as Tag;
+        const content = Markdoc.transform(ast, markdocConfig) as Tag;
+
         content.attributes.class = "markdown-body"; // style help content
         const html: string = Markdoc.renderers.html(content);
 
         state.frontmatter = ast.attributes.frontmatter
           ? (yaml.load(ast.attributes.frontmatter) as Record<string, string>)
           : {};
-        state.html = DOMPurify.sanitize(html);
+        state.html = DOMPurify.sanitize(html, DOMPurifyConfig);
         activate();
       } else {
         state.frontmatter = {};
