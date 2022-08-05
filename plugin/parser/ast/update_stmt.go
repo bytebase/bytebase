@@ -2,7 +2,7 @@ package ast
 
 // UpdateStmt is the struct for update statement.
 type UpdateStmt struct {
-	node
+	dml
 
 	Table       *TableDef
 	WhereClause ExpressionNode
