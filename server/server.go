@@ -133,7 +133,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Install Postgres.
-	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+	var pgDataDir string
+	if prof.useEmbedDB() {
+		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
+	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
 	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
 	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
