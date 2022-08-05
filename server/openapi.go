@@ -87,7 +87,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		}
 		dbType := database.Instance.Engine
 		databaseType = string(dbType)
-		catalog = store.NewCatalog(database.ID, s.store, dbType)
+		catalog = store.NewCatalog(&database.ID, s.store, dbType)
 	} else {
 		databaseType = request.DatabaseType
 		if databaseType == "" {

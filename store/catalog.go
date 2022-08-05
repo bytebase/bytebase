@@ -20,13 +20,13 @@ var (
 
 // Catalog is the database catalog.
 type Catalog struct {
-	databaseID int
+	databaseID *int
 	store      *Store
 	engineType db.Type
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(databaseID int, store *Store, dbType db.Type) *Catalog {
+func NewCatalog(databaseID *int, store *Store, dbType db.Type) *Catalog {
 	return &Catalog{
 		databaseID: databaseID,
 		store:      store,
@@ -36,8 +36,12 @@ func NewCatalog(databaseID int, store *Store, dbType db.Type) *Catalog {
 
 // GetDatabase implements the catalog.Catalog interface.
 func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
+	if c.databaseID == nil {
+		return &catalog.Database{}, nil
+	}
+
 	database, err := c.store.GetDatabase(ctx, &api.DatabaseFind{
-		ID: &c.databaseID,
+		ID: c.databaseID,
 	})
 	if err != nil {
 		return nil, err
@@ -84,7 +88,7 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 
 	// find table list
 	tableList, err := c.store.FindTable(ctx, &api.TableFind{
-		DatabaseID: &c.databaseID,
+		DatabaseID: c.databaseID,
 	})
 	if err != nil {
 		return nil, err
@@ -101,22 +105,22 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 
 		// find index list
 		indexList, err := c.store.FindIndex(ctx, &api.IndexFind{
-			DatabaseID: &c.databaseID,
+			DatabaseID: c.databaseID,
 			TableID:    &table.ID,
 		})
 		if err != nil {
-			log.Error("failed to find index", zap.Int("database", c.databaseID), zap.Int("table", table.ID), zap.Error(err))
+			log.Error("failed to find index", zap.Int("database", *c.databaseID), zap.Int("table", table.ID), zap.Error(err))
 			continue
 		}
 		tableData.IndexList = convertIndexList(indexList)
 
 		// find column list
 		columnList, err := c.store.FindColumn(ctx, &api.ColumnFind{
-			DatabaseID: &c.databaseID,
+			DatabaseID: c.databaseID,
 			TableID:    &table.ID,
 		})
 		if err != nil {
-			log.Error("failed to find column", zap.Int("database", c.databaseID), zap.Int("table", table.ID), zap.Error(err))
+			log.Error("failed to find column", zap.Int("database", *c.databaseID), zap.Int("table", table.ID), zap.Error(err))
 			continue
 		}
 		tableData.ColumnList = convertColumnList(columnList)
@@ -127,10 +131,10 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 
 	// find view list
 	viewList, err := c.store.FindView(ctx, &api.ViewFind{
-		DatabaseID: &c.databaseID,
+		DatabaseID: c.databaseID,
 	})
 	if err != nil {
-		log.Error("failed to find view", zap.Int("database", c.databaseID), zap.Error(err))
+		log.Error("failed to find view", zap.Int("database", *c.databaseID), zap.Error(err))
 		viewList = []*api.View{}
 	}
 	for _, view := range viewList {
@@ -147,10 +151,10 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 
 	// find extension list
 	extensionList, err := c.store.FindDBExtension(ctx, &api.DBExtensionFind{
-		DatabaseID: &c.databaseID,
+		DatabaseID: c.databaseID,
 	})
 	if err != nil {
-		log.Error("failed to find extension", zap.Int("database", c.databaseID), zap.Error(err))
+		log.Error("failed to find extension", zap.Int("database", *c.databaseID), zap.Error(err))
 		extensionList = []*api.DBExtension{}
 	}
 	for _, extension := range extensionList {
