@@ -321,6 +321,8 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 				},
 			}, nil
 		}
+	case *pgquery.Node_ExplainStmt:
+		return &ast.ExplainStmt{}, nil
 	case *pgquery.Node_InsertStmt:
 		insertStmt := &ast.InsertStmt{
 			Table: convertRangeVarToTableName(in.InsertStmt.Relation, ast.TableTypeBaseTable),
