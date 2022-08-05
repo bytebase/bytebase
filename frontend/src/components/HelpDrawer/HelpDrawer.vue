@@ -51,8 +51,8 @@ export default defineComponent({
         );
         const markdown = await res.text();
         const ast: Node = Markdoc.parse(markdown);
-
         const content = Markdoc.transform(ast, markdocConfig) as Tag;
+
         content.attributes.class = "markdown-body"; // style help content
         const html: string = Markdoc.renderers.html(content);
 
