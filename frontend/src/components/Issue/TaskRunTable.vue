@@ -176,8 +176,8 @@ const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
       };
     } else if (
       task.database &&
-      (taskRun.code == MigrationErrorCode.MIGRAITON_ALREADY_APPLIED ||
-        taskRun.code == MigrationErrorCode.MGIRATION_OUT_OF_ORDER ||
+      (taskRun.code == MigrationErrorCode.MIGRATION_ALREADY_APPLIED ||
+        taskRun.code == MigrationErrorCode.MIGRATION_OUT_OF_ORDER ||
         taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING)
     ) {
       return {
