@@ -31,7 +31,7 @@ import { isDev } from "./utils";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
-import HelpDrawer from "@/components/HelpDrawer.vue";
+import HelpDrawer from "@/components/HelpDrawer";
 
 import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
