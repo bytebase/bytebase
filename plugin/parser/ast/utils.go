@@ -52,6 +52,10 @@ func Walk(v Visitor, node Node) {
 		if n.Foreign != nil {
 			Walk(v, n.Foreign)
 		}
+	case *CopyStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
 	case *CreateIndexStmt:
 		if n.Index != nil {
 			Walk(v, n.Index)
@@ -115,6 +119,13 @@ func Walk(v Visitor, node Node) {
 		}
 	case *IndexKeyDef:
 		// No members to walk through.
+	case *InsertStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
+		if n.Select != nil {
+			Walk(v, n.Select)
+		}
 	case *PatternLikeDef:
 		if n.Expression != nil {
 			Walk(v, n.Expression)
