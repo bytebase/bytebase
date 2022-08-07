@@ -111,16 +111,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if driver.dbType == "MYSQL" {
 		options.ReadOnly = true
 	}
-	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
-	// Beginning a transaction in the same session will implicitly release existing table locks.
-	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
 	mysqldumpCmd := exec.Command(mysqlutil.GetPath(mysqlutil.MySQLDump, driver.resourceDir), mysqldumpArgs...)
-	// mysqldumpCmd.Stdout = out
-	// var stderr bytes.Buffer
-	// mysqldumpCmd.Stderr = &stderr
-	// if err := mysqldumpCmd.Run(); err != nil {
-	// 	return "", fmt.Errorf("mysqldump command failed, error: %q", stderr.String())
-	// }
 	dfWriter := common.NewSignalWriter(out)
 	defer dfWriter.Close()
 	mysqldumpCmd.Stdout = dfWriter
@@ -137,8 +128,11 @@ loop:
 				return "", fmt.Errorf("cannot unlock tables, error: %w", err)
 			}
 			break loop
+		case <-ctx.Done():
+			log.Debug("context timeout before get signal from signal writer")
+			break loop
 		default:
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 	if err := mysqldumpCmd.Wait(); err != nil {
