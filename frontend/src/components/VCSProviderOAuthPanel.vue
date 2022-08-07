@@ -142,7 +142,7 @@
                 </dt>
                 <dd class="text-sm text-main">Bytebase</dd>
               </div>
-              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+              <div class="grid grid-cols-2 gap-4 px-4 py-2 items-center">
                 <dt class="text-sm font-medium text-control-light text-right">
                   Homepage URL
                 </dt>
