@@ -486,6 +486,10 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 // FetchAllRepositoryList fetches all repositories where the authenticated user
 // has admin permissions, which is required to create webhook in the repository.
 //
+// NOTE: GitHub API does not provide a native filter for admin permissions, thus
+// we need to first fetch all repositories and then filter down the list using
+// the `permissions.admin` field.
+//
 // Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	var githubRepos []Repository
