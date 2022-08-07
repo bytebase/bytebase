@@ -115,13 +115,35 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// Beginning a transaction in the same session will implicitly release existing table locks.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
 	mysqldumpCmd := exec.Command(mysqlutil.GetPath(mysqlutil.MySQLDump, driver.resourceDir), mysqldumpArgs...)
-	mysqldumpCmd.Stdout = out
+	// mysqldumpCmd.Stdout = out
+	// var stderr bytes.Buffer
+	// mysqldumpCmd.Stderr = &stderr
+	// if err := mysqldumpCmd.Run(); err != nil {
+	// 	return "", fmt.Errorf("mysqldump command failed, error: %q", stderr.String())
+	// }
+	dfWriter := common.NewSignalWriter(out)
+	defer dfWriter.Close()
+	mysqldumpCmd.Stdout = dfWriter
 	var stderr bytes.Buffer
 	mysqldumpCmd.Stderr = &stderr
-	if err := mysqldumpCmd.Run(); err != nil {
-		return "", fmt.Errorf("mysqldump command failed, error: %q", stderr.String())
+	if err := mysqldumpCmd.Start(); err != nil {
+		return "", fmt.Errorf("mysqldump command failed, error: %w", err)
 	}
-
+loop:
+	for {
+		select {
+		case <-dfWriter.C:
+			if err := unlockTables(ctx, conn); err != nil {
+				return "", fmt.Errorf("cannot unlock tables, error: %w", err)
+			}
+			break loop
+		default:
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	if err := mysqldumpCmd.Wait(); err != nil {
+		return "", fmt.Errorf("failed to wait the mysqldump command, error: %q", stderr.String())
+	}
 	return string(payloadBytes), err
 }
 
