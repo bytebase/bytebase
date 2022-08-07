@@ -162,7 +162,7 @@ CREATE TABLE project (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     key TEXT NOT NULL,
-    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
+    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS', 'DaC')),
     visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
     tenant_mode TEXT NOT NULL CHECK (tenant_mode IN ('DISABLED', 'TENANT')) DEFAULT 'DISABLED',
     -- db_name_template is only used when a project is in tenant mode.

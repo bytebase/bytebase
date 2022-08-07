@@ -6,7 +6,7 @@
       </template>
     </i18n-t>
   </div>
-  <div class="mt-2 textinfolabel">
+  <div v-if="project.workflowType != 'DaC'" class="mt-2 textinfolabel">
     <i18n-t keypath="repository.version-control-description-file-path">
       <template #fullPath>
         <a class="normal-link" :href="repository.webUrl" target="_blank">{{
@@ -47,6 +47,25 @@
       </i18n-t>
     </template>
   </div>
+  <div v-if="project.workflowType == 'DaC'" class="mt-2 textinfolabel">
+    <i18n-t keypath="repository.database-as-code-description-schema-path">
+      <template #schemaPathTemplate>
+        <span class="font-medium text-main">{{
+          state.repositoryConfig.schemaPathTemplate
+        }}</span>
+      </template>
+      <template #branch>
+        <span class="font-medium text-main">
+          <template v-if="state.repositoryConfig.branchFilter">
+            {{ state.repositoryConfig.branchFilter }}
+          </template>
+          <template v-else>
+            {{ $t("common.default") }}
+          </template>
+        </span>
+      </template>
+    </i18n-t>
+  </div>
   <RepositoryForm
     class="mt-4"
     :allow-edit="allowEdit"
@@ -55,6 +74,7 @@
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
+    :workflow-type="project.workflowType"
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">

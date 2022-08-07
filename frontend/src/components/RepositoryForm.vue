@@ -74,7 +74,7 @@
         :disabled="!allowEdit"
       />
     </div>
-    <div>
+    <div v-if="workflowType != 'DaC'">
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
@@ -127,7 +127,7 @@
         }}
       </div>
     </div>
-    <div>
+    <div v-if="workflowType != 'DaC'">
       <div class="textlabel">
         {{ $t("repository.schema-path-template") }}
         <a
@@ -174,7 +174,7 @@
         }}
       </div>
     </div>
-    <div>
+    <div v-if="workflowType != 'DaC'">
       <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}
@@ -196,6 +196,46 @@
         </template>
       </div>
     </div>
+    <div v-if="workflowType == 'DaC'">
+      <div class="textlabel">
+        {{ $t("repository.schema-path-template") }}
+        <a
+          href="https://bytebase.com/docs/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
+          target="__blank"
+          class="font-normal normal-link"
+        >
+          {{ $t("common.config-guide") }}</a
+        >
+      </div>
+      <div class="mt-1 textinfolabel">
+        {{ $t("repository.database-as-code-schema-description") }}
+      </div>
+      <input
+        id="schemapathtemplate"
+        v-model="repositoryConfig.schemaPathTemplate"
+        name="schemapathtemplate"
+        type="text"
+        class="textfield mt-2 w-full"
+        :disabled="!allowEdit"
+      />
+      <div class="mt-2 textinfolabel">
+        <span class="text-red-600">*</span>
+        {{ $t("common.required-placeholder") }}:
+        {{ SCHEMA_REQUIRED_PLACEHOLDER }}
+      </div>
+      <div
+        v-if="repositoryConfig.schemaPathTemplate"
+        class="mt-2 textinfolabel"
+      >
+        • {{ $t("repository.schema-path-example") }}:
+        {{
+          sampleSchemaPath(
+            repositoryConfig.baseDirectory,
+            repositoryConfig.schemaPathTemplate
+          )
+        }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -204,6 +244,7 @@ import { reactive, PropType, defineComponent, computed } from "vue";
 import {
   ExternalRepositoryInfo,
   Project,
+  ProjectWorkflowType,
   RepositoryConfig,
   VCSType,
 } from "@/types";
@@ -244,6 +285,10 @@ export default defineComponent({
     project: {
       required: true,
       type: Object as PropType<Project>,
+    },
+    workflowType: {
+      required: true,
+      type: Object as PropType<ProjectWorkflowType>,
     },
   },
   emits: ["change-repository"],

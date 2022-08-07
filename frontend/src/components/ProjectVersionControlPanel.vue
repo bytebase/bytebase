@@ -8,6 +8,7 @@
       <RepositorySetupWizard
         :create="state.showWizardForCreate"
         :project="project"
+        :workflow-type="state.workflowType"
         @cancel="cancelWizard"
         @finish="finishWizard"
       />
@@ -59,6 +60,26 @@
               </div>
             </div>
           </div>
+          <div v-if="isDev" class="flex space-x-4">
+            <input
+              id="workflow-database-as-code"
+              v-model="state.workflowType"
+              name="Database-as-Code workflow"
+              tabindex="-1"
+              type="radio"
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
+              value="DaC"
+              :disabled="!allowEdit"
+            />
+            <div class="-mt-1">
+              <label for="workflow-database-as-code" class="textlabel">
+                {{ $t("workflow.database-as-code-workflow") }}
+              </label>
+              <div class="mt-1 textinfolabel">
+                {{ $t("workflow.database-as-code-workflow-description") }}
+              </div>
+            </div>
+          </div>
         </div>
         <template v-if="allowEdit && state.workflowType == 'VCS'">
           <div class="mt-4 flex items-center justify-end">
@@ -72,8 +93,28 @@
             </button>
           </div>
         </template>
+        <template v-if="isDev && allowEdit && state.workflowType == 'DaC'">
+          <div class="mt-4 flex items-center justify-end">
+            <button
+              type="button"
+              class="btn-primary inline-flex justify-center py-2 px-2"
+              @click.prevent="enterWizard(true)"
+            >
+              {{ $t("workflow.configure-gitops") }}
+              <heroicons-outline:chevron-right class="ml-1 w-5 h-5" />
+            </button>
+          </div>
+        </template>
       </template>
       <template v-else-if="project.workflowType == 'VCS'">
+        <RepositoryPanel
+          :project="project"
+          :repository="repository"
+          :allow-edit="allowEdit"
+          @change-repository="enterWizard(false)"
+        />
+      </template>
+      <template v-else-if="isDev && project.workflowType == 'DaC'">
         <RepositoryPanel
           :project="project"
           :repository="repository"

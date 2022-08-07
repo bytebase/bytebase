@@ -206,6 +206,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
 
+		if project.WorkflowType == api.DatabaseAsCodeWorkflow {
+			repositoryCreate.FilePathTemplate = "{{DB_NAME}}__{{VERSION}}__{{TYPE}}.sql"
+		}
+
 		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create linked repository request: %s", err.Error()))
 		}

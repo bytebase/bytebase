@@ -275,11 +275,10 @@ func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPat
 // createRepositoryImpl creates a new repository.
 func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *api.RepositoryCreate) (*repositoryRaw, error) {
 	// Updates the project workflow_type to "VCS"
-	workflowType := api.VCSWorkflow
 	projectPatch := api.ProjectPatch{
 		ID:           create.ProjectID,
 		UpdaterID:    create.CreatorID,
-		WorkflowType: &workflowType,
+		WorkflowType: &create.WorkflowType,
 	}
 	if _, err := s.patchProjectRawTx(ctx, tx, &projectPatch); err != nil {
 		return nil, err

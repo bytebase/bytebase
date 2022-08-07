@@ -37,7 +37,11 @@
         />
       </template>
       <template #2>
-        <RepositoryConfigPanel :config="state.config" :project="project" />
+        <RepositoryConfigPanel
+          :config="state.config"
+          :project="project"
+          :workflow-type="workflowType"
+        />
       </template>
     </BBStepTab>
   </div>
@@ -56,6 +60,7 @@ import {
   OAuthToken,
   Project,
   ProjectRepositoryConfig,
+  ProjectWorkflowType,
   RepositoryCreate,
   unknown,
   VCS,
@@ -104,6 +109,10 @@ export default defineComponent({
     project: {
       required: true,
       type: Object as PropType<Project>,
+    },
+    workflowType: {
+      required: true,
+      type: Object as PropType<ProjectWorkflowType>,
     },
   },
   emits: ["cancel", "finish"],
@@ -182,6 +191,7 @@ export default defineComponent({
         }
         const repositoryCreate: RepositoryCreate = {
           vcsId: state.config.vcs.id,
+          workflowType: props.workflowType,
           name: state.config.repositoryInfo.name,
           fullPath: state.config.repositoryInfo.fullPath,
           webUrl: state.config.repositoryInfo.webUrl,

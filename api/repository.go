@@ -53,8 +53,9 @@ type RepositoryCreate struct {
 	CreatorID int
 
 	// Related fields
-	VCSID     int `jsonapi:"attr,vcsId"`
-	ProjectID int
+	VCSID        int                 `jsonapi:"attr,vcsId"`
+	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
+	ProjectID    int
 
 	// Domain specific fields
 	Name               string `jsonapi:"attr,name"`

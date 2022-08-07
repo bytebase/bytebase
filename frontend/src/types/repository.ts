@@ -1,7 +1,7 @@
 import isEmpty from "lodash-es/isEmpty";
 import { ProjectId, RepositoryId, VCSId } from "./id";
 import { Principal } from "./principal";
-import { Project } from "./project";
+import { Project, ProjectWorkflowType } from "./project";
 import { VCS } from "./vcs";
 
 export type Repository = {
@@ -36,6 +36,7 @@ export type Repository = {
 export type RepositoryCreate = {
   // Related fields
   vcsId: VCSId;
+  workflowType: ProjectWorkflowType;
 
   // Domain specific fields
   name: string;

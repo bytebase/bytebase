@@ -20,6 +20,8 @@ const (
 	UIWorkflow ProjectWorkflowType = "UI"
 	// VCSWorkflow is the VCS workflow.
 	VCSWorkflow ProjectWorkflowType = "VCS"
+	// DatabaseAsCodeWorkflow is the Database-as-Code workflow.
+	DatabaseAsCodeWorkflow ProjectWorkflowType = "DaC"
 )
 
 // ProjectVisibility is the visibility of a project.

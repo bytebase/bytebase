@@ -7,7 +7,7 @@ import { VCS } from "./vcs";
 
 export type ProjectRoleType = "OWNER" | "DEVELOPER";
 
-export type ProjectWorkflowType = "UI" | "VCS";
+export type ProjectWorkflowType = "UI" | "VCS" | "DaC";
 
 export type ProjectVisibility = "PUBLIC" | "PRIVATE";
 
