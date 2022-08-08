@@ -130,7 +130,7 @@ const data = computed(() => {
 });
 const notifyMessage = computed(() => {
   if (!queryResult.value) {
-    return t("sql-editor.table-empty-placehoder");
+    return t("sql-editor.table-empty-placeholder");
   }
   if (sqlEditorStore.isExecuting) {
     return t("sql-editor.loading-data");
@@ -178,9 +178,9 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   }
 
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
-  const formatedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
+  const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
   // Example filename: `mysheet-2022-03-23T09-54-21.json`
-  const filename = `${tabStore.currentTab.name}-${formatedDateString}`;
+  const filename = `${tabStore.currentTab.name}-${formattedDateString}`;
   const link = document.createElement("a");
 
   link.download = `${filename}.${format}`;

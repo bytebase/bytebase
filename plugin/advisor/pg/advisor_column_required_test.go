@@ -70,7 +70,7 @@ func TestColumnRequirement(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &ColumnRequirementAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &ColumnRequirementAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleRequiredColumn,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),

@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
@@ -54,7 +55,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("backup", backup.Name),
 	)
 
-	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstanceDir)
+	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstanceDir, common.GetResourceDir(server.profile.DataDir))
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
 		Status:    string(api.BackupStatusDone),
@@ -80,8 +81,8 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir, resourceDir string) (string, error) {
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir, resourceDir)
 	if err != nil {
 		return "", err
 	}

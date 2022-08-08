@@ -369,34 +369,32 @@ export default defineComponent({
     };
 
     const onConfirmToggleRoleProvider = () => {
-      () => {
-        state.showModal = false;
-        // the current role provider is BYTEBASE, meaning switching role provider to VCS
-        if (props.project.roleProvider === "BYTEBASE") {
-          patchProjectRoleProvider("GITLAB_SELF_HOST")
-            .then(() => {
-              syncMemberFromVCS();
-            })
-            .catch(() => {
-              // nothing todo
-            }); // mute error at browser
-        } else if (props.project.roleProvider === "GITLAB_SELF_HOST") {
-          // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
-          patchProjectRoleProvider("BYTEBASE")
-            .then(() => {
-              pushNotification({
-                module: "bytebase",
-                style: "SUCCESS",
-                title: t(
-                  "project.settings.switch-role-provider-to-bytebase-success-prompt"
-                ),
-              });
-            })
-            .catch(() => {
-              // nothing todo
-            }); // mute error at browser;
-        }
-      };
+      state.showModal = false;
+      // the current role provider is BYTEBASE, meaning switching role provider to VCS
+      if (props.project.roleProvider === "BYTEBASE") {
+        patchProjectRoleProvider("GITLAB_SELF_HOST")
+          .then(() => {
+            syncMemberFromVCS();
+          })
+          .catch(() => {
+            // nothing todo
+          }); // mute error at browser
+      } else if (props.project.roleProvider === "GITLAB_SELF_HOST") {
+        // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
+        patchProjectRoleProvider("BYTEBASE")
+          .then(() => {
+            pushNotification({
+              module: "bytebase",
+              style: "SUCCESS",
+              title: t(
+                "project.settings.switch-role-provider-to-bytebase-success-prompt"
+              ),
+            });
+          })
+          .catch(() => {
+            // nothing todo
+          }); // mute error at browser;
+      }
     };
 
     return {

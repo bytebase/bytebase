@@ -230,7 +230,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
+					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
 					if err != nil {
 						return err
 					}
@@ -826,7 +826,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir string) (db.Driver, error) {
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir, resourceDir string) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
@@ -835,7 +835,10 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
-		db.DriverConfig{PgInstanceDir: pgInstanceDir},
+		db.DriverConfig{
+			PgInstanceDir: pgInstanceDir,
+			ResourceDir:   resourceDir,
+		},
 		connCfg,
 		db.ConnectionContext{
 			EnvironmentName: instance.Environment.Name,

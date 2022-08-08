@@ -290,13 +290,15 @@ const selectedRuleList = computed((): RuleTemplate[] => {
 const engineList = computed(
   (): { id: SchemaRuleEngineType; count: number }[] => {
     const tmp = selectedRuleList.value.reduce((dict, rule) => {
-      if (!dict[rule.engine]) {
-        dict[rule.engine] = {
-          id: rule.engine,
-          count: 0,
-        };
+      for (const engine of rule.engineList) {
+        if (!dict[engine]) {
+          dict[engine] = {
+            id: engine,
+            count: 0,
+          };
+        }
+        dict[engine].count += 1;
       }
-      dict[rule.engine].count += 1;
       return dict;
     }, {} as { [id: string]: { id: SchemaRuleEngineType; count: number } });
 
@@ -370,7 +372,9 @@ const filteredSelectedRuleList = computed((): RuleTemplate[] => {
           .toLowerCase()
           .includes(state.searchText.toLowerCase())) &&
       (state.checkedEngine.size === 0 ||
-        state.checkedEngine.has(selectedRule.engine)) &&
+        selectedRule.engineList.some((engine) =>
+          state.checkedEngine.has(engine)
+        )) &&
       (state.checkedLevel.size === 0 ||
         state.checkedLevel.has(selectedRule.level))
     );

@@ -10,17 +10,17 @@ import {
 export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan"
-  | "bb.policy.schema-review";
+  | "bb.policy.sql-review";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
   | "MANUAL_APPROVAL_ALWAYS";
 
-export type PipelineApporvalPolicyPayload = {
+export type PipelineApprovalPolicyPayload = {
   value: PipelineApprovalPolicyValue;
 };
 
-export const DefaultApporvalPolicy: PipelineApprovalPolicyValue =
+export const DefaultApprovalPolicy: PipelineApprovalPolicyValue =
   "MANUAL_APPROVAL_ALWAYS";
 
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
@@ -31,7 +31,7 @@ export type BackupPlanPolicyPayload = {
 
 export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
 
-// SQLReviewPolicyPayload is the payload for schema review policy in the backend.
+// SQLReviewPolicyPayload is the payload for SQL review policy in the backend.
 export type SQLReviewPolicyPayload = {
   name: string;
   ruleList: {
@@ -42,7 +42,7 @@ export type SQLReviewPolicyPayload = {
 };
 
 export type PolicyPayload =
-  | PipelineApporvalPolicyPayload
+  | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
   | SQLReviewPolicyPayload;
 

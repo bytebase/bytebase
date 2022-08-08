@@ -432,7 +432,8 @@
       "completed": "完成",
       "failed": "失败",
       "task-name": "任务 {name}",
-      "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}"
+      "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销"
     },
     "subject-prefix": {
       "task": "任务"
@@ -689,7 +690,7 @@
       "new-user": "第一次使用 Bytebase?",
       "demo-note": "请使用 demo 账号登录",
       "gitlab": "通过 GitLab 登录",
-      "gitlab-demo": "演示模式不支持 GitLab 登录",
+      "3rd-party-auth-demo": "演示模式不支持第三方账号登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录"
     },
     "password-forget": {
@@ -714,9 +715,9 @@
       "tip": "新策略仅对新建工单生效",
       "info": "要更改数据库 schema，该选项控制了是否需要手动审批。",
       "manual": "需要人工审批",
-      "manual-info": "进行中的 schema 改动任务只有被人工审批后才会执行。",
+      "manual-info": "任务只有被人工审批后才会执行。",
       "auto": "无需审批",
-      "auto-info": "进行中的任务无需审核并且会被自动执行。"
+      "auto-info": "如果任务检查都通过的话，任务无需审批并且会被自动执行。"
     },
     "backup": {
       "name": "数据库备份策略",
@@ -888,7 +889,7 @@
     "configure-deploy": "配置部署",
     "choose-git-provider-description": "选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema 变更应用到数据库上。",
     "choose-git-provider-visit-workspace": "访问 {workspace} 设置以添加更多 Git 提供方.",
-    "choose-git-provider-contact-workspace-owner": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。",
+    "choose-git-provider-contact-workspace-owner": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
     "linked": "关联的仓库",
@@ -915,7 +916,7 @@
       "connection-failure": "连接失败",
       "missing-migration-schema": "缺少变更 Schema",
       "schema-drift": "Schema 偏差",
-      "backup-enforcement-viloation": "违反备份策略约束",
+      "backup-enforcement-violation": "违反备份策略约束",
       "missing-backup": "缺少备份"
     },
     "action": {
@@ -1052,7 +1053,7 @@
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "github-com-admin-requirement": "您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
-        "ouath-info-correct": "OAuth 信息验证成功",
+        "oauth-info-correct": "OAuth 信息验证成功",
         "check-oauth-info-match": "请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。",
         "add-success": "成功添加了 Git 提供方「{vcs}」",
         "choose": "选择 Git 提供方",
@@ -1076,6 +1077,8 @@
           "github-login-as-admin": "以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。",
           "github-visit-admin-page": "进入组织 Settings 页面，然后导航到「Developer settings > OAuth Apps」分区，再点击「Register an application」。",
           "github-paste-oauth-info": "从刚创建好的应用上粘贴它的 Client ID 和 Client secret 到下面的字段。",
+          "copy-homepage-url": "Homepage URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。",
+          "copy-redirect-uri": "Redirect URI 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。",
           "direct-link": "直达链接",
           "create-oauth-app": "使用如下信息来创建您的 Bytebase OAuth 应用。",
           "gitlab-application-id-error": "应用 ID 必须是 64 个字母长度",
@@ -1186,7 +1189,7 @@
     "loading-databases": "加载数据库信息...",
     "close-pane": "关闭面板",
     "loading-data": "加载数据中...",
-    "table-empty-placehoder": "点击 ”运行“ 执行查询",
+    "table-empty-placeholder": "点击 ”运行“ 执行查询",
     "no-rows-found": "暂无数据",
     "download-as-csv": "下载为 CSV 格式",
     "download-as-json": "下载为 JSON 格式",

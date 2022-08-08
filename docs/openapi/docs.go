@@ -26,8 +26,8 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/sql/advise": {
-            "get": {
-                "description": "Parse and check the SQL statement according to the schema review policy.",
+            "post": {
+                "description": "Parse and check the SQL statement according to the SQL review policy.",
                 "consumes": [
                     "*/*"
                 ],
@@ -35,52 +35,64 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Schema Review"
+                    "SQL review"
                 ],
                 "summary": "Check the SQL statement.",
                 "parameters": [
                     {
-                        "type": "string",
                         "description": "The environment name. Case sensitive.",
-                        "name": "environment",
-                        "in": "query",
-                        "required": true
+                        "name": "environmentName",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
-                        "type": "string",
                         "description": "The SQL statement.",
                         "name": "statement",
-                        "in": "query",
-                        "required": true
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "enum": [
-                            "MySQL",
-                            "PostgreSQL",
-                            "TiDB"
+                            "MYSQL",
+                            "POSTGRES",
+                            "TIDB"
                         ],
-                        "type": "string",
                         "description": "The database type. Required if the port, host and database name is not specified.",
                         "name": "databaseType",
-                        "in": "query"
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
-                        "type": "string",
                         "description": "The instance host.",
                         "name": "host",
-                        "in": "query"
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
-                        "type": "string",
                         "description": "The instance port.",
                         "name": "port",
-                        "in": "query"
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
-                        "type": "string",
                         "description": "The database name in the instance.",
                         "name": "databaseName",
-                        "in": "query"
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

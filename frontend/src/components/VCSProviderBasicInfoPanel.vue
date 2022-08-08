@@ -21,7 +21,7 @@
         }}
       </label>
     </div>
-    <div v-if="isDev" class="radio space-x-2">
+    <div class="radio space-x-2">
       <input
         v-model="config.type"
         name="GitHub.com"
@@ -54,15 +54,6 @@
         <img src="../assets/github-logo.svg" />
       </div>
       <label class="whitespace-nowrap">GitHub Enterprise </label>
-    </div>
-    <div
-      v-if="!isDev"
-      class="flex flex-row space-x-2 items-center text-control"
-    >
-      <div class="h-5 w-5">
-        <img src="../assets/github-logo.svg" />
-      </div>
-      <label class="whitespace-nowrap">GitHub.com </label>
     </div>
   </div>
   <div class="mt-6 pt-6 border-t border-block-border textlabel">

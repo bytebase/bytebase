@@ -1,4 +1,4 @@
-id: bb.sql-review.mysql.dev
+id: bb.sql-review.dev
 ruleList:
   - type: engine.mysql.use-innodb
     level: ERROR
@@ -30,6 +30,11 @@ ruleList:
     level: WARNING
     payload:
       format: "^uk_{{table}}_{{column_list}}$"
+      maxLength: 64
+  - type: naming.index.pk
+    level: WARNING
+    payload:
+      format: "^pk_{{table}}_{{column_list}}$"
       maxLength: 64
   - type: naming.index.idx
     level: WARNING

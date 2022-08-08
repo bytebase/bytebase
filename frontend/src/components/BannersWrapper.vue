@@ -27,6 +27,9 @@ import {
   useSubscriptionStore,
 } from "@/store/modules";
 import { isDBAOrOwner } from "@/utils";
+import BannerDemo from "@/views/BannerDemo.vue";
+import BannerDebug from "@/views/BannerDebug.vue";
+import BannerSubscription from "@/views/BannerSubscription.vue";
 
 const actuatorStore = useActuatorStore();
 const currentUser = useCurrentUser();

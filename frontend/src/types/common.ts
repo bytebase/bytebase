@@ -22,7 +22,7 @@ import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
-import { DefaultApporvalPolicy } from "./policy";
+import { DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
 
@@ -332,7 +332,7 @@ const makeUnknown = (type: ResourceType) => {
     environment: UNKNOWN_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
     payload: {
-      value: DefaultApporvalPolicy,
+      value: DefaultApprovalPolicy,
     },
   };
 
@@ -735,7 +735,7 @@ const makeEmpty = (type: ResourceType) => {
     environment: EMPTY_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
     payload: {
-      value: DefaultApporvalPolicy,
+      value: DefaultApprovalPolicy,
     },
   };
 

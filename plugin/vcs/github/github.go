@@ -240,15 +240,18 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
 }
 
+// CommitAuthor represents a GitHub API response for a commit author.
+type CommitAuthor struct {
+	// Date expects corresponding JSON value is a string in RFC 3339 format,
+	// see https://pkg.go.dev/time#Time.MarshalJSON.
+	Date time.Time `json:"date"`
+	Name string    `json:"name"`
+}
+
 // Commit represents a GitHub API response for a commit.
 type Commit struct {
-	SHA    string `json:"sha"`
-	Author struct {
-		// Date expects corresponding JSON value is a string in RFC 3339 format,
-		// see https://pkg.go.dev/time#Time.MarshalJSON.
-		Date time.Time `json:"date"`
-		Name string    `json:"name"`
-	} `json:"author"`
+	SHA    string       `json:"sha"`
+	Author CommitAuthor `json:"author"`
 }
 
 // FileCommit represents a GitHub API request for committing a file.
@@ -417,7 +420,7 @@ func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oa
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return collaborators, len(collaborators) >= 100, nil
+	return collaborators, len(collaborators) >= apiPageSize, nil
 }
 
 // oauthResponse is a GitHub OAuth response.
@@ -556,7 +559,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return repos, len(repos) >= 100, nil
+	return repos, len(repos) >= apiPageSize, nil
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree

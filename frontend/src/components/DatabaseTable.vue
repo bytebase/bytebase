@@ -25,7 +25,9 @@
             class="text-xs"
           />
           <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
-            <span class="tooltip">
+            <span
+              class="tooltip text-justify w-[75%] transform -translate-x-[50%] -translate-y-[1.5rem]"
+            >
               {{
                 $t("database.last-sync-status-long", [
                   database.syncStatus,
@@ -139,7 +141,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { connectionSlug, databaseSlug } from "../utils";
+import { connectionSlug, databaseSlug, isPITRDatabase } from "../utils";
 import type { Database } from "../types";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
@@ -405,10 +407,4 @@ const clickDatabase = (section: number, row: number, e: MouseEvent) => {
     }
   }
 };
-
-function isPITRDatabase(db: Database): boolean {
-  const { name } = db;
-  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
-  return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
-}
 </script>

@@ -56,7 +56,6 @@ type Server struct {
 
 	profile       Profile
 	e             *echo.Echo
-	mysqlutil     mysqlutil.Instance
 	pgInstanceDir string
 	metaDB        *store.MetadataDB
 	store         *store.Store
@@ -129,14 +128,15 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
-	mysqlutilIns, err := mysqlutil.Install(resourceDir)
-	if err != nil {
+	if err := mysqlutil.Install(resourceDir); err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlutil = *mysqlutilIns
 
 	// Install Postgres.
-	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+	var pgDataDir string
+	if prof.useEmbedDB() {
+		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
+	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
 	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
 	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
@@ -216,9 +216,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
+		taskScheduler.Register(api.TaskDatabasePITRRestore, NewPITRRestoreTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
+		taskScheduler.Register(api.TaskDatabasePITRCutover, NewPITRCutoverTaskExecutor)
 
 		s.TaskScheduler = taskScheduler
 
@@ -428,6 +428,7 @@ func (s *Server) Run(ctx context.Context) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
+		s.runnerWG.Add(1)
 		go s.TaskScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
@@ -437,11 +438,10 @@ func (s *Server) Run(ctx context.Context) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
 
 		if s.MetricReporter != nil {
-			go s.MetricReporter.Run(ctx, &s.runnerWG)
 			s.runnerWG.Add(1)
+			go s.MetricReporter.Run(ctx, &s.runnerWG)
 		}
 	}
 

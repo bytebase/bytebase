@@ -1,7 +1,7 @@
 package ast
 
-// RenameTableStmt is the struct for rename table statement.
-// For PostgreSQL dialect is ALTER TABLE RENAME.
+// RenameTableStmt is the struct for rename table or view statement.
+// For PostgreSQL dialect is ALTER TABLE RENAME and ALTER VIEW RENAME.
 type RenameTableStmt struct {
 	node
 

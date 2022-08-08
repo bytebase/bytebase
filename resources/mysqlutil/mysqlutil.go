@@ -20,34 +20,39 @@ const (
 	MySQL binaryName = "mysql"
 	// MySQLBinlog is the name of mysqlbinlog binary.
 	MySQLBinlog binaryName = "mysqlbinlog"
+	// MySQLDump is the name of mysqldump binary.
+	MySQLDump binaryName = "mysqldump"
 )
 
-// Instance involve the path of all binaries binary.
-type Instance struct {
-	mysqlBinPath       string
-	mysqlbinlogBinPath string
-}
-
-// GetPath returns the binary path specified by `binName`.
-func (ins *Instance) GetPath(binName binaryName) string {
+// GetPath returns the binary path specified by `binName`, `resourceDir` is the path that installed the mysqlutil.
+func GetPath(binName binaryName, resourceDir string) string {
+	_, version, err := getTarNameAndVersion()
+	if err != nil {
+		return "UNEXPECTED_ERROR"
+	}
+	baseDir := filepath.Join(resourceDir, version)
 	switch binName {
 	case MySQL:
-		return ins.mysqlBinPath
+		return filepath.Join(baseDir, "bin", "mysql")
 	case MySQLBinlog:
-		return ins.mysqlbinlogBinPath
+		return filepath.Join(baseDir, "bin", "mysqlbinlog")
+	case MySQLDump:
+		return filepath.Join(baseDir, "bin", "mysqldump")
 	}
-	return "UNKNOWN"
+	return "UNKNOWN_BINARY"
 }
 
-// Version returns the raw output of ``binName` -V`.
-func (ins *Instance) Version(binName binaryName) (string, error) {
+// getExecutableVersion returns the raw output of ``binName` -V`.
+func getExecutableVersion(binName binaryName, resourceDir string) (string, error) {
 	var cmd *exec.Cmd
 	var version bytes.Buffer
 	switch binName {
 	case MySQL:
-		cmd = exec.Command(ins.GetPath(MySQL), "-V")
+		cmd = exec.Command(GetPath(MySQL, resourceDir), "-V")
 	case MySQLBinlog:
-		cmd = exec.Command(ins.GetPath(MySQLBinlog), "-V")
+		cmd = exec.Command(GetPath(MySQLBinlog, resourceDir), "-V")
+	case MySQLDump:
+		cmd = exec.Command(GetPath(MySQLDump, resourceDir), "-V")
 	default:
 		return "", fmt.Errorf("unknown binary name: %s", binName)
 	}
@@ -60,8 +65,7 @@ func (ins *Instance) Version(binName binaryName) (string, error) {
 	return version.String(), nil
 }
 
-// Install will extract the mysqlutil tar in resourceDir.
-func Install(resourceDir string) (*Instance, error) {
+func getTarNameAndVersion() (tarname string, version string, err error) {
 	var tarName string
 	switch {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
@@ -71,44 +75,60 @@ func Install(resourceDir string) (*Instance, error) {
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
 	default:
-		return nil, fmt.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+		return "", "", fmt.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+	}
+	return tarName, strings.TrimRight(tarName, "tar.gz"), nil
+}
+
+// Install will extract the mysqlutil tar in resourceDir.
+func Install(resourceDir string) error {
+	tarName, version, err := getTarNameAndVersion()
+	if err != nil {
+		return fmt.Errorf("failed to get tarball name and version, error: %w", err)
 	}
 
-	version := strings.TrimRight(tarName, "tar.gz")
 	mysqlutilDir := path.Join(resourceDir, version)
+
 	if _, err := os.Stat(mysqlutilDir); err != nil {
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlutilDir, err)
+			return fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlutilDir, err)
 		}
 		// Install if not exist yet
 		if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
-			return nil, fmt.Errorf("cannot install mysqlutil, error: %w", err)
+			return fmt.Errorf("cannot install mysqlutil, error: %w", err)
 		}
 	}
 
-	// TODO(zp): remove this block in the next few months
-	// We change Dockerfile's base image from alpine to debian slim in v1.2.1,
-	// and add libncurses.so.5 and libtinfo.so.5 to make mysqlbinlog run successfully.
-	// So we need to reinstall mysqlutil if the users upgrade from an older version that missing these shared libraries.
-	libncursesPath := path.Join(mysqlutilDir, "lib", "private", "libncurses.so.5")
-	if _, err := os.Stat(libncursesPath); err != nil {
-		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to check libncurses library path %q, error: %w", libncursesPath, err)
-		}
-		// Remove mysqlutil of old version and reinstall it
-		if err := os.RemoveAll(mysqlutilDir); err != nil {
-			return nil, fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
-		}
-		// Install the current version
-		if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
-			return nil, fmt.Errorf("cannot install mysqlutil, error: %w", err)
+	checks := []string{
+		// TODO(zp): remove this line in the next few months
+		// We change Dockerfile's base image from alpine to debian slim in v1.2.1,
+		// and add libncurses.so.5 and libtinfo.so.5 to make mysqlbinlog run successfully.
+		// So we need to reinstall mysqlutil if the users upgrade from an older version that missing these shared libraries.
+		path.Join(mysqlutilDir, "lib", "private", "libncurses.so.5"),
+		path.Join(mysqlutilDir, "lib", "private", "libtinfo.so.5"),
+
+		// We embed mysqldump in version v1.2.3.
+		path.Join(mysqlutilDir, "bin", "mysqldump"),
+	}
+
+	for _, fp := range checks {
+		if _, err := os.Stat(fp); err != nil {
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("failed to check libncurses library path %q, error: %w", fp, err)
+			}
+			// Remove mysqlutil of old version and reinstall it
+			if err := os.RemoveAll(mysqlutilDir); err != nil {
+				return fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
+			}
+			// Install the current version
+			if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
+				return fmt.Errorf("cannot install mysqlutil, error: %w", err)
+			}
+			break
 		}
 	}
 
-	return &Instance{
-		mysqlBinPath:       filepath.Join(mysqlutilDir, "bin", "mysql"),
-		mysqlbinlogBinPath: filepath.Join(mysqlutilDir, "bin", "mysqlbinlog"),
-	}, nil
+	return nil
 }
 
 // install installs mysqlutil in resourceDir.

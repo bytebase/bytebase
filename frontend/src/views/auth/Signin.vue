@@ -36,7 +36,7 @@
             }}
           </span>
           <span v-if="isDemo" class="tooltip">{{
-            $t("auth.sign-in.gitlab-demo")
+            $t("auth.sign-in.3rd-party-auth-demo")
           }}</span>
           <span v-else-if="!has3rdPartyLoginFeature" class="tooltip">{{
             $t("subscription.features.bb-feature-3rd-party-auth.login")
@@ -230,7 +230,7 @@ export default defineComponent({
       if (payload.error) {
         return;
       }
-      const gitlabLoginInfo: VCSLoginInfo = {
+      const vcsLoginInfo: VCSLoginInfo = {
         vcsId: state.activeAuthProvider.id,
         name: state.activeAuthProvider.name,
         code: payload.code,
@@ -238,7 +238,7 @@ export default defineComponent({
       authStore
         .login({
           authProvider: state.activeAuthProvider.type,
-          payload: gitlabLoginInfo,
+          payload: vcsLoginInfo,
         })
         .then(() => {
           router.push("/");

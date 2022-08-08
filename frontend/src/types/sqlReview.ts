@@ -4,11 +4,11 @@ import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import sqlReviewSchema from "./sql-review-schema.yaml";
-import sqlReviewProdTemplate from "./sql-review.mysql.prod.yaml";
-import sqlReviewDevTemplate from "./sql-review.mysql.dev.yaml";
+import sqlReviewProdTemplate from "./sql-review.prod.yaml";
+import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 
 // The engine type for rule template
-export type SchemaRuleEngineType = "MYSQL" | "COMMON";
+export type SchemaRuleEngineType = "MYSQL" | "POSTGRES" | "TIDB";
 
 // The category type for rule template
 export type CategoryType =
@@ -82,6 +82,7 @@ export type RuleType =
   | "naming.table"
   | "naming.column"
   | "naming.index.uk"
+  | "naming.index.pk"
   | "naming.index.fk"
   | "naming.index.idx"
   | "column.required"
@@ -134,7 +135,7 @@ export interface SQLReviewPolicy {
 export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
-  engine: SchemaRuleEngineType;
+  engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
 }
@@ -224,7 +225,6 @@ export const convertToCategoryList = (
 
   const dict = ruleList.reduce((dict, rule) => {
     if (!dict[rule.category]) {
-      const id = rule.category.toLowerCase();
       dict[rule.category] = {
         id: rule.category,
         ruleList: [],
@@ -312,6 +312,23 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    case "naming.index.pk":
+      if (!templateComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
+      return {
+        ...res,
+        componentList: [
+          {
+            ...templateComponent,
+            payload: {
+              ...templateComponent.payload,
+              value: (policyRule.payload as NamingFormatPayload).format,
+            } as TemplatePayload,
+          },
+        ],
+      };
     case "naming.index.idx":
     case "naming.index.uk":
     case "naming.index.fk":
@@ -338,7 +355,7 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
-    case "column.required":
+    case "column.required": {
       const requiredColumnComponent = ruleTemplate.componentList[0];
       const requiredColumnPayload = {
         ...requiredColumnComponent.payload,
@@ -353,6 +370,7 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    }
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -406,6 +424,16 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
+    case "naming.index.pk":
+      if (!templatePayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          format: templatePayload.value ?? templatePayload.default,
+        },
+      };
     case "naming.index.idx":
     case "naming.index.uk":
     case "naming.index.fk":
@@ -419,7 +447,7 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
-    case "column.required":
+    case "column.required": {
       const stringArrayPayload = rule.componentList[0]
         .payload as StringArrayPayload;
       return {
@@ -428,6 +456,7 @@ export const convertRuleTemplateToPolicyRule = (
           columnList: stringArrayPayload.value ?? stringArrayPayload.default,
         },
       };
+    }
   }
 
   throw new Error(`Invalid rule ${rule.type}`);

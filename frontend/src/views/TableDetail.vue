@@ -11,9 +11,16 @@
             <div>
               <div class="flex items-center">
                 <h1
-                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate"
+                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
                   {{ table.name }}
+
+                  <BBBadge
+                    v-if="isGhostTable(table)"
+                    text="gh-ost"
+                    :can-remove="false"
+                    class="text-xs"
+                  />
                 </h1>
               </div>
             </div>
@@ -208,7 +215,12 @@ import { computed, defineComponent } from "vue";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { bytesToString, connectionSlug, idFromSlug } from "../utils";
+import {
+  bytesToString,
+  connectionSlug,
+  idFromSlug,
+  isGhostTable,
+} from "../utils";
 import { useRouter } from "vue-router";
 import { useTableStore } from "@/store";
 import { Table } from "@/types";
@@ -255,6 +267,7 @@ export default defineComponent({
       database,
       gotoSQLEditor,
       bytesToString,
+      isGhostTable,
     };
   },
 });

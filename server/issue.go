@@ -405,18 +405,6 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return pipelineCreated, nil
 }
 
-func (s *Server) getPipelineApprovalPolicyForEnv(ctx context.Context, envID int) (api.TaskStatus, error) {
-	taskStatus := api.TaskPendingApproval
-	policy, err := s.store.GetPipelineApprovalPolicy(ctx, envID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get approval policy for environment ID %v, error %v", envID, err)
-	}
-	if policy.Value == api.PipelineApprovalValueManualNever {
-		taskStatus = api.TaskPending
-	}
-	return taskStatus, nil
-}
-
 func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
@@ -508,11 +496,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
 	}
 
-	taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, instance.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-
 	if c.BackupID != 0 {
 		backup, err := s.store.GetBackupByID(ctx, c.BackupID)
 		if err != nil {
@@ -539,7 +522,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 						{
 							InstanceID:   c.InstanceID,
 							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-							Status:       taskStatus,
+							Status:       api.TaskPendingApproval,
 							Type:         api.TaskDatabaseCreate,
 							DatabaseName: payload.DatabaseName,
 							Payload:      string(bytes),
@@ -572,7 +555,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 					{
 						InstanceID:   c.InstanceID,
 						Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
-						Status:       taskStatus,
+						Status:       api.TaskPendingApproval,
 						Type:         api.TaskDatabaseCreate,
 						DatabaseName: payload.DatabaseName,
 						Payload:      string(bytes),
@@ -600,12 +583,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
 	}
 
-	taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-
-	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, taskStatus, c.PointInTimeTs)
+	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, c.PointInTimeTs)
 	if err != nil {
 		return nil, err
 	}
@@ -669,10 +647,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 
 		if d.DatabaseName == "" && d.DatabaseID > 0 {
-			// We only support data change for a single tenant for the moment.
-			if c.MigrationType != db.Data {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only data change is allowed for a single tenant database in tenant mode project.")
-			}
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
@@ -681,12 +655,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
-			if err != nil {
-				return nil, err
-			}
-
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -719,12 +688,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 
-					taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
-					if err != nil {
-						return nil, err
-					}
-
-					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -747,6 +711,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
+		maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaximumTask)
+		if int64(len(c.DetailList)) > maximumTaskLimit {
+			return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, len(c.DetailList)))
+		}
+
 		type envKey struct {
 			name  string
 			id    int
@@ -765,12 +734,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
-			if err != nil {
-				return nil, err
-			}
-
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -837,12 +801,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database ID not found: %d", detail.DatabaseID))
 		}
 
-		taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-
-		taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, detail, schemaVersion, taskStatus)
+		taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, detail, schemaVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -857,7 +816,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 	return create, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	switch migrationType {
 	case db.Migrate:
@@ -889,7 +848,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		Name:              taskName,
 		InstanceID:        database.Instance.ID,
 		DatabaseID:        &database.ID,
-		Status:            taskStatus,
+		Status:            api.TaskPendingApproval,
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
@@ -899,7 +858,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 }
 
 // creates PITR TaskCreate list and dependency.
-func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func createPITRTaskList(database *api.Database, projectID int, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 
 	// task: create and restore to PITR database
@@ -916,7 +875,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 		Name:       fmt.Sprintf("Restore PITR database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
-		Status:     taskStatus,
+		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabasePITRRestore,
 		Payload:    string(bytesRestore),
 	})
@@ -932,7 +891,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 		Name:       fmt.Sprintf("Swap PITR and the original database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
-		Status:     taskStatus,
+		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabasePITRCutover,
 		Payload:    string(bytesCutover),
 	})
@@ -945,7 +904,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 }
 
 // creates gh-ost TaskCreate list and dependency.
-func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	// task "sync"
 	payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
@@ -961,7 +920,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Name:              fmt.Sprintf("Update %q schema gh-ost sync", database.Name),
 		InstanceID:        database.InstanceID,
 		DatabaseID:        &database.ID,
-		Status:            taskStatus,
+		Status:            api.TaskPendingApproval,
 		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
 		Statement:         detail.Statement,
 		EarliestAllowedTs: detail.EarliestAllowedTs,
@@ -979,7 +938,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Name:              fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
 		InstanceID:        database.InstanceID,
 		DatabaseID:        &database.ID,
-		Status:            taskStatus,
+		Status:            api.TaskPendingApproval,
 		Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
 		EarliestAllowedTs: detail.EarliestAllowedTs,
 		Payload:           string(bytesCutover),
@@ -993,7 +952,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-// checkCharacterSetCollationOwner checks if the charactes set, collation and owner are legal according to the dbType.
+// checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
 func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, owner string) error {
 	switch dbType {
 	case db.ClickHouse:
@@ -1111,7 +1070,11 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.changeTaskStatus(ctx, task, api.TaskCanceled, updaterID); err != nil {
+					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+						ID:        task.ID,
+						UpdaterID: updaterID,
+						Status:    api.TaskCanceled,
+					}); err != nil {
 						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
 					}
 				}
@@ -1275,7 +1238,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", nil
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.pgInstanceDir)
+	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
 	if err != nil {
 		return "", "", err
 	}
