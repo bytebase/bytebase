@@ -33,7 +33,6 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 		// dburl.Parse() do the job of parsing 'pg', 'postgresql' and 'pgsql' to 'postgres'.
 		// https://pkg.go.dev/github.com/xo/dburl@v0.9.1#hdr-Protocol_Schemes_and_Aliases
 		resourceDir = os.TempDir()
-		fmt.Println(resourceDir)
 		if err := mysqlutil.Install(resourceDir); err != nil {
 			return nil, fmt.Errorf("cannot install mysqlutil in directory %s, error: %w", resourceDir, err)
 		}
