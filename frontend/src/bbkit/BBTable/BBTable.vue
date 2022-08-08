@@ -14,7 +14,10 @@
           :key="index"
           scope="col"
           class="py-2 text-left text-xs font-medium text-gray-500 tracking-wider"
-          :class="index == 0 ? 'pl-4' : 'pl-2'"
+          :class="[
+            index == 0 ? 'pl-4' : 'pl-2',
+            column.center && 'text-center pr-2',
+          ]"
         >
           {{ column.title }}
         </th>
