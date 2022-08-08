@@ -3,11 +3,11 @@
     <VCSTipsInfo :project="state.project" />
 
     <div class="overflow-x-auto">
-      <div class="mx-1" :class="wrapperClass">
+      <div class="mx-1 w-192">
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
-            <NTabs v-model:value="state.alterType" type="line">
+            <NTabs v-model:value="state.alterType">
               <NTabPane
                 :tab="$t('alter-schema.alter-multiple-db')"
                 name="MULTI_DB"
@@ -33,6 +33,14 @@
                   @select-database="selectDatabase"
                 />
               </NTabPane>
+              <template #suffix>
+                <BBTableSearch
+                  v-if="state.alterType === 'SINGLE_DB'"
+                  class="m-px"
+                  :placeholder="$t('database.search-database-name')"
+                  @change-text="(text) => (state.searchText = text)"
+                />
+              </template>
             </NTabs>
           </template>
           <template v-else>
@@ -43,11 +51,21 @@
               :database-list="databaseList"
               :environment-list="environmentList"
               @select-database="selectDatabase"
-            />
+            >
+              <template #header>
+                <div class="flex items-center justify-end my-2">
+                  <BBTableSearch
+                    class="m-px"
+                    :placeholder="$t('database.search-database-name')"
+                    @change-text="(text) => (state.searchText = text)"
+                  />
+                </div>
+              </template>
+            </ProjectStandardView>
           </template>
         </template>
         <template v-else>
-          <NTabs v-model:value="state.tab" type="line">
+          <NTabs v-model:value="state.tab">
             <NTabPane :tab="$t('project.mode.standard')" name="standard">
               <!-- a simple table -->
               <DatabaseTable
@@ -66,6 +84,14 @@
                 @dismiss="cancel"
               />
             </NTabPane>
+            <template #suffix>
+              <BBTableSearch
+                v-if="state.tab === 'standard'"
+                class="m-px"
+                :placeholder="$t('database.search-database-name')"
+                @change-text="(text) => (state.searchText = text)"
+              />
+            </template>
           </NTabs>
         </template>
       </div>
@@ -153,6 +179,7 @@ type LocalState = ProjectStandardState &
     project?: Project;
     tab: "standard" | "tenant";
     showFeatureModal: boolean;
+    searchText: string;
   };
 
 export default defineComponent({
@@ -206,6 +233,7 @@ export default defineComponent({
       selectedDatabaseName: undefined,
       deployingTenantDatabaseList: [],
       showFeatureModal: false,
+      searchText: "",
     });
 
     // Returns true if alter schema, false if change data.
@@ -232,6 +260,11 @@ export default defineComponent({
         list = databaseStore.getDatabaseListByProjectId(props.projectId);
       } else {
         list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+      }
+
+      const keyword = state.searchText.trim();
+      if (keyword) {
+        list = list.filter((db) => db.name.toLowerCase().includes(keyword));
       }
 
       return sortDatabaseList(cloneDeep(list), environmentList.value);
@@ -428,17 +461,6 @@ export default defineComponent({
       emit("dismiss");
     };
 
-    const wrapperClass = computed(() => {
-      // provide a wider modal to tenant view
-      if (props.projectId) {
-        if (isTenantProject.value) return "w-192";
-        else return "w-160";
-      } else {
-        if (state.tab === "standard") return "w-160";
-        return "w-192";
-      }
-    });
-
     const generateIssueName = (
       databaseNameList: string[],
       isOnlineMode: boolean
@@ -463,7 +485,6 @@ export default defineComponent({
     };
 
     return {
-      wrapperClass,
       state,
       ghostDialog,
       isAlterSchema,
