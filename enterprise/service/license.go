@@ -20,12 +20,12 @@ type LicenseService struct {
 }
 
 // Claims creates a struct that will be encoded to a JWT.
-// We add jwt.StandardClaims as an embedded type, to provide fields like name.
+// We add jwt.RegisteredClaims as an embedded type, to provide fields like name.
 type Claims struct {
 	InstanceCount int    `json:"instanceCount"`
 	Trialing      bool   `json:"trialing"`
 	Plan          string `json:"plan"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // NewLicenseService will create a new enterprise license service.
@@ -123,8 +123,8 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 
 	license := &enterpriseAPI.License{
 		InstanceCount: instanceCount,
-		ExpiresTs:     claims.ExpiresAt,
-		IssuedTs:      claims.IssuedAt,
+		ExpiresTs:     claims.ExpiresAt.Unix(),
+		IssuedTs:      claims.IssuedAt.Unix(),
 		Plan:          planType,
 		Subject:       claims.Subject,
 		Trialing:      claims.Trialing,
