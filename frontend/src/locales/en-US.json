@@ -854,7 +854,9 @@
         "retention-period": "Retention period(days)"
       }
     },
-    "backup-policy-violation": "Backup policy violation"
+    "backup-policy-violation": "Backup policy violation",
+    "sync-at": "Sync at {time}",
+    "not-found": "Not found"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
