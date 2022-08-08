@@ -78,6 +78,7 @@
               <span v-else class="tooltip whitespace-nowrap">
                 {{ $t("database.version-control-enabled") }}
               </span>
+
               <heroicons-outline:collection
                 class="w-4 h-4 text-control hover:text-control-hover"
               />
