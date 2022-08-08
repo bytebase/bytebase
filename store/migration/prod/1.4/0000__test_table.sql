@@ -1,4 +1,4 @@
 CREATE TABLE testTable (
-    id SERIAL PRIMARY KEY,
+    id INTEGER,
     name TEXT
 );
