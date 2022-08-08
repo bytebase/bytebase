@@ -232,6 +232,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor()
 		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
 
+		statementTypeExecutor := NewTaskCheckStatementTypeExecutor()
+		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
+
 		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor()
 		taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
 
