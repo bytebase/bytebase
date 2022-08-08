@@ -855,7 +855,9 @@
         "retention-period": "保留时长（天）"
       }
     },
-    "backup-policy-violation": "违反了备份策略"
+    "backup-policy-violation": "违反了备份策略",
+    "sync-at": "同步于 {time}",
+    "not-found": "未找到"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
