@@ -46,10 +46,10 @@ const (
 )
 
 // Claims creates a struct that will be encoded to a JWT.
-// We add jwt.StandardClaims as an embedded type, to provide fields like name.
+// We add jwt.RegisteredClaims as an embedded type, to provide fields like name.
 type Claims struct {
 	Name string `json:"name"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 func getPrincipalIDContextKey() string {
@@ -92,11 +92,11 @@ func generateToken(user *api.Principal, aud string, expirationTime time.Time, se
 	// Create the JWT claims, which includes the username and expiry time.
 	claims := &Claims{
 		Name: user.Name,
-		StandardClaims: jwt.StandardClaims{
-			Audience: aud,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Audience: jwt.ClaimStrings{aud},
 			// In JWT, the expiry time is expressed as unix milliseconds.
-			ExpiresAt: expirationTime.Unix(),
-			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    issuer,
 			Subject:   strconv.Itoa(user.ID),
 		},
@@ -199,7 +199,7 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 			return nil, fmt.Errorf("unexpected access token kid=%v", t.Header["kid"])
 		})
 
-		if claims.Audience != fmt.Sprintf(accessTokenAudienceFmt, mode) {
+		if !audienceContains(claims.Audience, fmt.Sprintf(accessTokenAudienceFmt, mode)) {
 			return echo.NewHTTPError(http.StatusUnauthorized,
 				fmt.Sprintf("Invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 					claims.Audience,
@@ -207,7 +207,7 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 				))
 		}
 
-		generateToken := time.Until(time.Unix(claims.ExpiresAt, 0)) < refreshThresholdDuration
+		generateToken := time.Until(claims.ExpiresAt.Time) < refreshThresholdDuration
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
@@ -266,7 +266,7 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalID)).SetInternal(err)
 					}
 
-					if refreshTokenClaims.Audience != fmt.Sprintf(refreshTokenAudienceFmt, mode) {
+					if !audienceContains(refreshTokenClaims.Audience, fmt.Sprintf(refreshTokenAudienceFmt, mode)) {
 						return echo.NewHTTPError(http.StatusUnauthorized,
 							fmt.Sprintf("Invalid refresh token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 								refreshTokenClaims.Audience,
@@ -302,4 +302,13 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 			Internal: err,
 		}
 	}
+}
+
+func audienceContains(audience jwt.ClaimStrings, token string) bool {
+	for _, v := range audience {
+		if v == token {
+			return true
+		}
+	}
+	return false
 }
