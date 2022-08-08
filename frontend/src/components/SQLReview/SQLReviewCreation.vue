@@ -78,6 +78,7 @@ import {
   Environment,
   RuleTemplate,
   TEMPLATE_LIST,
+  convertToCategoryList,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
 import {
@@ -145,15 +146,31 @@ const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   selectedEnvironment: props.selectedEnvironment,
-  selectedRuleList: props.selectedRuleList.length
-    ? [...props.selectedRuleList]
-    : [...TEMPLATE_LIST[DEFAULT_TEMPLATE_INDEX].ruleList],
+  selectedRuleList: [...props.selectedRuleList],
   ruleUpdated: false,
   showAlertModal: false,
   showFeatureModal: false,
   templateIndex: props.policyId ? -1 : DEFAULT_TEMPLATE_INDEX,
   pendingApplyTemplateIndex: -1,
 });
+
+const onTemplateApply = (index: number) => {
+  if (index < 0 || index >= TEMPLATE_LIST.length) {
+    return;
+  }
+  state.templateIndex = index;
+  state.pendingApplyTemplateIndex = -1;
+
+  const categoryList = convertToCategoryList(TEMPLATE_LIST[index].ruleList);
+  state.selectedRuleList = categoryList.reduce((res, category) => {
+    res.push(...category.ruleList);
+    return res;
+  }, [] as RuleTemplate[]);
+};
+
+if (state.selectedRuleList.length === 0) {
+  onTemplateApply(DEFAULT_TEMPLATE_INDEX);
+}
 
 const availableEnvironmentList = computed((): Environment[] => {
   const environmentList = useEnvironmentList(["NORMAL"]);
@@ -244,15 +261,6 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
 
 const onEnvChange = (env: Environment) => {
   state.selectedEnvironment = env;
-};
-
-const onTemplateApply = (index: number) => {
-  if (index < 0 || index >= TEMPLATE_LIST.length) {
-    return;
-  }
-  state.templateIndex = index;
-  state.pendingApplyTemplateIndex = -1;
-  state.selectedRuleList = [...TEMPLATE_LIST[index].ruleList];
 };
 
 const tryApplyTemplate = (index: number) => {

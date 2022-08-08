@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :id="selectedRule.type.replace(/\./g, '-')">
     <div
       class="flex justify-center items-center py-4 px-2 group cursor-pointer hover:bg-gray-100"
       :class="active ? 'bg-gray-100' : ''"
