@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
 
 	// install mysql driver.
@@ -25,11 +26,17 @@ func getDatabase(u *dburl.URL) string {
 func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 	var dbType db.Type
 	var pgInstanceDir string
+	var resourceDir string
 	switch u.Driver {
 	case "mysql":
 		dbType = db.MySQL
-	// dburl.Parse() do the job of parsing 'pg', 'postgresql' and 'pgsql' to 'postgres'.
-	// https://pkg.go.dev/github.com/xo/dburl@v0.9.1#hdr-Protocol_Schemes_and_Aliases
+		// dburl.Parse() do the job of parsing 'pg', 'postgresql' and 'pgsql' to 'postgres'.
+		// https://pkg.go.dev/github.com/xo/dburl@v0.9.1#hdr-Protocol_Schemes_and_Aliases
+		resourceDir = os.TempDir()
+		fmt.Println(resourceDir)
+		if err := mysqlutil.Install(resourceDir); err != nil {
+			return nil, fmt.Errorf("cannot install mysqlutil in directory %s, error: %w", resourceDir, err)
+		}
 	case "postgres":
 		dbType = db.Postgres
 		pgInstance, err := postgres.Install(os.TempDir(), "" /* pgDataDir */, "" /* pgUser */)
@@ -44,7 +51,10 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 	driver, err := db.Open(
 		ctx,
 		dbType,
-		db.DriverConfig{PgInstanceDir: pgInstanceDir},
+		db.DriverConfig{
+			PgInstanceDir: pgInstanceDir,
+			ResourceDir:   resourceDir,
+		},
 		db.ConnectionConfig{
 			Host:     u.Hostname(),
 			Port:     u.Port(),
