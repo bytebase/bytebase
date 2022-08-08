@@ -51,6 +51,17 @@
       <BBTableCell v-if="showProjectColumn" class="w-[15%]">
         <div class="flex flex-row space-x-2 items-center">
           <div>{{ projectName(database.project) }}</div>
+          <div
+            v-if="
+              mode === 'ALL_SHORT' && database.project.tenantMode === 'TENANT'
+            "
+            class="tooltip-wrapper"
+          >
+            <span class="tooltip whitespace-nowrap">
+              {{ $t("project.mode.tenant") }}
+            </span>
+            <TenantIcon class="w-4 h-4 text-control" />
+          </div>
           <div class="tooltip-wrapper">
             <svg
               v-if="database.project.workflowType == 'UI'"
@@ -61,7 +72,10 @@
               xmlns="http://www.w3.org/2000/svg"
             ></svg>
             <template v-else-if="database.project.workflowType == 'VCS'">
-              <span class="tooltip whitespace-nowrap">
+              <span v-if="mode === 'ALL_SHORT'" class="tooltip w-40">
+                {{ $t("alter-schema.vcs-info") }}
+              </span>
+              <span v-else class="tooltip whitespace-nowrap">
                 {{ $t("database.version-control-enabled") }}
               </span>
               <heroicons-outline:collection
@@ -186,6 +200,7 @@ import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
+import TenantIcon from "./TenantIcon.vue";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
