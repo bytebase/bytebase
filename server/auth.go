@@ -142,7 +142,11 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				// Create a new user if not exist
 				if user == nil {
 					if userInfo.PublicEmail == "" {
-						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.github.com/en/account-and-profile")
+						profileLink := "https://docs.github.com/en/account-and-profile"
+						if authProvider == api.PrincipalAuthProviderGitlabSelfHost {
+							profileLink = "https://docs.gitlab.com/ee/user/profile/#set-your-public-email"
+						}
+						return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Please configure your public email first, %s.", profileLink))
 					}
 					// If the user logins via VCS for the first time, we will generate a random
 					// password. The random password is supposed to be not guessable. If user wants
