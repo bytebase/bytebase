@@ -91,6 +91,8 @@ func (*TaskCheckStatementTypeExecutor) Run(ctx context.Context, server *Server, 
 				})
 			}
 		}
+	default:
+		return nil, common.Errorf(common.Invalid, "invalid check statement type task type: %s", task.Type)
 	}
 
 	if len(result) == 0 {
