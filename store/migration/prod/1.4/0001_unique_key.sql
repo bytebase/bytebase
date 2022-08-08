@@ -1,0 +1,1 @@
+ALTER TABLE testTable ADD CONSTRAINT uk_id_name UNIQUE (id, name);
