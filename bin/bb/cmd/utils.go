@@ -39,7 +39,7 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 		dbType = db.Postgres
 		pgInstance, err := postgres.Install(resourceDir, "" /* pgDataDir */, "" /* pgUser */)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot install postgres in directory %q, error: %w", resourceDir, err)
 		}
 		pgInstanceDir = pgInstance.BaseDir
 	default:
