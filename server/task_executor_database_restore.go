@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -135,14 +134,13 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instanc
 		backupPath = filepath.Join(dataDir, backupPath)
 	}
 
-	f, err := os.OpenFile(backupPath, os.O_RDONLY, os.ModePerm)
+	f, err := os.Open(backupPath)
 	if err != nil {
 		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
 	}
 	defer f.Close()
-	sc := bufio.NewScanner(f)
 
-	if err := driver.Restore(ctx, sc); err != nil {
+	if err := driver.Restore(ctx, f); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)
 	}
 	return nil
