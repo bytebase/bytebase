@@ -95,8 +95,8 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	PolicyID int `json:"policyID,omitempty"`
 }
 
-// TaskCheckStatementTypePayload is the task check payload for SQL type.
-type TaskCheckStatementTypePayload struct {
+// TaskCheckDatabaseStatementTypePayload is the task check payload for SQL type.
+type TaskCheckDatabaseStatementTypePayload struct {
 	Statement string  `json:"statement,omitempty"`
 	DbType    db.Type `json:"dbType,omitempty"`
 }

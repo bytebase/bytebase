@@ -361,7 +361,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		if database.Instance.Engine == db.Postgres {
-			payload, err := json.Marshal(api.TaskCheckStatementTypePayload{
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
 				Statement: statement,
 				DbType:    database.Instance.Engine,
 			})

@@ -235,6 +235,11 @@ export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
   // more to come
 };
 
+export type TaskCheckDatabaseStatementTypePayload = {
+  statement: string;
+  dbType: string;
+};
+
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
 
 export type TaskCheckNamespace = "bb.advisor" | "bb.core";

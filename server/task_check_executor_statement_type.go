@@ -40,7 +40,7 @@ func (*TaskCheckStatementTypeExecutor) Run(ctx context.Context, server *Server, 
 		}, nil
 	}
 
-	payload := &api.TaskCheckStatementTypePayload{}
+	payload := &api.TaskCheckDatabaseStatementTypePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Errorf(common.Invalid, "invalid check statement type payload: %w", err)
 	}
