@@ -13,6 +13,9 @@ type PolicyType string
 // PipelineApprovalValue is value for approval policy.
 type PipelineApprovalValue string
 
+// AssigneeChoiceValue is the value for assignee choice policy.
+type AssigneeChoiceValue string
+
 // BackupPlanPolicySchedule is value for backup plan policy.
 type BackupPlanPolicySchedule string
 
@@ -22,6 +25,8 @@ const (
 
 	// PolicyTypePipelineApproval is the approval policy type.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
+	// PolicyTypeAssigneeChoice is the list where the assignee is chosen.
+	PolicyTypeAssigneeChoice PolicyType = "bb.policy.assignee-choice"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
 	// PolicyTypeSQLReview is the sql review policy type.
@@ -31,6 +36,11 @@ const (
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
+
+	// AssigneeChoiceValueWorkspaceOrDBA means the assignee is selected from the workspace owners or DBAs.
+	AssigneeChoiceValueWorkspaceOrDBA AssigneeChoiceValue = "WORKSPACE_OWNER_OR_DBA"
+	// AssigneeChoiceValueProject means the assignee is selected from the project owners.
+	AssigneeChoiceValueProject AssigneeChoiceValue = "PROJECT_OWNER"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
 	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
@@ -44,6 +54,7 @@ var (
 	// PolicyTypes is a set of all policy types.
 	PolicyTypes = map[PolicyType]bool{
 		PolicyTypePipelineApproval: true,
+		PolicyTypeAssigneeChoice:   true,
 		PolicyTypeBackupPlan:       true,
 		PolicyTypeSQLReview:        true,
 	}
@@ -136,6 +147,28 @@ func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, e
 	return &pa, nil
 }
 
+// AssigneeChoicePolicy is the policy configuration for the assignee choice.
+type AssigneeChoicePolicy struct {
+	Value AssigneeChoiceValue `json:"value"`
+}
+
+func (p AssigneeChoicePolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// UnmarshalAssigneeChoicePolicy will unmarshal payload to assignee choice policy.
+func UnmarshalAssigneeChoicePolicy(payload string) (*AssigneeChoicePolicy, error) {
+	var ac AssigneeChoicePolicy
+	if err := json.Unmarshal([]byte(payload), &ac); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal assignee choice policy %q, error: %w", payload, err)
+	}
+	return &ac, nil
+}
+
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {
 	Schedule BackupPlanPolicySchedule `json:"schedule"`
@@ -187,6 +220,14 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
+	case PolicyTypeAssigneeChoice:
+		ac, err := UnmarshalAssigneeChoicePolicy(payload)
+		if err != nil {
+			return err
+		}
+		if ac.Value != AssigneeChoiceValueWorkspaceOrDBA && ac.Value != AssigneeChoiceValueProject {
+			return fmt.Errorf("invalid assignee choice value: %q", payload)
+		}
 	case PolicyTypeBackupPlan:
 		bp, err := UnmarshalBackupPlanPolicy(payload)
 		if err != nil {
@@ -214,6 +255,10 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 	case PolicyTypePipelineApproval:
 		return PipelineApprovalPolicy{
 			Value: PipelineApprovalValueManualAlways,
+		}.String()
+	case PolicyTypeAssigneeChoice:
+		return AssigneeChoicePolicy{
+			Value: AssigneeChoiceValueWorkspaceOrDBA,
 		}.String()
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
