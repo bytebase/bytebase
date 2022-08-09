@@ -31,7 +31,7 @@ func TestDump(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@127.0.0.1:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestDump,
 		},

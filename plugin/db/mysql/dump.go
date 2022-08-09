@@ -120,6 +120,10 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if err := mysqldumpCmd.Start(); err != nil {
 		return "", fmt.Errorf("mysqldump command failed, error: %w", err)
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+	defer cancel()
+
 loop:
 	for {
 		select {
@@ -143,6 +147,7 @@ loop:
 
 // unlockTables runs `UNLOCK TABLES`.
 func unlockTables(ctx context.Context, conn *sql.Conn) error {
+	log.Debug("Unlock tables")
 	if _, err := conn.ExecContext(ctx, "UNLOCK TABLES;"); err != nil {
 		return err
 	}
