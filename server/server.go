@@ -105,17 +105,17 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Display config
-	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", prof.Mode)
-	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
-	fmt.Printf("datastore=%s:%d\n", prof.BackendHost, prof.DatastorePort)
-	fmt.Printf("frontend=%s:%d\n", prof.FrontendHost, prof.FrontendPort)
-	fmt.Printf("demoDataDir=%s\n", prof.DemoDataDir)
-	fmt.Printf("readonly=%t\n", prof.Readonly)
-	fmt.Printf("demo=%t\n", prof.Demo)
-	fmt.Printf("debug=%t\n", prof.Debug)
-	fmt.Printf("dataDir=%s\n", prof.DataDir)
-	fmt.Println("-----Config END-------")
+	log.Info("-----Config BEGIN-----")
+	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
+	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
+	log.Info(fmt.Sprintf("datastore=%s:%d", prof.BackendHost, prof.DatastorePort))
+	log.Info(fmt.Sprintf("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort))
+	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
+	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
+	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
+	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
+	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
+	log.Info("-----Config END-------")
 
 	serverStarted := false
 	defer func() {
@@ -138,13 +138,13 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
 	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
-	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
-	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
+	log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
 	log.Info("-----Embedded Postgres Config END-----")
 	log.Info("Preparing embedded PostgreSQL instance...")
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH))
+	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
 	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
 	if err != nil {
 		return nil, err
