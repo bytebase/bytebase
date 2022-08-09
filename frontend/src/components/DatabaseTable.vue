@@ -24,19 +24,25 @@
             :can-remove="false"
             class="text-xs"
           />
-          <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
-            <span
-              class="tooltip text-justify w-[75%] transform -translate-x-[50%] -translate-y-[1.5rem]"
-            >
+          <NTooltip
+            v-if="!showMiscColumn && database.syncStatus != 'OK'"
+            placement="right"
+          >
+            <template #trigger>
+              <heroicons-outline:exclamation-circle
+                class="w-5 h-5 text-error"
+              />
+            </template>
+
+            <div class="whitespace-nowrap">
               {{
                 $t("database.last-sync-status-long", [
                   database.syncStatus,
                   humanizeTs(database.lastSuccessfulSyncTs),
                 ])
               }}
-            </span>
-            <heroicons-outline:exclamation-circle class="w-5 h-5 text-error" />
-          </div>
+            </div>
+          </NTooltip>
         </div>
       </BBTableCell>
       <BBTableCell class="w-[10%]">
