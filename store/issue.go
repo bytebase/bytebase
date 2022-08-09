@@ -567,8 +567,9 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 			payload
 		FROM issue
 		WHERE ` + strings.Join(where, " AND ")
+	query += " ORDER BY updated_ts DESC"
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
+		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, query, args...)

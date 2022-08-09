@@ -7,7 +7,7 @@ import {
   waitForTargetElement,
 } from "./utils";
 import * as storage from "./storage";
-import { DialogPosition, GuideData, StepData } from "./types";
+import { Position, GuideData, StepData } from "./types";
 import { getStringFromI18NText, nextI18NText } from "./i18n";
 
 // validateStepData will check if the step data is valid
@@ -55,7 +55,7 @@ export const showGuideDialog = async (
 
 const renderHighlight = (targetElement: HTMLElement, guideStep: StepData) => {
   const highlightWrapper = document.createElement("div");
-  highlightWrapper.className = "bb-guide-highlight-wrapper";
+  highlightWrapper.className = "bb-demo-element bb-guide-highlight-wrapper";
   document.body.appendChild(highlightWrapper);
   const bounding = getElementBounding(targetElement);
   highlightWrapper.style.top = `${bounding.top}px`;
@@ -67,7 +67,7 @@ const renderHighlight = (targetElement: HTMLElement, guideStep: StepData) => {
     const maxZIndex = getElementMaxZIndex(targetElement);
     highlightWrapper.classList.add("covered");
     const coverElement = document.createElement("div");
-    coverElement.className = "bb-guide-cover-wrapper";
+    coverElement.className = "bb-demo-element bb-guide-cover-wrapper";
     coverElement.style.zIndex = `${maxZIndex - 1}`;
     document.body.appendChild(coverElement);
     targetElement.classList.add("bb-guide-target-element");
@@ -82,29 +82,29 @@ const renderGuideDialog = (
   const guideStep = guideData.steps[stepIndex];
   const { description, title, type } = guideStep;
   const guideDialogDiv = document.createElement("div");
-  guideDialogDiv.className = "bb-guide-dialog";
+  guideDialogDiv.className = "bb-demo-element bb-guide-dialog";
   adjustGuideDialogPosition(targetElement, guideDialogDiv, guideStep.position);
 
   const closeButton = document.createElement("button");
-  closeButton.className = "bb-guide-close-button";
+  closeButton.className = "bb-demo-element bb-guide-close-button";
   closeButton.innerHTML = "&times;";
   closeButton.addEventListener("click", () => removeGuideDialog());
   guideDialogDiv.appendChild(closeButton);
 
   const titleElement = document.createElement("p");
-  titleElement.className = "bb-guide-title-text";
+  titleElement.className = "bb-demo-element bb-guide-title-text";
   titleElement.innerText = getStringFromI18NText(title);
   guideDialogDiv.appendChild(titleElement);
   const descriptionElement = document.createElement("p");
-  descriptionElement.className = "bb-guide-description-text";
+  descriptionElement.className = "bb-demo-element bb-guide-description-text";
   descriptionElement.innerText = getStringFromI18NText(description);
   guideDialogDiv.appendChild(descriptionElement);
 
   if (!guideStep.hideNextButton) {
     const buttonsContainer = document.createElement("div");
-    buttonsContainer.className = "bb-guide-btns-container";
+    buttonsContainer.className = "bb-demo-element bb-guide-btns-container";
     const nextButton = document.createElement("button");
-    nextButton.className = "button";
+    nextButton.className = "bb-demo-element button";
     if (stepIndex === guideData.steps.length - 1) {
       nextButton.innerText = "Done";
     } else {
@@ -162,7 +162,7 @@ const renderGuideDialog = (
 const adjustGuideDialogPosition = (
   targetElement: HTMLElement,
   guideDialogDiv: HTMLElement,
-  position: DialogPosition = "bottom"
+  position: Position = "bottom"
 ) => {
   const bounding = getElementBounding(targetElement);
   const guideDialogBounding = getElementBounding(guideDialogDiv);
