@@ -422,8 +422,6 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from src, which is a full backup.
 	Restore(ctx context.Context, src io.Reader) error
-	// RestoreTx restores the database from src in the given transaction.
-	RestoreTx(ctx context.Context, tx *sql.Tx, src io.Reader) error
 }
 
 // Register makes a database driver available by the provided type.
