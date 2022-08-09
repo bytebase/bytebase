@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check SQL
-        uses: bytebase/sql-review-action@0.0.1
+        uses: bytebase/sql-review-action@0.0.2
         with:
-          override-file-path: ./sql-review-override.yml # Optional, we can only provide the template id
+          override-file-path: ./sql-review-override.yml
           database-type: POSTGRES
