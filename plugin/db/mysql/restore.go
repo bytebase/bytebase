@@ -211,7 +211,7 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup io.Reader, sta
 		// Create the pitr database.
 		"CREATE DATABASE `%s`;"+
 		// Change to the pitr database.
-		"USE `%s`;"+
+		"USE `%s`;",
 		pitrDatabaseName, pitrDatabaseName)
 
 	db, err := driver.GetDBConnection(ctx, "")
