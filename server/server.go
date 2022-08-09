@@ -106,15 +106,15 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// Display config
 	log.Info("-----Config BEGIN-----")
-	log.Infof("mode=%s", prof.Mode)
-	log.Infof("server=%s:%d", prof.BackendHost, prof.BackendPort)
-	log.Infof("datastore=%s:%d", prof.BackendHost, prof.DatastorePort)
-	log.Infof("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort)
-	log.Infof("demoDataDir=%s", prof.DemoDataDir)
-	log.Infof("readonly=%t", prof.Readonly)
-	log.Infof("demo=%t", prof.Demo)
-	log.Infof("debug=%t", prof.Debug)
-	log.Infof("dataDir=%s", prof.DataDir)
+	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
+	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
+	log.Info(fmt.Sprintf("datastore=%s:%d", prof.BackendHost, prof.DatastorePort))
+	log.Info(fmt.Sprintf("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort))
+	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
+	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
+	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
+	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
+	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
 	log.Info("-----Config END-------")
 
 	serverStarted := false

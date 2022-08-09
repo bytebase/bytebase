@@ -58,10 +58,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// Display config
 	log.Info("-----Config BEGIN-----")
-	log.Infof("mode=%s", prof.Mode)
-	log.Infof("server=%s:%d", prof.BackendHost, prof.BackendPort)
-	log.Infof("debug=%t", prof.Debug)
-	log.Infof("workspaceID=%s", prof.WorkspaceID)
+	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
+	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
+	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
+	log.Info(fmt.Sprintf("workspaceID=%s", prof.WorkspaceID))
 	log.Info("-----Config END-------")
 
 	serverStarted := false

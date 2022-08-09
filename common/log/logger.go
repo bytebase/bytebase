@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"os"
 
 	"go.uber.org/zap"
@@ -44,11 +43,6 @@ func Debug(msg string, fields ...zap.Field) {
 // Info wraps the zap Logger's Info method.
 func Info(msg string, fields ...zap.Field) {
 	gl.Info(msg, fields...)
-}
-
-// Infof wraps the zap Logger's Info method with inline formatting.
-func Infof(format string, a ...interface{}) {
-	gl.Info(fmt.Sprintf(format, a...))
 }
 
 // Warn wraps the zap Logger's Warn method.
