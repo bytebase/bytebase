@@ -1,6 +1,6 @@
 import { merge } from "lodash-es";
+import { DemoData, GuideData, HintData } from "./types";
 import { validateStepData } from "./guide";
-import { GuideData, HintData } from "./types";
 
 const hintCache = new Map<string, HintData[]>();
 
@@ -29,4 +29,9 @@ export const fetchHintDataWithName = async (hintName: string) => {
   hintCache.set(hintName, hintData);
 
   return hintData;
+};
+
+export const fetchDemoDataWithName = async (demoName: string) => {
+  const demoData = (await fetchJSONData(`/${demoName}/demo.json`)) as DemoData;
+  return demoData;
 };

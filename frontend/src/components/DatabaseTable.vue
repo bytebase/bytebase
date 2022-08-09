@@ -45,7 +45,10 @@
           </NTooltip>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showProjectColumn" class="w-[20%]">
+      <BBTableCell class="w-[10%]">
+        {{ database.schemaVersion }}
+      </BBTableCell>
+      <BBTableCell v-if="showProjectColumn" class="w-[15%]">
         <div class="flex flex-row space-x-2 items-center">
           <div>{{ projectName(database.project) }}</div>
           <div class="tooltip-wrapper">
@@ -80,21 +83,49 @@
         </div>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-[8%]">
-        <span
-          :class="{
-            'text-error': database.syncStatus === 'NOT_FOUND',
-          }"
-        >
-          {{ database.syncStatus }}
-        </span>
-      </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-[14%]">
-        {{ humanizeTs(database.lastSuccessfulSyncTs) }}
+        <NTooltip>
+          <template #trigger>
+            <div class="w-full flex justify-center">
+              <div
+                class="flex items-center justify-center rounded-full select-none w-5 h-5 overflow-hidden text-white font-medium text-base"
+                :class="
+                  database.syncStatus === 'OK' ? 'bg-success' : 'bg-error'
+                "
+              >
+                <template v-if="database.syncStatus === 'OK'">
+                  <heroicons-solid:check class="w-4 h-4" />
+                </template>
+                <template v-else>
+                  <span
+                    class="h-2 w-2 flex items-center justify-center"
+                    aria-hidden="true"
+                    >!</span
+                  >
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <span>
+            <template v-if="database.syncStatus === 'OK'">
+              {{
+                $t("database.sync-at", {
+                  time: humanizeTs(database.lastSuccessfulSyncTs),
+                })
+              }}
+            </template>
+            <template v-else>
+              {{ $t("database.not-found") }}
+            </template>
+          </span>
+        </NTooltip>
       </BBTableCell>
       <BBTableCell v-if="showSQLEditorLink" class="w-[8%]">
-        <button class="btn-icon" @click.stop="gotoSQLEditor(database)">
-          <heroicons-outline:terminal class="w-4 h-4" />
-        </button>
+        <div class="w-full flex justify-center">
+          <button class="btn-icon" @click.stop="gotoSQLEditor(database)">
+            <heroicons-outline:terminal class="w-4 h-4" />
+          </button>
+        </div>
       </BBTableCell>
     </template>
 
@@ -147,6 +178,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { NTooltip } from "naive-ui";
 import { connectionSlug, databaseSlug, isPITRDatabase } from "../utils";
 import type { Database } from "../types";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
@@ -245,6 +277,9 @@ const columnListMap = computed(() => {
           title: t("common.name"),
         },
         {
+          title: t("common.schema-version"),
+        },
+        {
           title: t("common.project"),
         },
         {
@@ -254,10 +289,8 @@ const columnListMap = computed(() => {
           title: t("common.instance"),
         },
         {
-          title: t("db.sync-status"),
-        },
-        {
-          title: t("db.last-successful-sync"),
+          title: t("database.last-sync-status"),
+          center: true,
         },
       ],
     ],
@@ -266,6 +299,9 @@ const columnListMap = computed(() => {
       [
         {
           title: t("common.name"),
+        },
+        {
+          title: t("common.schema-version"),
         },
         {
           title: t("common.project"),
@@ -285,13 +321,14 @@ const columnListMap = computed(() => {
           title: t("common.name"),
         },
         {
+          title: t("common.schema-version"),
+        },
+        {
           title: t("common.project"),
         },
         {
-          title: t("db.sync-status"),
-        },
-        {
-          title: t("db.last-successful-sync"),
+          title: t("database.last-sync-status"),
+          center: true,
         },
       ],
     ],
@@ -302,16 +339,17 @@ const columnListMap = computed(() => {
           title: t("common.name"),
         },
         {
+          title: t("common.schema-version"),
+        },
+        {
           title: t("common.environment"),
         },
         {
           title: t("common.instance"),
         },
         {
-          title: t("db.sync-status"),
-        },
-        {
-          title: t("db.last-successful-sync"),
+          title: t("database.last-sync-status"),
+          center: true,
         },
       ],
     ],
@@ -320,6 +358,9 @@ const columnListMap = computed(() => {
       [
         {
           title: t("common.name"),
+        },
+        {
+          title: t("common.schema-version"),
         },
         {
           title: t("common.environment"),
@@ -353,7 +394,7 @@ const columnList = computed(() => {
   if (showSQLEditorLink.value) {
     // Use cloneDeep, otherwise it will alter the one in columnListMap
     list = cloneDeep(list);
-    list.push({ title: t("sql-editor.self") });
+    list.push({ title: t("sql-editor.self"), center: true });
   }
 
   if (props.showSelectionColumn) {

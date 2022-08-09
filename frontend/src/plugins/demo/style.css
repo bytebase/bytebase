@@ -13,7 +13,7 @@
 .bb-guide-highlight-wrapper {
   @apply absolute rounded pointer-events-none;
   box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 2px;
-  z-index: 999999;
+  z-index: 9999;
 }
 
 .bb-guide-highlight-wrapper.covered {
@@ -24,7 +24,7 @@
 .bb-guide-dialog,
 .bb-hint-dialog {
   @apply fixed bg-white w-auto m-1 my-2 p-3 px-5 text-slate-900 rounded-lg text-left -top-full -left-full;
-  z-index: 1000000;
+  z-index: 10000;
   max-width: 300px;
   box-shadow: 0 4px 36px rgb(33 33 33 / 40%);
   font-size: 15px;
@@ -123,11 +123,11 @@
 
 .bb-hint-wrapper {
   @apply fixed rounded cursor-pointer overflow-hidden;
-  z-index: 999999;
+  z-index: 9999;
 }
 
 .bb-hint-wrapper.covered {
-  box-shadow: 0 3px 30px rgb(33 33 33 / 30%), rgb(0 0 0 / 30%) 0px 0px 0px 100vw !important;
+  box-shadow: 0 3px 30px rgb(33 33 33 / 30%), rgb(0 0 0 / 30%) 0px 0px 0px 100vw;
 }
 
 .bb-hint-wrapper.shield {

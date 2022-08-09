@@ -1,9 +1,6 @@
 <template>
   <div class="w-full flex flex-col justify-start" :class="props.className">
-    <p
-      class="w-full mt-1 text-sm text-gray-500"
-      :class="props.createInstanceFlag ? 'max-w-xl' : ''"
-    >
+    <p class="w-full mt-1 text-sm text-gray-500">
       {{
         props.dataSourceType === "ADMIN"
           ? $t("instance.sentence.create-admin-user")
