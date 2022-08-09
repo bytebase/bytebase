@@ -7,6 +7,7 @@
     :right-bordered="bordered"
     :top-bordered="bordered"
     :bottom-bordered="bordered"
+    header-class="capitalize"
     data-label="bb-database-table"
     @click-row="clickDatabase"
   >
@@ -37,6 +38,16 @@
             </span>
             <heroicons-outline:exclamation-circle class="w-5 h-5 text-error" />
           </div>
+          <button
+            v-if="showSQLEditorLink"
+            class="btn-icon tooltip-wrapper"
+            @click.stop="gotoSQLEditor(database)"
+          >
+            <heroicons-outline:terminal class="w-4 h-4" />
+            <div class="tooltip whitespace-nowrap">
+              {{ $t("sql-editor.self") }}
+            </div>
+          </button>
         </div>
       </BBTableCell>
       <BBTableCell class="w-[10%]">
@@ -77,9 +88,9 @@
         </div>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-[8%]">
-        <NTooltip>
-          <template #trigger>
-            <div class="w-full flex justify-center">
+        <div class="w-full flex justify-center">
+          <NTooltip placement="left">
+            <template #trigger>
               <div
                 class="flex items-center justify-center rounded-full select-none w-5 h-5 overflow-hidden text-white font-medium text-base"
                 :class="
@@ -97,28 +108,25 @@
                   >
                 </template>
               </div>
-            </div>
-          </template>
+            </template>
 
-          <span>
-            <template v-if="database.syncStatus === 'OK'">
-              {{
-                $t("database.sync-at", {
-                  time: humanizeTs(database.lastSuccessfulSyncTs),
-                })
-              }}
-            </template>
-            <template v-else>
-              {{ $t("database.not-found") }}
-            </template>
-          </span>
-        </NTooltip>
-      </BBTableCell>
-      <BBTableCell v-if="showSQLEditorLink" class="w-[8%]">
-        <div class="w-full flex justify-center">
-          <button class="btn-icon" @click.stop="gotoSQLEditor(database)">
-            <heroicons-outline:terminal class="w-4 h-4" />
-          </button>
+            <span>
+              <template v-if="database.syncStatus === 'OK'">
+                {{
+                  $t("database.synced-at", {
+                    time: humanizeTs(database.lastSuccessfulSyncTs),
+                  })
+                }}
+              </template>
+              <template v-else>
+                {{
+                  $t("database.not-found-last-successful-sync-was", {
+                    time: humanizeTs(database.lastSuccessfulSyncTs),
+                  })
+                }}
+              </template>
+            </span>
+          </NTooltip>
         </div>
       </BBTableCell>
     </template>
@@ -173,13 +181,12 @@
 import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
+import { useI18n } from "vue-i18n";
 import { connectionSlug, databaseSlug, isPITRDatabase } from "../utils";
 import type { Database } from "../types";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import { cloneDeep } from "lodash-es";
-import { useI18n } from "vue-i18n";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -283,7 +290,7 @@ const columnListMap = computed(() => {
           title: t("common.instance"),
         },
         {
-          title: t("database.last-sync-status"),
+          title: t("database.sync-status"),
           center: true,
         },
       ],
@@ -321,7 +328,7 @@ const columnListMap = computed(() => {
           title: t("common.project"),
         },
         {
-          title: t("database.last-sync-status"),
+          title: t("database.sync-status"),
           center: true,
         },
       ],
@@ -342,7 +349,7 @@ const columnListMap = computed(() => {
           title: t("common.instance"),
         },
         {
-          title: t("database.last-sync-status"),
+          title: t("database.sync-status"),
           center: true,
         },
       ],
@@ -385,12 +392,6 @@ const showMiscColumn = computed(() => {
 
 const columnList = computed(() => {
   var list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
-  if (showSQLEditorLink.value) {
-    // Use cloneDeep, otherwise it will alter the one in columnListMap
-    list = cloneDeep(list);
-    list.push({ title: t("sql-editor.self"), center: true });
-  }
-
   if (props.showSelectionColumn) {
     list.unshift({ title: "" });
   }
