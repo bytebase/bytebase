@@ -44,7 +44,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir, payload.PointInTimeTs, server.profile.Mode); err != nil {
+	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir, *payload.PointInTimeTs, server.profile.Mode); err != nil {
 		log.Error("Failed to do PITR restore", zap.Error(err))
 		return true, nil, err
 	}
