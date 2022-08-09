@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/tests/fake"
 
 	"go.uber.org/zap"
@@ -44,6 +45,10 @@ func TestBackupRestoreBasic(t *testing.T) {
 	port := getTestPort(t.Name())
 	database := "backup_restore"
 	table := "backup_restore"
+
+	tmpDir := t.TempDir()
+	err := mysqlutil.Install(tmpDir)
+	a.NoError(err)
 
 	_, stop := resourcemysql.SetupTestInstance(t, port)
 	defer stop()
@@ -75,7 +80,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// make a full backup
-	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
+	driver, err := getTestMySQLDriverWithResourceDir(ctx, strconv.Itoa(port), database, tmpDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
