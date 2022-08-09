@@ -67,6 +67,8 @@ const (
 	TaskCheckDatabaseStatementCompatibility TaskCheckType = "bb.task-check.database.statement.compatibility"
 	// TaskCheckDatabaseStatementAdvise is the task check type for schema system review policy.
 	TaskCheckDatabaseStatementAdvise TaskCheckType = "bb.task-check.database.statement.advise"
+	// TaskCheckDatabaseStatementType is the task check type for statement type.
+	TaskCheckDatabaseStatementType TaskCheckType = "bb.task-check.database.statement.type"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
@@ -91,6 +93,12 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 
 	// SQL review special fields.
 	PolicyID int `json:"policyID,omitempty"`
+}
+
+// TaskCheckDatabaseStatementTypePayload is the task check payload for SQL type.
+type TaskCheckDatabaseStatementTypePayload struct {
+	Statement string  `json:"statement,omitempty"`
+	DbType    db.Type `json:"dbType,omitempty"`
 }
 
 // Namespace is the namespace for task check result.

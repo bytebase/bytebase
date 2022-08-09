@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -352,6 +353,25 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
 				Type:                    api.TaskCheckDatabaseStatementAdvise,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			}); err != nil {
+				return nil, err
+			}
+		}
+
+		if database.Instance.Engine == db.Postgres {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+				Statement: statement,
+				DbType:    database.Instance.Engine,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal statement type payload: %v, err: %w", task.Name, err)
+			}
+			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementType,
 				Payload:                 string(payload),
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 			}); err != nil {
