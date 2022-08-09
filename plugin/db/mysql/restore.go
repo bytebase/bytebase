@@ -207,15 +207,11 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 // TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
 func (driver *Driver) RestorePITR(ctx context.Context, fullBackup io.Reader, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	query := fmt.Sprintf(""+
+	stmt := fmt.Sprintf(""+
 		// Create the pitr database.
 		"CREATE DATABASE `%s`;"+
 		// Change to the pitr database.
-		"USE `%s`;"+
-		// Set this to ignore foreign key constraints, otherwise the recovery of the full backup may encounter
-		// wrong foreign key dependency order and fail.
-		// We should turn it on after we the restore the full backup.
-		"SET foreign_key_checks=OFF",
+		"USE `%s`;",
 		pitrDatabaseName, pitrDatabaseName)
 
 	db, err := driver.GetDBConnection(ctx, "")
@@ -223,26 +219,11 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup io.Reader, sta
 		return err
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query); err != nil {
+	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
 
-	if err := driver.RestoreTx(ctx, tx, fullBackup); err != nil {
-		return err
-	}
-
-	// The full backup is restored successfully, enable foreign key constraints as normal.
-	if _, err := tx.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if err := driver.Restore(ctx, fullBackup); err != nil {
 		return err
 	}
 
