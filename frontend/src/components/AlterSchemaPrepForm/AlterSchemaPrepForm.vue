@@ -1,7 +1,5 @@
 <template>
   <div class="mx-4 space-y-4 max-w-min overflow-x-hidden">
-    <VCSTipsInfo :project="state.project" />
-
     <div class="overflow-x-auto">
       <div class="mx-1 w-192">
         <template v-if="projectId">
@@ -65,34 +63,21 @@
           </template>
         </template>
         <template v-else>
-          <NTabs v-model:value="state.tab">
-            <NTabPane :tab="$t('project.mode.standard')" name="standard">
-              <!-- a simple table -->
-              <DatabaseTable
-                mode="ALL_SHORT"
-                :bordered="true"
-                :custom-click="true"
-                :database-list="standardProjectDatabaseList"
-                @select-database="selectDatabase"
-              />
-            </NTabPane>
-            <NTabPane :tab="$t('project.mode.tenant')" name="tenant">
-              <CommonTenantView
-                :state="state"
-                :database-list="databaseList"
-                :environment-list="environmentList"
-                @dismiss="cancel"
-              />
-            </NTabPane>
-            <template #suffix>
-              <BBTableSearch
-                v-if="state.tab === 'standard'"
-                class="m-px"
-                :placeholder="$t('database.search-database-name')"
-                @change-text="(text) => (state.searchText = text)"
-              />
-            </template>
-          </NTabs>
+          <aside class="flex justify-end mb-4">
+            <BBTableSearch
+              class="m-px"
+              :placeholder="$t('database.search-database-name')"
+              @change-text="(text) => (state.searchText = text)"
+            />
+          </aside>
+          <!-- a simple table -->
+          <DatabaseTable
+            mode="ALL_SHORT"
+            :bordered="true"
+            :custom-click="true"
+            :database-list="databaseList"
+            @select-database="selectDatabase"
+          />
         </template>
       </div>
     </div>
@@ -152,16 +137,13 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { allowGhostMigration, sortDatabaseList } from "@/utils";
-import VCSTipsInfo from "./VCSTipsInfo.vue";
 import ProjectStandardView, {
   State as ProjectStandardState,
 } from "./ProjectStandardView.vue";
 import ProjectTenantView, {
   State as ProjectTenantState,
 } from "./ProjectTenantView.vue";
-import CommonTenantView, {
-  State as CommonTenantState,
-} from "./CommonTenantView.vue";
+import { State as CommonTenantState } from "./CommonTenantView.vue";
 import GhostDialog from "./GhostDialog.vue";
 import {
   hasFeature,
@@ -177,7 +159,6 @@ type LocalState = ProjectStandardState &
   ProjectTenantState &
   CommonTenantState & {
     project?: Project;
-    tab: "standard" | "tenant";
     showFeatureModal: boolean;
     searchText: string;
   };
@@ -185,11 +166,9 @@ type LocalState = ProjectStandardState &
 export default defineComponent({
   name: "AlterSchemaPrepForm",
   components: {
-    VCSTipsInfo,
     DatabaseTable,
     ProjectStandardView,
     ProjectTenantView,
-    CommonTenantView,
     NTabs,
     NTabPane,
     GhostDialog,
@@ -226,7 +205,6 @@ export default defineComponent({
       project: props.projectId
         ? projectStore.getProjectById(props.projectId)
         : undefined,
-      tab: "standard",
       alterType: "SINGLE_DB",
       selectedDatabaseIdListForEnvironment: new Map(),
       tenantProjectId: undefined,
@@ -268,18 +246,6 @@ export default defineComponent({
       }
 
       return sortDatabaseList(cloneDeep(list), environmentList.value);
-    });
-
-    const standardProjectDatabaseList = computed(() => {
-      return databaseList.value.filter(
-        (db) => db.project.tenantMode !== "TENANT"
-      );
-    });
-
-    const tenantProjectDatabaseList = computed(() => {
-      return databaseList.value.filter(
-        (db) => db.project.tenantMode === "TENANT"
-      );
     });
 
     const flattenSelectedDatabaseIdList = computed(() => {
@@ -366,10 +332,6 @@ export default defineComponent({
     const showGenerateTenant = computed(() => {
       // True when a tenant project is selected and "MULTI_DB" is selected.
       if (isTenantProject.value && state.alterType === "MULTI_DB") {
-        return true;
-      }
-      // True when no project is selected and "Tenant" tab is selected.
-      if (!props.projectId && state.tab === "tenant") {
         return true;
       }
       return false;
@@ -491,8 +453,6 @@ export default defineComponent({
       isTenantProject,
       environmentList,
       databaseList,
-      standardProjectDatabaseList,
-      tenantProjectDatabaseList,
       showGenerateMultiDb,
       allowGenerateMultiDb,
       generateMultiDb,
