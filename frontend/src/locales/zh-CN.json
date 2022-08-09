@@ -858,7 +858,9 @@
     },
     "backup-policy-violation": "违反了备份策略",
     "synced-at": "同步于 {time}",
-    "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}"
+    "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}",
+    "view-unassigned-databases": "查看未分配的数据库",
+    "unassigned-databases": "未分配的数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -961,7 +963,7 @@
       "recent-activity": "近期@.lower:{'common.activities'}",
       "in-progress": "进行中",
       "recently-closed": "近期结束",
-      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于默认项目中，之后您可以再将他们转移到适当的项目中。",
+      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。",
       "no-db-prompt": "没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。"
     },
     "webhook": {
