@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 
 	"go.uber.org/zap"
 )
@@ -287,6 +288,16 @@ func (s *TaskScheduler) canTransitTaskStatus(ctx context.Context, task *api.Task
 
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !pass {
+				return false, nil
+			}
+		}
+
+		if instance.Engine == db.Postgres {
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementType, allowedStatus)
 			if err != nil {
 				return false, err
 			}
