@@ -34,14 +34,14 @@ func TestMigrate(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@127.0.0.1:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestMigrate01,
 		},
 		{
 			args: []string{
 				"migrate",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@127.0.0.1:%d/bytebase_test_todo", mysql.Port()),
 				"-c", `"
 	CREATE TABLE bytebase_test_todo.book (
 		id INTEGER PRIMARY KEY,
@@ -53,7 +53,7 @@ func TestMigrate(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@127.0.0.1:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestMigrate03,
 		},
