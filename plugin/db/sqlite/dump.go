@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
@@ -150,7 +149,7 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -176,6 +175,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores the database in the given transaction.
-func (*Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
+func (*Driver) RestoreTx(context.Context, *sql.Tx, io.Reader) error {
 	return fmt.Errorf("Unimplemented")
 }

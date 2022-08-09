@@ -88,7 +88,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// restore
-	err = driver.Restore(ctx, bufio.NewScanner(buf))
+	err = driver.Restore(ctx, bufio.NewReader(buf))
 	a.NoError(err)
 
 	// validate data
