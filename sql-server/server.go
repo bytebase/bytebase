@@ -57,12 +57,12 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Display config
-	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", prof.Mode)
-	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
-	fmt.Printf("debug=%t\n", prof.Debug)
-	fmt.Printf("workspaceID=%s\n", prof.WorkspaceID)
-	fmt.Println("-----Config END-------")
+	log.Info("-----Config BEGIN-----")
+	log.Infof("mode=%s", prof.Mode)
+	log.Infof("server=%s:%d", prof.BackendHost, prof.BackendPort)
+	log.Infof("debug=%t", prof.Debug)
+	log.Infof("workspaceID=%s", prof.WorkspaceID)
+	log.Info("-----Config END-------")
 
 	serverStarted := false
 	defer func() {

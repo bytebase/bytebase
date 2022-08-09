@@ -126,7 +126,7 @@ func start() {
 
 	s, err := server.NewServer(ctx, activeProfile)
 	if err != nil {
-		fmt.Printf("Cannot new server, error: %v\n", err)
+		log.Error("Cannot new server", zap.Error(err))
 		return
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", activeProfile.Version, activeProfile.BackendHost, activeProfile.BackendPort))
