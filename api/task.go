@@ -70,7 +70,14 @@ type TaskDatabasePITRRestorePayload struct {
 	ProjectID int `json:"projectId,omitempty"`
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
-	PointInTimeTs int64 `json:"pointInTimeTs,omitempty"`
+	PointInTimeTs *int64 `json:"pointInTimeTs,omitempty"`
+
+	// TargetInstance must be within the same environment as the instance of the original database.
+	// Only used when doing PITR to a new database.
+	TargetInstance *Instance `json:"targetInstance,omitempty"`
+
+	// Only used when doing restore full backup only.
+	BackupID *int `json:"backupID,omitempty"`
 }
 
 // TaskDatabasePITRCutoverPayload is the task payload for PITR cutover.
