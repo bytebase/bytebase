@@ -191,6 +191,8 @@ type PITRContext struct {
 	// CreateDatabaseCtx will be not nil if user want to restore to a new database.
 	CreateDatabaseCtx *CreateDatabaseContext `json:"createDatabaseContext"`
 
+	// BackupID and PointInTimeTs only allow one non-nil.
+
 	// BackupID is not nil if the user just restore a full backup only.
 	BackupID *int `json:"backupId"`
 
