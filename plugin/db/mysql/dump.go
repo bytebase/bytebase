@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -662,7 +661,7 @@ func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -681,11 +680,11 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores a database in the given transaction.
-func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc io.Reader) error {
 	return restoreTx(ctx, tx, sc)
 }
 
-func restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func restoreTx(ctx context.Context, tx *sql.Tx, sc io.Reader) error {
 	fnExecuteStmt := func(stmt string) error {
 		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return err

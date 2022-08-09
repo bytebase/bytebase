@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -592,8 +591,7 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
 	count := 0
-	sc := bufio.NewScanner(strings.NewReader(sqlStatement))
-	if err := util.ApplyMultiStatements(sc, func(_ string) error {
+	if err := util.ApplyMultiStatements(strings.NewReader(sqlStatement), func(_ string) error {
 		count++
 		return nil
 	}); err != nil {
