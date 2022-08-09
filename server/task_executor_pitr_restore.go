@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -116,7 +115,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 	backupFileName := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
-	backupFile, err := os.OpenFile(backupFileName, os.O_RDONLY, os.ModePerm)
+	backupFile, err := os.Open(backupFileName)
 	if err != nil {
 		return fmt.Errorf("failed to open backup file %q, error: %w", backupFileName, err)
 	}
@@ -136,7 +135,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}
 
-	if err := mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupFile), startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
+	if err := mysqlDriver.RestorePITR(ctx, backupFile, startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),

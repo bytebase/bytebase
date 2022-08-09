@@ -1,7 +1,6 @@
 package db
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
@@ -421,10 +420,10 @@ type Driver interface {
 	// The returned string is the JSON encoded metadata for the logical dump.
 	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
-	// Restore the database from sc, which is a full backup.
-	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreTx restores the database from sc in the given transaction.
-	RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error
+	// Restore the database from src, which is a full backup.
+	Restore(ctx context.Context, src io.Reader) error
+	// RestoreTx restores the database from src in the given transaction.
+	RestoreTx(ctx context.Context, tx *sql.Tx, src io.Reader) error
 }
 
 // Register makes a database driver available by the provided type.
