@@ -856,8 +856,8 @@
       }
     },
     "backup-policy-violation": "Backup policy violation",
-    "sync-at": "Sync at {time}",
-    "not-found": "Not found"
+    "synced-at": "Synced at {time}",
+    "not-found-last-successful-sync-was": "Not found, last successful sync was {time}"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
