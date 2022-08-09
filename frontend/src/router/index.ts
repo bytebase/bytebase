@@ -25,6 +25,7 @@ import {
 } from "../store";
 import {
   Database,
+  DEFAULT_PROJECT_ID,
   PlanType,
   QuickActionType,
   Sheet,
@@ -584,10 +585,21 @@ const routes: Array<RouteRecordRaw> = [
                 path: "",
                 name: "workspace.project.detail",
                 meta: {
+                  overrideBreadcrumb: (route: RouteLocationNormalized) => {
+                    const slug = route.params.projectSlug as string;
+                    const projectId = idFromSlug(slug);
+                    if (projectId === DEFAULT_PROJECT_ID) {
+                      return true;
+                    }
+                    return false;
+                  },
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.projectSlug as string;
-                    return useProjectStore().getProjectById(idFromSlug(slug))
-                      .name;
+                    const projectId = idFromSlug(slug);
+                    if (projectId === DEFAULT_PROJECT_ID) {
+                      return t("database.unassigned-databases");
+                    }
+                    return useProjectStore().getProjectById(projectId).name;
                   },
                   allowBookmark: true,
                 },
