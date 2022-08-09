@@ -857,8 +857,8 @@
       }
     },
     "backup-policy-violation": "违反了备份策略",
-    "sync-at": "同步于 {time}",
-    "not-found": "未找到"
+    "synced-at": "同步于 {time}",
+    "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
