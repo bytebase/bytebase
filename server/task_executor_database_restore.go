@@ -82,7 +82,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir, server.profile.DataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir, common.GetResourceDir(server.profile.DataDir)); err != nil {
 		return true, nil, err
 	}
 
