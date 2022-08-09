@@ -8,8 +8,10 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )
@@ -59,7 +61,7 @@ func TestBootWithExternalPg(t *testing.T) {
 	a.NoError(err)
 	defer func() {
 		if err = externalPg.Destroy(); err != nil {
-			fmt.Printf("cannot destroy postgres instance, error: %s", err.Error())
+			log.Error("cannot destroy postgres instance", zap.Error(err))
 			t.FailNow()
 		}
 	}()
