@@ -25,19 +25,26 @@
             :can-remove="false"
             class="text-xs"
           />
-          <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
-            <span
-              class="tooltip text-justify w-[75%] transform -translate-x-[50%] -translate-y-[1.5rem]"
-            >
+          <NTooltip
+            v-if="!showMiscColumn && database.syncStatus != 'OK'"
+            placement="right"
+          >
+            <template #trigger>
+              <heroicons-outline:exclamation-circle
+                class="w-5 h-5 text-error"
+              />
+            </template>
+
+            <div class="whitespace-nowrap">
               {{
                 $t("database.last-sync-status-long", [
                   database.syncStatus,
                   humanizeTs(database.lastSuccessfulSyncTs),
                 ])
               }}
-            </span>
-            <heroicons-outline:exclamation-circle class="w-5 h-5 text-error" />
-          </div>
+            </div>
+          </NTooltip>
+
           <button
             v-if="showSQLEditorLink"
             class="btn-icon tooltip-wrapper"
@@ -56,6 +63,15 @@
       <BBTableCell v-if="showProjectColumn" class="w-[15%]">
         <div class="flex flex-row space-x-2 items-center">
           <div>{{ projectName(database.project) }}</div>
+          <div
+            v-if="showTenantIcon && database.project.tenantMode === 'TENANT'"
+            class="tooltip-wrapper"
+          >
+            <span class="tooltip whitespace-nowrap">
+              {{ $t("project.mode.tenant") }}
+            </span>
+            <TenantIcon class="w-4 h-4 text-control" />
+          </div>
           <div class="tooltip-wrapper">
             <svg
               v-if="database.project.workflowType == 'UI'"
@@ -66,9 +82,13 @@
               xmlns="http://www.w3.org/2000/svg"
             ></svg>
             <template v-else-if="database.project.workflowType == 'VCS'">
-              <span class="tooltip whitespace-nowrap">
+              <span v-if="mode === 'ALL_SHORT'" class="tooltip w-40">
+                {{ $t("alter-schema.vcs-info") }}
+              </span>
+              <span v-else class="tooltip whitespace-nowrap">
                 {{ $t("database.version-control-enabled") }}
               </span>
+
               <heroicons-outline:collection
                 class="w-4 h-4 text-control hover:text-control-hover"
               />
@@ -187,6 +207,7 @@ import type { Database } from "../types";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
+import TenantIcon from "./TenantIcon.vue";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -403,6 +424,10 @@ const showSQLEditorLink = computed(() => {
     return false;
   }
   return true;
+});
+
+const showTenantIcon = computed(() => {
+  return ["ALL", "ALL_SHORT", "INSTANCE"].includes(props.mode);
 });
 
 const gotoSQLEditor = (database: Database) => {
