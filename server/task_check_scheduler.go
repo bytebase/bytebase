@@ -178,7 +178,7 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 }
 
 // Returns true if we meet either of the following conditions:
-//   1. Task has a non-default value and no task check has run before (so we are about to kick of the check the first time)
+//   1. Task has a non-default value and no task check has run before (so we are about to kick off the check for the first time)
 //   2. The specified EarliestAllowedTs has elapsed, so we need to rerun the check to unblock the task.
 // On the other hand, we would also rerun the check if user has modified EarliestAllowedTs. This is handled separately in the task patch handler.
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
