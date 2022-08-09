@@ -57,9 +57,12 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		"--triggers",
 		// Produce more compact output
 		"--compact",
-		"--databases", database,
 		"--host", driver.connCfg.Host,
 		"--user", driver.connCfg.Username,
+		// We don't use --databases option because `CREATE DATABASE` and `USE` statements are included
+		// in the output before each new database if we use it although we can use `--no-create-db` to avoid output `CREATE DATABASE` option.
+		// And we always dump one database per call this function, so we just provide database name without `--database` option.
+		database,
 	}
 	if driver.connCfg.Port != "" {
 		mysqldumpArgs = append(mysqldumpArgs, "--port", driver.connCfg.Port)
