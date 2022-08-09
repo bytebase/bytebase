@@ -583,7 +583,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
 	}
 
-	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, c.PointInTimeTs)
+	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, *c.PointInTimeTs)
 	if err != nil {
 		return nil, err
 	}
@@ -864,7 +864,7 @@ func createPITRTaskList(database *api.Database, projectID int, targetTs int64) (
 	// task: create and restore to PITR database
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
 		ProjectID:     projectID,
-		PointInTimeTs: targetTs,
+		PointInTimeTs: &targetTs,
 	}
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
