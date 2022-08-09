@@ -533,7 +533,7 @@
     "from-default-project": "From Default project",
     "from-other-projects": "From other projects",
     "transfer-in-db-title": "Transfer in database from other projects",
-    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project.",
+    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in the default project.",
     "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?"
   },
   "create-db": {
@@ -857,7 +857,9 @@
     },
     "backup-policy-violation": "Backup policy violation",
     "synced-at": "Synced at {time}",
-    "not-found-last-successful-sync-was": "Not found, last successful sync was {time}"
+    "not-found-last-successful-sync-was": "Not found, last successful sync was {time}",
+    "view-unassigned-databases": "View unassigned databases",
+    "unassigned-databases": "Unassigned databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -960,7 +962,7 @@
       "recent-activity": "Recent @.lower:{'common.activities'}",
       "in-progress": "In progress",
       "recently-closed": "Recently Closed",
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.",
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
       "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
     },
     "webhook": {
