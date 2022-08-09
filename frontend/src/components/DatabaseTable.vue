@@ -53,7 +53,8 @@
           <div>{{ projectName(database.project) }}</div>
           <div
             v-if="
-              mode === 'ALL_SHORT' && database.project.tenantMode === 'TENANT'
+              ['ALL', 'ALL_SHORT', 'INSTANCE'].includes(mode) &&
+              database.project.tenantMode === 'TENANT'
             "
             class="tooltip-wrapper"
           >
