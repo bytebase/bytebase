@@ -1,6 +1,3 @@
-//go:build linux && amd64
-// +build linux,amd64
-
 package mysqlutil
 
 import "embed"
