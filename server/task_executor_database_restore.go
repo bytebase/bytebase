@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -83,7 +82,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir, server.profile.DataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir, common.GetResourceDir(server.profile.DataDir)); err != nil {
 		return true, nil, err
 	}
 
@@ -135,14 +134,13 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instanc
 		backupPath = filepath.Join(dataDir, backupPath)
 	}
 
-	f, err := os.OpenFile(backupPath, os.O_RDONLY, os.ModePerm)
+	f, err := os.Open(backupPath)
 	if err != nil {
 		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
 	}
 	defer f.Close()
-	sc := bufio.NewScanner(f)
 
-	if err := driver.Restore(ctx, sc); err != nil {
+	if err := driver.Restore(ctx, f); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)
 	}
 	return nil

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,22 +13,19 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
-	return &PITRRestoreTaskExecutor{
-		mysqlutil: instance,
-	}
+func NewPITRRestoreTaskExecutor() TaskExecutor {
+	return &PITRRestoreTaskExecutor{}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
 	completed int32
-	mysqlutil mysqlutil.Instance
+	progress  atomic.Value // api.Progress
 }
 
 // RunOnce will run the PITR restore task executor once.
@@ -48,7 +44,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir, payload.PointInTimeTs, server.profile.Mode); err != nil {
+	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir, *payload.PointInTimeTs, server.profile.Mode); err != nil {
 		log.Error("Failed to do PITR restore", zap.Error(err))
 		return true, nil, err
 	}
@@ -66,8 +62,12 @@ func (exec *PITRRestoreTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (*PITRRestoreTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
+func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
+	progress := exec.progress.Load()
+	if progress == nil {
+		return api.Progress{}
+	}
+	return progress.(api.Progress)
 }
 
 func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
@@ -96,7 +96,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		log.Error("Failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
+	mysqlDriver.SetUpForPITR(binlogDir)
 
 	log.Debug("Downloading all binlog files")
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */); err != nil {
@@ -115,9 +115,9 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 	backupFileName := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
-	backupFile, err := os.OpenFile(backupFileName, os.O_RDONLY, os.ModePerm)
+	backupFile, err := os.Open(backupFileName)
 	if err != nil {
-		return fmt.Errorf("failed to open backup file: %s, error: %w", backupFileName, err)
+		return fmt.Errorf("failed to open backup file %q, error: %w", backupFileName, err)
 	}
 	defer backupFile.Close()
 	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
@@ -130,13 +130,65 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BASELINE migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
-	if err := mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupFile), startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
+
+	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
+		return fmt.Errorf("failed to setup progress update process, error: %w", err)
+	}
+
+	if err := mysqlDriver.RestorePITR(ctx, backupFile, startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),
 			zap.Error(err))
 		return fmt.Errorf("failed to perform a PITR restore in the PITR database, error: %w", err)
 	}
+
+	return nil
+}
+
+func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo api.BinlogInfo, binlogDir string) error {
+	backupFileInfo, err := backupFile.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to get stat of backup file %q, error: %w", backupFile.Name(), err)
+	}
+	backupFileBytes := backupFileInfo.Size()
+	replayBinlogPaths, err := mysql.GetBinlogReplayList(startBinlogInfo, binlogDir)
+	if err != nil {
+		return fmt.Errorf("failed to get binlog replay list with startBinlogInfo %+v in binlog directory %q, error: %w", startBinlogInfo, binlogDir, err)
+	}
+	totalBinlogBytes, err := common.GetFileSizeSum(replayBinlogPaths)
+	if err != nil {
+		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
+	}
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		createdTs := time.Now().Unix()
+		exec.progress.Store(api.Progress{
+			TotalUnit:     backupFileBytes + totalBinlogBytes,
+			CompletedUnit: 0,
+			CreatedTs:     createdTs,
+			UpdatedTs:     createdTs,
+		})
+		for {
+			select {
+			case <-ticker.C:
+				progressPrev := exec.progress.Load().(api.Progress)
+				// TODO(dragonly): Calculate restored backup bytes when using mysqldump.
+				restoredBackupFileBytes := backupFileBytes
+				replayedBinlogBytes := driver.GetReplayedBinlogBytes()
+				exec.progress.Store(api.Progress{
+					TotalUnit:     progressPrev.TotalUnit,
+					CompletedUnit: restoredBackupFileBytes + replayedBinlogBytes,
+					CreatedTs:     progressPrev.CreatedTs,
+					UpdatedTs:     time.Now().Unix(),
+				})
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 
 	return nil
 }

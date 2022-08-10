@@ -1,18 +1,47 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col relative">
     <div class="px-5 py-2 flex justify-between items-center">
-      <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
-        :selectedId="state.selectedEnvironment?.id"
+        :selected-id="state.selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
-      <BBTableSearch
-        ref="searchField"
-        :placeholder="$t('database.search-database-name')"
-        @change-text="(text) => changeSearchText(text)"
-      />
+
+      <div class="flex items-center space-x-4">
+        <NTooltip>
+          <template #trigger>
+            <router-link
+              :to="{
+                name: 'workspace.project.detail',
+                params: {
+                  projectSlug: DEFAULT_PROJECT_ID,
+                },
+              }"
+              class="normal-link text-sm"
+            >
+              {{ $t("database.view-unassigned-databases") }}
+            </router-link>
+          </template>
+
+          <div class="whitespace-pre-wrap">
+            {{ $t("quick-action.default-db-hint") }}
+          </div>
+        </NTooltip>
+        <BBTableSearch
+          ref="searchField"
+          :placeholder="$t('database.search-database-name')"
+          @change-text="(text) => changeSearchText(text)"
+        />
+      </div>
     </div>
+
     <DatabaseTable :bordered="false" :database-list="filteredList" />
+
+    <div
+      v-if="state.loading"
+      class="absolute inset-0 bg-white/50 flex justify-center items-center"
+    >
+      <BBSpin />
+    </div>
   </div>
 </template>
 
@@ -26,9 +55,15 @@ import {
   defineComponent,
 } from "vue";
 import { useRouter } from "vue-router";
+import { NTooltip } from "naive-ui";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Environment, Database, UNKNOWN_ID } from "../types";
+import {
+  Environment,
+  Database,
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_ID,
+} from "../types";
 import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
@@ -43,11 +78,13 @@ interface LocalState {
   searchText: string;
   databaseList: Database[];
   selectedEnvironment?: Environment;
+  loading: boolean;
 }
 
 export default defineComponent({
-  name: "InstanceDashboard",
+  name: "DatabaseDashboard",
   components: {
+    NTooltip,
     EnvironmentTabFilter,
     DatabaseTable,
   },
@@ -65,6 +102,7 @@ export default defineComponent({
             parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
+      loading: false,
     });
 
     const currentUser = useCurrentUser();
@@ -86,6 +124,7 @@ export default defineComponent({
     const prepareDatabaseList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
+        state.loading = true;
         useDatabaseStore()
           .fetchDatabaseList()
           .then((list) => {
@@ -93,6 +132,9 @@ export default defineComponent({
               cloneDeep(list),
               environmentList.value
             );
+          })
+          .finally(() => {
+            state.loading = false;
           });
       }
     };
@@ -133,6 +175,7 @@ export default defineComponent({
     });
 
     return {
+      DEFAULT_PROJECT_ID,
       searchField,
       state,
       filteredList,

@@ -34,6 +34,10 @@ func NewCatalog(databaseID *int, store *Store, dbType db.Type) *Catalog {
 
 // GetDatabase implements the catalog.Catalog interface.
 func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
+	if c.databaseID == nil {
+		return &catalog.Database{}, nil
+	}
+
 	database, err := c.store.GetDatabase(ctx, &api.DatabaseFind{
 		ID: c.databaseID,
 	})

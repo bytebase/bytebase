@@ -1220,6 +1220,32 @@ func TestSetSchemaStmt(t *testing.T) {
 	runTests(t, tests)
 }
 
+func TestExplainStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "EXPLAIN SELECT * FROM tech_book",
+			want: []ast.Node{
+				&ast.ExplainStmt{
+					Statement: &ast.SelectStmt{
+						SetOperation: ast.SetOperationTypeNone,
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "*",
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"EXPLAIN SELECT * FROM tech_book",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestAlterColumnType(t *testing.T) {
 	tests := []testData{
 		{
@@ -1243,6 +1269,73 @@ func TestAlterColumnType(t *testing.T) {
 			},
 			textList: []string{
 				"ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestInsertStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
+			want: []ast.Node{
+				&ast.InsertStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					Select: &ast.SelectStmt{
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "*",
+							},
+						},
+						WhereClause: &ast.UnconvertedExpressionDef{},
+					},
+				},
+			},
+			textList: []string{
+				"INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
+			},
+		},
+		{
+			stmt: "INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
+			want: []ast.Node{
+				&ast.InsertStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					Select: &ast.SelectStmt{},
+				},
+			},
+			textList: []string{
+				"INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestCopyStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "COPY tech_book FROM '/file/path/in/file/system'",
+			want: []ast.Node{
+				&ast.CopyStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					FilePath: "/file/path/in/file/system",
+				},
+			},
+			textList: []string{
+				"COPY tech_book FROM '/file/path/in/file/system'",
 			},
 		},
 	}

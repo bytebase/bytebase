@@ -61,9 +61,10 @@ ________________________________________________________________________________
 var (
 	flags struct {
 		// Used for Bytebase command line config
-		host  string
-		port  int
-		debug bool
+		host        string
+		port        int
+		debug       bool
+		workspaceID string
 	}
 	rootCmd = &cobra.Command{
 		Use:   "sql",
@@ -85,6 +86,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "http://localhost", "host where Bytebase SQL service backend is accessed from, must start with http:// or https://.")
 	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase SQL service backend is accessed from.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
+	rootCmd.PersistentFlags().StringVar(&flags.workspaceID, "workspace-id", "", "the identifier for SQL service")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -124,7 +126,7 @@ func start() {
 
 	s, err := server.NewServer(ctx, activeProfile)
 	if err != nil {
-		fmt.Printf("Cannot new server, error: %v\n", err)
+		log.Error("Cannot new server", zap.Error(err))
 		return
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", activeProfile.Version, activeProfile.BackendHost, activeProfile.BackendPort))

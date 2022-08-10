@@ -1,7 +1,6 @@
 package snowflake
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
@@ -135,7 +134,7 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return nil
 	}
@@ -161,9 +160,4 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
-}
-
-// RestoreTx restores the database in the given transaction.
-func (*Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
-	return fmt.Errorf("Unimplemented")
 }

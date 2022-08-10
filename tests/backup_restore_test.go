@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/tests/fake"
 
 	"go.uber.org/zap"
@@ -44,6 +45,10 @@ func TestBackupRestoreBasic(t *testing.T) {
 	port := getTestPort(t.Name())
 	database := "backup_restore"
 	table := "backup_restore"
+
+	tmpDir := t.TempDir()
+	err := mysqlutil.Install(tmpDir)
+	a.NoError(err)
 
 	_, stop := resourcemysql.SetupTestInstance(t, port)
 	defer stop()
@@ -75,7 +80,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// make a full backup
-	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
+	driver, err := getTestMySQLDriverWithResourceDir(ctx, strconv.Itoa(port), database, tmpDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
@@ -88,7 +93,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// restore
-	err = driver.Restore(ctx, bufio.NewScanner(buf))
+	err = driver.Restore(ctx, bufio.NewReader(buf))
 	a.NoError(err)
 
 	// validate data
@@ -405,7 +410,7 @@ func TestPITR(t *testing.T) {
 func createPITRIssue(ctl *controller, project *api.Project, database *api.Database, targetTs int64) (*api.Issue, error) {
 	pitrIssueCtx, err := json.Marshal(&api.PITRContext{
 		DatabaseID:    database.ID,
-		PointInTimeTs: targetTs,
+		PointInTimeTs: &targetTs,
 	})
 	if err != nil {
 		return nil, err

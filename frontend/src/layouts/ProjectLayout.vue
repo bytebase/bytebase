@@ -3,7 +3,12 @@
     <ArchiveBanner v-if="project.rowStatus == 'ARCHIVED'" />
   </div>
   <h1 class="px-6 pb-4 text-xl font-bold leading-6 text-main truncate">
-    {{ project.name }}
+    <template v-if="project.id === DEFAULT_PROJECT_ID">
+      {{ $t("database.unassigned-databases") }}
+    </template>
+    <template v-else>
+      {{ project.name }}
+    </template>
     <span
       v-if="project.tenantMode === 'TENANT'"
       class="text-sm font-normal px-2 ml-2 rounded whitespace-nowrap inline-flex items-center bg-gray-200"

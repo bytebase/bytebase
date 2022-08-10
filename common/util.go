@@ -3,6 +3,7 @@ package common
 import (
 	"crypto/rand"
 	"math/big"
+	"os"
 	"path"
 	"regexp"
 	"sort"
@@ -91,4 +92,17 @@ func ParseTemplateTokens(template string) ([]string, []string) {
 		return tokens, delimiters
 	}
 	return nil, nil
+}
+
+// GetFileSizeSum calculates the sum of file sizes for file names in the list.
+func GetFileSizeSum(fileNameList []string) (int64, error) {
+	var sum int64
+	for _, fileName := range fileNameList {
+		stat, err := os.Stat(fileName)
+		if err != nil {
+			return 0, err
+		}
+		sum += stat.Size()
+	}
+	return sum, nil
 }

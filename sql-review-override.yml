@@ -1,0 +1,13 @@
+template: bb.sql-review.prod
+ruleList:
+  - type: naming.index.pk
+    level: WARNING
+  - type: naming.index.fk
+    level: WARNING
+  - type: naming.index.uk
+    payload:
+      format: "^idx_{{table}}_unique_{{column_list}}$"
+  - type: column.no-null
+    level: WARNING
+  - type: table.no-foreign-key
+    level: DISABLED

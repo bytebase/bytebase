@@ -1,7 +1,7 @@
 <template>
   <div v-if="project.id != DEFAULT_PROJECT_ID" class="textlabel">
     <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mb-2">
-      {{ $t("quick-action.default-db-hint") }}
+      {{ $t("quick-action.unassigned-db-hint") }}
     </div>
     <div class="radio-set-row">
       <label class="radio">
@@ -13,7 +13,7 @@
           value="DEFAULT"
         />
         <span class="label">
-          {{ $t("quick-action.from-default-project") }}
+          {{ $t("quick-action.from-unassigned-databases") }}
         </span>
       </label>
       <label class="radio">
@@ -25,7 +25,7 @@
           value="OTHER"
         />
         <span class="label">
-          {{ $t("quick-action.from-other-projects") }}
+          {{ $t("quick-action.from-projects") }}
         </span>
       </label>
     </div>

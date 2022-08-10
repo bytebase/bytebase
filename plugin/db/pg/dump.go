@@ -3,7 +3,6 @@ package pg
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -76,6 +75,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
 	}
+	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
 	cmd.Stderr = os.Stderr
 	r, err := cmd.StdoutPipe()
 	if err != nil {
@@ -130,7 +130,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -153,9 +153,4 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
-}
-
-// RestoreTx restores the database in the given transaction.
-func (*Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
-	return fmt.Errorf("Unimplemented")
 }
