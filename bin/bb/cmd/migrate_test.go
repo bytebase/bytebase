@@ -76,7 +76,7 @@ func TestCreateDatabase(t *testing.T) {
 		{
 			args: []string{
 				"migrate",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@127.0.0.1:%d/", mysql.Port()),
 				"-f", "testdata/mysql_test_schema/1_todo.sql",
 			},
 			expected: _TestCreateDatabase01,
@@ -84,7 +84,7 @@ func TestCreateDatabase(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@127.0.0.1:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestCreateDatabase02,
 		},
