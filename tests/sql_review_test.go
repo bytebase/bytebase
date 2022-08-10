@@ -198,6 +198,18 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 				},
 			},
 			{
+				statement: `INSERT INTO t VALUES (1), (2)`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusSuccess,
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
+						Title:     "OK",
+						Content:   "",
+					},
+				},
+			},
+			{
 				statement: `
 					CREATE TABLE tech_book(
 						id int,

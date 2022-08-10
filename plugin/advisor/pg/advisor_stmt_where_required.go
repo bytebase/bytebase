@@ -79,6 +79,13 @@ func (checker *whereRequirementChecker) Visit(node ast.Node) ast.Visitor {
 		if n.WhereClause == nil {
 			code = advisor.StatementNoWhere
 		}
+	// Blacklist
+	// INSERT
+	// Add INSERT because PostgreSQL parser will parse the value list as a SELECT statement.
+	// We do not convert this case in our AST. So skip it now.
+	// TODO(rebelice): remove it.
+	case *ast.InsertStmt:
+		return nil
 	}
 
 	if code != advisor.Ok {
