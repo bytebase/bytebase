@@ -11,6 +11,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/segment"
+	"github.com/bytebase/bytebase/store"
 
 	"go.uber.org/zap"
 )
@@ -23,6 +24,8 @@ const (
 	identifyTraitForOrgID = "org_id"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
+	// principalIDForFirstUser is the principal id for the first user in workspace.
+	principalIDForFirstUser = 101
 )
 
 // MetricReporter is the metric reporter.
@@ -35,6 +38,7 @@ type MetricReporter struct {
 	workspaceID string
 	reporter    metric.Reporter
 	collectors  map[string]metric.Collector
+	store       *store.Store
 }
 
 // NewMetricReporter creates a new metric scheduler.
@@ -47,6 +51,7 @@ func NewMetricReporter(server *Server, workspaceID string) *MetricReporter {
 		workspaceID:  workspaceID,
 		reporter:     r,
 		collectors:   make(map[string]metric.Collector),
+		store:        server.store,
 	}
 }
 
@@ -72,10 +77,9 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 				}()
 
-				// identify will be triggered in every schedule loop so that we can update the latest workspace profile like subscription plan.
-				m.identify()
-
 				ctx := context.Background()
+				// identify will be triggered in every schedule loop so that we can update the latest workspace profile like subscription plan.
+				m.identify(ctx)
 				for name, collector := range m.collectors {
 					log.Debug("Run metric collector", zap.String("collector", name))
 
@@ -111,7 +115,7 @@ func (m *MetricReporter) Register(metricName metric.Name, collector metric.Colle
 }
 
 // Identify will identify the workspace and update the subscription plan.
-func (m *MetricReporter) identify() {
+func (m *MetricReporter) identify(ctx context.Context) {
 	plan := api.FREE.String()
 	orgID := ""
 
@@ -119,8 +123,19 @@ func (m *MetricReporter) identify() {
 		plan = m.subscription.Plan.String()
 		orgID = m.subscription.OrgID
 	}
+
+	principal, err := m.store.GetPrincipalByID(ctx, principalIDForFirstUser)
+	if err != nil {
+		log.Debug("unable to get the first principal user", zap.Int("id", principalIDForFirstUser), zap.Error(err))
+	}
+	email := ""
+	if principal != nil {
+		email = principal.Email
+	}
+
 	if err := m.reporter.Identify(&metric.Identifier{
-		ID: m.workspaceID,
+		ID:    m.workspaceID,
+		Email: email,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,
 			identifyTraitForVersion: m.version,
