@@ -472,7 +472,8 @@ func setUpForPITRTest(t *testing.T, ctl *controller, port, envID int, project *a
 
 	return mysqlDB, database, func() {
 		stopInstance()
-		mysqlDB.Close()
+		err := mysqlDB.Close()
+		a.NoError(err)
 	}
 }
 

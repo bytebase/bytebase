@@ -389,10 +389,14 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	conf := &config{}
 
 	// initial JWT token
+	value, err := common.RandomString(secretLength)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate random JWT secret, error: %w", err)
+	}
 	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingAuthSecret,
-		Value:       common.RandomString(secretLength),
+		Value:       value,
 		Description: "Random string used to sign the JWT auth token.",
 	})
 	if err != nil {
