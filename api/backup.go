@@ -127,9 +127,9 @@ type BackupCreate struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name                    string               `jsonapi:"attr,name"`
-	Type                    BackupType           `jsonapi:"attr,type"`
-	StorageBackend          BackupStorageBackend `jsonapi:"attr,storageBackend"`
+	Name                    string     `jsonapi:"attr,name"`
+	Type                    BackupType `jsonapi:"attr,type"`
+	StorageBackend          BackupStorageBackend
 	MigrationHistoryVersion string
 	Path                    string
 }

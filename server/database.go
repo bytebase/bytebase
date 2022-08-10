@@ -486,11 +486,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		backupCreate := &api.BackupCreate{}
+		backupCreate := &api.BackupCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create backup request").SetInternal(err)
 		}
-		backupCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
@@ -500,7 +501,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, backupCreate.StorageBackend, c.Get(getPrincipalIDContextKey()).(int))
+		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			if common.ErrorCode(err) == common.DbConnectionFailure {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)

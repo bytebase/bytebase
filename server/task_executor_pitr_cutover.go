@@ -112,7 +112,7 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
 
 	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
+	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
 		return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
 	}
 
