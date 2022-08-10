@@ -93,7 +93,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// restore
-	err = driver.Restore(ctx, bufio.NewScanner(buf))
+	err = driver.Restore(ctx, bufio.NewReader(buf))
 	a.NoError(err)
 
 	// validate data
@@ -410,7 +410,7 @@ func TestPITR(t *testing.T) {
 func createPITRIssue(ctl *controller, project *api.Project, database *api.Database, targetTs int64) (*api.Issue, error) {
 	pitrIssueCtx, err := json.Marshal(&api.PITRContext{
 		DatabaseID:    database.ID,
-		PointInTimeTs: targetTs,
+		PointInTimeTs: &targetTs,
 	})
 	if err != nil {
 		return nil, err

@@ -230,6 +230,7 @@ const TaskCheckTypeOrderList: TaskCheckType[] = [
   "bb.task-check.general.earliest-allowed-time",
   "bb.task-check.database.statement.compatibility",
   "bb.task-check.database.statement.syntax",
+  "bb.task-check.database.statement.type",
   "bb.task-check.database.connect",
   "bb.task-check.instance.migration-schema",
   "bb.task-check.database.statement.advise",
@@ -252,6 +253,7 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
     "task.check-type.compatibility",
   ],
   ["bb.task-check.database.statement.advise", "task.check-type.sql-review"],
+  ["bb.task-check.database.statement.type", "task.check-type.statement-type"],
   ["bb.task-check.database.connect", "task.check-type.connection"],
   [
     "bb.task-check.instance.migration-schema",

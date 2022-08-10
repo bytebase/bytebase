@@ -81,7 +81,7 @@ func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, err
 	return vcsList, nil
 }
 
-// GetVCSByID gets a composesd instance of VCS by ID.
+// GetVCSByID gets a composed instance of VCS by ID.
 func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	vcsRaw, err := s.getVCSRaw(ctx, id)
 	if err != nil {

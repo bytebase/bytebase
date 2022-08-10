@@ -3,7 +3,6 @@ package pg
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -131,7 +130,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -154,9 +153,4 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
-}
-
-// RestoreTx restores the database in the given transaction.
-func (*Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
-	return fmt.Errorf("Unimplemented")
 }

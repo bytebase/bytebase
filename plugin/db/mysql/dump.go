@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"database/sql"
@@ -296,39 +295,44 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
-	txn, err := driver.db.BeginTx(ctx, nil)
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
+	databaseName, err := driver.databaseName(ctx)
 	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	if err := restoreTx(ctx, txn, sc); err != nil {
-		return err
+		return fmt.Errorf("cannot get the database name, error: %w", err)
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
+	mysqlArgs := []string{
+		"--host", driver.connCfg.Host,
+		"--user", driver.connCfg.Username,
+		"--database", databaseName,
+	}
+	if driver.connCfg.Port != "" {
+		mysqlArgs = append(mysqlArgs, "--port", driver.connCfg.Port)
+	}
+	if driver.connCfg.Password != "" {
+		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
+	}
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
+
+	var stderr bytes.Buffer
+	mysqlCmd.Stdin = sc
+	mysqlCmd.Stderr = &stderr
+
+	if err := mysqlCmd.Run(); err != nil {
+		return fmt.Errorf("mysql command fails, error: %w, %s", err, stderr.String())
 	}
 
 	return nil
 }
 
-// RestoreTx restores a database in the given transaction.
-func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
-	return restoreTx(ctx, tx, sc)
-}
-
-func restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
-	fnExecuteStmt := func(stmt string) error {
-		if _, err := tx.ExecContext(ctx, stmt); err != nil {
-			return err
+func (driver *Driver) databaseName(ctx context.Context) (string, error) {
+	query := `SELECT DATABASE();`
+	var database string
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&database); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil
+		return "", util.FormatErrorWithQuery(err, query)
 	}
-
-	if err := util.ApplyMultiStatements(sc, fnExecuteStmt); err != nil {
-		return err
-	}
-	return nil
+	return database, nil
 }

@@ -192,9 +192,14 @@ export default defineComponent({
         });
       }
 
-      if (currentRoute.value.meta.title) {
+      const { title, overrideBreadcrumb } = currentRoute.value.meta;
+      if (title) {
+        const route = currentRoute.value;
+        if (overrideBreadcrumb && overrideBreadcrumb(route)) {
+          list.length = 0; // empty the array
+        }
         list.push({
-          name: currentRoute.value.meta.title(currentRoute.value),
+          name: title(route),
           // Set empty path for the current route to make the link not clickable.
           // We do this because clicking the current route path won't trigger reload and would
           // confuse user since UI won't change while we may have cleared all query parameters.

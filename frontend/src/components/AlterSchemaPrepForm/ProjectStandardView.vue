@@ -6,6 +6,7 @@
     <div class="textinfolabel">
       {{ $t("alter-schema.alter-multiple-db-info") }}
     </div>
+    <slot name="header"></slot>
     <div class="space-y-4">
       <div
         v-for="{
@@ -71,6 +72,7 @@
   </template>
   <template v-else>
     <!-- single stage view -->
+    <slot name="header"></slot>
     <DatabaseTable
       mode="PROJECT_SHORT"
       :bordered="true"

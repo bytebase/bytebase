@@ -15,6 +15,7 @@
           scope="col"
           class="py-2 text-left text-xs font-medium text-gray-500 tracking-wider"
           :class="[
+            headerClass,
             index == 0 ? 'pl-4' : 'pl-2',
             column.center && 'text-center pr-2',
           ]"
@@ -97,6 +98,7 @@
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../types";
+import type { VueClass } from "@/utils";
 
 type DataType = any; // vue does not support generic typed components yet
 
@@ -111,6 +113,7 @@ const props = withDefaults(
     compactSection?: boolean;
     showHeader?: boolean;
     customHeader?: boolean;
+    headerClass?: VueClass;
     rowClickable?: boolean;
     leftBordered?: boolean;
     rightBordered?: boolean;
@@ -124,6 +127,7 @@ const props = withDefaults(
     compactSection: false,
     showHeader: true,
     customHeader: false,
+    headerClass: undefined,
     rowClickable: true,
     leftBordered: true,
     rightBordered: true,

@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
@@ -272,8 +271,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		}
 		return nil
 	}
-	sc := bufio.NewScanner(strings.NewReader(statement))
-	if err := util.ApplyMultiStatements(sc, f); err != nil {
+
+	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
 		return err
 	}
 

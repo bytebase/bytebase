@@ -40,12 +40,12 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 	// Allow frontend to change the SQL statement of
 	// 1. a PendingApproval task which hasn't started yet
 	// 2. a Failed task which can be retried
-	// 3. a Pending task which can't be scheduled because of failed task checks
+	// 3. a Pending task which can't be scheduled because of failed task checks, task dependency or earliest allowed time
 	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %q state", task.Status))
 	}
 	if task.Status == api.TaskPending {
-		ok, err := s.TaskScheduler.canTransitTaskStatus(ctx, task, api.TaskCheckStatusWarn)
+		ok, err := s.TaskScheduler.canSchedule(ctx, task)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
 		}

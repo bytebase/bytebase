@@ -45,6 +45,13 @@
                 class="h-4 w-auto"
                 :src="getEngineIcon(engine)"
               />
+              <a
+                :href="`https://www.bytebase.com/docs/sql-review/review-rules/supported-rules#${rule.type}`"
+                target="__blank"
+                class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
+              >
+                <heroicons-outline:external-link class="w-4 h-4" />
+              </a>
             </div>
           </div>
           <p class="py-2 text-gray-400">
