@@ -1,7 +1,6 @@
 package clickhouse
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
@@ -193,7 +192,7 @@ func getTables(ctx context.Context, txn *sql.Tx, dbName string) ([]*tableSchema,
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -212,9 +211,4 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return txn.Commit()
-}
-
-// RestoreTx restores the database in the given transaction.
-func (*Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
-	return fmt.Errorf("Unimplemented")
 }

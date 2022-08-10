@@ -13,5 +13,6 @@ type Metric struct {
 // Identifier is the identifier for metric.
 type Identifier struct {
 	ID     string
+	Email  string
 	Labels map[string]string
 }

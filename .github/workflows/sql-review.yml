@@ -9,5 +9,5 @@ jobs:
       - name: Check SQL
         uses: bytebase/sql-review-action@0.0.3
         with:
-          override-file-path: ./sql-review-override.yml # Optional, we can only provide the template id
+          override-file-path: ./sql-review-override.yml
           database-type: POSTGRES

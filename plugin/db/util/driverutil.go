@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -24,12 +25,13 @@ func FormatErrorWithQuery(err error, query string) error {
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
-func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
+func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
+	scanner := bufio.NewScanner(sc)
 	s := ""
 	delimiter := false
 	comment := false
-	for sc.Scan() {
-		line := sc.Text()
+	for scanner.Scan() {
+		line := scanner.Text()
 
 		execute := false
 		switch {
@@ -88,7 +90,7 @@ func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
 		}
 	}
 
-	if err := sc.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		return err
 	}
 	return nil

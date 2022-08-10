@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -177,7 +178,7 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 }
 
 // Returns true if we meet either of the following conditions:
-//   1. Task has a non-default value and no task check has run before (so we are about to kick of the check the first time)
+//   1. Task has a non-default value and no task check has run before (so we are about to kick off the check for the first time)
 //   2. The specified EarliestAllowedTs has elapsed, so we need to rerun the check to unblock the task.
 // On the other hand, we would also rerun the check if user has modified EarliestAllowedTs. This is handled separately in the task patch handler.
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
@@ -352,6 +353,25 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
 				Type:                    api.TaskCheckDatabaseStatementAdvise,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			}); err != nil {
+				return nil, err
+			}
+		}
+
+		if database.Instance.Engine == db.Postgres {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+				Statement: statement,
+				DbType:    database.Instance.Engine,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal statement type payload: %v, err: %w", task.Name, err)
+			}
+			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementType,
 				Payload:                 string(payload),
 				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 			}); err != nil {

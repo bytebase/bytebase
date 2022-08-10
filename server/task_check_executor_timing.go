@@ -35,7 +35,7 @@ func (*TaskCheckTimingExecutor) Run(_ context.Context, _ *Server, taskCheckRun *
 				Namespace: api.BBNamespace,
 				Code:      common.Ok.Int(),
 				Title:     "OK",
-				Content:   "Earliest allowed time unset",
+				Content:   "Earliest allowed time is not set",
 			},
 		}, nil
 	}
@@ -44,7 +44,7 @@ func (*TaskCheckTimingExecutor) Run(_ context.Context, _ *Server, taskCheckRun *
 	if time.Now().UTC().Before(time.Unix(payload.EarliestAllowedTs, 0).UTC()) {
 		return []api.TaskCheckResult{
 			{
-				Status:    api.TaskCheckStatusError,
+				Status:    api.TaskCheckStatusWarn,
 				Namespace: api.BBNamespace,
 				Code:      common.TaskTimingNotAllowed.Int(),
 				Title:     "Not ready to run",
