@@ -555,6 +555,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
+				statement: `INSERT INTO t VALUES (1), (2)`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusSuccess,
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
+						Title:     "OK",
+						Content:   "",
+					},
+				},
+			},
+			{
 				statement: "DELETE FROM t WHERE a = (SELECT max(id) FROM user WHERE name = 'bytebase')",
 				result: []api.TaskCheckResult{
 					{
