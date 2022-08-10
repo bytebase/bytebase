@@ -106,6 +106,10 @@ func Walk(v Visitor, node Node) {
 		for _, tableDef := range n.TableList {
 			Walk(v, tableDef)
 		}
+	case *ExplainStmt:
+		if n.Statement != nil {
+			Walk(v, n.Statement)
+		}
 	case *ForeignDef:
 		if n.Table != nil {
 			Walk(v, n.Table)
