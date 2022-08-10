@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -493,12 +494,12 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		if err := rows.Scan(&view.schemaName, &view.name, &def); err != nil {
 			return nil, err
 		}
-		// Return error on NULL view definition.
+		// Log error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
-		if !def.Valid {
-			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
+		log.Warn(fmt.Sprintf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name))
+		if def.Valid {
+			view.definition = def.String
 		}
-		view.definition = def.String
 		views = append(views, &view)
 	}
 	if err := rows.Err(); err != nil {
