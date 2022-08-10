@@ -5,7 +5,7 @@ export type BackupStatus = "PENDING_CREATE" | "DONE" | "FAILED";
 
 export type BackupType = "MANUAL" | "AUTOMATIC" | "PITR";
 
-export type BackupStorageBackend = "LOCAL";
+export type BackupStorageBackend = "LOCAL" | "S3" | "GCS";
 
 // Backup
 export type Backup = {
@@ -36,7 +36,6 @@ export type BackupCreate = {
   // Domain specific fields
   name: string;
   type: BackupType;
-  storageBackend: BackupStorageBackend;
 };
 
 // Backup setting.

@@ -3,6 +3,7 @@ package server
 import (
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 )
 
@@ -51,6 +52,8 @@ type Profile struct {
 	DemoDataDir string
 	// BackupRunnerInterval is the interval for backup runner.
 	BackupRunnerInterval time.Duration
+	// BackupStorageBackend is the backup storage backend.
+	BackupStorageBackend api.BackupStorageBackend
 	// Version is the bytebase's version
 	Version string
 	// Git commit hash of the build
