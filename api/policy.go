@@ -29,12 +29,12 @@ const (
 
 	// PipelineApprovalValueManualNever means the pipeline proceeds automatically if possible without the assignee's intervention, and the assignee is chosen from the workspace owners or DBAs.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
-	// PipelineApprovalValueManualNeverProjectOwner means the pipeline proceeds automatically if possible without the assignee's intervention, and the assignee is chosen from the project owners.
-	PipelineApprovalValueManualNeverProjectOwner PipelineApprovalValue = "MANUAL_APPROVAL_NEVER_PROJECT_OWNERS_ONLY"
-	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the workspace owners or DBAs.
+	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the workspace owners, DBAs, or project owners.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
-	// PipelineApprovalValueManualAlwaysProjectOwner means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the project owners.
-	PipelineApprovalValueManualAlwaysProjectOwner PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS_PROJECT_OWNERS_ONLY"
+	// PipelineApprovalValueManualAlwaysWorkspaceOwnerOrDBAOnly means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the workspace owners or DBAs.
+	PipelineApprovalValueManualAlwaysWorkspaceOwnerOrDBAOnly PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS_WORKSPACE_OWNER_OR_DBA_ONLY"
+	// PipelineApprovalValueManualAlwaysProjectOwnerOnly means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the project owners.
+	PipelineApprovalValueManualAlwaysProjectOwnerOnly PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS_PROJECT_OWNER_ONLY"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
 	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
