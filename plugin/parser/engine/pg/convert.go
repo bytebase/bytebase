@@ -322,7 +322,13 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 			}, nil
 		}
 	case *pgquery.Node_ExplainStmt:
-		return &ast.ExplainStmt{}, nil
+		explainStmt := &ast.ExplainStmt{}
+		if query, ok := in.ExplainStmt.Query.Node.(*pgquery.Node_SelectStmt); ok {
+			if explainStmt.Statement, err = convertSelectStmt(query.SelectStmt); err != nil {
+				return nil, err
+			}
+		}
+		return explainStmt, nil
 	case *pgquery.Node_InsertStmt:
 		insertStmt := &ast.InsertStmt{
 			Table: convertRangeVarToTableName(in.InsertStmt.Relation, ast.TableTypeBaseTable),
