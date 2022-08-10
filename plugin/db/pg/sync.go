@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -479,8 +478,8 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 	query := "" +
-		"SELECT table_schema, table_name, view_definition FROM information_schema.views " +
-		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
+		"SELECT schemaname, viewname, definition FROM pg_catalog.pg_views " +
+		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
 	var views []*viewSchema
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -494,11 +493,10 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		if err := rows.Scan(&view.schemaName, &view.name, &def); err != nil {
 			return nil, err
 		}
-		// Log error on NULL view definition.
+		// Return error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
-		log.Warn(fmt.Sprintf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name))
-		if def.Valid {
-			view.definition = def.String
+		if !def.Valid {
+			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
 		views = append(views, &view)
 	}
