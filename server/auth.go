@@ -152,9 +152,13 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					// password. The random password is supposed to be not guessable. If user wants
 					// to login via password, they need to set the new password from the profile
 					// page.
+					password, err := common.RandomString(20)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random password").SetInternal(err)
+					}
 					signUp := &api.SignUp{
 						Email:    userInfo.PublicEmail,
-						Password: common.RandomString(20),
+						Password: password,
 						Name:     userInfo.Name,
 					}
 					var httpError *echo.HTTPError
