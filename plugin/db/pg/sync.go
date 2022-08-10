@@ -498,6 +498,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		if !def.Valid {
 			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
+		view.definition = def.String
 		views = append(views, &view)
 	}
 	if err := rows.Err(); err != nil {
