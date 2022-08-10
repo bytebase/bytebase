@@ -11,9 +11,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	region = "us-east-1"
+	bucket = "bytebase-lyl-dev"
+)
+
 var (
-	region      = "us-east-1"
-	bucket      = "bytebase-lyl-dev"
 	credentials = Credentials{
 		AccessKeyID:     os.Getenv("ACCESS_KEY_ID"),
 		SecretAccessKey: os.Getenv("SECRET_ACCESS_KEY"),
