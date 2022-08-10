@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/plugin/parser"
 )
 
 var (
@@ -217,8 +218,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 
+	statements, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		return err
+	}
 	var remainingStmts []string
-	f := func(stmt string) error {
+	for _, stmt := range statements {
 		stmt = strings.TrimLeft(stmt, " \t")
 		// We don't use transaction for creating / altering databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
@@ -269,11 +274,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		} else {
 			remainingStmts = append(remainingStmts, stmt)
 		}
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return err
 	}
 
 	if len(remainingStmts) == 0 {
