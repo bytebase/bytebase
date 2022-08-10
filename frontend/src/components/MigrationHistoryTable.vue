@@ -65,26 +65,11 @@
         </template>
       </BBTableCell>
       <BBTableCell>
-        <NPopover
-          :disabled="history.statement.length < 100"
-          style="max-height: 300px"
+        <SQLPreviewPopover
+          :statement="history.statement"
+          :max-length="100"
           placement="bottom"
-          width="trigger"
-          scrollable
-        >
-          <highlight-code-block
-            :code="history.statement"
-            class="whitespace-pre-wrap"
-          />
-
-          <template #trigger>
-            {{
-              history.statement.length > 100
-                ? history.statement.substring(0, 100) + "..."
-                : history.statement
-            }}
-          </template>
-        </NPopover>
+        />
       </BBTableCell>
       <BBTableCell>
         {{ nanosecondsToString(history.executionDurationNs) }}
@@ -100,7 +85,6 @@
 </template>
 
 <script lang="ts">
-import { NPopover } from "naive-ui";
 import { computed, defineComponent, PropType } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -112,13 +96,14 @@ import {
   nanosecondsToString,
 } from "@/utils";
 import MigrationHistoryStatusIcon from "./MigrationHistoryStatusIcon.vue";
+import SQLPreviewPopover from "./misc/SQLPreviewPopover.vue";
 
 type Mode = "DATABASE" | "PROJECT";
 
 export default defineComponent({
   name: "MigrationHistoryTable",
   components: {
-    NPopover,
+    SQLPreviewPopover,
     MigrationHistoryStatusIcon,
   },
   props: {

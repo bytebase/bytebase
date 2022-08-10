@@ -136,7 +136,11 @@
                         :href="'#activity' + activity.id"
                         class="ml-1 anchor-link whitespace-normal"
                       >
-                        {{ actionSentence(activity) }}
+                        <ActivityActionSentence
+                          :issue="issue"
+                          :activity="activity"
+                        />
+
                         {{ humanizeTs(activity.createdTs) }}
                         <template
                           v-if="
@@ -320,23 +324,14 @@ import type {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityTaskStatusUpdatePayload,
-  ActivityTaskStatementUpdatePayload,
-  ActivityTaskEarliestAllowedTimeUpdatePayload,
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
 } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
-import {
-  findTaskById,
-  issueActivityActionSentence,
-  issueSlug,
-  sizeToFit,
-  taskSlug,
-} from "@/utils";
+import { findTaskById, issueSlug, sizeToFit, taskSlug } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import { useI18n } from "vue-i18n";
-import dayjs from "dayjs";
 import {
   useCurrentUser,
   useUIStateStore,
@@ -345,6 +340,7 @@ import {
 } from "@/store";
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
+import ActivityActionSentence from "./activity/ActionSentence.vue";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -580,87 +576,6 @@ const actionSubject = (activity: Activity): ActionSubject => {
     name: activity.creator.name,
     link: `/u/${activity.creator.id}`,
   };
-};
-
-const actionSentence = (activity: Activity): string => {
-  if (activity.type.startsWith("bb.issue.")) {
-    const [tid, params] = issueActivityActionSentence(activity);
-    return t(tid, params);
-  }
-  switch (activity.type) {
-    case "bb.pipeline.task.status.update": {
-      const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-      if (payload.newStatus === "PENDING_APPROVAL") {
-        // stale approval dismissed.
-
-        const task = findTaskById(issue.value.pipeline, payload.taskId);
-        const taskName = t("activity.sentence.task-name", { name: task.name });
-        return t("activity.sentence.dismissed-stale-approval", {
-          task: taskName,
-        });
-      }
-
-      let str = t("activity.sentence.changed");
-      switch (payload.newStatus) {
-        case "PENDING": {
-          if (payload.oldStatus == "RUNNING") {
-            str = t("activity.sentence.canceled");
-          } else if (payload.oldStatus == "PENDING_APPROVAL") {
-            str = t("activity.sentence.approved");
-          }
-          break;
-        }
-        case "RUNNING": {
-          str = t("activity.sentence.started");
-          break;
-        }
-        case "DONE": {
-          str = t("activity.sentence.completed");
-          break;
-        }
-        case "FAILED": {
-          str = t("activity.sentence.failed");
-          break;
-        }
-      }
-      if (activity.creator.id != SYSTEM_BOT_ID) {
-        // If creator is not the robot (which means we do NOT use task name in the subject),
-        // then we append the task name here.
-        const task = findTaskById(issue.value.pipeline, payload.taskId);
-        str += t("activity.sentence.task-name", { name: task.name });
-      }
-      return str;
-    }
-    case "bb.pipeline.task.file.commit": {
-      const payload = activity.payload as ActivityTaskFileCommitPayload;
-      // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
-      return t("activity.sentence.committed-to-at", {
-        file: payload.filePath,
-        branch: payload.branch,
-        repo: payload.repositoryFullPath,
-      });
-    }
-    case "bb.pipeline.task.statement.update": {
-      const payload = activity.payload as ActivityTaskStatementUpdatePayload;
-      return t("activity.sentence.changed-from-to", {
-        name: "SQL",
-        oldValue: payload.oldStatement,
-        newValue: payload.newStatement,
-      });
-    }
-    case "bb.pipeline.task.general.earliest-allowed-time.update": {
-      const payload =
-        activity.payload as ActivityTaskEarliestAllowedTimeUpdatePayload;
-      const newVal = payload.newEarliestAllowedTs;
-      const oldVal = payload.oldEarliestAllowedTs;
-      return t("activity.sentence.changed-from-to", {
-        name: "earliest allowed time",
-        oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
-        newValue: newVal ? dayjs(newVal * 1000) : "Unset",
-      });
-    }
-  }
-  return "";
 };
 
 const fileCommitActivityUrl = (activity: Activity) => {

@@ -17,7 +17,7 @@
         <slot name="selection" :database="database" />
       </BBTableCell>
       <BBTableCell :left-padding="showSelectionColumn ? 2 : 4" class="w-[25%]">
-        <div class="flex items-center space-x-2 tooltip-wrapper">
+        <div class="flex items-center space-x-2">
           <span>{{ database.name }}</span>
           <BBBadge
             v-if="isPITRDatabase(database)"
