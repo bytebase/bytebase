@@ -69,6 +69,9 @@ type TaskDatabasePITRRestorePayload struct {
 	// The project owning the database.
 	ProjectID int `json:"projectId,omitempty"`
 
+	// DatabaseName is the target database name.
+	DatabaseName string `json:"databaseName,omitempty"`
+
 	// TargetInstanceId must be within the same environment as the instance of the original database.
 	// Only used when doing PITR to a new database.
 	TargetInstanceID *int `json:"targetInstanceId,omitempty"`
