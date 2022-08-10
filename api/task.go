@@ -70,7 +70,7 @@ type TaskDatabasePITRRestorePayload struct {
 	ProjectID int `json:"projectId,omitempty"`
 
 	// DatabaseName is the target database name.
-	// It should be non-zero and non-null if not in the case of PITR inplace
+	// It is nil for the case of in-place PITR.
 	DatabaseName *string `json:"databaseName,omitempty"`
 
 	// TargetInstanceId must be within the same environment as the instance of the original database.
