@@ -530,11 +530,12 @@
     "troubleshoot": "Troubleshoot",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
-    "from-default-project": "From Default project",
-    "from-other-projects": "From other projects",
-    "transfer-in-db-title": "Transfer in database from other projects",
+    "from-unassigned-databases": "From unassigned databases",
+    "from-projects": "From projects",
+    "transfer-in-db-title": "Transfer in database",
     "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in the default project.",
-    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?"
+    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
+    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in unassigned databases."
   },
   "create-db": {
     "new-database-name": "New database name",
