@@ -24,8 +24,6 @@ const (
 	identifyTraitForOrgID = "org_id"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
-	// identifyTraitForEmail is the trait key for principal email.
-	identifyTraitForEmail = "email"
 	// principalIDForFirstUser is the principal id for the first user in workspace.
 	principalIDForFirstUser = 101
 )
@@ -136,12 +134,12 @@ func (m *MetricReporter) identify(ctx context.Context) {
 	}
 
 	if err := m.reporter.Identify(&metric.Identifier{
-		ID: m.workspaceID,
+		ID:    m.workspaceID,
+		Email: email,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,
 			identifyTraitForVersion: m.version,
 			identifyTraitForOrgID:   orgID,
-			identifyTraitForEmail:   email,
 		},
 	}); err != nil {
 		log.Debug("reporter identify failed", zap.Error(err))
