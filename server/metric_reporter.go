@@ -128,7 +128,7 @@ func (m *MetricReporter) identify(ctx context.Context) {
 
 	principal, err := m.store.GetPrincipalByID(ctx, principalIDForFirstUser)
 	if err != nil {
-		log.Debug("get principal by id failed", zap.Int("id", principalIDForFirstUser), zap.Error(err))
+		log.Debug("unable to get the first principal user", zap.Int("id", principalIDForFirstUser), zap.Error(err))
 	}
 	email := ""
 	if principal != nil {
