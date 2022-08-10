@@ -21,7 +21,7 @@ var (
 )
 
 func TestListObjects(t *testing.T) {
-	// t.Skip()
+	t.Skip()
 	a := require.New(t)
 	ctx := context.Background()
 	client, err := NewClient(ctx, region, bucket, credentials)
@@ -35,7 +35,7 @@ func TestListObjects(t *testing.T) {
 }
 
 func TestUploadObjects(t *testing.T) {
-	// t.Skip()
+	t.Skip()
 	a := require.New(t)
 	ctx := context.Background()
 	client, err := NewClient(ctx, region, bucket, credentials)
@@ -65,7 +65,7 @@ func TestDownloadObjects(t *testing.T) {
 }
 
 func TestDeleteObjects(t *testing.T) {
-	// t.Skip()
+	t.Skip()
 	a := require.New(t)
 	ctx := context.Background()
 	client, err := NewClient(ctx, region, bucket, credentials)
