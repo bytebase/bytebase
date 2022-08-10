@@ -1,12 +1,9 @@
 <template>
-  <template v-if="typeof actionSentence === 'string'">
-    {{ actionSentence }}
-  </template>
-  <component :is="() => actionSentence" v-else />
+  <renderer />
 </template>
 
 <script lang="ts" setup>
-import { h, PropType, computed } from "vue";
+import { h, PropType } from "vue";
 import {
   Activity,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
@@ -34,7 +31,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 
-const actionSentence = computed(() => {
+const renderActionSentence = () => {
   const { activity, issue } = props;
   if (activity.type.startsWith("bb.issue.")) {
     const [tid, params] = issueActivityActionSentence(activity);
@@ -123,7 +120,11 @@ const actionSentence = computed(() => {
     }
   }
   return "";
-});
+};
+
+const renderer = {
+  render: renderActionSentence,
+};
 
 const renderStatement = (statement: string) => {
   return h(SQLPreviewPopover, {
