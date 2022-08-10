@@ -1225,7 +1225,17 @@ func TestExplainStmt(t *testing.T) {
 		{
 			stmt: "EXPLAIN SELECT * FROM tech_book",
 			want: []ast.Node{
-				&ast.ExplainStmt{},
+				&ast.ExplainStmt{
+					Statement: &ast.SelectStmt{
+						SetOperation: ast.SetOperationTypeNone,
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "*",
+							},
+						},
+					},
+				},
 			},
 			textList: []string{
 				"EXPLAIN SELECT * FROM tech_book",
