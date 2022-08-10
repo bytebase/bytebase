@@ -26,12 +26,15 @@
           <p class="text-sm mb-2">微信扫码加入官方社群</p>
           <div class="flex flex-row justify-center">
             <div class="qrcode-card">
-              <img src="@/assets/wechat-official-qrcode.png" alt="微信公众号" />
+              <img
+                src="@/assets/wechat-official-qrcode.webp"
+                alt="微信公众号"
+              />
               <span>公众号</span>
             </div>
             <div class="qrcode-card ml-4">
               <img
-                src="@/assets/bb-helper-wechat-qrcode.jpeg"
+                src="@/assets/bb-helper-wechat-qrcode.webp"
                 alt="BB_小助手"
               />
               <span>BB 小助手</span>
