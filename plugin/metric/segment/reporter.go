@@ -56,6 +56,7 @@ func (r *reporter) Report(metric *metric.Metric) error {
 // Identify will identify the workspace with license.
 func (r *reporter) Identify(identifier *metric.Identifier) error {
 	traits := analytics.NewTraits()
+	traits.SetEmail(identifier.Email)
 	for key, value := range identifier.Labels {
 		traits.Set(key, value)
 	}
