@@ -126,7 +126,7 @@ user=%s
 	if _, err := fmt.Fprintf(defaultCfgFile, configFmt, basedir, datadir, user); err != nil {
 		return nil, err
 	}
-	defaultCfgFile.Close()
+	defer defaultCfgFile.Close()
 
 	args := []string{
 		fmt.Sprintf("--defaults-file=%s", defaultCfgFile.Name()),

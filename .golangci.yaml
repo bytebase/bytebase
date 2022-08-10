@@ -24,6 +24,8 @@ issues:
     - Rollback
     - logger.Sync
     - pgInstance.Stop
+    - fmt.Printf
+    - fmt.Print
 
 run:
   timeout: 5m
@@ -67,8 +69,6 @@ linters-settings:
       - name: early-return
         disabled: true
       # TODO(dragonly): Remove the rules below in the following PRs.
-      - name: unhandled-error
-        disabled: true
       - name: if-return
         disabled: true
       - name: empty-block
