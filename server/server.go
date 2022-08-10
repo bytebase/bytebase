@@ -115,6 +115,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
 	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
 	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
+	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
 	log.Info("-----Config END-------")
 
 	serverStarted := false

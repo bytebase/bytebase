@@ -287,7 +287,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 				zap.String("database", database.Name),
 				zap.String("backup", backupName),
 			)
-			if _, err := r.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
+			if _, err := r.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.SystemBotID); err != nil {
 				log.Error("Failed to create automatic backup for database",
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
@@ -308,7 +308,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 	}
 }
 
-func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, storageBackend api.BackupStorageBackend, creatorID int) (*api.Backup, error) {
+func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
 	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
 	if err != nil {
@@ -328,7 +328,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		CreatorID:               creatorID,
 		DatabaseID:              database.ID,
 		Name:                    backupName,
-		StorageBackend:          storageBackend,
+		StorageBackend:          s.profile.BackupStorageBackend,
 		Type:                    backupType,
 		Path:                    path,
 		MigrationHistoryVersion: migrationHistoryVersion,
