@@ -57,6 +57,9 @@ const (
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
 	NotCurrentDatabase Code = 702
+
+	// 801 miss index error code.
+	NotUseIndex Code = 801
 )
 
 // Int returns the int type of code.

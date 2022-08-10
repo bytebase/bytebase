@@ -21,6 +21,8 @@ import (
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -254,10 +256,39 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return json.Marshal(rowSet)
 		}()
 
+		if instance.Engine == db.Postgres {
+			stmts, err := parser.Parse(parser.Postgres, parser.Context{}, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse: %s", exec.Statement)).SetInternal(err)
+			}
+			if len(stmts) != 1 {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one statement, but found %d, statement: %s", len(stmts), exec.Statement))
+			}
+			if _, ok := stmts[0].(*ast.ExplainStmt); ok {
+				indexAdvice := checkPostgreSQLIndexHit(exec.Statement, string(bytes))
+				if len(indexAdvice) > 0 {
+					adviceLevel = advisor.Error
+					adviceList = append(adviceList, indexAdvice...)
+				}
+			}
+		}
+
+		if len(adviceList) == 0 {
+			adviceList = append(adviceList, advisor.Advice{
+				Status:  advisor.Success,
+				Code:    advisor.Ok,
+				Title:   "OK",
+				Content: "",
+			})
+		}
+
 		level := api.ActivityInfo
 		errMessage := ""
-		if adviceLevel == advisor.Warn {
+		switch adviceLevel {
+		case advisor.Warn:
 			level = api.ActivityWarn
+		case advisor.Error:
+			level = api.ActivityError
 		}
 		if queryErr != nil {
 			level = api.ActivityError
@@ -697,13 +728,32 @@ func (s *Server) sqlCheck(
 		adviceList = append(adviceList, advice)
 	}
 
-	if len(adviceList) == 0 {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return adviceLevel, adviceList, nil
+}
+
+func checkPostgreSQLIndexHit(statement string, plan string) []advisor.Advice {
+	plans := strings.Split(plan, "\n")
+	haveSeqScan := false
+	haveIndexScan := false
+	for _, row := range plans {
+		if strings.Contains(row, "Seq Scan") {
+			haveSeqScan = true
+			continue
+		}
+		if strings.Contains(row, "Index Scan") {
+			haveIndexScan = true
+			continue
+		}
+	}
+	if haveSeqScan && !haveIndexScan {
+		return []advisor.Advice{
+			{
+				Status:  advisor.Error,
+				Code:    advisor.NotUseIndex,
+				Title:   "Query does not use index",
+				Content: fmt.Sprintf("statement %q does not use any index", statement),
+			},
+		}
+	}
+	return nil
 }
