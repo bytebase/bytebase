@@ -357,7 +357,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 			}
 
-			// dismiss stale reviews and transfer the status to PendingApproval.
+			// updated statement, dismiss stale approvals and transfer the status to PendingApproval.
 			if taskPatched.Status != api.TaskPendingApproval {
 				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 					ID:        taskPatch.ID,
@@ -365,7 +365,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					Status:    api.TaskPendingApproval,
 				})
 				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
 				}
 				taskPatched = t
 			}
@@ -452,6 +452,19 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		})
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
+		}
+
+		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval.
+		if taskPatched.Status != api.TaskPendingApproval {
+			t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+				ID:        taskPatch.ID,
+				UpdaterID: taskPatch.UpdaterID,
+				Status:    api.TaskPendingApproval,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
+			}
+			taskPatched = t
 		}
 
 		// trigger task check
