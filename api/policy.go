@@ -31,10 +31,10 @@ const (
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the workspace owners, DBAs, or project owners.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
-	// PipelineApprovalValueManualAlwaysWorkspaceOwnerOrDBAOnly means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the workspace owners or DBAs.
-	PipelineApprovalValueManualAlwaysWorkspaceOwnerOrDBAOnly PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS_WORKSPACE_OWNER_OR_DBA_ONLY"
-	// PipelineApprovalValueManualAlwaysProjectOwnerOnly means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the project owners.
-	PipelineApprovalValueManualAlwaysProjectOwnerOnly PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS_PROJECT_OWNER_ONLY"
+	// PipelineApprovalValueManualAlwaysWorkspaceOwnerOrDBA means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the workspace owners or DBAs.
+	PipelineApprovalValueManualAlwaysWorkspaceOwnerOrDBA PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS_WORKSPACE_OWNER_OR_DBA"
+	// PipelineApprovalValueManualAlwaysProjectOwner means the pipeline should be manually approved by the assignee to proceed, and the assignee is chosen from the project owners.
+	PipelineApprovalValueManualAlwaysProjectOwner PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS_PROJECT_OWNER"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
 	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
