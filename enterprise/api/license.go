@@ -30,11 +30,7 @@ func (l *License) Valid() error {
 		return fmt.Errorf("license has expired at %v", expireTime)
 	}
 
-	if err := l.validPlanType(); err != nil {
-		return err
-	}
-
-	return nil
+	return l.validPlanType()
 }
 
 func (l *License) validPlanType() error {

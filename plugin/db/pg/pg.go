@@ -295,10 +295,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit()
 }
 
 func isSuperuserStatement(stmt string) bool {
