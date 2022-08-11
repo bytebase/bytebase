@@ -949,9 +949,6 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 			expiresIn, _ := strconv.ParseInt(r.ExpiresIn, 10, 64)
 			expireAt = r.CreatedAt + expiresIn
 		}
-		if err = refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
-			return err
-		}
-		return nil
+		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }
