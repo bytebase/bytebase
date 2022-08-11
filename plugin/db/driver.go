@@ -154,7 +154,7 @@ var (
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
 	PgInstanceDir string
-	// We use resrouce directory to splice the path of embedded binary, likes binaries in mysqlutil package.
+	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
 	ResourceDir string
 }
 
