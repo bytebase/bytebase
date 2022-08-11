@@ -287,7 +287,6 @@ func (ctl *controller) waitForHealthz() error {
 			if err != nil {
 				log.Error("Fail to create a new GET request", zap.String("URL", gURL), zap.Error(err))
 				continue
-
 			}
 
 			resp, err := ctl.client.Do(req)
@@ -309,10 +308,8 @@ func (ctl *controller) waitForHealthz() error {
 
 		case end := <-timer.C:
 			return fmt.Errorf("cannot wait for healthz in duration: %v", end.Sub(begin).Seconds())
-
 		}
 	}
-
 }
 
 // Close closes long running resources.
@@ -780,7 +777,6 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 						Status: api.TaskPending,
 					},
 					issue.Pipeline.ID); err != nil {
-
 					return fmt.Errorf("failed to patch task status for task %d, error: %w", task.ID, err)
 				}
 				return nil

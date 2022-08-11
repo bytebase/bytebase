@@ -90,7 +90,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 			zap.String("backup", backup.Name),
 		)
 		// Restore the database to the target database.
-		if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir, common.GetResourceDir(server.profile.DataDir)); err != nil {
+		if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
 			return true, nil, err
 		}
 		// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
@@ -128,7 +128,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 		}, nil
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */, common.GetResourceDir(server.profile.DataDir))
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return true, nil, err
 	}
@@ -297,8 +297,8 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 }
 
 // restoreDatabase will restore the database from a backup.
-func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir, resourceDir string) error {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir, resourceDir)
+func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
+	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
 	}

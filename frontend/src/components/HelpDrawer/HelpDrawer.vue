@@ -9,6 +9,40 @@
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-if="state.html" v-html="state.html"></div>
     </template>
+    <template #footer>
+      <div class="flex flex-row justify-center">
+        <div v-if="locale === 'en-US'" class="w-1/2">
+          <a href="https://discord.gg/VHEXRDQq" target="_blank">
+            <img
+              src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
+              alt="discord invitation"
+            />
+          </a>
+        </div>
+        <div
+          v-if="locale === 'zh-CN'"
+          class="w-full flex flex-col items-center"
+        >
+          <p class="text-sm mb-2">微信扫码加入官方社群</p>
+          <div class="flex flex-row justify-center">
+            <div class="qrcode-card">
+              <img
+                src="@/assets/wechat-official-qrcode.webp"
+                alt="微信公众号"
+              />
+              <span>公众号</span>
+            </div>
+            <div class="qrcode-card ml-4">
+              <img
+                src="@/assets/bb-helper-wechat-qrcode.webp"
+                alt="BB_小助手"
+              />
+              <span>BB 小助手</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </Drawer>
 </template>
 
@@ -88,7 +122,14 @@ export default defineComponent({
       active,
       state,
       onClose,
+      locale,
     };
   },
 });
 </script>
+
+<style scoped>
+.qrcode-card {
+  @apply w-20 flex flex-col items-center justify-start text-xs;
+}
+</style>

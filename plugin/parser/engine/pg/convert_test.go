@@ -1309,7 +1309,6 @@ func TestInsertStmt(t *testing.T) {
 						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
-					Select: &ast.SelectStmt{},
 				},
 			},
 			textList: []string{

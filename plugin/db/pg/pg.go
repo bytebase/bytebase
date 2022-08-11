@@ -102,12 +102,11 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		"password": password,
 	}
 
-	if sslCA == "" {
-		// We should use the default connection dsn without setting sslmode.
-		// Some provider might still perform default SSL check at the server side so we
-		// shouldn't disable sslmode at the client side.
-		// m["sslmode"] = "disable"
-	} else {
+	// We should use the default connection dsn without setting sslmode.
+	// Some provider might still perform default SSL check at the server side so we
+	// shouldn't disable sslmode at the client side.
+	// m["sslmode"] = "disable"
+	if sslCA != "" {
 		m["sslmode"] = "verify-ca"
 		m["sslrootcert"] = sslCA
 		if sslCert != "" && sslKey != "" {
@@ -140,13 +139,14 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		if guess != "" {
 			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guess)
 		}
-		db, err := sql.Open(driverName, guessDSN)
-		if err != nil {
-			continue
-		}
-		defer db.Close()
-
-		if err = db.Ping(); err != nil {
+		if err := func() error {
+			db, err := sql.Open(driverName, guessDSN)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+			return db.Ping()
+		}(); err != nil {
 			continue
 		}
 		return guess, guessDSN, nil
@@ -295,10 +295,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit()
 }
 
 func isSuperuserStatement(stmt string) bool {

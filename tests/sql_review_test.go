@@ -198,6 +198,18 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 				},
 			},
 			{
+				statement: `INSERT INTO t VALUES (1), (2)`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusSuccess,
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
+						Title:     "OK",
+						Content:   "",
+					},
+				},
+			},
+			{
 				statement: `
 					CREATE TABLE tech_book(
 						id int,
@@ -539,6 +551,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Code:      advisor.StatementNoWhere.Int(),
 						Title:     "statement.where.require",
 						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" requires WHERE clause",
+					},
+				},
+			},
+			{
+				statement: `INSERT INTO t VALUES (1), (2)`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusSuccess,
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
+						Title:     "OK",
+						Content:   "",
 					},
 				},
 			},
