@@ -38,7 +38,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 		return true, nil, fmt.Errorf("invalid PITR restore payload: %s, error: %w", task.Payload, err)
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */, common.GetResourceDir(server.profile.DataDir))
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
 	}
