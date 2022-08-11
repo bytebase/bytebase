@@ -132,6 +132,13 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 						Content:   fmt.Sprintf(`Table "public"."userTable" requires PRIMARY KEY, related statement: %q`, statements[1]),
 					},
 					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.TableHasFK.Int(),
+						Title:     "table.no-foreign-key",
+						Content:   fmt.Sprintf(`Foreign key is not allowed in the table "public"."userTable", related statement: "%s"`, statements[1]),
+					},
+					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.NoRequiredColumn.Int(),
