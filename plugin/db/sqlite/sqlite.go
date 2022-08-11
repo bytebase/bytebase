@@ -139,9 +139,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 			if _, err := db.Exec("SELECT 1;"); err != nil {
 				return err
 			}
-		} else if strings.HasPrefix(stmt, "USE ") {
-			// ignore this fake use database statement.
-		} else {
+		} else if !strings.HasPrefix(stmt, "USE ") { // ignore the fake use database statement.
 			remainingStmts = append(remainingStmts, stmt)
 		}
 		return nil

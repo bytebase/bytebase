@@ -453,23 +453,23 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		if matchedDb != nil {
 			// Case 1, appear in both the Bytebase metadata and the synced database metadata.
 			// We rely on syncDatabaseSchema() to sync the database details.
-		} else {
-			// Case 2, only appear in the synced db schema.
-			databaseCreate := &api.DatabaseCreate{
-				CreatorID:     api.SystemBotID,
-				ProjectID:     api.DefaultProjectID,
-				InstanceID:    instance.ID,
-				EnvironmentID: instance.EnvironmentID,
-				Name:          databaseName,
-				CharacterSet:  databaseMetadata.CharacterSet,
-				Collation:     databaseMetadata.Collation,
+			continue
+		}
+		// Case 2, only appear in the synced db schema.
+		databaseCreate := &api.DatabaseCreate{
+			CreatorID:     api.SystemBotID,
+			ProjectID:     api.DefaultProjectID,
+			InstanceID:    instance.ID,
+			EnvironmentID: instance.EnvironmentID,
+			Name:          databaseName,
+			CharacterSet:  databaseMetadata.CharacterSet,
+			Collation:     databaseMetadata.Collation,
+		}
+		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				return nil, fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 			}
-			if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
-				if common.ErrorCode(err) == common.Conflict {
-					return nil, fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-				}
-				return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
-			}
+			return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
 		}
 	}
 
