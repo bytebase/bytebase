@@ -13,6 +13,9 @@ type PolicyType string
 // PipelineApprovalValue is value for approval policy.
 type PipelineApprovalValue string
 
+// AssigneeGroupValue is the value for assignee group policy.
+type AssigneeGroupValue string
+
 // BackupPlanPolicySchedule is value for backup plan policy.
 type BackupPlanPolicySchedule string
 
@@ -31,6 +34,9 @@ const (
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
+
+	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners.
+	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
 	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
@@ -117,6 +123,10 @@ type PolicyDelete struct {
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`
+	// if the approval policy is MANUAL_APPROVAL_NEVER, there shouldn't be AssigneeGroupList.
+	// if the approval policy is MANUAL_APPROVAL_ALWAYS, the assignee group is the DBAs by default,
+	//	 and we set the assignee group to the project owners for corresponding issue types.
+	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
 }
 
 func (pa PipelineApprovalPolicy) String() (string, error) {
@@ -134,6 +144,20 @@ func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, e
 		return nil, fmt.Errorf("failed to unmarshal pipeline approval policy %q, error: %w", payload, err)
 	}
 	return &pa, nil
+}
+
+// AssigneeGroup is the configuration of the assignee group.
+type AssigneeGroup struct {
+	IssueType IssueType          `json:"issueType"`
+	Value     AssigneeGroupValue `json:"value"`
+}
+
+func (p AssigneeGroup) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
 }
 
 // BackupPlanPolicy is the policy configuration for backup plan.
