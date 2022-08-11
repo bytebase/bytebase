@@ -223,11 +223,11 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
 	case PolicyTypeAssigneeGroup:
-		ac, err := UnmarshalAssigneeGroupPolicy(payload)
+		ag, err := UnmarshalAssigneeGroupPolicy(payload)
 		if err != nil {
 			return err
 		}
-		if ac.Value != AssigneeGroupValueWorkspaceOrDBA && ac.Value != AssigneeGroupValueProject {
+		if ag.Value != AssigneeGroupValueWorkspaceOrDBA && ag.Value != AssigneeGroupValueProject {
 			return fmt.Errorf("invalid assignee group value: %q", payload)
 		}
 	case PolicyTypeBackupPlan:
