@@ -57,6 +57,7 @@ func (r *reporter) Report(metric *metric.Metric) error {
 func (r *reporter) Identify(identifier *metric.Identifier) error {
 	traits := analytics.NewTraits()
 	traits.SetEmail(identifier.Email)
+	traits.SetName(identifier.Name)
 	for key, value := range identifier.Labels {
 		traits.Set(key, value)
 	}

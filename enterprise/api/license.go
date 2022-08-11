@@ -22,6 +22,7 @@ type License struct {
 	IssuedTs      int64
 	Plan          api.PlanType
 	Trialing      bool
+	OrgName       string
 }
 
 // Valid will check if license expired or has correct plan type.
