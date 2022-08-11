@@ -300,8 +300,6 @@ import type {
   Instance,
   TaskDatabaseCreatePayload,
   DatabaseLabel,
-  EnvironmentId,
-  Pipeline,
 } from "@/types";
 import { ONBOARDING_ISSUE_ID } from "@/types";
 import {
@@ -318,13 +316,12 @@ import {
   useDatabaseStore,
   useEnvironmentStore,
   useLabelList,
-  usePolicyByEnvironmentAndType,
   useProjectStore,
 } from "@/store";
 import {
-  allowProjectOwnerToApprove,
   useExtraIssueLogic,
   useIssueLogic,
+  useAllowProjectOwnerToApprove,
 } from "./logic";
 
 dayjs.extend(isSameOrAfter);
@@ -354,7 +351,6 @@ const {
   template,
   isTenantMode,
   selectedStage,
-  activeStageOfPipeline,
   selectedTask,
   selectStageOrTask,
 } = useIssueLogic();
@@ -475,12 +471,19 @@ const allowEditAssignee = computed(() => {
   // assignee might not have DBA role in case its role is revoked after
   // being assigned to the issue.
   const issueEntity = issue.value as Issue;
-  return (
-    issueEntity.id !== ONBOARDING_ISSUE_ID &&
-    issueEntity.status == "OPEN" &&
-    (currentUser.value.id == issueEntity.assignee.id ||
-      isDBAOrOwner(currentUser.value.role))
-  );
+  if (issueEntity.id === ONBOARDING_ISSUE_ID) {
+    return false;
+  }
+  if (issueEntity.status !== "OPEN") {
+    return false;
+  }
+  if (currentUser.value.id === issueEntity.assignee.id) {
+    return true;
+  }
+  if (isDBAOrOwner(currentUser.value.role)) {
+    return true;
+  }
+  return false;
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
@@ -578,28 +581,5 @@ const selectTaskId = (taskId: TaskId) => {
   selectStageOrTask(stage.id, slug);
 };
 
-const activeEnvironmentId = computed((): EnvironmentId => {
-  if (create.value) {
-    // When creating an issue, activeEnvironmentId is the first stage's environmentId
-    const stage = (issue.value as IssueCreate).pipeline!.stageList[0];
-    return stage.environmentId;
-  }
-
-  const stage = activeStageOfPipeline(issue.value.pipeline as Pipeline);
-  return stage.environment.id;
-});
-
-const activeEnvironmentApprovalPolicy = usePolicyByEnvironmentAndType(
-  computed(() => ({
-    environmentId: activeEnvironmentId.value,
-    type: "bb.policy.pipeline-approval",
-  }))
-);
-
-const allowProjectOwnerAsAssignee = computed((): boolean => {
-  const policy = activeEnvironmentApprovalPolicy.value;
-  if (!policy) return false;
-
-  return allowProjectOwnerToApprove(policy, issue.value.type);
-});
+const allowProjectOwnerAsAssignee = useAllowProjectOwnerToApprove();
 </script>
