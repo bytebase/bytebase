@@ -31,6 +31,8 @@
           :disabled="!allowEditAssignee"
           :selectedId="create ? (issue as IssueCreate).assigneeId : (issue as Issue).assignee?.id"
           :allowed-role-list="['OWNER', 'DBA']"
+          :project="project"
+          :show-project-owner="allowProjectOwnerAsAssignee"
           data-label="bb-assignee-select"
           @select-principal-id="
             (principalId: number) => {
@@ -314,9 +316,14 @@ import {
   useDatabaseStore,
   useEnvironmentStore,
   useLabelList,
+  usePolicyByEnvironmentAndType,
   useProjectStore,
 } from "@/store";
-import { useExtraIssueLogic, useIssueLogic } from "./logic";
+import {
+  allowProjectOwnerToApprove,
+  useExtraIssueLogic,
+  useIssueLogic,
+} from "./logic";
 
 dayjs.extend(isSameOrAfter);
 
@@ -567,4 +574,18 @@ const selectTaskId = (taskId: TaskId) => {
   const stage = selectedStage.value as Stage;
   selectStageOrTask(stage.id, slug);
 };
+
+const approvalPolicy = usePolicyByEnvironmentAndType(
+  computed(() => ({
+    environmentId: environment.value.id,
+    type: "bb.policy.pipeline-approval",
+  }))
+);
+
+const allowProjectOwnerAsAssignee = computed((): boolean => {
+  const policy = approvalPolicy.value;
+  if (!policy) return false;
+
+  return allowProjectOwnerToApprove(policy, issue.value.type);
+});
 </script>
