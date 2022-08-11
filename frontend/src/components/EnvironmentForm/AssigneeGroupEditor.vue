@@ -114,17 +114,11 @@ watch(
 );
 
 watch(
-  [() => payload.value.value, () => payload.value.assigneeGroupList],
-  ([value, assigneeGroupList]) => {
+  () => payload.value.value,
+  (value) => {
     if (value === "MANUAL_APPROVAL_NEVER") {
       // Empty the array since it's meaningless when MANUAL_APPROVAL_NEVER
       emit("update", []);
-    } else if (
-      value === "MANUAL_APPROVAL_ALWAYS" &&
-      assigneeGroupList.length === 0
-    ) {
-      // Otherwise we set the default value if necessary
-      emit("update", getAssigneeGroupListByValue(DefaultAssigneeGroup));
     }
   },
   { immediate: true }
