@@ -7,6 +7,7 @@ import (
 	"time"
 
 	_ "github.com/bytebase/bytebase/docs/sqlservice" // initial the swagger doc
+	"github.com/bytebase/bytebase/plugin/metric/segment"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/common"
@@ -19,9 +20,10 @@ import (
 
 // Server is the Bytebase server.
 type Server struct {
-	profile   Profile
-	e         *echo.Echo
-	startedTs int64
+	profile        Profile
+	e              *echo.Echo
+	startedTs      int64
+	metricReporter *metricReporter
 }
 
 // Use following cmd to generate swagger doc
@@ -48,14 +50,19 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
 		profile:   prof,
 		startedTs: time.Now().Unix(),
+		metricReporter: &metricReporter{
+			workspaceID: prof.WorkspaceID,
+			reporter:    segment.NewReporter(prof.MetricConnectionKey, prof.WorkspaceID),
+		},
 	}
 
 	// Display config
-	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", prof.Mode)
-	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
-	fmt.Printf("debug=%t\n", prof.Debug)
-	fmt.Println("-----Config END-------")
+	log.Info("-----Config BEGIN-----")
+	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
+	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
+	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
+	log.Info(fmt.Sprintf("workspaceID=%s", prof.WorkspaceID))
+	log.Info("-----Config END-------")
 
 	serverStarted := false
 	defer func() {
@@ -87,6 +94,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	apiGroup := e.Group("/v1")
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return metricMiddleware(s, next)
+	})
 	s.registerAdvisorRoutes(apiGroup)
 
 	// Register healthz endpoint.

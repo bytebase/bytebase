@@ -230,7 +230,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
+					driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 					if err != nil {
 						return err
 					}
@@ -486,11 +486,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		backupCreate := &api.BackupCreate{}
+		backupCreate := &api.BackupCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create backup request").SetInternal(err)
 		}
-		backupCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
@@ -500,7 +501,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, backupCreate.StorageBackend, c.Get(getPrincipalIDContextKey()).(int))
+		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			if common.ErrorCode(err) == common.DbConnectionFailure {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
@@ -826,7 +827,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir, resourceDir string) (db.Driver, error) {
+func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
@@ -836,8 +837,8 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 		ctx,
 		instance.Engine,
 		db.DriverConfig{
-			PgInstanceDir: pgInstanceDir,
-			ResourceDir:   resourceDir,
+			PgInstanceDir: s.pgInstanceDir,
+			ResourceDir:   common.GetResourceDir(s.profile.DataDir),
 		},
 		connCfg,
 		db.ConnectionContext{

@@ -285,23 +285,22 @@ func (ctl *controller) waitForHealthz() error {
 			gURL := fmt.Sprintf("%s%s", ctl.rootURL, healthzURL)
 			req, err := http.NewRequest(http.MethodGet, gURL, nil)
 			if err != nil {
-				fmt.Printf("fail to create a new GET request(%q), error: %s", gURL, err.Error())
+				log.Error("Fail to create a new GET request", zap.String("URL", gURL), zap.Error(err))
 				continue
-
 			}
 
 			resp, err := ctl.client.Do(req)
 			if err != nil {
-				fmt.Printf("fail to send a GET request(%q), error: %s", gURL, err.Error())
+				log.Error("Fail to send a GET request", zap.String("URL", gURL), zap.Error(err))
 				continue
 			}
 
 			if resp.StatusCode != http.StatusOK {
 				body, err := io.ReadAll(resp.Body)
 				if err != nil {
-					fmt.Printf("failed to read http response body, error: %s", err.Error())
+					log.Error("Failed to read http response body", zap.Error(err))
 				}
-				fmt.Printf("http response error code %v body %q", resp.StatusCode, string(body))
+				log.Error("http response error", zap.Int("status_code", resp.StatusCode), zap.ByteString("body", body))
 				continue
 			}
 
@@ -309,10 +308,8 @@ func (ctl *controller) waitForHealthz() error {
 
 		case end := <-timer.C:
 			return fmt.Errorf("cannot wait for healthz in duration: %v", end.Sub(begin).Seconds())
-
 		}
 	}
-
 }
 
 // Close closes long running resources.
@@ -780,7 +777,6 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 						Status: api.TaskPending,
 					},
 					issue.Pipeline.ID); err != nil {
-
 					return fmt.Errorf("failed to patch task status for task %d, error: %w", task.ID, err)
 				}
 				return nil

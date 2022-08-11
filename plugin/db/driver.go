@@ -1,7 +1,6 @@
 package db
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
@@ -155,7 +154,7 @@ var (
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
 	PgInstanceDir string
-	// We use resrouce directory to splice the path of embedded binary, likes binaries in mysqlutil package.
+	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
 	ResourceDir string
 }
 
@@ -251,7 +250,9 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 		"TYPE",
 		"DESCRIPTION",
 	}
-	filePathRegex := filePathTemplate
+
+	// Escape "." characters to match literals instead of using it as a wildcard.
+	filePathRegex := strings.ReplaceAll(filePathTemplate, ".", `\.`)
 	for _, placeholder := range placeholderList {
 		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
 	}
@@ -421,10 +422,8 @@ type Driver interface {
 	// The returned string is the JSON encoded metadata for the logical dump.
 	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
-	// Restore the database from sc, which is a full backup.
-	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreTx restores the database from sc in the given transaction.
-	RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error
+	// Restore the database from src, which is a full backup.
+	Restore(ctx context.Context, src io.Reader) error
 }
 
 // Register makes a database driver available by the provided type.
@@ -457,7 +456,7 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 	}
 
 	if err := driver.Ping(ctx); err != nil {
-		driver.Close(ctx)
+		_ = driver.Close(ctx)
 		return nil, err
 	}
 

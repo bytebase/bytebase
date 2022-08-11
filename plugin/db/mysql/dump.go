@@ -1,12 +1,13 @@
 package mysql
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 )
 
 // Dump and restore.
@@ -166,11 +168,7 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
@@ -484,32 +482,34 @@ func isNumeric(t string) bool {
 func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 	var routines []*routineSchema
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
-		query := fmt.Sprintf("SHOW %s STATUS WHERE Db = ?;", routineType)
-		rows, err := txn.Query(query, dbName)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-
-		cols, err := rows.Columns()
-		if err != nil {
-			return nil, err
-		}
-		var values []interface{}
-		for i := 0; i < len(cols); i++ {
-			values = append(values, new(interface{}))
-		}
-		for rows.Next() {
-			var r routineSchema
-			if err := rows.Scan(values...); err != nil {
-				return nil, err
+		if err := func() error {
+			query := fmt.Sprintf("SHOW %s STATUS WHERE Db = ?;", routineType)
+			rows, err := txn.Query(query, dbName)
+			if err != nil {
+				return err
 			}
-			r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
-			r.routineType = fmt.Sprintf("%s", *values[2].(*interface{}))
+			defer rows.Close()
 
-			routines = append(routines, &r)
-		}
-		if err := rows.Err(); err != nil {
+			cols, err := rows.Columns()
+			if err != nil {
+				return err
+			}
+			var values []interface{}
+			for i := 0; i < len(cols); i++ {
+				values = append(values, new(interface{}))
+			}
+			for rows.Next() {
+				var r routineSchema
+				if err := rows.Scan(values...); err != nil {
+					return err
+				}
+				r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
+				r.routineType = fmt.Sprintf("%s", *values[2].(*interface{}))
+
+				routines = append(routines, &r)
+			}
+			return rows.Err()
+		}(); err != nil {
 			return nil, err
 		}
 	}
@@ -662,39 +662,44 @@ func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
-	txn, err := driver.db.BeginTx(ctx, nil)
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
+	databaseName, err := driver.databaseName(ctx)
 	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	if err := restoreTx(ctx, txn, sc); err != nil {
-		return err
+		return fmt.Errorf("cannot get the database name, error: %w", err)
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
+	mysqlArgs := []string{
+		"--host", driver.connCfg.Host,
+		"--user", driver.connCfg.Username,
+		"--database", databaseName,
+	}
+	if driver.connCfg.Port != "" {
+		mysqlArgs = append(mysqlArgs, "--port", driver.connCfg.Port)
+	}
+	if driver.connCfg.Password != "" {
+		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
+	}
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
+
+	var stderr bytes.Buffer
+	mysqlCmd.Stdin = sc
+	mysqlCmd.Stderr = &stderr
+
+	if err := mysqlCmd.Run(); err != nil {
+		return fmt.Errorf("mysql command fails, error: %w, %s", err, stderr.String())
 	}
 
 	return nil
 }
 
-// RestoreTx restores a database in the given transaction.
-func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
-	return restoreTx(ctx, tx, sc)
-}
-
-func restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
-	fnExecuteStmt := func(stmt string) error {
-		if _, err := tx.ExecContext(ctx, stmt); err != nil {
-			return err
+func (driver *Driver) databaseName(ctx context.Context) (string, error) {
+	query := `SELECT DATABASE();`
+	var database string
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&database); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil
+		return "", util.FormatErrorWithQuery(err, query)
 	}
-
-	if err := util.ApplyMultiStatements(sc, fnExecuteStmt); err != nil {
-		return err
-	}
-	return nil
+	return database, nil
 }

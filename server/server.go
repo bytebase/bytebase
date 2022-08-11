@@ -56,7 +56,6 @@ type Server struct {
 
 	profile       Profile
 	e             *echo.Echo
-	mysqlutil     mysqlutil.Instance
 	pgInstanceDir string
 	metaDB        *store.MetadataDB
 	store         *store.Store
@@ -106,17 +105,18 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Display config
-	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", prof.Mode)
-	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
-	fmt.Printf("datastore=%s:%d\n", prof.BackendHost, prof.DatastorePort)
-	fmt.Printf("frontend=%s:%d\n", prof.FrontendHost, prof.FrontendPort)
-	fmt.Printf("demoDataDir=%s\n", prof.DemoDataDir)
-	fmt.Printf("readonly=%t\n", prof.Readonly)
-	fmt.Printf("demo=%t\n", prof.Demo)
-	fmt.Printf("debug=%t\n", prof.Debug)
-	fmt.Printf("dataDir=%s\n", prof.DataDir)
-	fmt.Println("-----Config END-------")
+	log.Info("-----Config BEGIN-----")
+	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
+	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
+	log.Info(fmt.Sprintf("datastore=%s:%d", prof.BackendHost, prof.DatastorePort))
+	log.Info(fmt.Sprintf("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort))
+	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
+	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
+	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
+	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
+	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
+	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
+	log.Info("-----Config END-------")
 
 	serverStarted := false
 	defer func() {
@@ -129,22 +129,23 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
-	mysqlutilIns, err := mysqlutil.Install(resourceDir)
-	if err != nil {
+	if err := mysqlutil.Install(resourceDir); err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlutil = *mysqlutilIns
 
 	// Install Postgres.
-	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+	var pgDataDir string
+	if prof.useEmbedDB() {
+		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
+	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
-	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
-	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
+	log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
 	log.Info("-----Embedded Postgres Config END-----")
 	log.Info("Preparing embedded PostgreSQL instance...")
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH))
+	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
 	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
 	if err != nil {
 		return nil, err
@@ -216,9 +217,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
+		taskScheduler.Register(api.TaskDatabasePITRRestore, NewPITRRestoreTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
+		taskScheduler.Register(api.TaskDatabasePITRCutover, NewPITRCutoverTaskExecutor)
 
 		s.TaskScheduler = taskScheduler
 
@@ -231,6 +232,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor()
 		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
+
+		statementTypeExecutor := NewTaskCheckStatementTypeExecutor()
+		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
 
 		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor()
 		taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
@@ -386,10 +390,14 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	conf := &config{}
 
 	// initial JWT token
+	value, err := common.RandomString(secretLength)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate random JWT secret, error: %w", err)
+	}
 	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingAuthSecret,
-		Value:       common.RandomString(secretLength),
+		Value:       value,
 		Description: "Random string used to sign the JWT auth token.",
 	})
 	if err != nil {
@@ -428,6 +436,7 @@ func (s *Server) Run(ctx context.Context) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
+		s.runnerWG.Add(1)
 		go s.TaskScheduler.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
@@ -437,11 +446,10 @@ func (s *Server) Run(ctx context.Context) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
 
 		if s.MetricReporter != nil {
-			go s.MetricReporter.Run(ctx, &s.runnerWG)
 			s.runnerWG.Add(1)
+			go s.MetricReporter.Run(ctx, &s.runnerWG)
 		}
 	}
 

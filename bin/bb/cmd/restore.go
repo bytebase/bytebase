@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -38,12 +37,11 @@ func newRestoreCmd() *cobra.Command {
 
 // restoreDatabase restores the schema of a database instance.
 func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
-	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
+	f, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
 	}
 	defer f.Close()
-	sc := bufio.NewScanner(f)
 
 	db, err := open(ctx, u)
 	if err != nil {
@@ -51,7 +49,7 @@ func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	}
 	defer db.Close(ctx)
 
-	if err := db.Restore(ctx, sc); err != nil {
+	if err := db.Restore(ctx, f); err != nil {
 		return fmt.Errorf("failed to restore from database dump %s got error: %w", file, err)
 	}
 	return nil

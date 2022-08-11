@@ -144,6 +144,21 @@
               </div>
               <div class="grid grid-cols-2 gap-4 px-4 py-2 items-center">
                 <dt class="text-sm font-medium text-control-light text-right">
+                  Homepage URL
+                </dt>
+                <dd class="text-sm text-main items-center flex">
+                  https://bytebase.com
+                  <button
+                    tabindex="-1"
+                    class="ml-1 text-sm font-medium text-control-light hover:bg-gray-100"
+                    @click.prevent="copyHomepageURL"
+                  >
+                    <heroicons-outline:clipboard class="w-6 h-6" />
+                  </button>
+                </dd>
+              </div>
+              <div class="grid grid-cols-2 gap-4 px-4 py-2 items-center">
+                <dt class="text-sm font-medium text-control-light text-right">
                   Authorization callback URL
                 </dt>
                 <dd class="text-sm text-main items-center flex">
@@ -268,12 +283,26 @@ export default defineComponent({
       return "";
     });
 
+    const copyHomepageURL = () => {
+      toClipboard("https://bytebase.com").then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t(
+            "version-control.setting.add-git-provider.oauth-info.copy-homepage-url"
+          ),
+        });
+      });
+    };
+
     const copyRedirectURI = () => {
       toClipboard(redirectUrl()).then(() => {
         pushNotification({
           module: "bytebase",
           style: "INFO",
-          title: `Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.`,
+          title: t(
+            "version-control.setting.add-git-provider.oauth-info.copy-redirect-uri"
+          ),
         });
       });
     };
@@ -382,6 +411,7 @@ export default defineComponent({
       redirectUrl,
       state,
       createAdminApplicationUrl,
+      copyHomepageURL,
       copyRedirectURI,
       changeApplicationId,
       changeSecret,

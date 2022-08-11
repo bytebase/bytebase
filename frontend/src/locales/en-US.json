@@ -242,7 +242,8 @@
       "migration-schema": "Migration schema",
       "sql-review": "SQL review",
       "earliest-allowed-time": "Earliest allowed time",
-      "ghost-sync": "gh-ost sync"
+      "ghost-sync": "gh-ost sync",
+      "statement-type": "Statement type"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
@@ -509,7 +510,7 @@
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
-    "vcs-info": "indicates the project has enabled VCS based version control. Selecting database belonging to such project will navigate you to the corresponding Git repository to initiate the change process.",
+    "vcs-info": "VCS enabled. Selecting this will navigate you to the corresponding Git repository to initiate the change process.",
     "alter-single-db": "Alter single database",
     "alter-multiple-db": "Alter multiple databases",
     "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments."
@@ -529,11 +530,12 @@
     "troubleshoot": "Troubleshoot",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
-    "from-default-project": "From Default project",
-    "from-other-projects": "From other projects",
-    "transfer-in-db-title": "Transfer in database from other projects",
-    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project.",
-    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?"
+    "from-unassigned-databases": "From unassigned databases",
+    "from-projects": "From projects",
+    "transfer-in-db-title": "Transfer in database",
+    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in the default project.",
+    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
+    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in unassigned databases."
   },
   "create-db": {
     "new-database-name": "New database name",
@@ -689,7 +691,7 @@
       "new-user": "New to Bytebase?",
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
-      "gitlab-demo": "GitLab login is disabled in Demo mode",
+      "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login"
     },
     "password-forget": {
@@ -854,7 +856,11 @@
         "retention-period": "Retention period(days)"
       }
     },
-    "backup-policy-violation": "Backup policy violation"
+    "backup-policy-violation": "Backup policy violation",
+    "synced-at": "Synced at {time}",
+    "not-found-last-successful-sync-was": "Not found, last successful sync was {time}",
+    "view-unassigned-databases": "View unassigned databases",
+    "unassigned-databases": "Unassigned databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -892,6 +898,7 @@
     "choose-git-provider-visit-workspace": "Visit {workspace} setting to add more Git providers.",
     "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, and GitHub Enterprise later.",
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
+    "select-repository-attention-github": "Bytebase only lists GitHub repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
     "select-repository-search": "Search repository",
     "linked": "Linked repositories",
     "role-provider": "Project role provider",
@@ -960,7 +967,7 @@
       "recent-activity": "Recent @.lower:{'common.activities'}",
       "in-progress": "In progress",
       "recently-closed": "Recently Closed",
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.",
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
       "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
     },
     "webhook": {
@@ -1080,6 +1087,8 @@
           "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
           "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
+          "copy-homepage-url": "Homepage URL copied to clipboard. Paste to the corresponding field on the OAuth application form.",
+          "copy-redirect-uri": "Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.",
           "direct-link": "Direct link",
           "create-oauth-app": "Create your Bytebase OAuth application with the following info.",
           "gitlab-application-id-error": "Application ID must be a 64-character alphanumeric string",
@@ -1236,7 +1245,9 @@
     "save-sheet-input-placeholder": "Please input a sheet name",
     "untitled-sheet": "Untitled Sheet",
     "format": "Format",
-    "sql-review-result": "SQL review result"
+    "sql-review-result": "SQL review result",
+    "alter-table": "Alter table",
+    "open-connection": "Open connection"
   },
   "label": {
     "empty-label-value": "<Empty Value>",

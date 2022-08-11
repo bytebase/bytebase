@@ -134,17 +134,18 @@ func TestFetchBinlogFiles(t *testing.T) {
 	a.NoError(err)
 	defer db.Close()
 
-	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), "")
+	utilDir := t.TempDir()
+	err = mysqlutil.Install(utilDir)
+	a.NoError(err)
+
+	driver, err := getTestMySQLDriverWithResourceDir(ctx, strconv.Itoa(port), "", utilDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	a.Equal(true, ok)
-	utilDir := t.TempDir()
-	utilInstance, err := mysqlutil.Install(utilDir)
 	binlogDir := t.TempDir()
-	mysqlDriver.SetUpForPITR(*utilInstance, binlogDir)
-	a.NoError(err)
+	mysqlDriver.SetUpForPITR(binlogDir)
 
 	// init schema
 	_, err = db.ExecContext(ctx, `

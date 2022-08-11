@@ -22,6 +22,7 @@ type License struct {
 	IssuedTs      int64
 	Plan          api.PlanType
 	Trialing      bool
+	OrgName       string
 }
 
 // Valid will check if license expired or has correct plan type.
@@ -30,11 +31,7 @@ func (l *License) Valid() error {
 		return fmt.Errorf("license has expired at %v", expireTime)
 	}
 
-	if err := l.validPlanType(); err != nil {
-		return err
-	}
-
-	return nil
+	return l.validPlanType()
 }
 
 func (l *License) validPlanType() error {

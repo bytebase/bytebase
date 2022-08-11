@@ -9,6 +9,7 @@ export * from "./project";
 export * from "./role";
 export * from "./slug";
 export * from "./table";
+export * from "./types";
 export * from "./util";
 export * from "./label";
 export * from "./deployment";

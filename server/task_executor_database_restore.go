@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -83,7 +82,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir, server.profile.DataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup); err != nil {
 		return true, nil, err
 	}
 
@@ -123,8 +122,8 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 }
 
 // restoreDatabase will restore the database from a backup.
-func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir, resourceDir string) error {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir, resourceDir)
+func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) error {
+	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
 	}
@@ -132,17 +131,16 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instanc
 
 	backupPath := backup.Path
 	if !filepath.IsAbs(backupPath) {
-		backupPath = filepath.Join(dataDir, backupPath)
+		backupPath = filepath.Join(server.profile.DataDir, backupPath)
 	}
 
-	f, err := os.OpenFile(backupPath, os.O_RDONLY, os.ModePerm)
+	f, err := os.Open(backupPath)
 	if err != nil {
 		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
 	}
 	defer f.Close()
-	sc := bufio.NewScanner(f)
 
-	if err := driver.Restore(ctx, sc); err != nil {
+	if err := driver.Restore(ctx, f); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)
 	}
 	return nil
@@ -153,7 +151,7 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instanc
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
 func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
-	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, server.pgInstanceDir, common.GetResourceDir(server.profile.DataDir))
+	targetDriver, err := server.getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name)
 	if err != nil {
 		return -1, "", err
 	}

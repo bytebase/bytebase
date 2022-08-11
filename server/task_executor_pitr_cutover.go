@@ -12,21 +12,17 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
-	return &PITRCutoverTaskExecutor{
-		mysqlutil: instance,
-	}
+func NewPITRCutoverTaskExecutor() TaskExecutor {
+	return &PITRCutoverTaskExecutor{}
 }
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
 	completed int32
-	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR cutover task executor once.
@@ -91,7 +87,7 @@ func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
 func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */, common.GetResourceDir(server.profile.DataDir))
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
 	}
@@ -116,7 +112,7 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
 
 	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
+	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
 		return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
 	}
 

@@ -79,6 +79,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
 			if principal == nil { // try to create principal
+				password, err := common.RandomString(20)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random password").SetInternal(err)
+				}
 				signUpInfo := &api.SignUp{
 					Name:  projectMember.Name,
 					Email: projectMember.Email,
@@ -86,7 +90,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					// To prevent potential security issues, we use random string to set up her password.
 					// This is another safety measure since we already disallow user login via password
 					// if the principal uses external auth provider
-					Password: common.RandomString(20),
+					Password: password,
 				}
 				createdPrincipal, httpErr := trySignUp(ctx, s, signUpInfo, c.Get(getPrincipalIDContextKey()).(int))
 				if httpErr != nil {

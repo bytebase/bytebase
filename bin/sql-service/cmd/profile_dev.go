@@ -17,5 +17,6 @@ func activeProfile() server.Profile {
 		Version:             version,
 		GitCommit:           gitcommit,
 		MetricConnectionKey: "",
+		WorkspaceID:         flags.workspaceID,
 	}
 }

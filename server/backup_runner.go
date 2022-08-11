@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
@@ -207,13 +206,13 @@ func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 	for _, instance := range instanceList {
 		if _, ok := r.downloadBinlogInstanceIDs[instance.ID]; !ok {
 			r.downloadBinlogInstanceIDs[instance.ID] = true
-			go r.downloadBinlogFilesForInstance(ctx, instance, r.server.profile.DataDir, r.server.mysqlutil)
+			go r.downloadBinlogFilesForInstance(ctx, instance, r.server.profile.DataDir)
 			r.downloadBinlogWg.Add(1)
 		}
 	}
 }
 
-func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
+func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string) {
 	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
 	defer func() {
 		r.downloadBinlogMu.Lock()
@@ -221,7 +220,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		r.downloadBinlogMu.Unlock()
 		r.downloadBinlogWg.Done()
 	}()
-	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */, common.GetResourceDir(r.server.profile.DataDir))
+	driver, err := r.server.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
 			log.Warn("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
@@ -242,7 +241,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
+	mysqlDriver.SetUpForPITR(binlogDir)
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
@@ -288,7 +287,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 				zap.String("database", database.Name),
 				zap.String("backup", backupName),
 			)
-			if _, err := r.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
+			if _, err := r.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.SystemBotID); err != nil {
 				log.Error("Failed to create automatic backup for database",
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
@@ -309,9 +308,9 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 	}
 }
 
-func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, storageBackend api.BackupStorageBackend, creatorID int) (*api.Backup, error) {
+func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
+	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get admin database driver, error: %w", err)
 	}
@@ -329,7 +328,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		CreatorID:               creatorID,
 		DatabaseID:              database.ID,
 		Name:                    backupName,
-		StorageBackend:          storageBackend,
+		StorageBackend:          s.profile.BackupStorageBackend,
 		Type:                    backupType,
 		Path:                    path,
 		MigrationHistoryVersion: migrationHistoryVersion,

@@ -12,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -195,7 +194,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// Validate the request body first because there is no point in unmarshalling
 		// the request body if the signature doesn't match.
-		if !validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body) {
+		validated, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
+		}
+		if !validated {
 			return echo.NewHTTPError(http.StatusBadRequest, "Mismatched payload signature")
 		}
 
@@ -270,16 +273,18 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
 // HMAC hex digested SHA256 hash of the body using the given key.
-func validateGitHubWebhookSignature256(signature, key string, body []byte) bool {
+func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool, error) {
 	signature = strings.TrimPrefix(signature, "sha256=")
 	m := hmac.New(sha256.New, []byte(key))
-	m.Write(body)
+	if _, err := m.Write(body); err != nil {
+		return false, err
+	}
 	got := hex.EncodeToString(m.Sum(nil))
 
 	// NOTE: Use constant time string comparison helps mitigate certain timing
 	// attacks against regular equality operators, see
 	// https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks#validating-payloads-from-github
-	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1
+	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
 // We are observing the push webhook event so that we will receive the event either when:
@@ -513,7 +518,8 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 		}
 	}
 
-	mi, err := db.ParseMigrationInfo(fileEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	mi, err := db.ParseMigrationInfo(fileEscaped, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
 	if err != nil {
 		createIgnoredFileActivity(err)
 		return "", false, nil

@@ -81,22 +81,22 @@ INSERT INTO "public"."col" ("id", "row_status", "creator_id", "created_ts", "upd
 (248, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'Manager', 12, NULL, 'f', 'varchar(14)', 'utf8mb4', 'utf8mb4_0900_ai_ci', ''),
 (249, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'PhoneNo', 9, NULL, 'f', 'varchar(15)', 'utf8mb4', 'utf8mb4_0900_ai_ci', '');
 
-INSERT INTO "public"."idx" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "database_id", "table_id", "name", "expression", "position", "type", "unique", "visible", "comment") VALUES
-(158, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'PRIMARY', 'dept_no', 1, 'BTREE', 't', 't', ''),
-(159, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'dept_name', 'dept_name', 1, 'BTREE', 't', 't', ''),
-(160, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(161, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'from_date', 2, 'BTREE', 't', 't', ''),
-(162, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(163, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'title', 2, 'BTREE', 't', 't', ''),
-(164, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'from_date', 3, 'BTREE', 't', 't', ''),
-(165, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(166, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'dept_no', 2, 'BTREE', 't', 't', ''),
-(167, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'dept_no', 'dept_no', 1, 'BTREE', 'f', 't', ''),
-(168, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(169, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'dept_no', 2, 'BTREE', 't', 't', ''),
-(170, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'dept_no', 'dept_no', 1, 'BTREE', 'f', 't', ''),
-(171, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 131, 'PRIMARY', 'drift_no', 1, 'BTREE', 't', 't', ''),
-(172, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', '');
+INSERT INTO "public"."idx" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "database_id", "table_id", "name", "expression", "position", "type", "primary", "unique", "visible", "comment") VALUES
+(158, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'PRIMARY', 'dept_no', 1, 'BTREE', false, 't', 't', ''),
+(159, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'dept_name', 'dept_name', 1, 'BTREE', false, 't', 't', ''),
+(160, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(161, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'from_date', 2, 'BTREE', false, 't', 't', ''),
+(162, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(163, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'title', 2, 'BTREE', false, 't', 't', ''),
+(164, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'from_date', 3, 'BTREE', false, 't', 't', ''),
+(165, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(166, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'dept_no', 2, 'BTREE', false, 't', 't', ''),
+(167, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'dept_no', 'dept_no', 1, 'BTREE', false, 'f', 't', ''),
+(168, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(169, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'dept_no', 2, 'BTREE', false, 't', 't', ''),
+(170, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'dept_no', 'dept_no', 1, 'BTREE', false, 'f', 't', ''),
+(171, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 131, 'PRIMARY', 'drift_no', 1, 'BTREE', false, 't', 't', ''),
+(172, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', '');
 
 INSERT INTO "public"."data_source" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "instance_id", "database_id", "name", "type", "username", "password", "ssl_key", "ssl_cert", "ssl_ca") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 101, 'Admin data source', 'ADMIN', 'root', '', '', '', ''),

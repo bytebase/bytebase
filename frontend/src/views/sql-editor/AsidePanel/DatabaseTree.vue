@@ -19,21 +19,20 @@
         :data="treeData"
         :pattern="searchPattern"
         :default-expanded-keys="defaultExpanedKeys"
-        :default-selected-keys="defaultSelectedKeys"
         :selected-keys="selectedKeys"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
       />
       <n-dropdown
-        trigger="manual"
         placement="bottom-start"
-        :show="showDropdown"
+        trigger="manual"
+        :x="dropdownPosition.x"
+        :y="dropdownPosition.y"
         :options="dropdownOptions"
-        :x="x"
-        :y="y"
+        :show="showDropdown"
+        :on-clickoutside="handleClickoutside"
         @select="handleSelect"
-        @clickoutside="handleClickoutside"
       />
     </div>
   </div>
@@ -43,10 +42,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, h } from "vue";
 import { cloneDeep, omit, escape } from "lodash-es";
-import { useRouter } from "vue-router";
 import { TreeOption, DropdownOption } from "naive-ui";
+import { ref, computed, h, nextTick, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 import {
   ConnectionAtom,
@@ -54,29 +54,43 @@ import {
   Database,
   UNKNOWN_ID,
 } from "@/types";
-import {
-  useDatabaseStore,
-  useInstanceStore,
-  useTabStore,
-  useSQLEditorStore,
-} from "@/store";
+import { useDatabaseStore, useInstanceStore, useSQLEditorStore } from "@/store";
 import { connectionSlug, getHighlightHTMLByKeyWords } from "@/utils";
 import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
-import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
+import OpenConnectionIcon from "@/components/SQLEditor/OpenConnectionIcon.vue";
+
+type Position = {
+  x: number;
+  y: number;
+};
+
+const { t } = useI18n();
 
 const router = useRouter();
 const instanceStore = useInstanceStore();
-const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 
+const defaultExpanedKeys = ref<string[]>([]);
 const searchPattern = ref();
 const showDropdown = ref(false);
-const x = ref(0);
-const y = ref(0);
+const dropdownPosition = ref<Position>({
+  x: 0,
+  y: 0,
+});
 const selectedKeys = ref<string[] | number[]>([]);
 const sheetContext = ref<DropdownOption>();
+
+onMounted(() => {
+  const ctx = sqlEditorStore.connectionContext;
+  if (ctx.hasSlug) {
+    defaultExpanedKeys.value = [
+      `instance-${ctx.instanceId}`,
+      `database-${ctx.databaseId}`,
+    ];
+  }
+});
 
 const dropdownOptions = computed(() => {
   if (!sheetContext.value) {
@@ -84,21 +98,16 @@ const dropdownOptions = computed(() => {
   } else if (sheetContext.value.type === "table") {
     return [
       {
-        label: "Alter table",
-        key: "editor.sheet.alter-table",
+        key: "alter-table",
+        label: t("sql-editor.alter-table"),
         item: sheetContext.value,
       },
     ];
   } else {
     return [
       {
-        label: "Set as context",
-        key: "editor.sheet.set-context",
-        item: sheetContext.value,
-      },
-      {
-        label: "Open in new tab",
-        key: "editor.sheet.new",
+        key: "open-connection",
+        label: t("sql-editor.open-connection"),
         item: sheetContext.value,
       },
     ];
@@ -138,24 +147,6 @@ const treeData = computed(() => {
         }),
     };
   });
-});
-
-const defaultExpanedKeys = computed(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  if (ctx.hasSlug) {
-    return [`instance-${ctx.instanceId}`, `database-${ctx.databaseId}`];
-  } else {
-    return [];
-  }
-});
-
-const defaultSelectedKeys = computed(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  if (ctx.hasSlug) {
-    return [`database-${ctx.databaseId}`];
-  } else {
-    return [];
-  }
 });
 
 const getFlattenConnectionTree = () => {
@@ -274,16 +265,11 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 
 // render the suffix icon
 const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const renderSuffixHTML = h(HeroiconsSolidDotsHorizontal, {
+  const renderSuffixHTML = h(OpenConnectionIcon, {
     id: "tree-node-suffix",
-    class:
-      "n-tree-node-content__suffix-icon h-4 w-4 absolute right-0 top-0 hidden",
-    onClick: (e: MouseEvent) => {
-      sheetContext.value = option;
-      showDropdown.value = true;
-      x.value = e.clientX;
-      y.value = e.clientY;
-      e.preventDefault();
+    class: "n-tree-node-content__suffix-icon",
+    onClick: function () {
+      setSheetContext(option);
     },
   });
 
@@ -323,15 +309,10 @@ const handleSelect = (key: string) => {
     (item) => item.key === key
   ) as DropdownOption;
 
-  if (key === "editor.sheet.alter-table") {
+  if (key === "alter-table") {
     gotoAlterSchema(option.item);
-  } else if (key === "editor.sheet.set-context") {
+  } else if (key === "open-connection") {
     setSheetContext(option.item);
-  } else if (key === "editor.sheet.new") {
-    // set the sheet context first
-    setSheetContext(option.item);
-    // and then create a new tab
-    tabStore.addTab();
   }
 
   showDropdown.value = false;
@@ -345,7 +326,7 @@ const nodeProps = (info: { option: TreeOption }) => {
   const { option } = info;
 
   return {
-    onClick: (e: MouseEvent) => {
+    onClick(e: MouseEvent) {
       const targetEl = e.target as HTMLElement;
       if (option && targetEl.className === "n-tree-node-content__text") {
         let ctx = cloneDeep(
@@ -356,14 +337,18 @@ const nodeProps = (info: { option: TreeOption }) => {
       }
     },
     onContextmenu(e: MouseEvent) {
-      sheetContext.value = option;
-      showDropdown.value = true;
-      x.value = e.clientX;
-      y.value = e.clientY;
+      e.preventDefault();
+      showDropdown.value = false;
       if (option && option.key) {
+        sheetContext.value = option;
         selectedKeys.value = [option.key as string];
       }
-      e.preventDefault();
+
+      nextTick().then(() => {
+        showDropdown.value = true;
+        dropdownPosition.value.x = e.clientX;
+        dropdownPosition.value.y = e.clientY;
+      });
     },
   };
 };
@@ -378,19 +363,12 @@ const nodeProps = (info: { option: TreeOption }) => {
   border-bottom-color: transparent;
 }
 
-.n-tree .n-tree-node-content .n-tree-node-content__text {
-  @apply truncate;
-}
-
 .n-tree .n-tree-node .n-tree-node-content__suffix {
-  @apply w-4 h-4 flex items-center relative ml-1;
+  @apply w-5 h-full items-center justify-center absolute right-0 bg-white ml-1 hidden;
 }
 
-.n-tree
-  .n-tree-node:hover
-  .n-tree-node-content__suffix
-  .n-tree-node-content__suffix-icon {
-  @apply block;
+.n-tree .n-tree-node:hover .n-tree-node-content__suffix {
+  @apply flex;
 }
 </style>
 

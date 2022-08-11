@@ -9,6 +9,24 @@
     }
   },
   {
+    "selector": "[data-label='bb-dashboard-header']",
+    "url": ".*",
+    "type": "shield",
+    "additionStyle": {
+      "backdropFilter": "unset",
+      "background": "transparent"
+    }
+  },
+  {
+    "selector": "[data-label='bb-dashboard-static-sidebar']",
+    "url": ".*",
+    "type": "shield",
+    "additionStyle": {
+      "backdropFilter": "unset",
+      "background": "transparent"
+    }
+  },
+  {
     "selector": "[data-label='bb-migration-history-establish-baseline-alert'] [data-label='bb-alert-ok-button']",
     "type": "shield",
     "url": ".+?/db/.+?#migration-history$",
@@ -25,57 +43,6 @@
     }
   },
   {
-    "selector": "[data-label='bb-dashboard-header-database-entry']",
-    "url": "^(?!.+/(db|issue/))",
-    "cover": true,
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "Click here. Let's enter the DEMO",
-        "zh-CN": "点击这里，让我们进入 DEMO"
-      },
-      "alwaysShow": true
-    }
-  },
-  {
-    "selector": "[data-label='bb-database-table']",
-    "url": ".+?/db",
-    "cover": true,
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "Selecting the target database",
-        "zh-CN": "选择目标数据库"
-      },
-      "alwaysShow": true,
-      "position": "bottom"
-    }
-  },
-  {
-    "selector": "[data-label='bb-main-body-wrapper']",
-    "url": ".+?/(db|issue)/.+",
-    "cover": true
-  },
-  {
-    "selector": "[data-label='bb-database-detail-tab'] button:nth-child(2)",
-    "url": ".+?/db/.+?#overview$",
-    "type": "tooltip",
-    "position": "center",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "All migration records are here.",
-        "zh-CN": "所有的变更记录都在这里"
-      },
-      "alwaysShow": true,
-      "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "7px",
-      "marginTop": "10px"
-    }
-  },
-  {
     "selector": "[data-label='bb-database-detail-tab'] button:nth-child(3)",
     "url": ".*",
     "type": "shield",
@@ -85,21 +52,18 @@
     }
   },
   {
-    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(2)",
+    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(4) > a",
     "url": ".+?/db/.+?#migration-history$",
     "type": "tooltip",
-    "position": "leftcenter",
+    "position": "center",
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "In this migration, drift is detected. Click for more.",
-        "zh-CN": "一次常规的变更，其中检测到了偏差。点击查看详情"
+        "en-US": "Let's take a closer look at the issue it generates.",
+        "zh-CN": "让我们来详细看看它产生的工单"
       },
       "alwaysShow": true,
       "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "-16px"
     }
   },
   {
@@ -119,20 +83,6 @@
     "additionStyle": {
       "marginLeft": "2px",
       "marginTop": "10px"
-    }
-  },
-  {
-    "selector": "a.bb-comment-link",
-    "url": ".+?/issue/.+",
-    "type": "tooltip",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "Let's go back to Migration History.",
-        "zh-CN": "让我们回到 Migration History"
-      },
-      "alwaysShow": true,
-      "position": "right"
     }
   }
 ]

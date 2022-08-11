@@ -65,6 +65,7 @@ func (s *Server) loadSubscription() enterpriseAPI.Subscription {
 			InstanceCount: license.InstanceCount,
 			Trialing:      license.Trialing,
 			OrgID:         license.OrgID(),
+			OrgName:       license.OrgName,
 		}
 	}
 

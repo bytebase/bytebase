@@ -2,7 +2,7 @@ package ast
 
 // DeleteStmt is the struct for delete statement.
 type DeleteStmt struct {
-	node
+	dml
 
 	Table       *TableDef
 	WhereClause ExpressionNode

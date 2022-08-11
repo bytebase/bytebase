@@ -32,7 +32,7 @@ info:
   version: "1.0"
 paths:
   /sql/advise:
-    get:
+    post:
       consumes:
       - '*/*'
       description: Parse and check the SQL statement according to the SQL review policy.

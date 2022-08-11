@@ -13,6 +13,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -94,14 +95,13 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 }
 
 // SetUpForPITR sets necessary fields for MySQL PITR recovery.
-func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogDir string) {
-	driver.mysqlutil = mysqlutilInstance
+func (driver *Driver) SetUpForPITR(binlogDir string) {
 	driver.binlogDir = binlogDir
 }
 
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	replayBinlogPaths, err := getBinlogReplayList(startBinlogInfo, driver.binlogDir)
+	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, driver.binlogDir)
 	if err != nil {
 		return err
 	}
@@ -160,8 +160,8 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
 
-	mysqlbinlogCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
-	mysqlCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
+	mysqlbinlogCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), mysqlbinlogArgs...)
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
 	log.Debug("Start replay binlog commands.",
 		zap.String("mysqlbinlog", mysqlbinlogCmd.String()),
 		zap.String("mysql", mysqlCmd.String()))
@@ -174,9 +174,11 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 
 	mysqlbinlogCmd.Stderr = os.Stderr
 
+	countingReader := common.NewCountingReader(mysqlRead)
 	mysqlCmd.Stderr = os.Stderr
 	mysqlCmd.Stdout = os.Stderr
-	mysqlCmd.Stdin = mysqlRead
+	mysqlCmd.Stdin = countingReader
+	driver.replayBinlogCounter = countingReader
 
 	if err := mysqlbinlogCmd.Start(); err != nil {
 		return fmt.Errorf("cannot start mysqlbinlog command, error: %w", err)
@@ -192,20 +194,24 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	return nil
 }
 
+// GetReplayedBinlogBytes gets the replayed binlog bytes.
+func (driver *Driver) GetReplayedBinlogBytes() int64 {
+	if driver.replayBinlogCounter == nil {
+		return 0
+	}
+	return driver.replayBinlogCounter.Count()
+}
+
 // RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
 // It performs the step 1 of the restore process.
 // TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
-func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
+func (driver *Driver) RestorePITR(ctx context.Context, fullBackup io.Reader, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	query := fmt.Sprintf(""+
+	stmt := fmt.Sprintf(""+
 		// Create the pitr database.
 		"CREATE DATABASE `%s`;"+
 		// Change to the pitr database.
-		"USE `%s`;"+
-		// Set this to ignore foreign key constraints, otherwise the recovery of the full backup may encounter
-		// wrong foreign key dependency order and fail.
-		// We should turn it on after we the restore the full backup.
-		"SET foreign_key_checks=OFF",
+		"USE `%s`;",
 		pitrDatabaseName, pitrDatabaseName)
 
 	db, err := driver.GetDBConnection(ctx, "")
@@ -213,26 +219,11 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 		return err
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query); err != nil {
+	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
 
-	if err := driver.RestoreTx(ctx, tx, fullBackup); err != nil {
-		return err
-	}
-
-	// The full backup is restored successfully, enable foreign key constraints as normal.
-	if _, err := tx.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if err := driver.Restore(ctx, fullBackup); err != nil {
 		return err
 	}
 
@@ -243,8 +234,8 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 	return nil
 }
 
-// getBinlogReplayList returns the path list of the binlog that need be replayed.
-func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+// GetBinlogReplayList returns the path list of the binlog that need be replayed.
+func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
 	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name %q, error: %w", startBinlogInfo.FileName, err)
@@ -373,7 +364,7 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 				"--base64-output=DECODE-ROWS",
 				filepath.Join(driver.binlogDir, fmt.Sprintf("binlog.%06d", targetBinlogCoordinate.Seq)),
 			}
-			cmd := exec.Command(driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+			cmd := exec.Command(mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 			var out bytes.Buffer
 			cmd.Stdout = &out
 			if err := cmd.Run(); err != nil {
@@ -597,7 +588,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 		args = append(args, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
 
-	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
@@ -770,7 +761,7 @@ func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 	}
-	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {
@@ -815,7 +806,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
 		"--start-datetime", formatDateTime(targetTs),
 	}
-	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {
@@ -893,10 +884,7 @@ func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := checkVersionForPITR(value); err != nil {
-		return err
-	}
-	return nil
+	return checkVersionForPITR(value)
 }
 
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.

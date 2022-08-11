@@ -24,6 +24,8 @@ issues:
     - Rollback
     - logger.Sync
     - pgInstance.Stop
+    - fmt.Printf
+    - fmt.Print
 
 run:
   timeout: 5m
@@ -65,19 +67,6 @@ linters-settings:
       - name: import-shadowing
         disabled: true
       - name: early-return
-        disabled: true
-      # TODO(dragonly): Remove the rules below in the following PRs.
-      - name: unhandled-error
-        disabled: true
-      - name: if-return
-        disabled: true
-      - name: empty-block
-        disabled: true
-      - name: empty-lines
-        disabled: true
-      - name: confusing-naming
-        disabled: true
-      - name: defer
         disabled: true
   gocritic:
     disabled-checks:

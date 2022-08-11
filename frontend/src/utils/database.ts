@@ -55,7 +55,7 @@ export function sortDatabaseList(
   });
 }
 
-const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.6.0";
+const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
 
 export function allowGhostMigration(databaseList: Database[]): boolean {
   const groupByEnvironment = groupBy(

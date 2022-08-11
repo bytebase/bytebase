@@ -399,7 +399,6 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				return nil, fmt.Errorf("failed to create task DAG for issue, error %w", err)
 			}
 		}
-
 	}
 
 	return pipelineCreated, nil
@@ -583,7 +582,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
 	}
 
-	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, c.PointInTimeTs)
+	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, *c.PointInTimeTs)
 	if err != nil {
 		return nil, err
 	}
@@ -864,7 +863,7 @@ func createPITRTaskList(database *api.Database, projectID int, targetTs int64) (
 	// task: create and restore to PITR database
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
 		ProjectID:     projectID,
-		PointInTimeTs: targetTs,
+		PointInTimeTs: &targetTs,
 	}
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
@@ -1238,7 +1237,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", nil
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
+	driver, err := s.getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name)
 	if err != nil {
 		return "", "", err
 	}
