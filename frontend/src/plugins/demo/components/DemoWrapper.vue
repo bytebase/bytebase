@@ -1,24 +1,17 @@
 <template>
-  <Transition name="drawer">
-    <DemoDrawer v-if="state.showDemoDrawer" @close="handleDemoDrawerClose" />
-  </Transition>
-  <Transition name="process-bar">
-    <ProcessBar
-      v-if="state.showProcessBar"
-      @finish.once="handleProcessFinished"
-    />
-  </Transition>
+  <ProcessBar v-if="state.showProcessBar" @close.once="handleProcessClose" />
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive } from "vue";
+import { onMounted, reactive, watchEffect } from "vue";
+import { useRoute } from "vue-router";
+import { removeDemo } from "..";
 import { fetchDemoDataWithName } from "../data";
 import useAppStore from "../store";
-import DemoDrawer from "./DemoDrawer.vue";
 import ProcessBar from "./ProcessBar.vue";
 
 interface LocalState {
-  showDemoDrawer: boolean;
+  completed: boolean;
   showProcessBar: boolean;
 }
 
@@ -27,10 +20,11 @@ const props = defineProps<{
 }>();
 
 const state = reactive<LocalState>({
-  showDemoDrawer: false,
+  completed: false,
   showProcessBar: false,
 });
 
+const route = useRoute();
 const store = useAppStore();
 
 onMounted(async () => {
@@ -49,32 +43,23 @@ onMounted(async () => {
   } catch (error) {
     // do nth
   }
+
+  watchEffect(() => {
+    if (state.completed) {
+      return;
+    }
+
+    if (String(route.name).startsWith("auth")) {
+      state.showProcessBar = false;
+    } else {
+      state.showProcessBar = true;
+    }
+  });
 });
 
-const handleDemoDrawerClose = () => {
-  state.showDemoDrawer = false;
-};
-
-const handleProcessFinished = () => {
-  state.showDemoDrawer = true;
+const handleProcessClose = () => {
+  state.showProcessBar = false;
+  state.completed = true;
+  removeDemo();
 };
 </script>
-
-<style scoped>
-.drawer-enter-active,
-.drawer-leave-active,
-.process-bar-leave-active,
-.process-bar-leave-active {
-  @apply transition-all duration-300;
-}
-
-.drawer-enter-from,
-.drawer-leave-to {
-  @apply translate-x-full;
-}
-
-.process-bar-enter-from,
-.process-bar-leave-to {
-  @apply translate-y-full;
-}
-</style>

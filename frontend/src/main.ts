@@ -6,7 +6,7 @@ import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
-import "./plugins/demo";
+import mountDemoApp from "./plugins/demo";
 import { router } from "./router";
 import {
   pinia,
@@ -153,4 +153,10 @@ const restoreUser = () => {
 };
 Promise.all([initActuator(), initSubscription(), restoreUser()]).finally(() => {
   app.mount("#app");
+
+  // Try to mount demo vue app instance
+  const serverInfo = useActuatorStore().serverInfo;
+  if ((serverInfo && serverInfo.demo && serverInfo.demoName) || isDev()) {
+    mountDemoApp();
+  }
 });
