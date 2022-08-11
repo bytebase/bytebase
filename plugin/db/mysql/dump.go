@@ -482,32 +482,34 @@ func isNumeric(t string) bool {
 func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 	var routines []*routineSchema
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
-		query := fmt.Sprintf("SHOW %s STATUS WHERE Db = ?;", routineType)
-		rows, err := txn.Query(query, dbName)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-
-		cols, err := rows.Columns()
-		if err != nil {
-			return nil, err
-		}
-		var values []interface{}
-		for i := 0; i < len(cols); i++ {
-			values = append(values, new(interface{}))
-		}
-		for rows.Next() {
-			var r routineSchema
-			if err := rows.Scan(values...); err != nil {
-				return nil, err
+		if err := func() error {
+			query := fmt.Sprintf("SHOW %s STATUS WHERE Db = ?;", routineType)
+			rows, err := txn.Query(query, dbName)
+			if err != nil {
+				return err
 			}
-			r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
-			r.routineType = fmt.Sprintf("%s", *values[2].(*interface{}))
+			defer rows.Close()
 
-			routines = append(routines, &r)
-		}
-		if err := rows.Err(); err != nil {
+			cols, err := rows.Columns()
+			if err != nil {
+				return err
+			}
+			var values []interface{}
+			for i := 0; i < len(cols); i++ {
+				values = append(values, new(interface{}))
+			}
+			for rows.Next() {
+				var r routineSchema
+				if err := rows.Scan(values...); err != nil {
+					return err
+				}
+				r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
+				r.routineType = fmt.Sprintf("%s", *values[2].(*interface{}))
+
+				routines = append(routines, &r)
+			}
+			return rows.Err()
+		}(); err != nil {
 			return nil, err
 		}
 	}

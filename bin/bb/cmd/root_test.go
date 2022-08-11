@@ -57,15 +57,17 @@ got unexpected output:
 %s
 `, strings.Join(tc.args, " "), cmp.Diff(actual, tc.expected))
 
-			f, err := os.CreateTemp("", "*")
-			if err != nil {
-				t.Log(err)
-			}
-			defer f.Close()
-			if _, err := io.WriteString(f, actual); err != nil {
-				t.Log(err)
-			}
-			t.Logf("Actual output written to %s", f.Name())
+			func() {
+				f, err := os.CreateTemp("", "*")
+				if err != nil {
+					t.Log(err)
+				}
+				defer f.Close()
+				if _, err := io.WriteString(f, actual); err != nil {
+					t.Log(err)
+				}
+				t.Logf("Actual output written to %s", f.Name())
+			}()
 		}
 	}
 }

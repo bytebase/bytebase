@@ -131,11 +131,11 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, pgInstanceDir, resourceDir string, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
+func executeMigration(ctx context.Context, server *Server, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, pgInstanceDir, resourceDir)
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, databaseName)
 	if err != nil {
 		return 0, "", err
 	}
@@ -305,7 +305,7 @@ func runMigration(ctx context.Context, server *Server, task *api.Task, migration
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeMigration(ctx, server.pgInstanceDir, server.profile.DataDir, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, server, task, statement, mi)
 	if err != nil {
 		return true, nil, err
 	}
@@ -383,10 +383,10 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// existing token pair has expired.
 	repo2, err := server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch repository for schema writeback: %v", err)
+		return "", fmt.Errorf("failed to fetch repository for schema write-back: %v", err)
 	}
 	if repo2 == nil {
-		return "", fmt.Errorf("repository not found for schema writeback: %v", repository.ID)
+		return "", fmt.Errorf("repository not found for schema write-back: %v", repository.ID)
 	}
 
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
@@ -447,10 +447,10 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// existing token pair has expired.
 	repo2, err = server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch repository after schema writeback: %v", err)
+		return "", fmt.Errorf("failed to fetch repository after schema write-back: %v", err)
 	}
 	if repo2 == nil {
-		return "", fmt.Errorf("repository not found after schema writeback: %v", repository.ID)
+		return "", fmt.Errorf("repository not found after schema write-back: %v", repository.ID)
 	}
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
 	schemaFileMeta, err = vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
