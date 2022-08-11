@@ -151,7 +151,8 @@ func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, e
 
 // AssigneeGroupPolicy is the policy configuration for the assignee group.
 type AssigneeGroupPolicy struct {
-	Value AssigneeGroupValue `json:"value"`
+	IssueType IssueType          `json:"issueType"`
+	Value     AssigneeGroupValue `json:"value"`
 }
 
 func (p AssigneeGroupPolicy) String() (string, error) {
@@ -260,7 +261,8 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		}.String()
 	case PolicyTypeAssigneeGroup:
 		return AssigneeGroupPolicy{
-			Value: AssigneeGroupValueWorkspaceOwnerOrDBA,
+			IssueType: "",
+			Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
 		}.String()
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
