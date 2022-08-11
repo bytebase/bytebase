@@ -300,6 +300,8 @@ import type {
   Instance,
   TaskDatabaseCreatePayload,
   DatabaseLabel,
+  EnvironmentId,
+  Pipeline,
 } from "@/types";
 import { ONBOARDING_ISSUE_ID } from "@/types";
 import {
@@ -352,6 +354,7 @@ const {
   template,
   isTenantMode,
   selectedStage,
+  activeStageOfPipeline,
   selectedTask,
   selectStageOrTask,
 } = useIssueLogic();
@@ -575,9 +578,19 @@ const selectTaskId = (taskId: TaskId) => {
   selectStageOrTask(stage.id, slug);
 };
 
+const activeEnvironmentId = computed((): EnvironmentId => {
+  if (create.value) {
+    const stage = (issue.value as IssueCreate).pipeline!.stageList[0];
+    return stage.environmentId;
+  }
+
+  const stage = activeStageOfPipeline(issue.value.pipeline as Pipeline);
+  return stage.environment.id;
+});
+
 const approvalPolicy = usePolicyByEnvironmentAndType(
   computed(() => ({
-    environmentId: environment.value.id,
+    environmentId: activeEnvironmentId.value,
     type: "bb.policy.pipeline-approval",
   }))
 );
