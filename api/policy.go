@@ -13,6 +13,9 @@ type PolicyType string
 // PipelineApprovalValue is value for approval policy.
 type PipelineApprovalValue string
 
+// AssigneeGroupValue is the value for assignee group policy.
+type AssigneeGroupValue string
+
 // BackupPlanPolicySchedule is value for backup plan policy.
 type BackupPlanPolicySchedule string
 
@@ -22,6 +25,8 @@ const (
 
 	// PolicyTypePipelineApproval is the approval policy type.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
+	// PolicyTypeAssigneeGroup is the list where the assignee is chosen.
+	PolicyTypeAssigneeGroup PolicyType = "bb.policy.assignee-group"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
 	// PolicyTypeSQLReview is the sql review policy type.
@@ -31,6 +36,13 @@ const (
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
+
+	// AssigneeGroupValueWorkspaceOrDBA means the assignee is selected from the workspace owners or DBAs.
+	AssigneeGroupValueWorkspaceOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
+	// AssigneeGroupValueProject means the assignee is selected from the project owners if the issue type is one of
+	//  - alter schema
+	//  - update data
+	AssigneeGroupValueProject AssigneeGroupValue = "PROJECT_OWNER"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
 	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
@@ -44,6 +56,7 @@ var (
 	// PolicyTypes is a set of all policy types.
 	PolicyTypes = map[PolicyType]bool{
 		PolicyTypePipelineApproval: true,
+		PolicyTypeAssigneeGroup:    true,
 		PolicyTypeBackupPlan:       true,
 		PolicyTypeSQLReview:        true,
 	}
@@ -136,6 +149,28 @@ func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, e
 	return &pa, nil
 }
 
+// AssigneeGroupPolicy is the policy configuration for the assignee group.
+type AssigneeGroupPolicy struct {
+	Value AssigneeGroupValue `json:"value"`
+}
+
+func (p AssigneeGroupPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// UnmarshalAssigneeGroupPolicy will unmarshal payload to assignee group policy.
+func UnmarshalAssigneeGroupPolicy(payload string) (*AssigneeGroupPolicy, error) {
+	var ac AssigneeGroupPolicy
+	if err := json.Unmarshal([]byte(payload), &ac); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal assignee group policy %q, error: %w", payload, err)
+	}
+	return &ac, nil
+}
+
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {
 	Schedule BackupPlanPolicySchedule `json:"schedule"`
@@ -187,6 +222,14 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
+	case PolicyTypeAssigneeGroup:
+		ac, err := UnmarshalAssigneeGroupPolicy(payload)
+		if err != nil {
+			return err
+		}
+		if ac.Value != AssigneeGroupValueWorkspaceOrDBA && ac.Value != AssigneeGroupValueProject {
+			return fmt.Errorf("invalid assignee group value: %q", payload)
+		}
 	case PolicyTypeBackupPlan:
 		bp, err := UnmarshalBackupPlanPolicy(payload)
 		if err != nil {
@@ -214,6 +257,10 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 	case PolicyTypePipelineApproval:
 		return PipelineApprovalPolicy{
 			Value: PipelineApprovalValueManualAlways,
+		}.String()
+	case PolicyTypeAssigneeGroup:
+		return AssigneeGroupPolicy{
+			Value: AssigneeGroupValueWorkspaceOrDBA,
 		}.String()
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
