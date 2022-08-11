@@ -161,9 +161,6 @@ func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
 }
 
 func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
-	instance := task.Instance
-	database := task.Database
-
 	issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
 	if err != nil {
 		return err
@@ -176,17 +173,11 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 	log.Debug("Found backup list", zap.Array("backups", api.ZapBackupArray(backupList)))
 
-	binlogDir := getBinlogAbsDir(dataDir, task.Instance.ID)
-	if err := createBinlogDir(dataDir, task.Instance.ID); err != nil {
-		return err
-	}
-
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		log.Error("Failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-	mysqlDriver.SetUpForPITR(binlogDir)
 
 	log.Debug("Downloading all binlog files")
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */); err != nil {
@@ -213,22 +204,23 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
 
 	log.Debug("Start creating and restoring PITR database",
-		zap.String("instance", instance.Name),
-		zap.String("database", database.Name),
+		zap.String("instance", task.Instance.Name),
+		zap.String("database", task.Database.Name),
 	)
 	// RestorePITR will create the pitr database.
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BASELINE migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
 
+	binlogDir := getBinlogAbsDir(dataDir, task.Instance.ID)
 	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
 		return fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}
 
-	if err := mysqlDriver.RestorePITR(ctx, backupFile, startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
+	if err := mysqlDriver.RestorePITR(ctx, backupFile, startBinlogInfo, task.Database.Name, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
-			zap.String("database", database.Name),
+			zap.String("database", task.Database.Name),
 			zap.Error(err))
 		return fmt.Errorf("failed to perform a PITR restore in the PITR database, error: %w", err)
 	}

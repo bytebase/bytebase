@@ -964,10 +964,10 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		}
 	case db.Snowflake:
 		if characterSet != "" {
-			return fmt.Errorf("Snowflake does not support character set, but got %s", characterSet)
+			return fmt.Errorf("snowflake does not support character set, but got %s", characterSet)
 		}
 		if collation != "" {
-			return fmt.Errorf("Snowflake does not support collation, but got %s", collation)
+			return fmt.Errorf("snowflake does not support collation, but got %s", collation)
 		}
 	case db.Postgres:
 		if owner == "" {

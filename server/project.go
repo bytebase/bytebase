@@ -161,7 +161,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
 			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to find databases in the project %d", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to find databases in the project %d", id)).SetInternal(err)
 			}
 			if len(databases) > 0 {
 				return echo.NewHTTPError(http.StatusBadRequest, "You should transfer all databases under the project before archiving the project.")
