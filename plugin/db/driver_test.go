@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -181,6 +182,22 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
+			filePath:         ".db__20220811.sql",
+			filePathTemplate: ".{{DB_NAME}}__{{VERSION}}.sql",
+			want: MigrationInfo{
+				Version:     "20220811",
+				Namespace:   "db",
+				Database:    "db",
+				Environment: "",
+				Source:      VCS,
+				Type:        Migrate,
+				Description: "Create db schema migration",
+				Creator:     "",
+			},
+			wantErr: "",
+		},
+
+		{
 			filePath:         "db",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
 			want: MigrationInfo{
@@ -194,15 +211,31 @@ func TestParseMigrationInfo(t *testing.T) {
 			},
 			wantErr: "does not match file path template",
 		},
+		{ // Make sure the "." is escaped and should only match literals not as a wildcard
+			filePath:         ".db__20220811.sql",
+			filePathTemplate: "A{{DB_NAME}}__{{VERSION}}Asql",
+			want: MigrationInfo{
+				Version:     "",
+				Namespace:   "",
+				Database:    "",
+				Environment: "",
+				Type:        "",
+				Description: "",
+				Creator:     "",
+			},
+			wantErr: "does not match file path template",
+		},
 	}
-
 	for _, tc := range tests {
-		mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate)
-		if tc.wantErr != "" {
-			require.Contains(t, err.Error(), tc.wantErr)
-			continue
-		}
-		require.NoError(t, err)
-		require.Equal(t, tc.want, *mi)
+		t.Run(tc.filePath, func(t *testing.T) {
+			mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate)
+			if tc.wantErr != "" {
+				got := fmt.Sprintf("%v", err)
+				require.Contains(t, got, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, *mi)
+		})
 	}
 }
