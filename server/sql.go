@@ -450,7 +450,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 				break
 			}
 		}
-		if matchedDb != nil {
+		if matchedDb != nil { // nolint
 			// Case 1, appear in both the Bytebase metadata and the synced database metadata.
 			// We rely on syncDatabaseSchema() to sync the database details.
 		} else {
