@@ -274,19 +274,16 @@
               ></textarea>
               <div class="mt-4 flex items-center justify-between space-x-4">
                 <div>
-                  <NTooltip placement="top">
-                    <template #trigger>
-                      <button
-                        type="button"
-                        class="w-8 h-8 flex items-center justify-center rounded-full text-accent cursor-pointer hover:bg-gray-200"
-                        @click="doCreateComment('LGTM', false)"
-                      >
-                        <heroicons-outline:thumb-up class="w-5 h-5" />
-                      </button>
-                    </template>
-
-                    <span>LGTM</span>
-                  </NTooltip>
+                  <button
+                    type="button"
+                    class="group btn-normal !text-accent hover:!bg-gray-50"
+                    @click="lgtm"
+                  >
+                    <heroicons-outline:thumb-up
+                      class="w-5 h-5 group-hover:thumb-up"
+                    />
+                    <span class="ml-1">LGTM</span>
+                  </button>
                 </div>
                 <div>
                   <button
@@ -334,7 +331,6 @@ import {
   Ref,
   onMounted,
 } from "vue";
-import { NTooltip } from "naive-ui";
 import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import type {
@@ -359,6 +355,7 @@ import {
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import ActivityActionSentence from "./activity/ActionSentence.vue";
+import confetti from "canvas-confetti";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -483,6 +480,23 @@ const doCreateComment = (comment: string, clear = true) => {
     if (!isSubscribed) {
       addSubscriberId(currentUser.value.id);
     }
+  });
+};
+
+const lgtm = (e: Event) => {
+  doCreateComment("LGTM", false);
+
+  const button = e.target as HTMLElement;
+  const { left, top, width, height } = button.getBoundingClientRect();
+  const { innerWidth: winWidth, innerHeight: winHeight } = window;
+  // Create a confetti effect from the position of the LGTM button
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: {
+      x: (left + width / 2) / winWidth,
+      y: (top + height / 2) / winHeight,
+    },
   });
 };
 
