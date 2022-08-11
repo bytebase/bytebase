@@ -250,7 +250,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 		"TYPE",
 		"DESCRIPTION",
 	}
-	filePathRegex := filePathTemplate
+	filePathRegex := strings.ReplaceAll(filePathTemplate, ".", `\.`)
 	for _, placeholder := range placeholderList {
 		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
 	}
