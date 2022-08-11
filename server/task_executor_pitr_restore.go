@@ -45,7 +45,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	if payload.BackupID != nil {
 		if payload.DatabaseName == nil {
-			return true, nil, fmt.Errorf("unexpected nil for database name in case of restore full backup only")
+			return true, nil, fmt.Errorf("unexpected nil database name for backup restore")
 		}
 		// Restore full backup only
 		backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
