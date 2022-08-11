@@ -144,7 +144,7 @@ func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDele
 	}
 	defer tx.PTx.Rollback()
 
-	if err := s.deleteRepository(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteRepositoryImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -608,8 +608,8 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 	return &repository, nil
 }
 
-// deleteRepository permanently deletes a repository by ID.
-func (s *Store) deleteRepository(ctx context.Context, tx *sql.Tx, delete *api.RepositoryDelete) error {
+// deleteRepositoryImpl permanently deletes a repository by ID.
+func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *sql.Tx, delete *api.RepositoryDelete) error {
 	// Updates the project workflow_type to "UI"
 	workflowType := api.UIWorkflow
 	projectPatch := api.ProjectPatch{

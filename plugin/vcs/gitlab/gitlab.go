@@ -336,9 +336,9 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	return repos, len(repos) >= apiPageSize, nil
 }
 
-// fetchUserInfo fetches user information from the given resourceURI, which
+// fetchUserInfoImpl fetches user information from the given resourceURI, which
 // should be either "user" or "users/{userID}".
-func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
+func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
 	code, body, err := oauth.Get(
 		ctx,
@@ -378,7 +378,7 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 
 // TryLogin tries to fetch the user info from the current OAuth context.
 func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, "user")
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -426,7 +426,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 
 // FetchUserInfo fetches user info of given user ID.
 func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, userID string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", userID))
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", userID))
 }
 
 func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
