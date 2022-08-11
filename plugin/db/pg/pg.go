@@ -139,13 +139,14 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		if guess != "" {
 			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guess)
 		}
-		db, err := sql.Open(driverName, guessDSN)
-		if err != nil {
-			continue
-		}
-		defer db.Close()
-
-		if err = db.Ping(); err != nil {
+		if err := func() error {
+			db, err := sql.Open(driverName, guessDSN)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+			return db.Ping()
+		}(); err != nil {
 			continue
 		}
 		return guess, guessDSN, nil

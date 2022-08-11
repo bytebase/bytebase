@@ -412,35 +412,40 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 			return nil, err
 		}
 
-		// Uses single quote instead of backtick to escape because this is a string
-		// instead of table (which should use backtick instead). MySQL actually works
-		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
-		name := fmt.Sprintf("'%s'@'%s'", user, host)
-		grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
-		grantRows, err := driver.db.QueryContext(ctx,
-			grantQuery,
-		)
-		if err != nil {
-			return nil, util.FormatErrorWithQuery(err, grantQuery)
-		}
-		defer grantRows.Close()
-
-		grantList := []string{}
-		for grantRows.Next() {
-			var grant string
-			if err := grantRows.Scan(&grant); err != nil {
-				return nil, err
+		if err := func() error {
+			// Uses single quote instead of backtick to escape because this is a string
+			// instead of table (which should use backtick instead). MySQL actually works
+			// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
+			name := fmt.Sprintf("'%s'@'%s'", user, host)
+			grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
+			grantRows, err := driver.db.QueryContext(ctx,
+				grantQuery,
+			)
+			if err != nil {
+				return util.FormatErrorWithQuery(err, grantQuery)
 			}
-			grantList = append(grantList, grant)
-		}
-		if err := grantRows.Err(); err != nil {
-			return nil, util.FormatErrorWithQuery(err, grantQuery)
-		}
+			defer grantRows.Close()
 
-		userList = append(userList, db.User{
-			Name:  name,
-			Grant: strings.Join(grantList, "\n"),
-		})
+			grantList := []string{}
+			for grantRows.Next() {
+				var grant string
+				if err := grantRows.Scan(&grant); err != nil {
+					return err
+				}
+				grantList = append(grantList, grant)
+			}
+			if err := grantRows.Err(); err != nil {
+				return util.FormatErrorWithQuery(err, grantQuery)
+			}
+
+			userList = append(userList, db.User{
+				Name:  name,
+				Grant: strings.Join(grantList, "\n"),
+			})
+			return nil
+		}(); err != nil {
+			return nil, err
+		}
 	}
 	if err := userRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, userQuery)
