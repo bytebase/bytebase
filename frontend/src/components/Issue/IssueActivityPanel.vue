@@ -272,15 +272,32 @@
                   }
                 "
               ></textarea>
-              <div class="mt-4 flex items-center justify-start space-x-4">
-                <button
-                  type="button"
-                  class="btn-normal"
-                  :disabled="newComment.length == 0"
-                  @click.prevent="doCreateComment"
-                >
-                  {{ $t("common.comment") }}
-                </button>
+              <div class="mt-4 flex items-center justify-between space-x-4">
+                <div>
+                  <NTooltip placement="top">
+                    <template #trigger>
+                      <button
+                        type="button"
+                        class="w-8 h-8 flex items-center justify-center rounded-full text-accent cursor-pointer hover:bg-gray-200"
+                        @click="doCreateComment('LGTM', false)"
+                      >
+                        <heroicons-outline:thumb-up class="w-5 h-5" />
+                      </button>
+                    </template>
+
+                    <span>LGTM</span>
+                  </NTooltip>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    class="btn-normal"
+                    :disabled="newComment.length == 0"
+                    @click.prevent="doCreateComment(newComment)"
+                  >
+                    {{ $t("common.comment") }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -317,6 +334,7 @@ import {
   Ref,
   onMounted,
 } from "vue";
+import { NTooltip } from "naive-ui";
 import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import type {
@@ -397,7 +415,7 @@ const keyboardHandler = (e: KeyboardEvent) => {
     }
   } else if (newCommentTextArea.value === document.activeElement) {
     if (e.code == "Enter" && e.metaKey) {
-      doCreateComment();
+      doCreateComment(newComment.value);
     }
   }
 };
@@ -436,11 +454,11 @@ const cancelEditComment = () => {
   state.editCommentMode = false;
 };
 
-const doCreateComment = () => {
+const doCreateComment = (comment: string, clear = true) => {
   const createActivity: ActivityCreate = {
     type: "bb.issue.comment.create",
     containerId: issue.value.id,
-    comment: newComment.value,
+    comment,
   };
   activityStore.createActivity(createActivity).then(() => {
     useUIStateStore().saveIntroStateByKey({
@@ -448,8 +466,10 @@ const doCreateComment = () => {
       newState: true,
     });
 
-    newComment.value = "";
-    nextTick(() => sizeToFit(newCommentTextArea.value));
+    if (clear) {
+      newComment.value = "";
+      nextTick(() => sizeToFit(newCommentTextArea.value));
+    }
 
     // Because the user just added a comment and we assume she is interested in this
     // issue, and we add her to the subscriber list if she is not there
