@@ -63,33 +63,34 @@ type tableNoFKChecker struct {
 
 // Visit implements the ast.Visitor interface.
 func (checker *tableNoFKChecker) Visit(node ast.Node) ast.Visitor {
-	var hasFK *ast.TableDef
+	var tableHasFK *ast.TableDef
 	switch n := node.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		for _, column := range n.ColumnList {
 			if containFK(column.ConstraintList) {
-				hasFK = n.Name
+				tableHasFK = n.Name
+				break
 			}
 		}
 		if containFK(n.ConstraintList) {
-			hasFK = n.Name
+			tableHasFK = n.Name
 		}
 	// ADD CONSTRAINT
 	case *ast.AddConstraintStmt:
 		if n.Constraint.Type == ast.ConstraintTypeForeign {
-			hasFK = n.Table
+			tableHasFK = n.Table
 		}
 	}
 
-	if hasFK != nil {
+	if tableHasFK != nil {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status: checker.level,
 			Code:   advisor.TableHasFK,
 			Title:  checker.title,
 			Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"",
-				normalizeSchemaName(hasFK.Schema),
-				hasFK.Name,
+				normalizeSchemaName(tableHasFK.Schema),
+				tableHasFK.Name,
 				checker.text,
 			),
 		})
