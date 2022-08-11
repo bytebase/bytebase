@@ -159,15 +159,6 @@ func (p AssigneeGroup) String() (string, error) {
 	return string(s), nil
 }
 
-// UnmarshalAssigneeGroup will unmarshal payload to assignee group.
-func UnmarshalAssigneeGroup(payload string) (*AssigneeGroup, error) {
-	var ag AssigneeGroup
-	if err := json.Unmarshal([]byte(payload), &ag); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal assignee group %q, error: %w", payload, err)
-	}
-	return &ag, nil
-}
-
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {
 	Schedule BackupPlanPolicySchedule `json:"schedule"`
