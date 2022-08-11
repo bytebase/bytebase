@@ -144,56 +144,64 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 		tbl.Name = name
 		tbl.Type = "BASE TABLE"
 
-		// Get columns: cid, name, type, notnull, dflt_value, pk.
-		query := fmt.Sprintf("pragma table_info(%s);", name)
-		rows, err := txn.Query(query)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var col db.Column
-
-			var cid int
-			var notnull, pk bool
-			var name, ctype string
-			var dfltValue sql.NullString
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
-				return nil, err
-			}
-			col.Position = cid
-			col.Name = name
-			col.Nullable = !notnull
-			col.Type = ctype
-			if dfltValue.Valid {
-				col.Default = &dfltValue.String
-			}
-
-			tbl.ColumnList = append(tbl.ColumnList, col)
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-		for _, idx := range indicesMap[tbl.Name] {
-			query := fmt.Sprintf("pragma index_info(%s);", idx.name)
+		if err := func() error {
+			// Get columns: cid, name, type, notnull, dflt_value, pk.
+			query := fmt.Sprintf("pragma table_info(%s);", name)
 			rows, err := txn.Query(query)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			defer rows.Close()
+
 			for rows.Next() {
-				var dbIdx db.Index
-				dbIdx.Name = idx.name
-				dbIdx.Unique = idx.unique
-				var cid string
-				if err := rows.Scan(&dbIdx.Position, &cid, &dbIdx.Expression); err != nil {
-					return nil, err
+				var col db.Column
+
+				var cid int
+				var notnull, pk bool
+				var name, ctype string
+				var dfltValue sql.NullString
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
+					return err
 				}
-				tbl.IndexList = append(tbl.IndexList, dbIdx)
+				col.Position = cid
+				col.Name = name
+				col.Nullable = !notnull
+				col.Type = ctype
+				if dfltValue.Valid {
+					col.Default = &dfltValue.String
+				}
+
+				tbl.ColumnList = append(tbl.ColumnList, col)
 			}
-			if err := rows.Err(); err != nil {
-				return nil, util.FormatErrorWithQuery(err, query)
+			return rows.Err()
+		}(); err != nil {
+			return nil, err
+		}
+
+		for _, idx := range indicesMap[tbl.Name] {
+			if err := func() error {
+				query := fmt.Sprintf("pragma index_info(%s);", idx.name)
+				rows, err := txn.Query(query)
+				if err != nil {
+					return err
+				}
+				defer rows.Close()
+				for rows.Next() {
+					var dbIdx db.Index
+					dbIdx.Name = idx.name
+					dbIdx.Unique = idx.unique
+					var cid string
+					if err := rows.Scan(&dbIdx.Position, &cid, &dbIdx.Expression); err != nil {
+						return err
+					}
+					tbl.IndexList = append(tbl.IndexList, dbIdx)
+				}
+				if err := rows.Err(); err != nil {
+					return util.FormatErrorWithQuery(err, query)
+				}
+				return nil
+			}(); err != nil {
+				return nil, err
 			}
 		}
 
