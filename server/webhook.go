@@ -511,19 +511,19 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 	// Create schema update issue.
 	creatorID := api.SystemBotID
 	if pushEvent.FileCommit.AuthorEmail != "" {
-		committerPrinciple, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
+		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
 		if err != nil {
 			log.Error("failed to find the principal with committer email",
 				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
 				zap.Error(err),
 			)
 		}
-		if committerPrinciple == nil {
+		if committerPrincipal == nil {
 			log.Debug("cannot find the principal with committer email, use system bot instead",
 				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
 			)
 		} else {
-			creatorID = committerPrinciple.ID
+			creatorID = committerPrincipal.ID
 		}
 	}
 

@@ -65,13 +65,13 @@ export const useAuthStore = defineStore("auth", {
       return convertedUser;
     },
     async logout() {
-      const unknownPrinciple = unknown("PRINCIPAL") as Principal;
+      const unknownPrincipal = unknown("PRINCIPAL") as Principal;
       try {
         await axios.post("/api/auth/logout");
       } finally {
-        this.setCurrentUser(unknownPrinciple);
+        this.setCurrentUser(unknownPrincipal);
       }
-      return unknownPrinciple;
+      return unknownPrincipal;
     },
     async signup(signupInfo: SignupInfo) {
       const newUser = (
