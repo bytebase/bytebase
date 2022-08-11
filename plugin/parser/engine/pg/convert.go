@@ -336,8 +336,11 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 
 		if in.InsertStmt.SelectStmt != nil {
 			if selectNode, ok := in.InsertStmt.SelectStmt.Node.(*pgquery.Node_SelectStmt); ok {
-				if insertStmt.Select, err = convertSelectStmt(selectNode.SelectStmt); err != nil {
-					return nil, err
+				// PG parser will parse the value list as a SELECT statement.
+				if selectNode.SelectStmt.ValuesLists == nil {
+					if insertStmt.Select, err = convertSelectStmt(selectNode.SelectStmt); err != nil {
+						return nil, err
+					}
 				}
 			} else {
 				return nil, parser.NewConvertErrorf("expected SelectStmt but found %t", in.InsertStmt.SelectStmt.Node)
