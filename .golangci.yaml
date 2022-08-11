@@ -68,9 +68,6 @@ linters-settings:
         disabled: true
       - name: early-return
         disabled: true
-      # TODO(dragonly): Remove the rules below in the following PRs.
-      - name: defer
-        disabled: true
   gocritic:
     disabled-checks:
       - ifElseChain
