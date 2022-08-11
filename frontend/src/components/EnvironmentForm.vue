@@ -40,6 +40,16 @@
               </div>
             </div>
           </div>
+
+          <AssigneeGroupEditor
+            class="ml-8"
+            :policy="state.approvalPolicy"
+            :allow-edit="allowEdit"
+            @update="(assigneeGroupList) => {
+              (state.approvalPolicy.payload as PipelineApprovalPolicyPayload).assigneeGroupList = assigneeGroupList
+            }"
+          />
+
           <div class="flex space-x-4">
             <input
               v-model="(state.approvalPolicy.payload as PipelineApprovalPolicyPayload).value"
@@ -253,6 +263,7 @@ import type {
 } from "../types";
 import { isDBAOrOwner, sqlReviewPolicySlug } from "../utils";
 import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
+import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
