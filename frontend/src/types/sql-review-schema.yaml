@@ -24,6 +24,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+      - POSTGRES
     componentList: []
   - type: table.drop-naming-convention
     category: TABLE
