@@ -469,6 +469,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 		}
 	}
 
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 	mi, err := db.ParseMigrationInfo(fileEscaped, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
 	if err != nil {
 		createIgnoredFileActivity(err)
