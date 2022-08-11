@@ -122,8 +122,11 @@ type PolicyDelete struct {
 
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
-	Value             PipelineApprovalValue `json:"value"`
-	AssigneeGroupList []AssigneeGroup       `json:"assigneeGroupList"`
+	Value PipelineApprovalValue `json:"value"`
+	// if the approval policy is MANUAL_APPROVAL_NEVER, there shouldn't be AssigneeGroupList.
+	// if the approval policy is MANUAL_APPROVAL_ALWAYS, the assignee group is the DBAs by default,
+	//	 and we set the assignee group to the project owners for corresponding issue types.
+	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
 }
 
 func (pa PipelineApprovalPolicy) String() (string, error) {
