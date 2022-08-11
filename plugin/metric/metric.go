@@ -14,5 +14,6 @@ type Metric struct {
 type Identifier struct {
 	ID     string
 	Email  string
+	Name   string
 	Labels map[string]string
 }
