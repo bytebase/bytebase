@@ -115,6 +115,8 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			"platform":      c.Request().Header.Get("X-Platform"),
 			"repository":    c.Request().Header.Get("X-Repository"),
 			"actor":         c.Request().Header.Get("X-Actor"),
+			"source":        c.Request().Header.Get("X-Source"),
+			"version":       c.Request().Header.Get("X-Version"),
 		},
 	})
 
