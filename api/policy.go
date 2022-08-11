@@ -25,8 +25,6 @@ const (
 
 	// PolicyTypePipelineApproval is the approval policy type.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
-	// PolicyTypeAssigneeGroup is the list where the assignee is chosen.
-	PolicyTypeAssigneeGroup PolicyType = "bb.policy.assignee-group"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
 	// PolicyTypeSQLReview is the sql review policy type.
@@ -39,9 +37,7 @@ const (
 
 	// AssigneeGroupValueWorkspaceOwnerOrDBA means the assignee is selected from the workspace owners or DBAs.
 	AssigneeGroupValueWorkspaceOwnerOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
-	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners if the issue type is one of
-	//  - alter schema
-	//  - update data
+	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners.
 	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
@@ -129,7 +125,8 @@ type PolicyDelete struct {
 
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
-	Value PipelineApprovalValue `json:"value"`
+	Value             PipelineApprovalValue `json:"value"`
+	AssigneeGroupList []AssigneeGroup       `json:"assigneeGroupList"`
 }
 
 func (pa PipelineApprovalPolicy) String() (string, error) {
@@ -149,13 +146,13 @@ func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, e
 	return &pa, nil
 }
 
-// AssigneeGroupPolicy is the policy configuration for the assignee group.
-type AssigneeGroupPolicy struct {
+// AssigneeGroup is the configuration of the assignee group.
+type AssigneeGroup struct {
 	IssueType IssueType          `json:"issueType"`
 	Value     AssigneeGroupValue `json:"value"`
 }
 
-func (p AssigneeGroupPolicy) String() (string, error) {
+func (p AssigneeGroup) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err
@@ -163,11 +160,11 @@ func (p AssigneeGroupPolicy) String() (string, error) {
 	return string(s), nil
 }
 
-// UnmarshalAssigneeGroupPolicy will unmarshal payload to assignee group policy.
-func UnmarshalAssigneeGroupPolicy(payload string) (*AssigneeGroupPolicy, error) {
-	var ag AssigneeGroupPolicy
+// UnmarshalAssigneeGroup will unmarshal payload to assignee group.
+func UnmarshalAssigneeGroup(payload string) (*AssigneeGroup, error) {
+	var ag AssigneeGroup
 	if err := json.Unmarshal([]byte(payload), &ag); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal assignee group policy %q, error: %w", payload, err)
+		return nil, fmt.Errorf("failed to unmarshal assignee group %q, error: %w", payload, err)
 	}
 	return &ag, nil
 }
@@ -223,14 +220,6 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
-	case PolicyTypeAssigneeGroup:
-		ag, err := UnmarshalAssigneeGroupPolicy(payload)
-		if err != nil {
-			return err
-		}
-		if ag.Value != AssigneeGroupValueWorkspaceOwnerOrDBA && ag.Value != AssigneeGroupValueProjectOwner {
-			return fmt.Errorf("invalid assignee group policy value: %q", payload)
-		}
 	case PolicyTypeBackupPlan:
 		bp, err := UnmarshalBackupPlanPolicy(payload)
 		if err != nil {
@@ -258,11 +247,20 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 	case PolicyTypePipelineApproval:
 		return PipelineApprovalPolicy{
 			Value: PipelineApprovalValueManualAlways,
-		}.String()
-	case PolicyTypeAssigneeGroup:
-		return AssigneeGroupPolicy{
-			IssueType: "",
-			Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
+			AssigneeGroupList: []AssigneeGroup{
+				{
+					IssueType: IssueDatabaseSchemaUpdate,
+					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
+				},
+				{
+					IssueType: IssueDatabaseSchemaUpdateGhost,
+					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
+				},
+				{
+					IssueType: IssueDatabaseDataUpdate,
+					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA
+				},
+			},
 		}.String()
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
