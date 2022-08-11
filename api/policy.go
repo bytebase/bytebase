@@ -39,7 +39,7 @@ const (
 
 	// AssigneeGroupValueWorkspaceOwnerOrDBA means the assignee is selected from the workspace owners or DBAs.
 	AssigneeGroupValueWorkspaceOwnerOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
-	// AssigneeGroupValueProjectOwner means the assignee is selected from the project owners if the issue type is one of
+	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners if the issue type is one of
 	//  - alter schema
 	//  - update data
 	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
