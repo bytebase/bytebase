@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string) server.Profile {
+func activeProfile(dataDir string, backupStorageBackend api.BackupStorageBackend) server.Profile {
 	demoDataDir := ""
 	if flags.demo {
 		demoName := string(common.ReleaseModeProd)
@@ -37,6 +38,7 @@ func activeProfile(dataDir string) server.Profile {
 		DataDir:              dataDir,
 		DemoDataDir:          demoDataDir,
 		BackupRunnerInterval: 10 * time.Minute,
+		BackupStorageBackend: backupStorageBackend,
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,

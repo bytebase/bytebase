@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
@@ -172,7 +173,7 @@ func start() {
 		return
 	}
 
-	activeProfile := activeProfile(flags.dataDir)
+	activeProfile := activeProfile(flags.dataDir, api.BackupStorageBackendLocal)
 
 	var s *server.Server
 	// Setup signal handlers.
