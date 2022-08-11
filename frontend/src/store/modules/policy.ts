@@ -8,7 +8,12 @@ import {
   ResourceObject,
   unknown,
 } from "@/types";
-import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
+import {
+  PipelineApprovalPolicyPayload,
+  Policy,
+  PolicyType,
+  PolicyUpsert,
+} from "@/types/policy";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
 
@@ -33,7 +38,7 @@ function convert(
     }
   }
 
-  return {
+  const result = {
     ...(policy.attributes as Omit<
       Policy,
       "id" | "environment" | "payload" | "creator" | "updater"
@@ -50,6 +55,15 @@ function convert(
     environment,
     payload: JSON.parse((policy.attributes.payload as string) || "{}"),
   };
+  if (result.type === "bb.policy.pipeline-approval") {
+    const payload = result.payload as PipelineApprovalPolicyPayload;
+    if (!payload.assigneeGroupList) {
+      // Assign an empty array as fallback
+      payload.assigneeGroupList = [];
+    }
+  }
+
+  return result;
 }
 
 export const usePolicyStore = defineStore("policy", {
