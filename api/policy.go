@@ -228,7 +228,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return err
 		}
 		if ag.Value != AssigneeGroupValueWorkspaceOwnerOrDBA && ag.Value != AssigneeGroupValueProjectOwner {
-			return fmt.Errorf("invalid assignee group value: %q", payload)
+			return fmt.Errorf("invalid assignee group policy value: %q", payload)
 		}
 	case PolicyTypeBackupPlan:
 		bp, err := UnmarshalBackupPlanPolicy(payload)
