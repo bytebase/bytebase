@@ -136,6 +136,26 @@ export const waitForTargetElement = (
   });
 };
 
+export const waitBodyLoaded = () => {
+  return new Promise((resolve) => {
+    let t = setTimeout(() => {
+      resolve(undefined);
+    }, 1000);
+
+    const observer = new MutationObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        resolve(undefined);
+      }, 1000);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  });
+};
+
 // checkUrlMatched is used to check if the given url's pathname is matched with the location pathname.
 export const checkUrlPathnameMatched = (url: string) => {
   const urlObject = new URL(url);
