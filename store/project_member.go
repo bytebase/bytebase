@@ -84,12 +84,11 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 	return projectMemberList, nil
 }
 
-// GetProjectMemberByID gets an instance of ProjectMember.
-func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectMember, error) {
-	find := &api.ProjectMemberFind{ID: &id}
+// GetProjectMember gets an instance of ProjectMember.
+func (s *Store) GetProjectMember(ctx context.Context, find *api.ProjectMemberFind) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ProjectMember with ID %d, error: %w", id, err)
+		return nil, fmt.Errorf("failed to get ProjectMember with projectMemberFind[%+v], error: %w", find, err)
 	}
 	if projectMemberRaw == nil {
 		return nil, nil
@@ -101,22 +100,25 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 	return projectMember, nil
 }
 
+// GetProjectMemberByID gets an instance of ProjectMember by ID.
+func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectMember, error) {
+	find := &api.ProjectMemberFind{ID: &id}
+	projectMember, err := s.GetProjectMember(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ProjectMember with ID %d, error: %w", id, err)
+	}
+	return projectMember, nil
+}
+
 // GetProjectMemberByProjectIDAndPrincipalID gets an instance of ProjectMember by projectID and principalID.
 func (s *Store) GetProjectMemberByProjectIDAndPrincipalID(ctx context.Context, projectID int, principalID int) (*api.ProjectMember, error) {
 	find := &api.ProjectMemberFind{
 		ProjectID:   &projectID,
 		PrincipalID: &principalID,
 	}
-	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
+	projectMember, err := s.GetProjectMember(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ProjectMember with projectID %d, principalID %d, error: %w", projectID, principalID, err)
-	}
-	if projectMemberRaw == nil {
-		return nil, nil
-	}
-	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error: %w", projectMemberRaw, err)
 	}
 	return projectMember, nil
 }
