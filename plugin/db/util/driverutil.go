@@ -90,10 +90,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-	return nil
+	return scanner.Err()
 }
 
 // NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.
@@ -299,11 +296,7 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 // Query will execute a readonly / SELECT query.

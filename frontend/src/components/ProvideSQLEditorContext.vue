@@ -3,7 +3,8 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, onMounted } from "vue";
+import { cloneDeep } from "lodash-es";
+import { reactive, onMounted, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 import {
@@ -75,8 +76,7 @@ const prepareAccessibleConnectionByProject = async () => {
 };
 
 const prepareSQLEditorContext = async () => {
-  sqlEditorStore.setConnectionContext({ isLoadingTree: true });
-  let connectionTree = [];
+  let connectionTree: ConnectionAtom[] = [];
 
   const mapConnectionAtom =
     (type: ConnectionAtomType, parentId: number) =>
@@ -115,26 +115,36 @@ const prepareSQLEditorContext = async () => {
       mapConnectionAtom("database", instance.id)
     );
 
-    await Promise.all(
-      filteredDatabaseList.map(async (db) => {
-        const tableList = await tableStore.fetchTableListByDatabaseId(db.id);
-
-        const databaseItem = instanceItem.children!.find(
-          (item: ConnectionAtom) => item.id === db.id
-        )!;
-
-        databaseItem.children = tableList.map(
-          mapConnectionAtom("table", db.id)
-        );
-
-        return Promise.resolve(null);
-      })
-    );
+    sqlEditorStore.setConnectionTree(connectionTree);
   }
 
-  sqlEditorStore.setConnectionTree(connectionTree);
-  sqlEditorStore.setConnectionContext({ isLoadingTree: false });
-  sqlEditorStore.fetchQueryHistoryList();
+  // fetch table list in next tick
+  nextTick(async () => {
+    const tempConnectionTree = cloneDeep(connectionTree);
+    const tempFilteredInstanceList = cloneDeep(filteredInstanceList);
+    for (const instance of tempFilteredInstanceList) {
+      const instanceItem = tempConnectionTree.find(
+        (item: ConnectionAtom) => item.id === instance.id
+      );
+      if (instanceItem && instanceItem.children) {
+        await Promise.all(
+          instanceItem.children.map(async (db) => {
+            const tableList = await tableStore.fetchTableListByDatabaseId(
+              db.id
+            );
+            const databaseItem = instanceItem.children!.find(
+              (item: ConnectionAtom) => item.id === db.id
+            );
+            databaseItem!.children = tableList.map(
+              mapConnectionAtom("table", db.id)
+            );
+            return Promise.resolve(null);
+          })
+        );
+      }
+    }
+    sqlEditorStore.setConnectionTree(tempConnectionTree);
+  });
 };
 
 // Get sheetId from query.
@@ -157,9 +167,13 @@ const prepareSheetFromQuery = async () => {
 };
 
 onMounted(async () => {
+  sqlEditorStore.setConnectionContext({ isLoadingTree: true });
   await prepareAccessibleConnectionByProject();
   await prepareSQLEditorContext();
+  sqlEditorStore.setConnectionContext({ isLoadingTree: false });
+
   await prepareSheetFromQuery();
+  await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
 });
 </script>

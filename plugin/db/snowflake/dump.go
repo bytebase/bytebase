@@ -155,9 +155,5 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }

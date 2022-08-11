@@ -1002,9 +1002,6 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		if r.ExpiresIn != 0 {
 			expireAt = r.CreatedAt + r.ExpiresIn
 		}
-		if err := refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
-			return err
-		}
-		return nil
+		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }
