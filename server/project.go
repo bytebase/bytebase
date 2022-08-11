@@ -100,7 +100,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectFind.PrincipalID != nil {
 			principalID := *projectFind.PrincipalID
 			for _, project := range projectList {
-				// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
+				// We will filter those project with the current principal as an inactive member (the role provider differs from that of the project)
 				roleProvider := project.RoleProvider
 				for _, projectMember := range project.ProjectMemberList {
 					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
