@@ -580,6 +580,7 @@ const selectTaskId = (taskId: TaskId) => {
 
 const activeEnvironmentId = computed((): EnvironmentId => {
   if (create.value) {
+    // When creating an issue, activeEnvironmentId is the first stage's environmentId
     const stage = (issue.value as IssueCreate).pipeline!.stageList[0];
     return stage.environmentId;
   }
@@ -588,7 +589,7 @@ const activeEnvironmentId = computed((): EnvironmentId => {
   return stage.environment.id;
 });
 
-const approvalPolicy = usePolicyByEnvironmentAndType(
+const activeEnvironmentApprovalPolicy = usePolicyByEnvironmentAndType(
   computed(() => ({
     environmentId: activeEnvironmentId.value,
     type: "bb.policy.pipeline-approval",
@@ -596,7 +597,7 @@ const approvalPolicy = usePolicyByEnvironmentAndType(
 );
 
 const allowProjectOwnerAsAssignee = computed((): boolean => {
-  const policy = approvalPolicy.value;
+  const policy = activeEnvironmentApprovalPolicy.value;
   if (!policy) return false;
 
   return allowProjectOwnerToApprove(policy, issue.value.type);
