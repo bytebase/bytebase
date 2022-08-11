@@ -141,6 +141,9 @@ const (
 
 	// PostgreSQLMigrationCompatibility is an advisor type for PostgreSQL migration compatibility.
 	PostgreSQLMigrationCompatibility Type = "bb.plugin.advisor.postgresql.migration-compatibility"
+
+	// PostgreSQLTableNoFK is an advisor type for PostgreSQL table disallow foreign key.
+	PostgreSQLTableNoFK Type = "bb.plugin.advisor.postgresql.table.no-foreign-key"
 )
 
 // Advice is the result of an advisor.
