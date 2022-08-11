@@ -543,6 +543,9 @@ func (driver *Driver) GetBinlogDir() string {
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
+	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create binlog directory %q, error: %w", driver.binlogDir, err)
+	}
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/bytebase/bytebase/common"
@@ -48,10 +47,6 @@ func newDriver(dc db.DriverConfig) db.Driver {
 
 // Open opens a MySQL driver.
 func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to create binlog directory %q, error: %w", driver.binlogDir, err)
-	}
-
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
