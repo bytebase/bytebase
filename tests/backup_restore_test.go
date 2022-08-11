@@ -80,7 +80,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// make a full backup
-	driver, err := getTestMySQLDriverWithResourceDir(ctx, t, strconv.Itoa(port), database, t.TempDir())
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, t.TempDir())
 	a.NoError(err)
 	defer driver.Close(ctx)
 

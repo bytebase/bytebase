@@ -31,7 +31,7 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
 }
 
-func getTestMySQLDriverWithResourceDir(ctx context.Context, t *testing.T, port, database, binlogDir string) (db.Driver, error) {
+func getTestMySQLDriver(ctx context.Context, t *testing.T, port, database, binlogDir string) (db.Driver, error) {
 	connCfg := getMySQLConnectionConfig(port, database)
 	return db.Open(
 		ctx,
