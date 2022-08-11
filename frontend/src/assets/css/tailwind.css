@@ -221,6 +221,11 @@
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
   }
+
+  .thumb-up {
+    @apply origin-bottom-left;
+    animation: thumb-up 1s ease-in-out infinite;
+  }
 }
 
 .fade-enter-active,
@@ -249,4 +254,16 @@
 .fade-slow-enter-from,
 .fade-slow-leave-to {
   @apply opacity-0;
+}
+
+@keyframes thumb-up {
+  33% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+  66% {
+    transform: rotate(0deg);
+  }
 }
