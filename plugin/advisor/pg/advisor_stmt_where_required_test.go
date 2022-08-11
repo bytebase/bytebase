@@ -9,6 +9,17 @@ import (
 func TestWhereRequirement(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
+			Statement: "INSERT INTO t VALUES(1)",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
 			Statement: "DELETE FROM t1",
 			Want: []advisor.Advice{
 				{
