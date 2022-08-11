@@ -105,5 +105,4 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
 	}, advisor.MockPostgreSQLDatabase)
-
 }

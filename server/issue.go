@@ -399,7 +399,6 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				return nil, fmt.Errorf("failed to create task DAG for issue, error %w", err)
 			}
 		}
-
 	}
 
 	return pipelineCreated, nil

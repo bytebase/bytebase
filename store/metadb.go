@@ -56,7 +56,6 @@ func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (
 		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoDataDir, version, m.mode)
 	}
 	return m.connectExternal(readonly, version)
-
 }
 
 // connectEmbed starts the embed postgres server and returns an instance of store.DB.
