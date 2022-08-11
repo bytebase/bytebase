@@ -887,11 +887,18 @@ export const router = createRouter({
   routes,
   linkExactActiveClass: "bg-link-hover",
   scrollBehavior(to /*, from, savedPosition */) {
-    if (to.hash && document.querySelector(to.hash)) {
-      return {
-        el: to.hash,
-        behavior: "smooth",
-      };
+    if (to.hash) {
+      try {
+        const el = document.querySelector(to.hash);
+        if (el) {
+          return {
+            el: to.hash,
+            behavior: "smooth",
+          };
+        }
+      } catch {
+        // nothing todo
+      }
     }
   },
 });
