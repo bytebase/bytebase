@@ -206,7 +206,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
 
-		if project.WorkflowType == api.DatabaseAsCodeWorkflow {
+		if repositoryCreate.WorkflowType == api.DatabaseAsCodeWorkflow {
+			// FIXME(jc): We do not need file path template for state-based migration, but
+			// we cheat here to pass validations and to avoid major refactoring for MVP.
 			repositoryCreate.FilePathTemplate = "{{DB_NAME}}__{{VERSION}}__{{TYPE}}.sql"
 		}
 
@@ -352,6 +354,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
+
+		if project.WorkflowType == api.DatabaseAsCodeWorkflow {
+			// FIXME(jc): We do not need file path template for state-based migration, but
+			// we cheat here to pass validations and to avoid major refactoring for MVP.
+			filePathTemplate := "{{DB_NAME}}__{{VERSION}}__{{TYPE}}.sql"
+			repoPatch.FilePathTemplate = &filePathTemplate
 		}
 
 		if repoPatch.FilePathTemplate != nil {

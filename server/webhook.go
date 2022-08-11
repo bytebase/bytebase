@@ -81,78 +81,47 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("project", repo.Project.Name),
 		)
 
-		var createdMessageList []string
+		includeModified := false
+		issueCreator := s.createIssueFromMigrationScript
 		if repo.Project.WorkflowType == api.DatabaseAsCodeWorkflow {
-			distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, true)
-			for _, item := range distinctFileList {
-				createdMessage, created, httpErr := s.createIssueFromSchemaFile(
-					ctx,
-					repo,
-					vcs.PushEvent{ // todo only init this struct once
-						VCSType:            repo.VCS.Type,
-						BaseDirectory:      repo.BaseDirectory,
-						Ref:                pushEvent.Ref,
-						RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-						RepositoryURL:      pushEvent.Project.WebURL,
-						RepositoryFullPath: pushEvent.Project.FullPath,
-						AuthorName:         pushEvent.AuthorName,
-						FileCommit: vcs.FileCommit{
-							ID:          item.commit.ID,
-							Title:       item.commit.Title,
-							Message:     item.commit.Message,
-							CreatedTs:   item.createdTime.Unix(),
-							URL:         item.commit.URL,
-							AuthorName:  item.commit.Author.Name,
-							AuthorEmail: item.commit.Author.Email,
-							Added:       common.EscapeForLogging(item.fileName),
-						},
-					},
-					item.fileName,
-					webhookEndpointID,
-				)
-				if httpErr != nil {
-					return httpErr
-				}
+			includeModified = true
+			issueCreator = s.createIssueFromSchemaFile
+		}
 
-				if created {
-					createdMessageList = append(createdMessageList, createdMessage)
-				}
+		var createdMessageList []string
+		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, includeModified)
+		for _, item := range distinctFileList {
+			createdMessage, created, httpErr := issueCreator(
+				ctx,
+				repo,
+				vcs.PushEvent{
+					VCSType:            repo.VCS.Type,
+					BaseDirectory:      repo.BaseDirectory,
+					Ref:                pushEvent.Ref,
+					RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+					RepositoryURL:      pushEvent.Project.WebURL,
+					RepositoryFullPath: pushEvent.Project.FullPath,
+					AuthorName:         pushEvent.AuthorName,
+					FileCommit: vcs.FileCommit{
+						ID:          item.commit.ID,
+						Title:       item.commit.Title,
+						Message:     item.commit.Message,
+						CreatedTs:   item.createdTime.Unix(),
+						URL:         item.commit.URL,
+						AuthorName:  item.commit.Author.Name,
+						AuthorEmail: item.commit.Author.Email,
+						Added:       common.EscapeForLogging(item.fileName),
+					},
+				},
+				item.fileName,
+				webhookEndpointID,
+			)
+			if httpErr != nil {
+				return httpErr
 			}
-		} else {
-			distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, false)
-			for _, item := range distinctFileList {
-				createdMessage, created, httpErr := s.createIssueFromPushEvent(
-					ctx,
-					repo,
-					vcs.PushEvent{
-						VCSType:            repo.VCS.Type,
-						BaseDirectory:      repo.BaseDirectory,
-						Ref:                pushEvent.Ref,
-						RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-						RepositoryURL:      pushEvent.Project.WebURL,
-						RepositoryFullPath: pushEvent.Project.FullPath,
-						AuthorName:         pushEvent.AuthorName,
-						FileCommit: vcs.FileCommit{
-							ID:          item.commit.ID,
-							Title:       item.commit.Title,
-							Message:     item.commit.Message,
-							CreatedTs:   item.createdTime.Unix(),
-							URL:         item.commit.URL,
-							AuthorName:  item.commit.Author.Name,
-							AuthorEmail: item.commit.Author.Email,
-							Added:       common.EscapeForLogging(item.fileName),
-						},
-					},
-					item.fileName,
-					webhookEndpointID,
-				)
-				if httpErr != nil {
-					return httpErr
-				}
 
-				if created {
-					createdMessageList = append(createdMessageList, createdMessage)
-				}
+			if created {
+				createdMessageList = append(createdMessageList, createdMessage)
 			}
 		}
 
@@ -227,7 +196,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				messages := strings.SplitN(commit.Message, "\n\n", 2)
 				messageTitle := messages[0]
 
-				createdMessage, created, httpErr := s.createIssueFromPushEvent(
+				createdMessage, created, httpErr := s.createIssueFromMigrationScript(
 					ctx,
 					repo,
 					vcs.PushEvent{
@@ -455,13 +424,11 @@ func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEv
 	return string(createContext), nil
 }
 
-// createIssueFromPushEvent attempts to create a new issue for the given file of
-// the push event. It returns "created=true" when a new issue has been created,
-// along with the creation message to be presented in the UI. An *echo.HTTPError
-// is returned in case of the error during the process.
-//
-// TODO(jc): Rename to createIssueFromMigrationScript
-func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
+// createIssueFromMigrationScript attempts to create a new issue for the given
+// file of the push event. It returns "created=true" when a new issue has been
+// created, along with the creation message to be presented in the UI. An
+// *echo.HTTPError is returned in case of the error during the process.
+func (s *Server) createIssueFromMigrationScript(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
 	fileEscaped := common.EscapeForLogging(file)
 	log.Debug("Processing added file...",
 		zap.String("file", fileEscaped),
@@ -638,7 +605,11 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, fileEscaped), true, nil
 }
 
-// todo docstring, remove unused arguments
+// createIssueFromSchemaFile uses given file of the push event to compute and
+// create a new issue for the schema diff. It returns "created=true" when a new
+// issue has been created, along with the creation message to be presented in
+// the UI. An *echo.HTTPError is returned in case of the error during the
+// process.
 func (s *Server) createIssueFromSchemaFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
 	fileEscaped := common.EscapeForLogging(file)
 	log.Debug("Processing changed file...",
@@ -766,7 +737,7 @@ func (s *Server) createIssueFromSchemaFile(ctx context.Context, repo *api.Reposi
 	// FIXME(jc): We pick the first database for now.
 	database := databases[0]
 
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir, common.GetResourceDir(s.profile.DataDir))
+	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get driver for database %q", dbName)).SetInternal(err)
 	}
@@ -784,8 +755,7 @@ func (s *Server) createIssueFromSchemaFile(ctx context.Context, repo *api.Reposi
 	}
 	existingTables := make(map[string]struct{})
 	for _, node := range nodes {
-		switch n := node.(type) {
-		case *ast.CreateTableStmt:
+		if n, ok := node.(*ast.CreateTableStmt); ok {
 			existingTables[n.Name.Name] = struct{}{}
 		}
 	}
@@ -799,14 +769,17 @@ func (s *Server) createIssueFromSchemaFile(ctx context.Context, repo *api.Reposi
 	var tableList []string
 	var script bytes.Buffer
 	for _, node := range nodes {
-		switch n := node.(type) {
-		case *ast.CreateTableStmt:
+		if n, ok := node.(*ast.CreateTableStmt); ok {
 			if _, ok := existingTables[n.Name.Name]; !ok {
-				script.WriteString(n.Text())
-				script.WriteString("\n")
+				_, _ = script.WriteString(n.Text())
+				_, _ = script.WriteString("\n")
 				tableList = append(tableList, n.Name.Name)
 			}
 		}
+	}
+	if len(tableList) == 0 {
+		createIgnoredFileActivity(errors.New("No new tables found"))
+		return "", false, nil
 	}
 
 	// Create schema update issue.
@@ -836,7 +809,11 @@ func (s *Server) createIssueFromSchemaFile(ctx context.Context, repo *api.Reposi
 		Type:        db.Migrate,
 		Description: fmt.Sprintf("Create new tables %v", tableList),
 	}
-	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, fmt.Sprintf("%s__%d__state_based_migration.sql", dbName, pushEvent.FileCommit.CreatedTs))
+
+	// FIXME(jc): We don't have a typical migration file for state-based migration,
+	// thus we need to cheat here to avoid major refactoring for MVP.
+	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, fmt.Sprintf("%s__%d__migrate.sql", dbName, pushEvent.FileCommit.CreatedTs))
+
 	var createContext string
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {

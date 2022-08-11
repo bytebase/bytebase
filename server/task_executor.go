@@ -178,7 +178,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		}
 	}
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
+	writeBack := (repo.Project.WorkflowType != api.DatabaseAsCodeWorkflow) && (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
