@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -260,11 +260,11 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 // we need to filter the commit list to prevent creating a duplicated issue. GitLab has a limitation to distinguish
 // whether the commit is a merge commit (https://gitlab.com/gitlab-org/gitlab/-/issues/30914), so we need to dedup
 // ourselves. Below is the filtering algorithm:
-// 1. If we observe the same migration file multiple times, then we should use the latest migration file. This does not matter
-//    for change-based migration since a developer would always create different migration file with incremental names, while it
-//    will be important for the state-based migration, since the file name is always the same and we need to use the latest snapshot.
-// 2. Maintain the relative commit order between different migration files. If migration file A happens before migration file B,
-//    then we should create an issue for migration file A first.
+//  1. If we observe the same migration file multiple times, then we should use the latest migration file. This does not matter
+//     for change-based migration since a developer would always create different migration file with incremental names, while it
+//     will be important for the state-based migration, since the file name is always the same and we need to use the latest snapshot.
+//  2. Maintain the relative commit order between different migration files. If migration file A happens before migration file B,
+//     then we should create an issue for migration file A first.
 type distinctFileItem struct {
 	createdTime time.Time
 	commit      gitlab.WebhookCommit
@@ -469,7 +469,8 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 		}
 	}
 
-	mi, err := db.ParseMigrationInfo(fileEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	mi, err := db.ParseMigrationInfo(fileEscaped, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
 	if err != nil {
 		createIgnoredFileActivity(err)
 		return "", false, nil
