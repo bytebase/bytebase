@@ -536,6 +536,11 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	return nil
 }
 
+// GetBinlogDir gets the binlogDir.
+func (driver *Driver) GetBinlogDir() string {
+	return driver.binlogDir
+}
+
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
 	// Read binlog files list on server.

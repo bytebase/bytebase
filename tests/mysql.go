@@ -31,14 +31,14 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
 }
 
-func getTestMySQLDriver(ctx context.Context, t *testing.T, port, database, binlogDir string) (db.Driver, error) {
+func getTestMySQLDriver(ctx context.Context, t *testing.T, port, database string) (db.Driver, error) {
 	connCfg := getMySQLConnectionConfig(port, database)
 	return db.Open(
 		ctx,
 		db.MySQL,
 		db.DriverConfig{
 			ResourceDir: t.TempDir(),
-			BinlogDir:   binlogDir,
+			BinlogDir:   t.TempDir(),
 		},
 		connCfg,
 		db.ConnectionContext{},
