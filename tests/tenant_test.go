@@ -316,6 +316,7 @@ func TestTenantVCS(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              vcs.ID,
+					WorkflowType:       api.VCSWorkflow,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -764,6 +765,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              vcs.ID,
+					WorkflowType:       api.VCSWorkflow,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
