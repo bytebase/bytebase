@@ -21,6 +21,9 @@
       <section class="p-4">
         <slot name="body"></slot>
       </section>
+      <footer class="absolute bottom-5 w-full">
+        <slot name="footer"></slot>
+      </footer>
     </div>
   </Transition>
 </template>
