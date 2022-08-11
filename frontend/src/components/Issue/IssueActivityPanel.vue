@@ -355,7 +355,6 @@ import {
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import ActivityActionSentence from "./activity/ActionSentence.vue";
-import confetti from "canvas-confetti";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
