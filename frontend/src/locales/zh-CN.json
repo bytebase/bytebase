@@ -656,7 +656,8 @@
     "archive": "归档此环境",
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
-    "restore": "恢复这个环境"
+    "restore": "恢复这个环境",
+    "successfully-updated-environment": "成功更新环境'{0}'"
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",
