@@ -164,11 +164,11 @@ func (p AssigneeGroupPolicy) String() (string, error) {
 
 // UnmarshalAssigneeGroupPolicy will unmarshal payload to assignee group policy.
 func UnmarshalAssigneeGroupPolicy(payload string) (*AssigneeGroupPolicy, error) {
-	var ac AssigneeGroupPolicy
-	if err := json.Unmarshal([]byte(payload), &ac); err != nil {
+	var ag AssigneeGroupPolicy
+	if err := json.Unmarshal([]byte(payload), &ag); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal assignee group policy %q, error: %w", payload, err)
 	}
-	return &ac, nil
+	return &ag, nil
 }
 
 // BackupPlanPolicy is the policy configuration for backup plan.
