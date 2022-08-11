@@ -101,6 +101,26 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 	return projectMember, nil
 }
 
+// GetProjectMemberByProjectIDAndPrincipalID gets an instance of ProjectMember by projectID and principalID.
+func (s *Store) GetProjectMemberByProjectIDAndPrincipalID(ctx context.Context, projectID int, principalID int) (*api.ProjectMember, error) {
+	find := &api.ProjectMemberFind{
+		ProjectID:   &projectID,
+		PrincipalID: &principalID,
+	}
+	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ProjectMember with projectID %d, principalID %d, error: %w", projectID, principalID, err)
+	}
+	if projectMemberRaw == nil {
+		return nil, nil
+	}
+	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error: %w", projectMemberRaw, err)
+	}
+	return projectMember, nil
+}
+
 // PatchProjectMember patches an instance of ProjectMember.
 func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.patchProjectMemberRaw(ctx, patch)
@@ -441,6 +461,9 @@ func findProjectMemberImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PrincipalID; v != nil {
+		where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RoleProvider; v != nil {
 		where, args = append(where, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
