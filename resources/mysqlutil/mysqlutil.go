@@ -94,7 +94,7 @@ func Install(resourceDir string) error {
 			return fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlutilDir, err)
 		}
 		// Install if not exist yet
-		if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
+		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
 			return fmt.Errorf("cannot install mysqlutil, error: %w", err)
 		}
 	}
@@ -121,7 +121,7 @@ func Install(resourceDir string) error {
 				return fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
 			}
 			// Install the current version
-			if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
+			if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
 				return fmt.Errorf("cannot install mysqlutil, error: %w", err)
 			}
 			break
@@ -131,8 +131,8 @@ func Install(resourceDir string) error {
 	return nil
 }
 
-// install installs mysqlutil in resourceDir.
-func install(resourceDir, mysqlutilDir, tarName, version string) error {
+// installImpl installs mysqlutil in resourceDir.
+func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpDir); err != nil {
 		return fmt.Errorf("failed to remove mysqlutil binaries temp directory %q, error: %w", tmpDir, err)
