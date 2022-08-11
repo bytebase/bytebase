@@ -486,17 +486,20 @@ const doCreateComment = (comment: string, clear = true) => {
 const lgtm = (e: Event) => {
   doCreateComment("LGTM", false);
 
-  const button = e.target as HTMLElement;
-  const { left, top, width, height } = button.getBoundingClientRect();
-  const { innerWidth: winWidth, innerHeight: winHeight } = window;
-  // Create a confetti effect from the position of the LGTM button
-  confetti({
-    particleCount: 100,
-    spread: 70,
-    origin: {
-      x: (left + width / 2) / winWidth,
-      y: (top + height / 2) / winHeight,
-    },
+  // import the effect lib asynchronously
+  import("canvas-confetti").then(({ default: confetti }) => {
+    const button = e.target as HTMLElement;
+    const { left, top, width, height } = button.getBoundingClientRect();
+    const { innerWidth: winWidth, innerHeight: winHeight } = window;
+    // Create a confetti effect from the position of the LGTM button
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: {
+        x: (left + width / 2) / winWidth,
+        y: (top + height / 2) / winHeight,
+      },
+    });
   });
 };
 
