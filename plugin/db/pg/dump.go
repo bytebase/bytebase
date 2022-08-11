@@ -123,10 +123,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	if s.Err() != nil {
 		log.Warn(s.Err().Error())
 	}
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-	return nil
+	return cmd.Wait()
 }
 
 // Restore restores a database.
@@ -148,9 +145,5 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }

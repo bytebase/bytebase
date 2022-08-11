@@ -584,10 +584,7 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
 		return err
 	}
-	if err := syncDBExtensionSchema(ctx, s.store, database, schema); err != nil {
-		return err
-	}
-	return nil
+	return syncDBExtensionSchema(ctx, s.store, database, schema)
 }
 
 func syncTableSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
