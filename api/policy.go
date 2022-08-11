@@ -52,7 +52,6 @@ var (
 	// PolicyTypes is a set of all policy types.
 	PolicyTypes = map[PolicyType]bool{
 		PolicyTypePipelineApproval: true,
-		PolicyTypeAssigneeGroup:    true,
 		PolicyTypeBackupPlan:       true,
 		PolicyTypeSQLReview:        true,
 	}
@@ -258,7 +257,7 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 				},
 				{
 					IssueType: IssueDatabaseDataUpdate,
-					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA
+					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
 				},
 			},
 		}.String()
