@@ -74,7 +74,6 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 				break
 			}
 		}
-
 	}
 	return in, false
 }
