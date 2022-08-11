@@ -74,7 +74,7 @@ type TaskDatabasePITRRestorePayload struct {
 	DatabaseName *string `json:"databaseName,omitempty"`
 
 	// TargetInstanceId must be within the same environment as the instance of the original database.
-	// Only used when doing PITR to a new database.
+	// Only used when doing PITR to a new database now.
 	TargetInstanceID *int `json:"targetInstanceId,omitempty"`
 
 	// BackupID and PointInTimeTs only allow one non-nil.
