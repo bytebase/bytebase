@@ -71,8 +71,6 @@ linters-settings:
       # TODO(dragonly): Remove the rules below in the following PRs.
       - name: empty-block
         disabled: true
-      - name: confusing-naming
-        disabled: true
       - name: defer
         disabled: true
   gocritic:
