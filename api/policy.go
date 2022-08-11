@@ -37,12 +37,12 @@ const (
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
 
-	// AssigneeGroupValueWorkspaceOrDBA means the assignee is selected from the workspace owners or DBAs.
-	AssigneeGroupValueWorkspaceOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
-	// AssigneeGroupValueProject means the assignee is selected from the project owners if the issue type is one of
+	// AssigneeGroupValueWorkspaceOwnerOrDBA means the assignee is selected from the workspace owners or DBAs.
+	AssigneeGroupValueWorkspaceOwnerOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
+	// AssigneeGroupValueProjectOwner means the assignee is selected from the project owners if the issue type is one of
 	//  - alter schema
 	//  - update data
-	AssigneeGroupValueProject AssigneeGroupValue = "PROJECT_OWNER"
+	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
 	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
@@ -227,7 +227,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if err != nil {
 			return err
 		}
-		if ag.Value != AssigneeGroupValueWorkspaceOrDBA && ag.Value != AssigneeGroupValueProject {
+		if ag.Value != AssigneeGroupValueWorkspaceOwnerOrDBA && ag.Value != AssigneeGroupValueProjectOwner {
 			return fmt.Errorf("invalid assignee group value: %q", payload)
 		}
 	case PolicyTypeBackupPlan:
@@ -260,7 +260,7 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		}.String()
 	case PolicyTypeAssigneeGroup:
 		return AssigneeGroupPolicy{
-			Value: AssigneeGroupValueWorkspaceOrDBA,
+			Value: AssigneeGroupValueWorkspaceOwnerOrDBA,
 		}.String()
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
