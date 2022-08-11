@@ -198,9 +198,9 @@ type WebhookPushEvent struct {
 	Commits    []WebhookCommit   `json:"commits"`
 }
 
-// fetchUserInfo fetches user information from the given resourceURI, which
+// fetchUserInfoImpl fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
-func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
+func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
 	code, body, err := oauth.Get(
 		ctx,
@@ -240,7 +240,7 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 
 // TryLogin tries to fetch the user info from the current OAuth context.
 func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, "user")
 }
 
 // CommitAuthor represents a GitHub API response for a commit author.
@@ -307,7 +307,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 
 // FetchUserInfo fetches user info of given user ID.
 func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, username string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", username))
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", username))
 }
 
 func getRoleAndMappedRole(roleName string) (githubRole RepositoryRole, bytebaseRole common.ProjectRole) {
