@@ -11,15 +11,15 @@
     </template>
     <template #footer>
       <div class="flex flex-row justify-center">
-        <aside v-if="locale === 'en-US'" class="w-1/2">
+        <div v-if="locale === 'en-US'" class="w-1/2">
           <a href="https://discord.gg/VHEXRDQq" target="_blank">
             <img
               src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
               alt="discord invitation"
             />
           </a>
-        </aside>
-        <aside
+        </div>
+        <div
           v-if="locale === 'zh-CN'"
           class="w-full flex flex-col items-center"
         >
@@ -40,7 +40,7 @@
               <span>BB 小助手</span>
             </div>
           </div>
-        </aside>
+        </div>
       </div>
     </template>
   </Drawer>
