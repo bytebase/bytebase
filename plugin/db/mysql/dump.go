@@ -168,11 +168,7 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {

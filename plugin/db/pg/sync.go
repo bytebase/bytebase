@@ -380,10 +380,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		}
 		tbl.comment = comment.String
 	}
-	if err := crows.Err(); err != nil {
-		return err
-	}
-	return nil
+	return crows.Err()
 }
 
 // getTableColumns gets the columns of a table.
@@ -529,10 +526,7 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 		}
 		view.comment = comment.String
 	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	return nil
+	return rows.Err()
 }
 
 func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
@@ -642,10 +636,7 @@ func getIndex(txn *sql.Tx, idx *indexSchema) error {
 		}
 		idx.comment = comment.String
 	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	return nil
+	return rows.Err()
 }
 
 func convertBoolFromYesNo(s string) (bool, error) {
