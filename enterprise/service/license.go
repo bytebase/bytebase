@@ -25,6 +25,7 @@ type Claims struct {
 	InstanceCount int    `json:"instanceCount"`
 	Trialing      bool   `json:"trialing"`
 	Plan          string `json:"plan"`
+	OrgName       string `json:"orgName"`
 	jwt.RegisteredClaims
 }
 
@@ -128,6 +129,7 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 		Plan:          planType,
 		Subject:       claims.Subject,
 		Trialing:      claims.Trialing,
+		OrgName:       claims.OrgName,
 	}
 
 	if err := license.Valid(); err != nil {

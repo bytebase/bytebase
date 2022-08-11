@@ -118,10 +118,12 @@ func (m *MetricReporter) Register(metricName metric.Name, collector metric.Colle
 func (m *MetricReporter) identify(ctx context.Context) {
 	plan := api.FREE.String()
 	orgID := ""
+	orgName := ""
 
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
 		orgID = m.subscription.OrgID
+		orgName = m.subscription.OrgName
 	}
 
 	principal, err := m.store.GetPrincipalByID(ctx, principalIDForFirstUser)
@@ -136,6 +138,7 @@ func (m *MetricReporter) identify(ctx context.Context) {
 	if err := m.reporter.Identify(&metric.Identifier{
 		ID:    m.workspaceID,
 		Email: email,
+		Name:  orgName,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,
 			identifyTraitForVersion: m.version,
