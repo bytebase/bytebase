@@ -110,19 +110,6 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 	return projectMember, nil
 }
 
-// GetProjectMemberByProjectIDAndPrincipalID gets an instance of ProjectMember by projectID and principalID.
-func (s *Store) GetProjectMemberByProjectIDAndPrincipalID(ctx context.Context, projectID int, principalID int) (*api.ProjectMember, error) {
-	find := &api.ProjectMemberFind{
-		ProjectID:   &projectID,
-		PrincipalID: &principalID,
-	}
-	projectMember, err := s.GetProjectMember(ctx, find)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get ProjectMember with projectID %d, principalID %d, error: %w", projectID, principalID, err)
-	}
-	return projectMember, nil
-}
-
 // PatchProjectMember patches an instance of ProjectMember.
 func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.patchProjectMemberRaw(ctx, patch)
