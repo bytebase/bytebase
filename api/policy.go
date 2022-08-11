@@ -35,8 +35,6 @@ const (
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
 
-	// AssigneeGroupValueWorkspaceOwnerOrDBA means the assignee is selected from the workspace owners or DBAs.
-	AssigneeGroupValueWorkspaceOwnerOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
 	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners.
 	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
 
@@ -237,20 +235,6 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 	case PolicyTypePipelineApproval:
 		return PipelineApprovalPolicy{
 			Value: PipelineApprovalValueManualAlways,
-			AssigneeGroupList: []AssigneeGroup{
-				{
-					IssueType: IssueDatabaseSchemaUpdate,
-					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
-				},
-				{
-					IssueType: IssueDatabaseSchemaUpdateGhost,
-					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
-				},
-				{
-					IssueType: IssueDatabaseDataUpdate,
-					Value:     AssigneeGroupValueWorkspaceOwnerOrDBA,
-				},
-			},
 		}.String()
 	case PolicyTypeBackupPlan:
 		return BackupPlanPolicy{
