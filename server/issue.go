@@ -1294,7 +1294,7 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 	}
 }
 
-func (s *Server) getActiveTask(pipeline *api.Pipeline) *api.Task {
+func getActiveTask(pipeline *api.Pipeline) *api.Task {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPendingApproval ||
