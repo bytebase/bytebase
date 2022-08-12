@@ -21,7 +21,7 @@
         </div>
         <div
           v-if="locale === 'zh-CN'"
-          class="w-full flex flex-col items-center mt-2"
+          class="w-full flex flex-col items-center pt-2"
         >
           <p class="text-sm mb-2">微信扫码加入官方社群</p>
           <div class="flex flex-row justify-center">
