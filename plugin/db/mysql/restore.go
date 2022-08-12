@@ -100,7 +100,7 @@ func (driver *Driver) SetUpForPITR(binlogDir string) {
 }
 
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
-func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
+func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
 	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, driver.binlogDir)
 	if err != nil {
 		return err
@@ -136,9 +136,9 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		// Disable binary logging.
 		"--disable-log-bin",
 		// Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database.
-		"--rewrite-db", fmt.Sprintf("%s->%s", originalDBName, pitrDatabase),
+		"--rewrite-db", fmt.Sprintf("%s->%s", originalDBName, targetDatabase),
 		// List entries for just this database. It's applied after the --rewrite-db option, so we should provide the rewritten database, i.e., pitrDatabase.
-		"--database", pitrDatabase,
+		"--database", targetDatabase,
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		"--start-position", fmt.Sprintf("%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
