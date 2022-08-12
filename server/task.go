@@ -503,9 +503,9 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		return false, err
 	}
 	var groupValue *api.AssigneeGroupValue
-	for _, group := range policy.AssigneeGroupList {
+	for i, group := range policy.AssigneeGroupList {
 		if group.IssueType == issueType {
-			groupValue = &group.Value
+			groupValue = &policy.AssigneeGroupList[i].Value
 			break
 		}
 	}
