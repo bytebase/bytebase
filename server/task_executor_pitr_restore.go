@@ -175,17 +175,11 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 	log.Debug("Found backup list", zap.Array("backups", api.ZapBackupArray(backupList)))
 
-	binlogDir := getBinlogAbsDir(dataDir, task.Instance.ID)
-	if err := createBinlogDir(dataDir, task.Instance.ID); err != nil {
-		return err
-	}
-
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		log.Error("Failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-	mysqlDriver.SetUpForPITR(binlogDir)
 
 	log.Debug("Downloading all binlog files")
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */); err != nil {
@@ -220,6 +214,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	// database's migration history, and append a new BRANCH migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
 
+	binlogDir := getBinlogAbsDir(dataDir, task.Instance.ID)
 	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
 		return fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}

@@ -18,12 +18,14 @@
           ><heroicons-outline:x class="h-6 w-6"
         /></i>
       </header>
-      <section class="p-4">
-        <slot name="body"></slot>
-      </section>
-      <footer class="absolute bottom-5 w-full">
-        <slot name="footer"></slot>
-      </footer>
+      <div class="h-full flex flex-col justify-between">
+        <section class="p-4 overflow-auto">
+          <slot name="body"></slot>
+        </section>
+        <footer class="w-full h-40 mb-16">
+          <slot name="footer"></slot>
+        </footer>
+      </div>
     </div>
   </Transition>
 </template>

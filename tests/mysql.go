@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"testing"
 
 	"github.com/bytebase/bytebase/plugin/db"
 )
@@ -30,17 +31,14 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
 }
 
-func getTestMySQLDriver(ctx context.Context, port, database string) (db.Driver, error) {
-	return getTestMySQLDriverWithResourceDir(ctx, port, database, "" /*resourceDir*/)
-}
-
-func getTestMySQLDriverWithResourceDir(ctx context.Context, port, database, resourceDir string) (db.Driver, error) {
+func getTestMySQLDriver(ctx context.Context, t *testing.T, port, database, resourceDir string) (db.Driver, error) {
 	connCfg := getMySQLConnectionConfig(port, database)
 	return db.Open(
 		ctx,
 		db.MySQL,
 		db.DriverConfig{
 			ResourceDir: resourceDir,
+			BinlogDir:   t.TempDir(),
 		},
 		connCfg,
 		db.ConnectionContext{},

@@ -46,8 +46,8 @@ func TestBackupRestoreBasic(t *testing.T) {
 	database := "backup_restore"
 	table := "backup_restore"
 
-	tmpDir := t.TempDir()
-	err := mysqlutil.Install(tmpDir)
+	resourceDir := t.TempDir()
+	err := mysqlutil.Install(resourceDir)
 	a.NoError(err)
 
 	_, stop := resourcemysql.SetupTestInstance(t, port)
@@ -80,7 +80,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// make a full backup
-	driver, err := getTestMySQLDriverWithResourceDir(ctx, strconv.Itoa(port), database, tmpDir)
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, resourceDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
