@@ -137,7 +137,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
-			activeTask := s.getActiveTask(issue.Pipeline)
+			activeTask := getActiveTask(issue.Pipeline)
 			ok, err := s.canPrincipalChangeTaskStatus(ctx, *issuePatch.AssigneeID, activeTask)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
@@ -269,7 +269,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		if err != nil {
 			return nil, err
 		}
-		activeTask := s.getActiveTask(pipeline)
+		activeTask := getActiveTask(pipeline)
 		ok, err := s.canPrincipalChangeTaskStatus(ctx, issueCreate.AssigneeID, activeTask)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
