@@ -34,13 +34,18 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update stage tasks status request").SetInternal(err)
 		}
 
-		if err := s.validateIssueAssignee(ctx, currentPrincipalID, pipelineID); err != nil {
-			return err
-		}
-
 		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID}, true /* returnOnErr */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get tasks").SetInternal(err)
+		}
+		if len(tasks) == 0 {
+			// which is impossible, because we make sure at least there is one task in each stage.
+			return echo.NewHTTPError(http.StatusInternalServerError, "No task in the stage")
+		}
+		// pick any task in the stage to validate
+		// because all tasks in the same stage share the issue & environment.
+		if err := s.validatePrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0]); err != nil {
+			return err
 		}
 		var tasksPatched []*api.Task
 		for _, task := range tasks {
