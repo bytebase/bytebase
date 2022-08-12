@@ -195,8 +195,12 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		if err := s.validateIssueAssignee(ctx, currentPrincipalID, task.PipelineID); err != nil {
-			return err
+		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, task)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
+		}
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
 		taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
@@ -493,26 +497,73 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	return taskPatched, nil
 }
 
-func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, pipelineID int) error {
-	issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+// canPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
+func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) (bool, error) {
+	// the workspace owner and DBA roles can always change task status.
+	principal, err := s.store.GetPrincipalByID(ctx, principalID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
+		return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
+	}
+	if principal == nil {
+		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
+	}
+	if principal.Role == api.Owner || principal.Role == api.DBA {
+		return true, nil
+	}
+
+	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	if err != nil {
+		return false, common.Errorf(common.Internal, "failed to find issue, error: %w", err)
 	}
 	if issue == nil {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", pipelineID))
+		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
 	}
-	if issue.AssigneeID == api.SystemBotID {
-		currentPrincipal, err := s.store.GetPrincipalByID(ctx, currentPrincipalID)
+	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
+	if err != nil {
+		return false, common.Errorf(common.Internal, "failed to get assignee group value for taskID %d, error: %w", task.ID, err)
+	}
+	if groupValue == nil {
+		return false, nil
+	}
+	// as the policy says, the project owner has the privilege to change task status.
+	if *groupValue == api.AssigneeGroupValueProjectOwner {
+		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
+			ProjectID:   &issue.ProjectID,
+			PrincipalID: &principalID,
+		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
+			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", issue.ProjectID, principalID, err)
 		}
-		if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update task status")
+		if member != nil && member.Role == string(api.Owner) {
+			return true, nil
 		}
-	} else if issue.AssigneeID != currentPrincipalID {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
 	}
-	return nil
+	return false, nil
+}
+
+func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, task *api.Task) (*api.AssigneeGroupValue, error) {
+	environmentID := api.UnknownID
+	for _, stage := range issue.Pipeline.StageList {
+		if stage.ID == task.StageID {
+			environmentID = stage.EnvironmentID
+			break
+		}
+	}
+	if environmentID == api.UnknownID {
+		return nil, common.Errorf(common.NotFound, "failed to find environmentID by task.StageID %d", task.StageID)
+	}
+
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return nil, common.Errorf(common.Internal, "failed to get pipeline approval policy by environmentID %d, error: %w", environmentID, err)
+	}
+
+	for _, assigneeGroup := range policy.AssigneeGroupList {
+		if assigneeGroup.IssueType == issue.Type {
+			return &assigneeGroup.Value, nil
+		}
+	}
+	return nil, nil
 }
 
 func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
