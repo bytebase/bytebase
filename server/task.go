@@ -497,6 +497,48 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	return taskPatched, nil
 }
 
+func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return false, err
+	}
+	var groupValue *api.AssigneeGroupValue
+	for i, group := range policy.AssigneeGroupList {
+		if group.IssueType == issueType {
+			groupValue = &policy.AssigneeGroupList[i].Value
+			break
+		}
+	}
+	if groupValue == nil {
+		// default
+		// the assignee group is the workspace owner and DBA role.
+		principal, err := s.store.GetPrincipalByID(ctx, principalID)
+		if err != nil {
+			return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
+		}
+		if principal == nil {
+			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
+		}
+		if principal.Role == api.Owner || principal.Role == api.DBA {
+			return true, nil
+		}
+	}
+	// as the policy says, the assignee group is the project owner.
+	if *groupValue == api.AssigneeGroupValueProjectOwner {
+		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
+			ProjectID:   &projectID,
+			PrincipalID: &principalID,
+		})
+		if err != nil {
+			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", projectID, principalID, err)
+		}
+		if member != nil && member.Role == string(api.Owner) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // canPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
 func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) (bool, error) {
 	// the workspace owner and DBA roles can always change task status.
