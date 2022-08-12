@@ -195,8 +195,12 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		if err := s.validatePrincipalChangeTaskStatus(ctx, currentPrincipalID, task); err != nil {
-			return err
+		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, task)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
+		}
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
 		taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
@@ -502,12 +506,12 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 		}
 	}
 	if environmentID == api.UnknownID {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find environmentID by task.StageID %d", task.StageID))
+		return nil, common.Errorf(common.NotFound, "failed to find environmentID by task.StageID %d", task.StageID)
 	}
 
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pipeline approval policy").SetInternal(err)
+		return nil, common.Errorf(common.Internal, "failed to get pipeline approval policy by environmentID %d, error: %w", environmentID, err)
 	}
 
 	for _, assigneeGroup := range policy.AssigneeGroupList {
@@ -518,17 +522,17 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 	return nil, nil
 }
 
-func (s *Server) validatePrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) error {
+func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) (bool, error) {
 	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
+		return false, common.Errorf(common.Internal, "failed to find issue, error: %w", err)
 	}
 	if issue == nil {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
+		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
 	}
 	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
 	if err != nil {
-		return err
+		return false, common.Errorf(common.Internal, "failed to get assignee group value for taskID %d, error: %w", task.ID, err)
 	}
 	if groupValue != nil && *groupValue == api.AssigneeGroupValueProjectOwner {
 		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
@@ -536,23 +540,23 @@ func (s *Server) validatePrincipalChangeTaskStatus(ctx context.Context, principa
 			PrincipalID: &principalID,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get project member by projectID %d, principalID %d", issue.ProjectID, principalID).SetInternal(err)
+			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", issue.ProjectID, principalID, err)
 		}
 		if member != nil && member.Role == string(api.Owner) {
-			return nil
+			return true, nil
 		}
 	}
 	principal, err := s.store.GetPrincipalByID(ctx, principalID)
 	if err != nil {
-		return err
+		return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
 	}
 	if principal == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Principal not found by ID %d", principalID)
+		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 	}
 	if principal.Role == api.Owner || principal.Role == api.DBA {
-		return nil
+		return true, nil
 	}
-	return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to update task status")
+	return false, nil
 }
 
 func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {

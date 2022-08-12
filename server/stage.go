@@ -44,8 +44,12 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		}
 		// pick any task in the stage to validate
 		// because all tasks in the same stage share the issue & environment.
-		if err := s.validatePrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0]); err != nil {
-			return err
+		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0])
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
+		}
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 		var tasksPatched []*api.Task
 		for _, task := range tasks {
