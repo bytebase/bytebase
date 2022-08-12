@@ -46,12 +46,56 @@ func newDriver(dc db.DriverConfig) db.Driver {
 
 // Open opens a MySQL driver.
 func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+	db, err := connect(dbType, connCfg, connCtx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to MySQL database, error: %w", err)
+	}
+	driver.db = db
+	driver.dbType = dbType
+	driver.connectionCtx = connCtx
+	driver.connCfg = connCfg
+
+	return driver, nil
+}
+
+func connect(dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (*sql.DB, error) {
+	params := []string{"multiStatements=true"}
+
+	tlsKey := "db.mysql.tls"
+	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TLS config, error: %w", err)
+	}
+	if tlsConfig != nil {
+		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
+			return nil, fmt.Errorf("sql: failed to register tls config: %v", err)
+		}
+		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
+		defer mysql.DeregisterTLSConfig(tlsKey)
+		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
+	}
+
+	loggedDSN := getDSN(dbType, connCfg, params, true)
+	log.Debug("Opening MySQL driver",
+		zap.String("dsn", loggedDSN),
+		zap.String("environment", connCtx.EnvironmentName),
+		zap.String("database", connCtx.InstanceName),
+	)
+
+	dsn := getDSN(dbType, connCfg, params, false)
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func getDSN(dbType db.Type, connCfg db.ConnectionConfig, params []string, redact bool) string {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
 	}
-
-	params := []string{"multiStatements=true"}
 
 	port := connCfg.Port
 	if port == "" {
@@ -61,41 +105,16 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 		}
 	}
 
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
-
-	if err != nil {
-		return nil, fmt.Errorf("sql: tls config error: %v", err)
-	}
-
-	loggedDSN := fmt.Sprintf("%s:<<redacted password>>@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
+	password := ""
 	if connCfg.Password != "" {
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	}
-	tlsKey := "db.mysql.tls"
-	if tlsConfig != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
-			return nil, fmt.Errorf("sql: failed to register tls config: %v", err)
+		if redact {
+			password = ":<<redacted password>>"
+		} else {
+			password = ":" + connCfg.Password
 		}
-		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		defer mysql.DeregisterTLSConfig(tlsKey)
-		dsn += fmt.Sprintf("?tls=%s", tlsKey)
 	}
-	log.Debug("Opening MySQL driver",
-		zap.String("dsn", loggedDSN),
-		zap.String("environment", connCtx.EnvironmentName),
-		zap.String("database", connCtx.InstanceName),
-	)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
-	}
-	driver.dbType = dbType
-	driver.db = db
-	driver.connectionCtx = connCtx
-	driver.connCfg = connCfg
 
-	return driver, nil
+	return fmt.Sprintf("%s%s@%s(%s:%s)/%s?%s", connCfg.Username, password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 }
 
 // Close closes the driver.
@@ -110,7 +129,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
-	return driver.db, nil
+	return connect(driver.dbType, driver.connCfg, driver.connectionCtx)
 }
 
 // getDatabases gets all databases of an instance.

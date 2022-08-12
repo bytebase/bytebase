@@ -207,19 +207,10 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 // TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
 func (driver *Driver) RestorePITR(ctx context.Context, fullBackup io.Reader, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	stmt := fmt.Sprintf(""+
-		// Create the pitr database.
-		"CREATE DATABASE `%s`;"+
-		// Change to the pitr database.
-		"USE `%s`;",
-		pitrDatabaseName, pitrDatabaseName)
 
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return err
-	}
-
-	if _, err := db.ExecContext(ctx, stmt); err != nil {
+	// Create the pitr database.
+	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", pitrDatabaseName)
+	if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
 
@@ -619,13 +610,8 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 
 // GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files in ascending order by their numeric extension.
 func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return nil, err
-	}
-
 	query := "SHOW BINARY LOGS"
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -889,14 +875,9 @@ func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
 
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
 func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) error {
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return err
-	}
-
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/information-schema-tables-table.html
 	query := fmt.Sprintf("SELECT table_name, engine FROM information_schema.tables WHERE table_schema='%s';", database)
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -921,14 +902,9 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 }
 
 func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
-	db, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return "", err
-	}
-
 	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
 	var varNameFound, value string
-	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
 		if err == sql.ErrNoRows {
 			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}

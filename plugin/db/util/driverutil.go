@@ -175,6 +175,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
+			// TODO(dragonly): Provide an explicit switch database API. This is a trick.
 			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
 				return -1, "", err
 			}

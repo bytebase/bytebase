@@ -266,12 +266,8 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 }
 
 func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
-	sqldb, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
-	if err != nil {
-		return err
-	}
 	query := `SELECT id, version FROM bytebase.migration_history`
-	rows, err := sqldb.Query(query)
+	rows, err := driver.db.Query(query)
 	if err != nil {
 		return err
 	}
@@ -304,7 +300,7 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 			continue
 		}
 		newVersion := fmt.Sprintf("%s%s", util.NonSemanticPrefix, v.version)
-		if _, err := sqldb.Exec(updateQuery, newVersion, v.id, v.version); err != nil {
+		if _, err := driver.db.Exec(updateQuery, newVersion, v.id, v.version); err != nil {
 			return err
 		}
 	}
