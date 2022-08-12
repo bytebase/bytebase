@@ -420,71 +420,6 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 	}
 }
 
-// nolint
-// createDatabaseTaskList returns the task list for create database.
-func (s *Server) createDatabaseTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project api.Project) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
-	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
-		return nil, nil, err
-	}
-	if c.DatabaseName == "" {
-		return nil, nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, database name missing"))
-	}
-	if instance.Engine == db.Snowflake {
-		// Snowflake needs to use upper case of DatabaseName.
-		c.DatabaseName = strings.ToUpper(c.DatabaseName)
-	}
-	// Validate the labels. Labels are set upon task completion.
-	if c.Labels != "" {
-		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
-		}
-	}
-
-	var schemaVersion, schema string
-	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	if project.TenantMode == api.TenantModeTenant {
-		if !s.feature(api.FeatureMultiTenancy) {
-			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
-		if err != nil {
-			return nil, nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
-		}
-		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, &instance, &project, project.ID, baseDatabaseName)
-		if err != nil {
-			return nil, nil, err
-		}
-		schemaVersion, schema = sv, s
-	}
-	if schemaVersion == "" {
-		schemaVersion = common.DefaultMigrationVersion()
-	}
-
-	payload := api.TaskDatabaseCreatePayload{
-		ProjectID:     project.ID,
-		CharacterSet:  c.CharacterSet,
-		Collation:     c.Collation,
-		Labels:        c.Labels,
-		SchemaVersion: schemaVersion,
-	}
-	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
-	}
-
-	return []api.TaskCreate{
-		{
-			InstanceID:   c.InstanceID,
-			Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-			Status:       api.TaskPendingApproval,
-			Type:         api.TaskDatabaseCreate,
-			DatabaseName: payload.DatabaseName,
-			Payload:      string(bytes),
-		},
-	}, []api.TaskIndexDAG{}, nil
-}
-
 func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	c := api.CreateDatabaseContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
@@ -521,44 +456,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		c.DatabaseName = strings.ToUpper(c.DatabaseName)
 	}
 
-	// Validate the labels. Labels are set upon task completion.
-	if c.Labels != "" {
-		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: instance} /* dummy database */, project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
-		}
-	}
-
-	var schemaVersion, schema string
-	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	if project.TenantMode == api.TenantModeTenant {
-		if !s.feature(api.FeatureMultiTenancy) {
-			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
-		}
-		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, baseDatabaseName)
-		if err != nil {
-			return nil, err
-		}
-		schemaVersion, schema = sv, s
-	}
-	if schemaVersion == "" {
-		schemaVersion = common.DefaultMigrationVersion()
-	}
-
-	payload := api.TaskDatabaseCreatePayload{
-		ProjectID:     issueCreate.ProjectID,
-		CharacterSet:  c.CharacterSet,
-		Collation:     c.Collation,
-		Labels:        c.Labels,
-		SchemaVersion: schemaVersion,
-	}
-	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
-	bytes, err := json.Marshal(payload)
+	taskCreateList, taskIndexDAGList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		return nil, fmt.Errorf("failed to create task list of creating database, error: %w", err)
 	}
 
 	if c.BackupID != 0 {
@@ -577,55 +477,41 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
 		}
 
+		taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{
+			FromIndex: len(taskCreateList) - 1,
+			ToIndex:   len(taskCreateList),
+		})
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			InstanceID:   c.InstanceID,
+			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
+			Status:       api.TaskPending,
+			Type:         api.TaskDatabaseRestore,
+			DatabaseName: c.DatabaseName,
+			BackupID:     &c.BackupID,
+			Payload:      string(restoreBytes),
+		})
+
 		return &api.PipelineCreate{
-			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
+			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:          "Restore backup",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-							Status:       api.TaskPendingApproval,
-							Type:         api.TaskDatabaseCreate,
-							DatabaseName: payload.DatabaseName,
-							Payload:      string(bytes),
-						},
-						{
-							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Restore backup %v", backup.Name),
-							Status:       api.TaskPending,
-							Type:         api.TaskDatabaseRestore,
-							DatabaseName: payload.DatabaseName,
-							BackupID:     &c.BackupID,
-							Payload:      string(restoreBytes),
-						},
-					},
-					TaskIndexDAGList: []api.TaskIndexDAG{
-						{FromIndex: 0, ToIndex: 1},
-					},
+					Name:             "Restore backup",
+					EnvironmentID:    instance.EnvironmentID,
+					TaskList:         taskCreateList,
+					TaskIndexDAGList: taskIndexDAGList,
 				},
 			},
 		}, nil
 	}
 
 	return &api.PipelineCreate{
-		Name: fmt.Sprintf("Pipeline - Create database %s", payload.DatabaseName),
+		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
 		StageList: []api.StageCreate{
 			{
-				Name:          "Create database",
-				EnvironmentID: instance.EnvironmentID,
-				TaskList: []api.TaskCreate{
-					{
-						InstanceID:   c.InstanceID,
-						Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
-						Status:       api.TaskPendingApproval,
-						Type:         api.TaskDatabaseCreate,
-						DatabaseName: payload.DatabaseName,
-						Payload:      string(bytes),
-					},
-				},
+				Name:             "Create database",
+				EnvironmentID:    instance.EnvironmentID,
+				TaskList:         taskCreateList,
+				TaskIndexDAGList: taskIndexDAGList,
 			},
 		},
 	}, nil
@@ -920,6 +806,70 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		MigrationType:     migrationType,
 		Payload:           string(bytes),
 	}, nil
+}
+
+// createDatabaseCreateTaskList returns the task list for create database.
+func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project api.Project) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
+		return nil, nil, err
+	}
+	if c.DatabaseName == "" {
+		return nil, nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, database name missing"))
+	}
+	if instance.Engine == db.Snowflake {
+		// Snowflake needs to use upper case of DatabaseName.
+		c.DatabaseName = strings.ToUpper(c.DatabaseName)
+	}
+	// Validate the labels. Labels are set upon task completion.
+	if c.Labels != "" {
+		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
+		}
+	}
+
+	var schemaVersion, schema string
+	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
+	if project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
+		if err != nil {
+			return nil, nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
+		}
+		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, &instance, &project, project.ID, baseDatabaseName)
+		if err != nil {
+			return nil, nil, err
+		}
+		schemaVersion, schema = sv, s
+	}
+	if schemaVersion == "" {
+		schemaVersion = common.DefaultMigrationVersion()
+	}
+
+	payload := api.TaskDatabaseCreatePayload{
+		ProjectID:     project.ID,
+		CharacterSet:  c.CharacterSet,
+		Collation:     c.Collation,
+		Labels:        c.Labels,
+		SchemaVersion: schemaVersion,
+	}
+	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+	}
+
+	return []api.TaskCreate{
+		{
+			InstanceID:   c.InstanceID,
+			Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+			Status:       api.TaskPendingApproval,
+			Type:         api.TaskDatabaseCreate,
+			DatabaseName: payload.DatabaseName,
+			Payload:      string(bytes),
+		},
+	}, []api.TaskIndexDAG{}, nil
 }
 
 // creates PITR TaskCreate list and dependency.
