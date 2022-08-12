@@ -213,7 +213,9 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		}
 		issueTypeSeen := make(map[IssueType]bool)
 		for _, group := range pa.AssigneeGroupList {
-			if group.IssueType != IssueDatabaseSchemaUpdate && group.IssueType != IssueDatabaseSchemaUpdateGhost && group.IssueType != IssueDatabaseDataUpdate {
+			if group.IssueType != IssueDatabaseSchemaUpdate &&
+				group.IssueType != IssueDatabaseSchemaUpdateGhost &&
+				group.IssueType != IssueDatabaseDataUpdate {
 				return fmt.Errorf("found invalid assignee group issue type %q in pipeline approval policy", group.IssueType)
 			}
 			if issueTypeSeen[group.IssueType] {
