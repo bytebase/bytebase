@@ -497,6 +497,50 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	return taskPatched, nil
 }
 
+// canPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
+func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) (bool, error) {
+	// the workspace owner and DBA roles can always change task status.
+	principal, err := s.store.GetPrincipalByID(ctx, principalID)
+	if err != nil {
+		return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
+	}
+	if principal == nil {
+		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
+	}
+	if principal.Role == api.Owner || principal.Role == api.DBA {
+		return true, nil
+	}
+
+	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	if err != nil {
+		return false, common.Errorf(common.Internal, "failed to find issue, error: %w", err)
+	}
+	if issue == nil {
+		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
+	}
+	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
+	if err != nil {
+		return false, common.Errorf(common.Internal, "failed to get assignee group value for taskID %d, error: %w", task.ID, err)
+	}
+	if groupValue == nil {
+		return false, nil
+	}
+	// as the policy says, the project owner has the privilege to change task status.
+	if *groupValue == api.AssigneeGroupValueProjectOwner {
+		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
+			ProjectID:   &issue.ProjectID,
+			PrincipalID: &principalID,
+		})
+		if err != nil {
+			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", issue.ProjectID, principalID, err)
+		}
+		if member != nil && member.Role == string(api.Owner) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, task *api.Task) (*api.AssigneeGroupValue, error) {
 	environmentID := api.UnknownID
 	for _, stage := range issue.Pipeline.StageList {
@@ -520,43 +564,6 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 		}
 	}
 	return nil, nil
-}
-
-func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) (bool, error) {
-	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to find issue, error: %w", err)
-	}
-	if issue == nil {
-		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
-	}
-	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
-	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to get assignee group value for taskID %d, error: %w", task.ID, err)
-	}
-	if groupValue != nil && *groupValue == api.AssigneeGroupValueProjectOwner {
-		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
-			ProjectID:   &issue.ProjectID,
-			PrincipalID: &principalID,
-		})
-		if err != nil {
-			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", issue.ProjectID, principalID, err)
-		}
-		if member != nil && member.Role == string(api.Owner) {
-			return true, nil
-		}
-	}
-	principal, err := s.store.GetPrincipalByID(ctx, principalID)
-	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
-	}
-	if principal == nil {
-		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
-	}
-	if principal.Role == api.Owner || principal.Role == api.DBA {
-		return true, nil
-	}
-	return false, nil
 }
 
 func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
