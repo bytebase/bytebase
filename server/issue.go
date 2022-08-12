@@ -264,22 +264,20 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	// create validateOnly pipeline always because we need to validate approver.
-	{
-		pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, true /* ValidateOnly */)
-		if err != nil {
-			return nil, err
-		}
-		activeTask := getActiveTask(pipeline)
-		ok, err := s.canPrincipalChangeTaskStatus(ctx, issueCreate.AssigneeID, activeTask)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
-		}
-		if !ok {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
-		}
+	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, true /* ValidateOnly */)
+	if err != nil {
+		return nil, err
+	}
+	activeTask := getActiveTask(pipeline)
+	ok, err := s.canPrincipalChangeTaskStatus(ctx, issueCreate.AssigneeID, activeTask)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+	}
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
 	}
 
-	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
+	pipeline, err = s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
 	if err != nil {
 		return nil, err
 	}
