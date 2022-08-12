@@ -530,18 +530,16 @@ func (s *Server) validatePrincipalChangeTaskStatus(ctx context.Context, principa
 	if err != nil {
 		return err
 	}
-	if groupValue != nil {
-		if *groupValue == api.AssigneeGroupValueProjectOwner {
-			member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
-				ProjectID:   &issue.ProjectID,
-				PrincipalID: &principalID,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get project member by projectID %d, principalID %d", issue.ProjectID, principalID).SetInternal(err)
-			}
-			if member != nil && member.Role == string(api.Owner) {
-				return nil
-			}
+	if groupValue != nil && *groupValue == api.AssigneeGroupValueProjectOwner {
+		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
+			ProjectID:   &issue.ProjectID,
+			PrincipalID: &principalID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get project member by projectID %d, principalID %d", issue.ProjectID, principalID).SetInternal(err)
+		}
+		if member != nil && member.Role == string(api.Owner) {
+			return nil
 		}
 	}
 	principal, err := s.store.GetPrincipalByID(ctx, principalID)
