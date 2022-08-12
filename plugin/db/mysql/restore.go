@@ -222,7 +222,7 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
-	return driver.Restore(ctx, backup)
+	return driver.restoreImpl(ctx, backup, pitrDatabaseName)
 }
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
