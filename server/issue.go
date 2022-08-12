@@ -1287,20 +1287,6 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 	}
 }
 
-func getActiveTask(pipeline *api.Pipeline) *api.Task {
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status == api.TaskPendingApproval ||
-				task.Status == api.TaskPending ||
-				task.Status == api.TaskRunning ||
-				task.Status == api.TaskCanceled {
-				return task
-			}
-		}
-	}
-	return nil
-}
-
 func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
