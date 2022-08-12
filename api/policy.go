@@ -211,6 +211,16 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
 		}
+		issueTypeSeen := make(map[IssueType]bool)
+		for _, group := range pa.AssigneeGroupList {
+			if group.IssueType != IssueDatabaseSchemaUpdate && group.IssueType != IssueDatabaseSchemaUpdateGhost && group.IssueType != IssueDatabaseDataUpdate {
+				return fmt.Errorf("invalid assignee group issue type: %q", group.IssueType)
+			}
+			if issueTypeSeen[group.IssueType] {
+				return fmt.Errorf("duplicate assignee group issue type: %q", group.IssueType)
+			}
+			issueTypeSeen[group.IssueType] = true
+		}
 	case PolicyTypeBackupPlan:
 		bp, err := UnmarshalBackupPlanPolicy(payload)
 		if err != nil {
