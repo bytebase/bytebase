@@ -493,6 +493,31 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	return taskPatched, nil
 }
 
+func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, task *api.Task) (*api.AssigneeGroupValue, error) {
+	environmentID := api.UnknownID
+	for _, stage := range issue.Pipeline.StageList {
+		if stage.ID == task.StageID {
+			environmentID = stage.EnvironmentID
+			break
+		}
+	}
+	if environmentID == api.UnknownID {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find environmentID by task.StageID %d", task.StageID))
+	}
+
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pipeline approval policy").SetInternal(err)
+	}
+
+	for _, assigneeGroup := range policy.AssigneeGroupList {
+		if assigneeGroup.IssueType == issue.Type {
+			return &assigneeGroup.Value, nil
+		}
+	}
+	return nil, nil
+}
+
 func (s *Server) validatePrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) error {
 	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
@@ -501,30 +526,7 @@ func (s *Server) validatePrincipalChangeTaskStatus(ctx context.Context, principa
 	if issue == nil {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
 	}
-	groupValue, err := func() (*api.AssigneeGroupValue, error) {
-		environmentID := api.UnknownID
-		for _, stage := range issue.Pipeline.StageList {
-			if stage.ID == task.StageID {
-				environmentID = stage.EnvironmentID
-				break
-			}
-		}
-		if environmentID == api.UnknownID {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find environmentID by task.StageID %d", task.StageID))
-		}
-
-		policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pipeline approval policy").SetInternal(err)
-		}
-
-		for _, assigneeGroup := range policy.AssigneeGroupList {
-			if assigneeGroup.IssueType == issue.Type {
-				return &assigneeGroup.Value, nil
-			}
-		}
-		return nil, nil
-	}()
+	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
 	if err != nil {
 		return err
 	}
