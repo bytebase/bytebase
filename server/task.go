@@ -499,7 +499,7 @@ func (s *Server) validatePrincipalChangeTaskStatus(ctx context.Context, principa
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
 	}
 	if issue == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
 	}
 	groupValue, err := func() (*api.AssigneeGroupValue, error) {
 		environmentID := api.UnknownID
@@ -510,7 +510,7 @@ func (s *Server) validatePrincipalChangeTaskStatus(ctx context.Context, principa
 			}
 		}
 		if environmentID == api.UnknownID {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environmentID by task.StageID %d", task.StageID))
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find environmentID by task.StageID %d", task.StageID))
 		}
 
 		policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
