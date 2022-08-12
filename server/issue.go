@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -419,6 +420,71 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 	}
 }
 
+// nolint
+// createDatabaseTaskList returns the task list for create database.
+func (s *Server) createDatabaseTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project api.Project) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
+		return nil, nil, err
+	}
+	if c.DatabaseName == "" {
+		return nil, nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, database name missing"))
+	}
+	if instance.Engine == db.Snowflake {
+		// Snowflake needs to use upper case of DatabaseName.
+		c.DatabaseName = strings.ToUpper(c.DatabaseName)
+	}
+	// Validate the labels. Labels are set upon task completion.
+	if c.Labels != "" {
+		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
+		}
+	}
+
+	var schemaVersion, schema string
+	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
+	if project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
+		if err != nil {
+			return nil, nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
+		}
+		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, &instance, &project, project.ID, baseDatabaseName)
+		if err != nil {
+			return nil, nil, err
+		}
+		schemaVersion, schema = sv, s
+	}
+	if schemaVersion == "" {
+		schemaVersion = common.DefaultMigrationVersion()
+	}
+
+	payload := api.TaskDatabaseCreatePayload{
+		ProjectID:     project.ID,
+		CharacterSet:  c.CharacterSet,
+		Collation:     c.Collation,
+		Labels:        c.Labels,
+		SchemaVersion: schemaVersion,
+	}
+	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+	}
+
+	return []api.TaskCreate{
+		{
+			InstanceID:   c.InstanceID,
+			Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+			Status:       api.TaskPendingApproval,
+			Type:         api.TaskDatabaseCreate,
+			DatabaseName: payload.DatabaseName,
+			Payload:      string(bytes),
+		},
+	}, []api.TaskIndexDAG{}, nil
+}
+
 func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	c := api.CreateDatabaseContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
@@ -436,7 +502,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	if instance == nil {
 		return nil, fmt.Errorf("instance ID not found %v", c.InstanceID)
 	}
-	// Find project
+	// Find project.
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
