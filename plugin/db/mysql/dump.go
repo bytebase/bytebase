@@ -662,12 +662,11 @@ func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
-	databaseName, err := driver.databaseName(ctx)
-	if err != nil {
-		return fmt.Errorf("cannot get the database name, error: %w", err)
-	}
+func (driver *Driver) Restore(ctx context.Context, backup io.Reader) error {
+	return driver.restoreImpl(ctx, backup, driver.connCfg.Database)
+}
 
+func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databaseName string) error {
 	mysqlArgs := []string{
 		"--host", driver.connCfg.Host,
 		"--user", driver.connCfg.Username,
@@ -682,7 +681,7 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
 
 	var stderr bytes.Buffer
-	mysqlCmd.Stdin = sc
+	mysqlCmd.Stdin = backup
 	mysqlCmd.Stderr = &stderr
 
 	if err := mysqlCmd.Run(); err != nil {
@@ -690,16 +689,4 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	}
 
 	return nil
-}
-
-func (driver *Driver) databaseName(ctx context.Context) (string, error) {
-	query := `SELECT DATABASE();`
-	var database string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&database); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	return database, nil
 }

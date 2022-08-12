@@ -44,6 +44,8 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 
 	if payload.BackupID != nil {
+		// TODO(dragonly): backup restore/PITR to new db do not require a cutover task.
+		// The current implementation here is actually not working, because it restores the backup directly to the target database, and the later cutover task will fail.
 		if payload.DatabaseName == nil {
 			return true, nil, fmt.Errorf("unexpected nil database name for backup restore")
 		}
@@ -209,7 +211,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	)
 	// RestorePITR will create the pitr database.
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
-	// database's migration history, and append a new BASELINE migration.
+	// database's migration history, and append a new BRANCH migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
 
 	binlogDir := getBinlogAbsDir(dataDir, task.Instance.ID)
@@ -217,12 +219,20 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}
 
-	if err := mysqlDriver.RestorePITR(ctx, backupFile, startBinlogInfo, task.Database.Name, issue.CreatedTs, targetTs); err != nil {
+	if err := mysqlDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
+		log.Error("failed to restore full backup in the PITR database",
+			zap.Int("issueID", issue.ID),
+			zap.String("databaseName", task.Database.Name),
+			zap.Error(err))
+		return fmt.Errorf("failed to perform a backup restore in the PITR database, error: %w", err)
+	}
+
+	if err := mysqlDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
-			zap.String("database", task.Database.Name),
+			zap.String("databaseName", task.Database.Name),
 			zap.Error(err))
-		return fmt.Errorf("failed to perform a PITR restore in the PITR database, error: %w", err)
+		return fmt.Errorf("failed to replay binlog in the PITR database, error: %w", err)
 	}
 
 	return nil
