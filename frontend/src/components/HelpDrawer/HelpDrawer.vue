@@ -16,7 +16,6 @@
             <img
               src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
               alt="discord invitation"
-              class=""
             />
           </a>
         </div>
