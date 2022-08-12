@@ -140,7 +140,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			activeTask := s.getActiveTask(issue.Pipeline)
 			ok, err := s.canPrincipalChangeTaskStatus(ctx, *issuePatch.AssigneeID, activeTask)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check if the assignee can be changed")).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
 			if !ok {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
