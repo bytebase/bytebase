@@ -123,17 +123,6 @@ func createBackupDirectory(dataDir string, databaseID int) error {
 	return os.MkdirAll(absDir, os.ModePerm)
 }
 
-func getBinlogRelativeDir(instanceID int) string {
-	return filepath.Join("backup", "instance", fmt.Sprintf("%d", instanceID))
-}
-
 func getBinlogAbsDir(dataDir string, instanceID int) string {
-	dir := getBinlogRelativeDir(instanceID)
-	return filepath.Join(dataDir, dir)
-}
-
-func createBinlogDir(dataDir string, instanceID int) error {
-	dir := getBinlogRelativeDir(instanceID)
-	absDir := filepath.Join(dataDir, dir)
-	return os.MkdirAll(absDir, os.ModePerm)
+	return filepath.Join(dataDir, "backup", "instance", fmt.Sprintf("%d", instanceID))
 }
