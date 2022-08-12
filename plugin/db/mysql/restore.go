@@ -94,11 +94,6 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 	return binlogCoordinate{Seq: seq, Pos: pos}, nil
 }
 
-// SetUpForPITR sets necessary fields for MySQL PITR recovery.
-func (driver *Driver) SetUpForPITR(binlogDir string) {
-	driver.binlogDir = binlogDir
-}
-
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
 	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, driver.binlogDir)
@@ -541,8 +536,16 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	return nil
 }
 
+// GetBinlogDir gets the binlogDir.
+func (driver *Driver) GetBinlogDir() string {
+	return driver.binlogDir
+}
+
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
+	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create binlog directory %q, error: %w", driver.binlogDir, err)
+	}
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {

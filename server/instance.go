@@ -159,7 +159,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError,
-						fmt.Errorf("Failed to find databases in the instance %d", id)).SetInternal(err)
+						fmt.Errorf("failed to find databases in the instance %d", id)).SetInternal(err)
 				}
 				var databaseNameList []string
 				for _, database := range databases {
