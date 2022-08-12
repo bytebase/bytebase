@@ -884,10 +884,7 @@ func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := checkVersionForPITR(value); err != nil {
-		return err
-	}
-	return nil
+	return checkVersionForPITR(value)
 }
 
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.

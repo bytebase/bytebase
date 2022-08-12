@@ -64,7 +64,6 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string
 		})
 	}
 	return checker.adviceList, nil
-
 }
 
 type noLeadingWildcardLikeChecker struct {

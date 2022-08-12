@@ -272,15 +272,29 @@
                   }
                 "
               ></textarea>
-              <div class="mt-4 flex items-center justify-start space-x-4">
-                <button
-                  type="button"
-                  class="btn-normal"
-                  :disabled="newComment.length == 0"
-                  @click.prevent="doCreateComment"
-                >
-                  {{ $t("common.comment") }}
-                </button>
+              <div class="mt-4 flex items-center justify-between space-x-4">
+                <div>
+                  <button
+                    type="button"
+                    class="group btn-normal !text-accent hover:!bg-gray-50"
+                    @click="lgtm"
+                  >
+                    <heroicons-outline:thumb-up
+                      class="w-5 h-5 group-hover:thumb-up"
+                    />
+                    <span class="ml-1">LGTM</span>
+                  </button>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    class="btn-normal"
+                    :disabled="newComment.length == 0"
+                    @click.prevent="doCreateComment(newComment)"
+                  >
+                    {{ $t("common.comment") }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -397,7 +411,7 @@ const keyboardHandler = (e: KeyboardEvent) => {
     }
   } else if (newCommentTextArea.value === document.activeElement) {
     if (e.code == "Enter" && e.metaKey) {
-      doCreateComment();
+      doCreateComment(newComment.value);
     }
   }
 };
@@ -436,11 +450,11 @@ const cancelEditComment = () => {
   state.editCommentMode = false;
 };
 
-const doCreateComment = () => {
+const doCreateComment = (comment: string, clear = true) => {
   const createActivity: ActivityCreate = {
     type: "bb.issue.comment.create",
     containerId: issue.value.id,
-    comment: newComment.value,
+    comment,
   };
   activityStore.createActivity(createActivity).then(() => {
     useUIStateStore().saveIntroStateByKey({
@@ -448,8 +462,10 @@ const doCreateComment = () => {
       newState: true,
     });
 
-    newComment.value = "";
-    nextTick(() => sizeToFit(newCommentTextArea.value));
+    if (clear) {
+      newComment.value = "";
+      nextTick(() => sizeToFit(newCommentTextArea.value));
+    }
 
     // Because the user just added a comment and we assume she is interested in this
     // issue, and we add her to the subscriber list if she is not there
@@ -463,6 +479,26 @@ const doCreateComment = () => {
     if (!isSubscribed) {
       addSubscriberId(currentUser.value.id);
     }
+  });
+};
+
+const lgtm = (e: Event) => {
+  doCreateComment("LGTM", false);
+
+  // import the effect lib asynchronously
+  import("canvas-confetti").then(({ default: confetti }) => {
+    const button = e.target as HTMLElement;
+    const { left, top, width, height } = button.getBoundingClientRect();
+    const { innerWidth: winWidth, innerHeight: winHeight } = window;
+    // Create a confetti effect from the position of the LGTM button
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: {
+        x: (left + width / 2) / winWidth,
+        y: (top + height / 2) / winHeight,
+      },
+    });
   });
 };
 

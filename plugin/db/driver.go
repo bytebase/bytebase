@@ -154,7 +154,7 @@ var (
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
 	PgInstanceDir string
-	// We use resrouce directory to splice the path of embedded binary, likes binaries in mysqlutil package.
+	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
 	ResourceDir string
 }
 
@@ -250,7 +250,9 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 		"TYPE",
 		"DESCRIPTION",
 	}
-	filePathRegex := filePathTemplate
+
+	// Escape "." characters to match literals instead of using it as a wildcard.
+	filePathRegex := strings.ReplaceAll(filePathTemplate, ".", `\.`)
 	for _, placeholder := range placeholderList {
 		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
 	}

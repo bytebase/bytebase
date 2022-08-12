@@ -1241,7 +1241,9 @@
     "save-sheet-input-placeholder": "Please input a sheet name",
     "untitled-sheet": "Untitled Sheet",
     "format": "Format",
-    "sql-review-result": "SQL review result"
+    "sql-review-result": "SQL review result",
+    "alter-table": "Alter table",
+    "open-connection": "Open connection"
   },
   "label": {
     "empty-label-value": "<Empty Value>",
