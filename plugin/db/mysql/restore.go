@@ -202,36 +202,27 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 	return driver.replayBinlogCounter.Count()
 }
 
-// RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
-// It performs the step 1 of the restore process.
-// TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
-func (driver *Driver) RestorePITR(ctx context.Context, fullBackup io.Reader, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
-	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	stmt := fmt.Sprintf(""+
-		// Create the pitr database.
-		"CREATE DATABASE `%s`;"+
-		// Change to the pitr database.
-		"USE `%s`;",
-		pitrDatabaseName, pitrDatabaseName)
+// ReplayBinlogToPITRDatabase replays binlog to the PITR database.
+// It's the second step of the PITR process.
+func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseName string, startBinlogInfo api.BinlogInfo, suffixTs, targetTs int64) error {
+	pitrDatabaseName := getPITRDatabaseName(databaseName, suffixTs)
+	return driver.replayBinlog(ctx, databaseName, pitrDatabaseName, startBinlogInfo, targetTs)
+}
 
+// RestoreBackupToPITRDatabase restores a full backup to the PITR database.
+// It's the first step of the PITR process.
+func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
+	pitrDatabaseName := getPITRDatabaseName(databaseName, suffixTs)
+	// Create the pitr database.
+	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
 	}
-
 	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
-
-	if err := driver.Restore(ctx, fullBackup); err != nil {
-		return err
-	}
-
-	if err := driver.replayBinlog(ctx, database, pitrDatabaseName, startBinlogInfo, targetTs); err != nil {
-		return fmt.Errorf("failed to replay binlog, error: %w", err)
-	}
-
-	return nil
+	return driver.Restore(ctx, backup)
 }
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
