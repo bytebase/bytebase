@@ -217,7 +217,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 				return fmt.Errorf("found invalid assignee group issue type %q in pipeline approval policy", group.IssueType)
 			}
 			if issueTypeSeen[group.IssueType] {
-				return fmt.Errorf("duplicate assignee group issue type: %q", group.IssueType)
+				return fmt.Errorf("found duplicated assignee group issue type %q in pipeline approval policy", group.IssueType)
 			}
 			issueTypeSeen[group.IssueType] = true
 		}
