@@ -128,18 +128,23 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}
 
-		if issuePatch.AssigneeID != nil {
-			if err := s.validateAssigneeRoleByID(ctx, *issuePatch.AssigneeID); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
-			}
-		}
-
 		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
+		}
+
+		if issuePatch.AssigneeID != nil {
+			environmentID := getActiveTaskEnvironmentID(issue.Pipeline)
+			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
+			}
+			if !ok {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+			}
 		}
 
 		updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
@@ -249,22 +254,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-// Only allow Bot/Owner/DBA as the assignee, not Developer.
-func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
-	assignee, err := s.store.GetPrincipalByID(ctx, assigneeID)
-	if err != nil {
-		return err
-	}
-	if assignee == nil {
-		return fmt.Errorf("principal ID not found: %d", assigneeID)
-	}
-	if assignee.Role != api.Owner && assignee.Role != api.DBA {
-		return fmt.Errorf("%s is not allowed as assignee", assignee.Role)
-	}
-
-	return nil
-}
-
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
@@ -274,11 +263,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 	}
 
-	if err := s.validateAssigneeRoleByID(ctx, issueCreate.AssigneeID); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
-	}
-
-	// If frontend does not pass the stageList, we will generate it from backend.
 	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
 	if err != nil {
 		return nil, err
@@ -343,18 +327,27 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	if err != nil {
 		return nil, err
 	}
-
+	var environmentID int
 	// Return an error if the issue has no task to be executed
 	hasTask := false
 	for _, stage := range pipelineCreate.StageList {
 		if len(stage.TaskList) > 0 {
 			hasTask = true
+			environmentID = stage.EnvironmentID
 			break
 		}
 	}
 	if !hasTask {
 		err := fmt.Errorf("issue has no task to be executed")
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+
+	ok, err := s.canPrincipalBeAssignee(ctx, creatorID, environmentID, issueCreate.ProjectID, issueCreate.Type)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+	}
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
 	}
 
 	// Create the pipeline, stages, and tasks.
@@ -1292,4 +1285,19 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 			}
 		}
 	}
+}
+
+func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval ||
+				task.Status == api.TaskPending ||
+				task.Status == api.TaskRunning ||
+				task.Status == api.TaskCanceled {
+				return stage.EnvironmentID
+			}
+		}
+	}
+	// use the last stage if all done
+	return pipeline.StageList[len(pipeline.StageList)-1].EnvironmentID
 }
