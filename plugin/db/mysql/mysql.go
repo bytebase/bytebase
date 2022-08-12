@@ -41,6 +41,7 @@ type Driver struct {
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
 		resourceDir: dc.ResourceDir,
+		binlogDir:   dc.BinlogDir,
 	}
 }
 
