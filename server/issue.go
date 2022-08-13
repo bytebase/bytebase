@@ -449,7 +449,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		c.DatabaseName = strings.ToUpper(c.DatabaseName)
 	}
 
-	taskCreateList, taskIndexDAGList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
+	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task list of creating database, error: %w", err)
 	}
@@ -470,10 +470,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
 		}
 
-		taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{
-			FromIndex: len(taskCreateList) - 1,
-			ToIndex:   len(taskCreateList),
-		})
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			InstanceID:   c.InstanceID,
 			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
@@ -488,10 +484,16 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:             "Restore backup",
-					EnvironmentID:    instance.EnvironmentID,
-					TaskList:         taskCreateList,
-					TaskIndexDAGList: taskIndexDAGList,
+					Name:          "Restore backup",
+					EnvironmentID: instance.EnvironmentID,
+					TaskList:      taskCreateList,
+					// TODO(zp): Find a common way to merge taskCreateList and TaskIndexDAGList.
+					TaskIndexDAGList: []api.TaskIndexDAG{
+						{
+							FromIndex: 0,
+							ToIndex:   1,
+						},
+					},
 				},
 			},
 		}, nil
@@ -504,7 +506,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 				Name:             "Create database",
 				EnvironmentID:    instance.EnvironmentID,
 				TaskList:         taskCreateList,
-				TaskIndexDAGList: taskIndexDAGList,
+				TaskIndexDAGList: []api.TaskIndexDAG{},
 			},
 		},
 	}, nil
@@ -802,12 +804,12 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 }
 
 // createDatabaseCreateTaskList returns the task list for create database.
-func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project api.Project) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project api.Project) ([]api.TaskCreate, error) {
 	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if c.DatabaseName == "" {
-		return nil, nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, database name missing"))
+		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, database name missing"))
 	}
 	if instance.Engine == db.Snowflake {
 		// Snowflake needs to use upper case of DatabaseName.
@@ -816,7 +818,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	// Validate the labels. Labels are set upon task completion.
 	if c.Labels != "" {
 		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
 		}
 	}
 
@@ -824,15 +826,15 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
-			return nil, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
 		if err != nil {
-			return nil, nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
+			return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
 		}
 		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, &instance, &project, project.ID, baseDatabaseName)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schemaVersion, schema = sv, s
 	}
@@ -850,7 +852,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
 	}
 
 	return []api.TaskCreate{
@@ -862,7 +864,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 			DatabaseName: payload.DatabaseName,
 			Payload:      string(bytes),
 		},
-	}, []api.TaskIndexDAG{}, nil
+	}, nil
 }
 
 // creates PITR TaskCreate list and dependency.
