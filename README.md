@@ -54,9 +54,9 @@ Teams using Bytebase will naturally adopt industry best practice for managing da
 
 ## VCS Integration
 
-Database-as-Code, login with VCS account, project membership sync
+Database-as-Code, login with VCS account, project membership sync.
 
-✅ GitLab CE/EE support ✅ GitHub.com
+✅ GitLab CE/EE ✅ GitHub.com
 
 ## Features
 
