@@ -522,9 +522,8 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		if principal.Role == api.Owner || principal.Role == api.DBA {
 			return true, nil
 		}
-	}
-	// as the policy says, the assignee group is the project owner.
-	if *groupValue == api.AssigneeGroupValueProjectOwner {
+	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
+		// as the policy says, the assignee group is the project owner.
 		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
 			ProjectID:   &projectID,
 			PrincipalID: &principalID,
