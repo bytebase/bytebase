@@ -44,7 +44,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("check InnoDB engine")
-		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
+		driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, "")
 		a.NoError(err)
 		defer driver.Close(ctx)
 
@@ -75,7 +75,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("check InnoDB engine")
-		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
+		driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, "")
 		a.NoError(err)
 		defer driver.Close(ctx)
 
@@ -100,7 +100,7 @@ func TestCheckServerVersionAndBinlogForPITR(t *testing.T) {
 	a.NoError(err)
 	defer db.Close()
 
-	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), "")
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), "", "")
 	a.NoError(err)
 	defer driver.Close(ctx)
 
@@ -134,18 +134,17 @@ func TestFetchBinlogFiles(t *testing.T) {
 	a.NoError(err)
 	defer db.Close()
 
-	utilDir := t.TempDir()
-	err = mysqlutil.Install(utilDir)
+	resourceDir := t.TempDir()
+	err = mysqlutil.Install(resourceDir)
 	a.NoError(err)
 
-	driver, err := getTestMySQLDriverWithResourceDir(ctx, strconv.Itoa(port), "", utilDir)
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), "", resourceDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	a.Equal(true, ok)
-	binlogDir := t.TempDir()
-	mysqlDriver.SetUpForPITR(binlogDir)
+	binlogDir := mysqlDriver.GetBinlogDir()
 
 	// init schema
 	_, err = db.ExecContext(ctx, `
