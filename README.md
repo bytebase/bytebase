@@ -48,6 +48,16 @@ A collaborative web-console to allow DBAs to manage database tasks and handle de
 
 Teams using Bytebase will naturally adopt industry best practice for managing database schema changes. Tech leads will see an improved development velocity and reduced outages caused by database changes.
 
+## Supported Database
+
+✅ MySQL ✅ PostgreSQL ✅ TiDB ✅ ClickHouse ✅ Snowflake
+
+## VCS Integration
+
+Database-as-Code, login with VCS account, project membership sync
+
+✅ GitLab CE/EE support ✅ GitHub.com
+
 ## Features
 
 - [x] Web-based database change and management workspace for teams
@@ -67,15 +77,7 @@ Teams using Bytebase will naturally adopt industry best practice for managing da
 - [x] Schema drift detection
 - [x] Backward compatibility schema change check
 - [x] Role-based access control (RBAC)
-- [x] MySQL support
-- [x] PostgreSQL support
-- [x] TiDB support
-- [x] Snowflake support
-- [x] ClickHouse support
-- [x] GitLab CE/EE support (Database-as-Code, login with GitLab account, project membership sync)
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
-- [ ] GitLab.com support
-- [ ] GitHub support
 
 <figcaption align = "center">Fig.1 - Dashboard</figcaption>
 
