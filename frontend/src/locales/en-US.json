@@ -753,7 +753,7 @@
     "establish-baseline": "Establish new baseline",
     "refreshing-history": "Refreshing history ...",
     "config-instance": "Config instance",
-    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.",
+    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. This would reconcile the actual schema state with the recorded schema state in Bytebase and fix the reported schema drift. You should only do this if the current schema does reflect the desired state.",
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
