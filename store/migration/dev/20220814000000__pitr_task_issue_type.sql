@@ -1,3 +1,4 @@
+# We update the task type and issue type of PITR in PITR to new database feature.
 UPDATE
     issue
 SET
