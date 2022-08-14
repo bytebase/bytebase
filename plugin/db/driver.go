@@ -183,7 +183,7 @@ const (
 	// 2. Had schema drift and need to re-establish the baseline.
 	Baseline MigrationType = "BASELINE"
 	// Migrate is the migration type for MIGRATE.
-	// Used for DDL change.
+	// Used for DDL change including CREATE DATABASE.
 	Migrate MigrationType = "MIGRATE"
 	// Branch is the migration type for BRANCH.
 	// Used when restoring from a backup (the restored database branched from the original backup).
