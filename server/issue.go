@@ -402,7 +402,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
 		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
-	case api.IssueDatabasePITR:
+	case api.IssueDatabaseRestorePITR:
 		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
 	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
 		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
@@ -885,7 +885,7 @@ func createPITRTaskList(database *api.Database, projectID int, targetTs int64) (
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     api.TaskPendingApproval,
-		Type:       api.TaskDatabasePITRRestore,
+		Type:       api.TaskDatabaseRestorePITRRestore,
 		Payload:    string(bytesRestore),
 	})
 
@@ -901,7 +901,7 @@ func createPITRTaskList(database *api.Database, projectID int, targetTs int64) (
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     api.TaskPendingApproval,
-		Type:       api.TaskDatabasePITRCutover,
+		Type:       api.TaskDatabaseRestorePITRCutover,
 		Payload:    string(bytesCutover),
 	})
 
