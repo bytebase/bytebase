@@ -156,6 +156,7 @@ type DriverConfig struct {
 	PgInstanceDir string
 	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
 	ResourceDir string
+	BinlogDir   string
 }
 
 type driverFunc func(DriverConfig) Driver
