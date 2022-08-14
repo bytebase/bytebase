@@ -23,8 +23,7 @@ export type TaskType =
   | "bb.task.database.schema.update.ghost.sync"
   | "bb.task.database.schema.update.ghost.cutover"
   | "bb.task.database.restore.pitr.restore"
-  | "bb.task.database.restore.pitr.cutover"
-  | "bb.task.database.restore.pitr.delete";
+  | "bb.task.database.restore.pitr.cutover";
 
 export type TaskStatus =
   | "PENDING"
