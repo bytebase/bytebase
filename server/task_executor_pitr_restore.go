@@ -298,7 +298,7 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 	return issue, nil
 }
 
-// restoreDatabase will restore the database from a backup.
+// restoreDatabase will restore the database to the instance from the backup.
 func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
 	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
