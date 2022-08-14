@@ -503,9 +503,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
 		StageList: []api.StageCreate{
 			{
-				Name:             "Create database",
-				EnvironmentID:    instance.EnvironmentID,
-				TaskList:         taskCreateList,
+				Name:          "Create database",
+				EnvironmentID: instance.EnvironmentID,
+				TaskList:      taskCreateList,
 			},
 		},
 	}, nil
