@@ -418,7 +418,7 @@ func createPITRIssue(ctl *controller, project *api.Project, database *api.Databa
 	return ctl.createIssue(api.IssueCreate{
 		ProjectID:     project.ID,
 		Name:          fmt.Sprintf("Restore database %s to the time %d", database.Name, targetTs),
-		Type:          api.IssueDatabasePITR,
+		Type:          api.IssueDatabaseRestorePITR,
 		AssigneeID:    project.Creator.ID,
 		CreateContext: string(pitrIssueCtx),
 	})
