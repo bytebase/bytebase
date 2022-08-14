@@ -166,7 +166,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			Database:   databaseName,
 			Source:     db.UI,
-			Type:       db.Baseline,
+			Type:       db.Migrate,
 			Status:     db.Done,
 			Schema:     "",
 			SchemaPrev: "",
@@ -227,7 +227,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			Database:   cloneDatabaseName,
 			Source:     db.UI,
-			Type:       db.Baseline,
+			Type:       db.Migrate,
 			Status:     db.Done,
 			Schema:     "",
 			SchemaPrev: "",
@@ -516,7 +516,7 @@ func TestVCS(t *testing.T) {
 				{
 					Database:   databaseName,
 					Source:     db.UI,
-					Type:       db.Baseline,
+					Type:       db.Migrate,
 					Status:     db.Done,
 					Schema:     "",
 					SchemaPrev: "",
