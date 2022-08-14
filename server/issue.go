@@ -506,7 +506,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 				Name:             "Create database",
 				EnvironmentID:    instance.EnvironmentID,
 				TaskList:         taskCreateList,
-				TaskIndexDAGList: []api.TaskIndexDAG{},
 			},
 		},
 	}, nil
