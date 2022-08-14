@@ -636,33 +636,4 @@ VALUES
         '{}'
     );
 
-INSERT INTO
-    task (
-        id,
-        creator_id,
-        updater_id,
-        pipeline_id,
-        stage_id,
-        instance_id,
-        database_id,
-        name,
-        type,
-        status,
-        payload
-    )
-VALUES
-    (
-        11021,
-        1,
-        1,
-        9011,
-        10018,
-        6001,
-        7002,
-        'Delete the original database testdb_dev',
-        'bb.task.database.restore.pitr.delete',
-        'PENDING_APPROVAL',
-        '{}'
-    );
-
-ALTER SEQUENCE task_id_seq RESTART WITH 11022;
+ALTER SEQUENCE task_id_seq RESTART WITH 11021;
