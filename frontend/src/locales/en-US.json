@@ -753,7 +753,7 @@
     "establish-baseline": "Establish new baseline",
     "refreshing-history": "Refreshing history ...",
     "config-instance": "Config instance",
-    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state. For VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.",
+    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.",
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
