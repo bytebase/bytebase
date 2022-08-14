@@ -631,7 +631,7 @@ VALUES
         6001,
         7002,
         'Swap PITR and the original database testdb_dev',
-        'bb.task.database.resotre.pitr.cutover',
+        'bb.task.database.restore.pitr.cutover',
         'PENDING_APPROVAL',
         '{}'
     );
@@ -660,7 +660,7 @@ VALUES
         6001,
         7002,
         'Delete the original database testdb_dev',
-        'bb.task.database.pitr.delete',
+        'bb.task.database.restore.pitr.delete',
         'PENDING_APPROVAL',
         '{}'
     );
