@@ -54,10 +54,10 @@ const (
 	TaskDatabaseBackup TaskType = "bb.task.database.backup"
 	// TaskDatabaseRestore is the task type for restoring databases.
 	TaskDatabaseRestore TaskType = "bb.task.database.restore"
-	// TaskDatabasePITRRestore is the task type for restoring databases using PITR.
-	TaskDatabasePITRRestore TaskType = "bb.task.database.pitr.restore"
-	// TaskDatabasePITRCutover is the task type for swapping the pitr and original database.
-	TaskDatabasePITRCutover TaskType = "bb.task.database.pitr.cutover"
+	// TaskDatabaseRestorePITRRestore is the task type for restoring databases using PITR.
+	TaskDatabaseRestorePITRRestore TaskType = "bb.task.database.restore.pitr.restore"
+	// TaskDatabaseRestorePITRCutover is the task type for swapping the pitr and original database.
+	TaskDatabaseRestorePITRCutover TaskType = "bb.task.database.restore.pitr.cutover"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
