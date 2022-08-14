@@ -602,7 +602,7 @@ VALUES
         6001,
         7002,
         'Restore PITR database testdb_dev',
-        'bb.task.database.pitr.restore',
+        'bb.task.database.restore.pitr.restore',
         'PENDING_APPROVAL',
         '{"projectId":3001,"pointInTimeTs":1652429962}'
     );
@@ -631,7 +631,7 @@ VALUES
         6001,
         7002,
         'Swap PITR and the original database testdb_dev',
-        'bb.task.database.pitr.cutover',
+        'bb.task.database.restore.pitr.cutover',
         'PENDING_APPROVAL',
         '{}'
     );
@@ -660,7 +660,7 @@ VALUES
         6001,
         7002,
         'Delete the original database testdb_dev',
-        'bb.task.database.pitr.delete',
+        'bb.task.database.restore.pitr.delete',
         'PENDING_APPROVAL',
         '{}'
     );

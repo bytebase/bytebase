@@ -171,7 +171,7 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isPITRMode = computed((): boolean => {
-    return issue.value.type === "bb.issue.database.pitr";
+    return issue.value.type === "bb.issue.database.restore.pitr";
   });
 
   const taskStatusOfStage = (stage: Stage | StageCreate) => {
