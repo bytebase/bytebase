@@ -655,7 +655,8 @@
     "archive": "Archive this environment",
     "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
     "create": "Create Environment",
-    "restore": "Restore this environment"
+    "restore": "Restore this environment",
+    "successfully-updated-environment": "Successfully updated environment '{name}'."
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",
@@ -718,7 +719,11 @@
       "manual": "Require manual approval",
       "manual-info": "Tasks will only be executed after being manually approved.",
       "auto": "Skip manual approval",
-      "auto-info": "Tasks will be approved and executed automatically if all task checks pass."
+      "auto-info": "Tasks will be approved and executed automatically if all task checks pass.",
+      "assignee-group": {
+        "workspace-owner-or-dba": "Require approval from DBA or workspace owner.",
+        "project-owner": "Require approval from project owner."
+      }
     },
     "backup": {
       "name": "Database backup schedule policy",
@@ -753,7 +758,7 @@
     "establish-baseline": "Establish new baseline",
     "refreshing-history": "Refreshing history ...",
     "config-instance": "Config instance",
-    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state.",
+    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. This would reconcile the actual schema state with the recorded schema state in Bytebase and fix the reported schema drift. You should only do this if the current schema does reflect the desired state.",
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
@@ -869,8 +874,8 @@
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",
     "file-path-template-description": "Bytebase only observes the file path name matching the template pattern relative to the base directory.",
-    "file-path-example-normal-migration": "File path example for normal migration type",
-    "file-path-example-baseline-migration": "File path example for baseline migration type",
+    "file-path-example-schema-migration": "File path example for schema migration type",
+    "file-path-example-data-migration": "File path example for data migration type",
     "schema-path-template": "Schema path template",
     "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this.",
     "schema-writeback-protected-branch": "Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.",

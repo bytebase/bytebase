@@ -35,7 +35,13 @@ import {
   BackupPlanPolicyPayload,
 } from "../types";
 import { idFromSlug } from "../utils";
-import { hasFeature, useEnvironmentStore, usePolicyStore } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useEnvironmentStore,
+  usePolicyStore,
+} from "@/store";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   environment: Environment;
@@ -63,6 +69,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const environmentStore = useEnvironmentStore();
     const policyStore = usePolicyStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       environment: environmentStore.getEnvironmentById(
@@ -105,6 +112,14 @@ export default defineComponent({
         })
         .then((environment) => {
           assignEnvironment(environment);
+
+          pushNotification({
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("environment.successfully-updated-environment", {
+              name: environment.name,
+            }),
+          });
         });
     };
 
@@ -172,6 +187,14 @@ export default defineComponent({
           } else if (type === "bb.policy.backup-plan") {
             state.backupPolicy = policy;
           }
+
+          pushNotification({
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("environment.successfully-updated-environment", {
+              name: state.environment.name,
+            }),
+          });
         });
     };
 

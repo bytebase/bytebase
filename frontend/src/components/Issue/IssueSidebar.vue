@@ -30,7 +30,7 @@
           class="w-full"
           :disabled="!allowEditAssignee"
           :selectedId="create ? (issue as IssueCreate).assigneeId : (issue as Issue).assignee?.id"
-          :allowed-role-list="['OWNER', 'DBA']"
+          :custom-filter="filterPrincipal"
           data-label="bb-assignee-select"
           @select-principal-id="
             (principalId: number) => {
@@ -298,6 +298,7 @@ import type {
   Instance,
   TaskDatabaseCreatePayload,
   DatabaseLabel,
+  Principal,
 } from "@/types";
 import { ONBOARDING_ISSUE_ID } from "@/types";
 import {
@@ -307,6 +308,7 @@ import {
   isReservedDatabaseLabel,
   hidePrefix,
   taskSlug,
+  isOwnerOfProject,
 } from "@/utils";
 import {
   hasFeature,
@@ -316,7 +318,11 @@ import {
   useLabelList,
   useProjectStore,
 } from "@/store";
-import { useExtraIssueLogic, useIssueLogic } from "./logic";
+import {
+  useExtraIssueLogic,
+  useIssueLogic,
+  useAllowProjectOwnerToApprove,
+} from "./logic";
 
 dayjs.extend(isSameOrAfter);
 
@@ -460,17 +466,28 @@ const allowEditAssignee = computed(() => {
   if (create.value) {
     return true;
   }
-  // We allow the current assignee or DBA to re-assign the issue.
-  // Though only DBA can be assigned to the issue, the current
-  // assignee might not have DBA role in case its role is revoked after
-  // being assigned to the issue.
   const issueEntity = issue.value as Issue;
-  return (
-    issueEntity.id !== ONBOARDING_ISSUE_ID &&
-    issueEntity.status == "OPEN" &&
-    (currentUser.value.id == issueEntity.assignee.id ||
-      isDBAOrOwner(currentUser.value.role))
-  );
+  if (issueEntity.id === ONBOARDING_ISSUE_ID) {
+    return false;
+  }
+  if (issueEntity.status !== "OPEN") {
+    return false;
+  }
+
+  // Who can re-assign the issue?
+  // - The issue creator
+  // - The current assignee
+  // - Workspace owners and DBAs (they always have the highest privileges)
+  if (currentUser.value.id === issueEntity.creator.id) {
+    return true;
+  }
+  if (currentUser.value.id === issueEntity.assignee.id) {
+    return true;
+  }
+  if (isDBAOrOwner(currentUser.value.role)) {
+    return true;
+  }
+  return false;
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
@@ -566,5 +583,13 @@ const selectTaskId = (taskId: TaskId) => {
   const slug = taskSlug(task.name, task.id);
   const stage = selectedStage.value as Stage;
   selectStageOrTask(stage.id, slug);
+};
+
+const allowProjectOwnerToApprove = useAllowProjectOwnerToApprove();
+const filterPrincipal = (principal: Principal): boolean => {
+  if (allowProjectOwnerToApprove.value) {
+    return isOwnerOfProject(principal, project.value);
+  }
+  return isDBAOrOwner(principal.role);
 };
 </script>

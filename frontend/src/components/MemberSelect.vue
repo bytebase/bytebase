@@ -100,6 +100,10 @@ export default defineComponent({
       default: true,
       type: Boolean,
     },
+    customFilter: {
+      type: Function as PropType<(principal: Principal) => boolean>,
+      default: undefined,
+    },
   },
   emits: ["select-principal-id"],
   setup(props) {
@@ -136,6 +140,10 @@ export default defineComponent({
         // in such case, we still show the item.
         if (item.id == props.selectedId) {
           return true;
+        }
+
+        if (typeof props.customFilter === "function") {
+          return props.customFilter(item);
         }
 
         return (

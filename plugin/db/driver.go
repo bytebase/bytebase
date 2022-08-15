@@ -183,7 +183,7 @@ const (
 	// 2. Had schema drift and need to re-establish the baseline.
 	Baseline MigrationType = "BASELINE"
 	// Migrate is the migration type for MIGRATE.
-	// Used for DDL change.
+	// Used for DDL change including CREATE DATABASE.
 	Migrate MigrationType = "MIGRATE"
 	// Branch is the migration type for BRANCH.
 	// Used when restoring from a backup (the restored database branched from the original backup).
@@ -283,14 +283,12 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 				mi.Database = matchList[index]
 			case "TYPE":
 				switch matchList[index] {
-				case "baseline":
-					mi.Type = Baseline
 				case "data":
 					mi.Type = Data
 				case "migrate":
 					mi.Type = Migrate
 				default:
-					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'baseline', 'migrate' or 'data'", filePath, matchList[index])
+					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'migrate' or 'data'", filePath, matchList[index])
 				}
 			case "DESCRIPTION":
 				mi.Description = matchList[index]

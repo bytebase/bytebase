@@ -325,7 +325,7 @@ VALUES
         9011,
         'Hello PITR!',
         'OPEN',
-        'bb.issue.database.pitr',
+        'bb.issue.database.restore.pitr',
         'This issue is to demonstrate PITR.',
         101
     );

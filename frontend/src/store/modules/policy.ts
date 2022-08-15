@@ -7,10 +7,18 @@ import {
   ResourceIdentifier,
   ResourceObject,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
-import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
+import {
+  PipelineApprovalPolicyPayload,
+  Policy,
+  PolicyType,
+  PolicyUpsert,
+} from "@/types/policy";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
+import { computed, Ref, watchEffect } from "vue";
+import { useCurrentUser } from "./auth";
 
 function convert(
   policy: ResourceObject,
@@ -33,7 +41,7 @@ function convert(
     }
   }
 
-  return {
+  const result = {
     ...(policy.attributes as Omit<
       Policy,
       "id" | "environment" | "payload" | "creator" | "updater"
@@ -50,6 +58,15 @@ function convert(
     environment,
     payload: JSON.parse((policy.attributes.payload as string) || "{}"),
   };
+  if (result.type === "bb.policy.pipeline-approval") {
+    const payload = result.payload as PipelineApprovalPolicyPayload;
+    if (!payload.assigneeGroupList) {
+      // Assign an empty array as fallback
+      payload.assigneeGroupList = [];
+    }
+  }
+
+  return result;
 }
 
 export const usePolicyStore = defineStore("policy", {
@@ -150,3 +167,22 @@ export const usePolicyStore = defineStore("policy", {
     },
   },
 });
+
+export const usePolicyByEnvironmentAndType = (
+  params: Ref<{ environmentId: EnvironmentId; type: PolicyType }>
+) => {
+  const store = usePolicyStore();
+  const currentUser = useCurrentUser();
+  watchEffect(() => {
+    if (currentUser.value.id === UNKNOWN_ID) return;
+
+    store.fetchPolicyByEnvironmentAndType(params.value);
+  });
+
+  return computed(() =>
+    store.getPolicyByEnvironmentIdAndType(
+      params.value.environmentId,
+      params.value.type
+    )
+  );
+};

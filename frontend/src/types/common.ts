@@ -333,6 +333,7 @@ const makeUnknown = (type: ResourceType) => {
     type: "bb.policy.pipeline-approval",
     payload: {
       value: DefaultApprovalPolicy,
+      assigneeGroupList: [],
     },
   };
 
@@ -736,6 +737,7 @@ const makeEmpty = (type: ResourceType) => {
     type: "bb.policy.pipeline-approval",
     payload: {
       value: DefaultApprovalPolicy,
+      assigneeGroupList: [],
     },
   };
 
