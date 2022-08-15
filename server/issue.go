@@ -906,10 +906,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 			return nil, nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
 		}
 
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
-		}
-
 		payloadRestore.BackupID = c.BackupID
 
 		bytesRestore, err := json.Marshal(payloadRestore)
