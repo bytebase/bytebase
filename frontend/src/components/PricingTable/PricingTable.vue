@@ -7,7 +7,7 @@
       <thead>
         <tr>
           <th
-            class="py-8 px-6 text-sm font-medium text-gray-900 text-left align-top"
+            class="py-8 px-6 text-sm font-medium text-gray-900 text-left align-top hidden 2xl:block"
             scope="row"
           ></th>
           <td
@@ -35,7 +35,7 @@
               </p>
 
               <p class="mt-4 flex items-baseline text-gray-900 text-xl">
-                <span v-if="plan.pricePrefix" class="text-3xl">
+                <span v-if="plan.pricePrefix" class="text-xl 2xl:text-3xl">
                   {{ plan.pricePrefix }}&nbsp;</span
                 >
                 <span class="text-4xl">
