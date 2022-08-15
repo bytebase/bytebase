@@ -869,6 +869,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		},
 	}
 
+	var backup *api.Backup
 	// Restore payload
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
 		ProjectID: projectID,
@@ -891,70 +892,74 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 
 		payloadRestore.TargetInstanceID = &targetInstance.ID
 		payloadRestore.DatabaseName = &c.CreateDatabaseCtx.DatabaseName
-
-		if c.BackupID != nil {
-			// We only support restore the full backup to a new database only, so c.CreateDatabaseCtx must be not nil in this case.
-			backup, err := s.store.GetBackupByID(ctx, *c.BackupID)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to find backup %v", c.BackupID)
-			}
-			if backup == nil {
-				return nil, nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
-			}
-
-			payloadRestore.BackupID = c.BackupID
-
-			bytesRestore, err := json.Marshal(payloadRestore)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
-			}
-
-			taskCreateList = append(taskCreateList, api.TaskCreate{
-				InstanceID:   c.CreateDatabaseCtx.InstanceID,
-				Name:         fmt.Sprintf("Restore backup %v", backup.Name),
-				Status:       api.TaskPending,
-				Type:         api.TaskDatabaseRestorePITRRestore,
-				DatabaseName: c.CreateDatabaseCtx.DatabaseName,
-				BackupID:     c.BackupID,
-				Payload:      string(bytesRestore),
-			})
-
-			return taskCreateList, taskIndexDAGList, nil
-		}
 	}
 
-	// task: create and restore to PITR database
+	if c.BackupID != nil {
+		// We only support restore the full backup to a new database only, so c.CreateDatabaseCtx must be not nil in this case.
+		b, err := s.store.GetBackupByID(ctx, *c.BackupID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to find backup %v", c.BackupID)
+		}
+		if backup == nil {
+			return nil, nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
+		}
+		backup = b
+		payloadRestore.BackupID = c.BackupID
+	}
+
 	payloadRestore.PointInTimeTs = c.PointInTimeTs
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
 	}
-	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Restore PITR database %s", originDatabase.Name),
-		InstanceID: originDatabase.InstanceID,
-		DatabaseID: &originDatabase.ID,
-		Status:     api.TaskPendingApproval,
-		Type:       api.TaskDatabaseRestorePITRRestore,
-		Payload:    string(bytesRestore),
-	})
 
-	if c.CreateDatabaseCtx == nil {
-		// task: PITR in-place needs cut-over
-		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
-		bytesCutover, err := json.Marshal(payloadCutover)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
-		}
-
+	if payloadRestore.BackupID != nil && payloadRestore.DatabaseName != nil {
+		// Restore to a new database
 		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Swap PITR and the original database %s", originDatabase.Name),
+			InstanceID:   c.CreateDatabaseCtx.InstanceID,
+			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
+			Status:       api.TaskPending,
+			Type:         api.TaskDatabaseRestorePITRRestore,
+			DatabaseName: c.CreateDatabaseCtx.DatabaseName,
+			BackupID:     c.BackupID,
+			Payload:      string(bytesRestore),
+		})
+		return taskCreateList, taskIndexDAGList, nil
+	}
+	if payloadRestore.BackupID != nil && payloadRestore.DatabaseName == nil {
+		// Restore inplace but we not support now
+		return nil, nil, common.Errorf(common.Invalid, "unexpect restore inplace")
+	}
+
+	if payloadRestore.BackupID == nil {
+		// PITR
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:       fmt.Sprintf("Restore PITR database %s", originDatabase.Name),
 			InstanceID: originDatabase.InstanceID,
 			DatabaseID: &originDatabase.ID,
 			Status:     api.TaskPendingApproval,
-			Type:       api.TaskDatabaseRestorePITRCutover,
-			Payload:    string(bytesCutover),
+			Type:       api.TaskDatabaseRestorePITRRestore,
+			Payload:    string(bytesRestore),
 		})
+
+		if payloadRestore.TargetInstanceID == nil {
+			// PITR inplace
+			payloadCutover := api.TaskDatabasePITRCutoverPayload{}
+			bytesCutover, err := json.Marshal(payloadCutover)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
+			}
+			taskCreateList = append(taskCreateList, api.TaskCreate{
+				Name:       fmt.Sprintf("Swap PITR and the original database %s", originDatabase.Name),
+				InstanceID: originDatabase.InstanceID,
+				DatabaseID: &originDatabase.ID,
+				Status:     api.TaskPendingApproval,
+				Type:       api.TaskDatabaseRestorePITRCutover,
+				Payload:    string(bytesCutover),
+			})
+		}
 	}
+
 	return taskCreateList, taskIndexDAGList, nil
 }
 
