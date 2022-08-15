@@ -230,7 +230,7 @@ export default defineComponent({
           pushNotification({
             module: "bytebase",
             style: "CRITICAL",
-            title: "Need a VCS Migration History",
+            title: t("migration-history.no-succeed-vcs-migration-record"),
           });
           return;
         }
