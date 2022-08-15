@@ -15,23 +15,19 @@
 </p>
 
 <p align="center">
-<img alt="status" src="https://img.shields.io/badge/status-beta-blue" />
-<a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
-    <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
-</a>
-<a href="https://hub.docker.com/r/bytebase/bytebase">
-    <img alt="Docker pulls" src="https://img.shields.io/docker/pulls/bytebase/bytebase.svg" />
-</a>
-</p>
-
-<p align="center">
 <a href="https://discord.gg/Fac9nmZ95j"><img alt="Discord" src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4" /></a>
 </p>
 
 <p align="center" >
-<a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
-   <image src="https://gitpod.io/button/open-in-gitpod.svg" />
-</a>
+  <a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
+    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
+    <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
+  </a>
 </p>
 
 [Bytebase](https://bytebase.com/?source=github) is a web-based, zero-config, dependency-free database schema change and version control management tool for the **DevOps** team.
