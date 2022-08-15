@@ -528,7 +528,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
 	}
 
-	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, *c.PointInTimeTs)
+	taskCreateList, taskIndexDAGList, err := s.createPITRTaskList(ctx, database, issueCreate.ProjectID, c)
 	if err != nil {
 		return nil, err
 	}
@@ -866,49 +866,121 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	}, nil
 }
 
-// creates PITR TaskCreate list and dependency.
-func createPITRTaskList(database *api.Database, projectID int, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Database, projectID int, c api.PITRContext) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
+	var taskIndexDAGList []api.TaskIndexDAG
+
+	// Restore payload
+	payloadRestore := api.TaskDatabasePITRRestorePayload{
+		ProjectID: projectID,
+	}
+
+	if c.CreateDatabaseCtx != nil {
+		targetInstance, err := s.store.GetInstanceByID(ctx, c.CreateDatabaseCtx.InstanceID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to find the instance with ID: %d, err: %w", c.CreateDatabaseCtx.InstanceID, err)
+		}
+		project, err := s.store.GetProjectByID(ctx, projectID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to find the project with ID: %d, err: %w", projectID, err)
+		}
+		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, *project)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create the database create task list, error: %w", err)
+		}
+		taskCreateList = append(taskCreateList, taskList...)
+
+		payloadRestore.TargetInstanceID = &targetInstance.ID
+		payloadRestore.DatabaseName = &c.CreateDatabaseCtx.DatabaseName
+	}
+	if c.BackupID != nil {
+		// We only support restore the full backup to a new database only, so c.CreateDatabaseCtx must be not nil in this case.
+		if c.CreateDatabaseCtx == nil {
+			return nil, nil, common.Errorf(common.Invalid, "expect craete a new database in restore backup %d issue, but get nil", *c.BackupID)
+		}
+
+		backup, err := s.store.GetBackupByID(ctx, *c.BackupID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to find backup %v", c.BackupID)
+		}
+		if backup == nil {
+			return nil, nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
+		}
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+		}
+
+		payloadRestore.BackupID = c.BackupID
+
+		bytesRestore, err := json.Marshal(payloadRestore)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
+		}
+
+		taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{
+			FromIndex: len(taskCreateList) - 1,
+			ToIndex:   len(taskCreateList),
+		})
+
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			InstanceID:   c.CreateDatabaseCtx.InstanceID,
+			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
+			Status:       api.TaskPending,
+			Type:         api.TaskDatabaseRestorePITRRestore,
+			DatabaseName: c.CreateDatabaseCtx.DatabaseName,
+			BackupID:     c.BackupID,
+			Payload:      string(bytesRestore),
+		})
+
+		return taskCreateList, taskIndexDAGList, nil
+	}
 
 	// task: create and restore to PITR database
-	payloadRestore := api.TaskDatabasePITRRestorePayload{
-		ProjectID:     projectID,
-		PointInTimeTs: &targetTs,
-	}
+	payloadRestore.PointInTimeTs = c.PointInTimeTs
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
 	}
-
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Restore PITR database %s", database.Name),
-		InstanceID: database.InstanceID,
-		DatabaseID: &database.ID,
+		Name:       fmt.Sprintf("Restore PITR database %s", originDatabase.Name),
+		InstanceID: originDatabase.InstanceID,
+		DatabaseID: &originDatabase.ID,
 		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabaseRestorePITRRestore,
 		Payload:    string(bytesRestore),
 	})
 
-	// task: swap PITR and the original database
-	payloadCutover := api.TaskDatabasePITRCutoverPayload{}
-	bytesCutover, err := json.Marshal(payloadCutover)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
+	if len(taskCreateList) != 0 {
+		// Users may want to PITR to a new database
+		taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{
+			FromIndex: len(taskCreateList) - 1,
+			ToIndex:   len(taskCreateList),
+		})
 	}
 
-	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Swap PITR and the original database %s", database.Name),
-		InstanceID: database.InstanceID,
-		DatabaseID: &database.ID,
-		Status:     api.TaskPendingApproval,
-		Type:       api.TaskDatabaseRestorePITRCutover,
-		Payload:    string(bytesCutover),
-	})
+	if c.CreateDatabaseCtx == nil {
+		// task: PITR in-place needs cut-over
+		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
+		bytesCutover, err := json.Marshal(payloadCutover)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
+		}
 
-	taskIndexDAGList := []api.TaskIndexDAG{
-		{FromIndex: 0, ToIndex: 1},
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:       fmt.Sprintf("Swap PITR and the original database %s", originDatabase.Name),
+			InstanceID: originDatabase.InstanceID,
+			DatabaseID: &originDatabase.ID,
+			Status:     api.TaskPendingApproval,
+			Type:       api.TaskDatabaseRestorePITRCutover,
+			Payload:    string(bytesCutover),
+		})
+
+		// There will only 2 task in PITR inplace.
+		taskIndexDAGList = []api.TaskIndexDAG{
+			{FromIndex: 0, ToIndex: 1},
+		}
 	}
-
 	return taskCreateList, taskIndexDAGList, nil
 }
 
