@@ -39,7 +39,7 @@
               v-if="allowEdit"
               :disabled="state.syncingSchema"
               type="button"
-              class="btn-normal transition-all"
+              class="btn-normal"
               @click.prevent="syncSchema"
             >
               {{ $t("common.sync-now") }}
