@@ -163,13 +163,13 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 
 	// Phase 3 - Executing migration
 	// Branch migration type always has empty sql.
-	// Baseline migration type could has non-empty sql but will not execute, except for CreateDatabase.
+	// Baseline migration type could has non-empty sql but will not execute.
 	// https://github.com/bytebase/bytebase/issues/394
 	doMigrate := true
 	if statement == "" {
 		doMigrate = false
 	}
-	if m.Type == db.Baseline && !m.CreateDatabase {
+	if m.Type == db.Baseline {
 		doMigrate = false
 	}
 	if doMigrate {

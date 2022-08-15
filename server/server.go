@@ -217,9 +217,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRRestore, NewPITRRestoreTaskExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabasePITRCutover, NewPITRCutoverTaskExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor)
 
 		s.TaskScheduler = taskScheduler
 

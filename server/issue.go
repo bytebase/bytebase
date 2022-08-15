@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -128,18 +129,23 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}
 
-		if issuePatch.AssigneeID != nil {
-			if err := s.validateAssigneeRoleByID(ctx, *issuePatch.AssigneeID); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
-			}
-		}
-
 		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
+		}
+
+		if issuePatch.AssigneeID != nil {
+			environmentID := getActiveTaskEnvironmentID(issue.Pipeline)
+			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
+			}
+			if !ok {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
+			}
 		}
 
 		updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
@@ -249,37 +255,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-// Only allow Bot/Owner/DBA as the assignee, not Developer.
-func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
-	assignee, err := s.store.GetPrincipalByID(ctx, assigneeID)
-	if err != nil {
-		return err
-	}
-	if assignee == nil {
-		return fmt.Errorf("principal ID not found: %d", assigneeID)
-	}
-	if assignee.Role != api.Owner && assignee.Role != api.DBA {
-		return fmt.Errorf("%s is not allowed as assignee", assignee.Role)
-	}
-
-	return nil
-}
-
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
-	// since we are not creating pipeline/stage list/task list in a single transaction.
-	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
-	// quite unlikely so we will live with it for now.
-	if issueCreate.AssigneeID == api.UnknownID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-	}
-
-	if err := s.validateAssigneeRoleByID(ctx, issueCreate.AssigneeID); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
-	}
-
-	// If frontend does not pass the stageList, we will generate it from backend.
-	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID, issueCreate.ValidateOnly)
+	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -338,17 +315,26 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.Pipeline, error) {
+func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Pipeline, error) {
+	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
+	// since we are not creating pipeline/stage list/task list in a single transaction.
+	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
+	// quite unlikely so we will live with it for now.
+	if issueCreate.AssigneeID == api.UnknownID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+	}
+
 	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate)
 	if err != nil {
 		return nil, err
 	}
-
+	var environmentID int
 	// Return an error if the issue has no task to be executed
 	hasTask := false
 	for _, stage := range pipelineCreate.StageList {
 		if len(stage.TaskList) > 0 {
 			hasTask = true
+			environmentID = stage.EnvironmentID
 			break
 		}
 	}
@@ -357,8 +343,16 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
+	ok, err := s.canPrincipalBeAssignee(ctx, creatorID, environmentID, issueCreate.ProjectID, issueCreate.Type)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+	}
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
+	}
+
 	// Create the pipeline, stages, and tasks.
-	if validateOnly {
+	if issueCreate.ValidateOnly {
 		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
 	}
 
@@ -408,7 +402,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
 		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
-	case api.IssueDatabasePITR:
+	case api.IssueDatabaseRestorePITR:
 		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
 	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
 		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
@@ -436,7 +430,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	if instance == nil {
 		return nil, fmt.Errorf("instance ID not found %v", c.InstanceID)
 	}
-	// Find project
+	// Find project.
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
@@ -455,44 +449,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		c.DatabaseName = strings.ToUpper(c.DatabaseName)
 	}
 
-	// Validate the labels. Labels are set upon task completion.
-	if c.Labels != "" {
-		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: instance} /* dummy database */, project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
-		}
-	}
-
-	var schemaVersion, schema string
-	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	if project.TenantMode == api.TenantModeTenant {
-		if !s.feature(api.FeatureMultiTenancy) {
-			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
-		}
-		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, baseDatabaseName)
-		if err != nil {
-			return nil, err
-		}
-		schemaVersion, schema = sv, s
-	}
-	if schemaVersion == "" {
-		schemaVersion = common.DefaultMigrationVersion()
-	}
-
-	payload := api.TaskDatabaseCreatePayload{
-		ProjectID:     issueCreate.ProjectID,
-		CharacterSet:  c.CharacterSet,
-		Collation:     c.Collation,
-		Labels:        c.Labels,
-		SchemaVersion: schemaVersion,
-	}
-	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
-	bytes, err := json.Marshal(payload)
+	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		return nil, fmt.Errorf("failed to create task list of creating database, error: %w", err)
 	}
 
 	if c.BackupID != 0 {
@@ -511,33 +470,29 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
 		}
 
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			InstanceID:   c.InstanceID,
+			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
+			Status:       api.TaskPending,
+			Type:         api.TaskDatabaseRestore,
+			DatabaseName: c.DatabaseName,
+			BackupID:     &c.BackupID,
+			Payload:      string(restoreBytes),
+		})
+
 		return &api.PipelineCreate{
-			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
+			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
 					Name:          "Restore backup",
 					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-							Status:       api.TaskPendingApproval,
-							Type:         api.TaskDatabaseCreate,
-							DatabaseName: payload.DatabaseName,
-							Payload:      string(bytes),
-						},
-						{
-							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Restore backup %v", backup.Name),
-							Status:       api.TaskPending,
-							Type:         api.TaskDatabaseRestore,
-							DatabaseName: payload.DatabaseName,
-							BackupID:     &c.BackupID,
-							Payload:      string(restoreBytes),
-						},
-					},
+					TaskList:      taskCreateList,
+					// TODO(zp): Find a common way to merge taskCreateList and TaskIndexDAGList.
 					TaskIndexDAGList: []api.TaskIndexDAG{
-						{FromIndex: 0, ToIndex: 1},
+						{
+							FromIndex: 0,
+							ToIndex:   1,
+						},
 					},
 				},
 			},
@@ -545,21 +500,12 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	return &api.PipelineCreate{
-		Name: fmt.Sprintf("Pipeline - Create database %s", payload.DatabaseName),
+		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
 		StageList: []api.StageCreate{
 			{
 				Name:          "Create database",
 				EnvironmentID: instance.EnvironmentID,
-				TaskList: []api.TaskCreate{
-					{
-						InstanceID:   c.InstanceID,
-						Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
-						Status:       api.TaskPendingApproval,
-						Type:         api.TaskDatabaseCreate,
-						DatabaseName: payload.DatabaseName,
-						Payload:      string(bytes),
-					},
-				},
+				TaskList:      taskCreateList,
 			},
 		},
 	}, nil
@@ -856,6 +802,70 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
+// createDatabaseCreateTaskList returns the task list for create database.
+func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project api.Project) ([]api.TaskCreate, error) {
+	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
+		return nil, err
+	}
+	if c.DatabaseName == "" {
+		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, database name missing"))
+	}
+	if instance.Engine == db.Snowflake {
+		// Snowflake needs to use upper case of DatabaseName.
+		c.DatabaseName = strings.ToUpper(c.DatabaseName)
+	}
+	// Validate the labels. Labels are set upon task completion.
+	if c.Labels != "" {
+		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
+		}
+	}
+
+	var schemaVersion, schema string
+	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
+	if project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
+		}
+		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, &instance, &project, project.ID, baseDatabaseName)
+		if err != nil {
+			return nil, err
+		}
+		schemaVersion, schema = sv, s
+	}
+	if schemaVersion == "" {
+		schemaVersion = common.DefaultMigrationVersion()
+	}
+
+	payload := api.TaskDatabaseCreatePayload{
+		ProjectID:     project.ID,
+		CharacterSet:  c.CharacterSet,
+		Collation:     c.Collation,
+		Labels:        c.Labels,
+		SchemaVersion: schemaVersion,
+	}
+	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+	}
+
+	return []api.TaskCreate{
+		{
+			InstanceID:   c.InstanceID,
+			Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+			Status:       api.TaskPendingApproval,
+			Type:         api.TaskDatabaseCreate,
+			DatabaseName: payload.DatabaseName,
+			Payload:      string(bytes),
+		},
+	}, nil
+}
+
 // creates PITR TaskCreate list and dependency.
 func createPITRTaskList(database *api.Database, projectID int, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
@@ -875,7 +885,7 @@ func createPITRTaskList(database *api.Database, projectID int, targetTs int64) (
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     api.TaskPendingApproval,
-		Type:       api.TaskDatabasePITRRestore,
+		Type:       api.TaskDatabaseRestorePITRRestore,
 		Payload:    string(bytesRestore),
 	})
 
@@ -891,7 +901,7 @@ func createPITRTaskList(database *api.Database, projectID int, targetTs int64) (
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     api.TaskPendingApproval,
-		Type:       api.TaskDatabasePITRCutover,
+		Type:       api.TaskDatabaseRestorePITRCutover,
 		Payload:    string(bytesCutover),
 	})
 
@@ -1292,4 +1302,19 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 			}
 		}
 	}
+}
+
+func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval ||
+				task.Status == api.TaskPending ||
+				task.Status == api.TaskRunning ||
+				task.Status == api.TaskCanceled {
+				return stage.EnvironmentID
+			}
+		}
+	}
+	// use the last stage if all done
+	return pipeline.StageList[len(pipeline.StageList)-1].EnvironmentID
 }

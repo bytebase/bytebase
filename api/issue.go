@@ -35,8 +35,8 @@ const (
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDataSourceRequest is the issue type for requesting database sources.
 	IssueDataSourceRequest IssueType = "bb.issue.data-source.request"
-	// IssueDatabasePITR is the issue type for performing a Point-in-time Recovery.
-	IssueDatabasePITR IssueType = "bb.issue.database.pitr"
+	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
+	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
 )
 
 // IssueFieldID is the field ID for an issue.

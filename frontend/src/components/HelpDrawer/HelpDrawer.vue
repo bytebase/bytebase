@@ -7,11 +7,11 @@
   >
     <template #body>
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-if="state.html" v-html="state.html"></div>
+      <div v-if="state.html" class="overflow-auto" v-html="state.html"></div>
     </template>
     <template #footer>
-      <div class="flex flex-row justify-center">
-        <div v-if="locale === 'en-US'" class="w-1/2">
+      <div class="flex flex-row justify-center pb-10">
+        <div v-if="locale === 'en-US'" class="w-1/2 pt-2">
           <a href="https://discord.gg/VHEXRDQq" target="_blank">
             <img
               src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
@@ -21,7 +21,7 @@
         </div>
         <div
           v-if="locale === 'zh-CN'"
-          class="w-full flex flex-col items-center"
+          class="w-full flex flex-col items-center pt-2"
         >
           <p class="text-sm mb-2">微信扫码加入官方社群</p>
           <div class="flex flex-row justify-center">
