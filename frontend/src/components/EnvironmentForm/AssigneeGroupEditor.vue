@@ -12,10 +12,7 @@
       />
       <div class="-mt-0.5">
         <div class="textlabel">
-          {{ $t("policy.approval.assignee-group.workspace-owner-or-dba.self") }}
-        </div>
-        <div class="mt-1 textinfolabel">
-          {{ $t("policy.approval.assignee-group.workspace-owner-or-dba.info") }}
+          {{ $t("policy.approval.assignee-group.workspace-owner-or-dba") }}
         </div>
       </div>
     </div>
@@ -31,10 +28,7 @@
       />
       <div class="-mt-0.5">
         <div class="textlabel">
-          {{ $t("policy.approval.assignee-group.project-owner.self") }}
-        </div>
-        <div class="mt-1 textinfolabel">
-          {{ $t("policy.approval.assignee-group.project-owner.info") }}
+          {{ $t("policy.approval.assignee-group.project-owner") }}
         </div>
       </div>
     </div>
