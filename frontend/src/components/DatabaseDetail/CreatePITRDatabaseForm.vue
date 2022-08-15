@@ -6,6 +6,7 @@
     </label>
     <ProjectSelect
       class="mt-1"
+      :disabled="true"
       :include-default-project="true"
       :selected-id="state.context.projectId"
       @select-project-id="(id) => (state.context.projectId = id)"
