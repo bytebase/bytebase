@@ -68,6 +68,8 @@ export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
 export type TaskDatabasePITRRestorePayload = {
   projectId: ProjectId;
   pointInTimeTs: number; // UNIX timestamp
+  databaseName?: string; // used when PITR to new DB
+  targetInstanceId?: InstanceId; // used when PITR to new DB
 };
 
 export type TaskDatabasePITRCutoverPayload = {
