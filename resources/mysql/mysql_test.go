@@ -23,7 +23,7 @@ func TestStartMySQL(t *testing.T) {
 
 	mysql, err := Install(basedir, datadir, "root")
 	require.NoError(t, err)
-	err = mysql.Start(13306 /* port */, os.Stdout, os.Stderr)
+	err = mysql.Start(23306 /* port */, os.Stdout, os.Stderr)
 	require.NoError(t, err)
 
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", mysql.Port()))

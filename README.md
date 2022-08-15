@@ -24,6 +24,10 @@
 </a>
 </p>
 
+<p align="center">
+<a href="https://discord.gg/Fac9nmZ95j"><img alt="Discord" src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4" /></a>
+</p>
+
 <p align="center" >
 <a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
@@ -44,6 +48,15 @@ A collaborative web-console to allow DBAs to manage database tasks and handle de
 
 Teams using Bytebase will naturally adopt industry best practice for managing database schema changes. Tech leads will see an improved development velocity and reduced outages caused by database changes.
 
+## Supported Database
+
+✅ MySQL ✅ PostgreSQL ✅ TiDB ✅ ClickHouse ✅ Snowflake
+
+## VCS Integration
+
+Database-as-Code, login with VCS account, project membership sync.
+
+✅ GitLab CE/EE ✅ GitHub.com
 
 ## Features
 
@@ -64,15 +77,7 @@ Teams using Bytebase will naturally adopt industry best practice for managing da
 - [x] Schema drift detection
 - [x] Backward compatibility schema change check
 - [x] Role-based access control (RBAC)
-- [x] MySQL support
-- [x] PostgreSQL support
-- [x] TiDB support
-- [x] Snowflake support
-- [x] ClickHouse support
-- [x] GitLab CE/EE support (Database-as-Code, login with GitLab account, project membership sync)
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
-- [ ] GitLab.com support
-- [ ] GitHub support
 
 <figcaption align = "center">Fig.1 - Dashboard</figcaption>
 
@@ -129,15 +134,19 @@ working on the code:
 1. It requires zero config.
 1. 1 command to start backend and 1 command to start frontend, both with live reload support.
 
-**[Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)**
+### Learn the codebase
 
-**Tech Stack**
+* [Interactive code walkthrough](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
+* [Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)
 
-**Data Model**
+* Tech Stack
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
+   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
+
+* Data Model
+
+   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
 
 ### Prerequisites
 
@@ -153,16 +162,6 @@ working on the code:
 
    ```bash
    git clone https://github.com/bytebase/bytebase
-   ```
-
-1. Set up pre-commit hooks.
-
-   - Install [pre-commit](https://pre-commit.com/index.html#install)
-
-   ```bash
-    cd bytebase
-    pre-commit install
-    pre-commit install --hook-type commit-msg
    ```
 
 1. Start backend using air (with live reload).
@@ -183,12 +182,19 @@ working on the code:
    cd frontend && pnpm i && pnpm dev
    ```
 
-Bytebase should now be running at https://localhost:3000 and change either frontend or backend code would trigger live reload.
+   Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
+1. (*Optional*) Install [pre-commit](https://pre-commit.com/index.html#install).
+
+   ```bash
+   cd bytebase
+   pre-commit install
+   pre-commit install --hook-type commit-msg
+   ```
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)
 
-## We are hiring
+## Jobs
 
-We are looking for engineers and developer advocates, interns are also welcomed. Check out our [jobs page](https://bytebase.com/jobs?source=github).
+Check out our [jobs page](https://bytebase.com/jobs?source=github) for openings.

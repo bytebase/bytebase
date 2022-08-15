@@ -27,6 +27,9 @@ import {
   useSubscriptionStore,
 } from "@/store/modules";
 import { isDBAOrOwner } from "@/utils";
+import BannerDemo from "@/views/BannerDemo.vue";
+import BannerDebug from "@/views/BannerDebug.vue";
+import BannerSubscription from "@/views/BannerSubscription.vue";
 
 const actuatorStore = useActuatorStore();
 const currentUser = useCurrentUser();
@@ -44,7 +47,7 @@ const shouldShowDemoBanner = computed(() => {
   const isFeatureDemo =
     demoName && !invalidFeatureDemoNameList.includes(demoName);
 
-  return isDemo && !isFeatureDemo;
+  return isDemo.value && !isFeatureDemo;
 });
 
 // For now, debug mode is a global setting and will affect all users.
@@ -55,10 +58,10 @@ const shouldShowDebugBanner = computed(() => {
 });
 
 const shouldShowSubscriptionBanner = computed(() => {
-  return isExpired || isTrialing;
+  return isExpired.value || isTrialing.value;
 });
 
 const shouldShowReadonlyBanner = computed(() => {
-  return !isDemo && isReadonly;
+  return !isDemo.value && isReadonly.value;
 });
 </script>

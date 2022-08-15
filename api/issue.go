@@ -35,8 +35,8 @@ const (
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDataSourceRequest is the issue type for requesting database sources.
 	IssueDataSourceRequest IssueType = "bb.issue.data-source.request"
-	// IssueDatabasePITR is the issue type for performing a Point-in-time Recovery.
-	IssueDatabasePITR IssueType = "bb.issue.database.pitr"
+	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
+	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
 )
 
 // IssueFieldID is the field ID for an issue.
@@ -186,12 +186,20 @@ type UpdateSchemaGhostContext struct {
 
 // PITRContext is the issue create context for performing a PITR in a database.
 type PITRContext struct {
-	DatabaseID        int                    `json:"databaseId"`
+	DatabaseID int `json:"databaseId"`
+
+	// CreateDatabaseCtx will be not nil if user want to restore to a new database.
+	// The new database should be under the same project as the original database.
 	CreateDatabaseCtx *CreateDatabaseContext `json:"createDatabaseContext"`
+
+	// BackupID and PointInTimeTs only allow one non-nil.
+
+	// BackupID is not nil if the user just restore a full backup only.
+	BackupID *int `json:"backupId"`
 
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
-	PointInTimeTs int64 `json:"pointInTimeTs"`
+	PointInTimeTs *int64 `json:"pointInTimeTs"`
 }
 
 // IssueFind is the API message for finding issues.

@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -152,7 +152,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// Validate the request body first because there is no point in unmarshalling
 		// the request body if the signature doesn't match.
-		if !validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body) {
+		validated, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
+		}
+		if !validated {
 			return echo.NewHTTPError(http.StatusBadRequest, "Mismatched payload signature")
 		}
 
@@ -227,16 +231,18 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
 // HMAC hex digested SHA256 hash of the body using the given key.
-func validateGitHubWebhookSignature256(signature, key string, body []byte) bool {
+func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool, error) {
 	signature = strings.TrimPrefix(signature, "sha256=")
 	m := hmac.New(sha256.New, []byte(key))
-	m.Write(body)
+	if _, err := m.Write(body); err != nil {
+		return false, err
+	}
 	got := hex.EncodeToString(m.Sum(nil))
 
 	// NOTE: Use constant time string comparison helps mitigate certain timing
 	// attacks against regular equality operators, see
 	// https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks#validating-payloads-from-github
-	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1
+	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
 // We are observing the push webhook event so that we will receive the event either when:
@@ -254,11 +260,11 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) bool 
 // we need to filter the commit list to prevent creating a duplicated issue. GitLab has a limitation to distinguish
 // whether the commit is a merge commit (https://gitlab.com/gitlab-org/gitlab/-/issues/30914), so we need to dedup
 // ourselves. Below is the filtering algorithm:
-// 1. If we observe the same migration file multiple times, then we should use the latest migration file. This does not matter
-//    for change-based migration since a developer would always create different migration file with incremental names, while it
-//    will be important for the state-based migration, since the file name is always the same and we need to use the latest snapshot.
-// 2. Maintain the relative commit order between different migration files. If migration file A happens before migration file B,
-//    then we should create an issue for migration file A first.
+//  1. If we observe the same migration file multiple times, then we should use the latest migration file. This does not matter
+//     for change-based migration since a developer would always create different migration file with incremental names, while it
+//     will be important for the state-based migration, since the file name is always the same and we need to use the latest snapshot.
+//  2. Maintain the relative commit order between different migration files. If migration file A happens before migration file B,
+//     then we should create an issue for migration file A first.
 type distinctFileItem struct {
 	createdTime time.Time
 	commit      gitlab.WebhookCommit
@@ -463,7 +469,8 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 		}
 	}
 
-	mi, err := db.ParseMigrationInfo(fileEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	mi, err := db.ParseMigrationInfo(fileEscaped, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
 	if err != nil {
 		createIgnoredFileActivity(err)
 		return "", false, nil
@@ -504,19 +511,19 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 	// Create schema update issue.
 	creatorID := api.SystemBotID
 	if pushEvent.FileCommit.AuthorEmail != "" {
-		committerPrinciple, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
+		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
 		if err != nil {
 			log.Error("failed to find the principal with committer email",
 				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
 				zap.Error(err),
 			)
 		}
-		if committerPrinciple == nil {
+		if committerPrincipal == nil {
 			log.Debug("cannot find the principal with committer email, use system bot instead",
 				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
 			)
 		} else {
-			creatorID = committerPrinciple.ID
+			creatorID = committerPrincipal.ID
 		}
 	}
 

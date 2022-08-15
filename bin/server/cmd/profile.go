@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/server"
 )
@@ -22,6 +23,7 @@ func GetTestProfile(dataDir string, port int) server.Profile {
 		DataDir:              dataDir,
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
 	}
 }
 
@@ -37,6 +39,7 @@ func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL
 		DataDir:              dataDir,
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
 		PgURL:                pgURL,
 	}
 }

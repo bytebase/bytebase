@@ -22,9 +22,8 @@ export type TaskType =
   | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
   | "bb.task.database.schema.update.ghost.cutover"
-  | "bb.task.database.pitr.restore"
-  | "bb.task.database.pitr.cutover"
-  | "bb.task.database.pitr.delete";
+  | "bb.task.database.restore.pitr.restore"
+  | "bb.task.database.restore.pitr.cutover";
 
 export type TaskStatus =
   | "PENDING"
@@ -213,6 +212,7 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.syntax"
   | "bb.task-check.database.statement.compatibility"
   | "bb.task-check.database.statement.advise"
+  | "bb.task-check.database.statement.type"
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
   | "bb.task-check.general.earliest-allowed-time"
@@ -232,6 +232,11 @@ export type TaskCheckDatabaseSchemaUpdateGhostPayload = {
 export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
   // empty by now
   // more to come
+};
+
+export type TaskCheckDatabaseStatementTypePayload = {
+  statement: string;
+  dbType: string;
 };
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";

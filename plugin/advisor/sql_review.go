@@ -8,15 +8,16 @@ import (
 	"regexp"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-// How to add a schema review rule:
+// How to add a SQL review rule:
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
-//   2. Register this advisor in map[DBType][AdvisorType].(plugin/advisor.go)
+//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
 //   3. Add advisor error code if needed(plugin/advisor/code.go).
 //   4. Map SQLReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
-// SQLReviewRuleLevel is the error level for schema review rule.
+// SQLReviewRuleLevel is the error level for SQL review rule.
 type SQLReviewRuleLevel string
 
 // SQLReviewRuleType is the type of schema rule.
@@ -37,6 +38,8 @@ const (
 	SchemaRuleTableNaming SQLReviewRuleType = "naming.table"
 	// SchemaRuleColumnNaming enforce the column name format.
 	SchemaRuleColumnNaming SQLReviewRuleType = "naming.column"
+	// SchemaRulePKNaming enforce the primary key name format.
+	SchemaRulePKNaming SQLReviewRuleType = "naming.index.pk"
 	// SchemaRuleUKNaming enforce the unique key name format.
 	SchemaRuleUKNaming SQLReviewRuleType = "naming.index.uk"
 	// SchemaRuleFKNaming enforce the foreign key name format.
@@ -93,6 +96,10 @@ var (
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
 		},
+		SchemaRulePKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
 		SchemaRuleUKNaming: {
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
@@ -106,7 +113,7 @@ var (
 	}
 )
 
-// SQLReviewPolicy is the policy configuration for schema review.
+// SQLReviewPolicy is the policy configuration for SQL review.
 type SQLReviewPolicy struct {
 	Name     string           `json:"name"`
 	RuleList []*SQLReviewRule `json:"ruleList"`
@@ -125,7 +132,7 @@ func (policy *SQLReviewPolicy) Validate() error {
 	return nil
 }
 
-// SQLReviewRule is the rule for schema review policy.
+// SQLReviewRule is the rule for SQL review policy.
 type SQLReviewRule struct {
 	Type  SQLReviewRuleType  `json:"type"`
 	Level SQLReviewRuleLevel `json:"level"`
@@ -134,9 +141,9 @@ type SQLReviewRule struct {
 	Payload string `json:"payload"`
 }
 
-// Validate validates the schema review rule.
+// Validate validates the SQL review rule.
 func (rule *SQLReviewRule) Validate() error {
-	// TODO(rebelice): add other schema review rule validation.
+	// TODO(rebelice): add other SQL review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
 		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
@@ -246,16 +253,16 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 	return &rcr, nil
 }
 
-// SQLReviewCheckContext is the context for schema review check.
+// SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
 	Charset   string
 	Collation string
-	DbType    DBType
+	DbType    db.Type
 	Catalog   catalog.Catalog
 }
 
-// SchemaReviewCheck checks the statements with schema review rules.
-func SchemaReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
+// SQLReviewCheck checks the statements with sql review rules.
+func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
 	database, err := checkContext.Catalog.GetDatabase(context.Background())
 	if err != nil {
@@ -305,97 +312,117 @@ func SchemaReviewCheck(statements string, ruleList []*SQLReviewRule, checkContex
 	return result, nil
 }
 
-func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine DBType) (Type, error) {
+func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, error) {
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLWhereRequirement, nil
+		case db.Postgres:
+			return PostgreSQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNoLeadingWildcardLike, nil
+		case db.Postgres:
+			return PostgreSQLNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNoSelectAll, nil
+		case db.Postgres:
+			return PostgreSQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLMigrationCompatibility, nil
+		case db.Postgres:
+			return PostgreSQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingTableConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingIndexConvention, nil
+		case db.Postgres:
+			return PostgreSQLNamingIndexConvention, nil
+		}
+	case SchemaRulePKNaming:
+		if engine == db.Postgres {
+			return PostgreSQLNamingPKConvention, nil
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingUKConvention, nil
+		case db.Postgres:
+			return PostgreSQLNamingUKConvention, nil
 		}
 	case SchemaRuleFKNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingFKConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingFKConvention, nil
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLNamingColumnConvention, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLNamingColumnConvention, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLColumnRequirement, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLColumnNoNull, nil
-		case Postgres:
+		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLTableRequirePK, nil
+		case db.Postgres:
+			return PostgreSQLTableRequirePK, nil
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLTableNoFK, nil
+		case db.Postgres:
+			return PostgreSQLTableNoFK, nil
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleMySQLEngine:
-		if engine == MySQL {
+		if engine == db.MySQL {
 			return MySQLUseInnoDB, nil
 		}
 	case SchemaRuleDropEmptyDatabase:
 		switch engine {
-		case MySQL, TiDB:
+		case db.MySQL, db.TiDB:
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	}
-	return Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
+	return Fake, fmt.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
 }

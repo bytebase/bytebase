@@ -26,17 +26,4 @@ VALUES
         11020
     );
 
-INSERT INTO
-    task_dag (
-        id,
-        from_task_id,
-        to_task_id
-    )
-VALUES
-    (
-        11103,
-        11020,
-        11021
-    );
-
-ALTER SEQUENCE task_dag_id_seq RESTART WITH 11104;
+ALTER SEQUENCE task_dag_id_seq RESTART WITH 11103;

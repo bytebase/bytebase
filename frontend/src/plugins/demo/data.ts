@@ -1,8 +1,8 @@
 import { merge } from "lodash-es";
+import { DemoData, GuideData } from "./types";
 import { validateStepData } from "./guide";
-import { GuideData, HintData } from "./types";
 
-const hintCache = new Map<string, HintData[]>();
+const demoDataCache = new Map<string, DemoData>();
 
 const fetchJSONData = async (path: string) => {
   const res = await fetch("/demo" + path);
@@ -18,15 +18,13 @@ export const fetchGuideDataWithName = async (guideName: string) => {
   return guideData;
 };
 
-export const fetchHintDataWithName = async (hintName: string) => {
-  if (hintCache.has(hintName)) {
-    return hintCache.get(hintName) as HintData[];
+export const fetchDemoDataWithName = async (demoName: string) => {
+  if (demoDataCache.has(demoName)) {
+    return demoDataCache.get(demoName) as DemoData;
   }
 
-  const hintData = (await fetchJSONData(
-    `/${hintName}/hint.json`
-  )) as HintData[];
-  hintCache.set(hintName, hintData);
+  const demoData = (await fetchJSONData(`/${demoName}/demo.json`)) as DemoData;
+  demoDataCache.set(demoName, demoData);
 
-  return hintData;
+  return demoData;
 };

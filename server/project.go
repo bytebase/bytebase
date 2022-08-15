@@ -100,7 +100,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectFind.PrincipalID != nil {
 			principalID := *projectFind.PrincipalID
 			for _, project := range projectList {
-				// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
+				// We will filter those project with the current principal as an inactive member (the role provider differs from that of the project)
 				roleProvider := project.RoleProvider
 				for _, projectMember := range project.ProjectMemberList {
 					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
@@ -161,7 +161,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
 			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to find databases in the project %d", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to find databases in the project %d", id)).SetInternal(err)
 			}
 			if len(databases) > 0 {
 				return echo.NewHTTPError(http.StatusBadRequest, "You should transfer all databases under the project before archiving the project.")
@@ -224,7 +224,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
-		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
+		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for GitLab").SetInternal(err)
+		}
+		repositoryCreate.WebhookSecretToken = secretToken
 
 		// Create a new webhook and retrieve the created webhook ID
 		var webhookCreatePayload []byte
@@ -242,9 +246,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 		case vcsPlugin.GitHubCom:
+			webhookHost := s.profile.BackendHost
+			if s.profile.BackendHost == "http://localhost" {
+				webhookHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
+			}
 			webhookPost := github.WebhookCreateOrUpdate{
 				Config: github.WebhookConfig{
-					URL:         fmt.Sprintf("%s/%s/%s", s.profile.BackendHost, githubWebhookPath, repositoryCreate.WebhookEndpointID),
+					URL:         fmt.Sprintf("%s/%s/%s", webhookHost, githubWebhookPath, repositoryCreate.WebhookEndpointID),
 					ContentType: "json",
 					Secret:      repositoryCreate.WebhookSecretToken,
 					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate

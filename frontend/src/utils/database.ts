@@ -55,7 +55,7 @@ export function sortDatabaseList(
   });
 }
 
-const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.6.0";
+const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
 
 export function allowGhostMigration(databaseList: Database[]): boolean {
   const groupByEnvironment = groupBy(
@@ -79,4 +79,10 @@ export function allowGhostMigration(databaseList: Database[]): boolean {
       ) >= 0
     );
   });
+}
+
+export function isPITRDatabase(db: Database): boolean {
+  const { name } = db;
+  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
+  return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
 }

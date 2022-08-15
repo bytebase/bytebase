@@ -333,12 +333,12 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return repos, len(repos) >= 100, nil
+	return repos, len(repos) >= apiPageSize, nil
 }
 
-// fetchUserInfo fetches user information from the given resourceURI, which
+// fetchUserInfoImpl fetches user information from the given resourceURI, which
 // should be either "user" or "users/{userID}".
-func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
+func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
 	code, body, err := oauth.Get(
 		ctx,
@@ -378,7 +378,7 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 
 // TryLogin tries to fetch the user info from the current OAuth context.
 func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, "user")
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -426,7 +426,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 
 // FetchUserInfo fetches user info of given user ID.
 func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, userID string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", userID))
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", userID))
 }
 
 func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
@@ -562,7 +562,7 @@ func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context,
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return members, len(members) >= 100, nil
+	return members, len(members) >= apiPageSize, nil
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree
@@ -642,7 +642,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return treeNodes, len(treeNodes) >= 100, nil
+	return treeNodes, len(treeNodes) >= apiPageSize, nil
 }
 
 // CreateFile creates a file at given path in the repository.
@@ -1002,9 +1002,6 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		if r.ExpiresIn != 0 {
 			expireAt = r.CreatedAt + r.ExpiresIn
 		}
-		if err := refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
-			return err
-		}
-		return nil
+		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }

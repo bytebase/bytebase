@@ -1,7 +1,6 @@
 package db
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
@@ -155,6 +154,9 @@ var (
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
 	PgInstanceDir string
+	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
+	ResourceDir string
+	BinlogDir   string
 }
 
 type driverFunc func(DriverConfig) Driver
@@ -181,7 +183,7 @@ const (
 	// 2. Had schema drift and need to re-establish the baseline.
 	Baseline MigrationType = "BASELINE"
 	// Migrate is the migration type for MIGRATE.
-	// Used for DDL change.
+	// Used for DDL change including CREATE DATABASE.
 	Migrate MigrationType = "MIGRATE"
 	// Branch is the migration type for BRANCH.
 	// Used when restoring from a backup (the restored database branched from the original backup).
@@ -249,7 +251,9 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 		"TYPE",
 		"DESCRIPTION",
 	}
-	filePathRegex := filePathTemplate
+
+	// Escape "." characters to match literals instead of using it as a wildcard.
+	filePathRegex := strings.ReplaceAll(filePathTemplate, ".", `\.`)
 	for _, placeholder := range placeholderList {
 		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
 	}
@@ -279,14 +283,12 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 				mi.Database = matchList[index]
 			case "TYPE":
 				switch matchList[index] {
-				case "baseline":
-					mi.Type = Baseline
 				case "data":
 					mi.Type = Data
 				case "migrate":
 					mi.Type = Migrate
 				default:
-					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'baseline', 'migrate' or 'data'", filePath, matchList[index])
+					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'migrate' or 'data'", filePath, matchList[index])
 				}
 			case "DESCRIPTION":
 				mi.Description = matchList[index]
@@ -419,10 +421,8 @@ type Driver interface {
 	// The returned string is the JSON encoded metadata for the logical dump.
 	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
-	// Restore the database from sc, which is a full backup.
-	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreTx restores the database from sc in the given transaction.
-	RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error
+	// Restore the database from src, which is a full backup.
+	Restore(ctx context.Context, src io.Reader) error
 }
 
 // Register makes a database driver available by the provided type.
@@ -455,7 +455,7 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 	}
 
 	if err := driver.Ping(ctx); err != nil {
-		driver.Close(ctx)
+		_ = driver.Close(ctx)
 		return nil, err
 	}
 

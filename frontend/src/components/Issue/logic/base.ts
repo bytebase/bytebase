@@ -57,8 +57,8 @@ export const useBaseIssueLogic = (params: {
   };
 
   const selectedStage = computed((): Stage | StageCreate => {
-    const stageSlug = router.currentRoute.value.query.stage as string;
-    const taskSlug = router.currentRoute.value.query.task as string;
+    const stageSlug = route.query.stage as string;
+    const taskSlug = route.query.task as string;
     // For stage slug, we support both index based and id based.
     // Index based is used when creating the new task and is the one used when clicking the UI.
     // Id based is used when the context only has access to the stage id (e.g. Task only contains StageId)
@@ -105,10 +105,11 @@ export const useBaseIssueLogic = (params: {
     router.replace({
       name: "workspace.issue.detail",
       query: {
-        ...router.currentRoute.value.query,
+        ...route.query,
         stage: stageSlug(stageList[index].name, index),
         task: taskSlug,
       },
+      hash: route.hash,
     });
   };
 
@@ -158,17 +159,11 @@ export const useBaseIssueLogic = (params: {
 
   const isTenantMode = computed((): boolean => {
     if (project.value.tenantMode !== "TENANT") return false;
-    const { type } = issue.value;
-    if (type === "bb.issue.database.schema.update") {
-      return true;
-    }
-    if (type === "bb.issue.database.data.update") {
-      // We support single database data change in tenant mode projects.
-      // So a data change pipeline should be tenant mode when it contains more
-      // than one tasks.
-      return flattenTaskList(issue.value).length > 1;
-    }
-    return false;
+
+    // We support single database migration in tenant mode projects.
+    // So a pipeline should be tenant mode when it contains more
+    // than one tasks.
+    return flattenTaskList(issue.value).length > 1;
   });
 
   const isGhostMode = computed((): boolean => {
@@ -176,7 +171,7 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isPITRMode = computed((): boolean => {
-    return issue.value.type === "bb.issue.database.pitr";
+    return issue.value.type === "bb.issue.database.restore.pitr";
   });
 
   const taskStatusOfStage = (stage: Stage | StageCreate) => {
@@ -202,6 +197,16 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
+  const allowApplyIssueStatusTransition = () => {
+    // no extra logic by default
+    return true;
+  };
+
+  const allowApplyTaskStatusTransition = () => {
+    // no extra logic by default
+    return true;
+  };
+
   return {
     project,
     isTenantMode,
@@ -215,5 +220,7 @@ export const useBaseIssueLogic = (params: {
     selectTask,
     taskStatusOfStage,
     isValidStage,
+    allowApplyIssueStatusTransition,
+    allowApplyTaskStatusTransition,
   };
 };

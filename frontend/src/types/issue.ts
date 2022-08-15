@@ -19,7 +19,7 @@ type IssueTypeDatabase =
   | "bb.issue.database.schema.update"
   | "bb.issue.database.data.update"
   | "bb.issue.database.schema.update.ghost"
-  | "bb.issue.database.pitr";
+  | "bb.issue.database.restore.pitr";
 
 type IssueTypeDataSource = "bb.issue.data-source.request";
 

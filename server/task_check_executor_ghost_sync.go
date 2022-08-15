@@ -105,7 +105,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "failed to create migration context, error: %w", err)
 	}
 
-	migrator := logic.NewMigrator(migrationContext)
+	migrator := logic.NewMigrator(migrationContext, "bb")
 
 	if err := migrator.Migrate(); err != nil {
 		return []api.TaskCheckResult{

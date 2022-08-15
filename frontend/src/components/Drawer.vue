@@ -2,7 +2,7 @@
   <Transition name="slide">
     <div
       v-if="show"
-      class="absolute top-0 right-0 h-screen bg-white shadow-xl outline-none"
+      class="fixed top-0 right-0 h-screen bg-white shadow-xl outline-none"
       :style="`width: ${width}px`"
       tabindex="0"
       @keyup.esc="handleClose"
@@ -18,9 +18,14 @@
           ><heroicons-outline:x class="h-6 w-6"
         /></i>
       </header>
-      <section class="p-4">
-        <slot name="body"></slot>
-      </section>
+      <div class="h-full flex flex-col justify-between">
+        <section class="p-4 overflow-auto">
+          <slot name="body"></slot>
+        </section>
+        <footer class="w-full h-40 mb-16">
+          <slot name="footer"></slot>
+        </footer>
+      </div>
     </div>
   </Transition>
 </template>

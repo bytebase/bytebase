@@ -31,39 +31,42 @@ info:
   title: Bytebase SQL Service
   version: "1.0"
 paths:
-  /sql/advise:
-    get:
+  /advise:
+    post:
       consumes:
-      - '*/*'
-      description: Parse and check the SQL statement according to the schema review
-        rules.
+      - application/json
+      description: Parse and check the SQL statement according to the SQL review rules.
       parameters:
       - description: The SQL statement.
-        in: query
+        in: body
         name: statement
         required: true
-        type: string
+        schema:
+          type: string
       - description: The database type.
         enum:
-        - MySQL
-        - PostgreSQL
-        - TiDB
-        in: query
+        - MYSQL
+        - POSTGRES
+        - TIDB
+        in: body
         name: databaseType
         required: true
-        type: string
+        schema:
+          type: string
       - description: The SQL check template id. Required if the config is not specified.
         enum:
-        - bb.sql-review.mysql.prod
-        - bb.sql-review.mysql.dev
-        in: query
-        name: template
-        type: string
+        - bb.sql-review.prod
+        - bb.sql-review.dev
+        in: body
+        name: templateId
+        schema:
+          type: string
       - description: The SQL check config override string in YAML format. Check https://github.com/bytebase/bytebase/tree/main/plugin/advisor/config/sql-review.override.yaml
           for example. Required if the template is not specified.
-        in: query
+        in: body
         name: override
-        type: string
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -83,7 +86,7 @@ paths:
             $ref: '#/definitions/echo.HTTPError'
       summary: Check the SQL statement.
       tags:
-      - Schema Review
+      - SQL review
 schemes:
 - http
 swagger: "2.0"

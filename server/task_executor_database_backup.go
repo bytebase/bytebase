@@ -54,7 +54,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("backup", backup.Name),
 	)
 
-	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstanceDir)
+	backupPayload, backupErr := exec.backupDatabase(ctx, server, task.Instance, task.Database.Name, backup)
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
 		Status:    string(api.BackupStatusDone),
@@ -80,14 +80,14 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
+	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
 	}
 	defer driver.Close(ctx)
 
-	f, err := os.Create(filepath.Join(dataDir, backup.Path))
+	f, err := os.Create(filepath.Join(server.profile.DataDir, backup.Path))
 	if err != nil {
 		return "", fmt.Errorf("failed to open backup path: %s", backup.Path)
 	}
@@ -123,17 +123,6 @@ func createBackupDirectory(dataDir string, databaseID int) error {
 	return os.MkdirAll(absDir, os.ModePerm)
 }
 
-func getBinlogRelativeDir(instanceID int) string {
-	return filepath.Join("backup", "instance", fmt.Sprintf("%d", instanceID))
-}
-
 func getBinlogAbsDir(dataDir string, instanceID int) string {
-	dir := getBinlogRelativeDir(instanceID)
-	return filepath.Join(dataDir, dir)
-}
-
-func createBinlogDir(dataDir string, instanceID int) error {
-	dir := getBinlogRelativeDir(instanceID)
-	absDir := filepath.Join(dataDir, dir)
-	return os.MkdirAll(absDir, os.ModePerm)
+	return filepath.Join(dataDir, "backup", "instance", fmt.Sprintf("%d", instanceID))
 }

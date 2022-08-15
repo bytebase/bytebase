@@ -84,19 +84,28 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 	return projectMemberList, nil
 }
 
-// GetProjectMemberByID gets an instance of ProjectMember.
-func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectMember, error) {
-	find := &api.ProjectMemberFind{ID: &id}
+// GetProjectMember gets an instance of ProjectMember.
+func (s *Store) GetProjectMember(ctx context.Context, find *api.ProjectMemberFind) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ProjectMember with ID %d, error: %w", id, err)
+		return nil, fmt.Errorf("failed to get ProjectMember with projectMemberFind %+v, error: %w", find, err)
 	}
 	if projectMemberRaw == nil {
 		return nil, nil
 	}
 	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error: %w", projectMemberRaw, err)
+		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw %+v, error: %w", projectMemberRaw, err)
+	}
+	return projectMember, nil
+}
+
+// GetProjectMemberByID gets an instance of ProjectMember by ID.
+func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectMember, error) {
+	find := &api.ProjectMemberFind{ID: &id}
+	projectMember, err := s.GetProjectMember(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ProjectMember with ID %d, error: %w", id, err)
 	}
 	return projectMember, nil
 }
@@ -441,6 +450,9 @@ func findProjectMemberImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.PrincipalID; v != nil {
+		where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RoleProvider; v != nil {
 		where, args = append(where, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)

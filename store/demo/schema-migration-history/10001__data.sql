@@ -81,22 +81,22 @@ INSERT INTO "public"."col" ("id", "row_status", "creator_id", "created_ts", "upd
 (248, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'Manager', 12, NULL, 'f', 'varchar(14)', 'utf8mb4', 'utf8mb4_0900_ai_ci', ''),
 (249, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'PhoneNo', 9, NULL, 'f', 'varchar(15)', 'utf8mb4', 'utf8mb4_0900_ai_ci', '');
 
-INSERT INTO "public"."idx" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "database_id", "table_id", "name", "expression", "position", "type", "unique", "visible", "comment") VALUES
-(158, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'PRIMARY', 'dept_no', 1, 'BTREE', 't', 't', ''),
-(159, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'dept_name', 'dept_name', 1, 'BTREE', 't', 't', ''),
-(160, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(161, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'from_date', 2, 'BTREE', 't', 't', ''),
-(162, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(163, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'title', 2, 'BTREE', 't', 't', ''),
-(164, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'from_date', 3, 'BTREE', 't', 't', ''),
-(165, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(166, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'dept_no', 2, 'BTREE', 't', 't', ''),
-(167, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'dept_no', 'dept_no', 1, 'BTREE', 'f', 't', ''),
-(168, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', ''),
-(169, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'dept_no', 2, 'BTREE', 't', 't', ''),
-(170, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'dept_no', 'dept_no', 1, 'BTREE', 'f', 't', ''),
-(171, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 131, 'PRIMARY', 'drift_no', 1, 'BTREE', 't', 't', ''),
-(172, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'PRIMARY', 'emp_no', 1, 'BTREE', 't', 't', '');
+INSERT INTO "public"."idx" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "database_id", "table_id", "name", "expression", "position", "type", "primary", "unique", "visible", "comment") VALUES
+(158, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'PRIMARY', 'dept_no', 1, 'BTREE', false, 't', 't', ''),
+(159, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 126, 'dept_name', 'dept_name', 1, 'BTREE', false, 't', 't', ''),
+(160, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(161, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 127, 'PRIMARY', 'from_date', 2, 'BTREE', false, 't', 't', ''),
+(162, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(163, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'title', 2, 'BTREE', false, 't', 't', ''),
+(164, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 128, 'PRIMARY', 'from_date', 3, 'BTREE', false, 't', 't', ''),
+(165, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(166, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'PRIMARY', 'dept_no', 2, 'BTREE', false, 't', 't', ''),
+(167, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 129, 'dept_no', 'dept_no', 1, 'BTREE', false, 'f', 't', ''),
+(168, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', ''),
+(169, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'PRIMARY', 'dept_no', 2, 'BTREE', false, 't', 't', ''),
+(170, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 130, 'dept_no', 'dept_no', 1, 'BTREE', false, 'f', 't', ''),
+(171, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 131, 'PRIMARY', 'drift_no', 1, 'BTREE', false, 't', 't', ''),
+(172, 'NORMAL', 1, 1657274592, 1, 1657274592, 103, 132, 'PRIMARY', 'emp_no', 1, 'BTREE', false, 't', 't', '');
 
 INSERT INTO "public"."data_source" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "instance_id", "database_id", "name", "type", "username", "password", "ssl_key", "ssl_cert", "ssl_ca") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 101, 'Admin data source', 'ADMIN', 'root', '', '', '', ''),
@@ -133,15 +133,15 @@ INSERT INTO "public"."task_check_run" ("id", "creator_id", "created_ts", "update
 (101, 1, 1657272890, 1, 1657272892, 103, 'DONE', 'bb.task-check.database.connect', 0, '', '{"resultList": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}'),
 (102, 1, 1657272890, 1, 1657272892, 103, 'DONE', 'bb.task-check.instance.migration-schema', 0, '', '{"resultList": [{"title": "OK", "status": "SUCCESS", "content": "Instance \"DEMO\" has setup migration schema"}]}', '{}'),
 (103, 1, 1657272890, 1, 1657272891, 103, 'DONE', 'bb.task-check.database.statement.syntax', 0, '', '{"resultList": [{"title": "Syntax OK", "status": "SUCCESS", "content": "OK"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "/* Establish baseline using current schema */"}'),
-(104, 1, 1657272890, 1, 1657272891, 103, 'DONE', 'bb.task-check.database.statement.advise', 0, '', '{"resultList": [{"code": 401, "title": "Empty schema review policy or disabled", "status": "WARN"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "/* Establish baseline using current schema */"}'),
+(104, 1, 1657272890, 1, 1657272891, 103, 'DONE', 'bb.task-check.database.statement.advise', 0, '', '{"resultList": [{"code": 401, "title": "Empty SQL review policy or disabled", "status": "WARN"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "/* Establish baseline using current schema */"}'),
 (105, 1, 1657272927, 1, 1657272929, 104, 'DONE', 'bb.task-check.database.connect', 0, '', '{"resultList": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}'),
 (106, 1, 1657272927, 1, 1657272929, 104, 'DONE', 'bb.task-check.instance.migration-schema', 0, '', '{"resultList": [{"title": "OK", "status": "SUCCESS", "content": "Instance \"DEMO\" has setup migration schema"}]}', '{}'),
 (107, 1, 1657272927, 1, 1657272928, 104, 'DONE', 'bb.task-check.database.statement.syntax', 0, '', '{"resultList": [{"title": "Syntax OK", "status": "SUCCESS", "content": "OK"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "Alter table\n  employee\nadd\n  column (\n    EduBackgrounds varchar(50) not null,\n    Email varchar(40) not null,\n    PhoneNo varchar(15) not null,\n    Credentials_type char(4) not null,\n    Credentials_No varchar(10) not null,\n    Manager varchar(14),\n    Emergency_name varchar(16) not null,\n    Emergency_phoneNo varchar(15) not null,\n    Address varchar(60) not null\n  )"}'),
-(108, 1, 1657272927, 1, 1657272928, 104, 'DONE', 'bb.task-check.database.statement.advise', 0, '', '{"resultList": [{"code": 401, "title": "Empty schema review policy or disabled", "status": "WARN"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "Alter table\n  employee\nadd\n  column (\n    EduBackgrounds varchar(50) not null,\n    Email varchar(40) not null,\n    PhoneNo varchar(15) not null,\n    Credentials_type char(4) not null,\n    Credentials_No varchar(10) not null,\n    Manager varchar(14),\n    Emergency_name varchar(16) not null,\n    Emergency_phoneNo varchar(15) not null,\n    Address varchar(60) not null\n  )"}'),
+(108, 1, 1657272927, 1, 1657272928, 104, 'DONE', 'bb.task-check.database.statement.advise', 0, '', '{"resultList": [{"code": 401, "title": "Empty SQL review policy or disabled", "status": "WARN"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "Alter table\n  employee\nadd\n  column (\n    EduBackgrounds varchar(50) not null,\n    Email varchar(40) not null,\n    PhoneNo varchar(15) not null,\n    Credentials_type char(4) not null,\n    Credentials_No varchar(10) not null,\n    Manager varchar(14),\n    Emergency_name varchar(16) not null,\n    Emergency_phoneNo varchar(15) not null,\n    Address varchar(60) not null\n  )"}'),
 (109, 1, 1657273475, 1, 1657273477, 105, 'DONE', 'bb.task-check.database.connect', 0, '', '{"resultList": [{"title": "OK", "status": "SUCCESS", "content": "Successfully connected \"employee\""}]}', '{}'),
 (110, 1, 1657273475, 1, 1657273477, 105, 'DONE', 'bb.task-check.instance.migration-schema', 0, '', '{"resultList": [{"title": "OK", "status": "SUCCESS", "content": "Instance \"DEMO\" has setup migration schema"}]}', '{}'),
 (111, 1, 1657273475, 1, 1657273476, 105, 'DONE', 'bb.task-check.database.statement.syntax', 0, '', '{"resultList": [{"title": "Syntax OK", "status": "SUCCESS", "content": "OK"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "alter table\n  employee drop column Address;"}'),
-(112, 1, 1657273475, 1, 1657273476, 105, 'DONE', 'bb.task-check.database.statement.advise', 0, '', '{"resultList": [{"code": 401, "title": "Empty schema review policy or disabled", "status": "WARN"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "alter table\n  employee drop column Address;"}');
+(112, 1, 1657273475, 1, 1657273476, 105, 'DONE', 'bb.task-check.database.statement.advise', 0, '', '{"resultList": [{"code": 401, "title": "Empty SQL review policy or disabled", "status": "WARN"}]}', '{"dbType": "MYSQL", "charset": "utf8mb4", "collation": "utf8mb4_general_ci", "statement": "alter table\n  employee drop column Address;"}');
 
 INSERT INTO "public"."issue" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "project_id", "pipeline_id", "name", "status", "type", "description", "assignee_id", "payload") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 1, 101, 'Hello world!', 'OPEN', 'bb.issue.general', 'Welcome to Bytebase, this is the issue interface where developers and DBAs collaborate on database schema management issues such as: 

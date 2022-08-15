@@ -154,7 +154,6 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 	}
 
 	return ret, nil
-
 }
 
 // FindLabelKey finds a list of LabelKey instances.

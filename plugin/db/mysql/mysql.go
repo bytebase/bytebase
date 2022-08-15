@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
 )
@@ -32,13 +31,18 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
 	dbType        db.Type
-	mysqlutil     mysqlutil.Instance
+	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
+
+	replayBinlogCounter *common.CountingReader
 }
 
-func newDriver(db.DriverConfig) db.Driver {
-	return &Driver{}
+func newDriver(dc db.DriverConfig) db.Driver {
+	return &Driver{
+		resourceDir: dc.ResourceDir,
+		binlogDir:   dc.BinlogDir,
+	}
 }
 
 // Open opens a MySQL driver.

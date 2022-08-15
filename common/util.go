@@ -3,6 +3,7 @@ package common
 import (
 	"crypto/rand"
 	"math/big"
+	"os"
 	"path"
 	"regexp"
 	"sort"
@@ -23,7 +24,7 @@ func FindString(stringList []string, search string) int {
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // RandomString returns a random string with length n.
-func RandomString(n int) string {
+func RandomString(n int) (string, error) {
 	var sb strings.Builder
 	sb.Grow(n)
 	for i := 0; i < n; i++ {
@@ -32,12 +33,13 @@ func RandomString(n int) string {
 		// thus has a stronger source of random numbers.
 		randNum, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
-			// Use 0 as default index when encounter error
-			sb.WriteRune(letters[0])
+			return "", err
 		}
-		sb.WriteRune(letters[randNum.Uint64()])
+		if _, err := sb.WriteRune(letters[randNum.Uint64()]); err != nil {
+			return "", err
+		}
 	}
-	return sb.String()
+	return sb.String(), nil
 }
 
 // HasPrefixes returns true if the string s has any of the given prefixes.
@@ -91,4 +93,17 @@ func ParseTemplateTokens(template string) ([]string, []string) {
 		return tokens, delimiters
 	}
 	return nil, nil
+}
+
+// GetFileSizeSum calculates the sum of file sizes for file names in the list.
+func GetFileSizeSum(fileNameList []string) (int64, error) {
+	var sum int64
+	for _, fileName := range fileNameList {
+		stat, err := os.Stat(fileName)
+		if err != nil {
+			return 0, err
+		}
+		sum += stat.Size()
+	}
+	return sum, nil
 }

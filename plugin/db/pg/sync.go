@@ -22,7 +22,8 @@ var (
 		// aws
 		"rdsadmin": true,
 		// gcp
-		"cloudsql": true,
+		"cloudsql":      true,
+		"cloudsqladmin": true,
 	}
 )
 
@@ -379,10 +380,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		}
 		tbl.comment = comment.String
 	}
-	if err := crows.Err(); err != nil {
-		return err
-	}
-	return nil
+	return crows.Err()
 }
 
 // getTableColumns gets the columns of a table.
@@ -477,8 +475,8 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 	query := "" +
-		"SELECT table_schema, table_name, view_definition FROM information_schema.views " +
-		"WHERE table_schema NOT IN ('pg_catalog', 'information_schema');"
+		"SELECT schemaname, viewname, definition FROM pg_catalog.pg_views " +
+		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
 	var views []*viewSchema
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -528,10 +526,7 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 		}
 		view.comment = comment.String
 	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	return nil
+	return rows.Err()
 }
 
 func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
@@ -641,10 +636,7 @@ func getIndex(txn *sql.Tx, idx *indexSchema) error {
 		}
 		idx.comment = comment.String
 	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	return nil
+	return rows.Err()
 }
 
 func convertBoolFromYesNo(s string) (bool, error) {

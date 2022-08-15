@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,8 +18,11 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -179,7 +181,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceList := []advisor.Advice{}
 
 		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) {
-			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
+			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
 			}
@@ -210,7 +212,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				store.NewCatalog(&db.ID, s.store, instance.Engine),
 			)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check SQL review policy").SetInternal(err)
 			}
 
 			if adviceLevel == advisor.Error {
@@ -254,10 +256,39 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return json.Marshal(rowSet)
 		}()
 
+		if instance.Engine == db.Postgres {
+			stmts, err := parser.Parse(parser.Postgres, parser.Context{}, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse: %s", exec.Statement)).SetInternal(err)
+			}
+			if len(stmts) != 1 {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expected one statement, but found %d, statement: %s", len(stmts), exec.Statement))
+			}
+			if _, ok := stmts[0].(*ast.ExplainStmt); ok {
+				indexAdvice := checkPostgreSQLIndexHit(exec.Statement, string(bytes))
+				if len(indexAdvice) > 0 {
+					adviceLevel = advisor.Error
+					adviceList = append(adviceList, indexAdvice...)
+				}
+			}
+		}
+
+		if len(adviceList) == 0 {
+			adviceList = append(adviceList, advisor.Advice{
+				Status:  advisor.Success,
+				Code:    advisor.Ok,
+				Title:   "OK",
+				Content: "",
+			})
+		}
+
 		level := api.ActivityInfo
 		errMessage := ""
-		if adviceLevel == advisor.Warn {
+		switch adviceLevel {
+		case advisor.Warn:
 			level = api.ActivityWarn
+		case advisor.Error:
+			level = api.ActivityError
 		}
 		if queryErr != nil {
 			level = api.ActivityError
@@ -422,23 +453,23 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		if matchedDb != nil {
 			// Case 1, appear in both the Bytebase metadata and the synced database metadata.
 			// We rely on syncDatabaseSchema() to sync the database details.
-		} else {
-			// Case 2, only appear in the synced db schema.
-			databaseCreate := &api.DatabaseCreate{
-				CreatorID:     api.SystemBotID,
-				ProjectID:     api.DefaultProjectID,
-				InstanceID:    instance.ID,
-				EnvironmentID: instance.EnvironmentID,
-				Name:          databaseName,
-				CharacterSet:  databaseMetadata.CharacterSet,
-				Collation:     databaseMetadata.Collation,
+			continue
+		}
+		// Case 2, only appear in the synced db schema.
+		databaseCreate := &api.DatabaseCreate{
+			CreatorID:     api.SystemBotID,
+			ProjectID:     api.DefaultProjectID,
+			InstanceID:    instance.ID,
+			EnvironmentID: instance.EnvironmentID,
+			Name:          databaseName,
+			CharacterSet:  databaseMetadata.CharacterSet,
+			Collation:     databaseMetadata.Collation,
+		}
+		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				return nil, fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 			}
-			if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
-				if common.ErrorCode(err) == common.Conflict {
-					return nil, fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-				}
-				return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
-			}
+			return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
 		}
 	}
 
@@ -553,10 +584,7 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
 		return err
 	}
-	if err := syncDBExtensionSchema(ctx, s.store, database, schema); err != nil {
-		return err
-	}
-	return nil
+	return syncDBExtensionSchema(ctx, s.store, database, schema)
 }
 
 func syncTableSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
@@ -591,8 +619,7 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
 	count := 0
-	sc := bufio.NewScanner(strings.NewReader(sqlStatement))
-	if err := util.ApplyMultiStatements(sc, func(_ string) error {
+	if err := util.ApplyMultiStatements(strings.NewReader(sqlStatement), func(_ string) error {
 		count++
 		return nil
 	}); err != nil {
@@ -648,7 +675,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 
 func (s *Server) sqlCheck(
 	ctx context.Context,
-	dbType advisor.DBType,
+	dbType advisorDB.Type,
 	dbCharacterSet string,
 	dbCollation string,
 	environmentID int,
@@ -656,14 +683,14 @@ func (s *Server) sqlCheck(
 	catalog catalog.Catalog,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
+	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			adviceList = []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NotFound,
-					Title:   "Schema review policy is not configured or disabled",
+					Title:   "SQL review policy is not configured or disabled",
 					Content: "",
 				},
 			}
@@ -672,7 +699,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
+	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,
@@ -698,13 +725,32 @@ func (s *Server) sqlCheck(
 		adviceList = append(adviceList, advice)
 	}
 
-	if len(adviceList) == 0 {
-		adviceList = append(adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    advisor.Ok,
-			Title:   "OK",
-			Content: "",
-		})
-	}
 	return adviceLevel, adviceList, nil
+}
+
+func checkPostgreSQLIndexHit(statement string, plan string) []advisor.Advice {
+	plans := strings.Split(plan, "\n")
+	haveSeqScan := false
+	haveIndexScan := false
+	for _, row := range plans {
+		if strings.Contains(row, "Seq Scan") {
+			haveSeqScan = true
+			continue
+		}
+		if strings.Contains(row, "Index Scan") {
+			haveIndexScan = true
+			continue
+		}
+	}
+	if haveSeqScan && !haveIndexScan {
+		return []advisor.Advice{
+			{
+				Status:  advisor.Error,
+				Code:    advisor.NotUseIndex,
+				Title:   "Query does not use index",
+				Content: fmt.Sprintf("statement %q does not use any index", statement),
+			},
+		}
+	}
+	return nil
 }

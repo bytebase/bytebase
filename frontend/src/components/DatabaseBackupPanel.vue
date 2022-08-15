@@ -374,7 +374,6 @@ export default defineComponent({
         databaseId: props.database.id!,
         name: backupName,
         type: "MANUAL",
-        storageBackend: "LOCAL",
       };
       backupStore.createBackup({
         databaseId: props.database.id,

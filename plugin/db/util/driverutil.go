@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -24,12 +25,13 @@ func FormatErrorWithQuery(err error, query string) error {
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
-func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
+func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
+	scanner := bufio.NewScanner(sc)
 	s := ""
 	delimiter := false
 	comment := false
-	for sc.Scan() {
-		line := sc.Text()
+	for scanner.Scan() {
+		line := scanner.Text()
 
 		execute := false
 		switch {
@@ -88,10 +90,7 @@ func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
 		}
 	}
 
-	if err := sc.Err(); err != nil {
-		return err
-	}
-	return nil
+	return scanner.Err()
 }
 
 // NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.
@@ -164,13 +163,13 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 
 	// Phase 3 - Executing migration
 	// Branch migration type always has empty sql.
-	// Baseline migration type could has non-empty sql but will not execute, except for CreateDatabase.
+	// Baseline migration type could has non-empty sql but will not execute.
 	// https://github.com/bytebase/bytebase/issues/394
 	doMigrate := true
 	if statement == "" {
 		doMigrate = false
 	}
-	if m.Type == db.Baseline && !m.CreateDatabase {
+	if m.Type == db.Baseline {
 		doMigrate = false
 	}
 	if doMigrate {
@@ -297,11 +296,7 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 // Query will execute a readonly / SELECT query.

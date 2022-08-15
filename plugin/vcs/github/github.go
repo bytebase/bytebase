@@ -85,10 +85,13 @@ type User struct {
 
 // Repository represents a GitHub API response for a repository.
 type Repository struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	FullName string `json:"full_name"`
-	HTMLURL  string `json:"html_url"`
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	FullName    string `json:"full_name"`
+	HTMLURL     string `json:"html_url"`
+	Permissions struct {
+		Admin bool `json:"admin"`
+	} `json:"permissions"`
 }
 
 // RepositoryTree represents a GitHub API response for a repository tree.
@@ -195,9 +198,9 @@ type WebhookPushEvent struct {
 	Commits    []WebhookCommit   `json:"commits"`
 }
 
-// fetchUserInfo fetches user information from the given resourceURI, which
+// fetchUserInfoImpl fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
-func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
+func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
 	code, body, err := oauth.Get(
 		ctx,
@@ -237,18 +240,21 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 
 // TryLogin tries to fetch the user info from the current OAuth context.
 func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, "user")
+}
+
+// CommitAuthor represents a GitHub API response for a commit author.
+type CommitAuthor struct {
+	// Date expects corresponding JSON value is a string in RFC 3339 format,
+	// see https://pkg.go.dev/time#Time.MarshalJSON.
+	Date time.Time `json:"date"`
+	Name string    `json:"name"`
 }
 
 // Commit represents a GitHub API response for a commit.
 type Commit struct {
-	SHA    string `json:"sha"`
-	Author struct {
-		// Date expects corresponding JSON value is a string in RFC 3339 format,
-		// see https://pkg.go.dev/time#Time.MarshalJSON.
-		Date time.Time `json:"date"`
-		Name string    `json:"name"`
-	} `json:"author"`
+	SHA    string       `json:"sha"`
+	Author CommitAuthor `json:"author"`
 }
 
 // FileCommit represents a GitHub API request for committing a file.
@@ -301,7 +307,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 
 // FetchUserInfo fetches user info of given user ID.
 func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, username string) (*vcs.UserInfo, error) {
-	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", username))
+	return p.fetchUserInfoImpl(ctx, oauthCtx, instanceURL, fmt.Sprintf("users/%s", username))
 }
 
 func getRoleAndMappedRole(roleName string) (githubRole RepositoryRole, bytebaseRole common.ProjectRole) {
@@ -417,7 +423,7 @@ func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oa
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return collaborators, len(collaborators) >= 100, nil
+	return collaborators, len(collaborators) >= apiPageSize, nil
 }
 
 // oauthResponse is a GitHub OAuth response.
@@ -478,7 +484,11 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 }
 
 // FetchAllRepositoryList fetches all repositories where the authenticated user
-// has a owner role, which is required to create webhook in the repository.
+// has admin permissions, which is required to create webhook in the repository.
+//
+// NOTE: GitHub API does not provide a native filter for admin permissions, thus
+// we need to first fetch all repositories and then filter down the list using
+// the `permissions.admin` field.
 //
 // Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
@@ -499,6 +509,9 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 
 	var allRepos []*vcs.Repository
 	for _, r := range githubRepos {
+		if !r.Permissions.Admin {
+			continue
+		}
 		allRepos = append(allRepos,
 			&vcs.Repository{
 				ID:       r.ID,
@@ -512,12 +525,10 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 }
 
 // fetchPaginatedRepositoryList fetches repositories where the authenticated
-// user has a owner role in given page. It return the paginated results along
+// user has access to in given page. It returns the paginated results along
 // with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
-	// We will use user's token to create webhook in the project, which requires the
-	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/user/repos?affiliation=owner&page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
+	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -556,7 +567,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return repos, len(repos) >= 100, nil
+	return repos, len(repos) >= apiPageSize, nil
 }
 
 // FetchRepositoryFileList fetches the all files from the given repository tree
@@ -938,9 +949,6 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 			expiresIn, _ := strconv.ParseInt(r.ExpiresIn, 10, 64)
 			expireAt = r.CreatedAt + expiresIn
 		}
-		if err = refresher(r.AccessToken, r.RefreshToken, expireAt); err != nil {
-			return err
-		}
-		return nil
+		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }

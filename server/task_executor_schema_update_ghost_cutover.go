@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/github/gh-ost/go/base"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -38,7 +39,10 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to get a single taskDAG for schema update gh-ost cutover task, id: %v, error: %w", task.ID, err)
 	}
+
 	syncTaskID := taskDAG.FromTaskID
+	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
+
 	syncTask, err := server.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to get schema update gh-ost sync task for cutover task, error: %w", err)
@@ -53,13 +57,18 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 		return true, nil, fmt.Errorf("failed to parse table name from statement, error: %w", err)
 	}
 
-	socketFilename := getSocketFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
-	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, socketFilename, postponeFilename)
+	value, ok := server.TaskScheduler.sharedTaskState.Load(syncTaskID)
+	if !ok {
+		return true, nil, fmt.Errorf("failed to get gh-ost state from sync task")
+	}
+	sharedGhost := value.(sharedGhostState)
+
+	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 }
 
-func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, socketFilename, postponeFilename string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 
 	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
@@ -67,7 +76,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		return true, nil, err
 	}
 	migrationID, schema, err := func() (migrationHistoryID int64, updatedSchema string, resErr error) {
-		driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, "" /* pgInstanceDir */)
+		driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
 		if err != nil {
 			return -1, "", err
 		}
@@ -85,6 +94,13 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		var prevSchemaBuf bytes.Buffer
 		if _, err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
 			return -1, "", err
+		}
+
+		// wait for heartbeat lag.
+		// try to make the time gap between the migration history insertion and the actual cutover as close as possible.
+		cancelled := waitForCutover(ctx, migrationContext)
+		if cancelled {
+			return -1, "", fmt.Errorf("cutover poller cancelled")
 		}
 
 		insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
@@ -109,13 +125,8 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 			return -1, "", fmt.Errorf("failed to remove postpone flag file, error: %w", err)
 		}
 
-		ticker := time.NewTicker(time.Second * 1)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			if _, err := os.Stat(socketFilename); err != nil {
-				break
-			}
+		if migrationErr := <-errCh; migrationErr != nil {
+			return -1, "", fmt.Errorf("failed to run gh-ost migration, err: %w", migrationErr)
 		}
 
 		var afterSchemaBuf bytes.Buffer
@@ -130,6 +141,24 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 	}
 
 	return postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
+}
+
+func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			heartbeatLag := migrationContext.TimeSinceLastHeartbeatOnChangelog()
+			maxLagMillisecondsThrottle := time.Duration(atomic.LoadInt64(&migrationContext.MaxLagMillisecondsThrottleThreshold)) * time.Millisecond
+			cutOverLockTimeout := time.Duration(migrationContext.CutOverLockTimeoutSeconds) * time.Second
+			if heartbeatLag <= maxLagMillisecondsThrottle && heartbeatLag <= cutOverLockTimeout {
+				return false
+			}
+		case <-ctx.Done(): // if cancel() execute
+			return true
+		}
+	}
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.

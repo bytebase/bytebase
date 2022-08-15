@@ -37,6 +37,7 @@
             </div>
             <button
               v-if="allowEdit"
+              :disabled="state.syncingSchema"
               type="button"
               class="btn-normal"
               @click.prevent="syncSchema"

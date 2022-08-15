@@ -81,7 +81,7 @@ func TestNamingFKConvention(t *testing.T) {
 		MaxLength: 64,
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleFKNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),

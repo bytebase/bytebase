@@ -16,16 +16,21 @@ func TestRunBinary(t *testing.T) {
 
 	a := require.New(t)
 	tmpDir := t.TempDir()
-	ins, err := Install(tmpDir)
+	err := Install(tmpDir)
 	a.NoError(err)
 
 	t.Run("run mysql client", func(t *testing.T) {
-		_, err := ins.Version(MySQL)
+		_, err := getExecutableVersion(MySQL, tmpDir)
 		a.NoError(err)
 	})
 
 	t.Run("run mysqlbinlog", func(t *testing.T) {
-		_, err := ins.Version(MySQLBinlog)
+		_, err := getExecutableVersion(MySQLBinlog, tmpDir)
+		a.NoError(err)
+	})
+
+	t.Run("run mysqldump", func(t *testing.T) {
+		_, err := getExecutableVersion(MySQLDump, tmpDir)
 		a.NoError(err)
 	})
 }
@@ -41,24 +46,31 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 
 	a := require.New(t)
 	tmpDir := t.TempDir()
-	instance, err := Install(tmpDir)
+	err := Install(tmpDir)
 	a.NoError(err)
 
-	libDir := filepath.Join(tmpDir, "mysqlutil-8.0.28-linux-glibc2.17-x86_64" /*Hard code, don't care about this*/, "lib", "private")
+	baseDir := filepath.Join(tmpDir, "mysqlutil-8.0.28-linux-glibc2.17-x86_64" /*Hard code, don't care about this*/)
+	binDir := filepath.Join(baseDir, "bin")
+	libDir := filepath.Join(baseDir, "lib", "private")
 
-	libncursesPath := filepath.Join(libDir, "libncurses.so.5")
-	libtinfoPath := filepath.Join(libDir, "libtinfo.so.5")
-	mysqlPath := instance.GetPath(MySQL)
-	a.FileExists(libncursesPath)
+	checks := []string{
+		filepath.Join(libDir, "libncurses.so.5"),
+		filepath.Join(libDir, "libtinfo.so.5"),
+		filepath.Join(binDir, "mysqldump"),
+	}
 
-	err = os.RemoveAll(libncursesPath)
-	a.NoError(err)
-	a.NoFileExists(libncursesPath)
+	mysqlPath := GetPath(MySQL, tmpDir)
 
-	_, err = Install(tmpDir)
-	a.NoError(err)
+	for _, fp := range checks {
+		a.FileExists(fp)
 
-	a.FileExists(libncursesPath)
-	a.FileExists(libtinfoPath)
-	a.FileExists(mysqlPath)
+		err = os.RemoveAll(fp)
+		a.NoError(err)
+		a.NoFileExists(fp)
+
+		err = Install(tmpDir)
+		a.NoError(err)
+		a.FileExists(fp)
+		a.FileExists(mysqlPath)
+	}
 }

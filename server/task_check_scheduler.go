@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -177,7 +178,7 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 }
 
 // Returns true if we meet either of the following conditions:
-//   1. Task has a non-default value and no task check has run before (so we are about to kick of the check the first time)
+//   1. Task has a non-default value and no task check has run before (so we are about to kick off the check for the first time)
 //   2. The specified EarliestAllowedTs has elapsed, so we need to rerun the check to unblock the task.
 // On the other hand, we would also rerun the check if user has modified EarliestAllowedTs. This is handled separately in the task patch handler.
 func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
@@ -334,9 +335,9 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
-			policyID, err := s.server.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+			policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get schema review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)
+				return nil, fmt.Errorf("failed to get SQL review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)
 			}
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
@@ -359,6 +360,25 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
+		if database.Instance.Engine == db.Postgres {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+				Statement: statement,
+				DbType:    database.Instance.Engine,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal statement type payload: %v, err: %w", task.Name, err)
+			}
+			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementType,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			}); err != nil {
+				return nil, err
+			}
+		}
+
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &task.ID,
 		}
@@ -373,10 +393,11 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	return task, nil
 }
 
-// Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
-// But this method is used for gating the automatic run, so we are more cautious here.
+// Returns true only if the task check run result is at least the minimum required level.
+// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
+// For Pending->Running transitions, the minimum level is WARN.
 // TODO(dragonly): refactor arguments.
-func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &task.ID,
@@ -405,7 +426,7 @@ func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.Ta
 		return false, err
 	}
 	for _, result := range checkResult.ResultList {
-		if result.Status == api.TaskCheckStatusError {
+		if result.Status.LessThan(allowedStatus) {
 			log.Debug("Task is waiting for check to pass",
 				zap.Int("task_id", task.ID),
 				zap.String("task_name", task.Name),

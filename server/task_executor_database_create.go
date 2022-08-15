@@ -48,7 +48,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", server.pgInstanceDir)
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
 	}
@@ -60,7 +60,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("statement", statement),
 	)
 
-	// Create a baseline migration history upon creating the database.
+	// Create a migrate migration history upon creating the database.
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
@@ -69,7 +69,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Database:       payload.DatabaseName,
 		Environment:    instance.Environment.Name,
 		Source:         db.UI,
-		Type:           db.Baseline,
+		Type:           db.Migrate,
 		Description:    "Create database",
 		CreateDatabase: true,
 		Force:          true,

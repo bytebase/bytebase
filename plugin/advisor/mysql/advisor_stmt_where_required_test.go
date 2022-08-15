@@ -9,6 +9,17 @@ import (
 func TestWhereRequirement(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
+			Statement: "INSERT INTO t values (1)",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
 			Statement: "DELETE FROM t1",
 			Want: []advisor.Advice{
 				{
@@ -87,7 +98,7 @@ func TestWhereRequirement(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &advisor.SQLReviewRule{
+	advisor.RunSQLReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleStatementRequireWhere,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",

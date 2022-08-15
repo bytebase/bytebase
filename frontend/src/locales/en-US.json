@@ -242,7 +242,8 @@
       "migration-schema": "Migration schema",
       "sql-review": "SQL review",
       "earliest-allowed-time": "Earliest allowed time",
-      "ghost-sync": "gh-ost sync"
+      "ghost-sync": "gh-ost sync",
+      "statement-type": "Statement type"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
@@ -431,7 +432,8 @@
       "completed": "completed",
       "failed": "failed",
       "task-name": " task {name}",
-      "committed-to-at": "committed {file} to{branch}{'@'}{repo}"
+      "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
+      "dismissed-stale-approval": "dismissed stale approvals of {task}"
     },
     "subject-prefix": {
       "task": "Task"
@@ -508,7 +510,7 @@
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
-    "vcs-info": "indicates the project has enabled VCS based version control. Selecting database belonging to such project will navigate you to the corresponding Git repository to initiate the change process.",
+    "vcs-info": "VCS enabled. Selecting this will navigate you to the corresponding Git repository to initiate the change process.",
     "alter-single-db": "Alter single database",
     "alter-multiple-db": "Alter multiple databases",
     "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments."
@@ -528,11 +530,12 @@
     "troubleshoot": "Troubleshoot",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
-    "from-default-project": "From Default project",
-    "from-other-projects": "From other projects",
-    "transfer-in-db-title": "Transfer in database from other projects",
-    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project.",
-    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?"
+    "from-unassigned-databases": "From unassigned databases",
+    "from-projects": "From projects",
+    "transfer-in-db-title": "Transfer in database",
+    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in the default project.",
+    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
+    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in unassigned databases."
   },
   "create-db": {
     "new-database-name": "New database name",
@@ -688,7 +691,7 @@
       "new-user": "New to Bytebase?",
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
-      "gitlab-demo": "GitLab login is disabled in Demo mode",
+      "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login"
     },
     "password-forget": {
@@ -713,9 +716,9 @@
       "tip": "The policy is not applied retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
-      "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
+      "manual-info": "Tasks will only be executed after being manually approved.",
       "auto": "Skip manual approval",
-      "auto-info": "Pending schema migration task will be executed automatically."
+      "auto-info": "Tasks will be approved and executed automatically if all task checks pass."
     },
     "backup": {
       "name": "Database backup schedule policy",
@@ -750,7 +753,7 @@
     "establish-baseline": "Establish new baseline",
     "refreshing-history": "Refreshing history ...",
     "config-instance": "Config instance",
-    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state. For VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.",
+    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. This would reconcile the actual schema state with the recorded schema state in Bytebase and fix the reported schema drift. You should only do this if the current schema does reflect the desired state.",
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
@@ -857,7 +860,11 @@
         "retention-period": "Retention period(days)"
       }
     },
-    "backup-policy-violation": "Backup policy violation"
+    "backup-policy-violation": "Backup policy violation",
+    "synced-at": "Synced at {time}",
+    "not-found-last-successful-sync-was": "Not found, last successful sync was {time}",
+    "view-unassigned-databases": "View unassigned databases",
+    "unassigned-databases": "Unassigned databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -866,8 +873,8 @@
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",
     "file-path-template-description": "Bytebase only observes the file path name matching the template pattern relative to the base directory.",
-    "file-path-example-normal-migration": "File path example for normal migration type",
-    "file-path-example-baseline-migration": "File path example for baseline migration type",
+    "file-path-example-schema-migration": "File path example for schema migration type",
+    "file-path-example-data-migration": "File path example for data migration type",
     "schema-path-template": "Schema path template",
     "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this.",
     "schema-writeback-protected-branch": "Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.",
@@ -891,8 +898,9 @@
     "configure-deploy": "Configure deploy",
     "choose-git-provider-description": "Choose the Git provider where your database schema scripts (.sql) are hosted. When you push the changed script to the Git repository, Bytebase will automatically create a pipeline to apply the schema change to the database.",
     "choose-git-provider-visit-workspace": "Visit {workspace} setting to add more Git providers.",
-    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, GitHub Enterprise and GitHub.com later.",
+    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, and GitHub Enterprise later.",
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
+    "select-repository-attention-github": "Bytebase only lists GitHub repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
     "select-repository-search": "Search repository",
     "linked": "Linked repositories",
     "role-provider": "Project role provider",
@@ -917,7 +925,7 @@
     "types": {
       "connection-failure": "Connection failure",
       "missing-migration-schema": "Missing migration schema",
-      "backup-enforcement-viloation": "Backup enforcement violation",
+      "backup-enforcement-violation": "Backup enforcement violation",
       "missing-backup": "Missing backup",
       "schema-drift": "Schema drift"
     },
@@ -959,7 +967,7 @@
       "recent-activity": "Recent @.lower:{'common.activities'}",
       "in-progress": "In progress",
       "recently-closed": "Recently Closed",
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.",
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
       "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
     },
     "webhook": {
@@ -1055,7 +1063,7 @@
         "gitlab-self-host": "GitLab self-host",
         "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
-        "ouath-info-correct": "Verified OAuth info is correct",
+        "oauth-info-correct": "Verified OAuth info is correct",
         "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
         "add-success": "Successfully added Git provider {vcs}",
         "choose": "Choose Git provider",
@@ -1076,9 +1084,11 @@
           "gitlab-visit-admin-page": "Go to the Admin page by clicking the wrench icon, then navigate to \"Applications\" section and click \"New application\" button.",
           "gitlab-paste-oauth-info": "Paste the Application ID and Secret from that just created application into fields below.",
           "github-register-oauth-application": "Register Bytebase as a GitHub organization-wide OAuth application.",
-          "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organiztion Settings page).",
+          "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
           "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
           "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
+          "copy-homepage-url": "Homepage URL copied to clipboard. Paste to the corresponding field on the OAuth application form.",
+          "copy-redirect-uri": "Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.",
           "direct-link": "Direct link",
           "create-oauth-app": "Create your Bytebase OAuth application with the following info.",
           "gitlab-application-id-error": "Application ID must be a 64-character alphanumeric string",
@@ -1189,7 +1199,7 @@
     "loading-databases": "Loading Databases...",
     "close-pane": "Close Pane",
     "loading-data": "Loading Data...",
-    "table-empty-placehoder": "Click Run to execute the query.",
+    "table-empty-placeholder": "Click Run to execute the query.",
     "no-rows-found": "No rows found",
     "download-as-csv": "Download as CSV",
     "download-as-json": "Download as JSON",
@@ -1235,7 +1245,9 @@
     "save-sheet-input-placeholder": "Please input a sheet name",
     "untitled-sheet": "Untitled Sheet",
     "format": "Format",
-    "sql-review-result": "SQL review result"
+    "sql-review-result": "SQL review result",
+    "alter-table": "Alter table",
+    "open-connection": "Open connection"
   },
   "label": {
     "empty-label-value": "<Empty Value>",
@@ -1263,7 +1275,7 @@
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
   },
   "oauth": {
-    "unknown-event": "Unexpeted event type, OAuth failed."
+    "unknown-event": "Unexpected event type, OAuth failed."
   },
   "subscription": {
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
@@ -1322,15 +1334,15 @@
       },
       "bb-feature-approval-policy": {
         "title": "Approval policy",
-        "desc": "Approval policy controls whether the schama change task requires manual approval."
+        "desc": "Approval policy controls whether the schema change task requires manual approval."
       },
       "bb-feature-backup-policy": {
         "title": "Backup policy",
         "desc": "Backup policy will auto-backup your database based on the schedule."
       },
       "bb-feature-sql-review": {
-        "title": "Schema review policy",
-        "desc": "Customize the schema review policy for different environments. @:{'subscription.trial'}."
+        "title": "SQL review policy",
+        "desc": "Customize the SQL review policy for different environments. @:{'subscription.trial'}."
       },
       "bb-feature-rbac": {
         "title": "Role management",
@@ -1338,7 +1350,7 @@
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
-        "desc": "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
+        "desc": "@:{'subscription.upgrade'} to unlock schema drift auto-detection"
       },
       "bb-feature-3rd-party-auth": {
         "title": "3rd party authentication & authorization",
@@ -1379,7 +1391,7 @@
           "disaster-recovery-advanced": "Advanced",
           "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
           "archiving": "Archiving",
-          "sql-check": "SQL check / Schema review",
+          "sql-check": "SQL check / SQL review",
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
@@ -1488,7 +1500,7 @@
         "environments-select": "Select environments",
         "no-linked-environments": "No linked environment",
         "no-available-environment": "No available environment",
-        "no-available-environment-desc": "No available environment. One environment can only link one schema review policy.",
+        "no-available-environment-desc": "No available environment. One environment can only link one SQL review policy.",
         "choose-template": "Choose template"
       },
       "configure-rule": {

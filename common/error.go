@@ -25,15 +25,20 @@ const (
 
 	// 201 db migration error
 	// Db migration is a core feature, so we separate it from the db error.
-	MigrationSchemaMissing   Code = 201
-	MigrationAlreadyApplied  Code = 202
-	MigrationOutOfOrder      Code = 203
-	MigrationBaselineMissing Code = 204
-	MigrationPending         Code = 205
-	MigrationFailed          Code = 206
+	MigrationSchemaMissing  Code = 201
+	MigrationAlreadyApplied Code = 202
+	MigrationOutOfOrder     Code = 203
+	// MigrationBaselineMissing is no longer used.
+	// MigrationBaselineMissing Code = 204.
+	MigrationPending Code = 205
+	MigrationFailed  Code = 206
 
 	// 301 task error.
 	TaskTimingNotAllowed Code = 301
+
+	// 401 task sql type error.
+	TaskTypeNotDML Code = 401
+	TaskTypeNotDDL Code = 402
 )
 
 // Int returns the int type of code.

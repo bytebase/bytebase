@@ -35,6 +35,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				&ast.CreateTableStmt{
 					IfNotExists: false,
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techBook",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -70,6 +71,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				&ast.CreateTableStmt{
 					IfNotExists: true,
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -87,6 +89,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -112,6 +115,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -147,6 +151,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
 					ColumnList: []*ast.ColumnDef{
@@ -158,7 +163,10 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 									Type:    ast.ConstraintTypeForeign,
 									KeyList: []string{"a"},
 									Foreign: &ast.ForeignDef{
-										Table:      &ast.TableDef{Name: "people"},
+										Table: &ast.TableDef{
+											Type: ast.TableTypeBaseTable,
+											Name: "people",
+										},
 										ColumnList: []string{"id"},
 									},
 								},
@@ -171,7 +179,10 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 							Type:    ast.ConstraintTypeForeign,
 							KeyList: []string{"a"},
 							Foreign: &ast.ForeignDef{
-								Table:      &ast.TableDef{Name: "people"},
+								Table: &ast.TableDef{
+									Type: ast.TableTypeBaseTable,
+									Name: "people",
+								},
 								ColumnList: []string{"b"},
 							},
 						},
@@ -194,11 +205,13 @@ func TestPGAddColumnStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					AlterItemList: []ast.Node{
 						&ast.AddColumnListStmt{
 							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
 								Name: "techbook",
 							},
 							ColumnList: []*ast.ColumnDef{
@@ -217,11 +230,13 @@ func TestPGAddColumnStmt(t *testing.T) {
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
 					AlterItemList: []ast.Node{
 						&ast.AddColumnListStmt{
 							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
 								Name: "techbook",
 							},
 							ColumnList: []*ast.ColumnDef{
@@ -254,15 +269,47 @@ func TestPGRenameTableStmt(t *testing.T) {
 		{
 			stmt: "ALTER TABLE techbook RENAME TO \"techBook\"",
 			want: []ast.Node{
-				&ast.RenameTableStmt{
+				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
-					NewName: "techBook",
+					AlterItemList: []ast.Node{
+						&ast.RenameTableStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "techbook",
+							},
+							NewName: "techBook",
+						},
+					},
 				},
 			},
 			textList: []string{
 				"ALTER TABLE techbook RENAME TO \"techBook\"",
+			},
+		},
+		{
+			stmt: "ALTER VIEW techbook RENAME TO \"techBook\"",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "techbook",
+					},
+					AlterItemList: []ast.Node{
+						&ast.RenameTableStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeView,
+								Name: "techbook",
+							},
+							NewName: "techBook",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER VIEW techbook RENAME TO \"techBook\"",
 			},
 		},
 	}
@@ -275,16 +322,49 @@ func TestPGRenameColumnStmt(t *testing.T) {
 		{
 			stmt: "ALTER TABLE techbook RENAME abc TO \"ABC\"",
 			want: []ast.Node{
-				&ast.RenameColumnStmt{
+				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
 						Name: "techbook",
 					},
-					ColumnName: "abc",
-					NewName:    "ABC",
+					AlterItemList: []ast.Node{
+						&ast.RenameColumnStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "techbook",
+							},
+							ColumnName: "abc",
+							NewName:    "ABC",
+						},
+					},
 				},
 			},
 			textList: []string{
 				"ALTER TABLE techbook RENAME abc TO \"ABC\"",
+			},
+		},
+		{
+			stmt: "ALTER VIEW techbook RENAME abc TO \"ABC\"",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "techbook",
+					},
+					AlterItemList: []ast.Node{
+						&ast.RenameColumnStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeView,
+								Name: "techbook",
+							},
+							ColumnName: "abc",
+							NewName:    "ABC",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER VIEW techbook RENAME abc TO \"ABC\"",
 			},
 		},
 	}
@@ -297,10 +377,21 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 		{
 			stmt: "ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
 			want: []ast.Node{
-				&ast.RenameConstraintStmt{
-					Table:          &ast.TableDef{Name: "tech_book"},
-					ConstraintName: "uk_tech_a",
-					NewName:        "UK_TECH_A",
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.RenameConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ConstraintName: "uk_tech_a",
+							NewName:        "UK_TECH_A",
+						},
+					},
 				},
 			},
 			textList: []string{
@@ -424,10 +515,16 @@ func TestPGDropConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.DropConstraintStmt{
-							Table:          &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ConstraintName: "uk_tech_a",
 						},
 					},
@@ -445,13 +542,47 @@ func TestPGDropConstraintStmt(t *testing.T) {
 func TestPGAddConstraintStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:            ast.ConstraintTypeCheck,
+								Name:            "check_a_bigger_than_b",
+								SkipValidation:  true,
+								CheckExpression: &ast.UnconvertedExpressionDef{},
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
+			},
+		},
+		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:    ast.ConstraintTypeUnique,
 								Name:    "uk_tech_book_id",
@@ -469,10 +600,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:    ast.ConstraintTypePrimary,
 								Name:    "pk_tech_book_id",
@@ -490,16 +627,25 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:    ast.ConstraintTypeForeign,
 								Name:    "fk_tech_book_id",
 								KeyList: []string{"id"},
 								Foreign: &ast.ForeignDef{
-									Table:      &ast.TableDef{Name: "people"},
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
 									ColumnList: []string{"id"},
 								},
 							},
@@ -515,10 +661,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:      ast.ConstraintTypeUniqueUsingIndex,
 								Name:      "uk_tech_book_id",
@@ -536,10 +688,16 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.AddConstraintStmt{
-							Table: &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							Constraint: &ast.ConstraintDef{
 								Type:      ast.ConstraintTypePrimaryUsingIndex,
 								Name:      "pk_tech_book_id",
@@ -564,10 +722,16 @@ func TestPGDropColumnStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book DROP COLUMN a",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.DropColumnStmt{
-							Table:      &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ColumnName: "a",
 						},
 					},
@@ -590,9 +754,11 @@ func TestPGDropTableStmt(t *testing.T) {
 				&ast.DropTableStmt{
 					TableList: []*ast.TableDef{
 						{
+							Type: ast.TableTypeBaseTable,
 							Name: "tech_book",
 						},
 						{
+							Type:   ast.TableTypeBaseTable,
 							Schema: "xschema",
 							Name:   "user",
 						},
@@ -601,6 +767,27 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			textList: []string{
 				"DROP TABLE tech_book, xschema.user",
+			},
+		},
+		{
+			stmt: "DROP VIEW tech_book, xschema.user",
+			want: []ast.Node{
+				&ast.DropTableStmt{
+					TableList: []*ast.TableDef{
+						{
+							Type: ast.TableTypeView,
+							Name: "tech_book",
+						},
+						{
+							Type:   ast.TableTypeView,
+							Schema: "xschema",
+							Name:   "user",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"DROP VIEW tech_book, xschema.user",
 			},
 		},
 	}
@@ -614,10 +801,16 @@ func TestPGNotNullStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.SetNotNullStmt{
-							Table:      &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ColumnName: "id",
 						},
 					},
@@ -631,10 +824,16 @@ func TestPGNotNullStmt(t *testing.T) {
 			stmt: "ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
-					Table: &ast.TableDef{Name: "tech_book"},
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
 					AlterItemList: []ast.Node{
 						&ast.DropNotNullStmt{
-							Table:      &ast.TableDef{Name: "tech_book"},
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
 							ColumnName: "id",
 						},
 					},
@@ -651,6 +850,47 @@ func TestPGNotNullStmt(t *testing.T) {
 
 func TestPGSelectStmt(t *testing.T) {
 	tests := []testData{
+		{
+			stmt: "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+			want: []ast.Node{
+				&ast.SelectStmt{
+					SetOperation: ast.SetOperationTypeNone,
+					FieldList: []ast.ExpressionNode{
+						&ast.ColumnNameDef{
+							Table: &ast.TableDef{
+								Schema: "public",
+								Name:   "t",
+							},
+							ColumnName: "a",
+						},
+						&ast.ColumnNameDef{
+							Table:      &ast.TableDef{Name: "t"},
+							ColumnName: "*",
+						},
+						&ast.ColumnNameDef{
+							Table:      &ast.TableDef{Name: "t1"},
+							ColumnName: "*",
+						},
+					},
+					SubqueryList: []*ast.SubqueryDef{
+						{
+							Select: &ast.SelectStmt{
+								SetOperation: ast.SetOperationTypeNone,
+								FieldList: []ast.ExpressionNode{
+									&ast.ColumnNameDef{
+										Table:      &ast.TableDef{},
+										ColumnName: "*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+			},
+		},
 		{
 			stmt: "SELECT public.t.a, t.*, * FROM t",
 			want: []ast.Node{
@@ -791,6 +1031,310 @@ func TestPGSelectStmt(t *testing.T) {
 						(SELECT * FROM t1 WHERE x LIKE b)
 				UNION
 				SELECT * FROM t`,
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGDropDatabaseStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP DATABASE test",
+			want: []ast.Node{
+				&ast.DropDatabaseStmt{
+					DatabaseName: "test",
+				},
+			},
+			textList: []string{
+				"DROP DATABASE test",
+			},
+		},
+		{
+			stmt: "DROP DATABASE IF EXISTS test",
+			want: []ast.Node{
+				&ast.DropDatabaseStmt{
+					DatabaseName: "test",
+					IfExists:     true,
+				},
+			},
+			textList: []string{
+				"DROP DATABASE IF EXISTS test",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestUpdateStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+			want: []ast.Node{
+				&ast.UpdateStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					WhereClause: &ast.UnconvertedExpressionDef{},
+					SubqueryList: []*ast.SubqueryDef{
+						{
+							Select: &ast.SelectStmt{
+								SetOperation: ast.SetOperationTypeNone,
+								FieldList: []ast.ExpressionNode{
+									&ast.ColumnNameDef{
+										Table:      &ast.TableDef{},
+										ColumnName: "*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+			},
+		},
+		{
+			stmt: "UPDATE tech_book SET a = 1",
+			want: []ast.Node{
+				&ast.UpdateStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+				},
+			},
+			textList: []string{
+				"UPDATE tech_book SET a = 1",
+			},
+		},
+		{
+			stmt: "UPDATE tech_book SET a = 1 WHERE a > 1",
+			want: []ast.Node{
+				&ast.UpdateStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					WhereClause: &ast.UnconvertedExpressionDef{},
+				},
+			},
+			textList: []string{
+				"UPDATE tech_book SET a = 1 WHERE a > 1",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+func TestDeleteStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DELETE FROM tech_book",
+			want: []ast.Node{
+				&ast.DeleteStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+				},
+			},
+			textList: []string{
+				"DELETE FROM tech_book",
+			},
+		},
+		{
+			stmt: "DELETE FROM tech_book WHERE a > 1",
+			want: []ast.Node{
+				&ast.DeleteStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					WhereClause: &ast.UnconvertedExpressionDef{},
+				},
+			},
+			textList: []string{
+				"DELETE FROM tech_book WHERE a > 1",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestSetSchemaStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book SET SCHEMA new_schema",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.SetSchemaStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							NewSchema: "new_schema",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book SET SCHEMA new_schema",
+			},
+		},
+		{
+			stmt: "ALTER VIEW tech_book SET SCHEMA new_schema",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeView,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.SetSchemaStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeView,
+								Name: "tech_book",
+							},
+							NewSchema: "new_schema",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER VIEW tech_book SET SCHEMA new_schema",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestExplainStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "EXPLAIN SELECT * FROM tech_book",
+			want: []ast.Node{
+				&ast.ExplainStmt{
+					Statement: &ast.SelectStmt{
+						SetOperation: ast.SetOperationTypeNone,
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "*",
+							},
+						},
+					},
+				},
+			},
+			textList: []string{
+				"EXPLAIN SELECT * FROM tech_book",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestAlterColumnType(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AlterColumnTypeStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestInsertStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
+			want: []ast.Node{
+				&ast.InsertStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					Select: &ast.SelectStmt{
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "*",
+							},
+						},
+						WhereClause: &ast.UnconvertedExpressionDef{},
+					},
+				},
+			},
+			textList: []string{
+				"INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
+			},
+		},
+		{
+			stmt: "INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
+			want: []ast.Node{
+				&ast.InsertStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+				},
+			},
+			textList: []string{
+				"INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestCopyStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "COPY tech_book FROM '/file/path/in/file/system'",
+			want: []ast.Node{
+				&ast.CopyStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					FilePath: "/file/path/in/file/system",
+				},
+			},
+			textList: []string{
+				"COPY tech_book FROM '/file/path/in/file/system'",
 			},
 		},
 	}

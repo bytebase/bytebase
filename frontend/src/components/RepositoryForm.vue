@@ -107,7 +107,7 @@
         </template>
       </div>
       <div class="mt-2 textinfolabel">
-        • {{ $t("repository.file-path-example-normal-migration") }}:
+        • {{ $t("repository.file-path-example-schema-migration") }}:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
@@ -117,12 +117,12 @@
         }}
       </div>
       <div class="mt-2 textinfolabel">
-        • {{ $t("repository.file-path-example-baseline-migration") }}:
+        • {{ $t("repository.file-path-example-data-migration") }}:
         {{
           sampleFilePath(
             repositoryConfig.baseDirectory,
             repositoryConfig.filePathTemplate,
-            "baseline"
+            "data"
           )
         }}
       </div>

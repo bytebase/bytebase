@@ -39,6 +39,8 @@ const (
 	NamingUKConventionMismatch Code = 304
 	// 305 foreign key naming advisor error code.
 	NamingFKConventionMismatch Code = 305
+	// 306 primary key naming advisor error code.
+	NamingPKConventionMismatch Code = 306
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn Code = 401
@@ -55,6 +57,9 @@ const (
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
 	NotCurrentDatabase Code = 702
+
+	// 801 miss index error code.
+	NotUseIndex Code = 801
 )
 
 // Int returns the int type of code.

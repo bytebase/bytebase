@@ -97,7 +97,7 @@ export const usePITRLogic = (database: Ref<Database>) => {
     };
     const issueCreate: IssueCreate = {
       name: `Restore database [${database.value.name}]`,
-      type: "bb.issue.database.pitr",
+      type: "bb.issue.database.restore.pitr",
       description: "",
       assigneeId: currentUser.value.id,
       projectId: database.value.project.id,

@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 
 	"go.uber.org/zap"
 )
@@ -32,7 +33,8 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executorGetters  map[api.TaskType]func() TaskExecutor
 	runningExecutors map[int]TaskExecutor
-	taskProgress     sync.Map
+	taskProgress     sync.Map // map[taskID]api.Progress
+	sharedTaskState  sync.Map // map[taskID]interface{}
 	server           *Server
 }
 
@@ -170,7 +172,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							_, err = s.server.patchTaskStatus(ctx, task, taskStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task as FAILED",
 									zap.Int("id", task.ID),
@@ -199,7 +201,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							_, err = s.server.patchTaskStatus(ctx, task, taskStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task as DONE",
 									zap.Int("id", task.ID),
@@ -229,29 +231,10 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() Ta
 	s.executorGetters[taskType] = executorGetter
 }
 
-// canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING.
-func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bool, error) {
-	blocked, err := s.isTaskBlocked(ctx, task)
-	if err != nil {
-		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
-	}
-	if blocked {
-		return false, nil
-	}
-	// timing task check
-	if task.EarliestAllowedTs != 0 {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
-	}
-
+func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -259,7 +242,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 			return false, nil
 		}
 
-		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema)
+		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -276,7 +259,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -286,7 +269,17 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 		}
 
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			if err != nil {
+				return false, err
+			}
+			if !pass {
+				return false, nil
+			}
+		}
+
+		if instance.Engine == db.Postgres {
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementType, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -297,7 +290,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGhostSync)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGhostSync, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -309,11 +302,39 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 	return true, nil
 }
 
+// auto transit PendingApproval to Pending if all required task checks pass.
+func (s *TaskScheduler) canAutoApprove(ctx context.Context, task *api.Task) (bool, error) {
+	return s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
+}
+
+func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, error) {
+	blocked, err := s.isTaskBlocked(ctx, task)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
+	}
+	if blocked {
+		return false, nil
+	}
+	// timing task check
+	if task.EarliestAllowedTs != 0 {
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime, api.TaskCheckStatusSuccess)
+		if err != nil {
+			return false, err
+		}
+		if !pass {
+			return false, nil
+		}
+	}
+
+	return s.passAllCheck(ctx, task, api.TaskCheckStatusWarn)
+}
+
 // ScheduleIfNeeded schedules the task if
-// 1. its required check does not contain error in the latest run
-// 2. it has no blocking tasks.
+//   1. its required check does not contain error in the latest run.
+//   2. it has no blocking tasks.
+//   3. it has passed the earliest allowed time.
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	schedule, err := s.canScheduleTask(ctx, task)
+	schedule, err := s.canSchedule(ctx, task)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +342,11 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		return task, nil
 	}
 
-	updatedTask, err := s.server.changeTaskStatus(ctx, task, api.TaskRunning, api.SystemBotID)
+	updatedTask, err := s.server.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+		ID:        task.ID,
+		UpdaterID: api.SystemBotID,
+		Status:    api.TaskRunning,
+	})
 	if err != nil {
 		return nil, err
 	}

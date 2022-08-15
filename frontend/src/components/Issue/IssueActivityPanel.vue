@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="activity">
     <div class="divide-y divide-block-border">
       <div class="pb-4">
         <h2 id="activity-title" class="text-lg font-medium text-main">
@@ -9,8 +9,8 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(activity, index) in activityList" :key="index">
-            <div :id="'activity' + activity.id" class="relative pb-4">
+          <li v-for="(activity, index) in activityList" :key="activity.id">
+            <div :id="`#activity${activity.id}`" class="relative pb-4">
               <span
                 v-if="index != activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
@@ -136,7 +136,11 @@
                         :href="'#activity' + activity.id"
                         class="ml-1 anchor-link whitespace-normal"
                       >
-                        {{ actionSentence(activity) }}
+                        <ActivityActionSentence
+                          :issue="issue"
+                          :activity="activity"
+                        />
+
                         {{ humanizeTs(activity.createdTs) }}
                         <template
                           v-if="
@@ -268,15 +272,29 @@
                   }
                 "
               ></textarea>
-              <div class="mt-4 flex items-center justify-start space-x-4">
-                <button
-                  type="button"
-                  class="btn-normal"
-                  :disabled="newComment.length == 0"
-                  @click.prevent="doCreateComment"
-                >
-                  {{ $t("common.comment") }}
-                </button>
+              <div class="mt-4 flex items-center justify-between space-x-4">
+                <div>
+                  <button
+                    type="button"
+                    class="group btn-normal !text-accent hover:!bg-gray-50"
+                    @click="lgtm"
+                  >
+                    <heroicons-outline:thumb-up
+                      class="w-5 h-5 group-hover:thumb-up"
+                    />
+                    <span class="ml-1">LGTM</span>
+                  </button>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    class="btn-normal"
+                    :disabled="newComment.length == 0"
+                    @click.prevent="doCreateComment(newComment)"
+                  >
+                    {{ $t("common.comment") }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -303,31 +321,31 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, reactive, watchEffect, Ref } from "vue";
-import { useRouter } from "vue-router";
+import {
+  computed,
+  nextTick,
+  ref,
+  reactive,
+  watch,
+  watchEffect,
+  Ref,
+  onMounted,
+} from "vue";
+import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import type {
   Issue,
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityTaskStatusUpdatePayload,
-  ActivityTaskStatementUpdatePayload,
-  ActivityTaskEarliestAllowedTimeUpdatePayload,
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
 } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
-import {
-  findTaskById,
-  issueActivityActionSentence,
-  issueSlug,
-  sizeToFit,
-  taskSlug,
-} from "@/utils";
+import { findTaskById, issueSlug, sizeToFit, taskSlug } from "@/utils";
 import { IssueBuiltinFieldId } from "@/plugins";
 import { useI18n } from "vue-i18n";
-import dayjs from "dayjs";
 import {
   useCurrentUser,
   useUIStateStore,
@@ -336,6 +354,7 @@ import {
 } from "@/store";
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
+import ActivityActionSentence from "./activity/ActionSentence.vue";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -362,7 +381,7 @@ type ActionIconType =
 
 const { t } = useI18n();
 const activityStore = useActivityStore();
-const router = useRouter();
+const route = useRoute();
 
 const newComment = ref("");
 const newCommentTextArea = ref();
@@ -392,7 +411,7 @@ const keyboardHandler = (e: KeyboardEvent) => {
     }
   } else if (newCommentTextArea.value === document.activeElement) {
     if (e.code == "Enter" && e.metaKey) {
-      doCreateComment();
+      doCreateComment(newComment.value);
     }
   }
 };
@@ -406,16 +425,6 @@ const prepareActivityList = () => {
 };
 
 watchEffect(prepareActivityList);
-
-// The activity list and its anchor is not immediately available when the issue shows up.
-// Thus the scrollBehavior set in the vue router won't work (also tried promise to resolve async with no luck either)
-// So we manually use scrollIntoView after rendering the activity list.
-nextTick(() => {
-  if (router.currentRoute.value.hash) {
-    const el = document.getElementById(router.currentRoute.value.hash.slice(1));
-    el?.scrollIntoView();
-  }
-});
 
 // Need to use computed to make list reactive to activity list changes.
 const activityList = computed((): Activity[] => {
@@ -441,11 +450,11 @@ const cancelEditComment = () => {
   state.editCommentMode = false;
 };
 
-const doCreateComment = () => {
+const doCreateComment = (comment: string, clear = true) => {
   const createActivity: ActivityCreate = {
     type: "bb.issue.comment.create",
     containerId: issue.value.id,
-    comment: newComment.value,
+    comment,
   };
   activityStore.createActivity(createActivity).then(() => {
     useUIStateStore().saveIntroStateByKey({
@@ -453,8 +462,10 @@ const doCreateComment = () => {
       newState: true,
     });
 
-    newComment.value = "";
-    nextTick(() => sizeToFit(newCommentTextArea.value));
+    if (clear) {
+      newComment.value = "";
+      nextTick(() => sizeToFit(newCommentTextArea.value));
+    }
 
     // Because the user just added a comment and we assume she is interested in this
     // issue, and we add her to the subscriber list if she is not there
@@ -468,6 +479,26 @@ const doCreateComment = () => {
     if (!isSubscribed) {
       addSubscriberId(currentUser.value.id);
     }
+  });
+};
+
+const lgtm = (e: Event) => {
+  doCreateComment("LGTM", false);
+
+  // import the effect lib asynchronously
+  import("canvas-confetti").then(({ default: confetti }) => {
+    const button = e.target as HTMLElement;
+    const { left, top, width, height } = button.getBoundingClientRect();
+    const { innerWidth: winWidth, innerHeight: winHeight } = window;
+    // Create a confetti effect from the position of the LGTM button
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: {
+        x: (left + width / 2) / winWidth,
+        y: (top + height / 2) / winHeight,
+      },
+    });
   });
 };
 
@@ -531,6 +562,9 @@ const actionIcon = (activity: Activity): ActionIconType => {
       case "FAILED": {
         return "fail";
       }
+      case "PENDING_APPROVAL": {
+        return "avatar"; // stale approval dismissed.
+      }
     }
   } else if (activity.type == "bb.pipeline.task.file.commit") {
     return "commit";
@@ -580,79 +614,26 @@ const actionSubject = (activity: Activity): ActionSubject => {
   };
 };
 
-const actionSentence = (activity: Activity): string => {
-  if (activity.type.startsWith("bb.issue.")) {
-    const [tid, params] = issueActivityActionSentence(activity);
-    return t(tid, params);
-  }
-  switch (activity.type) {
-    case "bb.pipeline.task.status.update": {
-      const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-      let str = t("activity.sentence.changed");
-      switch (payload.newStatus) {
-        case "PENDING": {
-          if (payload.oldStatus == "RUNNING") {
-            str = t("activity.sentence.canceled");
-          } else if (payload.oldStatus == "PENDING_APPROVAL") {
-            str = t("activity.sentence.approved");
-          }
-          break;
-        }
-        case "RUNNING": {
-          str = t("activity.sentence.started");
-          break;
-        }
-        case "DONE": {
-          str = t("activity.sentence.completed");
-          break;
-        }
-        case "FAILED": {
-          str = t("activity.sentence.failed");
-          break;
-        }
-      }
-      if (activity.creator.id != SYSTEM_BOT_ID) {
-        // If creator is not the robot (which means we do NOT use task name in the subject),
-        // then we append the task name here.
-        const task = findTaskById(issue.value.pipeline, payload.taskId);
-        str += t("activity.sentence.task-name", { name: task.name });
-      }
-      return str;
-    }
-    case "bb.pipeline.task.file.commit": {
-      const payload = activity.payload as ActivityTaskFileCommitPayload;
-      // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
-      return t("activity.sentence.committed-to-at", {
-        file: payload.filePath,
-        branch: payload.branch,
-        repo: payload.repositoryFullPath,
-      });
-    }
-    case "bb.pipeline.task.statement.update": {
-      const payload = activity.payload as ActivityTaskStatementUpdatePayload;
-      return t("activity.sentence.changed-from-to", {
-        name: "SQL",
-        oldValue: payload.oldStatement,
-        newValue: payload.newStatement,
-      });
-    }
-    case "bb.pipeline.task.general.earliest-allowed-time.update": {
-      const payload =
-        activity.payload as ActivityTaskEarliestAllowedTimeUpdatePayload;
-      const newVal = payload.newEarliestAllowedTs;
-      const oldVal = payload.oldEarliestAllowedTs;
-      return t("activity.sentence.changed-from-to", {
-        name: "earliest allowed time",
-        oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
-        newValue: newVal ? dayjs(newVal * 1000) : "Unset",
-      });
-    }
-  }
-  return "";
-};
-
 const fileCommitActivityUrl = (activity: Activity) => {
   const payload = activity.payload as ActivityTaskFileCommitPayload;
   return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/-/commit/${payload.commitId}`;
 };
+
+onMounted(() => {
+  watch(
+    () => route.hash,
+    (hash) => {
+      if (hash.match(/^#activity(\d+)/)) {
+        // use '#activity' element as a fallback
+        const elem =
+          document.querySelector(hash) || document.querySelector("#activity");
+        // We use `setTimeout` here since this should be executed very late.
+        setTimeout(() => elem?.scrollIntoView());
+      }
+    },
+    {
+      immediate: true,
+    }
+  );
+});
 </script>

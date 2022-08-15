@@ -242,7 +242,8 @@
       "migration-schema": "变更 schema",
       "sql-review": "SQL 审查",
       "earliest-allowed-time": "最早执行时间",
-      "ghost-sync": "gh-ost 同步"
+      "ghost-sync": "gh-ost 同步",
+      "statement-type": "语句类型"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
     "comment": "评论",
@@ -432,7 +433,8 @@
       "completed": "完成",
       "failed": "失败",
       "task-name": "任务 {name}",
-      "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}"
+      "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销"
     },
     "subject-prefix": {
       "task": "任务"
@@ -509,7 +511,7 @@
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
-    "vcs-info": "代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以发起变更流程。",
+    "vcs-info": "已开启 VCS 版本管理。选择该数据库会跳转到对应的 Git 仓库以发起变更流程。",
     "alter-single-db": "变更单个数据库",
     "alter-multiple-db": "变更多个数据库",
     "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。"
@@ -529,11 +531,12 @@
     "troubleshoot": "问题排查",
     "transfer-in-db": "转移数据库",
     "request-db": "申请数据库",
-    "from-default-project": "从默认项目",
-    "from-other-projects": "从其他项目",
-    "transfer-in-db-title": "从其他项目转移数据库",
+    "from-unassigned-databases": "从未分配的数据库",
+    "from-projects": "从其他项目",
+    "transfer-in-db-title": "转移数据库",
     "default-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库会放在默认项目中。",
-    "transfer-in-db-alert": "您确定要转移 \"{ dbName }\" 到我们的项目中吗？"
+    "transfer-in-db-alert": "您确定要转移 \"{ dbName }\" 到我们的项目中吗？",
+    "unassigned-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库会放在未分配数据库中。"
   },
   "create-db": {
     "new-database-name": "新数据库名称",
@@ -689,7 +692,7 @@
       "new-user": "第一次使用 Bytebase?",
       "demo-note": "请使用 demo 账号登录",
       "gitlab": "通过 GitLab 登录",
-      "gitlab-demo": "演示模式不支持 GitLab 登录",
+      "3rd-party-auth-demo": "演示模式不支持第三方账号登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录"
     },
     "password-forget": {
@@ -714,9 +717,9 @@
       "tip": "新策略仅对新建工单生效",
       "info": "要更改数据库 schema，该选项控制了是否需要手动审批。",
       "manual": "需要人工审批",
-      "manual-info": "进行中的 schema 改动任务只有被人工审批后才会执行。",
+      "manual-info": "任务只有被人工审批后才会执行。",
       "auto": "无需审批",
-      "auto-info": "进行中的任务无需审核并且会被自动执行。"
+      "auto-info": "如果任务检查都通过的话，任务无需审批并且会被自动执行。"
     },
     "backup": {
       "name": "数据库备份策略",
@@ -751,7 +754,7 @@
     "establish-baseline": "建立新的基线",
     "refreshing-history": "刷新历史中 ...",
     "config-instance": "配置实例",
-    "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。您应该检查当前的基线确实反映了期望的状态。 对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。",
+    "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
     "establish-database-baseline": "建立「{name}」基线",
     "instance-missing-migration-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
@@ -858,7 +861,11 @@
         "retention-period": "保留时长（天）"
       }
     },
-    "backup-policy-violation": "违反了备份策略"
+    "backup-policy-violation": "违反了备份策略",
+    "synced-at": "同步于 {time}",
+    "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}",
+    "view-unassigned-databases": "查看未分配的数据库",
+    "unassigned-databases": "未分配的数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -867,8 +874,8 @@
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",
     "file-path-template-description": "Bytebase 仅会跟踪那些文件路径匹配模版 (相对于指定根目录）的文件。",
-    "file-path-example-normal-migration": "针对普通变更类型的文件路径样例",
-    "file-path-example-baseline-migration": "针对基线变更类型的文件路径样例",
+    "file-path-example-schema-migration": "针对 schema 变更类型的文件路径样例",
+    "file-path-example-data-migration": "针对数据变更类型的文件路径样例",
     "schema-path-template": "Schema 路径模版",
     "schema-writeback-description": "如果指定，在每一次变更之后，Bytebase 将把最新的 Schema 回写到本来触发变更的提交分支，回写的具体路径则是相对于前面指定的根目录。如果您不希望 Bytebase 这样做，则置为空。",
     "schema-writeback-protected-branch": "请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。",
@@ -892,8 +899,9 @@
     "configure-deploy": "配置部署",
     "choose-git-provider-description": "选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema 变更应用到数据库上。",
     "choose-git-provider-visit-workspace": "访问 {workspace} 设置以添加更多 Git 提供方.",
-    "choose-git-provider-contact-workspace-owner": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com, GitHub Enterprise 以及 GitHub.com。",
+    "choose-git-provider-contact-workspace-owner": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
+    "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-search": "搜索仓库",
     "linked": "关联的仓库",
     "role-provider": "项目角色权限提供方",
@@ -919,7 +927,7 @@
       "connection-failure": "连接失败",
       "missing-migration-schema": "缺少变更 Schema",
       "schema-drift": "Schema 偏差",
-      "backup-enforcement-viloation": "违反备份策略约束",
+      "backup-enforcement-violation": "违反备份策略约束",
       "missing-backup": "缺少备份"
     },
     "action": {
@@ -960,7 +968,7 @@
       "recent-activity": "近期@.lower:{'common.activities'}",
       "in-progress": "进行中",
       "recently-closed": "近期结束",
-      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于默认项目中，之后您可以再将他们转移到适当的项目中。",
+      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。",
       "no-db-prompt": "没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。"
     },
     "webhook": {
@@ -1056,7 +1064,7 @@
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "github-com-admin-requirement": "您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
-        "ouath-info-correct": "OAuth 信息验证成功",
+        "oauth-info-correct": "OAuth 信息验证成功",
         "check-oauth-info-match": "请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。",
         "add-success": "成功添加了 Git 提供方「{vcs}」",
         "choose": "选择 Git 提供方",
@@ -1080,6 +1088,8 @@
           "github-login-as-admin": "以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。",
           "github-visit-admin-page": "进入组织 Settings 页面，然后导航到「Developer settings > OAuth Apps」分区，再点击「Register an application」。",
           "github-paste-oauth-info": "从刚创建好的应用上粘贴它的 Client ID 和 Client secret 到下面的字段。",
+          "copy-homepage-url": "Homepage URL 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。",
+          "copy-redirect-uri": "Redirect URI 已复制到剪切板，请粘贴至 OAuth 应用的对应字段内。",
           "direct-link": "直达链接",
           "create-oauth-app": "使用如下信息来创建您的 Bytebase OAuth 应用。",
           "gitlab-application-id-error": "应用 ID 必须是 64 个字母长度",
@@ -1190,7 +1200,7 @@
     "loading-databases": "加载数据库信息...",
     "close-pane": "关闭面板",
     "loading-data": "加载数据中...",
-    "table-empty-placehoder": "点击 ”运行“ 执行查询",
+    "table-empty-placeholder": "点击 ”运行“ 执行查询",
     "no-rows-found": "暂无数据",
     "download-as-csv": "下载为 CSV 格式",
     "download-as-json": "下载为 JSON 格式",
@@ -1236,7 +1246,9 @@
     "save-sheet-input-placeholder": "请输入工作表名称",
     "untitled-sheet": "未命名工作表",
     "format": "格式化",
-    "sql-review-result": "SQL 检查结果"
+    "sql-review-result": "SQL 检查结果",
+    "alter-table": "修改表结构",
+    "open-connection": "打开连接"
   },
   "label": {
     "empty-label-value": "<空值>",

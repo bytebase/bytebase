@@ -16,7 +16,6 @@ import (
 )
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
-
 	// for now, we only support Gitlab
 	g.GET("/auth/provider", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -76,7 +75,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			}
 		case api.PrincipalAuthProviderGitlabSelfHost, api.PrincipalAuthProviderGitHubCom:
 			{
-				login := &api.GitlabLogin{}
+				login := &api.VCSLogin{}
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformed login request").SetInternal(err)
 				}
@@ -142,15 +141,23 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				// Create a new user if not exist
 				if user == nil {
 					if userInfo.PublicEmail == "" {
-						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.github.com/en/account-and-profile")
+						profileLink := "https://docs.github.com/en/account-and-profile"
+						if authProvider == api.PrincipalAuthProviderGitlabSelfHost {
+							profileLink = "https://docs.gitlab.com/ee/user/profile/#set-your-public-email"
+						}
+						return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Please configure your public email first, %s.", profileLink))
 					}
 					// If the user logins via VCS for the first time, we will generate a random
 					// password. The random password is supposed to be not guessable. If user wants
 					// to login via password, they need to set the new password from the profile
 					// page.
+					password, err := common.RandomString(20)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random password").SetInternal(err)
+					}
 					signUp := &api.SignUp{
 						Email:    userInfo.PublicEmail,
-						Password: common.RandomString(20),
+						Password: password,
 						Name:     userInfo.Name,
 					}
 					var httpError *echo.HTTPError

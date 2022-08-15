@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :id="selectedRule.type.replace(/\./g, '-')">
     <div
       class="flex justify-center items-center py-4 px-2 group cursor-pointer hover:bg-gray-100"
       :class="active ? 'bg-gray-100' : ''"
@@ -14,11 +14,20 @@
           <h1 class="text-base font-semibold text-gray-900">
             {{ getRuleLocalization(selectedRule.type).title }}
           </h1>
-          <BBBadge
-            :text="$t(`sql-review.engine.${selectedRule.engine.toLowerCase()}`)"
-            :can-remove="false"
-          />
           <SQLRuleLevelBadge :level="selectedRule.level" />
+          <img
+            v-for="engine in selectedRule.engineList"
+            :key="engine"
+            class="h-4 w-auto"
+            :src="getEngineIcon(engine)"
+          />
+          <a
+            :href="`https://www.bytebase.com/docs/sql-review/review-rules/supported-rules#${selectedRule.type}`"
+            target="__blank"
+            class="flex flex-row space-x-2 items-center text-base text-gray-500 hover:text-gray-900"
+          >
+            <heroicons-outline:external-link class="w-4 h-4" />
+          </a>
         </div>
         <div class="text-sm text-gray-400 ml-7">
           {{ getRuleLocalization(selectedRule.type).description }}
@@ -130,6 +139,7 @@ import {
   RuleConfigComponent,
   getRuleLocalization,
   getRuleLocalizationKey,
+  SchemaRuleEngineType,
 } from "@/types/sqlReview";
 
 type PayloadValueList = (string | number | string[])[];
@@ -193,6 +203,10 @@ const pushToList = (i: number, e: any) => {
 const getStringPayload = (i: number): string => {
   return state.payload[i] as string;
 };
+
+const getEngineIcon = (engine: SchemaRuleEngineType) =>
+  new URL(`../../../assets/db-${engine.toLowerCase()}.png`, import.meta.url)
+    .href;
 </script>
 
 <style scoped>

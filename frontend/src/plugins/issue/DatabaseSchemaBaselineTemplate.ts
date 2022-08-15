@@ -1,6 +1,6 @@
 import {
   IssueCreate,
-  PipelineApporvalPolicyPayload,
+  PipelineApprovalPolicyPayload,
   StageCreate,
   UNKNOWN_ID,
 } from "../../types";
@@ -23,7 +23,7 @@ const template: IssueTemplate = {
             status:
               (
                 ctx.approvalPolicyList[i]
-                  .payload as PipelineApporvalPolicyPayload
+                  .payload as PipelineApprovalPolicyPayload
               ).value == "MANUAL_APPROVAL_ALWAYS"
                 ? "PENDING_APPROVAL"
                 : "PENDING",

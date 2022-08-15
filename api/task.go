@@ -54,10 +54,10 @@ const (
 	TaskDatabaseBackup TaskType = "bb.task.database.backup"
 	// TaskDatabaseRestore is the task type for restoring databases.
 	TaskDatabaseRestore TaskType = "bb.task.database.restore"
-	// TaskDatabasePITRRestore is the task type for restoring databases using PITR.
-	TaskDatabasePITRRestore TaskType = "bb.task.database.pitr.restore"
-	// TaskDatabasePITRCutover is the task type for swapping the pitr and original database.
-	TaskDatabasePITRCutover TaskType = "bb.task.database.pitr.cutover"
+	// TaskDatabaseRestorePITRRestore is the task type for restoring databases using PITR.
+	TaskDatabaseRestorePITRRestore TaskType = "bb.task.database.restore.pitr.restore"
+	// TaskDatabaseRestorePITRCutover is the task type for swapping the pitr and original database.
+	TaskDatabaseRestorePITRCutover TaskType = "bb.task.database.restore.pitr.cutover"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
@@ -68,9 +68,23 @@ const (
 type TaskDatabasePITRRestorePayload struct {
 	// The project owning the database.
 	ProjectID int `json:"projectId,omitempty"`
+
+	// DatabaseName is the target database name.
+	// It is nil for the case of in-place PITR.
+	DatabaseName *string `json:"databaseName,omitempty"`
+
+	// TargetInstanceId must be within the same environment as the instance of the original database.
+	// Only used when doing PITR to a new database now.
+	TargetInstanceID *int `json:"targetInstanceId,omitempty"`
+
+	// BackupID and PointInTimeTs only allow one non-nil.
+
+	// Only used when doing restore full backup only.
+	BackupID *int `json:"backupId,omitempty"`
+
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
-	PointInTimeTs int64 `json:"pointInTimeTs,omitempty"`
+	PointInTimeTs *int64 `json:"pointInTimeTs,omitempty"`
 }
 
 // TaskDatabasePITRCutoverPayload is the task payload for PITR cutover.
