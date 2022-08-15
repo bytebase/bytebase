@@ -343,17 +343,18 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
-	ok, err := s.canPrincipalBeAssignee(ctx, creatorID, environmentID, issueCreate.ProjectID, issueCreate.Type)
+	// Create the pipeline, stages, and tasks.
+	if issueCreate.ValidateOnly {
+		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
+	}
+
+	// check the assignee if it's NOT ValidateOnly
+	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, environmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
 	}
 	if !ok {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
-	}
-
-	// Create the pipeline, stages, and tasks.
-	if issueCreate.ValidateOnly {
-		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
 	}
 
 	pipelineCreate.CreatorID = creatorID
