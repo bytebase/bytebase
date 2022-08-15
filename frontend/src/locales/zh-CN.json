@@ -656,7 +656,8 @@
     "archive": "归档此环境",
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
-    "restore": "恢复这个环境"
+    "restore": "恢复此环境",
+    "successfully-updated-environment": "环境'{0}'更新成功"
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",
@@ -719,7 +720,11 @@
       "manual": "需要人工审批",
       "manual-info": "任务只有被人工审批后才会执行。",
       "auto": "无需审批",
-      "auto-info": "如果任务检查都通过的话，任务无需审批并且会被自动执行。"
+      "auto-info": "如果任务检查都通过的话，任务无需审批并且会被自动执行。",
+      "assignee-group": {
+        "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者审批。",
+        "project-owner": "需要项目所有者审批。"
+      }
     },
     "backup": {
       "name": "数据库备份策略",

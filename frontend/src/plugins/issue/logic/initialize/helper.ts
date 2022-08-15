@@ -4,16 +4,11 @@ import {
   Issue,
   IssueCreate,
   Principal,
+  SYSTEM_BOT_ID,
   TaskDatabaseSchemaUpdatePayload,
   UNKNOWN_ID,
 } from "@/types";
-import { isDBAOrOwner } from "@/utils";
-import {
-  useActuatorStore,
-  useCurrentUser,
-  useIssueStore,
-  usePrincipalStore,
-} from "@/store";
+import { useActuatorStore, useCurrentUser, useIssueStore } from "@/store";
 import { BuildNewIssueContext, VALIDATE_ONLY_SQL } from "../common";
 
 export class IssueCreateHelper {
@@ -29,16 +24,6 @@ export class IssueCreateHelper {
     this.context = context;
     this.issueStore = useIssueStore();
     this.currentUser = useCurrentUser();
-  }
-
-  findDBAOrOwner(): Principal {
-    const currentUser = this.currentUser.value;
-    if (isDBAOrOwner(currentUser.role)) return currentUser;
-
-    const userList = usePrincipalStore().principalList;
-
-    // In bytebase, we always have at least 1 DBA or Owner, so it's safe here.
-    return userList.find((user) => isDBAOrOwner(user.role))!;
   }
 
   async prepare(): Promise<IssueCreate> {
@@ -66,7 +51,7 @@ export class IssueCreateHelper {
       // validateOnly does not support assigneeId=-1
       // so we need to specify here
       // but will reset this to -1 if route.query.assignee is empty
-      assigneeId: this.findDBAOrOwner().id,
+      assigneeId: SYSTEM_BOT_ID,
       createContext: {},
       payload: {},
     };

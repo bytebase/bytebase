@@ -93,6 +93,7 @@ const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
 const DEFAULT_NEW_APPROVAL_POLICY: PolicyUpsert = {
   payload: {
     value: DefaultApprovalPolicy,
+    assigneeGroupList: [],
   },
 };
 
