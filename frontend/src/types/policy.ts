@@ -1,10 +1,12 @@
 import {
   RowStatus,
   Environment,
+  IssueType,
   PolicyId,
   Principal,
   RuleType,
   RuleLevel,
+  SubsetOf,
 } from ".";
 
 export type PolicyType =
@@ -18,6 +20,7 @@ export type PipelineApprovalPolicyValue =
 
 export type PipelineApprovalPolicyPayload = {
   value: PipelineApprovalPolicyValue;
+  assigneeGroupList: AssigneeGroup[];
 };
 
 export const DefaultApprovalPolicy: PipelineApprovalPolicyValue =
@@ -39,6 +42,21 @@ export type SQLReviewPolicyPayload = {
     level: RuleLevel;
     payload: string;
   }[];
+};
+
+export type AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA" | "PROJECT_OWNER";
+
+export const DefaultAssigneeGroup: AssigneeGroupValue =
+  "WORKSPACE_OWNER_OR_DBA";
+
+export type AssigneeGroup = {
+  issueType: SubsetOf<
+    IssueType,
+    | "bb.issue.database.schema.update"
+    | "bb.issue.database.data.update"
+    | "bb.issue.database.schema.update.ghost"
+  >;
+  value: AssigneeGroupValue;
 };
 
 export type PolicyPayload =
