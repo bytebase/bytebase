@@ -1,1 +1,1 @@
-export type SubSetOf<T, S extends T> = S;
+export type SubsetOf<T, S extends T> = S;

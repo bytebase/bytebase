@@ -6,7 +6,7 @@ import {
   Principal,
   RuleType,
   RuleLevel,
-  SubSetOf,
+  SubsetOf,
 } from ".";
 
 export type PolicyType =
@@ -50,7 +50,7 @@ export const DefaultAssigneeGroup: AssigneeGroupValue =
   "WORKSPACE_OWNER_OR_DBA";
 
 export type AssigneeGroup = {
-  issueType: SubSetOf<
+  issueType: SubsetOf<
     IssueType,
     | "bb.issue.database.schema.update"
     | "bb.issue.database.data.update"
