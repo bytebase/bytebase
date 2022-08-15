@@ -7,6 +7,7 @@ import StandardModeProvider from "./StandardModeProvider";
 export * from "./base";
 export * from "./common";
 export * from "./extra";
+export * from "./assignee";
 export * from "./transition";
 export * from "./utils";
 

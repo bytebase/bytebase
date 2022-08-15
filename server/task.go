@@ -497,6 +497,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	return taskPatched, nil
 }
 
+// canPrincipalBeAssignee checks if a principal could be the assignee of an issue, judging by the principal role and the environment policy.
 func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
@@ -510,8 +511,8 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		}
 	}
 	if groupValue == nil {
-		// default
-		// the assignee group is the workspace owner and DBA role.
+		// no value is set, fallback to default.
+		// the assignee group is the workspace owner and DBA.
 		principal, err := s.store.GetPrincipalByID(ctx, principalID)
 		if err != nil {
 			return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
@@ -523,7 +524,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 			return true, nil
 		}
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
-		// as the policy says, the assignee group is the project owner.
+		// the assignee group is the project owner.
 		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
 			ProjectID:   &projectID,
 			PrincipalID: &principalID,
@@ -531,7 +532,10 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		if err != nil {
 			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", projectID, principalID, err)
 		}
-		if member != nil && member.Role == string(api.Owner) {
+		if member == nil {
+			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
+		}
+		if member.Role == string(api.Owner) {
 			return true, nil
 		}
 	}

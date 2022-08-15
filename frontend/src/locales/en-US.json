@@ -655,7 +655,8 @@
     "archive": "Archive this environment",
     "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
     "create": "Create Environment",
-    "restore": "Restore this environment"
+    "restore": "Restore this environment",
+    "successfully-updated-environment": "Successfully updated environment '{name}'."
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",
@@ -718,7 +719,11 @@
       "manual": "Require manual approval",
       "manual-info": "Tasks will only be executed after being manually approved.",
       "auto": "Skip manual approval",
-      "auto-info": "Tasks will be approved and executed automatically if all task checks pass."
+      "auto-info": "Tasks will be approved and executed automatically if all task checks pass.",
+      "assignee-group": {
+        "workspace-owner-or-dba": "Require approval from DBA or workspace owner.",
+        "project-owner": "Require approval from project owner."
+      }
     },
     "backup": {
       "name": "Database backup schedule policy",
