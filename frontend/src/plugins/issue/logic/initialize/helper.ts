@@ -11,6 +11,7 @@ import { isDBAOrOwner } from "@/utils";
 import {
   useActuatorStore,
   useCurrentUser,
+  useInstanceStore,
   useIssueStore,
   usePrincipalStore,
 } from "@/store";
@@ -21,6 +22,7 @@ export class IssueCreateHelper {
   issue: Issue | null;
   context: BuildNewIssueContext;
   issueStore: ReturnType<typeof useIssueStore>;
+  intanceStore: ReturnType<typeof useInstanceStore>;
   currentUser: Ref<Principal>;
 
   constructor(context: BuildNewIssueContext) {
@@ -28,6 +30,7 @@ export class IssueCreateHelper {
     this.issue = null;
     this.context = context;
     this.issueStore = useIssueStore();
+    this.intanceStore = useInstanceStore();
     this.currentUser = useCurrentUser();
   }
 
