@@ -466,16 +466,20 @@ const allowEditAssignee = computed(() => {
   if (create.value) {
     return true;
   }
-  // We allow the current assignee or DBA to re-assign the issue.
-  // Though only DBA can be assigned to the issue, the current
-  // assignee might not have DBA role in case its role is revoked after
-  // being assigned to the issue.
   const issueEntity = issue.value as Issue;
   if (issueEntity.id === ONBOARDING_ISSUE_ID) {
     return false;
   }
   if (issueEntity.status !== "OPEN") {
     return false;
+  }
+
+  // Who can re-assign the issue?
+  // - The issue creator
+  // - The current assignee
+  // - Workspace owners and DBAs (they always have the highest privileges)
+  if (currentUser.value.id === issueEntity.creator.id) {
+    return true;
   }
   if (currentUser.value.id === issueEntity.assignee.id) {
     return true;
