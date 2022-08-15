@@ -8,12 +8,11 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   UNKNOWN_ID,
 } from "@/types";
-import { isDBAOrOwner } from "@/utils";
 import {
   useActuatorStore,
   useCurrentUser,
   useIssueStore,
-  usePrincipalStore,
+  useInstanceStore,
 } from "@/store";
 import { BuildNewIssueContext, VALIDATE_ONLY_SQL } from "../common";
 
