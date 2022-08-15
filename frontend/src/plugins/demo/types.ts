@@ -6,6 +6,7 @@ export interface ProcessData {
 
 export interface DemoData {
   process: ProcessData[];
+  hint: HintData[];
 }
 
 type StepType = "click" | "change";

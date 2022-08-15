@@ -43,7 +43,7 @@
       class="my-4 bg-gray-200 w-full flex flex-row justify-start items-center rounded-full overflow-hidden"
     >
       <div
-        class="h-1 bg-indigo-600 rounded-full transition-all"
+        class="h-1 bg-indigo-600 rounded-full transition-all duration-500"
         :style="{
           width: processBarWidth,
         }"
@@ -86,8 +86,10 @@
         </button>
         <button
           class="w-auto flex flex-row justify-center items-center border px-3 leading-10 select-none rounded-md hover:opacity-60"
+          @click="handleDeployNowButtonClick"
         >
-          <heroicons-outline:book-open class="w-5 h-auto mr-2" /> Deploy now
+          <img src="../../../assets/deploy.svg" class="w-5 h-auto mr-2" />
+          Deploy now
         </button>
         <button
           class="w-auto flex flex-row justify-center items-center px-3 leading-10 select-none rounded-md font-medium bg-indigo-600 text-white shadow hover:opacity-80"
@@ -100,7 +102,7 @@
       <hr class="w-full bg-gray-50 mt-6" />
 
       <div class="mt-6 w-full grid grid-cols-3 leading-9">
-        <p class="col-span-1">More quickly demos:</p>
+        <p class="col-span-1">More quick demos:</p>
         <div class="w-full col-span-2 grid grid-cols-2 leading-9">
           <a
             class="text-indigo-600 w-full flex flex-row justify-start items-center hover:underline"
@@ -257,6 +259,13 @@ const handleRestartButtonClick = async () => {
   }
 };
 
+const handleDeployNowButtonClick = () => {
+  window.open(
+    "https://www.bytebase.com/docs/get-started/install/overview",
+    "_blank"
+  );
+};
+
 const handleBackToDemoButtonClick = async () => {
   const process = first(processDataList.value);
   if (process) {
@@ -280,7 +289,7 @@ watch(currentProcessIndex, () => {
 
 <style scoped>
 .process-bar-container {
-  @apply max-w-full fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-0 flex flex-col justify-start items-center bg-white px-8 py-6 rounded-lg;
+  @apply max-w-full fixed bottom-4 left-1/2 -translate-x-1/2 translate-y-0 flex flex-col justify-start items-center bg-white px-8 py-6 rounded-lg;
   min-width: 600px;
   z-index: 10001;
   box-shadow: 0 0 24px 8px rgb(0 0 0 / 20%);
