@@ -932,18 +932,27 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	if payloadRestore.BackupID == nil {
-		// PITR
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Restore PITR database %s", originDatabase.Name),
-			InstanceID: originDatabase.InstanceID,
-			DatabaseID: &originDatabase.ID,
-			Status:     api.TaskPendingApproval,
-			Type:       api.TaskDatabaseRestorePITRRestore,
-			Payload:    string(bytesRestore),
-		})
+		if payloadRestore.TargetInstanceID != nil {
+			// PITR to a new database
+			taskCreateList = append(taskCreateList, api.TaskCreate{
+				Name:       fmt.Sprintf("Restore PITR database %s to database %s", originDatabase.Name, *payloadRestore.DatabaseName),
+				InstanceID: originDatabase.InstanceID,
+				Status:     api.TaskPendingApproval,
+				Type:       api.TaskDatabaseRestorePITRRestore,
+				Payload:    string(bytesRestore),
+			})
+		}
 
 		if payloadRestore.TargetInstanceID == nil {
 			// PITR inplace
+			taskCreateList = append(taskCreateList, api.TaskCreate{
+				Name:       fmt.Sprintf("Restore PITR database %s", originDatabase.Name),
+				InstanceID: originDatabase.InstanceID,
+				Status:     api.TaskPendingApproval,
+				DatabaseID: &originDatabase.ID,
+				Type:       api.TaskDatabaseRestorePITRRestore,
+				Payload:    string(bytesRestore),
+			})
 			payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 			bytesCutover, err := json.Marshal(payloadCutover)
 			if err != nil {
