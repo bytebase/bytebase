@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
@@ -42,16 +43,27 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 		return true, nil, fmt.Errorf("only one of BackupID and time point can be set")
 	}
 
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
+	if err != nil {
+		return true, nil, err
+	}
+	defer driver.Close(ctx)
+
+	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
+	if err != nil {
+		return true, nil, err
+	}
+
 	// There are 2 * 2 = 4 kinds of task by combination of the following cases:
 	// 1. in-place or restore to new database: the latter does not create database with _pitr/_del suffix
 	// 2. backup restore or Point-in-Time restore: the former does not apply binlog/wal
 
 	if payload.BackupID != nil {
-		resultPayload, err := exec.doBackupRestore(ctx, server, task, payload)
+		resultPayload, err := exec.doBackupRestore(ctx, driver, issue, server, task, payload)
 		return true, resultPayload, err
 	}
 
-	resultPayload, err := exec.doPITRRestore(ctx, server, task, payload)
+	resultPayload, err := exec.doPITRRestore(ctx, driver, issue, server, task, payload)
 	return true, resultPayload, err
 }
 
@@ -69,13 +81,7 @@ func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
 	return progress.(api.Progress)
 }
 
-func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	// TODO(dragonly): backup restore/PITR to new db do not require a cutover task.
-	// The current implementation here is actually not working, because it restores the backup directly to the target database, and the later cutover task will fail.
-	if payload.DatabaseName == nil {
-		return nil, fmt.Errorf("unexpected nil database name for backup restore")
-	}
-	// Restore full backup only
+func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, driver db.Driver, issue *api.Issue, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find backup with ID %d, error: %w", *payload.BackupID, err)
@@ -86,88 +92,115 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	// TODO(dragonly): We should let users restore the backup even if the source database is gone.
 	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
-		return nil, fmt.Errorf("failed to find database for the backup: %w", err)
+		return nil, fmt.Errorf("failed to find the source database of the backup, error: %w", err)
 	}
 	if sourceDatabase == nil {
-		return nil, fmt.Errorf("source database ID not found %v", backup.DatabaseID)
+		return nil, fmt.Errorf("source database of backup %q with ID %d not found", backup.Name, backup.DatabaseID)
 	}
 
-	targetInstanceID := task.InstanceID
+	// case 1: backup restore to a new database
+	if payload.DatabaseName != nil {
+		targetInstanceID := task.InstanceID
+		if payload.TargetInstanceID != nil {
+			targetInstanceID = *payload.TargetInstanceID
+		}
+		targetDatabaseFind := &api.DatabaseFind{
+			InstanceID: &targetInstanceID,
+			Name:       payload.DatabaseName,
+		}
+		targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find target database %q in instance %q, error: %w", *payload.DatabaseName, task.Instance.Name, err)
+		}
+		if targetDatabase == nil {
+			return nil, fmt.Errorf("target database %q not found in instance %q, error: %w", *payload.DatabaseName, task.Instance.Name, err)
+		}
+		log.Debug("Start to restore from backup to a new database.",
+			zap.String("source_instance", sourceDatabase.Instance.Name),
+			zap.String("source_database", sourceDatabase.Name),
+			zap.String("target_instance", targetDatabase.Instance.Name),
+			zap.String("target_database", targetDatabase.Name),
+			zap.String("backup", backup.Name),
+		)
+		// Restore the database to the target database.
+		if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
+			return nil, err
+		}
+		// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
+		// For now, we do this after restoreDatabase, since this one is unlikely to fail.
+		migrationID, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task)
+		if err != nil {
+			return nil, err
+		}
+
+		// Patch the backup id after we successfully restore the database using the backup.
+		// restoringDatabase is changing the customer database instance, while here we are changing our own meta db,
+		// and since we can't guarantee cross database transaction consistency, there is always a chance to have
+		// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
+		databasePatch := &api.DatabasePatch{
+			ID:             targetDatabase.ID,
+			UpdaterID:      api.SystemBotID,
+			SourceBackupID: &backup.ID,
+		}
+		if _, err := server.store.PatchDatabase(ctx, databasePatch); err != nil {
+			return nil, fmt.Errorf("failed to patch database source with ID %d and backup ID %d after restore, error: %w", targetDatabase.ID, backup.ID, err)
+		}
+
+		// Sync database schema after restore is completed.
+		if err := server.syncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
+			log.Error("failed to sync database schema",
+				zap.String("instance", targetDatabase.Instance.Name),
+				zap.String("databaseName", targetDatabase.Name),
+			)
+		}
+
+		return &api.TaskRunResultPayload{
+			Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
+			MigrationID: migrationID,
+			Version:     version,
+		}, nil
+	}
+
+	// case 2: in-place backup restore
+	// TODO(dragonly): Check this when creating issue.
 	if payload.TargetInstanceID != nil {
-		// For now, we just support restore full backup to the same instance with the origin database.
-		// But for generality, we will use TargetInstanceID in payload to find the target instance.
-		targetInstanceID = *payload.TargetInstanceID
+		return nil, fmt.Errorf("expect targetInstanceId to be nil because databaseName is nil in TaskDatabasePITRRestorePayload")
 	}
-
-	targetDatabaseFind := &api.DatabaseFind{
-		InstanceID: &targetInstanceID,
-		Name:       payload.DatabaseName,
-	}
-
-	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find target database %q in instance %q: %w", *payload.DatabaseName, task.Instance.Name, err)
-	}
-	if targetDatabase == nil {
-		return nil, fmt.Errorf("target database %q not found in instance %q: %w", *payload.DatabaseName, task.Instance.Name, err)
-	}
-	log.Debug("Start database restore from backup...",
+	log.Debug("Start to restore database in place from backup.",
 		zap.String("source_instance", sourceDatabase.Instance.Name),
 		zap.String("source_database", sourceDatabase.Name),
-		zap.String("target_instance", targetDatabase.Instance.Name),
-		zap.String("target_database", targetDatabase.Name),
-		zap.String("backup", backup.Name),
-	)
-	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
-		return nil, err
+		zap.String("database", task.Database.Name),
+		zap.String("instance", task.Instance.Name),
+		zap.String("backup", backup.Name))
+
+	mysqlDriver, ok := driver.(*mysql.Driver)
+	if !ok {
+		log.Error("Failed to cast driver to mysql.Driver")
+		return nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-	// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
-	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	migrationID, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task)
+	backupFile, err := server.openBackupFile(backup)
 	if err != nil {
 		return nil, err
 	}
+	defer backupFile.Close()
 
-	// Patch the backup id after we successfully restore the database using the backup.
-	// restoringDatabase is changing the customer database instance, while here we are changing our own meta db,
-	// and since we can't guarantee cross database transaction consistency, there is always a chance to have
-	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
-	databasePatch := &api.DatabasePatch{
-		ID:             targetDatabase.ID,
-		UpdaterID:      api.SystemBotID,
-		SourceBackupID: &backup.ID,
+	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, nil, ""); err != nil {
+		return nil, fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}
-	if _, err = server.store.PatchDatabase(ctx, databasePatch); err != nil {
-		return nil, fmt.Errorf("failed to patch database source with ID %d and backup ID %d after restore, error: %w", targetDatabase.ID, backup.ID, err)
-	}
-
-	// Sync database schema after restore is completed.
-	if err := server.syncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
-		log.Error("failed to sync database schema",
-			zap.String("instance", targetDatabase.Instance.Name),
-			zap.String("databaseName", targetDatabase.Name),
-		)
+	if err := mysqlDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
+		log.Error("failed to restore full backup in the PITR database",
+			zap.Int("issueID", issue.ID),
+			zap.String("databaseName", task.Database.Name),
+			zap.Error(err))
+		return nil, fmt.Errorf("failed to perform a backup restore in the PITR database, error: %w", err)
 	}
 
 	return &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
-		MigrationID: migrationID,
-		Version:     version,
+		Detail: fmt.Sprintf("Restored database %q in place from backup %q", task.Database.Name, backup.Name),
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
-	if err != nil {
-		return nil, err
-	}
-	defer driver.Close(ctx)
-	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
-	if err != nil {
-		return nil, err
-	}
-
+func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, driver db.Driver, issue *api.Issue, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	backupStatus := api.BackupStatusDone
 	backupList, err := server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
 	if err != nil {
@@ -198,13 +231,12 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 		return nil, fmt.Errorf("failed to get latest backup before or equal to %s, error: %w", targetTsHuman, err)
 	}
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
-	backupFileName := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
-	backupFile, err := os.Open(backupFileName)
+
+	backupFile, err := server.openBackupFile(backup)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open backup file %q, error: %w", backupFileName, err)
+		return nil, err
 	}
 	defer backupFile.Close()
-	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
 
 	log.Debug("Start creating and restoring PITR database",
 		zap.String("instance", task.Instance.Name),
@@ -214,9 +246,8 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BRANCH migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
-
 	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
-	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
+	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, &startBinlogInfo, binlogDir); err != nil {
 		return nil, fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}
 
@@ -246,19 +277,32 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo api.BinlogInfo, binlogDir string) error {
+func (s *Server) openBackupFile(backup *api.Backup) (*os.File, error) {
+	backupFileName := getBackupAbsFilePath(s.profile.DataDir, backup.DatabaseID, backup.Name)
+	backupFile, err := os.Open(backupFileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open backup file %q, error: %w", backupFileName, err)
+	}
+	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
+	return backupFile, nil
+}
+
+func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo *api.BinlogInfo, binlogDir string) error {
 	backupFileInfo, err := backupFile.Stat()
 	if err != nil {
 		return fmt.Errorf("failed to get stat of backup file %q, error: %w", backupFile.Name(), err)
 	}
 	backupFileBytes := backupFileInfo.Size()
-	replayBinlogPaths, err := mysql.GetBinlogReplayList(startBinlogInfo, binlogDir)
-	if err != nil {
-		return fmt.Errorf("failed to get binlog replay list with startBinlogInfo %+v in binlog directory %q, error: %w", startBinlogInfo, binlogDir, err)
-	}
-	totalBinlogBytes, err := common.GetFileSizeSum(replayBinlogPaths)
-	if err != nil {
-		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
+	var totalBinlogBytes int64
+	if startBinlogInfo != nil {
+		replayBinlogPaths, err := mysql.GetBinlogReplayList(*startBinlogInfo, binlogDir)
+		if err != nil {
+			return fmt.Errorf("failed to get binlog replay list with startBinlogInfo %+v in binlog directory %q, error: %w", *startBinlogInfo, binlogDir, err)
+		}
+		totalBinlogBytes, err = common.GetFileSizeSum(replayBinlogPaths)
+		if err != nil {
+			return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
+		}
 	}
 
 	go func() {
