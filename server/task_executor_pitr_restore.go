@@ -53,7 +53,6 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	resultPayload, err := exec.doPITRRestore(ctx, server, task, payload)
 	return true, resultPayload, err
-
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
