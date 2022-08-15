@@ -566,6 +566,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
 
+	// If migration type is establishing baseline and project's workflow is VCS,
+	// then the context must contain a VCS push event field.
+	if c.MigrationType == db.Baseline && project.WorkflowType == api.VCSWorkflow {
+		if c.VCSPushEvent == nil {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create establishing baseline issue for VCS workflow project, VCSPushEvent missing")
+		}
+	}
+
 	schemaVersion := common.DefaultMigrationVersion()
 	// Tenant mode project pipeline has its own generation.
 	if project.TenantMode == api.TenantModeTenant {
