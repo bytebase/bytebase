@@ -30,9 +30,7 @@
           class="w-full"
           :disabled="!allowEditAssignee"
           :selectedId="create ? (issue as IssueCreate).assigneeId : (issue as Issue).assignee?.id"
-          :allowed-role-list="['OWNER', 'DBA']"
-          :project="project"
-          :show-project-owner="allowProjectOwnerAsAssignee"
+          :custom-filter="filterPrincipal"
           data-label="bb-assignee-select"
           @select-principal-id="
             (principalId: number) => {
@@ -300,6 +298,7 @@ import type {
   Instance,
   TaskDatabaseCreatePayload,
   DatabaseLabel,
+  Principal,
 } from "@/types";
 import { ONBOARDING_ISSUE_ID } from "@/types";
 import {
@@ -309,6 +308,7 @@ import {
   isReservedDatabaseLabel,
   hidePrefix,
   taskSlug,
+  isOwnerOfProject,
 } from "@/utils";
 import {
   hasFeature,
@@ -581,5 +581,11 @@ const selectTaskId = (taskId: TaskId) => {
   selectStageOrTask(stage.id, slug);
 };
 
-const allowProjectOwnerAsAssignee = useAllowProjectOwnerToApprove();
+const allowProjectOwnerToApprove = useAllowProjectOwnerToApprove();
+const filterPrincipal = (principal: Principal): boolean => {
+  if (allowProjectOwnerToApprove.value) {
+    return isOwnerOfProject(principal, project.value);
+  }
+  return isDBAOrOwner(principal.role);
+};
 </script>

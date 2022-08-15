@@ -57,9 +57,8 @@ import {
   RoleType,
   SYSTEM_BOT_ID,
   EMPTY_ID,
-  Project,
 } from "../types";
-import { isDBA, isDeveloper, isOwner, isOwnerOfProject } from "../utils";
+import { isDBA, isDeveloper, isOwner } from "../utils";
 import { BBComboBox } from "../bbkit";
 import { useMemberStore, usePrincipalStore } from "@/store";
 import { useI18n } from "vue-i18n";
@@ -101,13 +100,9 @@ export default defineComponent({
       default: true,
       type: Boolean,
     },
-    project: {
-      type: Object as PropType<Project>,
+    customFilter: {
+      type: Function as PropType<(principal: Principal) => boolean>,
       default: undefined,
-    },
-    showProjectOwner: {
-      type: Boolean,
-      default: false,
     },
   },
   emits: ["select-principal-id"],
@@ -147,10 +142,8 @@ export default defineComponent({
           return true;
         }
 
-        if (props.project && props.showProjectOwner) {
-          if (isOwnerOfProject(item, props.project)) {
-            return true;
-          }
+        if (typeof props.customFilter === "function") {
+          return props.customFilter(item);
         }
 
         return (
