@@ -12,7 +12,7 @@
     <template #body="{ rowData: table }">
       <BBTableCell :left-padding="4">
         <div class="flex items-center space-x-2">
-          <span>{{ table.name }}</span>
+          <EllipsisText>{{ table.name }}</EllipsisText>
           <BBBadge
             v-if="isGhostTable(table)"
             text="gh-ost"
@@ -61,6 +61,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Table } from "@/types";
 import { bytesToString, databaseSlug, isGhostTable } from "@/utils";
+import EllipsisText from "@/components/EllipsisText.vue";
 
 type LocalState = {
   showReservedTableList: boolean;
@@ -68,6 +69,7 @@ type LocalState = {
 
 export default defineComponent({
   name: "TableTable",
+  components: { EllipsisText },
   props: {
     tableList: {
       required: true,
