@@ -15,10 +15,11 @@ import {
   applicableStageTransition,
   applicableTaskTransition,
   isDBAOrOwner,
+  isOwnerOfProject,
   StageStatusTransition,
   TaskStatusTransition,
 } from "@/utils";
-import { useIssueLogic } from ".";
+import { useAllowProjectOwnerToApprove, useIssueLogic } from ".";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   const {
@@ -27,7 +28,29 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     allowApplyIssueStatusTransition,
     allowApplyTaskStatusTransition,
   } = useIssueLogic();
+
   const currentUser = useCurrentUser();
+
+  const allowProjectOwnerAsAssignee = useAllowProjectOwnerToApprove();
+
+  const isAllowedToApplyTaskTransition = computed(() => {
+    if (create.value) {
+      return false;
+    }
+
+    // Applying task transition is decoupled with the issue's Assignee.
+    // But relative to the task's environment's approval policy.
+    if (isDBAOrOwner(currentUser.value.role)) {
+      return true;
+    }
+    if (
+      allowProjectOwnerAsAssignee.value &&
+      isOwnerOfProject(currentUser.value, (issue.value as Issue).project)
+    ) {
+      return true;
+    }
+    return false;
+  });
 
   const getApplicableIssueStatusTransitionList = (
     issue: Issue
@@ -101,12 +124,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       case "CANCELED":
         return [];
       case "OPEN": {
-        // Allow assignee, or assignee is the system bot and current user is DBA or owner
-        if (
-          currentUser.value.id === issue.assignee?.id ||
-          (issue.assignee?.id == SYSTEM_BOT_ID &&
-            isDBAOrOwner(currentUser.value.role))
-        ) {
+        if (isAllowedToApplyTaskTransition.value) {
           const currentTask = activeTaskOfPipeline(issue.pipeline);
           return applicableStageTransition(issue.pipeline).filter(
             (transition) =>
@@ -134,12 +152,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       case "CANCELED":
         return [];
       case "OPEN": {
-        // Allow assignee, or assignee is the system bot and current user is DBA or owner
-        if (
-          currentUser.value.id === issue.assignee?.id ||
-          (issue.assignee?.id == SYSTEM_BOT_ID &&
-            isDBAOrOwner(currentUser.value.role))
-        ) {
+        if (isAllowedToApplyTaskTransition.value) {
           const currentTask = activeTaskOfPipeline(issue.pipeline);
           return applicableTaskTransition(issue.pipeline).filter((transition) =>
             allowApplyTaskStatusTransition(currentTask, transition.to)
