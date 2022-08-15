@@ -570,7 +570,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	// then the context must contain a VCS push event field.
 	if c.MigrationType == db.Baseline && project.WorkflowType == api.VCSWorkflow {
 		if c.VCSPushEvent == nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create establishing baseline issue for VCS workflow project, VCSPushEvent missing")
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create establishing baseline issue for GitOps workflow project, vcs context missing")
 		}
 	}
 
