@@ -936,7 +936,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 			// PITR to a new database
 			taskCreateList = append(taskCreateList, api.TaskCreate{
 				Name:       fmt.Sprintf("Restore PITR database %s to database %s", originDatabase.Name, *payloadRestore.DatabaseName),
-				InstanceID: originDatabase.InstanceID,
+				InstanceID: *payloadRestore.TargetInstanceID,
 				Status:     api.TaskPendingApproval,
 				Type:       api.TaskDatabaseRestorePITRRestore,
 				Payload:    string(bytesRestore),
