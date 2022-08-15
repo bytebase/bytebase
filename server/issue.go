@@ -440,15 +440,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
-	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
-		return nil, err
-	}
-
-	if instance.Engine == db.Snowflake {
-		// Snowflake needs to use upper case of DatabaseName.
-		c.DatabaseName = strings.ToUpper(c.DatabaseName)
-	}
-
 	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task list of creating database, error: %w", err)
