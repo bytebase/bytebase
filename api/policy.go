@@ -125,7 +125,7 @@ type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`
 	// The AssigneeGroup is the final value of the assignee group which overrides the default value.
 	// If there is no value provided in the AssigneeGroupList, we use the the workspace owners and DBAs (default) as the available assignee.
-	// If the AssigneeGroup for some issue type is PROJECT_OWNER, the available assignee is the project owners.
+	// If the AssigneeGroupValue is PROJECT_OWNER, the available assignee is the project owners.
 	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
 }
 
