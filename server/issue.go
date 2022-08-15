@@ -860,7 +860,14 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 
 func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Database, projectID int, c api.PITRContext) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
-	var taskIndexDAGList []api.TaskIndexDAG
+
+	// We make sure that createPITRTaskList will always return 2 tasks.
+	taskIndexDAGList := []api.TaskIndexDAG{
+		{
+			FromIndex: 0,
+			ToIndex:   1,
+		},
+	}
 
 	// Restore payload
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
@@ -910,11 +917,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 			return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
 		}
 
-		taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{
-			FromIndex: len(taskCreateList) - 1,
-			ToIndex:   len(taskCreateList),
-		})
-
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			InstanceID:   c.CreateDatabaseCtx.InstanceID,
 			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
@@ -943,14 +945,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		Payload:    string(bytesRestore),
 	})
 
-	if len(taskCreateList) != 0 {
-		// Users may want to PITR to a new database
-		taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{
-			FromIndex: len(taskCreateList) - 1,
-			ToIndex:   len(taskCreateList),
-		})
-	}
-
 	if c.CreateDatabaseCtx == nil {
 		// task: PITR in-place needs cut-over
 		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
@@ -967,11 +961,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 			Type:       api.TaskDatabaseRestorePITRCutover,
 			Payload:    string(bytesCutover),
 		})
-
-		// There will only 2 task in PITR inplace.
-		taskIndexDAGList = []api.TaskIndexDAG{
-			{FromIndex: 0, ToIndex: 1},
-		}
 	}
 	return taskCreateList, taskIndexDAGList, nil
 }
