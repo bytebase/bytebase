@@ -1,5 +1,7 @@
 <template>
-  <ProcessBar v-if="state.showProcessBar" @close.once="handleProcessClose" />
+  <template v-if="!state.isDemoCompleted && state.showDemo">
+    <ProcessBar @close.once="handleProcessClose" />
+  </template>
 </template>
 
 <script lang="ts" setup>
@@ -11,8 +13,8 @@ import useAppStore from "../store";
 import ProcessBar from "./ProcessBar.vue";
 
 interface LocalState {
-  completed: boolean;
-  showProcessBar: boolean;
+  isDemoCompleted: boolean;
+  showDemo: boolean;
 }
 
 const props = defineProps<{
@@ -20,8 +22,8 @@ const props = defineProps<{
 }>();
 
 const state = reactive<LocalState>({
-  completed: false,
-  showProcessBar: false,
+  isDemoCompleted: false,
+  showDemo: false,
 });
 
 const route = useRoute();
@@ -34,32 +36,30 @@ onMounted(async () => {
       store.setState({
         demoName: props.demoName,
         processDataList: demoData.process,
+        hintDataList: demoData.hint,
       });
-
-      if (demoData.process.length > 0) {
-        state.showProcessBar = true;
-      }
+      state.showDemo = true;
     }
   } catch (error) {
     // do nth
   }
 
   watchEffect(() => {
-    if (state.completed) {
+    if (state.isDemoCompleted) {
       return;
     }
 
     if (String(route.name).startsWith("auth")) {
-      state.showProcessBar = false;
+      state.showDemo = false;
     } else {
-      state.showProcessBar = true;
+      state.showDemo = true;
     }
   });
 });
 
 const handleProcessClose = () => {
-  state.showProcessBar = false;
-  state.completed = true;
+  state.showDemo = false;
+  state.isDemoCompleted = true;
   removeDemo();
 };
 </script>
