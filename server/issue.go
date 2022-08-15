@@ -860,7 +860,6 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 
 func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Database, projectID int, c api.PITRContext) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
-	var backup *api.Backup
 	// Restore payload
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
 		ProjectID: projectID,
@@ -886,15 +885,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	if c.BackupID != nil {
-		// We only support restore the full backup to a new database only, so c.CreateDatabaseCtx must be not nil in this case.
-		b, err := s.store.GetBackupByID(ctx, *c.BackupID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to find backup %v", c.BackupID)
-		}
-		if backup == nil {
-			return nil, nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
-		}
-		backup = b
 		payloadRestore.BackupID = c.BackupID
 	}
 
