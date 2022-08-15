@@ -123,9 +123,9 @@ type PolicyDelete struct {
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`
-	// if the approval policy is MANUAL_APPROVAL_NEVER, there shouldn't be AssigneeGroupList.
-	// if the approval policy is MANUAL_APPROVAL_ALWAYS, the assignee group is the DBAs by default,
-	//	 and we set the assignee group to the project owners for corresponding issue types.
+	// The AssigneeGroup is the final value of the assignee group which overrides the default value.
+	// If there is no value provided in the AssigneeGroupList, we use the the workspace owners and DBAs (default) as the available assignee.
+	// If the AssigneeGroupValue is PROJECT_OWNER, the available assignee is the project owners.
 	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
 }
 
