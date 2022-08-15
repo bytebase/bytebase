@@ -37,8 +37,9 @@
             </div>
             <button
               v-if="allowEdit"
+              :disabled="state.syncingSchema"
               type="button"
-              class="btn-normal"
+              class="btn-normal transition-all"
               @click.prevent="syncSchema"
             >
               {{ $t("common.sync-now") }}
