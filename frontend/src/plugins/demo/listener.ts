@@ -1,9 +1,5 @@
 import { isEqual } from "lodash-es";
-import {
-  fetchDemoDataWithName,
-  fetchGuideDataWithName,
-  fetchHintDataWithName,
-} from "./data";
+import { fetchDemoDataWithName, fetchGuideDataWithName } from "./data";
 import { removeGuideDialog, showGuideDialog } from "./guide";
 import { removeHint, showHints } from "./hint";
 import * as storage from "./storage";
@@ -23,8 +19,8 @@ const tryToShowHints = async () => {
   const { demo } = storage.get(["demo"]);
 
   if (demo) {
-    const hintData = await fetchHintDataWithName(demo.name);
-    showHints(hintData);
+    const demoData = await fetchDemoDataWithName(demo.name);
+    showHints(demoData.hint);
   } else {
     removeHint();
   }
@@ -104,8 +100,8 @@ const initDemoListeners = async () => {
       }
 
       try {
-        const hintData = await fetchHintDataWithName(demo.name);
-        if (hintData) {
+        const demoData = await fetchDemoDataWithName(demo.name);
+        if (demoData.hint) {
           await tryToShowHints();
           initHintListeners();
         }
