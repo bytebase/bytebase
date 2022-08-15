@@ -164,7 +164,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, driver
 	// case 2: in-place backup restore
 	// TODO(dragonly): Check this when creating issue.
 	if payload.TargetInstanceID != nil {
-		return nil, fmt.Errorf("expect targetInstanceId to be nil because databaseName is nil in TaskDatabasePITRRestorePayload")
+		return nil, fmt.Errorf("expect targetInstanceId to be nil when databaseName is nil in TaskDatabasePITRRestorePayload")
 	}
 	log.Debug("Start to restore database in place from backup.",
 		zap.String("source_instance", sourceDatabase.Instance.Name),
