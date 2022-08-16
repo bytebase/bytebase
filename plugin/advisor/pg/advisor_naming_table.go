@@ -34,7 +34,9 @@ func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string
 		return nil, err
 	}
 	// Naming length limit feature is limited for PG, the PG parser will auto slice the name to make sure its length <= 63
-	// Reference: https://stackoverflow.com/questions/27865770/how-long-can-postgresql-table-names-be
+	// Reference:
+	// https://stackoverflow.com/questions/27865770/how-long-can-postgresql-table-names-be
+	// https://www.postgresql.org/docs/current/limits.html
 	format, maxLength, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err

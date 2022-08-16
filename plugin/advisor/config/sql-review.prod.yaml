@@ -35,7 +35,7 @@ ruleList:
     level: WARNING
     payload:
       format: "^$|^pk_{{table}}_{{column_list}}$"
-      maxLength: 63
+      maxLength: 63 # https://www.postgresql.org/docs/current/limits.html
   - type: naming.index.idx
     level: WARNING
     payload:
