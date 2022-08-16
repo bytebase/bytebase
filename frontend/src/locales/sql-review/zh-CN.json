@@ -41,31 +41,31 @@
     },
     "naming-table": {
       "title": "表名命名检查",
-      "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
+      "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 63 个字符。",
       "component": {
         "format": {
           "title": "表命名规则（正则）"
         },
         "maxLength": {
-          "title": "长度限制（暂不支持 PostgreSQL）"
+          "title": "长度限制"
         }
       }
     },
     "naming-column": {
       "title": "列名命名检查",
-      "description": "限制列名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
+      "description": "限制列名命名风格和长度，默认为小写字母_下划线，且不超过 63 个字符。",
       "component": {
         "format": {
           "title": "列命名规则（正则）"
         },
         "maxLength": {
-          "title": "长度限制（暂不支持 PostgreSQL）"
+          "title": "长度限制"
         }
       }
     },
     "naming-index-uk": {
       "title": "唯一键命名检查",
-      "description": "限制唯一键命名风格和长度，默认为 uk_<表名>_<主键包含的字段名组合>，且不超过 64 个字符。",
+      "description": "限制唯一键命名风格和长度，默认为 uk_<表名>_<主键包含的字段名组合> 或空，且不超过 63 个字符。",
       "component": {
         "format": {
           "title": "唯一键命名规则",
@@ -75,13 +75,13 @@
           }
         },
         "maxLength": {
-          "title": "长度限制（暂不支持 PostgreSQL）"
+          "title": "长度限制"
         }
       }
     },
     "naming-index-pk": {
       "title": "主键命名检查",
-      "description": "限制主键命名风格和长度，默认为 pk_<表名>_<主键包含的字段名组合>。",
+      "description": "限制主键命名风格和长度，默认为 pk_<表名>_<主键包含的字段名组合> 或空，且不超过 63 个字符。",
       "component": {
         "format": {
           "title": "主键命名规则",
@@ -89,12 +89,15 @@
             "table": "表名",
             "column_list": "索引包含的字段名，通过 _ 连接"
           }
+        },
+        "maxLength": {
+          "title": "长度限制"
         }
       }
     },
     "naming-index-fk": {
       "title": "外键命名检查",
-      "description": "限制外键命名风格和长度，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>，且不超过 64 个字符。",
+      "description": "限制外键命名风格和长度，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名> 或空，且不超过 63 个字符。",
       "component": {
         "format": {
           "title": "外键命名规则",
@@ -106,13 +109,13 @@
           }
         },
         "maxLength": {
-          "title": "长度限制（暂不支持 PostgreSQL）"
+          "title": "长度限制"
         }
       }
     },
     "naming-index-idx": {
       "title": "索引命名检查",
-      "description": "限制索引命名风格和长度，默认为 idx_<表名>_<索引包含的字段名组合>，且不超过 64 个字符。",
+      "description": "限制索引命名风格和长度，默认为 idx_<表名>_<索引包含的字段名组合> 或空，且不超过 63 个字符。",
       "component": {
         "format": {
           "title": "索引命名规则",
@@ -122,7 +125,7 @@
           }
         },
         "maxLength": {
-          "title": "长度限制（暂不支持 PostgreSQL）"
+          "title": "长度限制"
         }
       }
     },
