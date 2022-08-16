@@ -328,13 +328,11 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	if err != nil {
 		return nil, err
 	}
-	var environmentID int
 	// Return an error if the issue has no task to be executed
 	hasTask := false
 	for _, stage := range pipelineCreate.StageList {
 		if len(stage.TaskList) > 0 {
 			hasTask = true
-			environmentID = stage.EnvironmentID
 			break
 		}
 	}
@@ -349,12 +347,12 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	}
 
 	// check the assignee if it's NOT ValidateOnly
-	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, environmentID, issueCreate.ProjectID, issueCreate.Type)
+	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
 	}
 	if !ok {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
 	pipelineCreate.CreatorID = creatorID
