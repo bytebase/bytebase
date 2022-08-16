@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pingcap/tidb/br/pkg/lightning/log"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -271,6 +272,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 			return nil, err
 		}
 		return issue, nil
+	}
+
+	//TODO: remove this debug logging
+	if len(issueCreate.Pipeline.StageList) == 0 {
+		log.L().Sugar().Warn("the length of the stage list is 0, let's see what's inside")
+		log.L().Sugar().Warn("issueCreate %+v", issueCreate)
 	}
 
 	// check the assignee if it's NOT ValidateOnly.
