@@ -232,6 +232,26 @@ export const useInstanceStore = defineStore("instance", {
         ) || []
       );
     },
+    getLatestDoneVCSMigrationHistory(
+      instanceId: InstanceId,
+      databaseName: string
+    ): MigrationHistory | undefined {
+      const migrationHistoryList =
+        this.getMigrationHistoryListByInstanceIdAndDatabaseName(
+          instanceId,
+          databaseName
+        );
+      for (const migrationHistory of migrationHistoryList) {
+        if (
+          migrationHistory.status === "DONE" &&
+          migrationHistory.source === "VCS" &&
+          migrationHistory.payload?.pushEvent !== undefined
+        ) {
+          return migrationHistory;
+        }
+      }
+      return undefined;
+    },
     setInstanceList(instanceList: Instance[]) {
       instanceList.forEach((instance) => {
         this.instanceById.set(instance.id, instance);
