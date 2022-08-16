@@ -251,42 +251,42 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 }
 
 func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, driver db.Driver, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	if payload.BackupID != nil {
-		backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find backup with ID %d, error: %w", *payload.BackupID, err)
-		}
-		if backup == nil {
-			return nil, fmt.Errorf("backup with ID %d not found", *payload.BackupID)
-		}
-		backupFileName := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
-		backupFile, err := os.Open(backupFileName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open backup file %q, error: %w", backupFileName, err)
-		}
-		defer backupFile.Close()
-		db1, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
-		}
-		pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
-		if _, err := db1.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s;", pitrDatabaseName)); err != nil {
-			return nil, fmt.Errorf("failed to create PITR database %q, error: %w", pitrDatabaseName, err)
-		}
-		// Switch to the PITR database.
-		// TODO(dragonly): This is a trick, needs refactor.
-		_, err = driver.GetDBConnection(ctx, pitrDatabaseName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get connection for database %q, error: %w", pitrDatabaseName, err)
-		}
-		if err := driver.Restore(ctx, backupFile); err != nil {
-			return nil, fmt.Errorf("failed to restore backup to the PITR database %q, error: %w", pitrDatabaseName, err)
-		}
-		return &api.TaskRunResultPayload{
-			Detail: fmt.Sprintf("Restored database %q in place from backup %q", task.Database.Name, backup.Name),
-		}, nil
+	if payload.BackupID == nil {
+		return nil, fmt.Errorf("PITR for Postgres is not implemented")
 	}
-	return nil, fmt.Errorf("PITR for Postgres is not implemented")
+
+	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find backup with ID %d, error: %w", *payload.BackupID, err)
+	}
+	if backup == nil {
+		return nil, fmt.Errorf("backup with ID %d not found", *payload.BackupID)
+	}
+	backupFileName := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
+	backupFile, err := os.Open(backupFileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open backup file %q, error: %w", backupFileName, err)
+	}
+	defer backupFile.Close()
+	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
+	}
+	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s;", pitrDatabaseName)); err != nil {
+		return nil, fmt.Errorf("failed to create PITR database %q, error: %w", pitrDatabaseName, err)
+	}
+	// Switch to the PITR database.
+	// TODO(dragonly): This is a trick, needs refactor.
+	if _, err := driver.GetDBConnection(ctx, pitrDatabaseName); err != nil {
+		return nil, fmt.Errorf("failed to get connection for database %q, error: %w", pitrDatabaseName, err)
+	}
+	if err := driver.Restore(ctx, backupFile); err != nil {
+		return nil, fmt.Errorf("failed to restore backup to the PITR database %q, error: %w", pitrDatabaseName, err)
+	}
+	return &api.TaskRunResultPayload{
+		Detail: fmt.Sprintf("Restored database %q in place from backup %q", task.Database.Name, backup.Name),
+	}, nil
 }
 
 func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo api.BinlogInfo, binlogDir string) error {

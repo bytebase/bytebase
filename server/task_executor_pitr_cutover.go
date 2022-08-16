@@ -120,14 +120,14 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 	case db.Postgres:
 		pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
 		pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
-		db1, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+		db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
 		}
-		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
 			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", task.Database.Name, pitrOldDatabaseName, err)
 		}
-		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
 			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", pitrDatabaseName, task.Database.Name, err)
 		}
 	default:
