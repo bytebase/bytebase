@@ -95,19 +95,6 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 	defer driver.Close(ctx)
 
 	switch task.Instance.Engine {
-	case db.Postgres:
-		pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
-		pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
-		db1, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
-		if err != nil {
-			return true, nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
-		}
-		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
-			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", task.Database.Name, pitrOldDatabaseName, err)
-		}
-		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
-			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", pitrDatabaseName, task.Database.Name, err)
-		}
 	case db.MySQL:
 		driverDB, err := driver.GetDBConnection(ctx, "")
 		if err != nil {
@@ -129,6 +116,19 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 		backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
 		if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
 			return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
+		}
+	case db.Postgres:
+		pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+		pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
+		db1, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
+		}
+		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
+			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", task.Database.Name, pitrOldDatabaseName, err)
+		}
+		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
+			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", pitrDatabaseName, task.Database.Name, err)
 		}
 	default:
 		return true, nil, fmt.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
