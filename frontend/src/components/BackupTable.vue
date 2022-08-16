@@ -104,6 +104,7 @@
   >
     <div class="space-y-4">
       <RestoreTargetForm
+        v-if="allowRestoreInPlace"
         :target="state.restoreBackupContext.target"
         @change="state.restoreBackupContext!.target = $event"
       />
@@ -218,6 +219,10 @@ export default defineComponent({
       loadingMigrationHistory: false,
       creatingRestoreIssue: false,
       showFeatureModal: false,
+    });
+
+    const allowRestoreInPlace = computed((): boolean => {
+      return props.database.instance.engine === "POSTGRES";
     });
 
     const hasPITRFeature = featureToRef("bb.feature.disaster-recovery-pitr");
@@ -410,6 +415,7 @@ export default defineComponent({
       backupSectionList,
       statusIconClass,
       allowRestore,
+      allowRestoreInPlace,
       doRestoreInPlace,
     };
   },
