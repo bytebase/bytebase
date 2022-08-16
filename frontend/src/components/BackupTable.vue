@@ -87,7 +87,6 @@
           class="normal-link disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:no-underline"
           @click.stop="
             state.restoreBackupContext = {
-              step: 'SELECT-RESTORE-TARGET',
               target: 'NEW',
               backup,
             }
@@ -182,7 +181,6 @@ import {
 } from "../components/DatabaseBackup/RestoreTargetForm.vue";
 
 type RestoreBackupContext = {
-  step: "SELECT-RESTORE-TARGET" | "CREATE-DATABASE";
   target: RestoreTarget;
   backup: Backup;
 };
