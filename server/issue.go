@@ -275,10 +275,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	//TODO: remove this debug logging
-	if len(issueCreate.Pipeline.StageList) == 0 {
-		log.L().Sugar().Warn("the length of the stage list is 0, let's see what's inside")
-		log.L().Sugar().Warn("issueCreate %+v", issueCreate)
-	}
+	log.L().Sugar().Warn("issueCreate %+v", issueCreate)
 
 	// check the assignee if it's NOT ValidateOnly.
 	if issueCreate.AssigneeID == api.UnknownID {
