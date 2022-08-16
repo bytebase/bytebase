@@ -295,12 +295,11 @@ func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver 
 		return fmt.Errorf("failed to get stat of backup file %q, error: %w", backupFile.Name(), err)
 	}
 	backupFileBytes := backupFileInfo.Size()
-	var totalBinlogBytes int64
 	replayBinlogPaths, err := mysql.GetBinlogReplayList(startBinlogInfo, binlogDir)
 	if err != nil {
 		return fmt.Errorf("failed to get binlog replay list with startBinlogInfo %+v in binlog directory %q, error: %w", startBinlogInfo, binlogDir, err)
 	}
-	totalBinlogBytes, err = common.GetFileSizeSum(replayBinlogPaths)
+	totalBinlogBytes, err := common.GetFileSizeSum(replayBinlogPaths)
 	if err != nil {
 		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
 	}
