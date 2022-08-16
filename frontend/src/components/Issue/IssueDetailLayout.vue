@@ -238,7 +238,7 @@ const selectedMigrateType = computed((): MigrationType => {
 });
 
 const showPipelineFlowBar = computed(() => {
-  return currentPipelineType.value != "NO_PIPELINE";
+  return currentPipelineType.value !== "NO_PIPELINE";
 });
 
 const showIssueOutputPanel = computed(() => {
