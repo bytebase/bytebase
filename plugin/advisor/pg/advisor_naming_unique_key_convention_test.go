@@ -221,7 +221,7 @@ func TestNamingUKConvention(t *testing.T) {
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format:    "^uk_{{table}}_{{column_list}}$",
+		Format:    "^$|^uk_{{table}}_{{column_list}}$",
 		MaxLength: maxLength,
 	})
 	require.NoError(t, err)
