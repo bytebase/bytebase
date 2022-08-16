@@ -32,7 +32,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
-					Content: "Index in table \"tech_book\" mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found \"tech_book_id_name\"",
+					Content: "Index in table \"tech_book\" mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found \"tech_book_id_name\"",
 				},
 			},
 		},
@@ -43,7 +43,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
-					Content: fmt.Sprintf("Index in table \"tech_book\" mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found \"%s\"", invalidIndexName),
+					Content: fmt.Sprintf("Index in table \"tech_book\" mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found \"%s\"", invalidIndexName),
 				},
 				{
 					Status:  advisor.Error,
@@ -78,14 +78,14 @@ func TestNamingIndexConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
-					Content: "Index in table \"tech_book\" mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found \"idx_tech_book\"",
+					Content: "Index in table \"tech_book\" mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found \"idx_tech_book\"",
 				},
 			},
 		},
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format:    "^idx_{{table}}_{{column_list}}$",
+		Format:    "^$|^idx_{{table}}_{{column_list}}$",
 		MaxLength: 32,
 	})
 	require.NoError(t, err)

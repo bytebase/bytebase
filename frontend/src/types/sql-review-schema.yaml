@@ -155,6 +155,10 @@ ruleList:
           templateList:
             - table
             - column_list
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 63
   - type: column.required
     category: COLUMN
     engineList:
