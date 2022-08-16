@@ -12,7 +12,9 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -46,12 +48,16 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	// 1. in-place or restore to new database: the latter does not create database with _pitr/_del suffix
 	// 2. backup restore or Point-in-Time restore: the former does not apply binlog/wal
 
-	if payload.BackupID != nil {
-		resultPayload, err := exec.doBackupRestore(ctx, server, task, payload)
+	if payload.DatabaseName != nil {
+		resultPayload, err := exec.doRestoreToNewDatabase(ctx, server, task, payload)
 		return true, resultPayload, err
 	}
 
-	resultPayload, err := exec.doPITRRestore(ctx, server, task, payload)
+	// TODO(dragonly): Check this when creating issue.
+	if payload.TargetInstanceID != nil {
+		return true, nil, fmt.Errorf("expect targetInstanceId to be nil when databaseName is nil in TaskDatabasePITRRestorePayload")
+	}
+	resultPayload, err := exec.doRestoreInPlace(ctx, server, task, payload)
 	return true, resultPayload, err
 }
 
@@ -69,12 +75,7 @@ func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
 	return progress.(api.Progress)
 }
 
-func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	// TODO(dragonly): backup restore/PITR to new db do not require a cutover task.
-	// The current implementation here is actually not working, because it restores the backup directly to the target database, and the later cutover task will fail.
-	if payload.DatabaseName == nil {
-		return nil, fmt.Errorf("unexpected nil database name for backup restore")
-	}
+func (exec *PITRRestoreTaskExecutor) doRestoreToNewDatabase(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	// Restore full backup only
 	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
@@ -157,7 +158,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return nil, err
@@ -166,6 +167,10 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
 	if err != nil {
 		return nil, err
+	}
+
+	if task.Instance.Engine == db.Postgres {
+		return exec.doRestoreInPlacePostgres(ctx, server, driver, issue, task, payload)
 	}
 
 	backupStatus := api.BackupStatusDone
@@ -214,7 +219,6 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BRANCH migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
-
 	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
 	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
 		return nil, fmt.Errorf("failed to setup progress update process, error: %w", err)
@@ -243,6 +247,45 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	log.Info("PITR restore success", zap.String("target database", targetDatabaseName))
 	return &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("PITR restore success for target database %q", targetDatabaseName),
+	}, nil
+}
+
+func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, driver db.Driver, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+	if payload.BackupID == nil {
+		return nil, fmt.Errorf("PITR for Postgres is not implemented")
+	}
+
+	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find backup with ID %d, error: %w", *payload.BackupID, err)
+	}
+	if backup == nil {
+		return nil, fmt.Errorf("backup with ID %d not found", *payload.BackupID)
+	}
+	backupFileName := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
+	backupFile, err := os.Open(backupFileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open backup file %q, error: %w", backupFileName, err)
+	}
+	defer backupFile.Close()
+	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
+	}
+	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s;", pitrDatabaseName)); err != nil {
+		return nil, fmt.Errorf("failed to create PITR database %q, error: %w", pitrDatabaseName, err)
+	}
+	// Switch to the PITR database.
+	// TODO(dragonly): This is a trick, needs refactor.
+	if _, err := driver.GetDBConnection(ctx, pitrDatabaseName); err != nil {
+		return nil, fmt.Errorf("failed to get connection for database %q, error: %w", pitrDatabaseName, err)
+	}
+	if err := driver.Restore(ctx, backupFile); err != nil {
+		return nil, fmt.Errorf("failed to restore backup to the PITR database %q, error: %w", pitrDatabaseName, err)
+	}
+	return &api.TaskRunResultPayload{
+		Detail: fmt.Sprintf("Restored database %q in place from backup %q", task.Database.Name, backup.Name),
 	}, nil
 }
 
