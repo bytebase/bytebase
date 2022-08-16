@@ -2,6 +2,7 @@ package pg
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -9,6 +10,8 @@ import (
 )
 
 func TestNamingColumnConvention(t *testing.T) {
+	invalidColumnName := advisor.RandomString(33)
+
 	tests := []advisor.TestCase{
 		{
 			Statement: "CREATE TABLE book(id int, \"creatorId\" int)",
@@ -18,6 +21,17 @@ func TestNamingColumnConvention(t *testing.T) {
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "\"book\".\"creatorId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf("CREATE TABLE book(id int, %s int)", invalidColumnName),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.NamingColumnConventionMismatch,
+					Title:   "naming.column",
+					Content: fmt.Sprintf("\"book\".\"%s\" mismatches column naming convention, its length should be within 32 characters", invalidColumnName),
 				},
 			},
 		},
@@ -94,7 +108,8 @@ func TestNamingColumnConvention(t *testing.T) {
 		},
 	}
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format: "^[a-z]+(_[a-z]+)*$",
+		Format:    "^[a-z]+(_[a-z]+)*$",
+		MaxLength: 32,
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SQLReviewRule{

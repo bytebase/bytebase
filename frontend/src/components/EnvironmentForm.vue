@@ -11,7 +11,7 @@
           :disabled="!allowEdit"
           :required="true"
           :value="state.environment.name"
-          @input="state.environment.name = $event.target.value"
+          @input="state.environment.name = ($event.target as HTMLInputElement).value"
         />
       </div>
       <div class="col-span-1">
@@ -25,7 +25,7 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
-              v-model="state.approvalPolicy.payload.value"
+              v-model="(state.approvalPolicy.payload as PipelineApprovalPolicyPayload).value"
               name="manual-approval-always"
               tabindex="-1"
               type="radio"
@@ -40,9 +40,19 @@
               </div>
             </div>
           </div>
+
+          <AssigneeGroupEditor
+            class="ml-8"
+            :policy="state.approvalPolicy"
+            :allow-edit="allowEdit"
+            @update="(assigneeGroupList) => {
+              (state.approvalPolicy.payload as PipelineApprovalPolicyPayload).assigneeGroupList = assigneeGroupList
+            }"
+          />
+
           <div class="flex space-x-4">
             <input
-              v-model="state.approvalPolicy.payload.value"
+              v-model="(state.approvalPolicy.payload as PipelineApprovalPolicyPayload).value"
               name="manual-approval-never"
               tabindex="-1"
               type="radio"
@@ -73,7 +83,7 @@
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
-              v-model="state.backupPolicy.payload.schedule"
+              v-model="(state.backupPolicy.payload as BackupPlanPolicyPayload).schedule"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
@@ -91,7 +101,7 @@
           </div>
           <div class="flex space-x-4">
             <input
-              v-model="state.backupPolicy.payload.schedule"
+              v-model="(state.backupPolicy.payload as BackupPlanPolicyPayload).schedule"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
@@ -113,7 +123,7 @@
           </div>
           <div class="flex space-x-4">
             <input
-              v-model="state.backupPolicy.payload.schedule"
+              v-model="(state.backupPolicy.payload as BackupPlanPolicyPayload).schedule"
               tabindex="-1"
               type="radio"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
@@ -185,7 +195,7 @@
     </div>
     <!-- Update button group -->
     <div v-else class="flex justify-between items-center pt-5">
-      <template v-if="state.environment.rowStatus == 'NORMAL'">
+      <template v-if="(state.environment as Environment).rowStatus == 'NORMAL'">
         <BBButtonConfirm
           v-if="allowArchive"
           :style="'ARCHIVE'"
@@ -199,7 +209,9 @@
           @confirm="archiveEnvironment"
         />
       </template>
-      <template v-else-if="state.environment.rowStatus == 'ARCHIVED'">
+      <template
+        v-else-if="(state.environment as Environment).rowStatus == 'ARCHIVED'"
+      >
         <BBButtonConfirm
           v-if="allowRestore"
           :style="'RESTORE'"
@@ -236,26 +248,22 @@
   </div>
 </template>
 
-<script lang="ts">
-import {
-  computed,
-  reactive,
-  PropType,
-  watch,
-  watchEffect,
-  defineComponent,
-} from "vue";
+<script lang="ts" setup>
+import { computed, reactive, PropType, watch, watchEffect } from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { useRouter } from "vue-router";
-import {
+import type {
+  BackupPlanPolicyPayload,
   Environment,
   EnvironmentCreate,
   EnvironmentPatch,
+  PipelineApprovalPolicyPayload,
   Policy,
   SQLReviewPolicy,
 } from "../types";
-import { isDev, isDBAOrOwner, sqlReviewPolicySlug } from "../utils";
+import { isDBAOrOwner, sqlReviewPolicySlug } from "../utils";
 import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
+import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -265,213 +273,191 @@ interface LocalState {
 
 const ROUTE_NAME = "setting.workspace.sql-review";
 
-export default defineComponent({
-  name: "EnvironmentForm",
-  props: {
-    create: {
-      type: Boolean,
-      default: false,
-    },
-    environment: {
-      required: true,
-      type: Object as PropType<Environment | EnvironmentCreate>,
-    },
-    approvalPolicy: {
-      required: true,
-      type: Object as PropType<Policy>,
-    },
-    backupPolicy: {
-      required: true,
-      type: Object as PropType<Policy>,
-    },
+const props = defineProps({
+  create: {
+    type: Boolean,
+    default: false,
   },
-  emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
-  setup(props, { emit }) {
-    const state = reactive<LocalState>({
-      environment: cloneDeep(props.environment),
-      approvalPolicy: cloneDeep(props.approvalPolicy),
-      backupPolicy: cloneDeep(props.backupPolicy),
-    });
-
-    const router = useRouter();
-    const sqlReviewStore = useSQLReviewStore();
-
-    const environmentId = computed(() => {
-      if (props.create) {
-        return;
-      }
-      return (props.environment as Environment).id;
-    });
-
-    const prepareSQLReviewPolicy = () => {
-      if (!environmentId.value) {
-        return;
-      }
-      return sqlReviewStore.fetchReviewPolicyByEnvironmentId(
-        environmentId.value
-      );
-    };
-    watchEffect(prepareSQLReviewPolicy);
-
-    const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
-      if (!environmentId.value) {
-        return;
-      }
-      return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
-    });
-
-    const onSQLReviewPolicyClick = () => {
-      if (sqlReviewPolicy.value) {
-        router.push({
-          name: `${ROUTE_NAME}.detail`,
-          params: {
-            sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
-          },
-        });
-      } else {
-        router.push({
-          name: `${ROUTE_NAME}.create`,
-          query: {
-            environmentId: environmentId.value,
-          },
-        });
-      }
-    };
-
-    watch(
-      () => props.environment,
-      (cur: Environment | EnvironmentCreate) => {
-        state.environment = cloneDeep(cur);
-      }
-    );
-
-    watch(
-      () => props.approvalPolicy,
-      (cur: Policy) => {
-        state.approvalPolicy = cloneDeep(cur);
-      }
-    );
-
-    watch(
-      () => props.backupPolicy,
-      (cur: Policy) => {
-        state.backupPolicy = cloneDeep(cur);
-      }
-    );
-
-    const currentUser = useCurrentUser();
-
-    const environmentList = useEnvironmentList();
-
-    const hasPermission = computed(() => {
-      return isDBAOrOwner(currentUser.value.role);
-    });
-
-    const allowArchive = computed(() => {
-      return allowEdit.value && environmentList.value.length > 1;
-    });
-
-    const allowRestore = computed(() => {
-      return hasPermission.value;
-    });
-
-    const allowEdit = computed(() => {
-      return (
-        props.create ||
-        ((state.environment as Environment).rowStatus == "NORMAL" &&
-          hasPermission.value)
-      );
-    });
-
-    const allowCreate = computed(() => {
-      return !isEmpty(state.environment?.name);
-    });
-
-    const valueChanged = (
-      field?: "environment" | "approvalPolicy" | "backupPolicy"
-    ): boolean => {
-      switch (field) {
-        case "environment":
-          return !isEqual(props.environment, state.environment);
-        case "approvalPolicy":
-          return !isEqual(props.approvalPolicy, state.approvalPolicy);
-        case "backupPolicy":
-          return !isEqual(props.backupPolicy, state.backupPolicy);
-
-        default:
-          return (
-            !isEqual(props.environment, state.environment) ||
-            !isEqual(props.approvalPolicy, state.approvalPolicy) ||
-            !isEqual(props.backupPolicy, state.backupPolicy)
-          );
-      }
-    };
-
-    const revertEnvironment = () => {
-      state.environment = cloneDeep(props.environment!);
-    };
-
-    const createEnvironment = () => {
-      emit(
-        "create",
-        state.environment,
-        state.approvalPolicy,
-        state.backupPolicy
-      );
-    };
-
-    const updateEnvironment = () => {
-      if (state.environment.name != props.environment!.name) {
-        const patchedEnvironment: EnvironmentPatch = {};
-
-        patchedEnvironment.name = state.environment.name;
-        emit("update", patchedEnvironment);
-      }
-
-      if (!isEqual(props.approvalPolicy, state.approvalPolicy)) {
-        emit(
-          "update-policy",
-          (state.environment as Environment).id,
-          "bb.policy.pipeline-approval",
-          state.approvalPolicy
-        );
-      }
-
-      if (!isEqual(props.backupPolicy, state.backupPolicy)) {
-        emit(
-          "update-policy",
-          (state.environment as Environment).id,
-          "bb.policy.backup-plan",
-          state.backupPolicy
-        );
-      }
-    };
-
-    const archiveEnvironment = () => {
-      emit("archive", state.environment);
-    };
-
-    const restoreEnvironment = () => {
-      emit("restore", state.environment);
-    };
-
-    return {
-      isDev,
-      state,
-      allowArchive,
-      allowRestore,
-      allowEdit,
-      valueChanged,
-      allowCreate,
-      hasPermission,
-      revertEnvironment,
-      createEnvironment,
-      updateEnvironment,
-      archiveEnvironment,
-      restoreEnvironment,
-      sqlReviewPolicy,
-      onSQLReviewPolicyClick,
-    };
+  environment: {
+    required: true,
+    type: Object as PropType<Environment | EnvironmentCreate>,
+  },
+  approvalPolicy: {
+    required: true,
+    type: Object as PropType<Policy>,
+  },
+  backupPolicy: {
+    required: true,
+    type: Object as PropType<Policy>,
   },
 });
+
+const emit = defineEmits([
+  "create",
+  "update",
+  "cancel",
+  "archive",
+  "restore",
+  "update-policy",
+]);
+const state = reactive<LocalState>({
+  environment: cloneDeep(props.environment),
+  approvalPolicy: cloneDeep(props.approvalPolicy),
+  backupPolicy: cloneDeep(props.backupPolicy),
+});
+
+const router = useRouter();
+const sqlReviewStore = useSQLReviewStore();
+
+const environmentId = computed(() => {
+  if (props.create) {
+    return;
+  }
+  return (props.environment as Environment).id;
+});
+
+const prepareSQLReviewPolicy = () => {
+  if (!environmentId.value) {
+    return;
+  }
+  return sqlReviewStore.fetchReviewPolicyByEnvironmentId(environmentId.value);
+};
+watchEffect(prepareSQLReviewPolicy);
+
+const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
+  if (!environmentId.value) {
+    return;
+  }
+  return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
+});
+
+const onSQLReviewPolicyClick = () => {
+  if (sqlReviewPolicy.value) {
+    router.push({
+      name: `${ROUTE_NAME}.detail`,
+      params: {
+        sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
+      },
+    });
+  } else {
+    router.push({
+      name: `${ROUTE_NAME}.create`,
+      query: {
+        environmentId: environmentId.value,
+      },
+    });
+  }
+};
+
+watch(
+  () => props.environment,
+  (cur: Environment | EnvironmentCreate) => {
+    state.environment = cloneDeep(cur);
+  }
+);
+
+watch(
+  () => props.approvalPolicy,
+  (cur: Policy) => {
+    state.approvalPolicy = cloneDeep(cur);
+  }
+);
+
+watch(
+  () => props.backupPolicy,
+  (cur: Policy) => {
+    state.backupPolicy = cloneDeep(cur);
+  }
+);
+
+const currentUser = useCurrentUser();
+
+const environmentList = useEnvironmentList();
+
+const hasPermission = computed(() => {
+  return isDBAOrOwner(currentUser.value.role);
+});
+
+const allowArchive = computed(() => {
+  return allowEdit.value && environmentList.value.length > 1;
+});
+
+const allowRestore = computed(() => {
+  return hasPermission.value;
+});
+
+const allowEdit = computed(() => {
+  return (
+    props.create ||
+    ((state.environment as Environment).rowStatus == "NORMAL" &&
+      hasPermission.value)
+  );
+});
+
+const allowCreate = computed(() => {
+  return !isEmpty(state.environment?.name);
+});
+
+const valueChanged = (
+  field?: "environment" | "approvalPolicy" | "backupPolicy"
+): boolean => {
+  switch (field) {
+    case "environment":
+      return !isEqual(props.environment, state.environment);
+    case "approvalPolicy":
+      return !isEqual(props.approvalPolicy, state.approvalPolicy);
+    case "backupPolicy":
+      return !isEqual(props.backupPolicy, state.backupPolicy);
+
+    default:
+      return (
+        !isEqual(props.environment, state.environment) ||
+        !isEqual(props.approvalPolicy, state.approvalPolicy) ||
+        !isEqual(props.backupPolicy, state.backupPolicy)
+      );
+  }
+};
+
+const revertEnvironment = () => {
+  state.environment = cloneDeep(props.environment!);
+};
+
+const createEnvironment = () => {
+  emit("create", state.environment, state.approvalPolicy, state.backupPolicy);
+};
+
+const updateEnvironment = () => {
+  if (state.environment.name != props.environment!.name) {
+    const patchedEnvironment: EnvironmentPatch = {};
+
+    patchedEnvironment.name = state.environment.name;
+    emit("update", patchedEnvironment);
+  }
+
+  if (!isEqual(props.approvalPolicy, state.approvalPolicy)) {
+    emit(
+      "update-policy",
+      (state.environment as Environment).id,
+      "bb.policy.pipeline-approval",
+      state.approvalPolicy
+    );
+  }
+
+  if (!isEqual(props.backupPolicy, state.backupPolicy)) {
+    emit(
+      "update-policy",
+      (state.environment as Environment).id,
+      "bb.policy.backup-plan",
+      state.backupPolicy
+    );
+  }
+};
+
+const archiveEnvironment = () => {
+  emit("archive", state.environment);
+};
+
+const restoreEnvironment = () => {
+  emit("restore", state.environment);
+};
 </script>

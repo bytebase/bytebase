@@ -123,9 +123,9 @@ type PolicyDelete struct {
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`
-	// if the approval policy is MANUAL_APPROVAL_NEVER, there shouldn't be AssigneeGroupList.
-	// if the approval policy is MANUAL_APPROVAL_ALWAYS, the assignee group is the DBAs by default,
-	//	 and we set the assignee group to the project owners for corresponding issue types.
+	// The AssigneeGroup is the final value of the assignee group which overrides the default value.
+	// If there is no value provided in the AssigneeGroupList, we use the the workspace owners and DBAs (default) as the available assignee.
+	// If the AssigneeGroupValue is PROJECT_OWNER, the available assignee is the project owners.
 	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
 }
 
@@ -210,6 +210,18 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		}
 		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
 			return fmt.Errorf("invalid approval policy value: %q", payload)
+		}
+		issueTypeSeen := make(map[IssueType]bool)
+		for _, group := range pa.AssigneeGroupList {
+			if group.IssueType != IssueDatabaseSchemaUpdate &&
+				group.IssueType != IssueDatabaseSchemaUpdateGhost &&
+				group.IssueType != IssueDatabaseDataUpdate {
+				return fmt.Errorf("found invalid assignee group issue type %q in pipeline approval policy", group.IssueType)
+			}
+			if issueTypeSeen[group.IssueType] {
+				return fmt.Errorf("found duplicated assignee group issue type %q in pipeline approval policy", group.IssueType)
+			}
+			issueTypeSeen[group.IssueType] = true
 		}
 	case PolicyTypeBackupPlan:
 		bp, err := UnmarshalBackupPlanPolicy(payload)

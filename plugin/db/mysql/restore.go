@@ -38,9 +38,6 @@ import (
 )
 
 const (
-	// MaxDatabaseNameLength is the allowed max database name length in MySQL.
-	MaxDatabaseNameLength = 64
-
 	// Variable lower_case_table_names related.
 
 	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the letter case specified in the CREATE TABLE or CREATE DATABASE statement.
@@ -94,13 +91,8 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 	return binlogCoordinate{Seq: seq, Pos: pos}, nil
 }
 
-// SetUpForPITR sets necessary fields for MySQL PITR recovery.
-func (driver *Driver) SetUpForPITR(binlogDir string) {
-	driver.binlogDir = binlogDir
-}
-
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
-func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
+func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
 	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, driver.binlogDir)
 	if err != nil {
 		return err
@@ -136,9 +128,9 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		// Disable binary logging.
 		"--disable-log-bin",
 		// Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database.
-		"--rewrite-db", fmt.Sprintf("%s->%s", originalDBName, pitrDatabase),
+		"--rewrite-db", fmt.Sprintf("%s->%s", originalDBName, targetDatabase),
 		// List entries for just this database. It's applied after the --rewrite-db option, so we should provide the rewritten database, i.e., pitrDatabase.
-		"--database", pitrDatabase,
+		"--database", targetDatabase,
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		"--start-position", fmt.Sprintf("%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
@@ -202,36 +194,27 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 	return driver.replayBinlogCounter.Count()
 }
 
-// RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
-// It performs the step 1 of the restore process.
-// TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
-func (driver *Driver) RestorePITR(ctx context.Context, fullBackup io.Reader, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
-	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	stmt := fmt.Sprintf(""+
-		// Create the pitr database.
-		"CREATE DATABASE `%s`;"+
-		// Change to the pitr database.
-		"USE `%s`;",
-		pitrDatabaseName, pitrDatabaseName)
+// ReplayBinlogToPITRDatabase replays binlog to the PITR database.
+// It's the second step of the PITR process.
+func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseName string, startBinlogInfo api.BinlogInfo, suffixTs, targetTs int64) error {
+	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
+	return driver.replayBinlog(ctx, databaseName, pitrDatabaseName, startBinlogInfo, targetTs)
+}
 
+// RestoreBackupToPITRDatabase restores a full backup to the PITR database.
+// It's the first step of the PITR process.
+func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
+	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
+	// Create the pitr database.
+	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
 	}
-
 	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
-
-	if err := driver.Restore(ctx, fullBackup); err != nil {
-		return err
-	}
-
-	if err := driver.replayBinlog(ctx, database, pitrDatabaseName, startBinlogInfo, targetTs); err != nil {
-		return fmt.Errorf("failed to replay binlog, error: %w", err)
-	}
-
-	return nil
+	return driver.restoreImpl(ctx, backup, pitrDatabaseName)
 }
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
@@ -386,8 +369,8 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 // It returns the pitr and old database names after swap.
 // It performs the step 2 of the restore process.
 func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suffixTs int64) (string, string, error) {
-	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	pitrOldDatabase := getPITROldDatabaseName(database, suffixTs)
+	pitrDatabaseName := util.GetPITRDatabaseName(database, suffixTs)
+	pitrOldDatabase := util.GetPITROldDatabaseName(database, suffixTs)
 
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
 	log.Debug("Checking database exists.", zap.String("database", database))
@@ -464,20 +447,6 @@ func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool,
 	return true, nil
 }
 
-// Composes a pitr database name that we use as the target database for full backup recovery and binlog recovery.
-// For example, getPITRDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005".
-func getPITRDatabaseName(database string, suffixTs int64) string {
-	suffix := fmt.Sprintf("pitr_%d", suffixTs)
-	return getSafeName(database, suffix)
-}
-
-// Composes a database name that we use as the target database for swapping out the original database.
-// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_del".
-func getPITROldDatabaseName(database string, suffixTs int64) string {
-	suffix := fmt.Sprintf("pitr_%d_del", suffixTs)
-	return getSafeName(database, suffix)
-}
-
 // GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
 func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
@@ -541,8 +510,16 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	return nil
 }
 
+// GetBinlogDir gets the binlogDir.
+func (driver *Driver) GetBinlogDir() string {
+	return driver.binlogDir
+}
+
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
+	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create binlog directory %q, error: %w", driver.binlogDir, err)
+	}
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
@@ -854,15 +831,6 @@ func GetBinlogNameSeq(name string) (int64, error) {
 		return 0, fmt.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
 	}
 	return strconv.ParseInt(s[1], 10, 0)
-}
-
-func getSafeName(baseName, suffix string) string {
-	name := fmt.Sprintf("%s_%s", baseName, suffix)
-	if len(name) <= MaxDatabaseNameLength {
-		return name
-	}
-	extraCharacters := len(name) - MaxDatabaseNameLength
-	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
 // checks the MySQL version is >=8.0.

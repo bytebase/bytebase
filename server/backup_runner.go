@@ -206,13 +206,13 @@ func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 	for _, instance := range instanceList {
 		if _, ok := r.downloadBinlogInstanceIDs[instance.ID]; !ok {
 			r.downloadBinlogInstanceIDs[instance.ID] = true
-			go r.downloadBinlogFilesForInstance(ctx, instance, r.server.profile.DataDir)
+			go r.downloadBinlogFilesForInstance(ctx, instance)
 			r.downloadBinlogWg.Add(1)
 		}
 	}
 }
 
-func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string) {
+func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance) {
 	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
 	defer func() {
 		r.downloadBinlogMu.Lock()
@@ -231,17 +231,11 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	}
 	defer driver.Close(ctx)
 
-	binlogDir := getBinlogAbsDir(dataDir, instance.ID)
-	if err := createBinlogDir(dataDir, instance.ID); err != nil {
-		log.Error("Failed to create binlog directory", zap.Error(err))
-		return
-	}
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	mysqlDriver.SetUpForPITR(binlogDir)
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
