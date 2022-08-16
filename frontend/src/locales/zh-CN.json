@@ -763,7 +763,8 @@
     "establish-database-baseline": "建立「{name}」基线",
     "instance-missing-migration-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
-    "contact-dba": "请联系您的 DBA 进行配置。"
+    "contact-dba": "请联系您的 DBA 进行配置。",
+    "no-succeed-vcs-migration-record": "没有来自 VCS 的变更历史。"
   },
   "database": {
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "该表每隔约10分钟刷新一次，所以展示的可能不是最新信息。",

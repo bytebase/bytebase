@@ -762,7 +762,8 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
-    "contact-dba": "Please contact your DBA to config it"
+    "contact-dba": "Please contact your DBA to config it",
+    "no-succeed-vcs-migration-record": "No succeed migration record from VCS"
   },
   "database": {
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
@@ -873,7 +874,7 @@
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
-    "branch-specify-tip": "Tip: You can also use wildcard like 'feature/*",
+    "branch-specify-tip": "Tip: You can also use wildcard like \"feature/*\"",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",

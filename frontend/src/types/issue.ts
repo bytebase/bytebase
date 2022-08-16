@@ -10,6 +10,7 @@ import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { MigrationType } from "./instance";
+import { VCSPushEvent } from "./vcs";
 
 type IssueTypeGeneral = "bb.issue.general";
 
@@ -58,6 +59,7 @@ export type UpdateSchemaGhostDetail = UpdateSchemaDetail & {
 export type UpdateSchemaContext = {
   migrationType: MigrationType;
   updateSchemaDetailList: UpdateSchemaDetail[];
+  vcsPushEvent?: VCSPushEvent;
 };
 
 export type UpdateSchemaGhostContext = {

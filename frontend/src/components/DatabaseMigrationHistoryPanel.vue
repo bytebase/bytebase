@@ -60,11 +60,7 @@
       })
     "
     :description="$t('migration-history.establish-baseline-description')"
-    @ok="
-      () => {
-        doCreateBaseline();
-      }
-    "
+    @ok="doCreateBaseline"
     @cancel="state.showBaselineModal = false"
   >
   </BBAlert>
@@ -78,6 +74,7 @@ import {
   PropType,
   reactive,
 } from "vue";
+import { useI18n } from "vue-i18n";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {
   Database,
@@ -88,8 +85,7 @@ import {
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { instanceSlug, isDBAOrOwner } from "../utils";
-import { useI18n } from "vue-i18n";
-import { useCurrentUser, useInstanceStore } from "@/store";
+import { pushNotification, useCurrentUser, useInstanceStore } from "@/store";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -196,15 +192,19 @@ export default defineComponent({
       return "";
     });
 
+    const migrationHistoryList = computed(() => {
+      return instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
+        props.database.instance.id,
+        props.database.name
+      );
+    });
+
     const migrationHistorySectionList = computed(
       (): BBTableSectionDataSource<MigrationHistory>[] => {
         return [
           {
             title: "",
-            list: instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-              props.database.instance.id,
-              props.database.name
-            ),
+            list: migrationHistoryList.value,
           },
         ];
       }
@@ -216,6 +216,26 @@ export default defineComponent({
 
     const doCreateBaseline = () => {
       state.showBaselineModal = false;
+
+      // If the database is within VCS project, try to find its latest and done migration history from VCS.
+      // If not found, show error notification.
+      if (props.database.project.workflowType === "VCS") {
+        const latestDoneVCSMigrationHistory =
+          instanceStore.getLatestDoneVCSMigrationHistory(
+            props.database.instance.id,
+            props.database.name
+          );
+
+        if (!latestDoneVCSMigrationHistory) {
+          pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("migration-history.no-succeed-vcs-migration-record"),
+          });
+          return;
+        }
+      }
+
       router.push({
         name: "workspace.issue.detail",
         params: {
