@@ -250,7 +250,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, driver db.Driver, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, driver db.Driver, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	if payload.BackupID != nil {
 		backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
 		if err != nil {
