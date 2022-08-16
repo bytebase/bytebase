@@ -12,11 +12,9 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -275,15 +273,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return issue, nil
 	}
 
-	//TODO: remove this debug logging
-	log.Debug("issueCreate", zap.Any("issueCreate", issueCreate))
-
 	// check the assignee if it's NOT ValidateOnly.
 	if issueCreate.AssigneeID == api.UnknownID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 	}
 	// Use the environment of the first stage.
-	environmentID := issueCreate.Pipeline.StageList[0].EnvironmentID
+	environmentID := pipeline.StageList[0].EnvironmentID
 	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, environmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
