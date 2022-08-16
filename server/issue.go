@@ -12,10 +12,11 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pingcap/tidb/br/pkg/lightning/log"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -275,7 +276,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	//TODO: remove this debug logging
-	log.L().Sugar().Warn("issueCreate %+v", issueCreate)
+	log.Debug("issueCreate", zap.Any("issueCreate", issueCreate))
 
 	// check the assignee if it's NOT ValidateOnly.
 	if issueCreate.AssigneeID == api.UnknownID {
