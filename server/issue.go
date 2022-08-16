@@ -266,7 +266,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	if !issueCreate.ValidateOnly {
-		// check the assignee if it's NOT ValidateOnly
+		// validate the assignee if we are going to insert data in to the database (NOT ValidateOnly).
 		if issueCreate.AssigneeID == api.UnknownID {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 		}
