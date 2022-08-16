@@ -911,11 +911,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		BackupID: c.BackupID,
 	}
 
-	// We don't support inplace backup restore yet.
-	if payloadRestore.BackupID != nil && payloadRestore.TargetInstanceID == nil {
-		return nil, nil, common.Errorf(common.Invalid, "unexpect restore inplace")
-	}
-
 	if payloadRestore.TargetInstanceID != nil {
 		restoreTaskCreate.InstanceID = c.CreateDatabaseCtx.InstanceID
 		restoreTaskCreate.DatabaseName = c.CreateDatabaseCtx.DatabaseName
@@ -925,7 +920,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 	taskCreateList = append(taskCreateList, restoreTaskCreate)
 
-	// Inplace restore needs a cutover task.
+	// In-place restore needs a cutover task.
 	if payloadRestore.TargetInstanceID == nil {
 		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 		bytesCutover, err := json.Marshal(payloadCutover)
