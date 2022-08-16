@@ -94,7 +94,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^uk_tech_book_name$\" but found \"tech_book_name\"",
+					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^$|^uk_tech_book_name$\" but found \"tech_book_name\"",
 				},
 			},
 		},
@@ -102,10 +102,10 @@ func TestNamingUKConvention(t *testing.T) {
 			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE (name))",
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingUKConventionMismatch,
-					Title:   "naming.index.uk",
-					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^uk_tech_book_name$\" but found \"\"",
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
@@ -113,21 +113,10 @@ func TestNamingUKConvention(t *testing.T) {
 			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20) UNIQUE)",
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingUKConventionMismatch,
-					Title:   "naming.index.uk",
-					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^uk_tech_book_name$\" but found \"\"",
-				},
-			},
-		},
-		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE (name))",
-			Want: []advisor.Advice{
-				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingUKConventionMismatch,
-					Title:   "naming.index.uk",
-					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^uk_tech_book_name$\" but found \"\"",
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
