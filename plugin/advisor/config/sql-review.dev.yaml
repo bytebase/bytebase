@@ -16,9 +16,6 @@ ruleList:
     level: WARNING
   - type: statement.where.no-leading-wildcard-like
     level: WARNING
-  # The default naming length is <= 63 characters
-  # PostgreSQL has it's own naming length limit, will auto slice the name to make sure its length <= 63
-  # https://www.postgresql.org/docs/current/limits.html
   - type: naming.table
     level: WARNING
     payload:

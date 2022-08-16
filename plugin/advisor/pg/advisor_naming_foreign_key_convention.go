@@ -35,9 +35,6 @@ func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, statement string) (
 		return nil, err
 	}
 
-	// Naming length limit feature is limited for PG, the PG parser will auto slice the name to make sure its length <= 63
-	// Reference:
-	// https://www.postgresql.org/docs/current/limits.html
 	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
