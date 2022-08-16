@@ -100,7 +100,7 @@
   </BBTable>
   <BBModal
     v-if="state.restoreBackupContext"
-    :title="restoreModalTitle"
+    :title="$t('database.restore-database')"
     @close="state.restoreBackupContext = undefined"
   >
     <div class="space-y-4">
@@ -357,16 +357,6 @@ export default defineComponent({
       return backup.status === "DONE";
     };
 
-    const restoreModalTitle = computed(() => {
-      if (!state.restoreBackupContext) return "";
-      if (state.restoreBackupContext.step === "CREATE-DATABASE") {
-        return t("database.restore-backup", [
-          state.restoreBackupContext.backup.name,
-        ]);
-      }
-      return t("database.restore");
-    });
-
     const doRestoreInPlace = async () => {
       const { restoreBackupContext } = state;
       if (!restoreBackupContext) {
@@ -422,7 +412,6 @@ export default defineComponent({
       backupSectionList,
       statusIconClass,
       allowRestore,
-      restoreModalTitle,
       doRestoreInPlace,
     };
   },

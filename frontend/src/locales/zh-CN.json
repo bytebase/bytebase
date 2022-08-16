@@ -847,7 +847,7 @@
       "no-later-than-now": "恢复的时间点不能晚于当前时间。",
       "restore-before-last-migration": "恢复到上次变更历史之前",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。{link}。",
-      "target": "还原到",
+      "target": "恢复到",
       "target-new-db": "新数据库",
       "target-inplace": "原数据库",
       "will-overwrite-current-database": "会覆盖现有数据库"
@@ -871,7 +871,8 @@
     "synced-at": "同步于 {time}",
     "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}",
     "view-unassigned-databases": "查看未分配的数据库",
-    "unassigned-databases": "未分配的数据库"
+    "unassigned-databases": "未分配的数据库",
+    "restore-database": "恢复数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
