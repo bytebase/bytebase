@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"go.uber.org/zap"
 )
 
@@ -93,27 +94,44 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 	}
 	defer driver.Close(ctx)
 
-	driverDB, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return true, nil, err
-	}
-	conn, err := driverDB.Conn(ctx)
-	if err != nil {
-		return true, nil, err
-	}
-	defer conn.Close()
-
-	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
-	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
-	if err != nil {
-		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
-		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
-	}
-	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
-
-	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
-		return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
+	switch task.Instance.Engine {
+	case db.Postgres:
+		pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+		pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
+		db1, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
+		}
+		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
+			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", task.Database.Name, pitrOldDatabaseName, err)
+		}
+		if _, err := db1.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
+			return true, nil, fmt.Errorf("failed to rename database %q to %q, error: %w", pitrDatabaseName, task.Database.Name, err)
+		}
+	case db.MySQL:
+		driverDB, err := driver.GetDBConnection(ctx, "")
+		if err != nil {
+			return true, nil, err
+		}
+		conn, err := driverDB.Conn(ctx)
+		if err != nil {
+			return true, nil, err
+		}
+		defer conn.Close()
+		log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
+		pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
+		if err != nil {
+			log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
+			return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
+		}
+		log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
+		// TODO(dragonly): Only needed for in-place PITR.
+		backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
+		if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
+			return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
+		}
+	default:
+		return true, nil, fmt.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
 	}
 
 	log.Debug("Appending new migration history record")
