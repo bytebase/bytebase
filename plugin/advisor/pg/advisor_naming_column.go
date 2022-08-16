@@ -113,7 +113,6 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, column, checker.maxLength),
 			})
 		}
-
 	}
 
 	return checker
