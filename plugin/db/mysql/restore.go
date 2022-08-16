@@ -209,6 +209,13 @@ func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseNa
 // RestoreBackupToDatabase create the database named `databaseName` and restores a full backup to the given database.
 func (driver *Driver) RestoreBackupToDatabase(ctx context.Context, backup io.Reader, databaseName string) error {
 	// Create the pitr database.
+	return driver.restoreImpl(ctx, backup, databaseName)
+}
+
+// RestoreBackupToPITRDatabase restores a full backup to the PITR database.
+// It's the first step of the PITR process.
+func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
+	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
 	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", databaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
@@ -217,13 +224,6 @@ func (driver *Driver) RestoreBackupToDatabase(ctx context.Context, backup io.Rea
 	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
-	return driver.restoreImpl(ctx, backup, databaseName)
-}
-
-// RestoreBackupToPITRDatabase restores a full backup to the PITR database.
-// It's the first step of the PITR process.
-func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
-	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
 	// Create the pitr database.
 	return driver.RestoreBackupToDatabase(ctx, backup, pitrDatabaseName)
 }
