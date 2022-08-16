@@ -284,7 +284,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
 	}
 	if !ok {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
 	issueCreate.CreatorID = creatorID
