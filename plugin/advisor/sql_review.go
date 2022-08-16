@@ -86,7 +86,9 @@ const (
 	ReferencedColumnNameTemplateToken = "{{referenced_column}}"
 
 	// defaultNameLengthLimit is the default length limit for naming rules.
-	defaultNameLengthLimit = 64
+	// PostgreSQL has it's own naming length limit, will auto slice the name to make sure its length <= 63
+	// https://www.postgresql.org/docs/current/limits.html
+	defaultNameLengthLimit = 63
 )
 
 var (

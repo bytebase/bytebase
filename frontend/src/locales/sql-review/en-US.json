@@ -41,7 +41,7 @@
     },
     "naming-table": {
       "title": "Table naming check",
-      "description": "Enforce the table name format and length limit. Default snake_lower_case with 64 characters.",
+      "description": "Enforce the table name format and length limit. Default snake_lower_case with 63 characters.",
       "component": {
         "format": {
           "title": "Table name format (regex)"
@@ -53,7 +53,7 @@
     },
     "naming-column": {
       "title": "Column naming check",
-      "description": "Enforce the column name format and length limit. Default snake_lower_case with 64 characters.",
+      "description": "Enforce the column name format and length limit. Default snake_lower_case with 63 characters.",
       "component": {
         "format": {
           "title": "Column name format (regex)"
@@ -65,7 +65,7 @@
     },
     "naming-index-uk": {
       "title": "Unique key naming check",
-      "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> or empty within 64 characters.",
+      "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> or empty within 63 characters.",
       "component": {
         "format": {
           "title": "Unique key name format",
@@ -97,7 +97,7 @@
     },
     "naming-index-fk": {
       "title": "Foreign key naming check",
-      "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> or empty within 64 characters.",
+      "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> or empty within 63 characters.",
       "component": {
         "format": {
           "title": "Foreign key name format",
@@ -115,7 +115,7 @@
     },
     "naming-index-idx": {
       "title": "Index naming check",
-      "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> or empty within 64 characters.",
+      "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> or empty within 63 characters.",
       "component": {
         "format": {
           "title": "Index name format",

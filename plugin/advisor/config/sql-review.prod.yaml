@@ -16,36 +16,39 @@ ruleList:
     level: ERROR
   - type: statement.where.no-leading-wildcard-like
     level: ERROR
+  # The default naming length is <= 63 characters
+  # PostgreSQL has it's own naming length limit, will auto slice the name to make sure its length <= 63
+  # https://www.postgresql.org/docs/current/limits.html
   - type: naming.table
     level: WARNING
     payload:
       format: "^[a-z]+(_[a-z]+)*$"
-      maxLength: 64
+      maxLength: 63
   - type: naming.column
     level: WARNING
     payload:
       format: "^[a-z]+(_[a-z]+)*$"
-      maxLength: 64
+      maxLength: 63
   - type: naming.index.uk
     level: WARNING
     payload:
       format: "^$|^uk_{{table}}_{{column_list}}$"
-      maxLength: 64
+      maxLength: 63
   - type: naming.index.pk
     level: WARNING
     payload:
       format: "^$|^pk_{{table}}_{{column_list}}$"
-      maxLength: 63 # https://www.postgresql.org/docs/current/limits.html
+      maxLength: 63
   - type: naming.index.idx
     level: WARNING
     payload:
       format: "^$|^idx_{{table}}_{{column_list}}$"
-      maxLength: 64
+      maxLength: 63
   - type: naming.index.fk
     level: WARNING
     payload:
       format: "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$"
-      maxLength: 64
+      maxLength: 63
   - type: column.required
     level: WARNING
     payload:
