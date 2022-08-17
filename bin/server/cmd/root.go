@@ -98,7 +98,6 @@ var (
 		pgURL string
 
 		// Cloud backup configs
-		// TODO(dragonly): add to profile
 		backupBucket    string
 		credentialsFile string
 	}
