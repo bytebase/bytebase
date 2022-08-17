@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 )
@@ -358,11 +359,11 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 	for _, blockingTaskIDString := range task.BlockedBy {
 		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
 		if err != nil {
-			return true, fmt.Errorf("failed to convert id string to int, id string: %v, error: %w", blockingTaskIDString, err)
+			return true, errors.Wrapf(err, "failed to convert id string to int, id string: %v", blockingTaskIDString)
 		}
 		blockingTask, err := s.server.store.GetTaskByID(ctx, blockingTaskID)
 		if err != nil {
-			return true, fmt.Errorf("failed to fetch the blocking task, id: %v, error: %w", blockingTaskID, err)
+			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %v", blockingTaskID)
 		}
 		if blockingTask.Status != api.TaskDone {
 			return true, nil

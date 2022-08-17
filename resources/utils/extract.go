@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/xi2/xz"
 )
 
@@ -45,7 +46,7 @@ func extractTar(r io.Reader, targetDir string) error {
 
 		targetPath, err := filepath.Abs(filepath.Join(targetDir, header.Name))
 		if err != nil {
-			return fmt.Errorf("failed to get absolute path for %q, error: %w", header.Name, err)
+			return errors.Wrapf(err, "failed to get absolute path for %q", header.Name)
 		}
 
 		// Ensure that output paths constructed from zip archive entries
@@ -55,7 +56,7 @@ func extractTar(r io.Reader, targetDir string) error {
 		}
 
 		if err := os.MkdirAll(path.Dir(targetPath), os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory %q, error: %w", header.Name, err)
+			return errors.Wrapf(err, "failed to create directory %q", header.Name)
 		}
 
 		switch header.Typeflag {

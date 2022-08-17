@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/metric"
+	"github.com/pkg/errors"
 )
 
 // sheetRaw is the store model for an Sheet.
@@ -74,11 +75,11 @@ func (raw *sheetRaw) toSheet() *api.Sheet {
 func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.Sheet, error) {
 	sheetRaw, err := s.createSheetRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Sheet with SheetCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Sheet with SheetCreate[%+v]", create)
 	}
 	sheet, err := s.composeSheet(ctx, sheetRaw, create.CreatorID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", sheetRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Sheet with sheetRaw[%+v]", sheetRaw)
 	}
 	return sheet, nil
 }
@@ -87,14 +88,14 @@ func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.
 func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*api.Sheet, error) {
 	sheetRaw, err := s.getSheetRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Sheet with SheetFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to get Sheet with SheetFind[%+v]", find)
 	}
 	if sheetRaw == nil {
 		return nil, nil
 	}
 	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", sheetRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Sheet with sheetRaw[%+v]", sheetRaw)
 	}
 	return sheet, nil
 }
@@ -109,7 +110,7 @@ func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrinc
 	for _, raw := range sheetRawList {
 		sheet, err := s.composeSheet(ctx, raw, currentPrincipalID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Sheet with sheetRaw[%+v]", raw)
 		}
 		sheetList = append(sheetList, sheet)
 	}
@@ -120,11 +121,11 @@ func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrinc
 func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.Sheet, error) {
 	sheetRaw, err := s.patchSheetRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Sheet with SheetPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Sheet with SheetPatch[%+v]", patch)
 	}
 	sheet, err := s.composeSheet(ctx, sheetRaw, patch.UpdaterID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", sheetRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Sheet with sheetRaw[%+v]", sheetRaw)
 	}
 	return sheet, nil
 }

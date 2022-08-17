@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/metric"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -84,11 +85,11 @@ func (raw *taskRaw) toTask() *api.Task {
 func (s *Store) CreateTask(ctx context.Context, create *api.TaskCreate) (*api.Task, error) {
 	taskRaw, err := s.createTaskRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Task with TaskCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Task with TaskCreate[%+v]", create)
 	}
 	task, err := s.composeTask(ctx, taskRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Task with taskRaw[%+v], error: %w", taskRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", taskRaw)
 	}
 	return task, nil
 }
@@ -98,14 +99,14 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 	find := &api.TaskFind{ID: &id}
 	taskRaw, err := s.getTaskRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Task with ID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get Task with ID %d", id)
 	}
 	if taskRaw == nil {
 		return nil, nil
 	}
 	task, err := s.composeTask(ctx, taskRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Task with taskRaw[%+v], error: %w", taskRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", taskRaw)
 	}
 	return task, nil
 }
@@ -114,14 +115,14 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bool) ([]*api.Task, error) {
 	taskRawList, err := s.findTaskRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Task list with TaskFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Task list with TaskFind[%+v]", find)
 	}
 	var taskList []*api.Task
 	for _, raw := range taskRawList {
 		task, err := s.composeTask(ctx, raw)
 		if err != nil {
 			if returnOnErr {
-				return nil, fmt.Errorf("failed to compose Task with taskRaw[%+v], error: %w", raw, err)
+				return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", raw)
 			}
 			log.Error("failed to compose Task",
 				zap.Any("taskRaw", raw),
@@ -137,11 +138,11 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bo
 func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task, error) {
 	taskRaw, err := s.patchTaskRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Task with TaskPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Task with TaskPatch[%+v]", patch)
 	}
 	task, err := s.composeTask(ctx, taskRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Task with taskRaw[%+v], error: %w", taskRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", taskRaw)
 	}
 	return task, nil
 }
@@ -150,11 +151,11 @@ func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task,
 func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
 	taskRaw, err := s.patchTaskRawStatus(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch TaskStatus with TaskStatusPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch TaskStatus with TaskStatusPatch[%+v]", patch)
 	}
 	task, err := s.composeTask(ctx, taskRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose TaskStatus with taskRaw[%+v], error: %w", taskRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose TaskStatus with taskRaw[%+v]", taskRaw)
 	}
 	return task, nil
 }
