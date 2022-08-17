@@ -798,7 +798,8 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
 
-	// https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook GitHub create webhook API returns 201 http status code if success.
+	// GitHub returns 201 HTTP status codes upon successful webhook creation,
+	// see https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook for details.
 	if code != http.StatusCreated {
 		if code == http.StatusNotFound {
 			return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
