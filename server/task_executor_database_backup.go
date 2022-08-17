@@ -118,7 +118,9 @@ func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, serv
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
 		log.Debug("Successfully uploaded backup to s3 bucket.")
-		os.Remove(backupFilePathLocal)
+		if err := os.Remove(backupFilePathLocal); err != nil {
+			log.Warn("Failed to remove the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal))
+		}
 		log.Debug("Removed local backup file.")
 		return payload, nil
 	default:
