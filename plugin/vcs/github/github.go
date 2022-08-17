@@ -798,15 +798,16 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
 
-	if code == http.StatusNotFound {
-		return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
-	} else if code >= 300 {
-		return "",
-			fmt.Errorf("failed to create webhook through URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
+	// https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook GitHub create webhook API returns 201 http status code if success.
+	if code != http.StatusCreated {
+		if code == http.StatusNotFound {
+			return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
+		}
+		return "", fmt.Errorf("failed to create webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
 	}
 
 	var webhookInfo WebhookInfo

@@ -795,15 +795,16 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
 
-	if code == http.StatusNotFound {
-		return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
-	} else if code >= 300 {
+	// https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook GitLab POST method returns 201 http status code if success.
+	if code != http.StatusCreated {
+		if code == http.StatusNotFound {
+			return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
+		}
 		reason := fmt.Sprintf("failed to create webhook through URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
 		)
-
 		// Add helper tips if the status code is 422, refer to https://github.com/bytebase/bytebase/issues/101 for more context.
 		if code == http.StatusUnprocessableEntity {
 			reason += ".\n\nIf GitLab and Bytebase are in the same private network, " +
