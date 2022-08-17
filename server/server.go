@@ -30,6 +30,7 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
+	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/store"
@@ -98,24 +99,24 @@ var casbinDeveloperPolicy string
 // @schemes http
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof Profile) (*Server, error) {
+func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	s := &Server{
-		profile:   prof,
+		profile:   profile,
 		startedTs: time.Now().Unix(),
 	}
 
 	// Display config
 	log.Info("-----Config BEGIN-----")
-	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
-	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
-	log.Info(fmt.Sprintf("datastore=%s:%d", prof.BackendHost, prof.DatastorePort))
-	log.Info(fmt.Sprintf("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort))
-	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
-	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
-	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
-	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
-	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
-	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
+	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
+	log.Info(fmt.Sprintf("server=%s:%d", profile.BackendHost, profile.BackendPort))
+	log.Info(fmt.Sprintf("datastore=%s:%d", profile.BackendHost, profile.DatastorePort))
+	log.Info(fmt.Sprintf("frontend=%s:%d", profile.FrontendHost, profile.FrontendPort))
+	log.Info(fmt.Sprintf("demoDataDir=%s", profile.DemoDataDir))
+	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
+	log.Info(fmt.Sprintf("demo=%t", profile.Demo))
+	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
+	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
+	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
 	log.Info("-----Config END-------")
 
 	serverStarted := false
@@ -127,7 +128,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	var err error
 
-	resourceDir := common.GetResourceDir(prof.DataDir)
+	resourceDir := common.GetResourceDir(profile.DataDir)
 	// Install mysqlutil
 	if err := mysqlutil.Install(resourceDir); err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
@@ -135,8 +136,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// Install Postgres.
 	var pgDataDir string
-	if prof.useEmbedDB() {
-		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
+	if profile.useEmbedDB() {
+		pgDataDir = common.GetPostgresDataDir(profile.DataDir)
 	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
 	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
@@ -146,24 +147,24 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+	pgInstance, err := postgres.Install(resourceDir, pgDataDir, profile.PgUser)
 	if err != nil {
 		return nil, err
 	}
 	s.pgInstanceDir = pgInstance.BaseDir
 
 	// New MetadataDB instance.
-	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
+	if profile.useEmbedDB() {
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, profile.PgUser, profile.DemoDataDir, profile.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, profile.PgURL, profile.DemoDataDir, profile.Mode)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
 	}
 
 	// New store.DB instance that represents the db connection.
-	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
+	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
 	if err != nil {
 		return nil, fmt.Errorf("cannot new db: %w", err)
 	}
@@ -185,7 +186,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.secret = config.secret
 
 	e := echo.New()
-	e.Debug = prof.Debug
+	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -197,7 +198,12 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	embedFrontend(e)
 	s.e = e
 
-	if !prof.Readonly {
+	s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, profile.CredentialsFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS S3 client, error: %w", err)
+	}
+
+	if !profile.Readonly {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
@@ -209,7 +215,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
+		taskScheduler.Register(api.TaskDatabaseBackup, func() TaskExecutor { return NewDatabaseBackupTaskExecutor(*s3Client) })
 
 		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
 
@@ -254,7 +260,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.SchemaSyncer = NewSchemaSyncer(s)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(s, profile.BackupRunnerInterval)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
@@ -264,7 +270,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
-	if prof.Mode == common.ReleaseModeDev || prof.Debug {
+	if profile.Mode == common.ReleaseModeDev || profile.Debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
 				return !common.HasPrefixes(c.Path(), "/api", "/hook")
@@ -287,7 +293,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
+		return JWTMiddleware(s.store, next, profile.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -300,7 +306,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, ce, next, prof.Readonly)
+		return aclMiddleware(s, ce, next, profile.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -342,7 +348,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p.Use(e)
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
+	s.LicenseService, err = enterpriseService.NewLicenseService(profile.Mode, s.store)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}

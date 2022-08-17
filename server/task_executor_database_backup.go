@@ -10,18 +10,22 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
+	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
-func NewDatabaseBackupTaskExecutor() TaskExecutor {
-	return &DatabaseBackupTaskExecutor{}
+func NewDatabaseBackupTaskExecutor(s3Client s3bb.Client) TaskExecutor {
+	return &DatabaseBackupTaskExecutor{
+		s3Client: s3Client,
+	}
 }
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
 	completed int32
+	s3Client  s3bb.Client
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
@@ -81,25 +85,45 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
+func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
 	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
 	}
 	defer driver.Close(ctx)
 
-	f, err := os.Create(filepath.Join(server.profile.DataDir, backup.Path))
+	backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+	backupFile, err := os.Create(backupFilePathLocal)
 	if err != nil {
 		return "", fmt.Errorf("failed to open backup path: %s", backup.Path)
 	}
-	defer f.Close()
+	defer backupFile.Close()
 
-	payload, err := driver.Dump(ctx, databaseName, f, false /* schemaOnly */)
+	payload, err := driver.Dump(ctx, databaseName, backupFile, false /* schemaOnly */)
 	if err != nil {
 		return "", err
 	}
 
-	return payload, nil
+	switch backup.StorageBackend {
+	case api.BackupStorageBackendLocal:
+		return payload, nil
+	case api.BackupStorageBackendS3:
+		log.Debug("Uploading backup to s3 bucket.")
+		bucketFileToUpload, err := os.Open(backupFilePathLocal)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
+		}
+		defer bucketFileToUpload.Close()
+		if _, err := exec.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
+			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
+		}
+		log.Debug("Successfully uploaded backup to s3 bucket.")
+		os.Remove(backupFilePathLocal)
+		log.Debug("Removed local backup file.")
+		return payload, nil
+	default:
+		return "", fmt.Errorf("backup to %s not implemented yet", backup.StorageBackend)
+	}
 }
 
 // Get backup dir relative to the data dir.

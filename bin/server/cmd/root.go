@@ -96,6 +96,11 @@ var (
 		// pgURL must follow PostgreSQL connection URIs pattern.
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 		pgURL string
+
+		// Cloud backup configs
+		// TODO(dragonly): add to profile
+		backupBucket    string
+		credentialsFile string
 	}
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -115,6 +120,12 @@ var (
 	}
 )
 
+type backupMeta struct {
+	storageBackend api.BackupStorageBackend
+	region         string
+	bucket         string
+}
+
 // Execute executes the root command.
 func Execute() error {
 	return rootCmd.Execute()
@@ -131,6 +142,11 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo-name", "", "name of the demo to use when running in demo mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
+
+	// Cloud backup related flags.
+	// TODO(dragonly): Add GCS usages when it's supported.
+	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3:us-west-2//example-bucket. When provided, Bytebase will store data to the S3 bucket.")
+	rootCmd.PersistentFlags().StringVar(&flags.credentialsFile, "credentials-file", "", "credential file to use for the backup bucket. It should be the same format as the AWS credential files.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -158,6 +174,7 @@ func checkDataDir() error {
 }
 
 func start() {
+	fmt.Printf("--backup-backet=%q\n", flags.backupBucket)
 	if flags.debug {
 		log.SetLevel(zap.DebugLevel)
 	}
@@ -173,7 +190,19 @@ func start() {
 		return
 	}
 
-	activeProfile := activeProfile(flags.dataDir, api.BackupStorageBackendLocal)
+	profile := activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal}, "")
+	if flags.backupBucket != "" {
+		if flags.credentialsFile == "" {
+			log.Error("no --credential-file specified")
+			return
+		}
+		bucketMeta, err := parseBucketURI(flags.backupBucket)
+		if err != nil {
+			log.Error("failed to parse backup bucket", zap.Error(err))
+			return
+		}
+		profile = activeProfile(flags.dataDir, bucketMeta, flags.credentialsFile)
+	}
 
 	var s *server.Server
 	// Setup signal handlers.
@@ -192,12 +221,12 @@ func start() {
 		cancel()
 	}()
 
-	s, err := server.NewServer(ctx, activeProfile)
+	s, err := server.NewServer(ctx, profile)
 	if err != nil {
 		log.Error("Cannot new server", zap.Error(err))
 		return
 	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", activeProfile.Version, activeProfile.BackendHost, activeProfile.BackendPort))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", profile.Version, profile.BackendHost, profile.BackendPort))
 	// Execute program.
 	if err := s.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {
@@ -209,4 +238,32 @@ func start() {
 
 	// Wait for CTRL-C.
 	<-ctx.Done()
+}
+
+// Examples:
+//   s3:us-west-2//bytebase-dev
+//   gcs://bytebase-dev
+func parseBucketURI(uri string) (backupMeta, error) {
+	parts := strings.Split(uri, ":")
+	if len(parts) != 2 {
+		return backupMeta{}, fmt.Errorf("invalid bucket URI %q", uri)
+	}
+
+	backend := parts[0]
+	switch strings.ToUpper(backend) {
+	case string(api.BackupStorageBackendS3):
+		parts = strings.Split(parts[1], "//")
+		if len(parts) != 2 {
+			return backupMeta{}, fmt.Errorf("invalid S3 bucket URI %q", uri)
+		}
+		region := parts[0]
+		bucket := parts[1]
+		return backupMeta{
+			storageBackend: api.BackupStorageBackendS3,
+			region:         region,
+			bucket:         bucket,
+		}, nil
+	default:
+		return backupMeta{}, fmt.Errorf("invalid storage backend %q", backend)
+	}
 }
