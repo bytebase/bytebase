@@ -307,7 +307,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	// Store the migration history version if exists.
 	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get admin database driver, error: %w", err)
+		return nil, errors.Wrap(err, "failed to get admin database driver")
 	}
 	defer driver.Close(ctx)
 
@@ -317,7 +317,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	}
 	path := getBackupRelativeFilePath(database.ID, backupName)
 	if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
-		return nil, fmt.Errorf("failed to create backup directory, error: %w", err)
+		return nil, errors.Wrap(err, "failed to create backup directory")
 	}
 	backupCreate := &api.BackupCreate{
 		CreatorID:               creatorID,

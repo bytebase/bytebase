@@ -311,7 +311,7 @@ func (s *TaskScheduler) canAutoApprove(ctx context.Context, task *api.Task) (boo
 func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
-		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
+		return false, errors.Wrap(err, "failed to check if task is blocked")
 	}
 	if blocked {
 		return false, nil
