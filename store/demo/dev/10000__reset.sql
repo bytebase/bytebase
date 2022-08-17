@@ -78,6 +78,9 @@ DELETE FROM
 DELETE FROM
     backup_setting;
 
+DELETE FROM
+    binlog_file;
+
 -- Delete in this order following foreign constraints.
 DELETE FROM
     db_label;
