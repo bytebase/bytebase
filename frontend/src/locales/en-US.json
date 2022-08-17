@@ -846,10 +846,10 @@
       "no-later-than-now": "Restore point-in-time cannot be later than now.",
       "restore-before-last-migration": "Restore to the point before last migration",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
-      "target": "Restore to",
-      "target-new-db": "New database",
-      "target-inplace": "In place",
-      "will-overwrite-current-database": "Will overwrite current database"
+      "will-overwrite-current-database": "Will overwrite current database",
+      "restore-to": "Restore to",
+      "restore-to-new-db": "New database",
+      "restore-to-in-place": "In place"
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
     "show-reserved-databases": "Show Bytebase reserved databases",

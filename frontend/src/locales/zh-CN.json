@@ -847,10 +847,10 @@
       "no-later-than-now": "恢复的时间点不能晚于当前时间。",
       "restore-before-last-migration": "恢复到上次变更历史之前",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。{link}。",
-      "target": "恢复到",
-      "target-new-db": "新数据库",
-      "target-inplace": "原数据库",
-      "will-overwrite-current-database": "会覆盖现有数据库"
+      "will-overwrite-current-database": "会覆盖现有数据库",
+      "restore-to": "恢复到",
+      "restore-to-new-db": "新数据库",
+      "restore-to-in-place": "原数据库"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
     "show-reserved-databases": "显示 Bytebase 保留的数据库",

@@ -3,7 +3,7 @@
     <div class="grid gap-y-6 gap-x-4 grid-cols-4">
       <div class="col-span-2 col-start-2 w-64">
         <label class="textlabel">
-          {{ $t("database.pitr.target") }}
+          {{ $t("database.pitr.restore-to") }}
         </label>
         <div class="flex items-center gap-6 textlabel py-1">
           <label class="flex items-center gap-2">
@@ -12,7 +12,7 @@
               :checked="state.target === 'NEW'"
               @input="$emit('change', 'NEW')"
             />
-            <span>{{ $t("database.pitr.target-new-db") }}</span>
+            <span>{{ $t("database.pitr.restore-to-new-db") }}</span>
           </label>
           <label class="flex items-center">
             <input
@@ -21,7 +21,7 @@
               @input="$emit('change', 'IN-PLACE')"
             />
             <span class="ml-2 flex items-center">
-              {{ $t("database.pitr.target-inplace") }}
+              {{ $t("database.pitr.restore-to-in-place") }}
 
               <FeatureBadge
                 feature="bb.feature.disaster-recovery-pitr"
