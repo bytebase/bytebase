@@ -69,7 +69,7 @@ func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate
 func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	principalRawList, err := s.findPrincipalRawList(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Principal list, error: %w", err)
+		return nil, errors.Wrap(err, "failed to find Principal list")
 	}
 	var principalList []*api.Principal
 	for _, raw := range principalRawList {

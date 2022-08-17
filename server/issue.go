@@ -446,7 +446,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 
 	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task list of creating database, error: %w", err)
+		return nil, errors.Wrap(err, "failed to create task list of creating database")
 	}
 
 	if c.BackupID != 0 {
@@ -888,7 +888,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		}
 		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, *project)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create the database create task list, error: %w", err)
+			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}
 		taskCreateList = append(taskCreateList, taskList...)
 
@@ -903,7 +903,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	payloadRestore.PointInTimeTs = c.PointInTimeTs
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
+		return nil, nil, errors.Wrap(err, "failed to create PITR restore task, unable to marshal payload")
 	}
 
 	restoreTaskCreate := api.TaskCreate{
@@ -928,7 +928,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 		bytesCutover, err := json.Marshal(payloadCutover)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
+			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			Name:       fmt.Sprintf("Swap PITR and the original database %s", originDatabase.Name),
