@@ -85,12 +85,7 @@
         <button
           :disabled="!allowRestore(backup)"
           class="normal-link disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:no-underline"
-          @click.stop="
-            state.restoreBackupContext = {
-              target: 'NEW',
-              backup,
-            }
-          "
+          @click.stop="showRestoreDialog(backup)"
         >
           {{ $t("database.restore") }}
         </button>
@@ -360,6 +355,13 @@ export default defineComponent({
       return backup.status === "DONE";
     };
 
+    const showRestoreDialog = (backup: Backup) => {
+      state.restoreBackupContext = {
+        target: "NEW",
+        backup,
+      };
+    };
+
     const doRestoreInPlace = async () => {
       const { restoreBackupContext } = state;
       if (!restoreBackupContext) {
@@ -416,6 +418,7 @@ export default defineComponent({
       statusIconClass,
       allowRestore,
       allowRestoreInPlace,
+      showRestoreDialog,
       doRestoreInPlace,
     };
   },
