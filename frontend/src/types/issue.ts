@@ -68,7 +68,8 @@ export type UpdateSchemaGhostContext = {
 
 export type PITRContext = {
   databaseId: DatabaseId;
-  pointInTimeTs: number; // UNIX timestamp
+  pointInTimeTs?: number; // UNIX timestamp
+  backupId?: BackupId;
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types

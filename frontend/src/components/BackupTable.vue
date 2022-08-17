@@ -85,12 +85,7 @@
         <button
           :disabled="!allowRestore(backup)"
           class="normal-link disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:no-underline"
-          @click.stop="
-            () => {
-              state.restoredBackup = backup;
-              state.showRestoreBackupModal = true;
-            }
-          "
+          @click.stop="showRestoreDialog(backup)"
         >
           {{ $t("database.restore") }}
         </button>
@@ -98,50 +93,104 @@
     </template>
   </BBTable>
   <BBModal
-    v-if="state.showRestoreBackupModal"
-    :title="$t('database.restore-backup', [state.restoredBackup.name])"
-    @close="
-      () => {
-        state.showRestoreBackupModal = false;
-        state.restoredBackup = undefined;
-      }
-    "
+    v-if="state.restoreBackupContext"
+    :title="$t('database.restore-database')"
+    @close="state.restoreBackupContext = undefined"
   >
-    <!-- eslint-disable vue/attribute-hyphenation -->
-    <CreateDatabasePrepForm
-      :projectId="database.project.id"
-      :environmentId="database.instance.environment.id"
-      :instanceId="database.instance.id"
-      :backup="state.restoredBackup"
-      @dismiss="
-        () => {
-          state.showRestoreBackupModal = false;
-          state.restoredBackup = undefined;
-        }
-      "
-    />
+    <div class="space-y-4">
+      <RestoreTargetForm
+        v-if="allowRestoreInPlace"
+        :target="state.restoreBackupContext.target"
+        @change="state.restoreBackupContext!.target = $event"
+      />
+
+      <CreateDatabasePrepForm
+        v-if="state.restoreBackupContext.target === 'NEW'"
+        :project-id="database.project.id"
+        :environment-id="database.instance.environment.id"
+        :instance-id="database.instance.id"
+        :backup="state.restoreBackupContext.backup"
+        @dismiss="state.restoreBackupContext = undefined"
+      />
+    </div>
+
+    <div
+      v-if="state.restoreBackupContext.target === 'IN-PLACE'"
+      class="w-full pt-6 mt-4 flex justify-end gap-x-3 border-t border-block-border"
+    >
+      <button
+        type="button"
+        class="btn-normal py-2 px-4"
+        @click="state.restoreBackupContext = undefined"
+      >
+        {{ $t("common.cancel") }}
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary py-2 px-4"
+        @click="doRestoreInPlace"
+      >
+        {{ $t("common.confirm") }}
+      </button>
+    </div>
+
+    <div
+      v-if="state.creatingRestoreIssue"
+      class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+    >
+      <BBSpin />
+    </div>
   </BBModal>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.disaster-recovery-pitr"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
-import { Backup, Database, MigrationHistory } from "../types";
-import { bytesToString, databaseSlug, migrationHistorySlug } from "../utils";
-import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useInstanceStore } from "@/store";
+import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+import {
+  Backup,
+  Database,
+  IssueCreate,
+  MigrationHistory,
+  PITRContext,
+  SYSTEM_BOT_ID,
+} from "../types";
+import {
+  bytesToString,
+  databaseSlug,
+  issueSlug,
+  migrationHistorySlug,
+} from "../utils";
+import { featureToRef, useInstanceStore, useIssueStore } from "@/store";
+import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
+import {
+  default as RestoreTargetForm,
+  RestoreTarget,
+} from "../components/DatabaseBackup/RestoreTargetForm.vue";
+
+type RestoreBackupContext = {
+  target: RestoreTarget;
+  backup: Backup;
+};
 
 interface LocalState {
-  showRestoreBackupModal: boolean;
-  restoredBackup?: Backup;
+  restoreBackupContext?: RestoreBackupContext;
   loadingMigrationHistory: boolean;
+  creatingRestoreIssue: boolean;
+  showFeatureModal: boolean;
 }
 
 export default defineComponent({
   name: "BackupTable",
-  components: { CreateDatabasePrepForm },
+  components: { RestoreTargetForm, CreateDatabasePrepForm },
   props: {
     database: {
       required: true,
@@ -161,9 +210,17 @@ export default defineComponent({
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
-      showRestoreBackupModal: false,
+      restoreBackupContext: undefined,
       loadingMigrationHistory: false,
+      creatingRestoreIssue: false,
+      showFeatureModal: false,
     });
+
+    const allowRestoreInPlace = computed((): boolean => {
+      return props.database.instance.engine === "POSTGRES";
+    });
+
+    const hasPITRFeature = featureToRef("bb.feature.disaster-recovery-pitr");
 
     const EDIT_COLUMN_LIST: BBTableColumn[] = [
       {
@@ -298,6 +355,60 @@ export default defineComponent({
       return backup.status === "DONE";
     };
 
+    const showRestoreDialog = (backup: Backup) => {
+      state.restoreBackupContext = {
+        target: "NEW",
+        backup,
+      };
+    };
+
+    const doRestoreInPlace = async () => {
+      const { restoreBackupContext } = state;
+      if (!restoreBackupContext) {
+        return;
+      }
+
+      if (!hasPITRFeature.value) {
+        state.showFeatureModal = true;
+        return;
+      }
+
+      state.creatingRestoreIssue = true;
+
+      try {
+        const { backup } = restoreBackupContext;
+        const { database } = props;
+        const issueNameParts: string[] = [
+          `Restore database [${database.name}]`,
+          `to backup snapshot [${restoreBackupContext.backup.name}]`,
+        ];
+
+        const issueStore = useIssueStore();
+        const createContext: PITRContext = {
+          databaseId: database.id,
+          backupId: backup.id,
+        };
+        const issueCreate: IssueCreate = {
+          name: issueNameParts.join(" "),
+          type: "bb.issue.database.restore.pitr",
+          description: "",
+          assigneeId: SYSTEM_BOT_ID,
+          projectId: database.project.id,
+          payload: {},
+          createContext,
+        };
+
+        await issueStore.validateIssue(issueCreate);
+
+        const issue = await issueStore.createIssue(issueCreate);
+
+        const slug = issueSlug(issue.name, issue.id);
+        router.push(`/issue/${slug}`);
+      } catch {
+        state.creatingRestoreIssue = false;
+      }
+    };
+
     return {
       state,
       gotoMigrationHistory,
@@ -306,6 +417,9 @@ export default defineComponent({
       backupSectionList,
       statusIconClass,
       allowRestore,
+      allowRestoreInPlace,
+      showRestoreDialog,
+      doRestoreInPlace,
     };
   },
 });

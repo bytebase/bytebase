@@ -846,7 +846,11 @@
       "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
       "no-later-than-now": "Restore point-in-time cannot be later than now.",
       "restore-before-last-migration": "Restore to the point before last migration",
-      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}."
+      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
+      "will-overwrite-current-database": "Will overwrite current database",
+      "restore-to": "Restore",
+      "restore-to-new-db": " To new database",
+      "restore-to-in-place": "In place"
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
     "show-reserved-databases": "Show Bytebase reserved databases",
@@ -867,7 +871,8 @@
     "synced-at": "Synced at {time}",
     "not-found-last-successful-sync-was": "Not found, last successful sync was {time}",
     "view-unassigned-databases": "View unassigned databases",
-    "unassigned-databases": "Unassigned databases"
+    "unassigned-databases": "Unassigned databases",
+    "restore-database": "Restore database"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
