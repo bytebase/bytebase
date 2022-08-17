@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 )
@@ -47,7 +48,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find backup with ID %d, error: %w", payload.BackupID, err)
+		return true, nil, errors.Wrapf(err, "failed to find backup with ID %d", payload.BackupID)
 	}
 	if backup == nil {
 		return true, nil, fmt.Errorf("backup with ID %d not found", payload.BackupID)
@@ -103,7 +104,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		SourceBackupID: &backup.ID,
 	}
 	if _, err = server.store.PatchDatabase(ctx, databasePatch); err != nil {
-		return true, nil, fmt.Errorf("failed to patch database source with ID %d and backup ID %d after restore, error: %w", targetDatabase.ID, backup.ID, err)
+		return true, nil, errors.Wrapf(err, "failed to patch database source with ID %d and backup ID %d after restore", targetDatabase.ID, backup.ID)
 	}
 
 	// Sync database schema after restore is completed.

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // issueSubscriberRaw is the store model for an IssueSubscriber.
@@ -30,11 +31,11 @@ func (raw *issueSubscriberRaw) toIssueSubscriber() *api.IssueSubscriber {
 func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
 	issueSubRaw, err := s.createIssueSubscriberRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create IssueSubscriber with IssueSubscriberCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create IssueSubscriber with IssueSubscriberCreate[%+v]", create)
 	}
 	issueSub, err := s.composeIssueSubscriber(ctx, issueSubRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error: %w", issueSubRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose IssueSubscriber with issueSubRaw[%+v]", issueSubRaw)
 	}
 	return issueSub, nil
 }
@@ -43,13 +44,13 @@ func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubs
 func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
 	issueSubRawList, err := s.findIssueSubscriberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find IssueSubscriber list with IssueSubscriberFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find IssueSubscriber list with IssueSubscriberFind[%+v]", find)
 	}
 	var issueSubList []*api.IssueSubscriber
 	for _, raw := range issueSubRawList {
 		issueSub, err := s.composeIssueSubscriber(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose IssueSubscriber with issueSubRaw[%+v]", raw)
 		}
 		issueSubList = append(issueSubList, issueSub)
 	}

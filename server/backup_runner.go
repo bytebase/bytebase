@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -135,7 +136,7 @@ func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Conte
 	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
 	if err != nil {
 		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
-		return 0, fmt.Errorf("failed to find backup settings for instance %q, error: %w", instance.Name, err)
+		return 0, errors.Wrapf(err, "failed to find backup settings for instance %q", instance.Name)
 	}
 	maxRetentionPeriodTs := math.MaxInt
 	for _, bs := range backupSettingList {
@@ -150,7 +151,7 @@ func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error
 	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
 	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
-		return fmt.Errorf("failed to read backup directory %q, error: %w", binlogDir, err)
+		return errors.Wrapf(err, "failed to read backup directory %q", binlogDir)
 	}
 	for _, binlogFileInfo := range binlogFileInfoList {
 		if _, err := mysql.GetBinlogNameSeq(binlogFileInfo.Name()); err != nil {
@@ -181,13 +182,13 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 	}
 	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
 		log.Error("Failed to update status for deleted backup.", zap.String("name", backup.Name), zap.Int("databaseId", backup.DatabaseID))
-		return fmt.Errorf("failed to update status for deleted backup %q for database with ID %d, error: %w", backup.Name, backup.DatabaseID, err)
+		return errors.Wrapf(err, "failed to update status for deleted backup %q for database with ID %d", backup.Name, backup.DatabaseID)
 	}
 
 	backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, backup.DatabaseID, backup.Name)
 	if err := os.Remove(backupFilePath); err != nil {
 		log.Error("Failed to delete an expired backup file.", zap.String("path", backupFilePath), zap.Error(err))
-		return fmt.Errorf("failed to delete an expired backup file %q, error: %w", backupFilePath, err)
+		return errors.Wrapf(err, "failed to delete an expired backup file %q", backupFilePath)
 	}
 	log.Info("Deleted expired backup file.", zap.String("path", backupFilePath))
 
@@ -312,7 +313,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 
 	migrationHistoryVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get migration history for database %q, error: %w", database.Name, err)
+		return nil, errors.Wrapf(err, "failed to get migration history for database %q", database.Name)
 	}
 	path := getBackupRelativeFilePath(database.ID, backupName)
 	if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
@@ -334,7 +335,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 			log.Debug("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.Name))
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to create backup %q, error: %w", backupName, err)
+		return nil, errors.Wrapf(err, "failed to create backup %q", backupName)
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
@@ -342,7 +343,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task payload for backup %q, error: %w", backupName, err)
+		return nil, errors.Wrapf(err, "failed to create task payload for backup %q", backupName)
 	}
 
 	createdPipeline, err := s.store.CreatePipeline(ctx, &api.PipelineCreate{
@@ -350,7 +351,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		CreatorID: creatorID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pipeline for backup %q, error: %w", backupName, err)
+		return nil, errors.Wrapf(err, "failed to create pipeline for backup %q", backupName)
 	}
 
 	createdStage, err := s.store.CreateStage(ctx, &api.StageCreate{
@@ -360,7 +361,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		CreatorID:     creatorID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stage for backup %q, error: %w", backupName, err)
+		return nil, errors.Wrapf(err, "failed to create stage for backup %q", backupName)
 	}
 
 	_, err = s.store.CreateTask(ctx, &api.TaskCreate{
@@ -375,7 +376,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		CreatorID:  creatorID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task for backup %q, error: %w", backupName, err)
+		return nil, errors.Wrapf(err, "failed to create task for backup %q", backupName)
 	}
 	return backupNew, nil
 }

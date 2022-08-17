@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -1118,7 +1119,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 						UpdaterID: updaterID,
 						Status:    api.TaskCanceled,
 					}); err != nil {
-						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
+						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Name, task.Name)
 					}
 				}
 			}
@@ -1132,7 +1133,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Status:    &pipelineStatus,
 	}
 	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, fmt.Errorf("failed to update issue %q's status, failed to update pipeline status with patch %+v, error: %w", issue.Name, pipelinePatch, err)
+		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Name, pipelinePatch)
 	}
 
 	issuePatch := &api.IssuePatch{
@@ -1142,7 +1143,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	}
 	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update issue %q's status with patch %v, error: %w", issue.Name, issuePatch, err)
+		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Name, issuePatch)
 	}
 
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
@@ -1151,7 +1152,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		IssueName: updatedIssue.Name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal activity after changing the issue status: %v, error: %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Name)
 	}
 
 	activityCreate := &api.ActivityCreate{
@@ -1167,7 +1168,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		issue: updatedIssue,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create activity after changing the issue status: %v, error: %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
 	}
 
 	return updatedIssue, nil
@@ -1181,7 +1182,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 		}
 		_, err := s.store.CreateInbox(ctx, inboxCreate)
 		if err != nil {
-			return fmt.Errorf("failed to post activity to creator inbox: %d, error: %w", issue.CreatorID, err)
+			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.CreatorID)
 		}
 	}
 
@@ -1192,7 +1193,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 		}
 		_, err := s.store.CreateInbox(ctx, inboxCreate)
 		if err != nil {
-			return fmt.Errorf("failed to post activity to assignee inbox: %d, error: %w", issue.AssigneeID, err)
+			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.AssigneeID)
 		}
 	}
 
@@ -1204,7 +1205,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 			}
 			_, err := s.store.CreateInbox(ctx, inboxCreate)
 			if err != nil {
-				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriber.ID, err)
+				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
 			}
 		}
 	}

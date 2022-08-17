@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // bookmarkRaw is the store model for an Bookmark.
@@ -48,11 +49,11 @@ func (raw *bookmarkRaw) toBookmark() *api.Bookmark {
 func (s *Store) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.Bookmark, error) {
 	bookmarkRaw, err := s.createBookmarkRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Bookmark with BookmarkCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Bookmark with BookmarkCreate[%+v]", create)
 	}
 	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error: %w", bookmarkRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Bookmark with bookmarkRaw[%+v]", bookmarkRaw)
 	}
 	return bookmark, nil
 }
@@ -62,14 +63,14 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 	find := &api.BookmarkFind{ID: &id}
 	bookmarkRaw, err := s.getBookmarkRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Bookmark with ID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get Bookmark with ID %d", id)
 	}
 	if bookmarkRaw == nil {
 		return nil, nil
 	}
 	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error: %w", bookmarkRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Bookmark with bookmarkRaw[%+v]", bookmarkRaw)
 	}
 	return bookmark, nil
 }
@@ -78,13 +79,13 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 func (s *Store) FindBookmark(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
 	bookmarkRawList, err := s.findBookmarkRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Bookmark list with BookmarkFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Bookmark list with BookmarkFind[%+v]", find)
 	}
 	var bookmarkList []*api.Bookmark
 	for _, raw := range bookmarkRawList {
 		bookmark, err := s.composeBookmark(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Bookmark with bookmarkRaw[%+v]", raw)
 		}
 		bookmarkList = append(bookmarkList, bookmark)
 	}

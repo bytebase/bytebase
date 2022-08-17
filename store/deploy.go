@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // deploymentConfigRaw is the store model for an DeploymentConfig.
@@ -54,14 +55,14 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get DeploymentConfig with projectID %d, error: %w", projectID, err)
+		return nil, errors.Wrapf(err, "failed to get DeploymentConfig with projectID %d", projectID)
 	}
 	if deploymentConfigRaw == nil {
 		return nil, nil
 	}
 	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error: %w", deploymentConfigRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose DeploymentConfig with deploymentConfigRaw[%+v]", deploymentConfigRaw)
 	}
 	return deploymentConfig, nil
 }
@@ -70,11 +71,11 @@ func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID in
 func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.upsertDeploymentConfigRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert deployment config with DeploymentConfigUpsert[%+v], error: %w", upsert, err)
+		return nil, errors.Wrapf(err, "failed to upsert deployment config with DeploymentConfigUpsert[%+v]", upsert)
 	}
 	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error: %w", deploymentConfigRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose DeploymentConfig with deploymentConfigRaw[%+v]", deploymentConfigRaw)
 	}
 	return deploymentConfig, nil
 }
