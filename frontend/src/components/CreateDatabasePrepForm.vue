@@ -234,6 +234,12 @@
     feature="bb.feature.multi-tenancy"
     @cancel="state.showFeatureModal = false"
   />
+  <div
+    v-if="state.creating"
+    class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+  >
+    <BBSpin />
+  </div>
 </template>
 
 <script lang="ts">
@@ -298,6 +304,7 @@ interface LocalState {
   cluster: string;
   assigneeId?: PrincipalId;
   showFeatureModal: boolean;
+  creating: boolean;
 }
 
 export default defineComponent({
@@ -367,6 +374,7 @@ export default defineComponent({
       cluster: "",
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
       showFeatureModal: false,
+      creating: false,
     });
 
     const project = computed((): Project => {
@@ -556,13 +564,20 @@ export default defineComponent({
       // Do not submit non-selected optional labels
       const labelList = state.labelList.filter((label) => !!label.value);
       context.labels = JSON.stringify(labelList);
+
+      state.creating = true;
       useIssueStore()
         .createIssue(newIssue)
-        .then((createdIssue) => {
-          router.push(
-            `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
-          );
-        });
+        .then(
+          (createdIssue) => {
+            router.push(
+              `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
+            );
+          },
+          () => {
+            state.creating = false;
+          }
+        );
     };
 
     // update `state.labelList` when selected Environment changed
