@@ -498,6 +498,19 @@ const testConnection = () => {
         title: t("instance.successfully-connected-instance"),
       });
     } else {
+      if (
+        connectionInfo.host == "localhost" ||
+        connectionInfo.host == "127.0.0.1"
+      ) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("instance.failed-to-connect-instance-localhost"),
+          description: resultSet.error,
+          // Manual hide, because user may need time to inspect the error
+          manualHide: true,
+        });
+      }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
