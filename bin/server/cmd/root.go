@@ -188,7 +188,8 @@ func start() {
 		return
 	}
 
-	profile := activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal}, "")
+	profile := activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal}, "" /* credentialsFile */)
+	// This enables backup to cloud, and all backup data will be stored in the supported cloud storage.
 	if flags.backupBucket != "" {
 		if flags.credentialsFile == "" {
 			log.Error("no --credential-file specified")
