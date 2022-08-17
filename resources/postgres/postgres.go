@@ -139,7 +139,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		defer f.Close()
 
 		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
-			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
+			return nil, errors.Wrap(err, "failed to extract txz file")
 		}
 
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
@@ -222,7 +222,7 @@ func shouldSwitchUser() (int, int, bool, error) {
 	sameUser := true
 	bytebaseUser, err := user.Current()
 	if err != nil {
-		return 0, 0, true, fmt.Errorf("failed to get current user, error: %w", err)
+		return 0, 0, true, errors.Wrap(err, "failed to get current user")
 	}
 	// If user runs Bytebase as root user, we will attempt to run as user `bytebase`.
 	// https://www.postgresql.org/docs/14/app-initdb.html

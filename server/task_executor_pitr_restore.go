@@ -222,7 +222,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 	startBinlogInfo := backup.Payload.BinlogInfo
 	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
 	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
-		return nil, fmt.Errorf("failed to setup progress update process, error: %w", err)
+		return nil, errors.Wrap(err, "failed to setup progress update process")
 	}
 
 	if err := mysqlDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
@@ -230,7 +230,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 			zap.Int("issueID", issue.ID),
 			zap.String("databaseName", task.Database.Name),
 			zap.Error(err))
-		return nil, fmt.Errorf("failed to perform a backup restore in the PITR database, error: %w", err)
+		return nil, errors.Wrap(err, "failed to perform a backup restore in the PITR database")
 	}
 
 	if err := mysqlDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, issue.CreatedTs, targetTs); err != nil {
@@ -238,7 +238,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 			zap.Int("issueID", issue.ID),
 			zap.String("databaseName", task.Database.Name),
 			zap.Error(err))
-		return nil, fmt.Errorf("failed to replay binlog in the PITR database, error: %w", err)
+		return nil, errors.Wrap(err, "failed to replay binlog in the PITR database")
 	}
 
 	targetDatabaseName := task.Database.Name
@@ -271,7 +271,7 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	defer backupFile.Close()
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
+		return nil, errors.Wrap(err, "failed to get connection for PostgreSQL")
 	}
 	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s;", pitrDatabaseName)); err != nil {
@@ -302,7 +302,7 @@ func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver 
 	}
 	totalBinlogBytes, err := common.GetFileSizeSum(replayBinlogPaths)
 	if err != nil {
-		return fmt.Errorf("failed to get file size sum of replay binlog files, error: %w", err)
+		return errors.Wrap(err, "failed to get file size sum of replay binlog files")
 	}
 
 	go func() {

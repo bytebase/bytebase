@@ -104,7 +104,7 @@ func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrinci
 func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) ([]*api.Sheet, error) {
 	sheetRawList, err := s.findSheetRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Sheet list, error: %w", err)
+		return nil, errors.Wrap(err, "failed to find Sheet list")
 	}
 	var sheetList []*api.Sheet
 	for _, raw := range sheetRawList {

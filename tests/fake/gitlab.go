@@ -276,7 +276,7 @@ func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed to read http response body, error: %w", err)
+			return errors.Wrap(err, "failed to read http response body")
 		}
 
 		if resp.StatusCode != http.StatusOK {

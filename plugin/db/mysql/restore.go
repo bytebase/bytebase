@@ -161,7 +161,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, target
 
 	mysqlRead, err := mysqlbinlogCmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("cannot get mysqlbinlog stdout pipe, error: %w", err)
+		return errors.Wrap(err, "cannot get mysqlbinlog stdout pipe")
 	}
 	defer mysqlRead.Close()
 
@@ -174,10 +174,10 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, target
 	driver.replayBinlogCounter = countingReader
 
 	if err := mysqlbinlogCmd.Start(); err != nil {
-		return fmt.Errorf("cannot start mysqlbinlog command, error: %w", err)
+		return errors.Wrap(err, "cannot start mysqlbinlog command")
 	}
 	if err := mysqlCmd.Run(); err != nil {
-		return fmt.Errorf("mysql command fails, error: %w", err)
+		return errors.Wrap(err, "mysql command fails")
 	}
 	if err := mysqlbinlogCmd.Wait(); err != nil {
 		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
@@ -535,7 +535,7 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 	// Read the local binlog files.
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)
 	if err != nil {
-		return fmt.Errorf("failed to read local binlog files, error: %w", err)
+		return errors.Wrap(err, "failed to read local binlog files")
 	}
 
 	return driver.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, downloadLatestBinlogFile)
@@ -574,7 +574,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	resultFilePath := filepath.Join(resultFileDir, binlogFileToDownload.Name)
 	if err := cmd.Run(); err != nil {
 		log.Error("Failed to execute mysqlbinlog binary", zap.Error(err))
-		return fmt.Errorf("failed to execute mysqlbinlog binary, error: %w", err)
+		return errors.Wrap(err, "failed to execute mysqlbinlog binary")
 	}
 
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", resultFilePath))
@@ -634,7 +634,7 @@ func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]B
 func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*binlogCoordinate, error) {
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
+		return nil, errors.Wrap(err, "failed to read sorted local binlog files")
 	}
 	if len(binlogFilesLocalSorted) == 0 {
 		return nil, fmt.Errorf("no local binlog files found")
@@ -759,7 +759,7 @@ func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName
 		line := s.Text()
 		eventTsParsed, found, err := parseBinlogEventTsInLine(line)
 		if err != nil {
-			return 0, fmt.Errorf("failed to parse binlog eventTs from mysqlbinlog output, error: %w", err)
+			return 0, errors.Wrap(err, "failed to parse binlog eventTs from mysqlbinlog output")
 		}
 		if !found {
 			continue
@@ -804,7 +804,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 		line := s.Text()
 		posParsed, found, err := parseBinlogEventPosInLine(line)
 		if err != nil {
-			return 0, fmt.Errorf("failed to parse binlog event start position from mysqlbinlog output, error: %w", err)
+			return 0, errors.Wrap(err, "failed to parse binlog event start position from mysqlbinlog output")
 		}
 		if !found {
 			continue

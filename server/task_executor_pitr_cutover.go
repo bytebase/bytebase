@@ -98,11 +98,11 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	switch task.Instance.Engine {
 	case db.Postgres:
 		if err := exec.pitrCutoverPostgres(ctx, driver, task, issue); err != nil {
-			return true, nil, fmt.Errorf("failed to do cutover for PostgreSQL, error: %w", err)
+			return true, nil, errors.Wrap(err, "failed to do cutover for PostgreSQL")
 		}
 	case db.MySQL:
 		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
-			return true, nil, fmt.Errorf("failed to do cutover for MySQL, error: %w", err)
+			return true, nil, errors.Wrap(err, "failed to do cutover for MySQL")
 		}
 	default:
 		return true, nil, fmt.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
@@ -125,7 +125,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
-		return true, nil, fmt.Errorf("failed to add migration history record, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
 
 	// Sync database schema after restore is completed.
@@ -155,7 +155,7 @@ func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.
 	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
 	if err != nil {
 		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
-		return fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
+		return errors.Wrap(err, "failed to swap the original and PITR database")
 	}
 	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
 	// TODO(dragonly): Only needed for in-place PITR.
@@ -171,7 +171,7 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
-		return fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
+		return errors.Wrap(err, "failed to get connection for PostgreSQL")
 	}
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
 		return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
