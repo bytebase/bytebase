@@ -257,7 +257,32 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID)
+	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
+	// since we are not creating pipeline/stage list/task list in a single transaction.
+	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
+	// quite unlikely so we will live with it for now.
+	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate the assignee if we are going to actually create the issue (NOT ValidateOnly).
+	if !issueCreate.ValidateOnly {
+		// pipeline generation logic was moved to the backend, so the frontend needs to get the generated pipeline first in order to send a user-filled issue back.
+		// ValidateOnly means that we merely generate issue for the frontend so there is no need to check the assignee since it's a dummy value and will be set by the user later.
+		if issueCreate.AssigneeID == api.UnknownID {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+		}
+		ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+		}
+		if !ok {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
+		}
+	}
+
+	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -316,26 +341,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Pipeline, error) {
-	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
-	// since we are not creating pipeline/stage list/task list in a single transaction.
-	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
-	// quite unlikely so we will live with it for now.
-	if issueCreate.AssigneeID == api.UnknownID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-	}
-
-	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate)
-	if err != nil {
-		return nil, err
-	}
-	var environmentID int
+func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
 	// Return an error if the issue has no task to be executed
 	hasTask := false
 	for _, stage := range pipelineCreate.StageList {
 		if len(stage.TaskList) > 0 {
 			hasTask = true
-			environmentID = stage.EnvironmentID
 			break
 		}
 	}
@@ -347,15 +358,6 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	// Create the pipeline, stages, and tasks.
 	if issueCreate.ValidateOnly {
 		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
-	}
-
-	// check the assignee if it's NOT ValidateOnly
-	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, environmentID, issueCreate.ProjectID, issueCreate.Type)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
-	}
-	if !ok {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
 	}
 
 	pipelineCreate.CreatorID = creatorID
