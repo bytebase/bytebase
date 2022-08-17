@@ -647,6 +647,7 @@
     "copy-grant-statement": "CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。",
     "successfully-connected-instance": "成功连接到实例。",
     "failed-to-connect-instance": "连接到实例失败。",
+    "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
     "no-read-only-data-source-support": "暂时不支持 {database} 创建只读连接",
     "grants": "权限"
