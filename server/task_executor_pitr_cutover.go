@@ -150,7 +150,7 @@ func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer common.Close(conn)
 	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
 	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
 	if err != nil {

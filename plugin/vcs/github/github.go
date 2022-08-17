@@ -471,7 +471,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	if err != nil {
 		return nil, fmt.Errorf("failed to read OAuth response body, code %v, error: %v", resp.StatusCode, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer common.Close(resp.Body)
 
 	oauthResp := new(oauthResponse)
 	if err := json.Unmarshal(body, oauthResp); err != nil {
@@ -929,7 +929,7 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		if err != nil {
 			return errors.Wrapf(err, "read body of POST %s", url)
 		}
-		defer resp.Body.Close()
+		defer common.Close(resp.Body)
 
 		if resp.StatusCode != http.StatusOK {
 			return errors.Errorf("non-200 POST %s status code %d with body %q", url, resp.StatusCode, body)

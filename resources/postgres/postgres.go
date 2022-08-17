@@ -136,7 +136,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
 		}
-		defer f.Close()
+		defer common.Close(f)
 
 		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
 			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)

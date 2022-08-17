@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/pkg/errors"
 	"github.com/xi2/xz"
 )
@@ -20,7 +21,7 @@ func ExtractTarGz(tarGzF io.Reader, targetDir string) error {
 	if err != nil {
 		return err
 	}
-	defer gzipR.Close()
+	defer common.Close(gzipR)
 	return extractTar(gzipR, targetDir)
 }
 

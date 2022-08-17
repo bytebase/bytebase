@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // DiscordWebhookResponse is the API message for Discord webhook response.
@@ -105,7 +107,7 @@ func (*DiscordReceiver) post(context Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
 	}
-	defer resp.Body.Close()
+	defer common.Close(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to POST webhook %v, status code: %d, response body: %s", context.URL, resp.StatusCode, b)

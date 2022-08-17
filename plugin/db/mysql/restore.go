@@ -163,7 +163,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, target
 	if err != nil {
 		return fmt.Errorf("cannot get mysqlbinlog stdout pipe, error: %w", err)
 	}
-	defer mysqlRead.Close()
+	defer common.Close(mysqlRead)
 
 	mysqlbinlogCmd.Stderr = os.Stderr
 

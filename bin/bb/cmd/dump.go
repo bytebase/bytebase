@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
 )
@@ -33,7 +34,7 @@ func newDumpCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to create dump file %s, got error: %w", file, err)
 				}
-				defer f.Close()
+				defer common.Close(f)
 				out = f
 			}
 			return dumpDatabase(context.Background(), u, out, schemaOnly)

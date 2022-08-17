@@ -2,6 +2,7 @@ package common
 
 import (
 	"crypto/rand"
+	"io"
 	"math/big"
 	"os"
 	"path"
@@ -111,9 +112,9 @@ func GetFileSizeSum(fileNameList []string) (int64, error) {
 	return sum, nil
 }
 
-// CloseFile is a helper function to log errors in deferred file.Close calls.
-func CloseFile(file *os.File) {
-	if err := file.Close(); err != nil {
-		log.Error("Failed to close file", zap.String("path", file.Name()), zap.Error(err))
+// Close is a helper function to log errors in deferred closer.Close calls.
+func Close(closer io.Closer) {
+	if err := closer.Close(); err != nil {
+		log.Error("Error occurs in deferred Close() call", zap.Error(err))
 	}
 }

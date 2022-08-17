@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/utils"
 	"github.com/pkg/errors"
 )
@@ -143,7 +144,7 @@ func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
 	}
-	defer f.Close()
+	defer common.Close(f)
 
 	if err := utils.ExtractTarGz(f, tmpDir); err != nil {
 		return fmt.Errorf("failed to extract tar.gz file, error: %w", err)

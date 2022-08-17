@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // FeishuWebhookResponse is the API message for Feishu webhook response.
@@ -146,7 +148,7 @@ func (*FeishuReceiver) post(context Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
 	}
-	defer resp.Body.Close()
+	defer common.Close(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to POST webhook %v, status code: %d, response body: %s", context.URL, resp.StatusCode, b)

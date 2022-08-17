@@ -209,7 +209,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to open backup file %q", backupFileName)
 	}
-	defer backupFile.Close()
+	defer common.Close(backupFile)
 	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
 
 	log.Debug("Start creating and restoring PITR database",
@@ -268,7 +268,7 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to open backup file %q", backupFileName)
 	}
-	defer backupFile.Close()
+	defer common.Close(backupFile)
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
@@ -367,7 +367,7 @@ func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Ser
 	if err != nil {
 		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
 	}
-	defer f.Close()
+	defer common.Close(f)
 
 	if err := driver.Restore(ctx, f); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)

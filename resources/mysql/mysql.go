@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/utils"
 	"github.com/pkg/errors"
 
@@ -105,7 +106,7 @@ func Install(basedir, datadir, user string) (*Instance, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to open mysql dist %q", tarName)
 	}
-	defer tarF.Close()
+	defer common.Close(tarF)
 
 	if err := extractFn(tarF, basedir); err != nil {
 		return nil, errors.Wrapf(err, "failed to extract mysql distribution %q", tarName)
@@ -127,7 +128,7 @@ user=%s
 	if _, err := fmt.Fprintf(defaultCfgFile, configFmt, basedir, datadir, user); err != nil {
 		return nil, err
 	}
-	defer defaultCfgFile.Close()
+	defer common.Close(defaultCfgFile)
 
 	args := []string{
 		fmt.Sprintf("--defaults-file=%s", defaultCfgFile.Name()),
@@ -183,7 +184,7 @@ func (i *Instance) Import(path string) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer common.Close(db)
 
 	_, err = db.Exec(buf.String())
 	return err
@@ -210,7 +211,7 @@ func cat(path string, out io.Writer) error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer common.Close(f)
 		if _, err = io.Copy(out, f); err != nil {
 			return err
 		}

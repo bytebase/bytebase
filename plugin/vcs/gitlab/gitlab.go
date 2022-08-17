@@ -242,7 +242,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	if err != nil {
 		return nil, fmt.Errorf("failed to read OAuth response body, code %v, error: %v", resp.StatusCode, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer common.Close(resp.Body)
 
 	oauthResp := new(oauthResponse)
 	if err := json.Unmarshal(body, oauthResp); err != nil {

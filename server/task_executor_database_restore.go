@@ -139,7 +139,7 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, server 
 	if err != nil {
 		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
 	}
-	defer f.Close()
+	defer common.Close(f)
 
 	if err := driver.Restore(ctx, f); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)

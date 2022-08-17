@@ -144,7 +144,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 			if err != nil {
 				return err
 			}
-			defer db.Close()
+			defer common.Close(db)
 			return db.Ping()
 		}(); err != nil {
 			continue

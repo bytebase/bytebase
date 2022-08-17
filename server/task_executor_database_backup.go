@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -92,7 +93,7 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 	if err != nil {
 		return "", fmt.Errorf("failed to open backup path: %s", backup.Path)
 	}
-	defer f.Close()
+	defer common.Close(f)
 
 	payload, err := driver.Dump(ctx, databaseName, f, false /* schemaOnly */)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
 )
@@ -41,7 +42,7 @@ func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	if err != nil {
 		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
 	}
-	defer f.Close()
+	defer common.Close(f)
 
 	db, err := open(ctx, u)
 	if err != nil {

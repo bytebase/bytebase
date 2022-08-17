@@ -42,7 +42,7 @@ func newMigrateCmd() *cobra.Command {
 				}
 				// nolint:revive
 				// f.Close() is intended to be deferred to the end of the function.
-				defer f.Close()
+				defer common.Close(f)
 				sqlReaders = append(sqlReaders, f)
 			}
 
