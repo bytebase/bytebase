@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
@@ -120,9 +121,10 @@ var (
 )
 
 type backupMeta struct {
-	storageBackend api.BackupStorageBackend
-	region         string
-	bucket         string
+	storageBackend  api.BackupStorageBackend
+	region          string
+	bucket          string
+	credentialsFile string
 }
 
 // Execute executes the root command.
@@ -166,7 +168,7 @@ func checkDataDir() error {
 	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
-		return fmt.Errorf("unable to access --data %s, %w", flags.dataDir, err)
+		return errors.Wrapf(err, "unable to access --data %s", flags.dataDir)
 	}
 
 	return nil
@@ -188,11 +190,11 @@ func start() {
 		return
 	}
 
-	profile := activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal}, "" /* credentialsFile */)
+	var profile server.Profile
 	// This enables backup to cloud, and all backup data will be stored in the supported cloud storage.
 	if flags.backupBucket != "" {
 		if flags.credentialsFile == "" {
-			log.Error("no --credential-file specified")
+			log.Error("Must specify --credentials-file when --backup-bucket is present.")
 			return
 		}
 		bucketMeta, err := parseBucketURI(flags.backupBucket)
@@ -200,7 +202,10 @@ func start() {
 			log.Error("failed to parse backup bucket", zap.Error(err))
 			return
 		}
-		profile = activeProfile(flags.dataDir, bucketMeta, flags.credentialsFile)
+		bucketMeta.credentialsFile = flags.credentialsFile
+		profile = activeProfile(flags.dataDir, bucketMeta)
+	} else {
+		profile = activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal})
 	}
 
 	var s *server.Server
@@ -240,12 +245,12 @@ func start() {
 }
 
 // Examples:
-//   s3:us-west-2//bytebase-dev
-//   gcs://bytebase-dev
+//   s3:us-west-2//dev-bytebase-backup
+//   gcs://dev-bytebase-backup
 func parseBucketURI(uri string) (backupMeta, error) {
 	parts := strings.Split(uri, ":")
 	if len(parts) != 2 {
-		return backupMeta{}, fmt.Errorf("invalid bucket URI %q", uri)
+		return backupMeta{}, errors.Errorf("invalid bucket URI %q", uri)
 	}
 
 	backend := parts[0]
@@ -253,7 +258,7 @@ func parseBucketURI(uri string) (backupMeta, error) {
 	case string(api.BackupStorageBackendS3):
 		parts = strings.Split(parts[1], "//")
 		if len(parts) != 2 {
-			return backupMeta{}, fmt.Errorf("invalid S3 bucket URI %q", uri)
+			return backupMeta{}, errors.Errorf("invalid S3 bucket URI %q, the expected format is s3:${region}//${bucket}", uri)
 		}
 		region := parts[0]
 		bucket := parts[1]
@@ -263,6 +268,6 @@ func parseBucketURI(uri string) (backupMeta, error) {
 			bucket:         bucket,
 		}, nil
 	default:
-		return backupMeta{}, fmt.Errorf("unsupported storage backend %q", backend)
+		return backupMeta{}, errors.Errorf("unsupported storage backend %q", backend)
 	}
 }

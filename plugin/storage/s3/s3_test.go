@@ -3,21 +3,14 @@ package s3
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
-
-// Credentials is the AWS S3 credentials.
-type Credentials struct {
-	AccessKeyID     string `json:"accessKeyId"`
-	SecretAccessKey string `json:"secretAccessKey"`
-}
 
 const (
 	region = "us-east-1"
@@ -25,7 +18,7 @@ const (
 )
 
 var (
-	credentials = Credentials{
+	credentials = aws.Credentials{
 		AccessKeyID:     os.Getenv("ACCESS_KEY_ID"),
 		SecretAccessKey: os.Getenv("SECRET_ACCESS_KEY"),
 	}
@@ -35,8 +28,7 @@ func TestS3Operations(t *testing.T) {
 	t.Skip()
 	a := require.New(t)
 	ctx := context.Background()
-	credentialsFileName := writeTempCredentialsFile(t, credentials)
-	client, err := NewClient(ctx, region, bucket, credentialsFileName)
+	client, err := NewClient(ctx, region, bucket, credentials)
 	a.NoError(err)
 
 	t.Run("ListObjects", func(t *testing.T) {
@@ -68,19 +60,4 @@ func TestS3Operations(t *testing.T) {
 		a.NoError(err)
 		log.Info("Deleted", zap.Any("meta", resp.ResultMetadata))
 	})
-}
-
-// The tests are skipped in CI and this function will be marked as unused by linters.
-// nolint
-func writeTempCredentialsFile(t *testing.T, credentials Credentials) string {
-	a := require.New(t)
-	file, err := os.Create(filepath.Join(t.TempDir(), "aws_credential"))
-	defer file.Close()
-	a.NoError(err)
-	template := `[default]
-aws_access_key_id = %s
-aws_secret_access_key = %s`
-	_, err = file.WriteString(fmt.Sprintf(template, credentials.AccessKeyID, credentials.SecretAccessKey))
-	a.NoError(err)
-	return file.Name()
 }

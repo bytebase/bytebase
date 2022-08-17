@@ -19,6 +19,7 @@ import (
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
@@ -201,7 +202,11 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	s.e = e
 
 	if profile.BackupBucket != "" {
-		s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, profile.CredentialsFile)
+		credentials, err := s3bb.GetCredentialsFromFile(ctx, profile.CredentialsFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get credentials from file")
+		}
+		s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create AWS S3 client, error: %w", err)
 		}

@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string, backupMeta backupMeta, credentialsFile string) server.Profile {
+func activeProfile(dataDir string, backupMeta backupMeta) server.Profile {
 	// `flags.demo` always be true in dev mode
 	demoName := string(common.ReleaseModeDev)
 	if flags.demoName != "" {
@@ -38,7 +38,7 @@ func activeProfile(dataDir string, backupMeta backupMeta, credentialsFile string
 		BackupStorageBackend: backupMeta.storageBackend,
 		BackupRegion:         backupMeta.region,
 		BackupBucket:         backupMeta.bucket,
-		CredentialsFile:      credentialsFile,
+		CredentialsFile:      backupMeta.credentialsFile,
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,

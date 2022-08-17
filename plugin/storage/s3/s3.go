@@ -2,13 +2,15 @@ package s3
 
 import (
 	"context"
-	"fmt"
 	"io"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/pkg/errors"
 )
 
 // Client wraps the AWS S3 client.
@@ -17,14 +19,29 @@ type Client struct {
 	bucket string
 }
 
-// NewClient returns a new AWS S3 client.
-func NewClient(ctx context.Context, region, bucket, credentialFileName string) (*Client, error) {
+// GetCredentialsFromFile load AWS credentials from file.
+func GetCredentialsFromFile(ctx context.Context, credentialsFileName string) (aws.Credentials, error) {
 	cfg, err := awsconfig.LoadDefaultConfig(ctx,
-		awsconfig.WithRegion(region),
-		awsconfig.WithSharedCredentialsFiles([]string{credentialFileName}),
+		awsconfig.WithSharedCredentialsFiles([]string{credentialsFileName}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS S3 config, error: %w", err)
+		return aws.Credentials{}, errors.Wrap(err, "failed to load AWS S3 config")
+	}
+	credentials, err := cfg.Credentials.Retrieve(ctx)
+	if err != nil {
+		return aws.Credentials{}, errors.Wrap(err, "failed to retrieve AWS S3 credentials")
+	}
+	return credentials, nil
+}
+
+// NewClient returns a new AWS S3 client.
+func NewClient(ctx context.Context, region, bucket string, credentials aws.Credentials) (*Client, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(ctx,
+		awsconfig.WithRegion(region),
+		awsconfig.WithCredentialsProvider(awscredentials.NewStaticCredentialsProvider(credentials.AccessKeyID, credentials.SecretAccessKey, credentials.SessionToken)),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load AWS S3 config")
 	}
 	return &Client{
 		c:      s3.NewFromConfig(cfg),
@@ -68,4 +85,9 @@ func (c *Client) DeleteObject(ctx context.Context, path string) (*s3.DeleteObjec
 		Bucket: &c.bucket,
 		Key:    &path,
 	})
+}
+
+// GetBucket returns the bucket.
+func (c *Client) GetBucket() string {
+	return c.bucket
 }

@@ -104,7 +104,7 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 	case api.BackupStorageBackendLocal:
 		return payload, nil
 	case api.BackupStorageBackendS3:
-		log.Debug("Uploading backup to s3 bucket.")
+		log.Debug("Uploading backup to s3 bucket.", zap.String("bucket", server.s3Client.GetBucket()), zap.String("path", backupFilePathLocal))
 		bucketFileToUpload, err := os.Open(backupFilePathLocal)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
