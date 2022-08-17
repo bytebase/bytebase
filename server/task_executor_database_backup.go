@@ -10,22 +10,18 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
-	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
-func NewDatabaseBackupTaskExecutor(s3Client s3bb.Client) TaskExecutor {
-	return &DatabaseBackupTaskExecutor{
-		s3Client: s3Client,
-	}
+func NewDatabaseBackupTaskExecutor() TaskExecutor {
+	return &DatabaseBackupTaskExecutor{}
 }
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
 	completed int32
-	s3Client  s3bb.Client
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
@@ -85,7 +81,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
 	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
@@ -114,7 +110,7 @@ func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, serv
 			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
 		}
 		defer bucketFileToUpload.Close()
-		if _, err := exec.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
+		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
 		log.Debug("Successfully uploaded backup to s3 bucket.")

@@ -63,6 +63,8 @@ type Server struct {
 	startedTs     int64
 	secret        string
 
+	s3Client *s3bb.Client
+
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
 }
@@ -198,9 +200,12 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	embedFrontend(e)
 	s.e = e
 
-	s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, profile.CredentialsFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS S3 client, error: %w", err)
+	if profile.BackupBucket != "" {
+		s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, profile.CredentialsFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create AWS S3 client, error: %w", err)
+		}
+		s.s3Client = s3Client
 	}
 
 	if !profile.Readonly {
@@ -215,7 +220,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabaseBackup, func() TaskExecutor { return NewDatabaseBackupTaskExecutor(*s3Client) })
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
 		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
 
