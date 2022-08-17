@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/server"
 )
