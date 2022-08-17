@@ -38,9 +38,6 @@ import (
 )
 
 const (
-	// MaxDatabaseNameLength is the allowed max database name length in MySQL.
-	MaxDatabaseNameLength = 64
-
 	// Variable lower_case_table_names related.
 
 	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the letter case specified in the CREATE TABLE or CREATE DATABASE statement.
@@ -200,14 +197,14 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 // ReplayBinlogToPITRDatabase replays binlog to the PITR database.
 // It's the second step of the PITR process.
 func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseName string, startBinlogInfo api.BinlogInfo, suffixTs, targetTs int64) error {
-	pitrDatabaseName := getPITRDatabaseName(databaseName, suffixTs)
+	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
 	return driver.replayBinlog(ctx, databaseName, pitrDatabaseName, startBinlogInfo, targetTs)
 }
 
 // RestoreBackupToPITRDatabase restores a full backup to the PITR database.
 // It's the first step of the PITR process.
 func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
-	pitrDatabaseName := getPITRDatabaseName(databaseName, suffixTs)
+	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
 	// Create the pitr database.
 	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
@@ -372,8 +369,8 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 // It returns the pitr and old database names after swap.
 // It performs the step 2 of the restore process.
 func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suffixTs int64) (string, string, error) {
-	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	pitrOldDatabase := getPITROldDatabaseName(database, suffixTs)
+	pitrDatabaseName := util.GetPITRDatabaseName(database, suffixTs)
+	pitrOldDatabase := util.GetPITROldDatabaseName(database, suffixTs)
 
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
 	log.Debug("Checking database exists.", zap.String("database", database))
@@ -448,20 +445,6 @@ func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool,
 		return false, util.FormatErrorWithQuery(err, query)
 	}
 	return true, nil
-}
-
-// Composes a pitr database name that we use as the target database for full backup recovery and binlog recovery.
-// For example, getPITRDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005".
-func getPITRDatabaseName(database string, suffixTs int64) string {
-	suffix := fmt.Sprintf("pitr_%d", suffixTs)
-	return getSafeName(database, suffix)
-}
-
-// Composes a database name that we use as the target database for swapping out the original database.
-// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_del".
-func getPITROldDatabaseName(database string, suffixTs int64) string {
-	suffix := fmt.Sprintf("pitr_%d_del", suffixTs)
-	return getSafeName(database, suffix)
 }
 
 // GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
@@ -848,15 +831,6 @@ func GetBinlogNameSeq(name string) (int64, error) {
 		return 0, fmt.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
 	}
 	return strconv.ParseInt(s[1], 10, 0)
-}
-
-func getSafeName(baseName, suffix string) string {
-	name := fmt.Sprintf("%s_%s", baseName, suffix)
-	if len(name) <= MaxDatabaseNameLength {
-		return name
-	}
-	extraCharacters := len(name) - MaxDatabaseNameLength
-	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
 // checks the MySQL version is >=8.0.
