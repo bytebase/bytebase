@@ -115,6 +115,6 @@ func GetFileSizeSum(fileNameList []string) (int64, error) {
 // Close is a helper function to log errors in deferred closer.Close calls.
 func Close(closer io.Closer) {
 	if err := closer.Close(); err != nil {
-		log.Error("Error occurs in deferred Close() call", zap.Error(err))
+		log.Error("Error occurs in deferred io.Closer.Close() call", zap.Error(err))
 	}
 }
