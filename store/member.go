@@ -79,10 +79,10 @@ func (s *Store) GetDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx context.Context)
 			member
 		WHERE
 			row_status = 'NORMAL'
-			AND ROLE IN('OWNER', 'DBA')
+			AND role IN('OWNER', 'DBA')
 		ORDER BY
 			principal_id
-		LIMIT 1,
+		LIMIT 1
 	`).Scan(
 		&principalID,
 	); err != nil {

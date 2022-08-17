@@ -69,7 +69,7 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 }
 
 // GetDefaultAssigneeIDFromProjectOwner gets a default assignee from the project owners.
-func (s *Store) GetDefaultAssigneeIDFromProjectOwner(ctx context.Context) (int, error) {
+func (s *Store) GetDefaultAssigneeIDFromProjectOwner(ctx context.Context, projectID int) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, FormatError(err)
@@ -79,16 +79,17 @@ func (s *Store) GetDefaultAssigneeIDFromProjectOwner(ctx context.Context) (int, 
 	var principalID int
 	if err := tx.PTx.QueryRowContext(ctx, `
 		SELECT
-			principal_id,
+			principal_id
 		FROM
 			project_member
 		WHERE
-			row_status = 'NORMAL'
-			AND ROLE = 'OWNER'
+			project_id = $1
+			AND row_status = 'NORMAL'
+			AND role = 'OWNER'
 		ORDER BY
 			principal_id
-		LIMIT 1,
-	`).Scan(
+		LIMIT 1
+	`, projectID).Scan(
 		&principalID,
 	); err != nil {
 		if err == sql.ErrNoRows {

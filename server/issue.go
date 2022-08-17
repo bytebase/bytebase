@@ -1360,7 +1360,7 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 		}
 		return assigneeID, nil
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
-		assigneeID, err := s.store.GetDefaultAssigneeIDFromProjectOwner(ctx)
+		assigneeID, err := s.store.GetDefaultAssigneeIDFromProjectOwner(ctx, projectID)
 		if err != nil {
 			return api.UnknownID, errors.Wrap(err, "failed to get default assignee ID from project owner")
 		}
