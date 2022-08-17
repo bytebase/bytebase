@@ -795,12 +795,12 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
 
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
+	}
 	// GitLab returns 201 HTTP status codes upon successful webhook creation,
 	// see https://docs.gitlab.com/ee/api/#status-codes for details.
 	if code != http.StatusCreated {
-		if code == http.StatusNotFound {
-			return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
-		}
 		reason := fmt.Sprintf("failed to create webhook through URL %s, status code: %d, body: %s",
 			url,
 			code,
