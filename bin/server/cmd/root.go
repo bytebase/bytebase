@@ -173,7 +173,6 @@ func checkDataDir() error {
 }
 
 func start() {
-	fmt.Printf("--backup-backet=%q\n", flags.backupBucket)
 	if flags.debug {
 		log.SetLevel(zap.DebugLevel)
 	}
