@@ -265,7 +265,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	// validate the assignee if we are going to insert data in to the database (NOT ValidateOnly).
+	// validate the assignee if we are going to actually create the issue (NOT ValidateOnly).
 	if !issueCreate.ValidateOnly {
 		// pipeline generation logic was moved to the backend, so the frontend needs to get the generated pipeline first in order to send a user-filled issue back.
 		// ValidateOnly means that we merely generate issue for the frontend so there is no need to check the assignee since it's a dummy value and will be set by the user later.
