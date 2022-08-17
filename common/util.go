@@ -9,6 +9,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/bytebase/bytebase/common/log"
+	"go.uber.org/zap"
 )
 
 // FindString returns the search index of sorted strings.
@@ -106,4 +109,11 @@ func GetFileSizeSum(fileNameList []string) (int64, error) {
 		sum += stat.Size()
 	}
 	return sum, nil
+}
+
+// CloseFile is a helper function to log errors in deferred file.Close calls.
+func CloseFile(file *os.File) {
+	if err := file.Close(); err != nil {
+		log.Error("Failed to close file", zap.String("path", file.Name()), zap.Error(err))
+	}
 }
