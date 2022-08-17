@@ -68,6 +68,37 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 	return projectMember, nil
 }
 
+// GetDefaultAssigneeIDFromProjectOwner gets a default assignee from the project owners.
+func (s *Store) GetDefaultAssigneeIDFromProjectOwner(ctx context.Context) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	var principalID int
+	if err := tx.PTx.QueryRowContext(ctx, `
+		SELECT
+			principal_id,
+		FROM
+			project_member
+		WHERE
+			row_status = 'NORMAL'
+			AND ROLE = 'OWNER'
+		ORDER BY
+			principal_id
+		LIMIT 1,
+	`).Scan(
+		&principalID,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, &common.Error{Code: common.NotFound, Err: fmt.Errorf("failed to find a default assignee")}
+		}
+		return 0, FormatError(err)
+	}
+	return principalID, nil
+}
+
 // FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)

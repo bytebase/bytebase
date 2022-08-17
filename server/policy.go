@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -158,4 +159,17 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) getAssigneeGroupValue(ctx context.Context, environmentID int, issueType api.IssueType) (*api.AssigneeGroupValue, error) {
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	for i, group := range policy.AssigneeGroupList {
+		if group.IssueType == issueType {
+			return &policy.AssigneeGroupList[i].Value, nil
+		}
+	}
+	return nil, nil
 }

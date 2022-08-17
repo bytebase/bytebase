@@ -499,16 +499,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 // canPrincipalBeAssignee checks if a principal could be the assignee of an issue, judging by the principal role and the environment policy.
 func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
-	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	groupValue, err := s.getAssigneeGroupValue(ctx, environmentID, issueType)
 	if err != nil {
 		return false, err
-	}
-	var groupValue *api.AssigneeGroupValue
-	for i, group := range policy.AssigneeGroupList {
-		if group.IssueType == issueType {
-			groupValue = &policy.AssigneeGroupList[i].Value
-			break
-		}
 	}
 	if groupValue == nil {
 		// no value is set, fallback to default.

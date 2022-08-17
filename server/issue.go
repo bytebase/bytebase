@@ -271,14 +271,21 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		// pipeline generation logic was moved to the backend, so the frontend needs to get the generated pipeline first in order to send a user-filled issue back.
 		// ValidateOnly means that we merely generate issue for the frontend so there is no need to check the assignee since it's a dummy value and will be set by the user later.
 		if issueCreate.AssigneeID == api.UnknownID {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-		}
-		ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
-		}
-		if !ok {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
+			// if the frontend sets the assignee id to UnknownID, the backend tries to find a default assignee.
+			assigneeID, err := s.getDefaultAssigneeID(ctx, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+			if err != nil {
+				err = errors.Wrapf(err, "failed to get default assignee ID with environmentID %v, projectID %v, issueType %v", pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
+			}
+			issueCreate.AssigneeID = assigneeID
+		} else {
+			ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+			}
+			if !ok {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
+			}
 		}
 	}
 
@@ -1339,6 +1346,28 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 			}
 		}
 	}
+}
+
+func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
+	groupValue, err := s.getAssigneeGroupValue(ctx, environmentID, issueType)
+	if err != nil {
+		return api.UnknownID, errors.Wrap(err, "failed to get assignee group value")
+	}
+	if groupValue == nil {
+		assigneeID, err := s.store.GetDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get default assignee ID from workspace owner or DBA")
+		}
+		return assigneeID, nil
+	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
+		assigneeID, err := s.store.GetDefaultAssigneeIDFromProjectOwner(ctx)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get default assignee ID from project owner")
+		}
+		return assigneeID, nil
+	}
+	// never reached
+	return api.UnknownID, fmt.Errorf("invalid assigneeGroupValue: %v", *groupValue)
 }
 
 func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
