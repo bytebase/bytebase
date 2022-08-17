@@ -138,7 +138,7 @@ user=%s
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to initialize mysql, error: %w", err)
+		return nil, errors.Wrap(err, "failed to initialize mysql")
 	}
 
 	return &Instance{

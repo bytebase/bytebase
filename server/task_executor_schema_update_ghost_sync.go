@@ -12,6 +12,7 @@ import (
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	ghostsql "github.com/github/gh-ost/go/sql"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -117,7 +118,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	if config.port != "" {
 		configPort, err := strconv.Atoi(config.port)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert port from string to int, error: %w", err)
+			return nil, errors.Wrap(err, "failed to convert port from string to int")
 		}
 		port = configPort
 	}
@@ -209,7 +210,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 		serverID: 10000000 + uint(task.ID),
 	})
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to init migrationContext for gh-ost, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

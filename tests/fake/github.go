@@ -246,7 +246,7 @@ func (gh *GitHub) SendWebhookPush(repositoryID string, payload []byte) error {
 
 		m := hmac.New(sha256.New, []byte(webhook.Config.Secret))
 		if _, err := m.Write(payload); err != nil {
-			return fmt.Errorf("failed to calculate SHA256 of the webhook secret, error: %w", err)
+			return errors.Wrap(err, "failed to calculate SHA256 of the webhook secret")
 		}
 		signature := "sha256=" + hex.EncodeToString(m.Sum(nil))
 		req.Header.Set("X-Hub-Signature-256", signature)

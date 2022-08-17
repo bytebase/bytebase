@@ -68,7 +68,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		backupPatch.Comment = backupErr.Error()
 	}
 	if _, err := server.store.PatchBackup(ctx, &backupPatch); err != nil {
-		return true, nil, fmt.Errorf("failed to patch backup, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to patch backup")
 	}
 
 	if backupErr != nil {

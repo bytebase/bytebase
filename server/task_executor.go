@@ -93,7 +93,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare for database migration, error: %w", err)
+			return nil, errors.Wrap(err, "failed to prepare for database migration")
 		}
 		mi.Creator = vcsPushEvent.FileCommit.AuthorName
 
@@ -102,7 +102,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		}
 		bytes, err := json.Marshal(miPayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare for database migration, unable to marshal vcs push event payload, error: %w", err)
+			return nil, errors.Wrap(err, "failed to prepare for database migration, unable to marshal vcs push event payload")
 		}
 		mi.Payload = string(bytes)
 	}

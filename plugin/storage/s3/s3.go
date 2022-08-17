@@ -2,7 +2,6 @@ package s3
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -10,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/pkg/errors"
 )
 
 // Credentials is the AWS S3 credentials.
@@ -31,7 +31,7 @@ func NewClient(ctx context.Context, region, bucket string, credentials Credentia
 		awsconfig.WithCredentialsProvider(awscredentials.NewStaticCredentialsProvider(credentials.AccessKeyID, credentials.SecretAccessKey, "")),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS S3 config, error: %w", err)
+		return nil, errors.Wrap(err, "failed to load AWS S3 config")
 	}
 	return &Client{
 		c:      s3.NewFromConfig(cfg),
