@@ -263,6 +263,6 @@ func parseBucketURI(uri string) (backupMeta, error) {
 			bucket:         bucket,
 		}, nil
 	default:
-		return backupMeta{}, fmt.Errorf("invalid storage backend %q", backend)
+		return backupMeta{}, fmt.Errorf("unsupported storage backend %q", backend)
 	}
 }
