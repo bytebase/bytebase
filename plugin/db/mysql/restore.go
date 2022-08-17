@@ -216,7 +216,7 @@ func (driver *Driver) RestoreBackupToDatabase(ctx context.Context, backup io.Rea
 // It's the first step of the PITR process.
 func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
-	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", databaseName)
+	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
