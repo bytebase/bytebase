@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/metric"
+	"github.com/pkg/errors"
 )
 
 // memberRaw is the store model for an Member.
@@ -53,11 +54,11 @@ func (raw *memberRaw) toMember() *api.Member {
 func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.Member, error) {
 	memberRaw, err := s.createMemberRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Member with MemberCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Member with MemberCreate[%+v]", create)
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", memberRaw)
 	}
 	return member, nil
 }
@@ -66,13 +67,13 @@ func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*ap
 func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
 	memberRawList, err := s.findMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Member list with MemberFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Member list with MemberFind[%+v]", find)
 	}
 	var memberList []*api.Member
 	for _, raw := range memberRawList {
 		member, err := s.composeMember(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", raw)
 		}
 		memberList = append(memberList, member)
 	}
@@ -84,14 +85,14 @@ func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member
 	find := &api.MemberFind{PrincipalID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Member with PrincipalID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get Member with PrincipalID %d", id)
 	}
 	if memberRaw == nil {
 		return nil, nil
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", memberRaw)
 	}
 	return member, nil
 }
@@ -101,14 +102,14 @@ func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) 
 	find := &api.MemberFind{ID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Member with ID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get Member with ID %d", id)
 	}
 	if memberRaw == nil {
 		return nil, nil
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", memberRaw)
 	}
 	return member, nil
 }
@@ -117,11 +118,11 @@ func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) 
 func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
 	memberRaw, err := s.patchMemberRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Member with MemberPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Member with MemberPatch[%+v]", patch)
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", memberRaw)
 	}
 	return member, nil
 }

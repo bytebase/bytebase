@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/pkg/errors"
 )
 
 // TaskExecutor is the task executor.
@@ -316,10 +317,10 @@ func findIssueByTask(ctx context.Context, server *Server, task *api.Task) (*api.
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
-		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, task_id: %v, error: %w", task.ID, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, task_id: %v", task.ID)
 	}
 	if issue == nil {
-		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v, error: %w", task.PipelineID, task.ID, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v", task.PipelineID, task.ID)
 	}
 	return issue, nil
 }

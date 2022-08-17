@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/pkg/errors"
 )
 
 // policyRaw is the store model for an Policy.
@@ -57,11 +58,11 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	policyRaw, err := s.upsertPolicyRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert policy with PolicyUpsert[%+v], error: %w", upsert, err)
+		return nil, errors.Wrapf(err, "failed to upsert policy with PolicyUpsert[%+v]", upsert)
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error: %w", policyRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", policyRaw)
 	}
 	return policy, nil
 }
@@ -70,11 +71,11 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
 	policyRaw, err := s.getPolicyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get policy with PolicyFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to get policy with PolicyFind[%+v]", find)
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error: %w", policyRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", policyRaw)
 	}
 	return policy, nil
 }
@@ -99,7 +100,7 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	}
 	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
-		return fmt.Errorf("failed to list policy with PolicyFind[%+v], error: %w", find, err)
+		return errors.Wrapf(err, "failed to list policy with PolicyFind[%+v]", find)
 	}
 	if len(policyRawList) != 1 {
 		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("failed to found policy with filter %+v, expect 1. ", find)}
@@ -136,14 +137,14 @@ func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Po
 
 	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list policy with PolicyFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to list policy with PolicyFind[%+v]", find)
 	}
 
 	policyList := []*api.Policy{}
 	for _, raw := range policyRawList {
 		policy, err := s.composePolicy(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", raw)
 		}
 		policyList = append(policyList, policy)
 	}

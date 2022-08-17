@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/github/gh-ost/go/base"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -37,7 +38,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 
 	taskDAG, err := server.store.GetTaskDAGByToTaskID(ctx, task.ID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to get a single taskDAG for schema update gh-ost cutover task, id: %v, error: %w", task.ID, err)
+		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
 	}
 
 	syncTaskID := taskDAG.FromTaskID

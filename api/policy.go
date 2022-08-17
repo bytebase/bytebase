@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/pkg/errors"
 )
 
 // PolicyType is the type or name of a policy.
@@ -141,7 +142,7 @@ func (pa PipelineApprovalPolicy) String() (string, error) {
 func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, error) {
 	var pa PipelineApprovalPolicy
 	if err := json.Unmarshal([]byte(payload), &pa); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal pipeline approval policy %q, error: %w", payload, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal pipeline approval policy %q", payload)
 	}
 	return &pa, nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // activityRaw is the store model for an Activity.
@@ -57,11 +58,11 @@ func (raw *activityRaw) toActivity() *api.Activity {
 func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) (*api.Activity, error) {
 	activityRaw, err := s.createActivityRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Activity with ActivityCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Activity with ActivityCreate[%+v]", create)
 	}
 	activity, err := s.composeActivity(ctx, activityRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Activity with activityRaw[%+v], error: %w", activityRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
 	}
 	return activity, nil
 }
@@ -70,14 +71,14 @@ func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) 
 func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, error) {
 	activityRaw, err := s.getActivityRawByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Activity with ID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get Activity with ID %d", id)
 	}
 	if activityRaw == nil {
 		return nil, nil
 	}
 	activity, err := s.composeActivity(ctx, activityRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Activity with activityRaw[%+v], error: %w", activityRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
 	}
 	return activity, nil
 }
@@ -86,13 +87,13 @@ func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, err
 func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*api.Activity, error) {
 	activityRawList, err := s.findActivityRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Activity list with ActivityFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Activity list with ActivityFind[%+v]", find)
 	}
 	var activityList []*api.Activity
 	for _, raw := range activityRawList {
 		activity, err := s.composeActivity(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Activity with activityRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", raw)
 		}
 		activityList = append(activityList, activity)
 	}
@@ -103,11 +104,11 @@ func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*ap
 func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*api.Activity, error) {
 	activityRaw, err := s.patchActivityRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Activity with ActivityPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Activity with ActivityPatch[%+v]", patch)
 	}
 	activity, err := s.composeActivity(ctx, activityRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Activity with activityRaw[%+v], error: %w", activityRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Activity with activityRaw[%+v]", activityRaw)
 	}
 	return activity, nil
 }
