@@ -70,6 +70,7 @@ func TestS3Operations(t *testing.T) {
 	})
 }
 
+// The tests are skipped in CI and this function will be marked as unused by linters.
 // nolint
 func writeTempCredentialsFile(t *testing.T, credentials Credentials) string {
 	a := require.New(t)
