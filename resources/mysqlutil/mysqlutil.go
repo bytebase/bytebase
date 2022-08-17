@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/resources/utils"
+	"github.com/pkg/errors"
 )
 
 type binaryName string
@@ -91,7 +92,7 @@ func Install(resourceDir string) error {
 
 	if _, err := os.Stat(mysqlutilDir); err != nil {
 		if !os.IsNotExist(err) {
-			return fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlutilDir, err)
+			return errors.Wrapf(err, "failed to check binary directory path %q", mysqlutilDir)
 		}
 		// Install if not exist yet
 		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
@@ -114,11 +115,11 @@ func Install(resourceDir string) error {
 	for _, fp := range checks {
 		if _, err := os.Stat(fp); err != nil {
 			if !os.IsNotExist(err) {
-				return fmt.Errorf("failed to check libncurses library path %q, error: %w", fp, err)
+				return errors.Wrapf(err, "failed to check libncurses library path %q", fp)
 			}
 			// Remove mysqlutil of old version and reinstall it
 			if err := os.RemoveAll(mysqlutilDir); err != nil {
-				return fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
+				return errors.Wrapf(err, "failed to remove the old version mysqlutil binary directory %q", mysqlutilDir)
 			}
 			// Install the current version
 			if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
@@ -135,7 +136,7 @@ func Install(resourceDir string) error {
 func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpDir); err != nil {
-		return fmt.Errorf("failed to remove mysqlutil binaries temp directory %q, error: %w", tmpDir, err)
+		return errors.Wrapf(err, "failed to remove mysqlutil binaries temp directory %q", tmpDir)
 	}
 
 	f, err := resources.Open(tarName)
@@ -149,7 +150,7 @@ func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
 	}
 
 	if err := os.Rename(tmpDir, mysqlutilDir); err != nil {
-		return fmt.Errorf("failed to rename mysqlutil binaries directory from %q to %q, error: %w", tmpDir, mysqlutilDir, err)
+		return errors.Wrapf(err, "failed to rename mysqlutil binaries directory from %q to %q", tmpDir, mysqlutilDir)
 	}
 
 	return nil

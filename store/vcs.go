@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/pkg/errors"
 )
 
 // vcsRaw is the store model for a VCS (Version Control System).
@@ -55,11 +56,11 @@ func (raw *vcsRaw) toVCS() *api.VCS {
 func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS, error) {
 	vcsRaw, err := s.createVCSRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create VCS with VCSCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create VCS with VCSCreate[%+v]", create)
 	}
 	vcs, err := s.composeVCS(ctx, vcsRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error: %w", vcsRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose VCS with vcsRaw[%+v]", vcsRaw)
 	}
 	return vcs, nil
 }
@@ -68,13 +69,13 @@ func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS,
 func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
 	vcsRawList, err := s.findVCSRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find VCS list with VCSFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find VCS list with VCSFind[%+v]", find)
 	}
 	var vcsList []*api.VCS
 	for _, raw := range vcsRawList {
 		vcs, err := s.composeVCS(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose VCS with vcsRaw[%+v]", raw)
 		}
 		vcsList = append(vcsList, vcs)
 	}
@@ -102,11 +103,11 @@ func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, error) {
 	vcsRaw, err := s.patchVCSRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch VCS with VCSPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch VCS with VCSPatch[%+v]", patch)
 	}
 	vcs, err := s.composeVCS(ctx, vcsRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error: %w", vcsRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose VCS with vcsRaw[%+v]", vcsRaw)
 	}
 	return vcs, nil
 }
@@ -114,7 +115,7 @@ func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, er
 // DeleteVCS deletes an instance of VCS.
 func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
 	if err := s.deleteVCSRaw(ctx, delete); err != nil {
-		return fmt.Errorf("failed to delete VCS with VCSDelete[%+v], error: %w", delete, err)
+		return errors.Wrapf(err, "failed to delete VCS with VCSDelete[%+v]", delete)
 	}
 	return nil
 }

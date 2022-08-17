@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -160,7 +161,7 @@ func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.
 	// TODO(dragonly): Only needed for in-place PITR.
 	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
 	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
-		return fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
+		return errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
 	}
 	return nil
 }
@@ -173,10 +174,10 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		return fmt.Errorf("failed to get connection for PostgreSQL, error: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
-		return fmt.Errorf("failed to rename database %q to %q, error: %w", task.Database.Name, pitrOldDatabaseName, err)
+		return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
 	}
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
-		return fmt.Errorf("failed to rename database %q to %q, error: %w", pitrDatabaseName, task.Database.Name, err)
+		return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
 	}
 	return nil
 }

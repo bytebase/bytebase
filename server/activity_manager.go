@@ -61,7 +61,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	}
 	webhookList, err := m.s.store.FindProjectWebhook(ctx, hookFind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find project webhook after changing the issue status: %v, error: %w", meta.issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", meta.issue.Name)
 	}
 	if len(webhookList) == 0 {
 		return activity, nil
@@ -69,7 +69,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 
 	updater, err := m.s.store.GetPrincipalByID(ctx, create.CreatorID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.issue.Name)
 	}
 	if updater == nil {
 		return nil, fmt.Errorf("updater principal not found for ID %v", create.CreatorID)

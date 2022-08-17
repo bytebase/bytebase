@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -357,7 +358,7 @@ func (ctl *controller) Login() error {
 func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
 	p := path.Join(rootDir, name)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to make directory %q, error: %w", p, err)
+		return "", errors.Wrapf(err, "failed to make directory %q", p)
 	}
 
 	return p, nil
@@ -368,7 +369,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	gURL := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	req, err := http.NewRequest("GET", gURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
+		return nil, errors.Wrapf(err, "fail to create a new GET request(%q)", gURL)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
 	q := url.Values{}
@@ -378,7 +379,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	req.URL.RawQuery = q.Encode()
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fail to send a GET request(%q), error: %w", gURL, err)
+		return nil, errors.Wrapf(err, "fail to send a GET request(%q)", gURL)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -395,12 +396,12 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create a new POST request(%q), error: %w", url, err)
+		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fail to send a POST request(%q), error: %w", url, err)
+		return nil, errors.Wrapf(err, "fail to send a POST request(%q)", url)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -417,12 +418,12 @@ func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, er
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	req, err := http.NewRequest("PATCH", url, body)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create a new PATCH request(%q), error: %w", url, err)
+		return nil, errors.Wrapf(err, "fail to create a new PATCH request(%q)", url)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fail to send a PATCH request(%q), error: %w", url, err)
+		return nil, errors.Wrapf(err, "fail to send a PATCH request(%q)", url)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -438,12 +439,12 @@ func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, e
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	req, err := http.NewRequest("DELETE", url, body)
 	if err != nil {
-		return nil, fmt.Errorf("fail to create a new DELETE request(%q), error: %w", url, err)
+		return nil, errors.Wrapf(err, "fail to create a new DELETE request(%q)", url)
 	}
 	req.Header.Set("Cookie", ctl.cookie)
 	resp, err := ctl.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fail to send a DELETE request(%q), error: %w", url, err)
+		return nil, errors.Wrapf(err, "fail to send a DELETE request(%q)", url)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -777,7 +778,7 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 						Status: api.TaskPending,
 					},
 					issue.Pipeline.ID); err != nil {
-					return fmt.Errorf("failed to patch task status for task %d, error: %w", task.ID, err)
+					return errors.Wrapf(err, "failed to patch task status for task %d", task.ID)
 				}
 				return nil
 			}
@@ -808,7 +809,7 @@ func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) erro
 			},
 			issue.Pipeline.ID,
 		); err != nil {
-			return fmt.Errorf("failed to patch task status for stage %d, error: %w", stageID, err)
+			return errors.Wrapf(err, "failed to patch task status for stage %d", stageID)
 		}
 	}
 	return nil
@@ -1152,7 +1153,7 @@ func (ctl *controller) addLabelValues(key string, values []string) error {
 		ValueList: valueList,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch label key for key %q ID %d values %+v, error: %w", key, labelKey.ID, valueList, err)
+		return errors.Wrapf(err, "failed to patch label key for key %q ID %d values %+v", key, labelKey.ID, valueList)
 	}
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 type taskDAGRaw struct {
@@ -37,7 +38,7 @@ func (raw *taskDAGRaw) toTaskDAG() *api.TaskDAG {
 func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*api.TaskDAG, error) {
 	taskDAGRaw, err := s.createTaskDAGRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create TaskDAG with TaskDAGCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create TaskDAG with TaskDAGCreate[%+v]", create)
 	}
 	taskDAG := taskDAGRaw.toTaskDAG()
 	return taskDAG, nil
@@ -47,7 +48,7 @@ func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*
 func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*api.TaskDAG, error) {
 	taskDAGRawList, err := s.findTaskDAGRawList(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find TaskDAG with TaskDAGFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find TaskDAG with TaskDAGFind[%+v]", find)
 	}
 	var taskDAGList []*api.TaskDAG
 	for _, taskDAGRaw := range taskDAGRawList {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // inboxRaw is the store model for an Inbox.
@@ -36,11 +37,11 @@ func (raw *inboxRaw) toInbox() *api.Inbox {
 func (s *Store) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.Inbox, error) {
 	inboxRaw, err := s.createInboxRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Inbox with InboxCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Inbox with InboxCreate[%+v]", create)
 	}
 	inbox, err := s.composeInbox(ctx, inboxRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Inbox with inboxRaw[%+v], error: %w", inboxRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", inboxRaw)
 	}
 	return inbox, nil
 }
@@ -50,14 +51,14 @@ func (s *Store) GetInboxByID(ctx context.Context, id int) (*api.Inbox, error) {
 	find := &api.InboxFind{ID: &id}
 	inboxRaw, err := s.getInboxRawByID(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Inbox with ID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get Inbox with ID %d", id)
 	}
 	if inboxRaw == nil {
 		return nil, nil
 	}
 	inbox, err := s.composeInbox(ctx, inboxRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Inbox with inboxRaw[%+v], error: %w", inboxRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", inboxRaw)
 	}
 	return inbox, nil
 }
@@ -66,13 +67,13 @@ func (s *Store) GetInboxByID(ctx context.Context, id int) (*api.Inbox, error) {
 func (s *Store) FindInbox(ctx context.Context, find *api.InboxFind) ([]*api.Inbox, error) {
 	inboxRawList, err := s.findInboxRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Inbox list with InboxFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Inbox list with InboxFind[%+v]", find)
 	}
 	var inboxList []*api.Inbox
 	for _, raw := range inboxRawList {
 		inbox, err := s.composeInbox(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Inbox with inboxRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", raw)
 		}
 		inboxList = append(inboxList, inbox)
 	}
@@ -83,11 +84,11 @@ func (s *Store) FindInbox(ctx context.Context, find *api.InboxFind) ([]*api.Inbo
 func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inbox, error) {
 	inboxRaw, err := s.patchInboxRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Inbox with InboxPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Inbox with InboxPatch[%+v]", patch)
 	}
 	inbox, err := s.composeInbox(ctx, inboxRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Inbox with inboxRaw[%+v], error: %w", inboxRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Inbox with inboxRaw[%+v]", inboxRaw)
 	}
 	return inbox, nil
 }

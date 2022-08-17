@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // stageRaw is the store model for an Stage.
@@ -54,11 +55,11 @@ func (raw *stageRaw) toStage() *api.Stage {
 func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.Stage, error) {
 	stageRaw, err := s.createStageRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Stage with StageCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Stage with StageCreate[%+v]", create)
 	}
 	stage, err := s.composeStage(ctx, stageRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Stage with stageRaw[%+v], error: %w", stageRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Stage with stageRaw[%+v]", stageRaw)
 	}
 	return stage, nil
 }
@@ -67,13 +68,13 @@ func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.
 func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
 	stageRawList, err := s.findStageRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Stage list with StageFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Stage list with StageFind[%+v]", find)
 	}
 	var stageList []*api.Stage
 	for _, raw := range stageRawList {
 		stage, err := s.composeStage(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Stage with stageRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Stage with stageRaw[%+v]", raw)
 		}
 		stageList = append(stageList, stage)
 	}
