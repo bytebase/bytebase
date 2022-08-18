@@ -9,10 +9,11 @@ import (
 )
 
 // convert converts the pg_query.Node to ast.Node.
-func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
+func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err error) {
 	defer func() {
 		if err == nil && res != nil {
-			res.SetText(text)
+			res.SetText(statement.Text)
+			res.SetLine(statement.Line)
 		}
 	}()
 	switch in := node.Node.(type) {
