@@ -2,8 +2,14 @@ package parser
 
 import "fmt"
 
+// SingleSQL is a separate SQL split from multi-SQL.
+type SingleSQL struct {
+	Text string
+	Line int
+}
+
 // SplitMultiSQL splits statement into a slice of the single SQL.
-func SplitMultiSQL(engineType EngineType, statement string) ([]string, error) {
+func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error) {
 	switch engineType {
 	case Postgres:
 		t := newTokenizer(statement)
