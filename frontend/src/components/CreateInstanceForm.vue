@@ -498,7 +498,7 @@ const testConnection = () => {
         title: t("instance.successfully-connected-instance"),
       });
     } else {
-      var title = t("instance.failed-to-connect-instance");
+      let title = t("instance.failed-to-connect-instance");
       if (
         connectionInfo.host == "localhost" ||
         connectionInfo.host == "127.0.0.1"
