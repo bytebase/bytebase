@@ -391,21 +391,6 @@ func TestPITR(t *testing.T) {
 		log.Debug("Second PITR done.")
 	})
 
-	t.Run("Invalid Time Point", func(t *testing.T) {
-		a := require.New(t)
-		port := getTestPort(t.Name())
-		targetTs := time.Now().Unix()
-		_, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
-		defer cleanFn()
-
-		issue, err := createPITRIssue(ctl, project, database, targetTs)
-		a.NoError(err)
-
-		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
-		a.Error(err)
-		a.Equal(api.TaskFailed, status)
-	})
-
 	t.Run("Restore To New Database In Another Instance", func(t *testing.T) {
 		port := getTestPort(t.Name())
 		sourceMySQLDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
@@ -481,6 +466,21 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, targetDB, targetDatabaseName, numRowsTime1)
 		validateTbl1(t, targetDB, targetDatabaseName, numRowsTime1)
 		validateTableUpdateRow(t, targetDB, targetDatabaseName)
+	})
+
+	t.Run("Invalid Time Point", func(t *testing.T) {
+		a := require.New(t)
+		port := getTestPort(t.Name())
+		targetTs := time.Now().Unix()
+		_, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
+		defer cleanFn()
+
+		issue, err := createPITRIssue(ctl, project, database, targetTs)
+		a.NoError(err)
+
+		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.Error(err)
+		a.Equal(api.TaskFailed, status)
 	})
 }
 
