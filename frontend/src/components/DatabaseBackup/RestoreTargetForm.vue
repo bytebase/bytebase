@@ -1,7 +1,7 @@
 <template>
   <div class="mx-4 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-4">
-      <div class="col-span-2 col-start-2 w-64">
+      <div class="col-span-3 col-start-2">
         <label class="textlabel">
           {{ $t("database.pitr.restore-to") }}
         </label>
