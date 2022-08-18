@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // UpsertInstanceUser would update the existing user if name matches.
@@ -46,7 +47,7 @@ func (s *Store) GetInstanceUser(ctx context.Context, find *api.InstanceUserFind)
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d instance users with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instance users with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
