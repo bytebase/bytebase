@@ -321,7 +321,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				Collation: database.Collation,
 			})
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v, err: %w", task.Name)
+				return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 			}
 			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
@@ -338,7 +338,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
 			policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID)
+				return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
 			}
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
@@ -348,7 +348,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				PolicyID:  policyID,
 			})
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v, err: %w", task.Name)
+				return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 			}
 			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
@@ -367,7 +367,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				DbType:    database.Instance.Engine,
 			})
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v, err: %w", task.Name)
+				return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
 			}
 			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,

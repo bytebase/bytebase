@@ -632,7 +632,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to change task %v(%v) status: %w", task.ID, task.Name)
+		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
 	}
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code

@@ -488,7 +488,7 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 	}
 	sheetRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid sheet path template", sheetPathTemplate)
+		return nil, errors.Wrapf(err, "invalid sheet path template %q", sheetPathTemplate)
 	}
 	if !sheetRegex.MatchString(sheetPath) {
 		return nil, fmt.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)

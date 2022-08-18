@@ -408,7 +408,7 @@ func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Ser
 
 	f, err := os.Open(backupPath)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open backup file at %s: %w", backupPath)
+		return errors.Wrapf(err, "failed to open backup file at %s", backupPath)
 	}
 	defer f.Close()
 
