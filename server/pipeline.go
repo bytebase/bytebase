@@ -2,9 +2,9 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/pkg/errors"
 )
 
 // ScheduleNextTaskIfNeeded tries to schedule the next task if needed.
@@ -26,7 +26,7 @@ func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pip
 
 				policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get approval policy for environment ID %d, error: %w", task.Instance.EnvironmentID, err)
+					return nil, errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
 				}
 				if policy.Value == api.PipelineApprovalValueManualNever {
 					// transit into Pending for ManualNever (auto-approval) tasks if all required task checks passed.

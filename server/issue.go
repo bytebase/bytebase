@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -256,7 +257,32 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
-	pipeline, err := s.createPipelineFromIssue(ctx, issueCreate, creatorID)
+	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
+	// since we are not creating pipeline/stage list/task list in a single transaction.
+	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
+	// quite unlikely so we will live with it for now.
+	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate the assignee if we are going to actually create the issue (NOT ValidateOnly).
+	if !issueCreate.ValidateOnly {
+		// pipeline generation logic was moved to the backend, so the frontend needs to get the generated pipeline first in order to send a user-filled issue back.
+		// ValidateOnly means that we merely generate issue for the frontend so there is no need to check the assignee since it's a dummy value and will be set by the user later.
+		if issueCreate.AssigneeID == api.UnknownID {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+		}
+		ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+		}
+		if !ok {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
+		}
+	}
+
+	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -315,26 +341,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Pipeline, error) {
-	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
-	// since we are not creating pipeline/stage list/task list in a single transaction.
-	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
-	// quite unlikely so we will live with it for now.
-	if issueCreate.AssigneeID == api.UnknownID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-	}
-
-	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate)
-	if err != nil {
-		return nil, err
-	}
-	var environmentID int
+func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
 	// Return an error if the issue has no task to be executed
 	hasTask := false
 	for _, stage := range pipelineCreate.StageList {
 		if len(stage.TaskList) > 0 {
 			hasTask = true
-			environmentID = stage.EnvironmentID
 			break
 		}
 	}
@@ -346,15 +358,6 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	// Create the pipeline, stages, and tasks.
 	if issueCreate.ValidateOnly {
 		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
-	}
-
-	// check the assignee if it's NOT ValidateOnly
-	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, environmentID, issueCreate.ProjectID, issueCreate.Type)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
-	}
-	if !ok {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID)).SetInternal(err)
 	}
 
 	pipelineCreate.CreatorID = creatorID
@@ -443,7 +446,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 
 	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task list of creating database, error: %w", err)
+		return nil, errors.Wrap(err, "failed to create task list of creating database")
 	}
 
 	if c.BackupID != 0 {
@@ -885,7 +888,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		}
 		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, *project)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create the database create task list, error: %w", err)
+			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}
 		taskCreateList = append(taskCreateList, taskList...)
 
@@ -900,7 +903,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	payloadRestore.PointInTimeTs = c.PointInTimeTs
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
+		return nil, nil, errors.Wrap(err, "failed to create PITR restore task, unable to marshal payload")
 	}
 
 	restoreTaskCreate := api.TaskCreate{
@@ -925,7 +928,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 		bytesCutover, err := json.Marshal(payloadCutover)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
+			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			Name:       fmt.Sprintf("Swap PITR and the original database %s", originDatabase.Name),
@@ -1118,7 +1121,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 						UpdaterID: updaterID,
 						Status:    api.TaskCanceled,
 					}); err != nil {
-						return nil, fmt.Errorf("failed to cancel issue: %v, failed to cancel task: %v, error: %w", issue.Name, task.Name, err)
+						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Name, task.Name)
 					}
 				}
 			}
@@ -1132,7 +1135,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Status:    &pipelineStatus,
 	}
 	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, fmt.Errorf("failed to update issue %q's status, failed to update pipeline status with patch %+v, error: %w", issue.Name, pipelinePatch, err)
+		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Name, pipelinePatch)
 	}
 
 	issuePatch := &api.IssuePatch{
@@ -1142,7 +1145,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	}
 	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update issue %q's status with patch %v, error: %w", issue.Name, issuePatch, err)
+		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Name, issuePatch)
 	}
 
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
@@ -1151,7 +1154,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		IssueName: updatedIssue.Name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal activity after changing the issue status: %v, error: %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Name)
 	}
 
 	activityCreate := &api.ActivityCreate{
@@ -1167,7 +1170,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		issue: updatedIssue,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create activity after changing the issue status: %v, error: %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
 	}
 
 	return updatedIssue, nil
@@ -1181,7 +1184,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 		}
 		_, err := s.store.CreateInbox(ctx, inboxCreate)
 		if err != nil {
-			return fmt.Errorf("failed to post activity to creator inbox: %d, error: %w", issue.CreatorID, err)
+			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.CreatorID)
 		}
 	}
 
@@ -1192,7 +1195,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 		}
 		_, err := s.store.CreateInbox(ctx, inboxCreate)
 		if err != nil {
-			return fmt.Errorf("failed to post activity to assignee inbox: %d, error: %w", issue.AssigneeID, err)
+			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.AssigneeID)
 		}
 	}
 
@@ -1204,7 +1207,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 			}
 			_, err := s.store.CreateInbox(ctx, inboxCreate)
 			if err != nil {
-				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriber.ID, err)
+				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/github/gh-ost/go/base"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -37,7 +38,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 
 	taskDAG, err := server.store.GetTaskDAGByToTaskID(ctx, task.ID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to get a single taskDAG for schema update gh-ost cutover task, id: %v, error: %w", task.ID, err)
+		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
 	}
 
 	syncTaskID := taskDAG.FromTaskID
@@ -45,7 +46,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 
 	syncTask, err := server.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to get schema update gh-ost sync task for cutover task, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to get schema update gh-ost sync task for cutover task")
 	}
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
@@ -54,7 +55,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 
 	tableName, err := getTableNameFromStatement(payload.Statement)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to parse table name from statement, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to parse table name from statement")
 	}
 
 	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
@@ -122,7 +123,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		}()
 
 		if err := os.Remove(postponeFilename); err != nil {
-			return -1, "", fmt.Errorf("failed to remove postpone flag file, error: %w", err)
+			return -1, "", errors.Wrap(err, "failed to remove postpone flag file")
 		}
 
 		if migrationErr := <-errCh; migrationErr != nil {

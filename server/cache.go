@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"fmt"
 
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/bytebase/bytebase/api"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -37,7 +37,7 @@ func (s *CacheService) FindCache(namespace api.CacheNamespace, id int, entry int
 	if has {
 		dec := gob.NewDecoder(bytes.NewReader(buf2))
 		if err := dec.Decode(entry); err != nil {
-			return false, fmt.Errorf("failed to decode entry for cache namespace: %s, error: %w", namespace, err)
+			return false, errors.Wrapf(err, "failed to decode entry for cache namespace: %s", namespace)
 		}
 		return true, nil
 	}
@@ -53,7 +53,7 @@ func (s *CacheService) UpsertCache(namespace api.CacheNamespace, id int, entry i
 	var buf2 bytes.Buffer
 	enc := gob.NewEncoder(&buf2)
 	if err := enc.Encode(entry); err != nil {
-		return fmt.Errorf("failed to encode entry for cache namespace: %s, error: %w", namespace, err)
+		return errors.Wrapf(err, "failed to encode entry for cache namespace: %s", namespace)
 	}
 	s.cache.Set(append([]byte(namespace), buf1...), buf2.Bytes())
 

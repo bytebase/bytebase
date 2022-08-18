@@ -14,6 +14,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -266,16 +267,16 @@ func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 		// Send post request.
 		req, err := http.NewRequest("POST", webhook.URL, bytes.NewReader(payload))
 		if err != nil {
-			return fmt.Errorf("fail to create a new POST request(%q), error: %w", webhook.URL, err)
+			return errors.Wrapf(err, "fail to create a new POST request(%q)", webhook.URL)
 		}
 		req.Header.Set("X-Gitlab-Token", webhook.SecretToken)
 		resp, err := gl.client.Do(req)
 		if err != nil {
-			return fmt.Errorf("fail to send a POST request(%q), error: %w", webhook.URL, err)
+			return errors.Wrapf(err, "fail to send a POST request(%q)", webhook.URL)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed to read http response body, error: %w", err)
+			return errors.Wrap(err, "failed to read http response body")
 		}
 
 		if resp.StatusCode != http.StatusOK {

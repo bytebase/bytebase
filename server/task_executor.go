@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/pkg/errors"
 )
 
 // TaskExecutor is the task executor.
@@ -92,7 +93,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare for database migration, error: %w", err)
+			return nil, errors.Wrap(err, "failed to prepare for database migration")
 		}
 		mi.Creator = vcsPushEvent.FileCommit.AuthorName
 
@@ -101,7 +102,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		}
 		bytes, err := json.Marshal(miPayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare for database migration, unable to marshal vcs push event payload, error: %w", err)
+			return nil, errors.Wrap(err, "failed to prepare for database migration, unable to marshal vcs push event payload")
 		}
 		mi.Payload = string(bytes)
 	}
@@ -316,10 +317,10 @@ func findIssueByTask(ctx context.Context, server *Server, task *api.Task) (*api.
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
-		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, task_id: %v, error: %w", task.ID, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, task_id: %v", task.ID)
 	}
 	if issue == nil {
-		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v, error: %w", task.PipelineID, task.ID, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v", task.PipelineID, task.ID)
 	}
 	return issue, nil
 }

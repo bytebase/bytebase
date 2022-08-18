@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 )
 
 // tableRaw is the store model for an Table.
@@ -72,14 +73,14 @@ func (raw *tableRaw) toTable() *api.Table {
 func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
 	tableRaw, err := s.getTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Table with TableFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to get Table with TableFind[%+v]", find)
 	}
 	if tableRaw == nil {
 		return nil, nil
 	}
 	table, err := s.composeTable(ctx, tableRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", tableRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Table with tableRaw[%+v]", tableRaw)
 	}
 	return table, nil
 }
@@ -88,13 +89,13 @@ func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, 
 func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Table, error) {
 	tableRawList, err := s.findTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Table list, error: %w", err)
+		return nil, errors.Wrap(err, "failed to find Table list")
 	}
 	var tableList []*api.Table
 	for _, raw := range tableRawList {
 		table, err := s.composeTable(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Table with tableRaw[%+v]", raw)
 		}
 		tableList = append(tableList, table)
 	}

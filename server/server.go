@@ -19,6 +19,7 @@ import (
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
@@ -130,7 +131,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
 	if err := mysqlutil.Install(resourceDir); err != nil {
-		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
+		return nil, errors.Wrap(err, "cannot install mysqlbinlog binary")
 	}
 
 	// Install Postgres.
@@ -159,7 +160,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
+		return nil, errors.Wrap(err, "cannot create MetadataDB instance")
 	}
 
 	// New store.DB instance that represents the db connection.
@@ -344,7 +345,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create license service, error: %w", err)
+		return nil, errors.Wrap(err, "failed to create license service")
 	}
 
 	s.initSubscription()
@@ -392,7 +393,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial JWT token
 	value, err := common.RandomString(secretLength)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate random JWT secret, error: %w", err)
+		return nil, errors.Wrap(err, "failed to generate random JWT secret")
 	}
 	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,

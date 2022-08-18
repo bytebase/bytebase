@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // anomalyRaw is the store model for an Anomaly.
@@ -60,11 +61,11 @@ func (raw *anomalyRaw) toAnomaly() *api.Anomaly {
 func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	anomalyRaw, err := s.upsertActiveAnomalyRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert active anomaly with AnomalyUpsert[%+v], error: %w", upsert, err)
+		return nil, errors.Wrapf(err, "failed to upsert active anomaly with AnomalyUpsert[%+v]", upsert)
 	}
 	anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose anomaly with AnomalyRaw[%+v], error: %w", anomalyRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose anomaly with AnomalyRaw[%+v]", anomalyRaw)
 	}
 	return anomaly, nil
 }
@@ -73,13 +74,13 @@ func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpse
 func (s *Store) FindAnomaly(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
 	anomalyRawList, err := s.findAnomalyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find anomaly with AnomalyFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find anomaly with AnomalyFind[%+v]", find)
 	}
 	var anomalyList []*api.Anomaly
 	for _, anomalyRaw := range anomalyRawList {
 		anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose anomaly with AnomalyRaw[%+v], error: %w", anomalyRaw, err)
+			return nil, errors.Wrapf(err, "failed to compose anomaly with AnomalyRaw[%+v]", anomalyRaw)
 		}
 		anomalyList = append(anomalyList, anomaly)
 	}
