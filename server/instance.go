@@ -229,6 +229,36 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/instance/:instanceID/user/:userID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		instanceID, err := strconv.Atoi(c.Param("instanceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
+		}
+		userID, err := strconv.Atoi(c.Param("userID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
+		}
+
+		instanceUserFind := &api.InstanceUserFind{
+			ID:         &userID,
+			InstanceID: &instanceID,
+		}
+		instanceUser, err := s.store.GetInstanceUser(ctx, instanceUserFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
+		}
+		if instanceUser == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instanceUser not found with instanceID: %v and userID: %v", instanceID, userID))
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUser); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.POST("/instance/:instanceID/migration", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
