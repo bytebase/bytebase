@@ -1,14 +1,17 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -178,7 +181,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						zap.Error(err))
 				}
 			} else {
-				// elsewise, we will create a MEMBER CREATE activity
+				// otherwise, we will create a MEMBER CREATE activity
 				principal, err := s.store.GetPrincipalByID(ctx, createdMember.PrincipalID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", principal.ID)).SetInternal(err)
@@ -403,4 +406,30 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
+}
+
+// getDefaultAssigneeIDFromProjectOwner gets a default assignee from the project owners.
+func (s *Server) getDefaultAssigneeIDFromProjectOwner(ctx context.Context, projectID int) (int, error) {
+	principalID := math.MaxInt
+
+	role := string(api.Owner)
+	find := &api.ProjectMemberFind{
+		ProjectID: &projectID,
+		Role:      &role,
+	}
+	projectMemberList, err := s.store.FindProjectMember(ctx, find)
+	if err != nil {
+		return api.UnknownID, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
+	}
+	for _, projectMember := range projectMemberList {
+		if projectMember.PrincipalID < principalID {
+			principalID = projectMember.PrincipalID
+		}
+	}
+
+	if principalID == math.MaxInt {
+		return api.UnknownID, fmt.Errorf("failed to get a default assignee")
+	}
+
+	return principalID, nil
 }

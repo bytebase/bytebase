@@ -68,38 +68,6 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 	return projectMember, nil
 }
 
-// GetDefaultAssigneeIDFromProjectOwner gets a default assignee from the project owners.
-func (s *Store) GetDefaultAssigneeIDFromProjectOwner(ctx context.Context, projectID int) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	var principalID int
-	if err := tx.PTx.QueryRowContext(ctx, `
-		SELECT
-			principal_id
-		FROM
-			project_member
-		WHERE
-			project_id = $1
-			AND row_status = 'NORMAL'
-			AND role = 'OWNER'
-		ORDER BY
-			principal_id
-		LIMIT 1
-	`, projectID).Scan(
-		&principalID,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, &common.Error{Code: common.NotFound, Err: fmt.Errorf("failed to find a default assignee")}
-		}
-		return 0, FormatError(err)
-	}
-	return principalID, nil
-}
-
 // FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
@@ -486,6 +454,9 @@ func findProjectMemberImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	}
 	if v := find.PrincipalID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Role; v != nil {
+		where, args = append(where, fmt.Sprintf("role = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RoleProvider; v != nil {
 		where, args = append(where, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
