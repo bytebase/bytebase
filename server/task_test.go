@@ -150,18 +150,7 @@ func TestReassignEnvironmentID(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		var environmentID int
-		stageList := test.stageList
-		task := test.task
-		for i, stage := range stageList {
-			if stage.ID == task.StageID {
-				environmentID = stage.EnvironmentID
-				if i != len(stageList)-1 && stage.TaskList[len(stage.TaskList)-1].ID == task.ID {
-					environmentID = stageList[i+1].EnvironmentID
-				}
-				break
-			}
-		}
+		environmentID := getNextTaskEnvironmentID(test.stageList, test.task)
 		assert.Equal(t, test.want, environmentID)
 	}
 }
