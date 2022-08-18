@@ -223,8 +223,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 	var remainingStmts []string
-	for _, stmt := range statements {
-		stmt = strings.TrimLeft(stmt, " \t")
+	for _, statement := range statements {
+		stmt := strings.TrimLeft(statement.Text, " \t")
 		// We don't use transaction for creating / altering databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {

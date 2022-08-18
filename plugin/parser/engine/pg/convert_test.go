@@ -9,9 +9,9 @@ import (
 )
 
 type testData struct {
-	stmt     string
-	want     []ast.Node
-	textList []string
+	stmt          string
+	want          []ast.Node
+	statementList []parser.SingleSQL
 }
 
 func runTests(t *testing.T, tests []testData) {
@@ -21,7 +21,8 @@ func runTests(t *testing.T, tests []testData) {
 		res, err := p.Parse(parser.Context{}, test.stmt)
 		require.NoError(t, err)
 		for i := range test.want {
-			test.want[i].SetText(test.textList[i])
+			test.want[i].SetText(test.statementList[i].Text)
+			test.want[i].SetLine(test.statementList[i].Line)
 		}
 		require.Equal(t, test.want, res, test.stmt)
 	}
@@ -61,8 +62,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -80,8 +84,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -106,8 +113,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -142,8 +152,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -189,8 +202,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -221,8 +237,11 @@ func TestPGAddColumnStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE techbook ADD COLUMN a int",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE techbook ADD COLUMN a int",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -255,8 +274,11 @@ func TestPGAddColumnStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE techbook ADD COLUMN a int CONSTRAINT uk_techbook_a UNIQUE",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE techbook ADD COLUMN a int CONSTRAINT uk_techbook_a UNIQUE",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -285,8 +307,11 @@ func TestPGRenameTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE techbook RENAME TO \"techBook\"",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE techbook RENAME TO \"techBook\"",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -308,8 +333,11 @@ func TestPGRenameTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER VIEW techbook RENAME TO \"techBook\"",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER VIEW techbook RENAME TO \"techBook\"",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -339,8 +367,11 @@ func TestPGRenameColumnStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE techbook RENAME abc TO \"ABC\"",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE techbook RENAME abc TO \"ABC\"",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -363,8 +394,11 @@ func TestPGRenameColumnStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER VIEW techbook RENAME abc TO \"ABC\"",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER VIEW techbook RENAME abc TO \"ABC\"",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -394,8 +428,11 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -422,8 +459,11 @@ func TestPGCreateIndexStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"CREATE INDEX idx_id ON tech_book (id)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "CREATE INDEX idx_id ON tech_book (id)",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -443,8 +483,11 @@ func TestPGCreateIndexStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -467,8 +510,11 @@ func TestPGDropIndexStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"DROP INDEX xschema.idx_id, idx_x",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "DROP INDEX xschema.idx_id, idx_x",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -487,8 +533,11 @@ func TestPGAlterIndexStmt(t *testing.T) {
 					NewName:   "IDX_ID",
 				},
 			},
-			textList: []string{
-				"ALTER INDEX xschema.idx_id RENAME TO \"IDX_ID\"",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER INDEX xschema.idx_id RENAME TO \"IDX_ID\"",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -500,8 +549,11 @@ func TestPGAlterIndexStmt(t *testing.T) {
 					NewName:   "IDX_ID",
 				},
 			},
-			textList: []string{
-				"ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -530,8 +582,11 @@ func TestPGDropConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -565,8 +620,11 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -592,8 +650,11 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -619,8 +680,11 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -653,8 +717,11 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -680,8 +747,11 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -707,8 +777,11 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -737,8 +810,11 @@ func TestPGDropColumnStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book DROP COLUMN a",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book DROP COLUMN a",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -765,8 +841,11 @@ func TestPGDropTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"DROP TABLE tech_book, xschema.user",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "DROP TABLE tech_book, xschema.user",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -786,8 +865,11 @@ func TestPGDropTableStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"DROP VIEW tech_book, xschema.user",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "DROP VIEW tech_book, xschema.user",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -816,8 +898,11 @@ func TestPGNotNullStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -839,8 +924,11 @@ func TestPGNotNullStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -887,8 +975,11 @@ func TestPGSelectStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -915,8 +1006,11 @@ func TestPGSelectStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"SELECT public.t.a, t.*, * FROM t",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "SELECT public.t.a, t.*, * FROM t",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -1018,8 +1112,9 @@ func TestPGSelectStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				`SELECT
+			statementList: []parser.SingleSQL{
+				{
+					Text: `SELECT
 					public.t.a, b, lower(a), b>a
 				FROM
 					t
@@ -1031,6 +1126,8 @@ func TestPGSelectStmt(t *testing.T) {
 						(SELECT * FROM t1 WHERE x LIKE b)
 				UNION
 				SELECT * FROM t`,
+					Line: 2,
+				},
 			},
 		},
 	}
@@ -1047,8 +1144,11 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 					DatabaseName: "test",
 				},
 			},
-			textList: []string{
-				"DROP DATABASE test",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "DROP DATABASE test",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -1059,8 +1159,11 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 					IfExists:     true,
 				},
 			},
-			textList: []string{
-				"DROP DATABASE IF EXISTS test",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "DROP DATABASE IF EXISTS test",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -1094,8 +1197,11 @@ func TestUpdateStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -1108,8 +1214,11 @@ func TestUpdateStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"UPDATE tech_book SET a = 1",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "UPDATE tech_book SET a = 1",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -1123,8 +1232,11 @@ func TestUpdateStmt(t *testing.T) {
 					WhereClause: &ast.UnconvertedExpressionDef{},
 				},
 			},
-			textList: []string{
-				"UPDATE tech_book SET a = 1 WHERE a > 1",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "UPDATE tech_book SET a = 1 WHERE a > 1",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -1143,8 +1255,11 @@ func TestDeleteStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"DELETE FROM tech_book",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "DELETE FROM tech_book",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -1158,8 +1273,11 @@ func TestDeleteStmt(t *testing.T) {
 					WhereClause: &ast.UnconvertedExpressionDef{},
 				},
 			},
-			textList: []string{
-				"DELETE FROM tech_book WHERE a > 1",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "DELETE FROM tech_book WHERE a > 1",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -1188,8 +1306,11 @@ func TestSetSchemaStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book SET SCHEMA new_schema",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book SET SCHEMA new_schema",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -1211,8 +1332,11 @@ func TestSetSchemaStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER VIEW tech_book SET SCHEMA new_schema",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER VIEW tech_book SET SCHEMA new_schema",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -1237,8 +1361,11 @@ func TestExplainStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"EXPLAIN SELECT * FROM tech_book",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "EXPLAIN SELECT * FROM tech_book",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -1267,8 +1394,11 @@ func TestAlterColumnType(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -1297,8 +1427,11 @@ func TestInsertStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
+					Line: 1,
+				},
 			},
 		},
 		{
@@ -1311,8 +1444,11 @@ func TestInsertStmt(t *testing.T) {
 					},
 				},
 			},
-			textList: []string{
-				"INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
+					Line: 1,
+				},
 			},
 		},
 	}
@@ -1333,8 +1469,11 @@ func TestCopyStmt(t *testing.T) {
 					FilePath: "/file/path/in/file/system",
 				},
 			},
-			textList: []string{
-				"COPY tech_book FROM '/file/path/in/file/system'",
+			statementList: []parser.SingleSQL{
+				{
+					Text: "COPY tech_book FROM '/file/path/in/file/system'",
+					Line: 1,
+				},
 			},
 		},
 	}

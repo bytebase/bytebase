@@ -97,7 +97,7 @@
     :title="$t('database.restore-database')"
     @close="state.restoreBackupContext = undefined"
   >
-    <div class="space-y-4">
+    <div class="space-y-4 w-[35rem]">
       <RestoreTargetForm
         v-if="allowRestoreInPlace"
         :target="state.restoreBackupContext.target"
