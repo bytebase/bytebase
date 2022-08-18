@@ -1,8 +1,6 @@
 package api
 
-import (
-	"fmt"
-)
+import "github.com/pkg/errors"
 
 const (
 	// EnvironmentKeyName is the reserved key for environment.
@@ -61,7 +59,7 @@ type LabelKeyPatch struct {
 func (patch *LabelKeyPatch) Validate() error {
 	for _, v := range patch.ValueList {
 		if len(v) == 0 || len(v) > labelLengthMax {
-			return fmt.Errorf("label value has a maximum length of %v characters and cannot be empty", labelLengthMax)
+			return errors.Errorf("label value has a maximum length of %v characters and cannot be empty", labelLengthMax)
 		}
 	}
 	return nil

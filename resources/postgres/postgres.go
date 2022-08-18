@@ -64,7 +64,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	}
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
 
 	return nil
@@ -101,7 +101,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	case "linux":
 		tarName = "postgres-linux-x86_64.txz"
 	default:
-		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
+		return nil, errors.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 	version := strings.TrimRight(tarName, ".txz")
 	pgBinDir := path.Join(resourceDir, version)
@@ -134,7 +134,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 
 		f, err := resources.Open(tarName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+			return nil, errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
 		}
 		defer f.Close()
 
@@ -212,7 +212,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to initdb %q", p.String())
 	}
 
 	return nil
@@ -229,7 +229,7 @@ func shouldSwitchUser() (int, int, bool, error) {
 	if bytebaseUser.Username == "root" {
 		bytebaseUser, err = user.Lookup("bytebase")
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("please run Bytebase as non-root user. You can use the following command to create a dedicated \"bytebase\" user to run the application: addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase")
+			return 0, 0, false, errors.Errorf("please run Bytebase as non-root user. You can use the following command to create a dedicated \"bytebase\" user to run the application: addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase")
 		}
 		sameUser = false
 	}
@@ -266,7 +266,7 @@ func (i *Instance) StartForTest(port int, stdout, stderr io.Writer) (err error) 
 	p.Stderr = stderr
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
 
 	return nil

@@ -1,9 +1,8 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	"github.com/pkg/errors"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.
@@ -19,7 +18,7 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 		t := newTokenizer(statement)
 		return t.splitPostgreSQLMultiSQL()
 	default:
-		return nil, fmt.Errorf("engine type is not supported: %s", engineType)
+		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
 }
 
@@ -30,6 +29,6 @@ func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt)
 		t := newTokenizer(node.Text())
 		return t.setLineForCreateTableStmt(node)
 	default:
-		return fmt.Errorf("engine type is not supported: %s", engineType)
+		return errors.Errorf("engine type is not supported: %s", engineType)
 	}
 }

@@ -149,7 +149,7 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 			return nil, err
 		}
 	} else {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
@@ -383,10 +383,10 @@ func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*an
 // archiveAnomalyImpl archives an anomaly by ID.
 func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
 	if archive.InstanceID == nil && archive.DatabaseID == nil {
-		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
+		return &common.Error{Code: common.Internal, Err: errors.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
 	}
 	if archive.InstanceID != nil && archive.DatabaseID != nil {
-		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID, but not both")}
+		return &common.Error{Code: common.Internal, Err: errors.Errorf("failed to close anomaly, should specify either instanceID or databaseID, but not both")}
 	}
 	// Remove row from database.
 	if archive.InstanceID != nil {
@@ -402,7 +402,7 @@ func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArc
 
 		rows, _ := result.RowsAffected()
 		if rows == 0 {
-			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceID, archive.Type)}
+			return &common.Error{Code: common.NotFound, Err: errors.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceID, archive.Type)}
 		}
 	} else if archive.DatabaseID != nil {
 		result, err := tx.ExecContext(ctx,
@@ -417,7 +417,7 @@ func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArc
 
 		rows, _ := result.RowsAffected()
 		if rows == 0 {
-			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found database: %d type: %s", *archive.DatabaseID, archive.Type)}
+			return &common.Error{Code: common.NotFound, Err: errors.Errorf("anomaly not found database: %d type: %s", *archive.DatabaseID, archive.Type)}
 		}
 	}
 

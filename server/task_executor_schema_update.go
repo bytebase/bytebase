@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/pkg/errors"
 )
 
 // NewSchemaUpdateTaskExecutor creates a schema update (DDL) task executor.
@@ -24,7 +24,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database schema update payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
 	return runMigration(ctx, server, task, payload.MigrationType, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)

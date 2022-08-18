@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -333,7 +334,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		if oldStatement != newStatement {
 			if issue == nil {
-				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+				err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 				return nil, echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
 			}
 
@@ -399,7 +400,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					Collation: taskPatched.Database.Collation,
 				})
 				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 				}
 				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID:               api.SystemBotID,
@@ -420,7 +421,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
 				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 				}
 			}
 		}
@@ -430,7 +431,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
 		if issue == nil {
-			err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+			err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 			return nil, echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
 		}
 
@@ -442,7 +443,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			IssueName:            issue.Name,
 		})
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal earliest allowed time activity payload: %v, err: %w", task.Name, err))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal earliest allowed time activity payload: %v", task.Name))
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   taskPatched.CreatorID,
@@ -476,7 +477,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
 		})
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 		}
 		_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               api.SystemBotID,
@@ -515,7 +516,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		// the assignee group is the workspace owner and DBA.
 		principal, err := s.store.GetPrincipalByID(ctx, principalID)
 		if err != nil {
-			return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
+			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
 		}
 		if principal == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
@@ -530,7 +531,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 			PrincipalID: &principalID,
 		})
 		if err != nil {
-			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", projectID, principalID, err)
+			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", projectID, principalID)
 		}
 		if member == nil {
 			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
@@ -547,7 +548,7 @@ func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID i
 	// the workspace owner and DBA roles can always change task status.
 	principal, err := s.store.GetPrincipalByID(ctx, principalID)
 	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
+		return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
 	}
 	if principal == nil {
 		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
@@ -558,14 +559,14 @@ func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID i
 
 	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to find issue, error: %w", err)
+		return false, common.Wrapf(err, common.Internal, "failed to find issue")
 	}
 	if issue == nil {
 		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
 	}
 	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
 	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to get assignee group value for taskID %d, error: %w", task.ID, err)
+		return false, common.Wrapf(err, common.Internal, "failed to get assignee group value for taskID %d", task.ID)
 	}
 	if groupValue == nil {
 		return false, nil
@@ -577,7 +578,7 @@ func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID i
 			PrincipalID: &principalID,
 		})
 		if err != nil {
-			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", issue.ProjectID, principalID, err)
+			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", issue.ProjectID, principalID)
 		}
 		if member != nil && member.Role == string(api.Owner) {
 			return true, nil
@@ -600,7 +601,7 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
-		return nil, common.Errorf(common.Internal, "failed to get pipeline approval policy by environmentID %d, error: %w", environmentID, err)
+		return nil, common.Wrapf(err, common.Internal, "failed to get pipeline approval policy by environmentID %d", environmentID)
 	}
 
 	for _, assigneeGroup := range policy.AssigneeGroupList {
@@ -626,12 +627,12 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
 		return nil, &common.Error{
 			Code: common.Invalid,
-			Err:  fmt.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
+			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
 	}
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to change task %v(%v) status: %w", task.ID, task.Name, err)
+		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
 	}
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
@@ -639,7 +640,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
 	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
 	}
 	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
@@ -661,7 +662,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		TaskName:  task.Name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
+		return nil, errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
 	}
 
 	containerID := task.PipelineID
@@ -696,7 +697,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
+			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
 		}
 		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
 			log.Error("failed to sync database schema",
@@ -712,10 +713,10 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if taskPatched.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
 		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
+			return nil, errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
 		}
 		if pipeline == nil {
-			return nil, fmt.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
+			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
 		}
 		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
 		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == taskPatched.ID {
@@ -727,13 +728,13 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 					Status:    &status,
 				}
 				if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-					return nil, fmt.Errorf("failed to mark pipeline %v as DONE after completing task %v: %w", pipeline.Name, taskPatched.Name, err)
+					return nil, errors.Wrapf(err, "failed to mark pipeline %v as DONE after completing task %v", pipeline.Name, taskPatched.Name)
 				}
 			} else {
 				issue.Pipeline = pipeline
 				_, err := s.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
 				if err != nil {
-					return nil, fmt.Errorf("failed to mark issue %v as DONE after completing task %v: %w", issue.Name, taskPatched.Name, err)
+					return nil, errors.Wrapf(err, "failed to mark issue %v as DONE after completing task %v", issue.Name, taskPatched.Name)
 				}
 			}
 		}
@@ -764,7 +765,7 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 		PolicyID:  policyID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
+		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 
 	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{

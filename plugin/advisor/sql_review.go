@@ -3,12 +3,12 @@ package advisor
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"regexp"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/pkg/errors"
 )
 
 // How to add a SQL review rule:
@@ -125,7 +125,7 @@ type SQLReviewPolicy struct {
 // Validate validates the SQLReviewPolicy. It also validates the each review rule.
 func (policy *SQLReviewPolicy) Validate() error {
 	if policy.Name == "" || len(policy.RuleList) == 0 {
-		return fmt.Errorf("invalid payload, name or rule list cannot be empty")
+		return errors.Errorf("invalid payload, name or rule list cannot be empty")
 	}
 	for _, rule := range policy.RuleList {
 		if err := rule.Validate(); err != nil {
@@ -179,12 +179,12 @@ type RequiredColumnRulePayload struct {
 func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
 	}
 
 	format, err := regexp.Compile(nr.Format)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
+		return nil, 0, errors.Wrapf(err, "failed to compile regular expression \"%s\"", nr.Format)
 	}
 
 	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
@@ -202,7 +202,7 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 func UnmarshalNamingRulePayloadAsTemplate(ruleType SQLReviewRuleType, payload string) (string, []string, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return "", nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return "", nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
 	}
 
 	template := nr.Format
@@ -210,7 +210,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SQLReviewRuleType, payload st
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
-			return "", nil, 0, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
+			return "", nil, 0, errors.Errorf("invalid template %s for rule %s", key, ruleType)
 		}
 	}
 
@@ -248,10 +248,10 @@ func parseTemplateTokens(template string) ([]string, []string) {
 func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
 	var rcr RequiredColumnRulePayload
 	if err := json.Unmarshal([]byte(payload), &rcr); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal required column rule payload %q: %q", payload, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal required column rule payload %q", payload)
 	}
 	if len(rcr.ColumnList) == 0 {
-		return nil, fmt.Errorf("invalid required column rule payload, column list cannot be empty")
+		return nil, errors.Errorf("invalid required column rule payload, column list cannot be empty")
 	}
 	return &rcr, nil
 }
@@ -269,7 +269,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	var result []Advice
 	database, err := checkContext.Catalog.GetDatabase(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database information from catalog: %w", err)
+		return nil, errors.Wrap(err, "failed to get database information from catalog")
 	}
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
@@ -294,7 +294,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			statements,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check statement: %w", err)
+			return nil, errors.Wrap(err, "failed to check statement")
 		}
 
 		result = append(result, adviceList...)
@@ -427,5 +427,5 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	}
-	return Fake, fmt.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
+	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
 }

@@ -254,7 +254,7 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d projects with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d projects with filter %+v, expect 1", len(list), find)}
 	}
 	if err := s.cache.UpsertCache(api.ProjectCache, list[0].ID, list[0]); err != nil {
 		return nil, err
@@ -471,7 +471,7 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 		&project.RoleProvider,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

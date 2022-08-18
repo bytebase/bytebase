@@ -1,8 +1,9 @@
 package parser
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
@@ -54,7 +55,7 @@ func Parse(engineType EngineType, ctx Context, statement string) ([]ast.Node, er
 	p, ok := parsers[engineType]
 	parserMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("engine: unknown engine type %v", engineType)
+		return nil, errors.Errorf("engine: unknown engine type %v", engineType)
 	}
 	return p.Parse(ctx, statement)
 }

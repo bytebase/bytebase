@@ -263,7 +263,7 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 			return nil, err
 		}
 		if database == nil {
-			return nil, fmt.Errorf("database not found with ID %v", task.DatabaseID)
+			return nil, errors.Errorf("database not found with ID %v", task.DatabaseID)
 		}
 		task.Database = database
 	}
@@ -328,7 +328,7 @@ func (s *Store) getTaskRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tasks with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d tasks with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -618,7 +618,7 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatc
 		&taskRaw.EarliestAllowedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found with ID %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task not found with ID %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}
@@ -638,7 +638,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		return nil, err
 	}
 	if taskRawObj == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task ID not found: %d", patch.ID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task ID not found: %d", patch.ID)}
 	}
 
 	taskRunFind := &api.TaskRunFind{
@@ -667,7 +667,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		}
 	} else {
 		if patch.Status == api.TaskRunning {
-			return nil, fmt.Errorf("task is already running: %v", taskRawObj.Name)
+			return nil, errors.Errorf("task is already running: %v", taskRawObj.Name)
 		}
 		taskRunStatusPatch := &api.TaskRunStatusPatch{
 			ID:        &taskRunRaw.ID,

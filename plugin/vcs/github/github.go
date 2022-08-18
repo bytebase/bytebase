@@ -224,7 +224,7 @@ func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthC
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, "failed to read user info from URL %s", url)
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s", url, code, body)
+		return nil, errors.Errorf("failed to read user info from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	var user User
@@ -290,7 +290,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, "failed to fetch commit data from URL %s", url)
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s", url, code, body)
+		return nil, errors.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	commit := &Commit{}
@@ -374,7 +374,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 	}
 
 	if len(emptyEmailUserList) != 0 {
-		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitHub, please make sure every members' public email is configured before syncing, see https://docs.github.com/en/account-and-profile", strings.Join(emptyEmailUserList, ", "))
+		return nil, errors.Errorf("[ %v ] did not configure their public email in GitHub, please make sure every members' public email is configured before syncing, see https://docs.github.com/en/account-and-profile", strings.Join(emptyEmailUserList, ", "))
 	}
 
 	return allMembers, nil
@@ -408,7 +408,7 @@ func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oa
 		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository collaborators from URL %s", url)
 	} else if code >= 300 {
 		return nil, false,
-			fmt.Errorf("failed to read repository collaborators from URL %s, status code: %d, body: %s",
+			errors.Errorf("failed to read repository collaborators from URL %s, status code: %d, body: %s",
 				url,
 				code,
 				body,
@@ -464,21 +464,21 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v", err)
+		return nil, errors.Wrap(err, "failed to exchange OAuth token")
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read OAuth response body, code %v, error: %v", resp.StatusCode, err)
+		return nil, errors.Wrapf(err, "failed to read OAuth response body, code %v", resp.StatusCode)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	oauthResp := new(oauthResponse)
 	if err := json.Unmarshal(body, oauthResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal OAuth response body, code %v, error: %v", resp.StatusCode, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal OAuth response body, code %v", resp.StatusCode)
 	}
 	if oauthResp.Error != "" {
-		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
+		return nil, errors.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
 	}
 	return oauthResp.toVCSOAuthToken(), nil
 }
@@ -552,7 +552,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository list from URL %s", url)
 	} else if code >= 300 {
 		return nil, false,
-			fmt.Errorf("failed to fetch repository list from URL %s, status code: %d, body: %s",
+			errors.Errorf("failed to fetch repository list from URL %s, status code: %d, body: %s",
 				url,
 				code,
 				body,
@@ -603,7 +603,7 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 		return nil, common.Errorf(common.NotFound, "failed to fetch repository file list from URL %s", url)
 	} else if code >= 300 {
 		return nil,
-			fmt.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
+			errors.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
 				url,
 				code,
 				body,
@@ -675,7 +675,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, "failed to create/update file through URL %s", url)
 	} else if code >= 300 {
-		return fmt.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
+		return errors.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
@@ -745,7 +745,7 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
 	} else if code >= 300 {
 		return nil,
-			fmt.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+			errors.Errorf("failed to read file from URL %s, status code: %d, body: %s",
 				url,
 				code,
 				body,
@@ -800,13 +800,16 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 
 	if code == http.StatusNotFound {
 		return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
-	} else if code >= 300 {
-		return "",
-			fmt.Errorf("failed to create webhook through URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
+	}
+
+	// GitHub returns 201 HTTP status codes upon successful webhook creation,
+	// see https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook for details.
+	if code != http.StatusCreated {
+		return "", errors.Errorf("failed to create webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
 	}
 
 	var webhookInfo WebhookInfo
@@ -844,7 +847,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, "failed to patch webhook through URL %s", url)
 	} else if code >= 300 {
-		return fmt.Errorf("failed to patch webhook through URL %s, status code: %d, body: %s",
+		return errors.Errorf("failed to patch webhook through URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
@@ -880,7 +883,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 	if code == http.StatusNotFound {
 		return nil // It is OK if the webhook has already gone
 	} else if code >= 300 {
-		return fmt.Errorf("failed to delete webhook through URL %s, status code: %d, body: %s",
+		return errors.Errorf("failed to delete webhook through URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,

@@ -21,7 +21,7 @@ type TaskCheckMigrationSchemaExecutor struct {
 func (*TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.WithError(common.Internal, err)
+		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
 	}
 	if task == nil {
 		return []api.TaskCheckResult{

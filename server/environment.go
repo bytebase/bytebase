@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -81,7 +81,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 				RowStatus:     &normalStatus,
 			})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to find instances in the environment %d", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find instances in the environment %d", id)).SetInternal(err)
 			}
 			if len(instances) > 0 {
 				return echo.NewHTTPError(http.StatusBadRequest, "You should archive all instances under the environment before archiving the environment.")

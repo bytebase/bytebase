@@ -37,7 +37,7 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Errorf(common.Invalid, "invalid check statement advise payload: %w", err)
+		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
 	}
 
 	policy, err := server.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ID: &payload.PolicyID})
@@ -53,12 +53,12 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 				},
 			}, nil
 		}
-		return nil, common.Errorf(common.Internal, "failed to get SQL review policy: %w", err)
+		return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 	}
 
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return nil, common.Errorf(common.Internal, "failed to get task by id: %w", err)
+		return nil, common.Wrapf(err, common.Internal, "failed to get task by id")
 	}
 
 	catalog := store.NewCatalog(task.DatabaseID, server.store, payload.DbType)

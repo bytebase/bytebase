@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -105,7 +106,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 			return true, nil, errors.Wrap(err, "failed to do cutover for MySQL")
 		}
 	default:
-		return true, nil, fmt.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
+		return true, nil, errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
 	}
 
 	log.Debug("Appending new migration history record")
@@ -173,11 +174,46 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 	if err != nil {
 		return errors.Wrap(err, "failed to get connection for PostgreSQL")
 	}
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
-		return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
+
+	// The original database may not exist.
+	// This is possible if there's a former task execution which successfully renamed original -> _del database and failed.
+	// Now we have the _del and the _pitr database.
+	existOriginal, err := pgDatabaseExist(ctx, db, task.Database.Name)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check existence of database %q", task.Database.Name)
 	}
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
-		return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
+	if existOriginal {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
+			return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
+		}
+		log.Debug("Successfully renamed database", zap.String("from", task.Database.Name), zap.String("to", pitrOldDatabaseName))
 	}
+
+	// The _pitr database may not exist.
+	// This is possible if there's a former task execution which successfully renamed _pitr -> original database and failed.
+	// Now we have the _del and the original database.
+	existPITR, err := pgDatabaseExist(ctx, db, pitrDatabaseName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check existence of database %q", pitrDatabaseName)
+	}
+	if existPITR {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
+			return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
+		}
+		log.Debug("Successfully renamed database", zap.String("from", pitrDatabaseName), zap.String("to", task.Database.Name))
+	}
+
 	return nil
+}
+
+func pgDatabaseExist(ctx context.Context, db *sql.DB, database string) (bool, error) {
+	query := fmt.Sprintf("SELECT datname FROM pg_database WHERE datname='%s';", database)
+	var unused string
+	if err := db.QueryRowContext(ctx, query).Scan(&unused); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, util.FormatErrorWithQuery(err, query)
+	}
+	return true, nil
 }

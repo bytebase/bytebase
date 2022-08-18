@@ -432,7 +432,7 @@ func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d issues with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d issues with filter %+v, expect 1", len(list), find)}
 	}
 	if err := s.cache.UpsertCache(api.IssueCache, list[0].ID, list[0]); err != nil {
 		return nil, err
@@ -657,7 +657,7 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.IssuePa
 		&issueRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("unable to find issue ID to update: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

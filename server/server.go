@@ -166,13 +166,13 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	// New store.DB instance that represents the db connection.
 	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
 	if err != nil {
-		return nil, fmt.Errorf("cannot new db: %w", err)
+		return nil, errors.Wrap(err, "cannot new db")
 	}
 
 	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
-		return nil, fmt.Errorf("cannot open db: %w", err)
+		return nil, errors.Wrap(err, "cannot open db")
 	}
 
 	cacheService := NewCacheService()
@@ -181,7 +181,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init config: %w", err)
+		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 
@@ -265,28 +265,29 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
-	if prof.Mode == common.ReleaseModeDev || prof.Debug {
-		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-			Skipper: func(c echo.Context) bool {
-				return !common.HasPrefixes(c.Path(), "/api", "/hook")
-			},
-			Format: `{"time":"${time_rfc3339}",` +
-				`"method":"${method}","uri":"${uri}",` +
-				`"status":${status},"error":"${error}"}` + "\n",
-		}))
-	}
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: func(c echo.Context) bool {
+			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
+				return true
+			}
+			return !common.HasPrefixes(c.Path(), "/api", "/hook")
+		},
+		Format: `{"time":"${time_rfc3339}",` +
+			`"method":"${method}","uri":"${uri}",` +
+			`"status":${status},"error":"${error}"}` + "\n",
+	}))
 	e.Use(recoverMiddleware)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)
 
-	apiGroup := e.Group("/api")
 	openAPIGroup := e.Group(openAPIPrefix)
 	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return openAPIMetricMiddleware(s, next)
 	})
 
+	apiGroup := e.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
 	})

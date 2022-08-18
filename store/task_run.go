@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // taskRunRaw is the store model for an TaskRun.
@@ -119,7 +120,7 @@ func (s *Store) getTaskRunRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskR
 	if len(taskRunRawList) == 0 {
 		return nil, nil
 	} else if len(taskRunRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d task runs with filter %+v, expect 1", len(taskRunRawList), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d task runs with filter %+v, expect 1", len(taskRunRawList), find)}
 	}
 	return taskRunRawList[0], nil
 }
@@ -176,7 +177,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api
 		&taskRunRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}
