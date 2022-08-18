@@ -108,6 +108,15 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch member request").SetInternal(err)
 		}
+		// When archiving a owner, make sure he's not the only unarchived owner
+		if member.Role == "OWNER" && *memberPatch.RowStatus == "ARCHIVED" {
+			countResult, err := s.store.CountMemberGroupByRoleAndStatus(ctx)
+			for _, count := range countResult {
+				if count.Role == "OWNER" && count.RowStatus == "NORMAL" && count.Count == 1 {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Cannot archive the only unarchived owner in workspace").SetInternal(err)
+				}
+			}
+		}
 
 		updatedMember, err := s.store.PatchMember(ctx, memberPatch)
 		if err != nil {
