@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -159,7 +160,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError,
-						fmt.Errorf("failed to find databases in the instance %d", id)).SetInternal(err)
+						errors.Errorf("failed to find databases in the instance %d", id)).SetInternal(err)
 				}
 				var databaseNameList []string
 				for _, database := range databases {
@@ -464,7 +465,7 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as socket file extension to differentiate different Postgres instances.
 	if engine == db.Postgres && port == fmt.Sprintf("%v", s.profile.DatastorePort) && host == common.GetPostgresSocketDir() {
-		return fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
+		return errors.Errorf("instance doesn't exist for host %q and port %q", host, port)
 	}
 	return nil
 }

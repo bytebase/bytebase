@@ -62,7 +62,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		if repo.VCS == nil {
-			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
+			err := errors.Errorf("VCS not found for ID: %v", repo.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
 		}
 
@@ -142,7 +142,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		if repo.VCS == nil {
-			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
+			err := errors.Errorf("VCS not found for ID: %v", repo.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
 		}
 
@@ -320,9 +320,9 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	databaseList, err := s.store.FindDatabase(ctx, databaseFind)
 	if err != nil {
-		return "", fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
+		return "", errors.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
 	} else if len(databaseList) == 0 {
-		return "", fmt.Errorf("project with ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
+		return "", errors.Errorf("project with ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -346,7 +346,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 			}
 		}
 		if len(filteredDatabaseList) == 0 {
-			return "", fmt.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment)
+			return "", errors.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment)
 		}
 	} else {
 		filteredDatabaseList = databaseList
@@ -365,7 +365,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		}
 	}
 	if len(multipleDatabaseForSameEnv) > 0 {
-		return "", fmt.Errorf("ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
+		return "", errors.Errorf("ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
 	}
 
 	// Compose the new issue
@@ -390,7 +390,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, statement string) (string, error) {
 	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
 	if mi.Environment != "" {
-		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
+		return "", errors.Errorf("environment isn't accepted in schema update for tenant mode project")
 	}
 	m := &api.UpdateSchemaContext{
 		MigrationType: mi.Type,

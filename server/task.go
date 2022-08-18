@@ -334,7 +334,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		if oldStatement != newStatement {
 			if issue == nil {
-				err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+				err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 				return nil, echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
 			}
 
@@ -431,7 +431,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
 		if issue == nil {
-			err := fmt.Errorf("issue not found with pipeline ID %v", task.PipelineID)
+			err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
 			return nil, echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
 		}
 
@@ -516,7 +516,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		// the assignee group is the workspace owner and DBA.
 		principal, err := s.store.GetPrincipalByID(ctx, principalID)
 		if err != nil {
-			return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
+			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
 		}
 		if principal == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
@@ -531,7 +531,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 			PrincipalID: &principalID,
 		})
 		if err != nil {
-			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", projectID, principalID, err)
+			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", projectID, principalID)
 		}
 		if member == nil {
 			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
@@ -548,7 +548,7 @@ func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID i
 	// the workspace owner and DBA roles can always change task status.
 	principal, err := s.store.GetPrincipalByID(ctx, principalID)
 	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to get principal by ID %d, error: %w", principalID, err)
+		return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
 	}
 	if principal == nil {
 		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
@@ -559,14 +559,14 @@ func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID i
 
 	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to find issue, error: %w", err)
+		return false, common.Wrapf(err, common.Internal, "failed to find issue")
 	}
 	if issue == nil {
 		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
 	}
 	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
 	if err != nil {
-		return false, common.Errorf(common.Internal, "failed to get assignee group value for taskID %d, error: %w", task.ID, err)
+		return false, common.Wrapf(err, common.Internal, "failed to get assignee group value for taskID %d", task.ID)
 	}
 	if groupValue == nil {
 		return false, nil
@@ -578,7 +578,7 @@ func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID i
 			PrincipalID: &principalID,
 		})
 		if err != nil {
-			return false, common.Errorf(common.Internal, "failed to get project member by projectID %d, principalID %d, error: %w", issue.ProjectID, principalID, err)
+			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", issue.ProjectID, principalID)
 		}
 		if member != nil && member.Role == string(api.Owner) {
 			return true, nil
@@ -601,7 +601,7 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
-		return nil, common.Errorf(common.Internal, "failed to get pipeline approval policy by environmentID %d, error: %w", environmentID, err)
+		return nil, common.Wrapf(err, common.Internal, "failed to get pipeline approval policy by environmentID %d", environmentID)
 	}
 
 	for _, assigneeGroup := range policy.AssigneeGroupList {
@@ -627,7 +627,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
 		return nil, &common.Error{
 			Code: common.Invalid,
-			Err:  fmt.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
+			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
 	}
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
@@ -713,10 +713,10 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if taskPatched.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
 		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
+			return nil, errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
 		}
 		if pipeline == nil {
-			return nil, fmt.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
+			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
 		}
 		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
 		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == taskPatched.ID {

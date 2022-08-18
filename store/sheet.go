@@ -309,7 +309,7 @@ func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d sheet with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d sheet with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -427,7 +427,7 @@ func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*sh
 		&sheetRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

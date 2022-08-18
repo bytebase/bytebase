@@ -57,7 +57,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
 						if !ok {
-							err = fmt.Errorf("%v", r)
+							err = errors.Errorf("%v", r)
 						}
 						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}

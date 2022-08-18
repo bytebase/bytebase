@@ -1,8 +1,9 @@
 package parser
 
 import (
-	"fmt"
 	"unicode"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -103,7 +104,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			t.skip(uint(len(beginRuneList)))
 			t.skipBlank()
 			if t.equalWordCaseInsensitive(atomicRuneList) {
-				return nil, fmt.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it")
+				return nil, errors.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it")
 			}
 		case t.char(0) == '\n':
 			t.line++
@@ -118,7 +119,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 // See https://www.postgresql.org/docs/current/sql-syntax-lexical.html.
 func (t *tokenizer) scanIdentifier(delimiter rune) error {
 	if t.char(0) != delimiter {
-		return fmt.Errorf("delimiter doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
+		return errors.Errorf("delimiter doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
 	}
 
 	t.skip(1)
@@ -128,7 +129,7 @@ func (t *tokenizer) scanIdentifier(delimiter rune) error {
 			t.skip(1)
 			return nil
 		case eofRune:
-			return fmt.Errorf("invalid indentifier: not found delimiter: %c, but found EOF", delimiter)
+			return errors.Errorf("invalid indentifier: not found delimiter: %c, but found EOF", delimiter)
 		default:
 			t.skip(1)
 		}
@@ -147,7 +148,7 @@ func (t *tokenizer) scanIdentifier(delimiter rune) error {
 // And this is extensible.
 func (t *tokenizer) scanString(delimiter rune) error {
 	if t.char(0) != delimiter {
-		return fmt.Errorf("string doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
+		return errors.Errorf("string doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
 	}
 
 	t.skip(1)
@@ -157,7 +158,7 @@ func (t *tokenizer) scanString(delimiter rune) error {
 			t.skip(1)
 			return nil
 		case eofRune:
-			return fmt.Errorf("invalid string: not found delimiter: %c, but found EOF", delimiter)
+			return errors.Errorf("invalid string: not found delimiter: %c, but found EOF", delimiter)
 		case '\\':
 			// skip two because we want to skip \' and \\.
 			t.skip(2)
@@ -196,7 +197,7 @@ func (t *tokenizer) scanComment() error {
 				t.skip(2)
 				return nil
 			case t.char(0) == eofRune:
-				return fmt.Errorf("invalid comment: not found */, but found EOF")
+				return errors.Errorf("invalid comment: not found */, but found EOF")
 			case t.char(0) == '\n':
 				t.line++
 				t.skip(1)
@@ -219,13 +220,13 @@ func (t *tokenizer) scanComment() error {
 			}
 		}
 	}
-	return fmt.Errorf("no comment found")
+	return errors.Errorf("no comment found")
 }
 
 // scanTo scans to delimiter. Use KMP algorithm.
 func (t *tokenizer) scanTo(delimiter []rune) error {
 	if len(delimiter) == 0 {
-		return fmt.Errorf("scanTo failed: delimiter can not be nil")
+		return errors.Errorf("scanTo failed: delimiter can not be nil")
 	}
 
 	// KMP algorithm.
@@ -257,7 +258,7 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 			return nil
 		}
 		if t.char(0) == eofRune {
-			return fmt.Errorf("scanTo failed: delimiter %q not found", string(delimiter))
+			return errors.Errorf("scanTo failed: delimiter %q not found", string(delimiter))
 		}
 		if t.char(0) == '\n' {
 			t.line++

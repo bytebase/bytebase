@@ -203,7 +203,7 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 	if len(envRawList) == 0 {
 		return nil, nil
 	} else if len(envRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
 	}
 	if err := s.cache.UpsertCache(api.EnvironmentCache, envRawList[0].ID, envRawList[0]); err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *api.
 		LIMIT 1
 	`).Scan(&order); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("no environment record found")}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("no environment record found")}
 		}
 		return nil, FormatError(err)
 	}
@@ -381,7 +381,7 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *sql.Tx, patch *api.E
 		&environment.Order,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("environment ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

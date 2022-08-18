@@ -14,7 +14,7 @@ import (
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	if database == "" {
-		return "", fmt.Errorf("SQLite can dump one database only at a time")
+		return "", errors.Errorf("SQLite can dump one database only at a time")
 	}
 
 	// Find all dumpable databases and make sure the existence of the database to be dumped.
@@ -30,7 +30,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		}
 	}
 	if !exist {
-		return "", fmt.Errorf("database %s not found", database)
+		return "", errors.Errorf("database %s not found", database)
 	}
 
 	if err := driver.dumpOneDatabase(ctx, database, out, schemaOnly); err != nil {
