@@ -99,8 +99,9 @@ var (
 		pgURL string
 
 		// Cloud backup configs
-		backupBucket    string
-		credentialsFile string
+		backupRegion      string
+		backupBucket      string
+		backupCredentials string
 	}
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -146,8 +147,9 @@ func init() {
 
 	// Cloud backup related flags.
 	// TODO(dragonly): Add GCS usages when it's supported.
-	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3:us-west-2//example-bucket. When provided, Bytebase will store data to the S3 bucket.")
-	rootCmd.PersistentFlags().StringVar(&flags.credentialsFile, "credentials-file", "", "credential file to use for the backup bucket. It should be the same format as the AWS credential files.")
+	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
+	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
+	rootCmd.PersistentFlags().StringVar(&flags.backupCredentials, "backup-credentials", "", "credentials file to use for the backup bucket. It should be the same format as the AWS credential files.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -193,8 +195,8 @@ func start() {
 	var profile server.Profile
 	// This enables backup to cloud, and all backup data will be stored in the supported cloud storage.
 	if flags.backupBucket != "" {
-		if flags.credentialsFile == "" {
-			log.Error("Must specify --credentials-file when --backup-bucket is present.")
+		if flags.backupCredentials == "" {
+			log.Error("Must specify --backup-credentials when --backup-bucket is present.")
 			return
 		}
 		bucketMeta, err := parseBucketURI(flags.backupBucket)
@@ -202,7 +204,14 @@ func start() {
 			log.Error("failed to parse backup bucket", zap.Error(err))
 			return
 		}
-		bucketMeta.credentialsFile = flags.credentialsFile
+		if bucketMeta.storageBackend == api.BackupStorageBackendS3 {
+			if flags.backupRegion == "" {
+				log.Error("Must specify --backup-region for AWS S3 backup.")
+				return
+			}
+			bucketMeta.region = flags.backupRegion
+		}
+		bucketMeta.credentialsFile = flags.backupCredentials
 		profile = activeProfile(flags.dataDir, bucketMeta)
 	} else {
 		profile = activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal})
@@ -248,23 +257,20 @@ func start() {
 //   s3:us-west-2//dev-bytebase-backup
 //   gcs://dev-bytebase-backup
 func parseBucketURI(uri string) (backupMeta, error) {
-	parts := strings.Split(uri, ":")
+	parts := strings.Split(uri, "://")
 	if len(parts) != 2 {
-		return backupMeta{}, errors.Errorf("invalid bucket URI %q", uri)
+		return backupMeta{}, errors.Errorf("invalid bucket URI %q, expected format is s3://${BUCKET_NAME}", uri)
 	}
 
-	backend := parts[0]
+	backend, bucket := parts[0], parts[1]
+	if strings.Contains(bucket, "/") {
+		return backupMeta{}, errors.Errorf("invalid bucket URI %q, expecting no / in the BUCKET_NAME", uri)
+	}
+
 	switch strings.ToUpper(backend) {
 	case string(api.BackupStorageBackendS3):
-		parts = strings.Split(parts[1], "//")
-		if len(parts) != 2 {
-			return backupMeta{}, errors.Errorf("invalid S3 bucket URI %q, the expected format is s3:${region}//${bucket}", uri)
-		}
-		region := parts[0]
-		bucket := parts[1]
 		return backupMeta{
 			storageBackend: api.BackupStorageBackendS3,
-			region:         region,
 			bucket:         bucket,
 		}, nil
 	default:

@@ -2,7 +2,7 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  full_bin = "./.air/bytebase --port 8080 --frontend-port 3000 --data . --backup-bucket s3:us-east-1//dev-bytebase-backup --credentials-file ~/.aws/credentials"
+  full_bin = "./.air/bytebase --port 8080 --frontend-port 3000 --data . --backup-region us-east-1 --backup-bucket s3://dev-bytebase-backup --backup-credentials ~/.aws/credentials"
   cmd = """
   go build -gcflags=all=\"-N -l\" \
   -ldflags " \
