@@ -86,7 +86,7 @@ func (gh *GitHub) createRepositoryWebhook(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for creating repository webhook: %v", err))
 	}
 	gh.nextWebhookID++
-	return c.String(http.StatusOK, string(buf))
+	return c.String(http.StatusCreated, string(buf))
 }
 
 func (gh *GitHub) getRepositoryCommit(c echo.Context) error {
