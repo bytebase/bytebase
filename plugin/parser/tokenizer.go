@@ -111,8 +111,9 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 	}
 }
 
-// text must be lower case.
+// matchTableConstraint matches text as lowercase.
 func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
+	text = strings.ToLower(text)
 	if cons.Name != "" {
 		return strings.Contains(text, strings.ToLower(cons.Name))
 	}

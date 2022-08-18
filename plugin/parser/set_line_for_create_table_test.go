@@ -51,6 +51,16 @@ func TestPGCreateTableSetLine(t *testing.T) {
 			columnLineList:     []int{3, 3, 4, 5},
 			constraintLineList: []int{6, 7, 8, 8, 10},
 		},
+		{
+			statement: `
+			CREATE TABLE t(
+				a int PRIMARY KEY,
+				b int CHECK(b>1), c int UNIQUE
+			)
+			`,
+			columnLineList:     []int{3, 4, 4},
+			constraintLineList: []int{},
+		},
 	}
 
 	for _, test := range tests {
