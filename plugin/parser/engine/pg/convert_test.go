@@ -9,9 +9,11 @@ import (
 )
 
 type testData struct {
-	stmt          string
-	want          []ast.Node
-	statementList []parser.SingleSQL
+	stmt           string
+	want           []ast.Node
+	statementList  []parser.SingleSQL
+	columnLine     [][]int
+	constraintLine [][]int
 }
 
 func runTests(t *testing.T, tests []testData) {
@@ -23,6 +25,15 @@ func runTests(t *testing.T, tests []testData) {
 		for i := range test.want {
 			test.want[i].SetText(test.statementList[i].Text)
 			test.want[i].SetLine(test.statementList[i].Line)
+
+			if createTable, ok := test.want[i].(*ast.CreateTableStmt); ok {
+				for j, col := range createTable.ColumnList {
+					col.SetLine(test.columnLine[i][j])
+				}
+				for j, cons := range createTable.ConstraintList {
+					cons.SetLine(test.constraintLine[i][j])
+				}
+			}
 		}
 		require.Equal(t, test.want, res, test.stmt)
 	}
@@ -68,6 +79,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					Line: 1,
 				},
 			},
+			columnLine: [][]int{
+				{1, 1},
+			},
 		},
 		{
 			stmt: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
@@ -89,6 +103,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					Text: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
 					Line: 1,
 				},
+			},
+			columnLine: [][]int{
+				{1, 1},
 			},
 		},
 		{
@@ -118,6 +135,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					Text: "CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
 					Line: 1,
 				},
+			},
+			columnLine: [][]int{
+				{1},
 			},
 		},
 		{
@@ -157,6 +177,12 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					Text: "CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
 					Line: 1,
 				},
+			},
+			columnLine: [][]int{
+				{1, 1},
+			},
+			constraintLine: [][]int{
+				{1},
 			},
 		},
 		{
@@ -207,6 +233,12 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					Text: "CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
 					Line: 1,
 				},
+			},
+			columnLine: [][]int{
+				{1},
+			},
+			constraintLine: [][]int{
+				{1},
 			},
 		},
 	}
