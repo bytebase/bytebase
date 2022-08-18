@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
@@ -76,7 +77,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			s = strings.Trim(s, "\n\t ")
 			if s != "" {
 				if err := f(s); err != nil {
-					return fmt.Errorf("execute query %q failed: %v", s, err)
+					return errors.Wrapf(err, "execute query %q failed", s)
 				}
 			}
 			s = ""
@@ -86,7 +87,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	s = strings.Trim(s, "\n\t ")
 	if s != "" {
 		if err := f(s); err != nil {
-			return fmt.Errorf("execute query %q failed: %v", s, err)
+			return errors.Wrapf(err, "execute query %q failed", s)
 		}
 	}
 
@@ -198,7 +199,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Convert version to stored version.
 	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
-		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
+		return 0, errors.Wrap(err, "failed to convert to stored version")
 	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
@@ -206,7 +207,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		Database: &m.Namespace,
 		Version:  &m.Version,
 	}); err != nil {
-		return -1, fmt.Errorf("check duplicate version error: %q", err)
+		return -1, errors.Wrap(err, "failed to check duplicate version")
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:

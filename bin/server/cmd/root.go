@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
@@ -150,7 +151,7 @@ func checkDataDir() error {
 	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
-		return fmt.Errorf("unable to access --data %s, %w", flags.dataDir, err)
+		return errors.Wrapf(err, "unable to access --data directory %s", flags.dataDir)
 	}
 
 	return nil

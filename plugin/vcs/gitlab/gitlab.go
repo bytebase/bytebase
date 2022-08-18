@@ -235,21 +235,21 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v", err)
+		return nil, errors.Wrap(err, "failed to exchange OAuth token")
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read OAuth response body, code %v, error: %v", resp.StatusCode, err)
+		return nil, errors.Wrapf(err, "failed to read OAuth response body, code %v", resp.StatusCode)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	oauthResp := new(oauthResponse)
 	if err := json.Unmarshal(body, oauthResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal OAuth response body, code %v, error: %v", resp.StatusCode, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal OAuth response body, code %v", resp.StatusCode)
 	}
 	if oauthResp.Error != "" {
-		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
+		return nil, errors.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
 	}
 	return oauthResp.toVCSOAuthToken(), nil
 }
@@ -414,7 +414,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 
 	commit := &Commit{}
 	if err := json.Unmarshal([]byte(body), commit); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal commit data from GitLab instance %s, err: %w", instanceURL, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal commit data from GitLab instance %s", instanceURL)
 	}
 
 	return &vcs.Commit{

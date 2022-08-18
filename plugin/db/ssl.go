@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 // TLSConfig is the configuration for SSL connection.
@@ -51,7 +53,7 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 		}
 		opts := x509.VerifyOptions{Roots: rootCertPool}
 		if _, err = cert.Verify(opts); err != nil {
-			return fmt.Errorf("SSL cert failed to verify: %v", err)
+			return errors.Wrap(err, "SSL cert failed to verify")
 		}
 		return nil
 	}

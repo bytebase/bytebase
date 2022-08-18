@@ -43,7 +43,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database backup payload")
 	}
 
 	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
@@ -56,7 +56,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
+		return true, nil, errors.Wrap(err, "failed to find database for the backup")
 	}
 	if sourceDatabase == nil {
 		return true, nil, fmt.Errorf("source database ID not found %v", backup.DatabaseID)
@@ -68,10 +68,10 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
+		return true, nil, errors.Wrapf(err, "failed to find target database %q in instance %q", payload.DatabaseName, task.Instance.Name)
 	}
 	if targetDatabase == nil {
-		return true, nil, fmt.Errorf("target database %q not found in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
+		return true, nil, errors.Wrapf(err, "target database %q not found in instance %q", payload.DatabaseName, task.Instance.Name)
 	}
 
 	log.Debug("Start database restore from backup...",
@@ -137,12 +137,12 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, server 
 
 	f, err := os.Open(backupPath)
 	if err != nil {
-		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
+		return errors.Wrapf(err, "failed to open backup file at %s", backupPath)
 	}
 	defer f.Close()
 
 	if err := driver.Restore(ctx, f); err != nil {
-		return fmt.Errorf("failed to restore backup: %w", err)
+		return errors.Wrap(err, "failed to restore backup")
 	}
 	return nil
 }
@@ -160,7 +160,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return -1, "", fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
+		return -1, "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
 
 	// Add a branch migration history record.
@@ -187,7 +187,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {
-		return -1, "", fmt.Errorf("failed to create migration history: %w", err)
+		return -1, "", errors.Wrap(err, "failed to create migration history")
 	}
 	return migrationID, m.Version, nil
 }

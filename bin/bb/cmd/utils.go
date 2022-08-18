@@ -69,7 +69,7 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 		db.ConnectionContext{},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database, got error: %w", err)
+		return nil, errors.Wrap(err, "failed to open database")
 	}
 
 	return driver, nil

@@ -50,7 +50,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	}
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
 
 	tableName, err := getTableNameFromStatement(payload.Statement)
@@ -84,7 +84,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		defer driver.Close(ctx)
 		needsSetup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
-			return -1, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
+			return -1, "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
 		}
 		if needsSetup {
 			return -1, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)

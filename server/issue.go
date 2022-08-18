@@ -314,7 +314,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
-		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
@@ -323,7 +323,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 
 	bytes, err := json.Marshal(createActivityPayload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   creatorID,
@@ -336,7 +336,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		issue: issue,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	return issue, nil
 }
@@ -363,7 +363,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 	pipelineCreate.CreatorID = creatorID
 	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pipeline for issue, error %v", err)
+		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
 
 	for _, stageCreate := range pipelineCreate.StageList {
@@ -371,7 +371,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		stageCreate.PipelineID = pipelineCreated.ID
 		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
+			return nil, errors.Wrap(err, "failed to create stage for issue")
 		}
 
 		taskID := make(map[int]int)
@@ -382,7 +382,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 			taskCreate.StageID = createdStage.ID
 			task, err := s.store.CreateTask(ctx, &taskCreate)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create task for issue, error %v", err)
+				return nil, errors.Wrap(err, "failed to create task for issue")
 			}
 			taskID[index] = task.ID
 		}
@@ -394,7 +394,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 				Payload:    "{}",
 			}
 			if _, err := s.store.CreateTaskDAG(ctx, &taskDAGCreate); err != nil {
-				return nil, fmt.Errorf("failed to create task DAG for issue, error %w", err)
+				return nil, errors.Wrap(err, "failed to create task DAG for issue")
 			}
 		}
 	}
@@ -462,7 +462,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		restorePayload.BackupID = c.BackupID
 		restoreBytes, err := json.Marshal(restorePayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+			return nil, errors.Wrap(err, "failed to create restore database task, unable to marshal payload")
 		}
 
 		taskCreateList = append(taskCreateList, api.TaskCreate{
@@ -833,7 +833,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		}
 		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
 		if err != nil {
-			return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
+			return nil, errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", c.DatabaseName, project.DBNameTemplate, c.Labels)
 		}
 		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, &instance, &project, project.ID, baseDatabaseName)
 		if err != nil {
@@ -855,7 +855,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
 	}
 
 	return []api.TaskCreate{
@@ -880,11 +880,11 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	if c.CreateDatabaseCtx != nil {
 		targetInstance, err := s.store.GetInstanceByID(ctx, c.CreateDatabaseCtx.InstanceID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to find the instance with ID: %d, err: %w", c.CreateDatabaseCtx.InstanceID, err)
+			return nil, nil, errors.Wrapf(err, "failed to find the instance with ID %d", c.CreateDatabaseCtx.InstanceID)
 		}
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to find the project with ID: %d, err: %w", projectID, err)
+			return nil, nil, errors.Wrapf(err, "failed to find the project with ID %d", projectID)
 		}
 		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, *project)
 		if err != nil {
@@ -1262,7 +1262,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		for _, db := range dbList {
 			var labelList []*api.DatabaseLabel
 			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
-				return "", "", fmt.Errorf("failed to unmarshal labels for database ID %v name %q, error: %v", db.ID, db.Name, err)
+				return "", "", errors.Wrapf(err, "failed to unmarshal labels for database ID %v name %q", db.ID, db.Name)
 			}
 			labelMap := map[string]string{}
 			for _, label := range labelList {
@@ -1270,7 +1270,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 			}
 			dbName, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
 			if err != nil {
-				return "", "", fmt.Errorf("failed to format database name formatDatabaseName(%q, %q, %+v), error: %v", baseDatabaseName, project.DBNameTemplate, labelMap, err)
+				return "", "", errors.Wrapf(err, "failed to format database name formatDatabaseName(%q, %q, %+v)", baseDatabaseName, project.DBNameTemplate, labelMap)
 			}
 			if db.Name == dbName {
 				found = true
@@ -1291,7 +1291,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	defer driver.Close(ctx)
 	schemaVersion, err := getLatestSchemaVersion(ctx, driver, similarDB.Name)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get migration history for database %q: %w", similarDB.Name, err)
+		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.Name)
 	}
 
 	var schemaBuf bytes.Buffer

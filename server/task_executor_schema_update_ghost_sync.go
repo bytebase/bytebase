@@ -36,7 +36,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
 	return exec.runGhostMigration(ctx, server, task, payload.Statement)
 }

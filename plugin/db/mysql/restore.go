@@ -180,7 +180,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, target
 		return errors.Wrap(err, "mysql command fails")
 	}
 	if err := mysqlbinlogCmd.Wait(); err != nil {
-		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
+		return errors.Wrap(err, "error occurred while waiting for mysqlbinlog to exit")
 	}
 
 	log.Debug("Replayed binlog successfully.")
@@ -238,7 +238,7 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 
 	binlogFiles, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read binlog directory %s, error %w", binlogDir, err)
+		return nil, errors.Wrapf(err, "cannot read binlog directory %s", binlogDir)
 	}
 
 	var binlogFilesToReplay []BinlogFile

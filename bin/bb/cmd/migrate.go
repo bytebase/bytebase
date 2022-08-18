@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/user"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
 )
@@ -29,7 +29,7 @@ func newMigrateCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
-				return fmt.Errorf("failed to parse dsn, got error: %w", err)
+				return errors.Wrap(err, "failed to parse dsn")
 			}
 
 			var sqlReaders []io.Reader
@@ -70,7 +70,7 @@ func migrateDatabase(ctx context.Context, u *dburl.URL, description, issueID str
 	defer driver.Close(ctx)
 
 	if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
-		return fmt.Errorf("failed to setup migration, got error: %w", err)
+		return errors.Wrap(err, "failed to setup migration")
 	}
 
 	migrationCreator := "bb-unknown-creator"
@@ -80,7 +80,7 @@ func migrateDatabase(ctx context.Context, u *dburl.URL, description, issueID str
 
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, sqlReader); err != nil {
-		return fmt.Errorf("failed to read sql file, got error: %w", err)
+		return errors.Wrap(err, "failed to read sql file")
 	}
 	// TODO(d): support semantic versioning.
 	if _, _, err := driver.ExecuteMigration(ctx, &db.MigrationInfo{
@@ -94,7 +94,7 @@ func migrateDatabase(ctx context.Context, u *dburl.URL, description, issueID str
 		IssueID:        issueID,
 		CreateDatabase: createDatabase,
 	}, buf.String()); err != nil {
-		return fmt.Errorf("failed to migrate database, got error: %w", err)
+		return errors.Wrap(err, "failed to migrate database")
 	}
 	return nil
 }

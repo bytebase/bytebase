@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +40,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid create database payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid create database payload")
 	}
 
 	statement := strings.TrimSpace(payload.Statement)

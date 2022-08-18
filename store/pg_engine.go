@@ -119,7 +119,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		// The database storing metadata is the same as user name.
 		db.db, err = d.GetDBConnection(ctx, databaseName)
 		if err != nil {
-			return fmt.Errorf("failed to connect to database %q which may not be setup yet, error: %v", databaseName, err)
+			return errors.Wrapf(err, "failed to connect to database %q which may not be setup yet", databaseName)
 		}
 		return nil
 	}
@@ -160,22 +160,22 @@ func (db *DB) Open(ctx context.Context) (err error) {
 
 	verBefore, err := getLatestVersion(ctx, d, databaseName)
 	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
+		return errors.Wrap(err, "failed to get current schema version")
 	}
 
 	if err := migrate(ctx, d, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
-		return fmt.Errorf("failed to migrate: %w", err)
+		return errors.Wrap(err, "failed to migrate")
 	}
 
 	verAfter, err := getLatestVersion(ctx, d, databaseName)
 	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
+		return errors.Wrap(err, "failed to get current schema version")
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
 	db.db, err = d.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database %q, error: %v", db.connCfg.Username, err)
+		return errors.Wrapf(err, "failed to connect to database %q", db.connCfg.Username)
 	}
 
 	if err := db.setupDemoData(); err != nil {
@@ -199,7 +199,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		Limit:    &limit,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get migration history, error: %v", err)
+		return nil, errors.Wrap(err, "failed to get migration history")
 	}
 	if len(history) == 0 {
 		return nil, nil
@@ -211,7 +211,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		}
 		v, err := semver.Make(h.Version)
 		if err != nil {
-			return nil, fmt.Errorf("invalid version %q, error: %v", h.Version, err)
+			return nil, errors.Wrapf(err, "invalid version %q", h.Version)
 		}
 		return &v, nil
 	}
@@ -240,7 +240,7 @@ func (db *DB) setupDemoData() error {
 	// Loop over all data files and execute them in order.
 	for _, name := range names {
 		if err := db.applyDataFile(name); err != nil {
-			return fmt.Errorf("applyDataFile error: name=%q err=%w", name, err)
+			return errors.Wrapf(err, "applyDataFile error: name=%q", name)
 		}
 	}
 	log.Info("Completed demo data setup.")
@@ -317,12 +317,12 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		latestSchemaPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeProd, latestSchemaFile)
 		buf, err := migrationFS.ReadFile(latestSchemaPath)
 		if err != nil {
-			return fmt.Errorf("failed to read latest schema %q, error %w", latestSchemaPath, err)
+			return errors.Wrapf(err, "failed to read latest schema %q", latestSchemaPath)
 		}
 		latestDataPath := fmt.Sprintf("migration/%s/%s", common.ReleaseModeProd, latestDataFile)
 		dataBuf, err := migrationFS.ReadFile(latestDataPath)
 		if err != nil {
-			return fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
+			return errors.Wrapf(err, "failed to read latest data %q", latestSchemaPath)
 		}
 
 		var stmt string
@@ -355,7 +355,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 			},
 			stmt,
 		); err != nil {
-			return fmt.Errorf("failed to migrate initial schema version %q, error: %v", latestSchemaPath, err)
+			return errors.Wrapf(err, "failed to migrate initial schema version %q", latestSchemaPath)
 		}
 		log.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
 	} else {
@@ -388,7 +388,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 			for _, pv := range patchVersions {
 				buf, err := fs.ReadFile(migrationFS, pv.filename)
 				if err != nil {
-					return fmt.Errorf("failed to read migration file %q, error %w", pv.filename, err)
+					return errors.Wrapf(err, "failed to read migration file %q", pv.filename)
 				}
 				// This happens when a migration file is moved from dev to release and we should not reapply the migration.
 				// For example,
@@ -417,7 +417,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 					},
 					string(buf),
 				); err != nil {
-					return fmt.Errorf("failed to migrate schema version %q, error: %v", pv.version, err)
+					return errors.Wrapf(err, "failed to migrate schema version %q", pv.version)
 				}
 				retVersion = pv.version
 			}
@@ -508,7 +508,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 			},
 			m.statement,
 		); err != nil {
-			return fmt.Errorf("failed to migrate schema version %q, error: %v", m.version, err)
+			return errors.Wrapf(err, "failed to migrate schema version %q", m.version)
 		}
 	}
 
@@ -540,7 +540,7 @@ func getDevMigrations() ([]devMigration, error) {
 		}
 		buf, err := fs.ReadFile(migrationFS, name)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read dev migration file %q, error %w", name, err)
+			return nil, errors.Wrapf(err, "failed to read dev migration file %q", name)
 		}
 
 		devMigrations = append(devMigrations, devMigration{
@@ -641,7 +641,7 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 		s := fmt.Sprintf("%s.0", baseName)
 		v, err := semver.Make(s)
 		if err != nil {
-			return nil, fmt.Errorf("invalid migration file path %q, error %w", name, err)
+			return nil, errors.Wrapf(err, "invalid migration file path %q", name)
 		}
 		versions = append(versions, v)
 	}

@@ -3,9 +3,9 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
 )
@@ -21,7 +21,7 @@ func newRestoreCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
-				return fmt.Errorf("failed to parse dsn, got error: %w", err)
+				return errors.Wrap(err, "failed to parse dsn")
 			}
 			return restoreDatabase(context.Background(), u, file)
 		},
@@ -39,7 +39,7 @@ func newRestoreCmd() *cobra.Command {
 func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	f, err := os.Open(file)
 	if err != nil {
-		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
+		return errors.Wrapf(err, "failed to open file %q", file)
 	}
 	defer f.Close()
 
@@ -50,7 +50,7 @@ func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	defer db.Close(ctx)
 
 	if err := db.Restore(ctx, f); err != nil {
-		return fmt.Errorf("failed to restore from database dump %s got error: %w", file, err)
+		return errors.Wrapf(err, "failed to restore from backup file %q", file)
 	}
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -399,7 +400,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					Collation: taskPatched.Database.Collation,
 				})
 				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 				}
 				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID:               api.SystemBotID,
@@ -420,7 +421,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
 				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 				}
 			}
 		}
@@ -442,7 +443,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			IssueName:            issue.Name,
 		})
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal earliest allowed time activity payload: %v, err: %w", task.Name, err))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal earliest allowed time activity payload: %v", task.Name))
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   taskPatched.CreatorID,
@@ -476,7 +477,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
 		})
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 		}
 		_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               api.SystemBotID,
@@ -631,7 +632,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to change task %v(%v) status: %w", task.ID, task.Name, err)
+		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
 	}
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
@@ -639,7 +640,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
 	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
 	}
 	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
@@ -661,7 +662,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		TaskName:  task.Name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal activity after changing the task status: %v, err: %w", task.Name, err)
+		return nil, errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
 	}
 
 	containerID := task.PipelineID
@@ -696,7 +697,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
+			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
 		}
 		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
 			log.Error("failed to sync database schema",
@@ -727,13 +728,13 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 					Status:    &status,
 				}
 				if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-					return nil, fmt.Errorf("failed to mark pipeline %v as DONE after completing task %v: %w", pipeline.Name, taskPatched.Name, err)
+					return nil, errors.Wrapf(err, "failed to mark pipeline %v as DONE after completing task %v", pipeline.Name, taskPatched.Name)
 				}
 			} else {
 				issue.Pipeline = pipeline
 				_, err := s.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
 				if err != nil {
-					return nil, fmt.Errorf("failed to mark issue %v as DONE after completing task %v: %w", issue.Name, taskPatched.Name, err)
+					return nil, errors.Wrapf(err, "failed to mark issue %v as DONE after completing task %v", issue.Name, taskPatched.Name)
 				}
 			}
 		}
@@ -764,7 +765,7 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 		PolicyID:  policyID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
+		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 
 	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{

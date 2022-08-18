@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -487,7 +488,7 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 	}
 	sheetRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
 	if err != nil {
-		return nil, fmt.Errorf("invalid sheet path template: %q, err: %v", sheetPathTemplate, err)
+		return nil, errors.Wrapf(err, "invalid sheet path template %q", sheetPathTemplate)
 	}
 	if !sheetRegex.MatchString(sheetPath) {
 		return nil, fmt.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)
