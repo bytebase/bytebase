@@ -213,6 +213,13 @@ export default defineComponent({
       return dataSource;
     });
 
+    const hasMoreThanOneOwner = computed(
+      () =>
+        dataSource.value[0].list.filter(
+          (m) => m.principal.type !== "SYSTEM_BOT"
+        ).length > 1
+    );
+
     const allowEdit = computed(() => {
       return isOwner(currentUser.value.role);
     });
@@ -225,7 +232,7 @@ export default defineComponent({
         hasRBACFeature.value &&
         allowEdit.value &&
         member.rowStatus == "NORMAL" &&
-        (member.role != "OWNER" || dataSource.value[0].list.length > 1)
+        (member.role != "OWNER" || hasMoreThanOneOwner.value)
       );
     };
 
@@ -255,7 +262,7 @@ export default defineComponent({
       return (
         allowEdit.value &&
         member.rowStatus == "NORMAL" &&
-        (member.role != "OWNER" || dataSource.value[0].list.length > 1)
+        (member.role != "OWNER" || hasMoreThanOneOwner.value)
       );
     };
 
