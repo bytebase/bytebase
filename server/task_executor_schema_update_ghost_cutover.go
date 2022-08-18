@@ -50,7 +50,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	}
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
 
 	tableName, err := getTableNameFromStatement(payload.Statement)

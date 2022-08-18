@@ -160,16 +160,16 @@ func (db *DB) Open(ctx context.Context) (err error) {
 
 	verBefore, err := getLatestVersion(ctx, d, databaseName)
 	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
+		return errors.Wrap(err, "failed to get current schema version")
 	}
 
 	if err := migrate(ctx, d, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
-		return fmt.Errorf("failed to migrate: %w", err)
+		return errors.Wrap(err, "failed to migrate")
 	}
 
 	verAfter, err := getLatestVersion(ctx, d, databaseName)
 	if err != nil {
-		return fmt.Errorf("failed to get current schema version: %w", err)
+		return errors.Wrap(err, "failed to get current schema version")
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
@@ -199,7 +199,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		Limit:    &limit,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get migration history, error: %v", err)
+		return nil, errors.Wrap(err, "failed to get migration history")
 	}
 	if len(history) == 0 {
 		return nil, nil

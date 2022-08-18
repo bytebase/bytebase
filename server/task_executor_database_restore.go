@@ -43,7 +43,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database backup payload")
 	}
 
 	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
@@ -56,7 +56,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
+		return true, nil, errors.Wrap(err, "failed to find database for the backup")
 	}
 	if sourceDatabase == nil {
 		return true, nil, fmt.Errorf("source database ID not found %v", backup.DatabaseID)
@@ -142,7 +142,7 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, server 
 	defer f.Close()
 
 	if err := driver.Restore(ctx, f); err != nil {
-		return fmt.Errorf("failed to restore backup: %w", err)
+		return errors.Wrap(err, "failed to restore backup")
 	}
 	return nil
 }
@@ -187,7 +187,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {
-		return -1, "", fmt.Errorf("failed to create migration history: %w", err)
+		return -1, "", errors.Wrap(err, "failed to create migration history")
 	}
 	return migrationID, m.Version, nil
 }

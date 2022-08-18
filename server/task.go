@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -420,7 +421,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
 				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 				}
 			}
 		}
@@ -696,7 +697,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
+			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
 		}
 		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
 			log.Error("failed to sync database schema",

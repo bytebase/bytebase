@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -255,19 +256,19 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		case api.TaskDatabaseSchemaUpdate:
 			taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-				return nil, fmt.Errorf("invalid database schema update payload: %w", err)
+				return nil, errors.Wrap(err, "invalid database schema update payload")
 			}
 			statement = taskPayload.Statement
 		case api.TaskDatabaseDataUpdate:
 			taskPayload := &api.TaskDatabaseDataUpdatePayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-				return nil, fmt.Errorf("invalid database data update payload: %w", err)
+				return nil, errors.Wrap(err, "invalid database data update payload")
 			}
 			statement = taskPayload.Statement
 		case api.TaskDatabaseSchemaUpdateGhostSync:
 			taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-				return nil, fmt.Errorf("invalid database data update payload: %w", err)
+				return nil, errors.Wrap(err, "invalid database data update payload")
 			}
 			statement = taskPayload.Statement
 		}

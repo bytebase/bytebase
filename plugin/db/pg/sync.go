@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -110,7 +111,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get databases: %s", err)
+		return nil, errors.Wrap(err, "failed to get databases")
 	}
 	var databaseList []db.DatabaseMeta
 	for _, database := range databases {
@@ -141,7 +142,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get databases: %s", err)
+		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
 	schema := db.Schema{
@@ -300,7 +301,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	constraints, err := getTableConstraints(txn)
 	if err != nil {
-		return nil, fmt.Errorf("getTableConstraints() got error: %v", err)
+		return nil, errors.Wrap(err, "failed to get table constraints")
 	}
 
 	var tables []*tableSchema

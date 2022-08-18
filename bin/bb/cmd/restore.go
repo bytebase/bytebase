@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
 )
@@ -21,7 +22,7 @@ func newRestoreCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
-				return fmt.Errorf("failed to parse dsn, got error: %w", err)
+				return errors.Wrap(err, "failed to parse dsn")
 			}
 			return restoreDatabase(context.Background(), u, file)
 		},

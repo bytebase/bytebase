@@ -180,7 +180,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, target
 		return errors.Wrap(err, "mysql command fails")
 	}
 	if err := mysqlbinlogCmd.Wait(); err != nil {
-		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
+		return errors.Wrap(err, "error occurred while waiting for mysqlbinlog to exit")
 	}
 
 	log.Debug("Replayed binlog successfully.")

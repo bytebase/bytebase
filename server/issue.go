@@ -363,7 +363,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 	pipelineCreate.CreatorID = creatorID
 	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pipeline for issue, error %v", err)
+		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
 
 	for _, stageCreate := range pipelineCreate.StageList {
@@ -371,7 +371,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		stageCreate.PipelineID = pipelineCreated.ID
 		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
+			return nil, errors.Wrap(err, "failed to create stage for issue")
 		}
 
 		taskID := make(map[int]int)
@@ -382,7 +382,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 			taskCreate.StageID = createdStage.ID
 			task, err := s.store.CreateTask(ctx, &taskCreate)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create task for issue, error %v", err)
+				return nil, errors.Wrap(err, "failed to create task for issue")
 			}
 			taskID[index] = task.ID
 		}
@@ -394,7 +394,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 				Payload:    "{}",
 			}
 			if _, err := s.store.CreateTaskDAG(ctx, &taskDAGCreate); err != nil {
-				return nil, fmt.Errorf("failed to create task DAG for issue, error %w", err)
+				return nil, errors.Wrap(err, "failed to create task DAG for issue")
 			}
 		}
 	}
@@ -462,7 +462,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		restorePayload.BackupID = c.BackupID
 		restoreBytes, err := json.Marshal(restorePayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+			return nil, errors.Wrap(err, "failed to create restore database task, unable to marshal payload")
 		}
 
 		taskCreateList = append(taskCreateList, api.TaskCreate{
@@ -855,7 +855,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
 	}
 
 	return []api.TaskCreate{

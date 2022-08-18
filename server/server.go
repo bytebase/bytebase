@@ -166,13 +166,13 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	// New store.DB instance that represents the db connection.
 	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
 	if err != nil {
-		return nil, fmt.Errorf("cannot new db: %w", err)
+		return nil, errors.Wrap(err, "cannot new db")
 	}
 
 	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
-		return nil, fmt.Errorf("cannot open db: %w", err)
+		return nil, errors.Wrap(err, "cannot open db")
 	}
 
 	cacheService := NewCacheService()
@@ -181,7 +181,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init config: %w", err)
+		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 

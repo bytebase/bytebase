@@ -176,7 +176,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
+		return errors.Wrap(err, "failed to get databases")
 	}
 
 	var dumpableDbNames []string

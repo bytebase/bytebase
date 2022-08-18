@@ -364,7 +364,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			createSchemaFile = true
 			verb = "Create"
 		} else {
-			return "", fmt.Errorf("failed to fetch latest schema: %w", err)
+			return "", errors.Wrap(err, "failed to fetch latest schema")
 		}
 	}
 
@@ -384,7 +384,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// existing token pair has expired.
 	repo2, err := server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch repository for schema write-back: %v", err)
+		return "", errors.Wrap(err, "failed to fetch repository for schema write-back")
 	}
 	if repo2 == nil {
 		return "", fmt.Errorf("repository not found for schema write-back: %v", repository.ID)
@@ -448,7 +448,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// existing token pair has expired.
 	repo2, err = server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch repository after schema write-back: %v", err)
+		return "", errors.Wrap(err, "failed to fetch repository after schema write-back")
 	}
 	if repo2 == nil {
 		return "", fmt.Errorf("repository not found after schema write-back: %v", repository.ID)

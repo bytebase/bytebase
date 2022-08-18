@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 )
 
 // Dump dumps the database.
@@ -19,7 +20,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// Find all dumpable databases and make sure the existence of the database to be dumped.
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return "", fmt.Errorf("failed to get databases: %s", err)
+		return "", errors.Wrap(err, "failed to get databases")
 	}
 	exist := false
 	for _, n := range databases {
