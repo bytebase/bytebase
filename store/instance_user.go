@@ -3,10 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // UpsertInstanceUser would update the existing user if name matches.
@@ -29,10 +31,31 @@ func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUser
 	return instanceUser, nil
 }
 
+// GetInstanceUser gets an instance of IntanceUser.
+func (s *Store) GetInstanceUser(ctx context.Context, find *api.InstanceUserFind) (*api.InstanceUser, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	list, err := findInstanceUserImpl(ctx, tx.PTx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) == 0 {
+		return nil, nil
+	} else if len(list) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instance users with filter %+v, expect 1", len(list), find)}
+	}
+	return list[0], nil
+}
+
 // FindInstanceUserByInstanceID retrieves a list of instanceUsers based on find.
 func (s *Store) FindInstanceUserByInstanceID(ctx context.Context, id int) ([]*api.InstanceUser, error) {
 	find := &api.InstanceUserFind{
-		InstanceID: id,
+		InstanceID: &id,
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -109,7 +132,13 @@ func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.Instanc
 func findInstanceUserImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	where, args = append(where, "instance_id = $1"), append(args, find.InstanceID)
+
+	if v := find.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.InstanceID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
