@@ -409,7 +409,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 // getDefaultAssigneeIDFromProjectOwner gets a default assignee from the project owners.
 func (s *Server) getDefaultAssigneeIDFromProjectOwner(ctx context.Context, projectID int) (int, error) {
-	role := string(api.Owner)
+	role := api.Owner
 	find := &api.ProjectMemberFind{
 		ProjectID: &projectID,
 		Role:      &role,
