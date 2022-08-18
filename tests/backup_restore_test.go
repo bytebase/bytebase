@@ -415,7 +415,7 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, sourceMySQLDB, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		defer cancelUpdateRow()
+		cancelUpdateRow()
 
 		targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
 
@@ -459,6 +459,8 @@ func TestPITR(t *testing.T) {
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
+
+		cancelUpdateRow()
 
 		targetDB, err := connectTestMySQL(dstPort, targetDatabaseName)
 		a.NoError(err)
