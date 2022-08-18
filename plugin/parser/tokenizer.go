@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"strings"
 	"unicode"
 
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 	"github.com/pkg/errors"
 )
 
@@ -36,6 +38,96 @@ func newTokenizer(statement string) *tokenizer {
 	// append an additional eofRune.
 	t.statement = append(t.statement, eofRune)
 	return t
+}
+
+// setLineForCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
+func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
+	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
+	// and the identifiers don't equal any keywords in CREATE TABLE statements.
+	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
+	for _, col := range node.ColumnList {
+		col.SetLine(node.Line())
+	}
+	for _, cons := range node.ConstraintList {
+		cons.SetLine(node.Line())
+	}
+
+	columnPos := 0
+	constraintPos := 0
+	// find the '(' for CREATE TABLE ... ( ... )
+	if err := t.scanTo([]rune{'('}); err != nil {
+		return err
+	}
+
+	// parentheses is the flag for matching parentheses.
+	parentheses := 1
+	t.skipBlank()
+	startPos := t.pos()
+	t.startLine = t.line
+	for {
+		switch t.char(0) {
+		case '\n':
+			t.line++
+			t.skip(1)
+		case '(':
+			parentheses++
+			t.skip(1)
+		case ')':
+			parentheses--
+			if parentheses == 0 {
+				// This means we find the corresponding ')' for the first '(' in CREATE TABLE statements.
+				// We need to check the definition and return.
+				def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
+				if columnPos < len(node.ColumnList) &&
+					strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
+					node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+				} else if constraintPos < len(node.ConstraintList) &&
+					matchTableConstraint(def, node.ConstraintList[constraintPos]) {
+					node.ConstraintList[constraintPos].SetLine(t.startLine + node.Line() - 1)
+				}
+				return nil
+			}
+			t.skip(1)
+		case ',':
+			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
+			if columnPos < len(node.ColumnList) &&
+				strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
+				node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+				columnPos++
+			} else if constraintPos < len(node.ConstraintList) &&
+				matchTableConstraint(def, node.ConstraintList[constraintPos]) {
+				node.ConstraintList[constraintPos].SetLine(t.startLine + node.Line() - 1)
+				constraintPos++
+			}
+			t.skip(1)
+			t.skipBlank()
+			startPos = t.pos()
+			t.startLine = t.line
+		case eofRune:
+			return nil
+		default:
+			t.skip(1)
+		}
+	}
+}
+
+// matchTableConstraint matches text as lowercase.
+func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
+	text = strings.ToLower(text)
+	if cons.Name != "" {
+		return strings.Contains(text, strings.ToLower(cons.Name))
+	}
+	switch cons.Type {
+	case ast.ConstraintTypeCheck:
+		return strings.Contains(text, "check")
+	case ast.ConstraintTypeUnique:
+		return strings.Contains(text, "unique")
+	case ast.ConstraintTypePrimary:
+		return strings.Contains(text, "primary key")
+	case ast.ConstraintTypeForeign:
+		return strings.Contains(text, "foreign key")
+	}
+	return false
 }
 
 // splitPostgreSQLMultiSQL splits the statement to a string slice.
