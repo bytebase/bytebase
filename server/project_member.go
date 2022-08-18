@@ -428,7 +428,7 @@ func (s *Server) getDefaultAssigneeIDFromProjectOwner(ctx context.Context, proje
 	}
 
 	if principalID == math.MaxInt {
-		return api.UnknownID, fmt.Errorf("failed to get a default assignee")
+		return api.UnknownID, errors.New("failed to get a default assignee")
 	}
 	return principalID, nil
 }

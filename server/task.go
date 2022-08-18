@@ -851,5 +851,5 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 		return assigneeID, nil
 	}
 	// never reached
-	return api.UnknownID, fmt.Errorf("invalid assigneeGroupValue: %v", *groupValue)
+	return api.UnknownID, errors.New("invalid assigneeGroupValue")
 }
