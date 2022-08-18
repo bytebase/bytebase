@@ -106,7 +106,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 			return true, nil, errors.Wrap(err, "failed to do cutover for MySQL")
 		}
 	default:
-		return true, nil, fmt.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
+		return true, nil, errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
 	}
 
 	log.Debug("Appending new migration history record")

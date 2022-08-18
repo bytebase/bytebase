@@ -494,7 +494,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		// Return error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
 		if !def.Valid {
-			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
+			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
 		view.definition = def.String
 		views = append(views, &view)
@@ -647,7 +647,7 @@ func convertBoolFromYesNo(s string) (bool, error) {
 	case "NO":
 		return false, nil
 	default:
-		return false, fmt.Errorf("unrecognized isNullable type %q", s)
+		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
 }
 
@@ -664,7 +664,7 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 	rc := regexp.MustCompile(`\((.*)\)`)
 	rm := rc.FindStringSubmatch(stmt)
 	if len(rm) == 0 {
-		return nil, fmt.Errorf("invalid index statement: %q", stmt)
+		return nil, errors.Errorf("invalid index statement: %q", stmt)
 	}
 	columnStmt := rm[1]
 
@@ -689,7 +689,7 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 		}
 		// Strip token
 		if len(token) == 0 {
-			return nil, fmt.Errorf("invalid index statement: %q", stmt)
+			return nil, errors.Errorf("invalid index statement: %q", stmt)
 		}
 		columnStmt = columnStmt[len(token):]
 		cols = append(cols, strings.TrimSpace(token))

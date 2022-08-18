@@ -1,10 +1,9 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -14,7 +13,7 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			if r := recover(); r != nil {
 				err, ok := r.(error)
 				if !ok {
-					err = fmt.Errorf("%v", r)
+					err = errors.Errorf("%v", r)
 				}
 				log.Error("Middleware PANIC RECOVER", zap.Error(err))
 

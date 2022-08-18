@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -177,7 +176,7 @@ func (s *Store) getSettingRaw(ctx context.Context, find *api.SettingFind) (*sett
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -315,7 +314,7 @@ func patchSettingImpl(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) 
 		&settingRaw.Description,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", patch.Name)}
 		}
 		return nil, FormatError(err)
 	}

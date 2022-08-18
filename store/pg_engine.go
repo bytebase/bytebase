@@ -179,11 +179,10 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	}
 
 	if err := db.setupDemoData(); err != nil {
-		return fmt.Errorf("failed to setup demo data: %w."+
+		return errors.Wrapf(err, "failed to setup demo data."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
 			" directory under the same directory where the Bytebase binary resides. and restart again to let"+
-			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
-			err)
+			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help")
 	}
 
 	return nil
@@ -216,7 +215,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return &v, nil
 	}
 
-	return nil, fmt.Errorf("failed to find a successful migration history")
+	return nil, errors.Errorf("failed to find a successful migration history")
 }
 
 // setupDemoData loads the setupDemoData data for testing.
@@ -288,7 +287,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		log.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 		major := curVer.Major
 		if major != majorSchemaVersion {
-			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
+			return errors.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
 		}
 	}
 
@@ -449,7 +448,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 		return semver.Version{}, err
 	}
 	if len(versions) == 0 {
-		return semver.Version{}, fmt.Errorf("migration path %s has no minor version", minorPathPrefix)
+		return semver.Version{}, errors.Errorf("migration path %s has no minor version", minorPathPrefix)
 	}
 	minorVersion := versions[len(versions)-1]
 
@@ -463,7 +462,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 		return semver.Version{}, err
 	}
 	if len(patchVersions) == 0 {
-		return semver.Version{}, fmt.Errorf("migration path %s has no patch version", patchPathPrefix)
+		return semver.Version{}, errors.Errorf("migration path %s has no patch version", patchPathPrefix)
 	}
 	return patchVersions[len(patchVersions)-1].version, nil
 }
@@ -536,7 +535,7 @@ func getDevMigrations() ([]devMigration, error) {
 
 		parts := strings.Split(baseName, "__")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid migration file name %q", name)
+			return nil, errors.Errorf("invalid migration file name %q", name)
 		}
 		buf, err := fs.ReadFile(migrationFS, name)
 		if err != nil {
@@ -576,7 +575,7 @@ func getPatchVersions(minorVersion semver.Version, currentVersion semver.Version
 		baseName := filepath.Base(name)
 		parts := strings.Split(baseName, "__")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("migration filename %q should include '__'", name)
+			return nil, errors.Errorf("migration filename %q should include '__'", name)
 		}
 		patch, err := strconv.ParseInt(parts[0], 10, 64)
 		if err != nil {

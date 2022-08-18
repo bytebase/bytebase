@@ -260,7 +260,7 @@ func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int
 			return dataSourceRaw.Password, nil
 		}
 	}
-	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
+	return "", &common.Error{Code: common.NotFound, Err: errors.Errorf("missing admin password for instance with ID %d", instanceID)}
 }
 
 // GetInstanceSslSuiteByID gets ssl suite of instance.
@@ -279,7 +279,7 @@ func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db
 			SslCert: dataSourceRaw.SslCert,
 		}, nil
 	}
-	return db.TLSConfig{}, &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing ssl suite for instance with ID %d", instanceID)}
+	return db.TLSConfig{}, &common.Error{Code: common.NotFound, Err: errors.Errorf("missing ssl suite for instance with ID %d", instanceID)}
 }
 
 //
@@ -437,7 +437,7 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d instances with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(list), find)}
 	}
 
 	instance := list[0]
@@ -629,7 +629,7 @@ func patchInstanceImpl(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch
 		&instanceRaw.Port,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("instance ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

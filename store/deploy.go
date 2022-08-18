@@ -198,7 +198,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	case 1:
 		return ret[0], nil
 	default:
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d deployment configurations with filter %+v, expect 1", len(ret), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d deployment configurations with filter %+v, expect 1", len(ret), find)}
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -57,7 +58,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
 		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
-		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
+		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
 	databaseName, dsn, err := guessDSN(
@@ -153,9 +154,9 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 	}
 
 	if database != "" {
-		return "", "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
+		return "", "", errors.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
 	}
-	return "", "", fmt.Errorf("cannot connecting instance, make sure the connection info is correct")
+	return "", "", errors.Errorf("cannot connecting instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
@@ -257,7 +258,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 			// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
 			parts := strings.Split(stmt, `"`)
 			if len(parts) != 3 {
-				return fmt.Errorf("invalid statement %q", stmt)
+				return errors.Errorf("invalid statement %q", stmt)
 			}
 			if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
 				return err
@@ -311,7 +312,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
 	tokens := strings.Fields(raw)
 	if len(tokens) == 0 {
-		return "", fmt.Errorf("database name not found")
+		return "", errors.Errorf("database name not found")
 	}
 	databaseName := strings.TrimLeft(tokens[0], `"`)
 	databaseName = strings.TrimRight(databaseName, `"`)
@@ -345,7 +346,7 @@ func (driver *Driver) getCurrentDatabaseOwner() (string, error) {
 		return "", err
 	}
 	if owner == "" {
-		return "", fmt.Errorf("owner not found for the current database")
+		return "", errors.Errorf("owner not found for the current database")
 	}
 	return owner, nil
 }

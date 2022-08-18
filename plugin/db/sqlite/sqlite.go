@@ -130,7 +130,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
 			parts := strings.Split(stmt, `'`)
 			if len(parts) != 3 {
-				return fmt.Errorf("invalid statement %q", stmt)
+				return errors.Errorf("invalid statement %q", stmt)
 			}
 			db, err := driver.GetDBConnection(ctx, parts[1])
 			if err != nil {

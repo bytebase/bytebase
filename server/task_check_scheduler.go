@@ -46,7 +46,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
 						if !ok {
-							err = fmt.Errorf("%v", r)
+							err = errors.Errorf("%v", r)
 						}
 						log.Error("Task check scheduler PANIC RECOVER", zap.Error(err))
 					}
@@ -278,7 +278,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 		if database == nil {
-			return nil, fmt.Errorf("database ID not found %v", task.DatabaseID)
+			return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
 		}
 
 		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{

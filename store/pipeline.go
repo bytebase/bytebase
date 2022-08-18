@@ -241,7 +241,7 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 	if len(pipelineRawList) == 0 {
 		return nil, nil
 	} else if len(pipelineRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d pipelines with filter %+v, expect 1", len(pipelineRawList), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d pipelines with filter %+v, expect 1", len(pipelineRawList), find)}
 	}
 	if err := s.cache.UpsertCache(api.PipelineCache, pipelineRawList[0].ID, pipelineRawList[0]); err != nil {
 		return nil, err
@@ -390,7 +390,7 @@ func (*Store) patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.Pipe
 		&pipelineRaw.Status,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("pipeline ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

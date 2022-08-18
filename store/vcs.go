@@ -198,7 +198,7 @@ func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d VCSs with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d VCSs with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -391,7 +391,7 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 		&vcs.Secret,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("vcs ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

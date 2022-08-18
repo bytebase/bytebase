@@ -55,7 +55,7 @@ func getExecutableVersion(binName binaryName, resourceDir string) (string, error
 	case MySQLDump:
 		cmd = exec.Command(GetPath(MySQLDump, resourceDir), "-V")
 	default:
-		return "", fmt.Errorf("unknown binary name: %s", binName)
+		return "", errors.Errorf("unknown binary name: %s", binName)
 	}
 
 	cmd.Stdout = &version
@@ -76,7 +76,7 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
 	default:
-		return "", "", fmt.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+		return "", "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
 	return tarName, strings.TrimRight(tarName, "tar.gz"), nil
 }

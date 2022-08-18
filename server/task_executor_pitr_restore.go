@@ -42,11 +42,11 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 
 	if (payload.BackupID == nil) == (payload.PointInTimeTs == nil) {
-		return true, nil, fmt.Errorf("only one of BackupID and time point can be set")
+		return true, nil, errors.Errorf("only one of BackupID and time point can be set")
 	}
 
 	if !((payload.DatabaseName == nil) == (payload.TargetInstanceID == nil)) {
-		return true, nil, fmt.Errorf("DatabaseName and TargetInstanceID must be both set or unset")
+		return true, nil, errors.Errorf("DatabaseName and TargetInstanceID must be both set or unset")
 	}
 
 	// There are 2 * 2 = 4 kinds of task by combination of the following cases:
@@ -83,7 +83,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
 	if backup == nil {
-		return nil, fmt.Errorf("backup with ID %d not found", *payload.BackupID)
+		return nil, errors.Errorf("backup with ID %d not found", *payload.BackupID)
 	}
 
 	// TODO(dragonly): We should let users restore the backup even if the source database is gone.
@@ -92,7 +92,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 		return nil, errors.Wrap(err, "failed to find database for the backup")
 	}
 	if sourceDatabase == nil {
-		return nil, fmt.Errorf("source database ID not found %v", backup.DatabaseID)
+		return nil, errors.Errorf("source database ID not found %v", backup.DatabaseID)
 	}
 
 	if payload.TargetInstanceID == nil {
@@ -104,7 +104,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 			}
 			return exec.doRestoreInPlacePostgres(ctx, server, issue, task, payload)
 		}
-		return nil, fmt.Errorf("we only support backup restore replace for PostgreSQL now")
+		return nil, errors.Errorf("we only support backup restore replace for PostgreSQL now")
 	}
 
 	targetInstanceID := *payload.TargetInstanceID
@@ -203,7 +203,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	mysqlTargetDriver, targetOk := targetDriver.(*mysql.Driver)
 	if (!sourceOk) || (!targetOk) {
 		log.Error("Failed to cast driver to mysql.Driver")
-		return nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
+		return nil, errors.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
 	log.Debug("Downloading all binlog files")
@@ -289,7 +289,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 
 func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	if payload.BackupID == nil {
-		return nil, fmt.Errorf("PITR for Postgres is not implemented")
+		return nil, errors.Errorf("PITR for Postgres is not implemented")
 	}
 
 	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
@@ -297,7 +297,7 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
 	if backup == nil {
-		return nil, fmt.Errorf("backup with ID %d not found", *payload.BackupID)
+		return nil, errors.Errorf("backup with ID %d not found", *payload.BackupID)
 	}
 	backupFileName := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
 	backupFile, err := os.Open(backupFileName)
@@ -393,7 +393,7 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 	}
 	if issue == nil {
 		log.Error("issue not found with PipelineID", zap.Int("PipelineID", pid))
-		return nil, fmt.Errorf("issue not found with PipelineID: %d", pid)
+		return nil, errors.Errorf("issue not found with PipelineID: %d", pid)
 	}
 	return issue, nil
 }

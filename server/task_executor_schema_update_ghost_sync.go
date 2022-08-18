@@ -69,7 +69,7 @@ func getTableNameFromStatement(statement string) (string, error) {
 	statement = strings.Join(strings.Fields(statement), " ")
 	parser := ghostsql.NewParserFromAlterStatement(statement)
 	if !parser.HasExplicitTable() {
-		return "", fmt.Errorf("failed to parse table name from statement, statement: %v", statement)
+		return "", errors.Errorf("failed to parse table name from statement, statement: %v", statement)
 	}
 	return parser.GetExplicitTable(), nil
 }
@@ -139,20 +139,20 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.ThrottleHTTPTimeoutMillis = throttleHTTPTimeoutMillis
 
 	if migrationContext.AlterStatement == "" {
-		return nil, fmt.Errorf("alterStatement must be provided and must not be empty")
+		return nil, errors.Errorf("alterStatement must be provided and must not be empty")
 	}
 	parser := ghostsql.NewParserFromAlterStatement(migrationContext.AlterStatement)
 	migrationContext.AlterStatementOptions = parser.GetAlterStatementOptions()
 
 	if migrationContext.DatabaseName == "" {
 		if !parser.HasExplicitSchema() {
-			return nil, fmt.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
+			return nil, errors.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
 		}
 		migrationContext.DatabaseName = parser.GetExplicitSchema()
 	}
 	if migrationContext.OriginalTableName == "" {
 		if !parser.HasExplicitTable() {
-			return nil, fmt.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
+			return nil, errors.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}

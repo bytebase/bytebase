@@ -107,7 +107,7 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	}
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 	pd.webhooks = append(pd.webhooks, webhookCreate)
 
@@ -259,7 +259,7 @@ func (gl *GitLab) createProjectFile(c echo.Context) error {
 func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Trigger webhooks.
@@ -280,7 +280,7 @@ func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+			return errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 		}
 		gl.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
 	}
@@ -292,7 +292,7 @@ func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 func (gl *GitLab) AddFiles(projectID string, files map[string]string) error {
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Save files
@@ -306,7 +306,7 @@ func (gl *GitLab) AddFiles(projectID string, files map[string]string) error {
 func (gl *GitLab) GetFiles(projectID string, filePaths ...string) (map[string]string, error) {
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return nil, fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return nil, errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Get files
