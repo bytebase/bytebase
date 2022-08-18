@@ -187,18 +187,18 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 }
 
-// getDefaultAssigneeIDFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
-func (s *Server) getDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx context.Context) (int, error) {
+// getAnyFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
+func (s *Server) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, error) {
 	for _, role := range []api.Role{api.Owner, api.DBA} {
 		memberList, err := s.store.FindMember(ctx, &api.MemberFind{
 			Role: &role,
 		})
 		if err != nil {
-			return api.UnknownID, errors.Wrapf(err, "failed to get role %v", role)
+			return nil, errors.Wrapf(err, "failed to get role %v", role)
 		}
 		if len(memberList) > 0 {
-			return memberList[0].PrincipalID, nil
+			return memberList[0], nil
 		}
 	}
-	return api.UnknownID, errors.New("failed to get a default assignee")
+	return nil, errors.New("failed to get a default assignee")
 }

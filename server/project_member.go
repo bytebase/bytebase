@@ -407,8 +407,8 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 }
 
-// getDefaultAssigneeIDFromProjectOwner gets a default assignee from the project owners.
-func (s *Server) getDefaultAssigneeIDFromProjectOwner(ctx context.Context, projectID int) (int, error) {
+// getAnyProjectOwner gets a default assignee from the project owners.
+func (s *Server) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
 	role := api.Owner
 	find := &api.ProjectMemberFind{
 		ProjectID: &projectID,
@@ -416,10 +416,10 @@ func (s *Server) getDefaultAssigneeIDFromProjectOwner(ctx context.Context, proje
 	}
 	projectMemberList, err := s.store.FindProjectMember(ctx, find)
 	if err != nil {
-		return api.UnknownID, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
+		return nil, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
 	}
 	if len(projectMemberList) > 0 {
-		return projectMemberList[0].PrincipalID, nil
+		return projectMemberList[0], nil
 	}
-	return api.UnknownID, errors.New("failed to get a default assignee")
+	return nil, errors.New("failed to get a default assignee")
 }
