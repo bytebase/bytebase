@@ -1349,20 +1349,32 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 }
 
 func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
-	groupValue, err := s.getAssigneeGroupValue(ctx, environmentID, issueType)
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
-		return api.UnknownID, errors.Wrap(err, "failed to get assignee group value")
+		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
+	}
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		// use SystemBot for auto approval tasks.
+		return api.SystemBotID, nil
+	}
+
+	var groupValue *api.AssigneeGroupValue
+	for i, group := range policy.AssigneeGroupList {
+		if group.IssueType == issueType {
+			groupValue = &policy.AssigneeGroupList[i].Value
+			break
+		}
 	}
 	if groupValue == nil {
 		assigneeID, err := s.store.GetDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx)
 		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get default assignee ID from workspace owner or DBA")
+			return api.UnknownID, errors.Wrap(err, "failed to get a default assignee ID from workspace owner or DBA")
 		}
 		return assigneeID, nil
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
 		assigneeID, err := s.store.GetDefaultAssigneeIDFromProjectOwner(ctx, projectID)
 		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get default assignee ID from project owner")
+			return api.UnknownID, errors.Wrap(err, "failed to get a default assignee ID from project owner")
 		}
 		return assigneeID, nil
 	}
