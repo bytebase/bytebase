@@ -89,7 +89,7 @@
             :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
-            @wheel="$event.target.blur()"
+            @wheel="handleInstancePortWheelScroll"
             @input="handleInstancePortInput"
           />
         </div>
@@ -150,7 +150,7 @@
 
       <div
         v-if="!hasReadonlyDataSource"
-        class="mt-4 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3 mt-0"
+        class="flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3 mt-0"
       >
         <heroicons-outline:exclamation
           class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
@@ -480,6 +480,10 @@ const handleInstanceNameInput = (event: Event) => {
 
 const handleInstanceHostInput = (event: Event) => {
   updateInstance("host", (event.target as HTMLInputElement).value);
+};
+
+const handleInstancePortWheelScroll = (event: MouseEvent) => {
+  (event.target as HTMLInputElement).blur();
 };
 
 const handleInstancePortInput = (event: Event) => {

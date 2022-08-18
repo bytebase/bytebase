@@ -136,13 +136,13 @@
           {{ $t("create-db.database-owner-name") }}
           <span class="text-red-600">*</span>
         </label>
-        <input
-          id="name"
-          v-model="state.databaseOwnerName"
-          required
-          name="ownerName"
-          type="text"
-          class="textfield mt-1 w-full"
+        <InstanceUserSelect
+          id="instance-user"
+          class="mt-1"
+          name="instance-user"
+          :instanceId="state.instanceId"
+          :selectedId="state.instanceUserId"
+          @select="selectInstanceUser"
         />
       </div>
 
@@ -276,6 +276,7 @@ import {
   CreateDatabaseContext,
   UNKNOWN_ID,
   Instance,
+  InstanceUserId,
 } from "../types";
 import {
   buildDatabaseNameByTemplateAndLabelList,
@@ -296,9 +297,9 @@ interface LocalState {
   projectId?: ProjectId;
   environmentId?: EnvironmentId;
   instanceId?: InstanceId;
+  instanceUserId?: InstanceUserId;
   labelList: DatabaseLabel[];
   databaseName: string;
-  databaseOwnerName: string;
   characterSet: string;
   collation: string;
   cluster: string;
@@ -364,7 +365,6 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       databaseName: "",
-      databaseOwnerName: "",
       projectId: props.projectId,
       environmentId: props.environmentId,
       instanceId: props.instanceId,
@@ -468,7 +468,7 @@ export default defineComponent({
         return true;
       }
 
-      return !isEmpty(state.databaseOwnerName);
+      return state.instanceUserId !== undefined;
     });
 
     const selectProject = (projectId: ProjectId) => {
@@ -483,6 +483,10 @@ export default defineComponent({
       state.instanceId = instanceId;
     };
 
+    const selectInstanceUser = (instanceUserId?: InstanceUserId) => {
+      state.instanceUserId = instanceUserId;
+    };
+
     const selectAssignee = (assigneeId: PrincipalId) => {
       state.assigneeId = assigneeId;
     };
@@ -492,14 +496,24 @@ export default defineComponent({
     };
 
     const create = async () => {
+      if (!allowCreate.value) {
+        return;
+      }
+
       var newIssue: IssueCreate;
 
       const databaseName = isDbNameTemplateMode.value
         ? generatedDatabaseName.value
         : state.databaseName;
-      const owner = requireDatabaseOwnerName.value
-        ? state.databaseOwnerName
-        : "";
+      const instanceId = state.instanceId as InstanceId;
+      let owner = "";
+      if (requireDatabaseOwnerName.value && state.instanceUserId) {
+        const instanceUser = await useInstanceStore().fetchInstanceUser(
+          instanceId,
+          state.instanceUserId
+        );
+        owner = instanceUser.name;
+      }
 
       if (props.backup) {
         newIssue = {
@@ -513,7 +527,7 @@ export default defineComponent({
             name: "",
           },
           createContext: {
-            instanceId: state.instanceId!,
+            instanceId: instanceId,
             databaseName: databaseName,
             owner,
             characterSet:
@@ -540,7 +554,7 @@ export default defineComponent({
             name: "",
           },
           createContext: {
-            instanceId: state.instanceId!,
+            instanceId: instanceId,
             databaseName: databaseName,
             owner,
             characterSet:
@@ -615,6 +629,7 @@ export default defineComponent({
       selectProject,
       selectEnvironment,
       selectInstance,
+      selectInstanceUser,
       selectAssignee,
       cancel,
       create,
