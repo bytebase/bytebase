@@ -182,7 +182,13 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 
 	targetDriver := sourceDriver
 	if payload.TargetInstanceID != nil {
-		targetDriver.Close(ctx)
+		targetInstance, err := server.store.GetInstanceByID(ctx, *payload.TargetInstanceID)
+		if err != nil {
+			return nil, err
+		}
+		if targetDriver, err = server.getAdminDatabaseDriver(ctx, targetInstance, ""); err != nil {
+			return nil, err
+		}
 	}
 	// DB.Close is idempotent, so we can feel free to assign sourceDriver to targetDriver first.
 	defer targetDriver.Close(ctx)
@@ -253,7 +259,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to restore full backup in the new database")
 		}
-		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, targetTs); err != nil {
+		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, targetTs, mysqlSourceDriver.GetBinlogDir()); err != nil {
 			log.Error("failed to perform a PITR restore in the new database",
 				zap.Int("issueID", issue.ID),
 				zap.String("databaseName", *payload.DatabaseName),
