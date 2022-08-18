@@ -23,7 +23,7 @@ func (c columnName) normalizeTableName() string {
 	return fmt.Sprintf(`"%s"."%s"`, schema, c.table)
 }
 
-type columnMap map[columnName]bool
+type columnMap map[columnName]int
 
 func normalizeSchemaName(name string) string {
 	if name != "" {
