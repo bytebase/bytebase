@@ -80,6 +80,7 @@ func (checker *columnNoNullChecker) generateAdviceList() []advisor.Advice {
 			Code:    advisor.ColumnCanNotNull,
 			Title:   checker.title,
 			Content: fmt.Sprintf(`Column "%s" in %s can not have NULL value`, column.column, column.normalizeTableName()),
+			Line:    checker.nullableColumns[column],
 		})
 	}
 
@@ -100,7 +101,7 @@ func (checker *columnNoNullChecker) Visit(node ast.Node) ast.Visitor {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		for _, column := range n.ColumnList {
-			checker.addColumn(n.Name, column.ColumnName)
+			checker.addColumn(n.Name, column.ColumnName, column.Line())
 			checker.removeColumnByConstraintList(n.Name, column.ConstraintList)
 		}
 		checker.removeColumnByConstraintList(n.Name, n.ConstraintList)
@@ -111,7 +112,7 @@ func (checker *columnNoNullChecker) Visit(node ast.Node) ast.Visitor {
 			// ALTER TABLE ADD COLUMN
 			case *ast.AddColumnListStmt:
 				for _, column := range cmd.ColumnList {
-					checker.addColumn(n.Table, column.ColumnName)
+					checker.addColumn(n.Table, column.ColumnName, n.Line())
 					checker.removeColumnByConstraintList(n.Table, column.ConstraintList)
 				}
 			// ALTER TABLE ALTER COLUMN SET NOT NULL
@@ -119,7 +120,7 @@ func (checker *columnNoNullChecker) Visit(node ast.Node) ast.Visitor {
 				checker.removeColumn(n.Table, cmd.ColumnName)
 			// ALTER TABLE ALTER COLUMN DROP NOT NULL
 			case *ast.DropNotNullStmt:
-				checker.addColumn(n.Table, cmd.ColumnName)
+				checker.addColumn(n.Table, cmd.ColumnName, n.Line())
 			// ALTER TABLE ADD CONSTRAINT
 			case *ast.AddConstraintStmt:
 				checker.removeColumnByConstraintList(n.Table, []*ast.ConstraintDef{cmd.Constraint})
@@ -130,8 +131,8 @@ func (checker *columnNoNullChecker) Visit(node ast.Node) ast.Visitor {
 	return checker
 }
 
-func (checker *columnNoNullChecker) addColumn(table *ast.TableDef, column string) {
-	checker.nullableColumns[convertToColumnName(table, column)] = true
+func (checker *columnNoNullChecker) addColumn(table *ast.TableDef, column string, line int) {
+	checker.nullableColumns[convertToColumnName(table, column)] = line
 }
 
 func (checker *columnNoNullChecker) removeColumn(table *ast.TableDef, column string) {
