@@ -840,13 +840,13 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 	if groupValue == nil {
 		member, err := s.getAnyWorkspaceOwnerOrDBA(ctx)
 		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get a default assignee ID from workspace owner or DBA")
+			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")
 		}
 		return member.PrincipalID, nil
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
 		projectMember, err := s.getAnyProjectOwner(ctx, projectID)
 		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get a default assignee ID from project owner")
+			return api.UnknownID, errors.Wrap(err, "failed to get a project owner")
 		}
 		return projectMember.PrincipalID, nil
 	}
