@@ -18,6 +18,8 @@ type tokenizer struct {
 	statement []rune
 	cursor    uint
 	len       uint
+	line      int
+	startLine int
 }
 
 // newTokenizer creates a new tokenizer.
@@ -26,6 +28,8 @@ func newTokenizer(statement string) *tokenizer {
 	t := &tokenizer{
 		statement: []rune(statement),
 		cursor:    0,
+		line:      1,
+		startLine: 1,
 	}
 	t.len = uint(len(t.statement))
 	// append an additional eofRune.
@@ -48,10 +52,11 @@ func newTokenizer(statement string) *tokenizer {
 //   - We support PostgreSQL CREATE PROCEDURE statement with $$ $$ style,
 //       but do not support BEGIN ATOMIC ... END; style.
 //       See https://www.postgresql.org/docs/14/sql-createprocedure.html.
-func (t *tokenizer) splitPostgreSQLMultiSQL() ([]string, error) {
-	var res []string
+func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
+	var res []SingleSQL
 
 	t.skipBlank()
+	t.startLine = t.line
 	startPos := t.cursor
 	for {
 		switch {
@@ -77,13 +82,20 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]string, error) {
 			}
 		case t.char(0) == ';':
 			t.skip(1)
-			res = append(res, t.getString(startPos, t.pos()-startPos))
+			res = append(res, SingleSQL{
+				Text: t.getString(startPos, t.pos()-startPos),
+				Line: t.startLine,
+			})
 			t.skipBlank()
+			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
-				res = append(res, s)
+				res = append(res, SingleSQL{
+					Text: s,
+					Line: t.startLine,
+				})
 			}
 			return res, nil
 		// return error when meeting BEGIN ATOMIC.
@@ -93,6 +105,9 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]string, error) {
 			if t.equalWordCaseInsensitive(atomicRuneList) {
 				return nil, fmt.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it")
 			}
+		case t.char(0) == '\n':
+			t.line++
+			t.skip(1)
 		default:
 			t.skip(1)
 		}
@@ -146,6 +161,9 @@ func (t *tokenizer) scanString(delimiter rune) error {
 		case '\\':
 			// skip two because we want to skip \' and \\.
 			t.skip(2)
+		case '\n':
+			t.line++
+			t.skip(1)
 		default:
 			t.skip(1)
 		}
@@ -179,6 +197,9 @@ func (t *tokenizer) scanComment() error {
 				return nil
 			case t.char(0) == eofRune:
 				return fmt.Errorf("invalid comment: not found */, but found EOF")
+			case t.char(0) == '\n':
+				t.line++
+				t.skip(1)
 			default:
 				t.skip(1)
 			}
@@ -188,6 +209,7 @@ func (t *tokenizer) scanComment() error {
 		for {
 			switch t.char(0) {
 			case '\n':
+				t.line++
 				t.skip(1)
 				return nil
 			case eofRune:
@@ -237,6 +259,9 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 		if t.char(0) == eofRune {
 			return fmt.Errorf("scanTo failed: delimiter %q not found", string(delimiter))
 		}
+		if t.char(0) == '\n' {
+			t.line++
+		}
 		if t.char(0) == delimiter[pos] {
 			pos++
 			t.skip(1)
@@ -269,6 +294,9 @@ func (t *tokenizer) skipBlank() {
 	r := t.char(0)
 	for r == ' ' || r == '\n' || r == '\r' || r == '\t' {
 		t.skip(1)
+		if r == '\n' {
+			t.line++
+		}
 		r = t.char(0)
 	}
 }
