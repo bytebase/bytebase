@@ -10,7 +10,6 @@ import (
 )
 
 func getBaseProfile() server.Profile {
-	// `flags.demo` always be true in dev mode
 	var demoDataDir string
 	if flags.demo {
 		demoName := string(common.ReleaseModeDev)
