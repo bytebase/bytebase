@@ -45,20 +45,21 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 		return true, nil, fmt.Errorf("only one of BackupID and time point can be set")
 	}
 
+	if !((payload.DatabaseName == nil) == (payload.TargetInstanceID == nil)) {
+		return true, nil, fmt.Errorf("DatabaseName and TargetInstanceID must be both set or unset")
+	}
+
 	// There are 2 * 2 = 4 kinds of task by combination of the following cases:
 	// 1. in-place or restore to new database: the latter does not create database with _pitr/_del suffix
 	// 2. backup restore or Point-in-Time restore: the former does not apply binlog/wal
 
-	if payload.DatabaseName != nil {
-		resultPayload, err := exec.doRestoreToNewDatabase(ctx, server, task, payload)
+	if payload.BackupID != nil {
+		// Restore Backup
+		resultPayload, err := exec.doBackupRestoreOnly(ctx, server, task, payload)
 		return true, resultPayload, err
 	}
 
-	// TODO(dragonly): Check this when creating issue.
-	if payload.TargetInstanceID != nil {
-		return true, nil, fmt.Errorf("expect targetInstanceId to be nil when databaseName is nil in TaskDatabasePITRRestorePayload")
-	}
-	resultPayload, err := exec.doRestoreInPlace(ctx, server, task, payload)
+	resultPayload, err := exec.doPITRRestore(ctx, server, task, payload)
 	return true, resultPayload, err
 }
 
@@ -76,8 +77,7 @@ func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
 	return progress.(api.Progress)
 }
 
-func (exec *PITRRestoreTaskExecutor) doRestoreToNewDatabase(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	// Restore full backup only
+func (exec *PITRRestoreTaskExecutor) doBackupRestoreOnly(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
@@ -85,6 +85,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreToNewDatabase(ctx context.Context,
 	if backup == nil {
 		return nil, fmt.Errorf("backup with ID %d not found", *payload.BackupID)
 	}
+
 	// TODO(dragonly): We should let users restore the backup even if the source database is gone.
 	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
@@ -94,7 +95,19 @@ func (exec *PITRRestoreTaskExecutor) doRestoreToNewDatabase(ctx context.Context,
 		return nil, fmt.Errorf("source database ID not found %v", backup.DatabaseID)
 	}
 
-	targetInstanceID := task.InstanceID
+	if payload.TargetInstanceID == nil {
+		// Backup restore inplace
+		if task.Instance.Engine == db.Postgres {
+			issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
+			if err != nil {
+				return nil, err
+			}
+			return exec.doRestoreInPlacePostgres(ctx, server, issue, task, payload)
+		}
+		return nil, fmt.Errorf("we only support backup restore replace for PostgreSQL now")
+	}
+
+	targetInstanceID := *payload.TargetInstanceID
 	if payload.TargetInstanceID != nil {
 		// For now, we just support restore full backup to the same instance with the origin database.
 		// But for generality, we will use TargetInstanceID in payload to find the target instance.
@@ -120,6 +133,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreToNewDatabase(ctx context.Context,
 		zap.String("target_database", targetDatabase.Name),
 		zap.String("backup", backup.Name),
 	)
+
 	// Restore the database to the target database.
 	if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
 		return nil, err
@@ -159,19 +173,23 @@ func (exec *PITRRestoreTaskExecutor) doRestoreToNewDatabase(ctx context.Context,
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
+func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+	sourceDriver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return nil, err
 	}
-	defer driver.Close(ctx)
+	defer sourceDriver.Close(ctx)
+
+	targetDriver := sourceDriver
+	if payload.TargetInstanceID != nil {
+		targetDriver.Close(ctx)
+	}
+	// DB.Close is idempotent, so we can feel free to assign sourceDriver to targetDriver first.
+	defer targetDriver.Close(ctx)
+
 	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
 	if err != nil {
 		return nil, err
-	}
-
-	if task.Instance.Engine == db.Postgres {
-		return exec.doRestoreInPlacePostgres(ctx, server, driver, issue, task, payload)
 	}
 
 	backupStatus := api.BackupStatusDone
@@ -181,20 +199,21 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 	}
 	log.Debug("Found backup list", zap.Array("backups", api.ZapBackupArray(backupList)))
 
-	mysqlDriver, ok := driver.(*mysql.Driver)
-	if !ok {
+	mysqlSourceDriver, sourceOk := sourceDriver.(*mysql.Driver)
+	mysqlTargetDriver, targetOk := targetDriver.(*mysql.Driver)
+	if (!sourceOk) || (!targetOk) {
 		log.Error("Failed to cast driver to mysql.Driver")
 		return nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
 	log.Debug("Downloading all binlog files")
-	if err := mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */); err != nil {
+	if err := mysqlSourceDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */); err != nil {
 		return nil, err
 	}
 
 	targetTs := *payload.PointInTimeTs
 	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
-	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, server.profile.Mode)
+	backup, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, server.profile.Mode)
 	if err != nil {
 		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
@@ -221,24 +240,41 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 	// database's migration history, and append a new BRANCH migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
 	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
-	if err := exec.updateProgress(ctx, mysqlDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
-		return nil, errors.Wrap(err, "failed to setup progress update process")
+
+	if err := exec.updateProgress(ctx, mysqlTargetDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
+		return nil, fmt.Errorf("failed to setup progress update process, error: %w", err)
 	}
 
-	if err := mysqlDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
-		log.Error("failed to restore full backup in the PITR database",
-			zap.Int("issueID", issue.ID),
-			zap.String("databaseName", task.Database.Name),
-			zap.Error(err))
-		return nil, errors.Wrap(err, "failed to perform a backup restore in the PITR database")
-	}
-
-	if err := mysqlDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, issue.CreatedTs, targetTs); err != nil {
-		log.Error("failed to perform a PITR restore in the PITR database",
-			zap.Int("issueID", issue.ID),
-			zap.String("databaseName", task.Database.Name),
-			zap.Error(err))
-		return nil, errors.Wrap(err, "failed to replay binlog in the PITR database")
+	if payload.DatabaseName != nil {
+		if err := mysqlTargetDriver.RestoreBackupToDatabase(ctx, backupFile, *payload.DatabaseName); err != nil {
+			log.Error("failed to restore full backup in the new database",
+				zap.Int("issueID", issue.ID),
+				zap.String("databaseName", *payload.DatabaseName),
+				zap.Error(err))
+			return nil, fmt.Errorf("failed to restore full backup in the new database, error: %w", err)
+		}
+		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, targetTs); err != nil {
+			log.Error("failed to perform a PITR restore in the new database",
+				zap.Int("issueID", issue.ID),
+				zap.String("databaseName", *payload.DatabaseName),
+				zap.Error(err))
+			return nil, fmt.Errorf("failed to perform a PITR restore in the new database, error: %w", err)
+		}
+	} else {
+		if err := mysqlTargetDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
+			log.Error("failed to restore full backup in the PITR database",
+				zap.Int("issueID", issue.ID),
+				zap.String("databaseName", task.Database.Name),
+				zap.Error(err))
+			return nil, fmt.Errorf("failed to perform a backup restore in the PITR database, error: %w", err)
+		}
+		if err := mysqlTargetDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, issue.CreatedTs, targetTs); err != nil {
+			log.Error("failed to perform a PITR restore in the PITR database",
+				zap.Int("issueID", issue.ID),
+				zap.String("databaseName", task.Database.Name),
+				zap.Error(err))
+			return nil, fmt.Errorf("failed to replay binlog in the PITR database, error: %w", err)
+		}
 	}
 
 	targetDatabaseName := task.Database.Name
@@ -251,7 +287,7 @@ func (exec *PITRRestoreTaskExecutor) doRestoreInPlace(ctx context.Context, serve
 	}, nil
 }
 
-func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, driver db.Driver, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	if payload.BackupID == nil {
 		return nil, fmt.Errorf("PITR for Postgres is not implemented")
 	}
@@ -269,6 +305,13 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 		return nil, errors.Wrapf(err, "failed to open backup file %q", backupFileName)
 	}
 	defer backupFile.Close()
+
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
+	if err != nil {
+		return nil, err
+	}
+	defer driver.Close(ctx)
+
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get connection for PostgreSQL")
