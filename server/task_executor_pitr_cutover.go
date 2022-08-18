@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/jackc/pgconn"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -174,10 +175,18 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		return errors.Wrap(err, "failed to get connection for PostgreSQL")
 	}
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
-		return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
+		var e *pgconn.PgError
+		if !errors.As(err, &e) || e.Code != "3D000" {
+			return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
+		}
+		// PostgreSQL error code 3D000 (invalid_catalog_name) means the original database does not exist.
+		// This is possible if there's a former task execution which successfully renamed original -> _del database and failed.
+		// Now we have the _del database and the _pitr database.
 	}
+	log.Debug("Successfully renamed database", zap.String("from", task.Database.Name), zap.String("to", pitrOldDatabaseName))
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
 		return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
 	}
+	log.Debug("Successfully renamed database", zap.String("from", pitrDatabaseName), zap.String("to", task.Database.Name))
 	return nil
 }
