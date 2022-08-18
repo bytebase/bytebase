@@ -132,6 +132,22 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			},
 		},
 		{
+			// test for Windows
+			statement: `CREATE TABLE t` + "\r\n" + `(a int);` + "\r\n" + `CREATE TABLE t1(b int);`,
+			want: resData{
+				res: []SeparateSQL{
+					{
+						Text: "CREATE TABLE t\r\n(a int);",
+						Line: 1,
+					},
+					{
+						Text: "CREATE TABLE t1(b int);",
+						Line: 3,
+					},
+				},
+			},
+		},
+		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
 				err: fmt.Errorf("invalid string: not found delimiter: ', but found EOF"),
