@@ -907,7 +907,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	restoreTaskCreate := api.TaskCreate{
-		Name:     fmt.Sprintf("Restore PITR database %s", originDatabase.Name),
+		Name:     fmt.Sprintf("Restore PITR database %q", originDatabase.Name),
 		Status:   api.TaskPendingApproval,
 		Type:     api.TaskDatabaseRestorePITRRestore,
 		Payload:  string(bytesRestore),
@@ -931,7 +931,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Swap PITR and the original database %s", originDatabase.Name),
+			Name:       fmt.Sprintf("Swap PITR and the original database %q", originDatabase.Name),
 			InstanceID: originDatabase.InstanceID,
 			DatabaseID: &originDatabase.ID,
 			Status:     api.TaskPendingApproval,

@@ -55,7 +55,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	if payload.BackupID != nil {
 		// Restore Backup
-		resultPayload, err := exec.doBackupRestoreOnly(ctx, server, task, payload)
+		resultPayload, err := exec.doBackupRestore(ctx, server, task, payload)
 		return true, resultPayload, err
 	}
 
@@ -77,7 +77,7 @@ func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
 	return progress.(api.Progress)
 }
 
-func (exec *PITRRestoreTaskExecutor) doBackupRestoreOnly(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
@@ -96,7 +96,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestoreOnly(ctx context.Context, se
 	}
 
 	if payload.TargetInstanceID == nil {
-		// Backup restore inplace
+		// Backup restore in place
 		if task.Instance.Engine == db.Postgres {
 			issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
 			if err != nil {
@@ -317,19 +317,24 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 		return nil, errors.Wrap(err, "failed to get connection for PostgreSQL")
 	}
 	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+	// If there's already a PITR database, it means there's a failed trial before this task execution.
+	// We need to clean up the dirty state and start clean for idempotent task execution.
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s;", pitrDatabaseName)); err != nil {
+		return nil, errors.Wrapf(err, "failed to drop the dirty PITR database %q left from a former task execution", pitrDatabaseName)
+	}
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s;", pitrDatabaseName)); err != nil {
-		return nil, errors.Wrapf(err, "failed to create PITR database %q", pitrDatabaseName)
+		return nil, errors.Wrapf(err, "failed to create the PITR database %q", pitrDatabaseName)
 	}
 	// Switch to the PITR database.
 	// TODO(dragonly): This is a trick, needs refactor.
 	if _, err := driver.GetDBConnection(ctx, pitrDatabaseName); err != nil {
-		return nil, errors.Wrapf(err, "failed to get connection for database %q", pitrDatabaseName)
+		return nil, errors.Wrapf(err, "failed to switch connection to database %q", pitrDatabaseName)
 	}
 	if err := driver.Restore(ctx, backupFile); err != nil {
 		return nil, errors.Wrapf(err, "failed to restore backup to the PITR database %q", pitrDatabaseName)
 	}
 	return &api.TaskRunResultPayload{
-		Detail: fmt.Sprintf("Restored database %q in place from backup %q", task.Database.Name, backup.Name),
+		Detail: fmt.Sprintf("Restored backup %q to the temporary PITR database %q", backup.Name, pitrDatabaseName),
 	}, nil
 }
 
