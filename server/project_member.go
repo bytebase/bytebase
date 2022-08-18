@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -410,8 +409,6 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 // getDefaultAssigneeIDFromProjectOwner gets a default assignee from the project owners.
 func (s *Server) getDefaultAssigneeIDFromProjectOwner(ctx context.Context, projectID int) (int, error) {
-	principalID := math.MaxInt
-
 	role := string(api.Owner)
 	find := &api.ProjectMemberFind{
 		ProjectID: &projectID,
@@ -421,14 +418,8 @@ func (s *Server) getDefaultAssigneeIDFromProjectOwner(ctx context.Context, proje
 	if err != nil {
 		return api.UnknownID, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
 	}
-	for _, projectMember := range projectMemberList {
-		if projectMember.PrincipalID < principalID {
-			principalID = projectMember.PrincipalID
-		}
+	if len(projectMemberList) > 0 {
+		return projectMemberList[0].PrincipalID, nil
 	}
-
-	if principalID == math.MaxInt {
-		return api.UnknownID, errors.New("failed to get a default assignee")
-	}
-	return principalID, nil
+	return api.UnknownID, errors.New("failed to get a default assignee")
 }

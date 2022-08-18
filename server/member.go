@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 
@@ -190,36 +189,16 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 // getDefaultAssigneeIDFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
 func (s *Server) getDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx context.Context) (int, error) {
-	principalID := math.MaxInt
-
-	role := api.Owner
-	memberList, err := s.store.FindMember(ctx, &api.MemberFind{
-		Role: &role,
-	})
-	if err != nil {
-		return api.UnknownID, errors.Wrap(err, "failed to get owners")
-	}
-	for _, member := range memberList {
-		if member.PrincipalID < principalID {
-			principalID = member.PrincipalID
+	for _, role := range []api.Role{api.Owner, api.DBA} {
+		memberList, err := s.store.FindMember(ctx, &api.MemberFind{
+			Role: &role,
+		})
+		if err != nil {
+			return api.UnknownID, errors.Wrapf(err, "failed to get role %v", role)
+		}
+		if len(memberList) > 0 {
+			return memberList[0].PrincipalID, nil
 		}
 	}
-
-	role = api.DBA
-	memberList, err = s.store.FindMember(ctx, &api.MemberFind{
-		Role: &role,
-	})
-	if err != nil {
-		return api.UnknownID, errors.Wrap(err, "failed to get DBAs")
-	}
-	for _, member := range memberList {
-		if member.PrincipalID < principalID {
-			principalID = member.PrincipalID
-		}
-	}
-
-	if principalID == math.MaxInt {
-		return api.UnknownID, errors.New("failed to get a default assignee")
-	}
-	return principalID, nil
+	return api.UnknownID, errors.New("failed to get a default assignee")
 }
