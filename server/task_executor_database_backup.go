@@ -120,7 +120,7 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 		log.Debug("Removed local backup file.")
 		return payload, nil
 	default:
-		return "", fmt.Errorf("backup to %s not implemented yet", backup.StorageBackend)
+		return "", errors.Errorf("backup to %s not implemented yet", backup.StorageBackend)
 	}
 }
 

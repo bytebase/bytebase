@@ -208,7 +208,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 		}
 		s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create AWS S3 client, error: %w", err)
+			return nil, errors.Wrap(err, "failed to create AWS S3 client")
 		}
 		s.s3Client = s3Client
 	}
