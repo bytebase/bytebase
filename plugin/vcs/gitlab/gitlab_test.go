@@ -673,7 +673,7 @@ func TestProvider_CreateWebhook(t *testing.T) {
 					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
 						assert.Equal(t, "/api/v4/projects/1/hooks", r.URL.Path)
 						return &http.Response{
-							StatusCode: http.StatusOK,
+							StatusCode: http.StatusCreated,
 							// Example response taken from https://docs.gitlab.com/ee/api/projects.html#get-project-hook
 							Body: io.NopCloser(strings.NewReader(`
 {
