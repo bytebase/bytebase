@@ -707,8 +707,8 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
-	// this is the last task in a stage and just completed, we are moving to a new stage.
-	// if the current assignee doesn't fit in the new assignee group, we will reassign a new one.
+	// this is the last task in a stage and was just completed, we are moving to a new stage.
+	// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 	if taskPatched.Status == "DONE" && issue != nil {
 		for i, stage := range issue.Pipeline.StageList {
 			if stage.ID == taskPatched.StageID {
@@ -719,7 +719,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 						return nil, errors.Wrap(err, "failed to check if the current assignee can still be")
 					}
 					if !ok {
-						// reassign to a new assignee if the current one can't be anymore.
+						// reassign the issue to a new assignee if the current one doesn't fit.
 						assigneeID, err := s.getDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
 						if err != nil {
 							return nil, errors.Wrap(err, "failed to get a default assignee")
