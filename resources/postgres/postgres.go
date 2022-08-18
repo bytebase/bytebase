@@ -64,7 +64,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	}
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
 
 	return nil
@@ -134,7 +134,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 
 		f, err := resources.Open(tarName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+			return nil, errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
 		}
 		defer f.Close()
 
@@ -212,7 +212,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	}
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to initdb %q", p.String())
 	}
 
 	return nil
@@ -266,7 +266,7 @@ func (i *Instance) StartForTest(port int, stdout, stderr io.Writer) (err error) 
 	p.Stderr = stderr
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
 
 	return nil

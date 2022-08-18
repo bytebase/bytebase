@@ -141,7 +141,7 @@ func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
 
 	f, err := resources.Open(tarName)
 	if err != nil {
-		return fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+		return errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
 	}
 	defer f.Close()
 

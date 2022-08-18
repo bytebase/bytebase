@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
+	pkgerrors "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -60,7 +61,7 @@ func getPrincipalIDContextKey() string {
 func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode common.ReleaseMode, secret string) error {
 	accessToken, err := generateAccessToken(user, mode, secret)
 	if err != nil {
-		return fmt.Errorf("failed to generate access token: %w", err)
+		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
 
 	cookieExp := time.Now().Add(cookieExpDuration)
@@ -70,7 +71,7 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	// We generate here a new refresh token and saving it to the cookie.
 	refreshToken, err := generateRefreshToken(user, mode, secret)
 	if err != nil {
-		return fmt.Errorf("failed to generate refresh token: %w", err)
+		return pkgerrors.Wrap(err, "failed to generate refresh token")
 	}
 	setTokenCookie(c, refreshTokenCookieName, refreshToken, cookieExp)
 

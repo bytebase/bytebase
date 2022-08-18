@@ -3,10 +3,10 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
 )
@@ -25,13 +25,13 @@ func newDumpCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
-				return fmt.Errorf("failed to parse dsn, got error: %w", err)
+				return errors.Wrap(err, "failed to parse dsn, got error")
 			}
 			out := cmd.OutOrStdout()
 			if file != "" {
 				f, err := os.Create(file)
 				if err != nil {
-					return fmt.Errorf("failed to create dump file %s, got error: %w", file, err)
+					return errors.Wrapf(err, "failed to create dump file %s", file)
 				}
 				defer f.Close()
 				out = f
@@ -56,7 +56,7 @@ func dumpDatabase(ctx context.Context, u *dburl.URL, out io.Writer, schemaOnly b
 	defer db.Close(ctx)
 
 	if _, err := db.Dump(ctx, getDatabase(u), out, schemaOnly); err != nil {
-		return fmt.Errorf("failed to create dump, got error: %w", err)
+		return errors.Wrap(err, "failed to create dump")
 	}
 	return nil
 }

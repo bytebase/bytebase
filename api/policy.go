@@ -180,7 +180,7 @@ func (bp BackupPlanPolicy) String() (string, error) {
 func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 	var bp BackupPlanPolicy
 	if err := json.Unmarshal([]byte(payload), &bp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal backup plan policy %q: %q", payload, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal backup plan policy %q", payload)
 	}
 	return &bp, nil
 }
@@ -189,7 +189,7 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) {
 	var sr advisor.SQLReviewPolicy
 	if err := json.Unmarshal([]byte(payload), &sr); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal SQL review policy %q: %q", payload, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal SQL review policy %q", payload)
 	}
 	return &sr, nil
 }
@@ -238,7 +238,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return err
 		}
 		if err := sr.Validate(); err != nil {
-			return fmt.Errorf("invalid SQL review policy: %w", err)
+			return errors.Wrap(err, "invalid SQL review policy")
 		}
 	}
 	return nil
