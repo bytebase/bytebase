@@ -140,6 +140,7 @@ func getTestPort(testName string) int {
 		"TestPITR/Case_Sensitive",
 		"TestPITR/Invalid_Time_Point",
 		"TestPITR/PITR_Twice",
+		"TestPITR/Restore_To_New_Database_In_Another_Instance",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
