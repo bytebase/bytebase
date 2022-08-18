@@ -834,7 +834,7 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 		}
 	}
 	if groupValue == nil {
-		assigneeID, err := s.store.GetDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx)
+		assigneeID, err := s.getDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx)
 		if err != nil {
 			return api.UnknownID, errors.Wrap(err, "failed to get a default assignee ID from workspace owner or DBA")
 		}

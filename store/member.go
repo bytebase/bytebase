@@ -63,37 +63,6 @@ func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*ap
 	return member, nil
 }
 
-// GetDefaultAssigneeIDFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
-func (s *Store) GetDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx context.Context) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	var principalID int
-	if err := tx.PTx.QueryRowContext(ctx, `
-		SELECT
-			principal_id
-		FROM
-			member
-		WHERE
-			row_status = 'NORMAL'
-			AND role IN('OWNER', 'DBA')
-		ORDER BY
-			principal_id
-		LIMIT 1
-	`).Scan(
-		&principalID,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, &common.Error{Code: common.NotFound, Err: fmt.Errorf("failed to find a default assignee")}
-		}
-		return 0, FormatError(err)
-	}
-	return principalID, nil
-}
-
 // FindMember finds a list of Member instances.
 func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
 	memberRawList, err := s.findMemberRaw(ctx, find)

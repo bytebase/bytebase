@@ -1,13 +1,16 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -183,4 +186,40 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+// getDefaultAssigneeIDFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
+func (s *Server) getDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx context.Context) (int, error) {
+	principalID := math.MaxInt
+
+	role := api.Owner
+	memberList, err := s.store.FindMember(ctx, &api.MemberFind{
+		Role: &role,
+	})
+	if err != nil {
+		return api.UnknownID, errors.Wrap(err, "failed to get owners")
+	}
+	for _, member := range memberList {
+		if member.ID < principalID {
+			principalID = member.PrincipalID
+		}
+	}
+
+	role = api.DBA
+	memberList, err = s.store.FindMember(ctx, &api.MemberFind{
+		Role: &role,
+	})
+	if err != nil {
+		return api.UnknownID, errors.Wrap(err, "failed to get DBAs")
+	}
+	for _, member := range memberList {
+		if member.ID < principalID {
+			principalID = member.PrincipalID
+		}
+	}
+
+	if principalID == math.MaxInt {
+		return api.UnknownID, fmt.Errorf("failed to get a default assignee")
+	}
+	return principalID, nil
 }
