@@ -220,7 +220,7 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 	ctl.client = &http.Client{}
 
 	if err := ctl.waitForHealthz(); err != nil {
-		return fmt.Errorf("failed to wait for healthz, err: %w", err)
+		return errors.Wrap(err, "failed to wait for healthz")
 	}
 
 	return nil
@@ -334,7 +334,7 @@ func (ctl *controller) Login() error {
 		"",
 		strings.NewReader(`{"data":{"type":"loginInfo","attributes":{"email":"demo@example.com","password":"1024"}}}`))
 	if err != nil {
-		return fmt.Errorf("fail to post login request, error %w", err)
+		return errors.Wrap(err, "fail to post login request")
 	}
 
 	cookie := ""
@@ -507,7 +507,7 @@ func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
 	var environments []*api.Environment
 	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Environment)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get environment response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get environment response")
 	}
 	for _, p := range ps {
 		environment, ok := p.(*api.Environment)
@@ -545,7 +545,7 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	var databases []*api.Database
 	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Database)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get database response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get database response")
 	}
 	for _, p := range ps {
 		database, ok := p.(*api.Database)
@@ -624,7 +624,7 @@ func (ctl *controller) getInstanceMigrationHistory(find db.MigrationHistoryFind)
 	var histories []*api.MigrationHistory
 	hs, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.MigrationHistory)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get migration history response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get migration history response")
 	}
 	for _, h := range hs {
 		history, ok := h.(*api.MigrationHistory)
@@ -664,7 +664,7 @@ func (ctl *controller) getIssue(id int) (*api.Issue, error) {
 
 	issue := new(api.Issue)
 	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get issue response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get issue response")
 	}
 	return issue, nil
 }
@@ -690,7 +690,7 @@ func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) 
 	var issues []*api.Issue
 	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Issue)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get issue response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get issue response")
 	}
 	for _, p := range ps {
 		issue, ok := p.(*api.Issue)
@@ -921,7 +921,7 @@ func (ctl *controller) query(instance *api.Instance, databaseName, query string)
 		Readonly:     true,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to execute SQL, error: %v", err)
+		return "", errors.Wrap(err, "failed to execute SQL")
 	}
 	if sqlResultSet.Error != "" {
 		return "", fmt.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
@@ -998,14 +998,14 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		CreateContext: string(createContext),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create database creation issue, error: %v", err)
+		return errors.Wrap(err, "failed to create database creation issue")
 	}
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
-		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}
 	if status != api.TaskDone {
 		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
@@ -1015,7 +1015,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		Status: api.IssueDone,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
 	return nil
 }
@@ -1046,14 +1046,14 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		CreateContext: string(createContext),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create database creation issue, error: %v", err)
+		return errors.Wrap(err, "failed to create database creation issue")
 	}
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
-		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}
 	if status != api.TaskDone {
 		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
@@ -1063,7 +1063,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		Status: api.IssueDone,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
 	return nil
 }
@@ -1083,7 +1083,7 @@ func marshalLabels(labelMap map[string]string, environmentName string) (string, 
 
 	labels, err := json.Marshal(labelList)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal labels %+v, error %v", labelList, err)
+		return "", errors.Wrapf(err, "failed to marshal labels %+v", labelList)
 	}
 	return string(labels), nil
 }
@@ -1429,7 +1429,7 @@ func (ctl *controller) GetSQLReviewResult(id int) ([]api.TaskCheckResult, error)
 
 		result, yes, err := ctl.sqlReviewTaskCheckRunFinished(issue)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get SQL review result for issue %v: %w", id, err)
+			return nil, errors.Wrapf(err, "failed to get SQL review result for issue %v", id)
 		}
 		if yes {
 			return result, nil

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -381,7 +382,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
+		return "", errors.Wrap(err, "failed to construct issue create context payload")
 	}
 	return string(createContext), nil
 }
@@ -403,7 +404,7 @@ func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEv
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
+		return "", errors.Wrap(err, "failed to construct issue create context payload")
 	}
 	return string(createContext), nil
 }

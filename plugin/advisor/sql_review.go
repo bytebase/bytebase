@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/pkg/errors"
 )
 
 // How to add a SQL review rule:
@@ -179,12 +180,12 @@ type RequiredColumnRulePayload struct {
 func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
 	}
 
 	format, err := regexp.Compile(nr.Format)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
+		return nil, 0, errors.Wrapf(err, "failed to compile regular expression \"%s\"", nr.Format)
 	}
 
 	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
@@ -202,7 +203,7 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 func UnmarshalNamingRulePayloadAsTemplate(ruleType SQLReviewRuleType, payload string) (string, []string, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return "", nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return "", nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
 	}
 
 	template := nr.Format
@@ -248,7 +249,7 @@ func parseTemplateTokens(template string) ([]string, []string) {
 func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
 	var rcr RequiredColumnRulePayload
 	if err := json.Unmarshal([]byte(payload), &rcr); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal required column rule payload %q: %q", payload, err)
+		return nil, errors.Wrapf(err, "failed to unmarshal required column rule payload %q", payload)
 	}
 	if len(rcr.ColumnList) == 0 {
 		return nil, fmt.Errorf("invalid required column rule payload, column list cannot be empty")
@@ -269,7 +270,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	var result []Advice
 	database, err := checkContext.Catalog.GetDatabase(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database information from catalog: %w", err)
+		return nil, errors.Wrap(err, "failed to get database information from catalog")
 	}
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
@@ -294,7 +295,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 			statements,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check statement: %w", err)
+			return nil, errors.Wrap(err, "failed to check statement")
 		}
 
 		result = append(result, adviceList...)

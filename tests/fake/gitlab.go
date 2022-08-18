@@ -99,11 +99,11 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	c.Logger().Infof("Create webhook for project %q", c.Param("id"))
 	b, err := io.ReadAll(c.Request().Body)
 	if err != nil {
-		return fmt.Errorf("failed to read create project hook request body, error %w", err)
+		return errors.Wrap(err, "failed to read create project hook request body")
 	}
 	webhookCreate := &gitlab.WebhookCreate{}
 	if err := json.Unmarshal(b, webhookCreate); err != nil {
-		return fmt.Errorf("failed to unmarshal create project hook request body, error %w", err)
+		return errors.Wrap(err, "failed to unmarshal create project hook request body")
 	}
 	pd, ok := gl.projects[projectID]
 	if !ok {

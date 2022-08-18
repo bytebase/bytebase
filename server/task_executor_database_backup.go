@@ -39,7 +39,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database backup payload")
 	}
 
 	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)

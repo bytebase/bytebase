@@ -176,7 +176,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
+		return errors.Wrap(err, "failed to get databases")
 	}
 
 	var dumpableDbNames []string
@@ -211,7 +211,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			}
 			dbStmt, err := getDatabaseStmt(txn, dbName)
 			if err != nil {
-				return fmt.Errorf("failed to get database %q: %s", dbName, err)
+				return errors.Wrapf(err, "failed to get database %q", dbName)
 			}
 			if _, err := io.WriteString(out, dbStmt); err != nil {
 				return err
@@ -247,7 +247,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		// Procedure and function (routine) statements.
 		routines, err := getRoutines(txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get routines of database %q: %s", dbName, err)
+			return errors.Wrapf(err, "failed to get routines of database %q", dbName)
 		}
 		for _, rt := range routines {
 			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", rt.statement)); err != nil {
@@ -258,7 +258,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		// Event statements.
 		events, err := getEvents(txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get events of database %q: %s", dbName, err)
+			return errors.Wrapf(err, "failed to get events of database %q", dbName)
 		}
 		for _, et := range events {
 			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", et.statement)); err != nil {
@@ -269,7 +269,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		// Trigger statements.
 		triggers, err := getTriggers(txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get triggers of database %q: %s", dbName, err)
+			return errors.Wrapf(err, "failed to get triggers of database %q", dbName)
 		}
 		for _, tr := range triggers {
 			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tr.statement)); err != nil {
@@ -383,7 +383,7 @@ func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	for _, tbl := range tables {
 		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
-			return nil, fmt.Errorf("getTableStmt(%q, %q, %q) got error: %s", dbName, tbl.Name, tbl.TableType, err)
+			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
 		tbl.Statement = stmt
 	}
@@ -518,7 +518,7 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 	for _, r := range routines {
 		stmt, err := getRoutineStmt(txn, dbName, r.name, r.routineType)
 		if err != nil {
-			return nil, fmt.Errorf("getRoutineStmt(%q, %q, %q) got error: %s", dbName, r.name, r.routineType, err)
+			return nil, errors.Wrapf(err, "failed to call getRoutineStmt(%q, %q, %q)", dbName, r.name, r.routineType)
 		}
 		r.statement = stmt
 	}
@@ -590,7 +590,7 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 	for _, r := range events {
 		stmt, err := getEventStmt(txn, dbName, r.name)
 		if err != nil {
-			return nil, fmt.Errorf("getEventStmt(%q, %q) got error: %s", dbName, r.name, err)
+			return nil, errors.Wrapf(err, "failed to call getEventStmt(%q, %q)", dbName, r.name)
 		}
 		r.statement = stmt
 	}
@@ -642,7 +642,7 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 	for _, tr := range triggers {
 		stmt, err := getTriggerStmt(txn, dbName, tr.name)
 		if err != nil {
-			return nil, fmt.Errorf("getTriggerStmt(%q, %q) got error: %s", dbName, tr.name, err)
+			return nil, errors.Wrapf(err, "failed to call getTriggerStmt(%q, %q)", dbName, tr.name)
 		}
 		tr.statement = stmt
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -51,7 +52,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	// Set SSL configuration.
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
-		return nil, fmt.Errorf("sql: tls config error: %v", err)
+		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 	// Default user name is "default".
 	conn := clickhouse.OpenDB(&clickhouse.Options{
