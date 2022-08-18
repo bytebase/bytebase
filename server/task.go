@@ -724,11 +724,15 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 						if err != nil {
 							return nil, errors.Wrap(err, "failed to get a default assignee")
 						}
-						updatedIssue, err := s.store.PatchIssue(ctx, &api.IssuePatch{
+						patch := &api.IssuePatch{
 							ID:         issue.ID,
 							UpdaterID:  api.SystemBotID,
 							AssigneeID: &assigneeID,
-						})
+						}
+						updatedIssue, err := s.store.PatchIssue(ctx, patch)
+						if err != nil {
+							return nil, errors.Wrapf(err, "failed to update the issue assignee with issuePatch %+v", patch)
+						}
 						issue = updatedIssue
 					}
 				}
