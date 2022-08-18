@@ -907,19 +907,17 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	restoreTaskCreate := api.TaskCreate{
-		Name:     fmt.Sprintf("Restore PITR database %q", originDatabase.Name),
-		Status:   api.TaskPendingApproval,
-		Type:     api.TaskDatabaseRestorePITRRestore,
-		Payload:  string(bytesRestore),
-		BackupID: c.BackupID,
+		Name:       fmt.Sprintf("Restore PITR database %q", originDatabase.Name),
+		Status:     api.TaskPendingApproval,
+		Type:       api.TaskDatabaseRestorePITRRestore,
+		InstanceID: originDatabase.InstanceID,
+		DatabaseID: &originDatabase.ID,
+		Payload:    string(bytesRestore),
+		BackupID:   c.BackupID,
 	}
 
 	if payloadRestore.TargetInstanceID != nil {
-		restoreTaskCreate.InstanceID = c.CreateDatabaseCtx.InstanceID
 		restoreTaskCreate.DatabaseName = c.CreateDatabaseCtx.DatabaseName
-	} else {
-		restoreTaskCreate.InstanceID = originDatabase.InstanceID
-		restoreTaskCreate.DatabaseID = &originDatabase.ID
 	}
 	taskCreateList = append(taskCreateList, restoreTaskCreate)
 
