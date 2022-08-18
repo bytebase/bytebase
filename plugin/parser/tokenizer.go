@@ -42,9 +42,8 @@ func newTokenizer(statement string) *tokenizer {
 
 // setLineForCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
 func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
-	// It's a protection.
-	// We assume that parser will parse the columns and table constraints as origin order
-	// and the identifiers don't equal the any key words in CREATE TABLE statements.
+	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
+	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
 	for _, col := range node.ColumnList {
 		col.SetLine(node.Line())
@@ -112,8 +111,9 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 	}
 }
 
-// text must be lower case.
+// matchTableConstraint matches text as lowercase.
 func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
+	text = strings.ToLower(text)
 	if cons.Name != "" {
 		return strings.Contains(text, strings.ToLower(cons.Name))
 	}

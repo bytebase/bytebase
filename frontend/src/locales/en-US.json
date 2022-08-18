@@ -564,6 +564,7 @@
   },
   "instance": {
     "select": "Select instance",
+    "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",
     "sync-schema-now": "Sync schema now",
