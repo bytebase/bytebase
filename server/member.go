@@ -200,5 +200,5 @@ func (s *Server) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, er
 			return memberList[0], nil
 		}
 	}
-	return nil, errors.New("failed to get a default assignee")
+	return nil, errors.New("failed to get a workspace owner or DBA")
 }

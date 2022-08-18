@@ -421,5 +421,5 @@ func (s *Server) getAnyProjectOwner(ctx context.Context, projectID int) (*api.Pr
 	if len(projectMemberList) > 0 {
 		return projectMemberList[0], nil
 	}
-	return nil, errors.New("failed to get a default assignee")
+	return nil, errors.New("failed to get a project owner")
 }
