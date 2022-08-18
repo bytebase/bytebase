@@ -200,7 +200,7 @@ func (s *Server) getDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx context.Context
 		return api.UnknownID, errors.Wrap(err, "failed to get owners")
 	}
 	for _, member := range memberList {
-		if member.ID < principalID {
+		if member.PrincipalID < principalID {
 			principalID = member.PrincipalID
 		}
 	}
@@ -213,7 +213,7 @@ func (s *Server) getDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx context.Context
 		return api.UnknownID, errors.Wrap(err, "failed to get DBAs")
 	}
 	for _, member := range memberList {
-		if member.ID < principalID {
+		if member.PrincipalID < principalID {
 			principalID = member.PrincipalID
 		}
 	}
