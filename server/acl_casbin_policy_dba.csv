@@ -31,6 +31,7 @@ p, DBA, /policy/environment/{environmentID}, PATCH
 p, DBA, /policy/environment/{environmentID}, DELETE
 p, DBA, /instance, POST
 p, DBA, /instance, GET
+p, DBA, /instance/{id}/user/{userID}, GET
 p, DBA, /instance/{id}, GET
 p, DBA, /instance/{id}, PATCH
 p, DBA, /instance/{id}/user, GET
