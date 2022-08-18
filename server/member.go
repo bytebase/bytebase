@@ -108,7 +108,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch member request").SetInternal(err)
 		}
-		// When archiving a owner, make sure he's not the only unarchived owner
+		// When archiving an owner, make sure there are other active owners.
 		if member.Role == "OWNER" && *memberPatch.RowStatus == "ARCHIVED" {
 			countResult, err := s.store.CountMemberGroupByRoleAndStatus(ctx)
 			for _, count := range countResult {
