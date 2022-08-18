@@ -477,13 +477,6 @@ func TestPITR(t *testing.T) {
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
-
-		// Cutover stage.
-		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
-		a.NoError(err)
-		a.Equal(api.TaskDone, status)
 
 		targetDB, err := connectTestMySQL(dstPort, targetDatabaseName)
 		a.NoError(err)
