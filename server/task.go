@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -706,6 +707,36 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
+	// this is the last task in a stage and just completed, we are moving to a new stage.
+	// if the current assignee doesn't fit in the new assignee group, we will reassign a new one.
+	if taskPatched.Status == "DONE" && issue != nil {
+		for i, stage := range issue.Pipeline.StageList {
+			if stage.ID == taskPatched.StageID {
+				if i != len(issue.Pipeline.StageList)-1 && stage.TaskList[len(stage.TaskList)-1].ID == taskPatched.ID {
+					environmentID := issue.Pipeline.StageList[i+1].EnvironmentID
+					ok, err := s.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+					if err != nil {
+						return nil, errors.Wrap(err, "failed to check if the current assignee can still be")
+					}
+					if !ok {
+						// reassign to a new assignee if the current one can't be anymore.
+						assigneeID, err := s.getDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
+						if err != nil {
+							return nil, errors.Wrap(err, "failed to get a default assignee")
+						}
+						updatedIssue, err := s.store.PatchIssue(ctx, &api.IssuePatch{
+							ID:         issue.ID,
+							UpdaterID:  api.SystemBotID,
+							AssigneeID: &assigneeID,
+						})
+						issue = updatedIssue
+					}
+				}
+				break
+			}
+		}
+	}
+
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
@@ -783,4 +814,38 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 	}
 
 	return nil
+}
+
+func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
+	}
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		// use SystemBot for auto approval tasks.
+		return api.SystemBotID, nil
+	}
+
+	var groupValue *api.AssigneeGroupValue
+	for i, group := range policy.AssigneeGroupList {
+		if group.IssueType == issueType {
+			groupValue = &policy.AssigneeGroupList[i].Value
+			break
+		}
+	}
+	if groupValue == nil {
+		assigneeID, err := s.store.GetDefaultAssigneeIDFromWorkspaceOwnerOrDBA(ctx)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get a default assignee ID from workspace owner or DBA")
+		}
+		return assigneeID, nil
+	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
+		assigneeID, err := s.store.GetDefaultAssigneeIDFromProjectOwner(ctx, projectID)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get a default assignee ID from project owner")
+		}
+		return assigneeID, nil
+	}
+	// never reached
+	return api.UnknownID, fmt.Errorf("invalid assigneeGroupValue: %v", *groupValue)
 }
