@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 )
 
 // Dump and restore.
@@ -76,7 +77,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
+		return errors.Wrap(err, "failed to get databases")
 	}
 
 	var dumpableDbNames []string
@@ -111,7 +112,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 			}
 			dbStmt, err := getDatabaseStmt(ctx, txn, dbName)
 			if err != nil {
-				return fmt.Errorf("failed to get database %q: %s", dbName, err)
+				return errors.Wrapf(err, "failed to get database %q", dbName)
 			}
 			if _, err := io.WriteString(out, dbStmt); err != nil {
 				return err
@@ -126,7 +127,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 		// Table and view statement.
 		tables, err := getTables(ctx, txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
+			return errors.Wrapf(err, "failed to get tables of database %q", dbName)
 		}
 		for _, tbl := range tables {
 			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.statement)); err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +51,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
 						if !ok {
-							err = fmt.Errorf("%v", r)
+							err = errors.Errorf("%v", r)
 						}
 						log.Error("Anomaly scanner PANIC RECOVER", zap.Error(err))
 					}

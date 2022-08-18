@@ -314,7 +314,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	}
 
 	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
-		return nil, fmt.Errorf("failed to schedule task after creating the issue: %v. Error %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
@@ -323,7 +323,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 
 	bytes, err := json.Marshal(createActivityPayload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   creatorID,
@@ -336,7 +336,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		issue: issue,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create activity after creating the issue: %v. Error %w", issue.Name, err)
+		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	return issue, nil
 }
@@ -351,7 +351,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		}
 	}
 	if !hasTask {
-		err := fmt.Errorf("issue has no task to be executed")
+		err := errors.Errorf("issue has no task to be executed")
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
@@ -363,7 +363,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 	pipelineCreate.CreatorID = creatorID
 	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pipeline for issue, error %v", err)
+		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
 
 	for _, stageCreate := range pipelineCreate.StageList {
@@ -371,7 +371,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		stageCreate.PipelineID = pipelineCreated.ID
 		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
+			return nil, errors.Wrap(err, "failed to create stage for issue")
 		}
 
 		taskID := make(map[int]int)
@@ -382,7 +382,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 			taskCreate.StageID = createdStage.ID
 			task, err := s.store.CreateTask(ctx, &taskCreate)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create task for issue, error %v", err)
+				return nil, errors.Wrap(err, "failed to create task for issue")
 			}
 			taskID[index] = task.ID
 		}
@@ -394,7 +394,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 				Payload:    "{}",
 			}
 			if _, err := s.store.CreateTaskDAG(ctx, &taskDAGCreate); err != nil {
-				return nil, fmt.Errorf("failed to create task DAG for issue, error %w", err)
+				return nil, errors.Wrap(err, "failed to create task DAG for issue")
 			}
 		}
 	}
@@ -432,7 +432,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, err
 	}
 	if instance == nil {
-		return nil, fmt.Errorf("instance ID not found %v", c.InstanceID)
+		return nil, errors.Errorf("instance ID not found %v", c.InstanceID)
 	}
 	// Find project.
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
@@ -440,7 +440,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
 	if project == nil {
-		err := fmt.Errorf("project ID not found %v", issueCreate.ProjectID)
+		err := errors.Errorf("project ID not found %v", issueCreate.ProjectID)
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
@@ -452,17 +452,17 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	if c.BackupID != 0 {
 		backup, err := s.store.GetBackupByID(ctx, c.BackupID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find backup %v", c.BackupID)
+			return nil, errors.Errorf("failed to find backup %v", c.BackupID)
 		}
 		if backup == nil {
-			return nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
+			return nil, errors.Errorf("backup not found with ID %d", c.BackupID)
 		}
 		restorePayload := api.TaskDatabaseRestorePayload{}
 		restorePayload.DatabaseName = c.DatabaseName
 		restorePayload.BackupID = c.BackupID
 		restoreBytes, err := json.Marshal(restorePayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
+			return nil, errors.Wrap(err, "failed to create restore database task, unable to marshal payload")
 		}
 
 		taskCreateList = append(taskCreateList, api.TaskCreate{
@@ -648,7 +648,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					for k := range environmentSet {
 						environments = append(environments, k)
 					}
-					err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
+					err := errors.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 				}
 
@@ -833,7 +833,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		}
 		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
 		if err != nil {
-			return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
+			return nil, errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", c.DatabaseName, project.DBNameTemplate, c.Labels)
 		}
 		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, &instance, &project, project.ID, baseDatabaseName)
 		if err != nil {
@@ -855,7 +855,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
 	}
 
 	return []api.TaskCreate{
@@ -880,11 +880,11 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	if c.CreateDatabaseCtx != nil {
 		targetInstance, err := s.store.GetInstanceByID(ctx, c.CreateDatabaseCtx.InstanceID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to find the instance with ID: %d, err: %w", c.CreateDatabaseCtx.InstanceID, err)
+			return nil, nil, errors.Wrapf(err, "failed to find the instance with ID %d", c.CreateDatabaseCtx.InstanceID)
 		}
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to find the project with ID: %d, err: %w", projectID, err)
+			return nil, nil, errors.Wrapf(err, "failed to find the project with ID %d", projectID)
 		}
 		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, *project)
 		if err != nil {
@@ -907,7 +907,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	restoreTaskCreate := api.TaskCreate{
-		Name:     fmt.Sprintf("Restore PITR database %s", originDatabase.Name),
+		Name:     fmt.Sprintf("Restore PITR database %q", originDatabase.Name),
 		Status:   api.TaskPendingApproval,
 		Type:     api.TaskDatabaseRestorePITRRestore,
 		Payload:  string(bytesRestore),
@@ -931,7 +931,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Swap PITR and the original database %s", originDatabase.Name),
+			Name:       fmt.Sprintf("Swap PITR and the original database %q", originDatabase.Name),
 			InstanceID: originDatabase.InstanceID,
 			DatabaseID: &originDatabase.ID,
 			Status:     api.TaskPendingApproval,
@@ -1004,33 +1004,33 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	case db.ClickHouse:
 		// ClickHouse does not support character set and collation at the database level.
 		if characterSet != "" {
-			return fmt.Errorf("ClickHouse does not support character set, but got %s", characterSet)
+			return errors.Errorf("ClickHouse does not support character set, but got %s", characterSet)
 		}
 		if collation != "" {
-			return fmt.Errorf("ClickHouse does not support collation, but got %s", collation)
+			return errors.Errorf("ClickHouse does not support collation, but got %s", collation)
 		}
 	case db.Snowflake:
 		if characterSet != "" {
-			return fmt.Errorf("Snowflake does not support character set, but got %s", characterSet)
+			return errors.Errorf("Snowflake does not support character set, but got %s", characterSet)
 		}
 		if collation != "" {
-			return fmt.Errorf("Snowflake does not support collation, but got %s", collation)
+			return errors.Errorf("Snowflake does not support collation, but got %s", collation)
 		}
 	case db.Postgres:
 		if owner == "" {
-			return fmt.Errorf("database owner is required for PostgreSQL")
+			return errors.Errorf("database owner is required for PostgreSQL")
 		}
 	case db.SQLite:
 		// no-op.
 	default:
 		if characterSet == "" {
-			return fmt.Errorf("character set missing for %s", string(dbType))
+			return errors.Errorf("character set missing for %s", string(dbType))
 		}
 		// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
 		// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
 		// install it.
 		if collation == "" {
-			return fmt.Errorf("collation missing for %s", string(dbType))
+			return errors.Errorf("collation missing for %s", string(dbType))
 		}
 	}
 	return nil
@@ -1104,7 +1104,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status != api.TaskDone {
-					return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
+					return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
 				}
 			}
 		}
@@ -1262,7 +1262,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		for _, db := range dbList {
 			var labelList []*api.DatabaseLabel
 			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
-				return "", "", fmt.Errorf("failed to unmarshal labels for database ID %v name %q, error: %v", db.ID, db.Name, err)
+				return "", "", errors.Wrapf(err, "failed to unmarshal labels for database ID %v name %q", db.ID, db.Name)
 			}
 			labelMap := map[string]string{}
 			for _, label := range labelList {
@@ -1270,7 +1270,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 			}
 			dbName, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
 			if err != nil {
-				return "", "", fmt.Errorf("failed to format database name formatDatabaseName(%q, %q, %+v), error: %v", baseDatabaseName, project.DBNameTemplate, labelMap, err)
+				return "", "", errors.Wrapf(err, "failed to format database name formatDatabaseName(%q, %q, %+v)", baseDatabaseName, project.DBNameTemplate, labelMap)
 			}
 			if db.Name == dbName {
 				found = true
@@ -1278,7 +1278,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 			}
 		}
 		if found {
-			err := fmt.Errorf("conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
+			err := errors.Errorf("conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
 			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		return "", "", nil
@@ -1291,7 +1291,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	defer driver.Close(ctx)
 	schemaVersion, err := getLatestSchemaVersion(ctx, driver, similarDB.Name)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get migration history for database %q: %w", similarDB.Name, err)
+		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.Name)
 	}
 
 	var schemaBuf bytes.Buffer

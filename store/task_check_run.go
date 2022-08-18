@@ -323,7 +323,7 @@ func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, patch
 		&taskCheckRunRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run ID not found: %d", *patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task check run ID not found: %d", *patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

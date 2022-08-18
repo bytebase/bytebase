@@ -3,7 +3,6 @@ package utils
 import (
 	"archive/tar"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -52,7 +51,7 @@ func extractTar(r io.Reader, targetDir string) error {
 		// Ensure that output paths constructed from zip archive entries
 		// are validated to prevent writing files to unexpected locations.
 		if strings.Contains(targetPath, "..") {
-			return fmt.Errorf("invalid path %q", targetPath)
+			return errors.Errorf("invalid path %q", targetPath)
 		}
 
 		if err := os.MkdirAll(path.Dir(targetPath), os.ModePerm); err != nil {
@@ -89,7 +88,7 @@ func extractTar(r io.Reader, targetDir string) error {
 				return err
 			}
 		default:
-			return fmt.Errorf("unsupported type flag %d", header.Typeflag)
+			return errors.Errorf("unsupported type flag %d", header.Typeflag)
 		}
 	}
 

@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,7 +13,7 @@ type testData struct {
 
 type resData struct {
 	res []SingleSQL
-	err error
+	err string
 }
 
 func TestPGSplitMultiSQL(t *testing.T) {
@@ -150,31 +149,35 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid string: not found delimiter: ', but found EOF"),
+				err: "invalid string: not found delimiter: ', but found EOF",
 			},
 		},
 		{
 			statement: `INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid indentifier: not found delimiter: \", but found EOF"),
+				err: "invalid indentifier: not found delimiter: \", but found EOF",
 			},
 		},
 		{
 			statement: `/*INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid comment: not found */, but found EOF"),
+				err: "invalid comment: not found */, but found EOF",
 			},
 		},
 		{
 			statement: `$$INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("scanTo failed: delimiter \"$$\" not found"),
+				err: "scanTo failed: delimiter \"$$\" not found",
 			},
 		},
 	}
 
 	for _, test := range tests {
 		res, err := SplitMultiSQL(Postgres, test.statement)
-		require.Equal(t, test.want, resData{res, err}, test.statement)
+		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 	}
 }

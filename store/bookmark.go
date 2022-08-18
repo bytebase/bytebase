@@ -167,7 +167,7 @@ func (s *Store) getBookmarkRaw(ctx context.Context, find *api.BookmarkFind) (*bo
 	if len(bookmarkRawList) == 0 {
 		return nil, nil
 	} else if len(bookmarkRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d activities with filter %+v, expect 1. ", len(bookmarkRawList), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities with filter %+v, expect 1. ", len(bookmarkRawList), find)}
 	}
 	return bookmarkRawList[0], nil
 }
@@ -291,7 +291,7 @@ func (*Store) deleteBookmarkImpl(ctx context.Context, tx *sql.Tx, delete *api.Bo
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("bookmark ID not found: %d", delete.ID)}
+		return &common.Error{Code: common.NotFound, Err: errors.Errorf("bookmark ID not found: %d", delete.ID)}
 	}
 
 	return nil

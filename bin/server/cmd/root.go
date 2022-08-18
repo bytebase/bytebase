@@ -170,7 +170,7 @@ func checkDataDir() error {
 	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
-		return errors.Wrapf(err, "unable to access --data %s", flags.dataDir)
+		return errors.Wrapf(err, "unable to access --data directory %s", flags.dataDir)
 	}
 
 	return nil

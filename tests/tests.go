@@ -220,7 +220,7 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 	ctl.client = &http.Client{}
 
 	if err := ctl.waitForHealthz(); err != nil {
-		return fmt.Errorf("failed to wait for healthz, err: %w", err)
+		return errors.Wrap(err, "failed to wait for healthz")
 	}
 
 	return nil
@@ -308,7 +308,7 @@ func (ctl *controller) waitForHealthz() error {
 			return nil
 
 		case end := <-timer.C:
-			return fmt.Errorf("cannot wait for healthz in duration: %v", end.Sub(begin).Seconds())
+			return errors.Errorf("cannot wait for healthz in duration: %v", end.Sub(begin).Seconds())
 		}
 	}
 }
@@ -334,7 +334,7 @@ func (ctl *controller) Login() error {
 		"",
 		strings.NewReader(`{"data":{"type":"loginInfo","attributes":{"email":"demo@example.com","password":"1024"}}}`))
 	if err != nil {
-		return fmt.Errorf("fail to post login request, error %w", err)
+		return errors.Wrap(err, "fail to post login request")
 	}
 
 	cookie := ""
@@ -347,7 +347,7 @@ func (ctl *controller) Login() error {
 		}
 	}
 	if cookie == "" {
-		return fmt.Errorf("unable to find access token in the login response headers")
+		return errors.Errorf("unable to find access token in the login response headers")
 	}
 	ctl.cookie = cookie
 
@@ -386,7 +386,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read http response body")
 		}
-		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
 }
@@ -408,7 +408,7 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read http response body")
 		}
-		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
 }
@@ -430,7 +430,7 @@ func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, er
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read http response body")
 		}
-		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
 }
@@ -451,7 +451,7 @@ func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, e
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read http response body")
 		}
-		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
 }
@@ -471,7 +471,7 @@ func (ctl *controller) getProjects() ([]*api.Project, error) {
 	for _, p := range ps {
 		project, ok := p.(*api.Project)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert project")
+			return nil, errors.Errorf("fail to convert project")
 		}
 		projects = append(projects, project)
 	}
@@ -507,12 +507,12 @@ func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
 	var environments []*api.Environment
 	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Environment)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get environment response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get environment response")
 	}
 	for _, p := range ps {
 		environment, ok := p.(*api.Environment)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert environment")
+			return nil, errors.Errorf("fail to convert environment")
 		}
 		environments = append(environments, environment)
 	}
@@ -525,7 +525,7 @@ func findEnvironment(envs []*api.Environment, name string) (*api.Environment, er
 			return env, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to find environment %q", name)
+	return nil, errors.Errorf("unable to find environment %q", name)
 }
 
 // getDatabases gets the databases.
@@ -545,12 +545,12 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	var databases []*api.Database
 	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Database)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get database response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get database response")
 	}
 	for _, p := range ps {
 		database, ok := p.(*api.Database)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert database")
+			return nil, errors.Errorf("fail to convert database")
 		}
 		databases = append(databases, database)
 	}
@@ -624,12 +624,12 @@ func (ctl *controller) getInstanceMigrationHistory(find db.MigrationHistoryFind)
 	var histories []*api.MigrationHistory
 	hs, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.MigrationHistory)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get migration history response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get migration history response")
 	}
 	for _, h := range hs {
 		history, ok := h.(*api.MigrationHistory)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert migration history")
+			return nil, errors.Errorf("fail to convert migration history")
 		}
 		histories = append(histories, history)
 	}
@@ -664,7 +664,7 @@ func (ctl *controller) getIssue(id int) (*api.Issue, error) {
 
 	issue := new(api.Issue)
 	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get issue response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get issue response")
 	}
 	return issue, nil
 }
@@ -690,12 +690,12 @@ func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) 
 	var issues []*api.Issue
 	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Issue)))
 	if err != nil {
-		return nil, fmt.Errorf("fail to unmarshal get issue response, error %w", err)
+		return nil, errors.Wrap(err, "fail to unmarshal get issue response")
 	}
 	for _, p := range ps {
 		issue, ok := p.(*api.Issue)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert issue")
+			return nil, errors.Errorf("fail to convert issue")
 		}
 		issues = append(issues, issue)
 	}
@@ -760,7 +760,7 @@ func (ctl *controller) patchStageAllTaskStatus(stageAllTaskStatusPatch api.Stage
 	for _, t := range untypedTasks {
 		task, ok := t.(*api.Task)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert task")
+			return nil, errors.Errorf("fail to convert task")
 		}
 		tasks = append(tasks, task)
 	}
@@ -827,7 +827,7 @@ func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 				for _, run := range task.TaskRunList {
 					runs = append(runs, fmt.Sprintf("%+v", run))
 				}
-				return api.TaskFailed, fmt.Errorf("pipeline task %v failed runs: %v", task.ID, strings.Join(runs, ", "))
+				return api.TaskFailed, errors.Errorf("pipeline task %v failed runs: %v", task.ID, strings.Join(runs, ", "))
 			}
 			return task.Status, nil
 		}
@@ -921,10 +921,10 @@ func (ctl *controller) query(instance *api.Instance, databaseName, query string)
 		Readonly:     true,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to execute SQL, error: %v", err)
+		return "", errors.Wrap(err, "failed to execute SQL")
 	}
 	if sqlResultSet.Error != "" {
-		return "", fmt.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
+		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
 	}
 	return sqlResultSet.Data, nil
 }
@@ -998,24 +998,24 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		CreateContext: string(createContext),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create database creation issue, error: %v", err)
+		return errors.Wrap(err, "failed to create database creation issue")
 	}
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
-		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
+		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
-		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}
 	if status != api.TaskDone {
-		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
+		return errors.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
 	}
 	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
 		ID:     issue.ID,
 		Status: api.IssueDone,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
 	return nil
 }
@@ -1046,24 +1046,24 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		CreateContext: string(createContext),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create database creation issue, error: %v", err)
+		return errors.Wrap(err, "failed to create database creation issue")
 	}
 	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
-		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
+		return errors.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
-		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}
 	if status != api.TaskDone {
-		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
+		return errors.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
 	}
 	issue, err = ctl.patchIssueStatus(api.IssueStatusPatch{
 		ID:     issue.ID,
 		Status: api.IssueDone,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
 	return nil
 }
@@ -1083,7 +1083,7 @@ func marshalLabels(labelMap map[string]string, environmentName string) (string, 
 
 	labels, err := json.Marshal(labelList)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal labels %+v, error %v", labelList, err)
+		return "", errors.Wrapf(err, "failed to marshal labels %+v", labelList)
 	}
 	return string(labels), nil
 }
@@ -1103,7 +1103,7 @@ func (ctl *controller) getLabels() ([]*api.LabelKey, error) {
 	for _, lk := range lks {
 		labelKey, ok := lk.(*api.LabelKey)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert label key")
+			return nil, errors.Errorf("fail to convert label key")
 		}
 		labelKeys = append(labelKeys, labelKey)
 	}
@@ -1143,7 +1143,7 @@ func (ctl *controller) addLabelValues(key string, values []string) error {
 		}
 	}
 	if labelKey == nil {
-		return fmt.Errorf("failed to find label with key %q", key)
+		return errors.Errorf("failed to find label with key %q", key)
 	}
 	var valueList []string
 	valueList = append(valueList, labelKey.ValueList...)
@@ -1234,7 +1234,7 @@ func (ctl *controller) listBackups(databaseID int) ([]*api.Backup, error) {
 	for _, p := range ps {
 		backup, ok := p.(*api.Backup)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert backup")
+			return nil, errors.Errorf("fail to convert backup")
 		}
 		backups = append(backups, backup)
 	}
@@ -1260,17 +1260,17 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 			}
 		}
 		if backup == nil {
-			return fmt.Errorf("backup %v for database %v not found", backupID, databaseID)
+			return errors.Errorf("backup %v for database %v not found", backupID, databaseID)
 		}
 		switch backup.Status {
 		case api.BackupStatusDone:
 			return nil
 		case api.BackupStatusFailed:
-			return fmt.Errorf("backup %v for database %v failed", backupID, databaseID)
+			return errors.Errorf("backup %v for database %v failed", backupID, databaseID)
 		}
 	}
 	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
-	return fmt.Errorf("failed to wait for backup as this condition should never be reached")
+	return errors.Errorf("failed to wait for backup as this condition should never be reached")
 }
 
 // createSheet creates a sheet.
@@ -1315,7 +1315,7 @@ func (ctl *controller) listSheets(sheetFind api.SheetFind) ([]*api.Sheet, error)
 	for _, p := range ps {
 		sheet, ok := p.(*api.Sheet)
 		if !ok {
-			return nil, fmt.Errorf("fail to convert sheet")
+			return nil, errors.Errorf("fail to convert sheet")
 		}
 		sheets = append(sheets, sheet)
 	}
@@ -1424,12 +1424,12 @@ func (ctl *controller) GetSQLReviewResult(id int) ([]api.TaskCheckResult, error)
 		}
 
 		if status != api.TaskPendingApproval {
-			return nil, fmt.Errorf("the status of issue %v is not pending approval", id)
+			return nil, errors.Errorf("the status of issue %v is not pending approval", id)
 		}
 
 		result, yes, err := ctl.sqlReviewTaskCheckRunFinished(issue)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get SQL review result for issue %v: %w", id, err)
+			return nil, errors.Wrapf(err, "failed to get SQL review result for issue %v", id)
 		}
 		if yes {
 			return result, nil
@@ -1488,7 +1488,7 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 			},
 		})
 	default:
-		return "", fmt.Errorf("unknown SQL review type for default payload: %s", ruleTp)
+		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)
 	}
 
 	if err != nil {

@@ -71,7 +71,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 			if err != nil {
 				return errors.Wrapf(err, "mysql instance has started as process %d, but failed to kill it", i.proc.Pid)
 			}
-			return fmt.Errorf("failed to connect to mysql")
+			return errors.Errorf("failed to connect to mysql")
 		}
 	}
 
@@ -98,7 +98,7 @@ func Install(basedir, datadir, user string) (*Instance, error) {
 		version = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal"
 		extractFn = utils.ExtractTarXz
 	default:
-		return nil, fmt.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
+		return nil, errors.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
 
 	tarF, err := resources.Open(tarName)

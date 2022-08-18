@@ -248,7 +248,7 @@ func (s *Store) getProjectMemberRaw(ctx context.Context, find *api.ProjectMember
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d project members with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d project members with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -550,7 +550,7 @@ func patchProjectMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectM
 		&projectMemberRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project member ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}
