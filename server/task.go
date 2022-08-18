@@ -712,7 +712,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if taskPatched.Status == "DONE" && issue != nil {
 		environmentID := getNextTaskEnvironmentID(issue.Pipeline.StageList, taskPatched)
 		if environmentID == api.UnknownID {
-			log.Error("getNextTaskEnvironmentID returns api.UnknownID which should never happen", zap.Any("stageList", issue.Pipeline.StageList), zap.Any("task", taskPatched))
+			log.Error("getNextTaskEnvironmentID returns api.UnknownID which should never happen")
 		} else {
 			ok, err := s.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 			if err != nil {
