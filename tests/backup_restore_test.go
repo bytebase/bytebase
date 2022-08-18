@@ -407,9 +407,6 @@ func TestPITR(t *testing.T) {
 	})
 
 	t.Run("Restore To New Database In Another Instance", func(t *testing.T) {
-		if true {
-			return
-		}
 		port := getTestPort(t.Name())
 		sourceMySQLDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
 		defer cleanFn()
@@ -473,7 +470,7 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		// Restore stage
+		// Restore task
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
