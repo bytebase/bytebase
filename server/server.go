@@ -265,28 +265,29 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
-	if prof.Mode == common.ReleaseModeDev || prof.Debug {
-		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-			Skipper: func(c echo.Context) bool {
-				return !common.HasPrefixes(c.Path(), "/api", "/hook")
-			},
-			Format: `{"time":"${time_rfc3339}",` +
-				`"method":"${method}","uri":"${uri}",` +
-				`"status":${status},"error":"${error}"}` + "\n",
-		}))
-	}
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: func(c echo.Context) bool {
+			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
+				return true
+			}
+			return !common.HasPrefixes(c.Path(), "/api", "/hook")
+		},
+		Format: `{"time":"${time_rfc3339}",` +
+			`"method":"${method}","uri":"${uri}",` +
+			`"status":${status},"error":"${error}"}` + "\n",
+	}))
 	e.Use(recoverMiddleware)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)
 
-	apiGroup := e.Group("/api")
 	openAPIGroup := e.Group(openAPIPrefix)
 	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return openAPIMetricMiddleware(s, next)
 	})
 
+	apiGroup := e.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
 	})
