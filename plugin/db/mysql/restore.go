@@ -195,18 +195,28 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 	return driver.replayBinlogCounter.Count()
 }
 
+// ReplayBinlogToDatabase replays the binlog of originDatabaseName to the targetDatabaseName.
+func (driver *Driver) ReplayBinlogToDatabase(ctx context.Context, originDatabaseName, targetDatabaseName string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
+	return driver.replayBinlog(ctx, originDatabaseName, targetDatabaseName, startBinlogInfo, targetTs)
+}
+
 // ReplayBinlogToPITRDatabase replays binlog to the PITR database.
 // It's the second step of the PITR process.
 func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseName string, startBinlogInfo api.BinlogInfo, suffixTs, targetTs int64) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
-	return driver.replayBinlog(ctx, databaseName, pitrDatabaseName, startBinlogInfo, targetTs)
+	return driver.ReplayBinlogToDatabase(ctx, databaseName, pitrDatabaseName, startBinlogInfo, targetTs)
+}
+
+// RestoreBackupToDatabase create the database named `databaseName` and restores a full backup to the given database.
+func (driver *Driver) RestoreBackupToDatabase(ctx context.Context, backup io.Reader, databaseName string) error {
+	// Create the pitr database.
+	return driver.restoreImpl(ctx, backup, databaseName)
 }
 
 // RestoreBackupToPITRDatabase restores a full backup to the PITR database.
 // It's the first step of the PITR process.
 func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
-	// Create the pitr database.
 	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
@@ -215,7 +225,8 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
-	return driver.restoreImpl(ctx, backup, pitrDatabaseName)
+	// Create the pitr database.
+	return driver.RestoreBackupToDatabase(ctx, backup, pitrDatabaseName)
 }
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
