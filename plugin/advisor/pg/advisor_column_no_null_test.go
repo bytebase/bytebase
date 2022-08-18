@@ -9,19 +9,25 @@ import (
 func TestColumnNoNULL(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
-			Statement: "CREATE TABLE book(id int, name varchar(255))",
+			Statement: `
+			CREATE TABLE book (
+				id int,
+				name varchar(255)
+			)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: `Column "id" in "public"."book" can not have NULL value`,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Line:    4,
 				},
 			},
 		},
@@ -33,6 +39,7 @@ func TestColumnNoNULL(t *testing.T) {
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Line:    1,
 				},
 			},
 		},
@@ -44,6 +51,7 @@ func TestColumnNoNULL(t *testing.T) {
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Line:    1,
 				},
 			},
 		},
@@ -55,6 +63,7 @@ func TestColumnNoNULL(t *testing.T) {
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Line:    1,
 				},
 			},
 		},
@@ -77,6 +86,7 @@ func TestColumnNoNULL(t *testing.T) {
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: `Column "id" in "public"."book" can not have NULL value`,
+					Line:    1,
 				},
 			},
 		},
@@ -110,6 +120,7 @@ func TestColumnNoNULL(t *testing.T) {
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: `Column "id" in "public"."book" can not have NULL value`,
+					Line:    1,
 				},
 			},
 		},
