@@ -99,9 +99,9 @@ var (
 		pgURL string
 
 		// Cloud backup configs
-		backupRegion      string
-		backupBucket      string
-		backupCredentials string
+		backupRegion     string
+		backupBucket     string
+		backupCredential string
 	}
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -122,10 +122,10 @@ var (
 )
 
 type backupMeta struct {
-	storageBackend  api.BackupStorageBackend
-	region          string
-	bucket          string
-	credentialsFile string
+	storageBackend api.BackupStorageBackend
+	region         string
+	bucket         string
+	credentialFile string
 }
 
 // Execute executes the root command.
@@ -147,9 +147,9 @@ func init() {
 
 	// Cloud backup related flags.
 	// TODO(dragonly): Add GCS usages when it's supported.
-	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
-	rootCmd.PersistentFlags().StringVar(&flags.backupCredentials, "backup-credentials", "", "credentials file to use for the backup bucket. It should be the same format as the AWS credential files.")
+	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
+	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS credential files.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -195,8 +195,8 @@ func start() {
 	var profile server.Profile
 	// This enables backup to cloud, and all backup data will be stored in the supported cloud storage.
 	if flags.backupBucket != "" {
-		if flags.backupCredentials == "" {
-			log.Error("Must specify --backup-credentials when --backup-bucket is present.")
+		if flags.backupCredential == "" {
+			log.Error("Must specify --backup-credential when --backup-bucket is present.")
 			return
 		}
 		bucketMeta, err := parseBucketURI(flags.backupBucket)
@@ -211,7 +211,7 @@ func start() {
 			}
 			bucketMeta.region = flags.backupRegion
 		}
-		bucketMeta.credentialsFile = flags.backupCredentials
+		bucketMeta.credentialFile = flags.backupCredential
 		profile = activeProfile(flags.dataDir, bucketMeta)
 	} else {
 		profile = activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal})
@@ -254,8 +254,8 @@ func start() {
 }
 
 // Examples:
-//   s3:us-west-2//dev-bytebase-backup
-//   gcs://dev-bytebase-backup
+//   s3://example-bucket
+//   gcs://example-bucket
 func parseBucketURI(uri string) (backupMeta, error) {
 	parts := strings.Split(uri, "://")
 	if len(parts) != 2 {

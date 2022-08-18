@@ -202,7 +202,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	s.e = e
 
 	if profile.BackupBucket != "" {
-		credentials, err := s3bb.GetCredentialsFromFile(ctx, profile.BackupCredentialsFile)
+		credentials, err := s3bb.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get credentials from file")
 		}

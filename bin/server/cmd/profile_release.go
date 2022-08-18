@@ -21,6 +21,6 @@ func activeProfile(dataDir string, backupMeta backupMeta) server.Profile {
 	p.BackupStorageBackend = backupMeta.storageBackend
 	p.BackupRegion = backupMeta.region
 	p.BackupBucket = backupMeta.bucket
-	p.BackupCredentialsFile = backupMeta.credentialsFile
+	p.BackupCredentialFile = backupMeta.credentialFile
 	return p
 }

@@ -56,9 +56,9 @@ type Profile struct {
 	BackupStorageBackend api.BackupStorageBackend
 
 	// Cloud backup related fields
-	BackupRegion          string
-	BackupBucket          string
-	BackupCredentialsFile string
+	BackupRegion         string
+	BackupBucket         string
+	BackupCredentialFile string
 
 	// Version is the bytebase's version
 	Version string
