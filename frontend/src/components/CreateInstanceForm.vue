@@ -1,6 +1,6 @@
 <template>
   <form class="space-y-6 divide-y divide-block-border">
-    <div class="divide-y divide-block-border px-1">
+    <div class="divide-y divide-block-border">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template v-for="engine in engineList" :key="engine">
           <div
@@ -109,7 +109,7 @@
             :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
-            @wheel="$event.target.blur()"
+            @wheel="handleInstancePortWheelScroll"
             @input="handleInstancePortInput"
           />
         </div>
@@ -381,6 +381,10 @@ const handleInstanceNameInput = (event: Event) => {
 
 const handleInstanceHostInput = (event: Event) => {
   updateInstance("host", (event.target as HTMLInputElement).value);
+};
+
+const handleInstancePortWheelScroll = (event: MouseEvent) => {
+  (event.target as HTMLInputElement).blur();
 };
 
 const handleInstancePortInput = (event: Event) => {
