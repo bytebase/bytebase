@@ -13,7 +13,7 @@ type testData struct {
 }
 
 type resData struct {
-	res []SeparateSQL
+	res []SingleSQL
 	err error
 }
 
@@ -22,7 +22,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)",
 			want: resData{
-				res: []SeparateSQL{
+				res: []SingleSQL{
 					{
 						Text: "CREATE TABLE t(a int);",
 						Line: 1,
@@ -38,7 +38,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			statement: `CREATE TABLE "tech_Book"(id int, name varchar(255));
 						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []SeparateSQL{
+				res: []SingleSQL{
 					{
 						Text: `CREATE TABLE "tech_Book"(id int, name varchar(255));`,
 						Line: 1,
@@ -57,7 +57,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						-- this is the comment.
 						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []SeparateSQL{
+				res: []SingleSQL{
 					{
 						Text: `/* this is the comment. */
 						CREATE /* inline comment */TABLE "tech_Book"(id int, name varchar(255));`,
@@ -82,7 +82,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						$$;
 						CREATE TABLE t(a int);`,
 			want: resData{
-				res: []SeparateSQL{
+				res: []SingleSQL{
 					{
 						Text: `CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
 						LANGUAGE SQL
@@ -112,7 +112,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						$tag_name$;
 						CREATE TABLE t(a int);`,
 			want: resData{
-				res: []SeparateSQL{
+				res: []SingleSQL{
 					{
 						Text: `CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
 						LANGUAGE SQL
@@ -135,7 +135,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			// test for Windows
 			statement: `CREATE TABLE t` + "\r\n" + `(a int);` + "\r\n" + `CREATE TABLE t1(b int);`,
 			want: resData{
-				res: []SeparateSQL{
+				res: []SingleSQL{
 					{
 						Text: "CREATE TABLE t\r\n(a int);",
 						Line: 1,

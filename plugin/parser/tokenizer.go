@@ -52,8 +52,8 @@ func newTokenizer(statement string) *tokenizer {
 //   - We support PostgreSQL CREATE PROCEDURE statement with $$ $$ style,
 //       but do not support BEGIN ATOMIC ... END; style.
 //       See https://www.postgresql.org/docs/14/sql-createprocedure.html.
-func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SeparateSQL, error) {
-	var res []SeparateSQL
+func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
+	var res []SingleSQL
 
 	t.skipBlank()
 	t.startLine = t.line
@@ -82,7 +82,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SeparateSQL, error) {
 			}
 		case t.char(0) == ';':
 			t.skip(1)
-			res = append(res, SeparateSQL{
+			res = append(res, SingleSQL{
 				Text: t.getString(startPos, t.pos()-startPos),
 				Line: t.startLine,
 			})
@@ -92,7 +92,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SeparateSQL, error) {
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
-				res = append(res, SeparateSQL{
+				res = append(res, SingleSQL{
 					Text: s,
 					Line: t.startLine,
 				})
