@@ -391,6 +391,85 @@ func TestPITR(t *testing.T) {
 		log.Debug("Second PITR done.")
 	})
 
+	t.Run("Restore To New Database In Another Instance", func(t *testing.T) {
+		port := getTestPort(t.Name())
+		sourceMySQLDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
+		defer cleanFn()
+
+		dstPort := port + 1
+		_, dstStopFn := resourcemysql.SetupTestInstance(t, dstPort)
+		defer dstStopFn()
+		dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
+
+		dstInstance, err := ctl.addInstance(api.InstanceCreate{
+			// The target instance must be within the same environment as the instance of the original database now.
+			EnvironmentID: prodEnvironment.ID,
+			Name:          "DestinationInstance",
+			Engine:        db.MySQL,
+			Host:          dstConnCfg.Host,
+			Port:          dstConnCfg.Port,
+			Username:      dstConnCfg.Username,
+		})
+		a.NoError(err)
+
+		insertRangeData(t, sourceMySQLDB, numRowsTime0, numRowsTime1)
+
+		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
+		cancelUpdateRow()
+
+		targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
+
+		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
+		log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
+		_, err = sourceMySQLDB.ExecContext(ctx, dropColumnStmt)
+		a.NoError(err)
+
+		labels, err := marshalLabels(nil, dstInstance.Environment.Name)
+		a.NoError(err)
+
+		targetDatabaseName := "new_database"
+		pitrIssueCtx, err := json.Marshal(&api.PITRContext{
+			DatabaseID:    database.ID,
+			PointInTimeTs: &targetTs,
+			CreateDatabaseCtx: &api.CreateDatabaseContext{
+				InstanceID:   dstInstance.ID,
+				DatabaseName: targetDatabaseName,
+				Labels:       labels,
+				CharacterSet: "utf8mb4",
+				Collation:    "utf8mb4_general_ci",
+			},
+		})
+		a.NoError(err)
+
+		issue, err := ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Restore database %s to the time %d", database.Name, targetTs),
+			Type:          api.IssueDatabaseRestorePITR,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(pitrIssueCtx),
+		})
+		a.NoError(err)
+
+		// Create database task
+		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(api.TaskDone, status)
+
+		// Restore task
+		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(api.TaskDone, status)
+
+		cancelUpdateRow()
+
+		targetDB, err := connectTestMySQL(dstPort, targetDatabaseName)
+		a.NoError(err)
+
+		validateTbl0(t, targetDB, targetDatabaseName, numRowsTime1)
+		validateTbl1(t, targetDB, targetDatabaseName, numRowsTime1)
+		validateTableUpdateRow(t, targetDB, targetDatabaseName)
+	})
+
 	t.Run("Invalid Time Point", func(t *testing.T) {
 		a := require.New(t)
 		port := getTestPort(t.Name())
