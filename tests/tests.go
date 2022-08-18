@@ -1005,7 +1005,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
-		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}
 	if status != api.TaskDone {
 		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
@@ -1015,7 +1015,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		Status: api.IssueDone,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
 	return nil
 }
@@ -1053,7 +1053,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	if err != nil {
-		return fmt.Errorf("failed to wait for issue %v pipeline %v, error: %v", issue.ID, issue.Pipeline.ID, err)
+		return errors.Wrapf(err, "failed to wait for issue %v pipeline %v", issue.ID, issue.Pipeline.ID)
 	}
 	if status != api.TaskDone {
 		return fmt.Errorf("issue %v pipeline %v is expected to finish with status done, got %v", issue.ID, issue.Pipeline.ID, status)
@@ -1063,7 +1063,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		Status: api.IssueDone,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch issue status %v to done, error: %v", issue.ID, err)
+		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
 	return nil
 }
@@ -1083,7 +1083,7 @@ func marshalLabels(labelMap map[string]string, environmentName string) (string, 
 
 	labels, err := json.Marshal(labelList)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal labels %+v, error %v", labelList, err)
+		return "", errors.Wrapf(err, "failed to marshal labels %+v", labelList)
 	}
 	return string(labels), nil
 }
@@ -1429,7 +1429,7 @@ func (ctl *controller) GetSQLReviewResult(id int) ([]api.TaskCheckResult, error)
 
 		result, yes, err := ctl.sqlReviewTaskCheckRunFinished(issue)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get SQL review result for issue %v: %w", id, err)
+			return nil, errors.Wrapf(err, "failed to get SQL review result for issue %v", id)
 		}
 		if yes {
 			return result, nil

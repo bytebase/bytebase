@@ -121,10 +121,10 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestoreOnly(ctx context.Context, se
 
 	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find target database %q in instance %q: %w", *payload.DatabaseName, task.Instance.Name, err)
+		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, task.Instance.Name)
 	}
 	if targetDatabase == nil {
-		return nil, fmt.Errorf("target database %q not found in instance %q: %w", *payload.DatabaseName, task.Instance.Name, err)
+		return nil, errors.Wrapf(err, "target database %q not found in instance %q", *payload.DatabaseName, task.Instance.Name)
 	}
 	log.Debug("Start database restore from backup...",
 		zap.String("source_instance", sourceDatabase.Instance.Name),
@@ -408,7 +408,7 @@ func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Ser
 
 	f, err := os.Open(backupPath)
 	if err != nil {
-		return fmt.Errorf("failed to open backup file at %s: %w", backupPath, err)
+		return errors.Wrapf(err, "failed to open backup file at %s: %w", backupPath)
 	}
 	defer f.Close()
 

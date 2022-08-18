@@ -185,7 +185,7 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 
 	format, err := regexp.Compile(nr.Format)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
+		return nil, 0, errors.Wrapf(err, "failed to compile regular expression \"%s\"", nr.Format)
 	}
 
 	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.

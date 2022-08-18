@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
@@ -40,7 +39,7 @@ func newRestoreCmd() *cobra.Command {
 func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	f, err := os.Open(file)
 	if err != nil {
-		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
+		return errors.Wrapf(err, "failed to open file %q", file)
 	}
 	defer f.Close()
 
@@ -51,7 +50,7 @@ func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	defer db.Close(ctx)
 
 	if err := db.Restore(ctx, f); err != nil {
-		return fmt.Errorf("failed to restore from database dump %s got error: %w", file, err)
+		return errors.Wrapf(err, "failed to restore from backup file %q", file)
 	}
 	return nil
 }

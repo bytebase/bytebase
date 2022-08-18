@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
@@ -32,7 +31,7 @@ func newDumpCmd() *cobra.Command {
 			if file != "" {
 				f, err := os.Create(file)
 				if err != nil {
-					return fmt.Errorf("failed to create dump file %s, got error: %w", file, err)
+					return errors.Wrapf(err, "failed to create dump file %s", file)
 				}
 				defer f.Close()
 				out = f

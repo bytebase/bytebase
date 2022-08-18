@@ -84,7 +84,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		defer driver.Close(ctx)
 		needsSetup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
-			return -1, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
+			return -1, "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
 		}
 		if needsSetup {
 			return -1, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)

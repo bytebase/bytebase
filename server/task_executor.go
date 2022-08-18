@@ -152,7 +152,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return 0, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
+		return 0, "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
 	}
 	if setup {
 		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
@@ -211,7 +211,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	if writeBack {
 		dbName, err := api.GetBaseDatabaseName(mi.Database, project.DBNameTemplate, task.Database.Labels)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to get BaseDatabaseName for instance %q, database %q: %w", task.Instance.Name, task.Database.Name, err)
+			return true, nil, errors.Wrapf(err, "failed to get BaseDatabaseName for instance %q, database %q", task.Instance.Name, task.Database.Name)
 		}
 		latestSchemaFile := filepath.Join(repo.BaseDirectory, repo.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
@@ -416,7 +416,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		)
 
 		if err != nil {
-			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
+			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
 		}
 	} else {
 		log.Debug("Update latest schema file",
@@ -439,7 +439,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			schemaFileCommit,
 		)
 		if err != nil {
-			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
+			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
 		}
 	}
 
@@ -470,7 +470,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch latest schema file %s after update: %w", latestSchemaFile, err)
+		return "", errors.Wrapf(err, "failed to fetch latest schema file %s after update", latestSchemaFile)
 	}
 	return schemaFileMeta.LastCommitID, nil
 }

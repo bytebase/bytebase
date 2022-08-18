@@ -77,7 +77,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			s = strings.Trim(s, "\n\t ")
 			if s != "" {
 				if err := f(s); err != nil {
-					return fmt.Errorf("execute query %q failed: %v", s, err)
+					return errors.Wrapf(err, "execute query %q failed", s)
 				}
 			}
 			s = ""
@@ -87,7 +87,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	s = strings.Trim(s, "\n\t ")
 	if s != "" {
 		if err := f(s); err != nil {
-			return fmt.Errorf("execute query %q failed: %v", s, err)
+			return errors.Wrapf(err, "execute query %q failed", s)
 		}
 	}
 
