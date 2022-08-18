@@ -66,21 +66,6 @@
         </span>
       </div>
 
-      <div v-if="requireDatabaseOwnerName" class="col-span-2 col-start-2 w-64">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.database-owner-name") }}
-          <span class="text-red-600">*</span>
-        </label>
-        <input
-          id="name"
-          v-model="state.databaseOwnerName"
-          required
-          name="ownerName"
-          type="text"
-          class="textfield mt-1 w-full"
-        />
-      </div>
-
       <div
         v-if="selectedInstance.engine == 'CLICKHOUSE'"
         class="col-span-2 col-start-2 w-64"
@@ -144,6 +129,21 @@
             @select-instance-id="selectInstance"
           />
         </div>
+      </div>
+
+      <div v-if="requireDatabaseOwnerName" class="col-span-2 col-start-2 w-64">
+        <label for="name" class="textlabel">
+          {{ $t("create-db.database-owner-name") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="name"
+          v-model="state.databaseOwnerName"
+          required
+          name="ownerName"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
       </div>
 
       <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
