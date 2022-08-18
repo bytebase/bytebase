@@ -999,7 +999,7 @@ func TestProvider_CreateWebhook(t *testing.T) {
 					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
 						assert.Equal(t, "/repos/1/hooks", r.URL.Path)
 						return &http.Response{
-							StatusCode: http.StatusOK,
+							StatusCode: http.StatusCreated,
 							// Example response taken from https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 							Body: io.NopCloser(strings.NewReader(`
 {

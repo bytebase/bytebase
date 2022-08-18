@@ -85,7 +85,7 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 func Install(resourceDir string) error {
 	tarName, version, err := getTarNameAndVersion()
 	if err != nil {
-		return fmt.Errorf("failed to get tarball name and version, error: %w", err)
+		return errors.Wrap(err, "failed to get tarball name and version")
 	}
 
 	mysqlutilDir := path.Join(resourceDir, version)
@@ -96,7 +96,7 @@ func Install(resourceDir string) error {
 		}
 		// Install if not exist yet
 		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
-			return fmt.Errorf("cannot install mysqlutil, error: %w", err)
+			return errors.Wrap(err, "cannot install mysqlutil")
 		}
 	}
 
@@ -123,7 +123,7 @@ func Install(resourceDir string) error {
 			}
 			// Install the current version
 			if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
-				return fmt.Errorf("cannot install mysqlutil, error: %w", err)
+				return errors.Wrap(err, "cannot install mysqlutil")
 			}
 			break
 		}
@@ -146,7 +146,7 @@ func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
 	defer f.Close()
 
 	if err := utils.ExtractTarGz(f, tmpDir); err != nil {
-		return fmt.Errorf("failed to extract tar.gz file, error: %w", err)
+		return errors.Wrap(err, "failed to extract tar.gz file")
 	}
 
 	if err := os.Rename(tmpDir, mysqlutilDir); err != nil {

@@ -89,7 +89,7 @@ func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, 
 func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Table, error) {
 	tableRawList, err := s.findTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Table list, error: %w", err)
+		return nil, errors.Wrap(err, "failed to find Table list")
 	}
 	var tableList []*api.Table
 	for _, raw := range tableRawList {
