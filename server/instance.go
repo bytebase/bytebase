@@ -243,15 +243,14 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			ID:         &userID,
 			InstanceID: &instanceID,
 		}
-
 		instanceUser, err := s.store.GetInstanceUser(ctx, instanceUserFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with ID: %v", userID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUser); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with ID: %v", userID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
 		}
 		return nil
 	})
