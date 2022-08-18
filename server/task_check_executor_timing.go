@@ -25,7 +25,7 @@ const dataFormat = "2006-01-02 15:04:05"
 func (*TaskCheckTimingExecutor) Run(_ context.Context, _ *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckEarliestAllowedTimePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, "invalid check timing payload: %w", err)
+		return []api.TaskCheckResult{}, common.Wrapf(err, common.Invalid, "invalid check timing payload")
 	}
 
 	if payload.EarliestAllowedTs == 0 {

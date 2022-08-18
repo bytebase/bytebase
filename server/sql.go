@@ -359,7 +359,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		}
 	}
 	if len(errorList) > 0 {
-		return fmt.Errorf("sync database schema errors, %s", strings.Join(errorList, ", "))
+		return errors.Errorf("sync database schema errors, %s", strings.Join(errorList, ", "))
 	}
 
 	return nil
@@ -468,7 +468,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		}
 		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return nil, fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
+				return nil, errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 			}
 			return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
 		}
@@ -496,7 +496,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 			database, err := s.store.PatchDatabase(ctx, databasePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
-					return nil, fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
+					return nil, errors.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
 				}
 				return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, database.Name)
 			}
@@ -554,7 +554,7 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return fmt.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
+				return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
 			}
 			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, matchedDb.Name)
 		}
@@ -573,7 +573,7 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
+				return errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 			}
 			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
 		}

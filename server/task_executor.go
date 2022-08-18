@@ -40,12 +40,12 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
 			if !ok {
-				panicErr = fmt.Errorf("%v", r)
+				panicErr = errors.Errorf("%v", r)
 			}
 			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr))
 			terminated = true
 			result = nil
-			err = fmt.Errorf("encounter internal error when executing task")
+			err = errors.Errorf("encounter internal error when executing task")
 		}
 	}()
 
@@ -58,7 +58,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		if migrationType == db.Data {
 			msg = "missing database when updating data"
 		}
-		return nil, fmt.Errorf(msg)
+		return nil, errors.Errorf(msg)
 	}
 	databaseName := task.Database.Name
 
@@ -121,7 +121,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	statement = strings.TrimSpace(statement)
 	// Only baseline can have empty sql statement, which indicates empty database.
 	if mi.Type != db.Baseline && statement == "" {
-		return nil, fmt.Errorf("empty statement")
+		return nil, errors.Errorf("empty statement")
 	}
 	// We will force migration for baseline and migrate type of migrations.
 	// This usually happens when the previous attempt fails and the client retries the migration.
@@ -219,10 +219,10 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 
 		vcs, err := server.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
+			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
 		if vcs == nil {
-			return true, nil, fmt.Errorf("VCS ID not found: %d", repo.VCSID)
+			return true, nil, errors.Errorf("VCS ID not found: %d", repo.VCSID)
 		}
 		repo.VCS = vcs
 
@@ -331,10 +331,10 @@ func findRepositoryByTask(ctx context.Context, server *Server, task *api.Task) (
 	}
 	repo, err := server.store.GetRepository(ctx, repoFind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find linked repository for database %q", task.Database.Name)
+		return nil, errors.Errorf("failed to find linked repository for database %q", task.Database.Name)
 	}
 	if repo == nil {
-		return nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+		return nil, errors.Errorf("repository not found with project ID %v", task.Database.ProjectID)
 	}
 	return repo, nil
 }
@@ -387,7 +387,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		return "", errors.Wrap(err, "failed to fetch repository for schema write-back")
 	}
 	if repo2 == nil {
-		return "", fmt.Errorf("repository not found for schema write-back: %v", repository.ID)
+		return "", errors.Errorf("repository not found for schema write-back: %v", repository.ID)
 	}
 
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
@@ -451,7 +451,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		return "", errors.Wrap(err, "failed to fetch repository after schema write-back")
 	}
 	if repo2 == nil {
-		return "", fmt.Errorf("repository not found after schema write-back: %v", repository.ID)
+		return "", errors.Errorf("repository not found after schema write-back: %v", repository.ID)
 	}
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
 	schemaFileMeta, err = vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(

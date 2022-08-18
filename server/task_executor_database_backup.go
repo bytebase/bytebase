@@ -47,7 +47,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, errors.Wrapf(err, "failed to find backup with ID %d", payload.BackupID)
 	}
 	if backup == nil {
-		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
+		return true, nil, errors.Errorf("backup %v not found", payload.BackupID)
 	}
 	log.Debug("Start database backup...",
 		zap.String("instance", task.Instance.Name),
@@ -90,7 +90,7 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 
 	f, err := os.Create(filepath.Join(server.profile.DataDir, backup.Path))
 	if err != nil {
-		return "", fmt.Errorf("failed to open backup path: %s", backup.Path)
+		return "", errors.Errorf("failed to open backup path: %s", backup.Path)
 	}
 	defer f.Close()
 

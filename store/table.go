@@ -324,7 +324,7 @@ func (s *Store) getTableRaw(ctx context.Context, find *api.TableFind) (*tableRaw
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tables with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d tables with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -434,7 +434,7 @@ func (*Store) patchTableImpl(ctx context.Context, tx *sql.Tx, patch *api.TablePa
 		&tableRaw.Comment,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("table ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("table ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

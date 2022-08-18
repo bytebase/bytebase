@@ -35,7 +35,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			}
 		}
 		if !exist {
-			return "", fmt.Errorf("database %s not found", database)
+			return "", errors.Errorf("database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {

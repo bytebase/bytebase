@@ -321,7 +321,7 @@ func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error
 	if len(backupRawList) == 0 {
 		return nil, nil
 	} else if len(backupRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d backups with filter %+v, expect 1. ", len(backupRawList), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d backups with filter %+v, expect 1. ", len(backupRawList), find)}
 	}
 	return backupRawList[0], nil
 }
@@ -372,16 +372,16 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 	// Backup plan policy check for backup setting mutation.
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		if !upsert.Enabled {
-			return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
 		}
 		switch backupPlanPolicy.Schedule {
 		case api.BackupPlanPolicyScheduleDaily:
 			if upsert.DayOfWeek != -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
 			}
 		case api.BackupPlanPolicyScheduleWeekly:
 			if upsert.DayOfWeek == -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
 			}
 		}
 	}
@@ -576,7 +576,7 @@ func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Backup
 		&payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("backup ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}
@@ -603,7 +603,7 @@ func (s *Store) getBackupSettingRaw(ctx context.Context, find *api.BackupSetting
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d backup settings with filter %+v, expect 1. ", len(list), find)}
 	}
 	return list[0], nil
 }

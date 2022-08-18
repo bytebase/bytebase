@@ -119,7 +119,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, target
 	case LetterCaseOnDiskLowerCaseCmp:
 		originalDBName = strings.ToLower(originalDatabase)
 	default:
-		return fmt.Errorf("expecting value of %s in range [%d, %d, %d], but get %s", caseVariable, 0, 1, 2, identifierCaseSensitive)
+		return errors.Errorf("expecting value of %s in range [%d, %d, %d], but get %s", caseVariable, 0, 1, 2, identifierCaseSensitive)
 	}
 
 	// Extract the SQL statements from the binlog and replay them to the pitrDatabase via the mysql client by pipe.
@@ -256,18 +256,18 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	}
 	if len(binlogFilesToReplay) == 0 {
 		log.Error("No binlog files found locally after given start binlog info", zap.Any("startBinlogInfo", startBinlogInfo))
-		return nil, fmt.Errorf("no binlog files found locally after given start binlog info: %v", startBinlogInfo)
+		return nil, errors.Errorf("no binlog files found locally after given start binlog info: %v", startBinlogInfo)
 	}
 
 	binlogFilesToReplaySorted := sortBinlogFiles(binlogFilesToReplay)
 
 	if binlogFilesToReplaySorted[0].Seq != startBinlogSeq {
 		log.Error("The starting binlog file does not exist locally", zap.String("filename", startBinlogInfo.FileName))
-		return nil, fmt.Errorf("the starting binlog file %q does not exist locally", startBinlogInfo.FileName)
+		return nil, errors.Errorf("the starting binlog file %q does not exist locally", startBinlogInfo.FileName)
 	}
 
 	if !binlogFilesAreContinuous(binlogFilesToReplaySorted) {
-		return nil, fmt.Errorf("discontinuous binlog file extensions detected, skip ")
+		return nil, errors.Errorf("discontinuous binlog file extensions detected, skip ")
 	}
 
 	var binlogReplayList []string
@@ -294,7 +294,7 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 // The backupList should only contain DONE backups.
 func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, mode common.ReleaseMode) (*api.Backup, error) {
 	if len(backupList) == 0 {
-		return nil, fmt.Errorf("no valid backup")
+		return nil, errors.Errorf("no valid backup")
 	}
 
 	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs)
@@ -344,10 +344,10 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 				break
 			}
 			if bc.backup.Status == api.BackupStatusFailed && bc.backup.Type == api.BackupTypePITR {
-				return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
+				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
 			}
 			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.Type == api.BackupTypePITR {
-				return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
+				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
 			}
 		}
 	}
@@ -371,7 +371,7 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
 			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
 			zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
-		return nil, fmt.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
+		return nil, errors.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
 	}
 
 	return backup, nil
@@ -600,7 +600,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 			zap.Int64("sizeInfo", binlogFileToDownload.Size),
 			zap.Int64("downloadedSize", fileInfo.Size()),
 		)
-		return fmt.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
+		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 	}
 
 	return nil
@@ -648,10 +648,10 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		return nil, errors.Wrap(err, "failed to read sorted local binlog files")
 	}
 	if len(binlogFilesLocalSorted) == 0 {
-		return nil, fmt.Errorf("no local binlog files found")
+		return nil, errors.Errorf("no local binlog files found")
 	}
 	if !binlogFilesAreContinuous(binlogFilesLocalSorted) {
-		return nil, fmt.Errorf("local binlog files are not continuous")
+		return nil, errors.Errorf("local binlog files are not continuous")
 	}
 
 	var binlogFileTarget *BinlogFile
@@ -663,7 +663,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		log.Debug("Parsed first binlog event ts", zap.String("file", file.Name), zap.Int64("eventTs", eventTs))
 		if eventTs >= targetTs {
 			if i == 0 {
-				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, eventTs, file.Name)
+				return nil, errors.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, eventTs, file.Name)
 			}
 			// The previous local binlog file contains targetTs.
 			binlogFileTarget = &binlogFilesLocalSorted[i-1]
@@ -681,7 +681,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 	log.Debug("Found potential binlog file containing targetTs", zap.String("binlogFile", binlogFileTarget.Name), zap.Int64("targetTs", targetTs), zap.Bool("isLastBinlogFile", isLastBinlogFile))
 	targetSeq, err := GetBinlogNameSeq(binlogFileTarget.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
+		return nil, errors.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
 	}
 
 	eventPos, err := driver.getBinlogEventPositionAtOrAfterTs(ctx, *binlogFileTarget, targetTs)
@@ -691,7 +691,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 			// If this is the last binlog file, the user wants to recover to a time in the future and we should return an error.
 			// Otherwise, we should return the end position of the current binlog file.
 			if isLastBinlogFile {
-				return nil, fmt.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, binlogFileTarget.Name)
+				return nil, errors.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, binlogFileTarget.Name)
 			}
 			return &binlogCoordinate{Seq: targetSeq, Pos: math.MaxInt64}, nil
 		}
@@ -714,7 +714,7 @@ func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error
 	// fields should starts with ["#220421", "14:49:26", "server", "id", "1", "end_log_pos", "34794"]
 	if len(fields) < 7 ||
 		(len(fields[0]) != 7 || fields[2] != "server" || fields[3] != "id" || fields[5] != "end_log_pos") {
-		return 0, false, fmt.Errorf("found unexpected mysqlbinlog output line %q when parsing binlog event timestamp", line)
+		return 0, false, errors.Errorf("found unexpected mysqlbinlog output line %q when parsing binlog event timestamp", line)
 	}
 	datetime, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
 	if err != nil {
@@ -731,7 +731,7 @@ func parseBinlogEventPosInLine(line string) (pos int64, found bool, err error) {
 	// This is the line containing the start position of the binlog event.
 	fields := strings.Fields(line)
 	if len(fields) != 3 {
-		return 0, false, fmt.Errorf("unexpected mysqlbinlog output line %q when parsing binlog event start position", line)
+		return 0, false, errors.Errorf("unexpected mysqlbinlog output line %q when parsing binlog event start position", line)
 	}
 	pos, err = strconv.ParseInt(fields[2], 10, 0)
 	if err != nil {
@@ -840,7 +840,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 func GetBinlogNameSeq(name string) (int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return 0, fmt.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
+		return 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
 	}
 	return strconv.ParseInt(s[1], 10, 0)
 }
@@ -853,7 +853,7 @@ func checkVersionForPITR(version string) error {
 	}
 	v8 := semver.MustParse("8.0.0")
 	if v.LT(v8) {
-		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 8.0", version)
+		return errors.Errorf("version %s is not supported for PITR; the minimum supported version is 8.0", version)
 	}
 	return nil
 }
@@ -895,7 +895,7 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 		return util.FormatErrorWithQuery(err, query)
 	}
 	if len(tablesNotInnoDB) != 0 {
-		return fmt.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
+		return errors.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
 	}
 	return nil
 }
@@ -915,7 +915,7 @@ func (driver *Driver) getServerVariable(ctx context.Context, varName string) (st
 		return "", util.FormatErrorWithQuery(err, query)
 	}
 	if varName != varNameFound {
-		return "", fmt.Errorf("expecting variable %s, but got %s", varName, varNameFound)
+		return "", errors.Errorf("expecting variable %s, but got %s", varName, varNameFound)
 	}
 	return value, nil
 }
@@ -927,7 +927,7 @@ func (driver *Driver) CheckBinlogEnabled(ctx context.Context) error {
 		return err
 	}
 	if strings.ToUpper(value) != "ON" {
-		return fmt.Errorf("binlog is not enabled")
+		return errors.Errorf("binlog is not enabled")
 	}
 	return nil
 }
@@ -939,7 +939,7 @@ func (driver *Driver) CheckBinlogRowFormat(ctx context.Context) error {
 		return err
 	}
 	if strings.ToUpper(value) != "ROW" {
-		return fmt.Errorf("binlog format is not ROW but %s", value)
+		return errors.Errorf("binlog format is not ROW but %s", value)
 	}
 	return nil
 }

@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -64,7 +63,7 @@ func (s *Store) GetTaskDAGByToTaskID(ctx context.Context, id int) (*api.TaskDAG,
 		return nil, err
 	}
 	if len(taskDAGList) != 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tasks with ToTaskID %v, expect 1", len(taskDAGList), id)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d tasks with ToTaskID %v, expect 1", len(taskDAGList), id)}
 	}
 	return taskDAGList[0], nil
 }

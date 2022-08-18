@@ -72,7 +72,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.issue.Name)
 	}
 	if updater == nil {
-		return nil, fmt.Errorf("updater principal not found for ID %v", create.CreatorID)
+		return nil, errors.Errorf("updater principal not found for ID %v", create.CreatorID)
 	}
 
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
@@ -151,7 +151,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 						return webhookCtx, err
 					}
 					if oldAssignee == nil {
-						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
+						err := errors.Errorf("failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
 						log.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("old_assignee_id", update.OldValue),
@@ -178,7 +178,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 						return webhookCtx, err
 					}
 					if newAssignee == nil {
-						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
+						err := errors.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
 						log.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("new_assignee_id", update.NewValue),
@@ -220,7 +220,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 		if task == nil {
-			err := fmt.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
+			err := errors.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
 			log.Warn(err.Error(),
 				zap.String("issue_name", meta.issue.Name),
 				zap.Int("task_id", update.TaskID),

@@ -1,8 +1,9 @@
 package db
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Type is the type of a database.
@@ -29,5 +30,5 @@ func ConvertToAdvisorDBType(dbType string) (Type, error) {
 		return TiDB, nil
 	}
 
-	return "", fmt.Errorf("unsupported db type %s for advisor", dbType)
+	return "", errors.Errorf("unsupported db type %s for advisor", dbType)
 }

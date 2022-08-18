@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/segment"
 	"github.com/bytebase/bytebase/store"
+	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 )
@@ -71,7 +72,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
 						if !ok {
-							err = fmt.Errorf("%v", r)
+							err = errors.Errorf("%v", r)
 						}
 						log.Error("Metrics reporter PANIC RECOVER", zap.Error(err))
 					}

@@ -3,7 +3,6 @@ package advisor
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"regexp"
 
@@ -126,7 +125,7 @@ type SQLReviewPolicy struct {
 // Validate validates the SQLReviewPolicy. It also validates the each review rule.
 func (policy *SQLReviewPolicy) Validate() error {
 	if policy.Name == "" || len(policy.RuleList) == 0 {
-		return fmt.Errorf("invalid payload, name or rule list cannot be empty")
+		return errors.Errorf("invalid payload, name or rule list cannot be empty")
 	}
 	for _, rule := range policy.RuleList {
 		if err := rule.Validate(); err != nil {
@@ -211,7 +210,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SQLReviewRuleType, payload st
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
-			return "", nil, 0, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
+			return "", nil, 0, errors.Errorf("invalid template %s for rule %s", key, ruleType)
 		}
 	}
 
@@ -252,7 +251,7 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 		return nil, errors.Wrapf(err, "failed to unmarshal required column rule payload %q", payload)
 	}
 	if len(rcr.ColumnList) == 0 {
-		return nil, fmt.Errorf("invalid required column rule payload, column list cannot be empty")
+		return nil, errors.Errorf("invalid required column rule payload, column list cannot be empty")
 	}
 	return &rcr, nil
 }
@@ -428,5 +427,5 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	}
-	return Fake, fmt.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
+	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
 }

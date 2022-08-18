@@ -1,9 +1,10 @@
 package webhook
 
 import (
-	"fmt"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -111,7 +112,7 @@ func Post(webhookType string, context Context) error {
 	r, ok := receivers[webhookType]
 	receiverMu.RUnlock()
 	if !ok {
-		return fmt.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
+		return errors.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
 
 	return r.post(context)
