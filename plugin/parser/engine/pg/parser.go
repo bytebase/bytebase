@@ -46,6 +46,11 @@ func (*PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, 
 		if err != nil {
 			return nil, err
 		}
+		if createTable, ok := node.(*ast.CreateTableStmt); ok {
+			if err := parser.SetLineForCreateTableStmt(parser.Postgres, createTable); err != nil {
+				return nil, err
+			}
+		}
 		nodeList = append(nodeList, node)
 	}
 	return nodeList, nil
