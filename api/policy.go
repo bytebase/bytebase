@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/pkg/errors"
@@ -197,7 +196,7 @@ func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) 
 // ValidatePolicy will validate the policy type and payload values.
 func ValidatePolicy(pType PolicyType, payload string) error {
 	if !PolicyTypes[pType] {
-		return fmt.Errorf("invalid policy type: %s", pType)
+		return errors.Errorf("invalid policy type: %s", pType)
 	}
 	if payload == "" {
 		return nil
@@ -210,17 +209,17 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return err
 		}
 		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
-			return fmt.Errorf("invalid approval policy value: %q", payload)
+			return errors.Errorf("invalid approval policy value: %q", payload)
 		}
 		issueTypeSeen := make(map[IssueType]bool)
 		for _, group := range pa.AssigneeGroupList {
 			if group.IssueType != IssueDatabaseSchemaUpdate &&
 				group.IssueType != IssueDatabaseSchemaUpdateGhost &&
 				group.IssueType != IssueDatabaseDataUpdate {
-				return fmt.Errorf("found invalid assignee group issue type %q in pipeline approval policy", group.IssueType)
+				return errors.Errorf("found invalid assignee group issue type %q in pipeline approval policy", group.IssueType)
 			}
 			if issueTypeSeen[group.IssueType] {
-				return fmt.Errorf("found duplicated assignee group issue type %q in pipeline approval policy", group.IssueType)
+				return errors.Errorf("found duplicated assignee group issue type %q in pipeline approval policy", group.IssueType)
 			}
 			issueTypeSeen[group.IssueType] = true
 		}
@@ -230,7 +229,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return err
 		}
 		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
-			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
+			return errors.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
 	case PolicyTypeSQLReview:
 		sr, err := UnmarshalSQLReviewPolicy(payload)

@@ -181,7 +181,7 @@ func (s *Store) composeRepository(ctx context.Context, raw *repositoryRaw) (*api
 	}
 	// We should always expect VCS to exist when ID isn't the default zero.
 	if repository.VCSID > 0 && vcs == nil {
-		return nil, fmt.Errorf("VCS not found for ID: %v", repository.VCSID)
+		return nil, errors.Errorf("VCS not found for ID: %v", repository.VCSID)
 	}
 	repository.VCS = vcs
 
@@ -247,7 +247,7 @@ func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) 
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d repositories with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d repositories with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -602,7 +602,7 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 		&repository.RefreshToken,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("repository ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

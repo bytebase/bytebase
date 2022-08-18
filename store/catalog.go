@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -169,7 +169,7 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 func splitPGSchema(name string) (string, string, error) {
 	list := strings.Split(name, ".")
 	if len(list) != 2 {
-		return "", "", fmt.Errorf("split failed: the expected name is schemaName.name, but get %s", name)
+		return "", "", errors.Errorf("split failed: the expected name is schemaName.name, but get %s", name)
 	}
 	return list[0], list[1], nil
 }

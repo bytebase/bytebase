@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -62,7 +61,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 
 	value, ok := server.TaskScheduler.sharedTaskState.Load(syncTaskID)
 	if !ok {
-		return true, nil, fmt.Errorf("failed to get gh-ost state from sync task")
+		return true, nil, errors.Errorf("failed to get gh-ost state from sync task")
 	}
 	sharedGhost := value.(sharedGhostState)
 
@@ -101,7 +100,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		// try to make the time gap between the migration history insertion and the actual cutover as close as possible.
 		cancelled := waitForCutover(ctx, migrationContext)
 		if cancelled {
-			return -1, "", fmt.Errorf("cutover poller cancelled")
+			return -1, "", errors.Errorf("cutover poller cancelled")
 		}
 
 		insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
@@ -127,7 +126,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		}
 
 		if migrationErr := <-errCh; migrationErr != nil {
-			return -1, "", fmt.Errorf("failed to run gh-ost migration, err: %w", migrationErr)
+			return -1, "", errors.Wrapf(migrationErr, "failed to run gh-ost migration")
 		}
 
 		var afterSchemaBuf bytes.Buffer

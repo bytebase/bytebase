@@ -415,7 +415,7 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 		}
 		return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
 	default:
-		return "", fmt.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
+		return "", errors.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
 }
 
@@ -686,7 +686,7 @@ func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databas
 	mysqlCmd.Stderr = &stderr
 
 	if err := mysqlCmd.Run(); err != nil {
-		return fmt.Errorf("mysql command fails, error: %w, %s", err, stderr.String())
+		return errors.Wrapf(err, "mysql command fails: %s", stderr.String())
 	}
 
 	return nil

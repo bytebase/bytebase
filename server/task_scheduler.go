@@ -53,7 +53,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
 						if !ok {
-							err = fmt.Errorf("%v", r)
+							err = errors.Errorf("%v", r)
 						}
 						log.Error("Task scheduler PANIC RECOVER", zap.Error(err))
 					}
@@ -256,7 +256,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 			return false, err
 		}
 		if instance == nil {
-			return false, fmt.Errorf("instance ID not found %v", task.InstanceID)
+			return false, errors.Errorf("instance ID not found %v", task.InstanceID)
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {

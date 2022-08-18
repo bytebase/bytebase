@@ -212,7 +212,7 @@ func (s *Store) getProjectWebhookRaw(ctx context.Context, find *api.ProjectWebho
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d project hooks with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d project hooks with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -401,7 +401,7 @@ func patchProjectWebhookImpl(ctx context.Context, tx *sql.Tx, patch *api.Project
 		&txtArray,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project hook ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

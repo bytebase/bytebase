@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +46,7 @@ func NewConfig(mode common.ReleaseMode) (*Config, error) {
 	filename := fmt.Sprintf("keys/%s.pub.pem", mode)
 	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
 	if err != nil {
-		return nil, fmt.Errorf("cannot read license public key for env %s", mode)
+		return nil, errors.Errorf("cannot read license public key for env %s", mode)
 	}
 	log.Info("load public pem", zap.String("file", filename))
 

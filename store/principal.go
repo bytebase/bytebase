@@ -209,7 +209,7 @@ func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d principals with PrincipalFind[%+v], expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d principals with PrincipalFind[%+v], expect 1", len(list), find)}
 	}
 	if err := s.cache.UpsertCache(api.PrincipalCache, list[0].ID, list[0]); err != nil {
 		return nil, err
@@ -400,7 +400,7 @@ func patchPrincipalImpl(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPat
 		&principalRaw.PasswordHash,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("principal ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

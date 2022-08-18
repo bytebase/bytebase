@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // sheetOrganizerRaw is the store model for SheetOrganizer.
@@ -70,7 +71,7 @@ func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizer
 	if len(sheetOrganizerRawlist) == 0 {
 		return nil, nil
 	} else if len(sheetOrganizerRawlist) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d sheet organizer with filter %+v, expect 1. ", len(sheetOrganizerRawlist), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d sheet organizer with filter %+v, expect 1. ", len(sheetOrganizerRawlist), find)}
 	}
 
 	sheetOrganizer := sheetOrganizerRawlist[0].toSheetOrganizer()

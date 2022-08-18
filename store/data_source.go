@@ -207,7 +207,7 @@ func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) 
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -410,7 +410,7 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 		&dataSourceRaw.SslCa,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("DataSource not found with ID %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("DataSource not found with ID %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

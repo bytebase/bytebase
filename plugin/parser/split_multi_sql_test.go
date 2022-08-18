@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -150,25 +150,25 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid string: not found delimiter: ', but found EOF"),
+				err: errors.Errorf("invalid string: not found delimiter: ', but found EOF"),
 			},
 		},
 		{
 			statement: `INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid indentifier: not found delimiter: \", but found EOF"),
+				err: errors.Errorf("invalid indentifier: not found delimiter: \", but found EOF"),
 			},
 		},
 		{
 			statement: `/*INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid comment: not found */, but found EOF"),
+				err: errors.Errorf("invalid comment: not found */, but found EOF"),
 			},
 		},
 		{
 			statement: `$$INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("scanTo failed: delimiter \"$$\" not found"),
+				err: errors.Errorf("scanTo failed: delimiter \"$$\" not found"),
 			},
 		},
 	}

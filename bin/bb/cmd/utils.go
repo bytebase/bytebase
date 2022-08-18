@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/bytebase/bytebase/plugin/db"
@@ -44,7 +43,7 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 		}
 		pgInstanceDir = pgInstance.BaseDir
 	default:
-		return nil, fmt.Errorf("database type %q not supported; supported types: mysql, pg", u.Driver)
+		return nil, errors.Errorf("database type %q not supported; supported types: mysql, pg", u.Driver)
 	}
 	passwd, _ := u.User.Password()
 	driver, err := db.Open(

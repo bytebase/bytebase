@@ -85,7 +85,7 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	// Validate policy.
 	// Currently we only support PolicyTypeSQLReview type policy to delete by id
 	if delete.Type != api.PolicyTypeSQLReview {
-		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy type")}
+		return &common.Error{Code: common.Invalid, Err: errors.Errorf("invalid policy type")}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -103,11 +103,11 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 		return errors.Wrapf(err, "failed to list policy with PolicyFind[%+v]", find)
 	}
 	if len(policyRawList) != 1 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("failed to found policy with filter %+v, expect 1. ", find)}
+		return &common.Error{Code: common.NotFound, Err: errors.Errorf("failed to found policy with filter %+v, expect 1. ", find)}
 	}
 	policyRaw := policyRawList[0]
 	if policyRaw.RowStatus != api.Archived {
-		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
+		return &common.Error{Code: common.Invalid, Err: errors.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
 	}
 
 	if err := s.deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
@@ -181,7 +181,7 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 // GetNormalSQLReviewPolicy will get the normal SQL review policy for an environment.
 func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SQLReviewPolicy, error) {
 	if find.ID != nil && *find.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("SQL review policy not found with ID %d", *find.ID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy not found with ID %d", *find.ID)}
 	}
 
 	pType := api.PolicyTypeSQLReview
@@ -191,10 +191,10 @@ func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFi
 		return nil, err
 	}
 	if policy.RowStatus == api.Archived {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("SQL review policy ID: %d for environment %d is archived", policy.ID, policy.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d is archived", policy.ID, policy.EnvironmentID)}
 	}
 	if policy.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("SQL review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
 	}
 	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
@@ -271,7 +271,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 			ret.EnvironmentID = *find.EnvironmentID
 		}
 	} else if len(policyRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
 	} else {
 		ret = policyRawList[0]
 	}
@@ -386,7 +386,7 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 	}
 
 	if len(set) == 0 {
-		return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy upsert %+v", upsert)}
+		return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("invalid policy upsert %+v", upsert)}
 	}
 
 	if upsert.Payload == nil || *upsert.Payload == "" {
