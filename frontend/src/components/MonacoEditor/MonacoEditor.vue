@@ -150,6 +150,10 @@ onMounted(async () => {
     setPositionAtEndOfLine,
   } = await useMonaco(language.value);
 
+  if (!editorContainerRef.value) {
+    return;
+  }
+
   monacoInstanceRef.value = {
     monaco,
     dispose,
