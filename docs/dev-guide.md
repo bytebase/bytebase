@@ -50,7 +50,7 @@ git push --set-upstream origin feat/xxx
 
 ### Branch Naming Convention
 
-The recommended branch naming convention is using `/` as a namespace separator, e.g., feat/xxx, chore/xxx, docs/xxx, which works nicely with 3rd party git tools like GitLens.
+The recommended branch naming convention is using `/` as a namespace separator, e.g., feat/xxx, chore/xxx, docs/xxx, which works nicely with 3rd party git tools such as GitLens.
 
 
 

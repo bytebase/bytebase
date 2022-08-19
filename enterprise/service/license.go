@@ -20,7 +20,7 @@ type LicenseService struct {
 }
 
 // Claims creates a struct that will be encoded to a JWT.
-// We add jwt.RegisteredClaims as an embedded type, to provide fields like name.
+// We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type Claims struct {
 	InstanceCount int    `json:"instanceCount"`
 	Trialing      bool   `json:"trialing"`
