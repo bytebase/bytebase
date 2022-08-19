@@ -56,9 +56,6 @@
         placeholder="e.g. master"
         :disabled="!allowEdit"
       />
-      <div v-if="vcsType == 'GITLAB_SELF_HOST'" class="mt-2 textinfolabel">
-        {{ $t("repository.branch-specify-tip") }}
-      </div>
     </div>
     <div>
       <div class="textlabel">{{ $t("repository.base-directory") }}</div>

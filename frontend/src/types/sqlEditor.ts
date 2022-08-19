@@ -25,6 +25,7 @@ export interface ConnectionAtom {
   label: string;
   type?: ConnectionAtomType;
   children?: ConnectionAtom[];
+  isLeaf?: boolean;
 }
 
 export enum SortText {
