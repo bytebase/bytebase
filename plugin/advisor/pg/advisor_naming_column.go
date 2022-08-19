@@ -99,6 +99,7 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, column, checker.format),
+				Line:    node.Line(),
 			})
 		}
 
@@ -108,6 +109,7 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, column, checker.maxLength),
+				Line:    node.Line(),
 			})
 		}
 	}
