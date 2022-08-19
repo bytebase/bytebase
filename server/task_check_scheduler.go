@@ -260,34 +260,31 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
 	}
 
-	_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 		CreatorID:               creatorID,
 		TaskID:                  task.ID,
 		Type:                    api.TaskCheckDatabaseConnect,
 		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
-	_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 		CreatorID:               creatorID,
 		TaskID:                  task.ID,
 		Type:                    api.TaskCheckInstanceMigrationSchema,
 		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               creatorID,
 			TaskID:                  task.ID,
 			Type:                    api.TaskCheckGhostSync,
 			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		})
-		if err != nil {
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -302,14 +299,13 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 		}
-		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               creatorID,
 			TaskID:                  task.ID,
 			Type:                    api.TaskCheckDatabaseStatementSyntax,
 			Payload:                 string(payload),
 			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		})
-		if err != nil {
+		}); err != nil {
 			return nil, err
 		}
 	}
