@@ -199,6 +199,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create linked repository request").SetInternal(err)
 		}
 
+		if strings.Contains(repositoryCreate.BranchFilter, "*") {
+			return echo.NewHTTPError(http.StatusBadRequest, "Wildcard isn't supported for branch setting")
+		}
+
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
@@ -343,6 +347,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repoPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch linked repository request").SetInternal(err)
 		}
+		if repoPatch.BranchFilter != nil && strings.Contains(*repoPatch.BranchFilter, "*") {
+			return echo.NewHTTPError(http.StatusBadRequest, "Wildcard isn't supported for branch setting")
+		}
+
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
