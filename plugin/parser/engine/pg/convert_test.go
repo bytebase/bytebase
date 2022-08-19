@@ -26,12 +26,17 @@ func runTests(t *testing.T, tests []testData) {
 			test.want[i].SetText(test.statementList[i].Text)
 			test.want[i].SetLine(test.statementList[i].Line)
 
-			if createTable, ok := test.want[i].(*ast.CreateTableStmt); ok {
-				for j, col := range createTable.ColumnList {
+			switch n := test.want[i].(type) {
+			case *ast.CreateTableStmt:
+				for j, col := range n.ColumnList {
 					col.SetLine(test.columnLine[i][j])
 				}
-				for j, cons := range createTable.ConstraintList {
+				for j, cons := range n.ConstraintList {
 					cons.SetLine(test.constraintLine[i][j])
+				}
+			case *ast.AlterTableStmt:
+				for _, item := range n.AlterItemList {
+					item.SetLine(n.Line())
 				}
 			}
 		}
