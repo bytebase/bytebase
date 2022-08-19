@@ -1,5 +1,5 @@
 <template>
-  <form class="space-y-6 divide-y divide-block-border">
+  <div class="space-y-6 divide-y divide-block-border">
     <div class="divide-y divide-block-border px-1">
       <!-- Instance Name -->
       <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
@@ -89,7 +89,7 @@
             :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
-            @wheel="$event.target.blur()"
+            @wheel="handleInstancePortWheelScroll"
             @input="handleInstancePortInput"
           />
         </div>
@@ -150,7 +150,7 @@
 
       <div
         v-if="!hasReadonlyDataSource"
-        class="mt-4 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3 mt-0"
+        class="flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3 mt-0"
       >
         <heroicons-outline:exclamation
           class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
@@ -317,7 +317,7 @@
         </div>
       </div>
     </div>
-  </form>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -480,6 +480,10 @@ const handleInstanceNameInput = (event: Event) => {
 
 const handleInstanceHostInput = (event: Event) => {
   updateInstance("host", (event.target as HTMLInputElement).value);
+};
+
+const handleInstancePortWheelScroll = (event: MouseEvent) => {
+  (event.target as HTMLInputElement).blur();
 };
 
 const handleInstancePortInput = (event: Event) => {
@@ -765,10 +769,17 @@ const testConnection = () => {
         title: t("instance.successfully-connected-instance"),
       });
     } else {
+      let title = t("instance.failed-to-connect-instance");
+      if (
+        connectionInfo.host == "localhost" ||
+        connectionInfo.host == "127.0.0.1"
+      ) {
+        title = t("instance.failed-to-connect-instance-localhost");
+      }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: t("instance.failed-to-connect-instance"),
+        title: title,
         description: resultSet.error,
         // Manual hide, because user may need time to inspect the error
         manualHide: true,

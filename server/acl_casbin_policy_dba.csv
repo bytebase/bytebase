@@ -34,6 +34,7 @@ p, DBA, /instance, GET
 p, DBA, /instance/{id}, GET
 p, DBA, /instance/{id}, PATCH
 p, DBA, /instance/{id}/user, GET
+p, DBA, /instance/{id}/user/{userID}, GET
 p, DBA, /instance/{id}/migration, POST
 p, DBA, /instance/{id}/migration/status, GET
 p, DBA, /instance/{id}/migration/history, GET

@@ -165,7 +165,7 @@ function convertPartial(
     }
     if (
       item.type == "database" &&
-      // Tasks like creating database may not have database.
+      // Tasks such as creating database may not have database.
       (task.relationships!.database.data as ResourceIdentifier)?.id == item.id
     ) {
       database = databaseStore.convert(item, includedList);

@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/go-sql-driver/mysql"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -65,7 +66,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
 
 	if err != nil {
-		return nil, fmt.Errorf("sql: tls config error: %v", err)
+		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 
 	loggedDSN := fmt.Sprintf("%s:<<redacted password>>@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
@@ -76,7 +77,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
-			return nil, fmt.Errorf("sql: failed to register tls config: %v", err)
+			return nil, errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
 		defer mysql.DeregisterTLSConfig(tlsKey)

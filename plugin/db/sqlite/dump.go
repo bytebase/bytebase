@@ -8,18 +8,19 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 )
 
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	if database == "" {
-		return "", fmt.Errorf("SQLite can dump one database only at a time")
+		return "", errors.Errorf("SQLite can dump one database only at a time")
 	}
 
 	// Find all dumpable databases and make sure the existence of the database to be dumped.
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return "", fmt.Errorf("failed to get databases: %s", err)
+		return "", errors.Wrap(err, "failed to get databases")
 	}
 	exist := false
 	for _, n := range databases {
@@ -29,7 +30,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		}
 	}
 	if !exist {
-		return "", fmt.Errorf("database %s not found", database)
+		return "", errors.Errorf("database %s not found", database)
 	}
 
 	if err := driver.dumpOneDatabase(ctx, database, out, schemaOnly); err != nil {

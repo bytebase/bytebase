@@ -1,9 +1,9 @@
 package server
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -68,13 +68,13 @@ func TestParseSheetInfo(t *testing.T) {
 			filePath:          "sheet/db/test.sql",
 			sheetPathTemplate: "sheet/{{NAME}}.sql",
 			want:              nil,
-			err:               fmt.Errorf("sheet path \"sheet/db/test.sql\" does not match sheet path template \"sheet/{{NAME}}.sql\""),
+			err:               errors.Errorf("sheet path \"sheet/db/test.sql\" does not match sheet path template \"sheet/{{NAME}}.sql\""),
 		},
 		{
 			filePath:          "my-sheet/test.sql",
 			sheetPathTemplate: "sheet/{{NAME}}.sql",
 			want:              nil,
-			err:               fmt.Errorf("sheet path \"my-sheet/test.sql\" does not match sheet path template \"sheet/{{NAME}}.sql\""),
+			err:               errors.Errorf("sheet path \"my-sheet/test.sql\" does not match sheet path template \"sheet/{{NAME}}.sql\""),
 		},
 	}
 

@@ -3,13 +3,13 @@ package utils
 import (
 	"archive/tar"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/xi2/xz"
 )
 
@@ -45,17 +45,17 @@ func extractTar(r io.Reader, targetDir string) error {
 
 		targetPath, err := filepath.Abs(filepath.Join(targetDir, header.Name))
 		if err != nil {
-			return fmt.Errorf("failed to get absolute path for %q, error: %w", header.Name, err)
+			return errors.Wrapf(err, "failed to get absolute path for %q", header.Name)
 		}
 
 		// Ensure that output paths constructed from zip archive entries
 		// are validated to prevent writing files to unexpected locations.
 		if strings.Contains(targetPath, "..") {
-			return fmt.Errorf("invalid path %q", targetPath)
+			return errors.Errorf("invalid path %q", targetPath)
 		}
 
 		if err := os.MkdirAll(path.Dir(targetPath), os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory %q, error: %w", header.Name, err)
+			return errors.Wrapf(err, "failed to create directory %q", header.Name)
 		}
 
 		switch header.Typeflag {
@@ -88,7 +88,7 @@ func extractTar(r io.Reader, targetDir string) error {
 				return err
 			}
 		default:
-			return fmt.Errorf("unsupported type flag %d", header.Typeflag)
+			return errors.Errorf("unsupported type flag %d", header.Typeflag)
 		}
 	}
 

@@ -66,6 +66,7 @@ const handleRequestButtonClick = async () => {
 
   const analytics = (window as any).analytics;
   analytics.identify(email.value, {
+    category: "request-demo",
     integrations: {
       MailChimp: {
         subscriptionStatus: "subscribed",

@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -451,14 +452,14 @@ func composeCommonSheetFindByQueryParams(queryParams url.Values) (*api.SheetFind
 	if projectIDStr := queryParams.Get("projectId"); projectIDStr != "" {
 		projectID, err := strconv.Atoi(projectIDStr)
 		if err != nil {
-			return nil, fmt.Errorf("project ID is not a number: %s", queryParams.Get("projectId"))
+			return nil, errors.Errorf("project ID is not a number: %s", queryParams.Get("projectId"))
 		}
 		sheetFind.ProjectID = &projectID
 	}
 	if databaseIDStr := queryParams.Get("databaseId"); databaseIDStr != "" {
 		databaseID, err := strconv.Atoi(databaseIDStr)
 		if err != nil {
-			return nil, fmt.Errorf("database ID is not a number: %s", queryParams.Get("databaseId"))
+			return nil, errors.Errorf("database ID is not a number: %s", queryParams.Get("databaseId"))
 		}
 		sheetFind.DatabaseID = &databaseID
 	}
@@ -487,10 +488,10 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 	}
 	sheetRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
 	if err != nil {
-		return nil, fmt.Errorf("invalid sheet path template: %q, err: %v", sheetPathTemplate, err)
+		return nil, errors.Wrapf(err, "invalid sheet path template %q", sheetPathTemplate)
 	}
 	if !sheetRegex.MatchString(sheetPath) {
-		return nil, fmt.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)
+		return nil, errors.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)
 	}
 
 	matchList := sheetRegex.FindStringSubmatch(sheetPath)

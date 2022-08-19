@@ -13,4 +13,6 @@ export * from "./types";
 export * from "./util";
 export * from "./label";
 export * from "./deployment";
+export * from "./task";
 export * from "./principal";
+export * from "./sql-editor";

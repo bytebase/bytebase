@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/metric"
+	"github.com/pkg/errors"
 )
 
 // projectRaw is the store model for a Project.
@@ -60,14 +61,14 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 	find := &api.ProjectFind{ID: &id}
 	projectRaw, err := s.getProjectRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Project with ID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get Project with ID %d", id)
 	}
 	if projectRaw == nil {
 		return nil, nil
 	}
 	project, err := s.composeProject(ctx, projectRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", projectRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
 	}
 	return project, nil
 }
@@ -76,13 +77,13 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
 	projectRawList, err := s.findProjectRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Project list with ProjectFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Project list with ProjectFind[%+v]", find)
 	}
 	var projectList []*api.Project
 	for _, raw := range projectRawList {
 		project, err := s.composeProject(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", raw)
 		}
 		projectList = append(projectList, project)
 	}
@@ -93,11 +94,11 @@ func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.
 func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.Project, error) {
 	projectRaw, err := s.createProjectRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Project with ProjectCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Project with ProjectCreate[%+v]", create)
 	}
 	project, err := s.composeProject(ctx, projectRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", projectRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
 	}
 	return project, nil
 }
@@ -106,11 +107,11 @@ func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*
 func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
 	projectRaw, err := s.patchProjectRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Project with ProjectPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Project with ProjectPatch[%+v]", patch)
 	}
 	project, err := s.composeProject(ctx, projectRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", projectRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
 	}
 	return project, nil
 }
@@ -253,7 +254,7 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d projects with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d projects with filter %+v, expect 1", len(list), find)}
 	}
 	if err := s.cache.UpsertCache(api.ProjectCache, list[0].ID, list[0]); err != nil {
 		return nil, err
@@ -470,7 +471,7 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 		&project.RoleProvider,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

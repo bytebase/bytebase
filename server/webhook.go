@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -61,7 +62,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		if repo.VCS == nil {
-			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
+			err := errors.Errorf("VCS not found for ID: %v", repo.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
 		}
 
@@ -141,7 +142,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		if repo.VCS == nil {
-			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
+			err := errors.Errorf("VCS not found for ID: %v", repo.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
 		}
 
@@ -163,6 +164,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		var pushEvent github.WebhookPushEvent
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+		}
+
+		if branch, err := parseBranchNameFromGitHubRefs(pushEvent.Ref); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref").SetInternal(err)
+		} else if branch != repo.BranchFilter {
+			return c.String(http.StatusOK, "")
 		}
 
 		if pushEvent.Repository.FullName != repo.ExternalID {
@@ -245,6 +252,18 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
+// parseBranchNameFromGitHubRefs is for GitHub.
+// GitLab webhook has the option to listen to push events to a certain branch while GitHub doesn't. So we need to manually parse the branch name from the refs field in the request.
+// https://docs.github.com/en/rest/git/refs
+func parseBranchNameFromGitHubRefs(ref string) (string, error) {
+	expectedPrefix := "refs/heads/"
+	if !strings.HasPrefix(ref, expectedPrefix) || len(expectedPrefix) == len(ref) {
+		log.Debug("ref is not prefix with expected prefix", zap.String("escaped ref", common.EscapeForLogging(ref)), zap.String("expected prefix", expectedPrefix))
+		return ref, errors.Errorf("unexpected ref name %q without prefix %q", ref, expectedPrefix)
+	}
+	return ref[len(expectedPrefix):], nil
+}
+
 // We are observing the push webhook event so that we will receive the event either when:
 // 1. A commit is directly pushed to a branch.
 // 2. One or more commits are merged to a branch.
@@ -319,9 +338,9 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	databaseList, err := s.store.FindDatabase(ctx, databaseFind)
 	if err != nil {
-		return "", fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
+		return "", errors.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
 	} else if len(databaseList) == 0 {
-		return "", fmt.Errorf("project with ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
+		return "", errors.Errorf("project with ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -345,7 +364,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 			}
 		}
 		if len(filteredDatabaseList) == 0 {
-			return "", fmt.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment)
+			return "", errors.Errorf("project does not contain committed file database %q for environment %q", mi.Database, mi.Environment)
 		}
 	} else {
 		filteredDatabaseList = databaseList
@@ -364,7 +383,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		}
 	}
 	if len(multipleDatabaseForSameEnv) > 0 {
-		return "", fmt.Errorf("ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
+		return "", errors.Errorf("ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
 	}
 
 	// Compose the new issue
@@ -381,7 +400,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
+		return "", errors.Wrap(err, "failed to construct issue create context payload")
 	}
 	return string(createContext), nil
 }
@@ -389,7 +408,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, statement string) (string, error) {
 	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
 	if mi.Environment != "" {
-		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")
+		return "", errors.Errorf("environment isn't accepted in schema update for tenant mode project")
 	}
 	m := &api.UpdateSchemaContext{
 		MigrationType: mi.Type,
@@ -403,7 +422,7 @@ func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEv
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
+		return "", errors.Wrap(err, "failed to construct issue create context payload")
 	}
 	return string(createContext), nil
 }

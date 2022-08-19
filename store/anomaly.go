@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // anomalyRaw is the store model for an Anomaly.
@@ -60,11 +61,11 @@ func (raw *anomalyRaw) toAnomaly() *api.Anomaly {
 func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	anomalyRaw, err := s.upsertActiveAnomalyRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert active anomaly with AnomalyUpsert[%+v], error: %w", upsert, err)
+		return nil, errors.Wrapf(err, "failed to upsert active anomaly with AnomalyUpsert[%+v]", upsert)
 	}
 	anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose anomaly with AnomalyRaw[%+v], error: %w", anomalyRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose anomaly with AnomalyRaw[%+v]", anomalyRaw)
 	}
 	return anomaly, nil
 }
@@ -73,13 +74,13 @@ func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpse
 func (s *Store) FindAnomaly(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
 	anomalyRawList, err := s.findAnomalyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find anomaly with AnomalyFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find anomaly with AnomalyFind[%+v]", find)
 	}
 	var anomalyList []*api.Anomaly
 	for _, anomalyRaw := range anomalyRawList {
 		anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose anomaly with AnomalyRaw[%+v], error: %w", anomalyRaw, err)
+			return nil, errors.Wrapf(err, "failed to compose anomaly with AnomalyRaw[%+v]", anomalyRaw)
 		}
 		anomalyList = append(anomalyList, anomaly)
 	}
@@ -148,7 +149,7 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 			return nil, err
 		}
 	} else {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
@@ -382,10 +383,10 @@ func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*an
 // archiveAnomalyImpl archives an anomaly by ID.
 func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
 	if archive.InstanceID == nil && archive.DatabaseID == nil {
-		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
+		return &common.Error{Code: common.Internal, Err: errors.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
 	}
 	if archive.InstanceID != nil && archive.DatabaseID != nil {
-		return &common.Error{Code: common.Internal, Err: fmt.Errorf("failed to close anomaly, should specify either instanceID or databaseID, but not both")}
+		return &common.Error{Code: common.Internal, Err: errors.Errorf("failed to close anomaly, should specify either instanceID or databaseID, but not both")}
 	}
 	// Remove row from database.
 	if archive.InstanceID != nil {
@@ -401,7 +402,7 @@ func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArc
 
 		rows, _ := result.RowsAffected()
 		if rows == 0 {
-			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceID, archive.Type)}
+			return &common.Error{Code: common.NotFound, Err: errors.Errorf("anomaly not found instance: %d type: %s", *archive.InstanceID, archive.Type)}
 		}
 	} else if archive.DatabaseID != nil {
 		result, err := tx.ExecContext(ctx,
@@ -416,7 +417,7 @@ func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArc
 
 		rows, _ := result.RowsAffected()
 		if rows == 0 {
-			return &common.Error{Code: common.NotFound, Err: fmt.Errorf("anomaly not found database: %d type: %s", *archive.DatabaseID, archive.Type)}
+			return &common.Error{Code: common.NotFound, Err: errors.Errorf("anomaly not found database: %d type: %s", *archive.DatabaseID, archive.Type)}
 		}
 	}
 

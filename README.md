@@ -148,11 +148,15 @@ working on the code:
 
 - [Go](https://golang.org/doc/install) (1.18 or later)
 - [pnpm](https://pnpm.io/installation)
-- [Air](https://github.com/cosmtrek/air#installation) (1.27.10 or later). This is for backend live reload.
+- [Air](https://github.com/cosmtrek/air#installation) (**must use 1.30.0**). This is for backend live reload.
 
 ### Steps
 
-1. Install [Air](https://github.com/cosmtrek/air#installation).
+1. Install Air v1.30.0. Use 1.30.0 because the newer version changes the behavior and won't shutdown the previous service properly.
+
+   ```bash
+   go install github.com/cosmtrek/air@v1.30.0
+   ```
 
 1. Pull source.
 

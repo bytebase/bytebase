@@ -1,6 +1,6 @@
 <template>
-  <form class="space-y-6 divide-y divide-block-border">
-    <div class="divide-y divide-block-border px-1">
+  <div class="space-y-6 divide-y divide-block-border">
+    <div class="divide-y divide-block-border">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template v-for="engine in engineList" :key="engine">
           <div
@@ -109,7 +109,7 @@
             :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
-            @wheel="$event.target.blur()"
+            @wheel="handleInstancePortWheelScroll"
             @input="handleInstancePortInput"
           />
         </div>
@@ -228,7 +228,7 @@
         </div>
       </div>
     </div>
-  </form>
+  </div>
   <BBAlert
     v-if="state.showCreateInstanceWarningModal"
     :style="'WARN'"
@@ -383,6 +383,10 @@ const handleInstanceHostInput = (event: Event) => {
   updateInstance("host", (event.target as HTMLInputElement).value);
 };
 
+const handleInstancePortWheelScroll = (event: MouseEvent) => {
+  (event.target as HTMLInputElement).blur();
+};
+
 const handleInstancePortInput = (event: Event) => {
   updateInstance("port", (event.target as HTMLInputElement).value);
 };
@@ -498,10 +502,17 @@ const testConnection = () => {
         title: t("instance.successfully-connected-instance"),
       });
     } else {
+      let title = t("instance.failed-to-connect-instance");
+      if (
+        connectionInfo.host == "localhost" ||
+        connectionInfo.host == "127.0.0.1"
+      ) {
+        title = t("instance.failed-to-connect-instance-localhost");
+      }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: t("instance.failed-to-connect-instance"),
+        title: title,
         description: resultSet.error,
         // Manual hide, because user may need time to inspect the error
         manualHide: true,

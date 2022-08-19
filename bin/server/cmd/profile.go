@@ -9,6 +9,35 @@ import (
 	"github.com/bytebase/bytebase/server"
 )
 
+func getBaseProfile() server.Profile {
+	var demoDataDir string
+	if flags.demo {
+		demoName := string(common.ReleaseModeDev)
+		if flags.demoName != "" {
+			demoName = flags.demoName
+		}
+		demoDataDir = fmt.Sprintf("demo/%s", demoName)
+	}
+	// Using flags.port + 1 as our datastore port
+	datastorePort := flags.port + 1
+
+	return server.Profile{
+		BackendHost:          flags.host,
+		BackendPort:          flags.port,
+		FrontendHost:         flags.frontendHost,
+		FrontendPort:         flags.frontendPort,
+		DatastorePort:        datastorePort,
+		Readonly:             flags.readonly,
+		Debug:                flags.debug,
+		Demo:                 flags.demo,
+		DemoDataDir:          demoDataDir,
+		Version:              version,
+		GitCommit:            gitcommit,
+		PgURL:                flags.pgURL,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
+	}
+}
+
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
 func GetTestProfile(dataDir string, port int) server.Profile {

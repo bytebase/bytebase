@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // DefaultProjectID is the ID for the default project.
@@ -158,20 +158,20 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode Proj
 	}
 	if tenantMode == TenantModeTenant {
 		if _, ok := tokenMap[EnvironmentToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
+			return &common.Error{Code: common.Invalid, Err: errors.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
 		}
 	}
 
 	for token, required := range repositoryFilePathTemplateTokens {
 		if required {
 			if _, ok := tokenMap[token]; !ok {
-				return fmt.Errorf("missing %s in file path template", token)
+				return errors.Errorf("missing %s in file path template", token)
 			}
 		}
 	}
 	for token := range tokenMap {
 		if _, ok := repositoryFilePathTemplateTokens[token]; !ok {
-			return fmt.Errorf("unknown token %s in file path template", token)
+			return errors.Errorf("unknown token %s in file path template", token)
 		}
 	}
 	return nil
@@ -189,20 +189,20 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 	}
 	if tenantMode == TenantModeTenant {
 		if _, ok := tokenMap[EnvironmentToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: fmt.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
+			return &common.Error{Code: common.Invalid, Err: errors.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
 		}
 	}
 
 	for token, required := range schemaPathTemplateTokens {
 		if required {
 			if _, ok := tokenMap[token]; !ok {
-				return fmt.Errorf("missing %s in schema path template", token)
+				return errors.Errorf("missing %s in schema path template", token)
 			}
 		}
 	}
 	for token := range tokenMap {
 		if _, ok := schemaPathTemplateTokens[token]; !ok {
-			return fmt.Errorf("unknown token %s in schema path template", token)
+			return errors.Errorf("unknown token %s in schema path template", token)
 		}
 	}
 	return nil
@@ -221,11 +221,11 @@ func ValidateProjectDBNameTemplate(template string) error {
 			hasDBName = true
 		}
 		if _, ok := allowedProjectDBNameTemplateTokens[token]; !ok {
-			return fmt.Errorf("invalid token %v in database name template", token)
+			return errors.Errorf("invalid token %v in database name template", token)
 		}
 	}
 	if !hasDBName {
-		return fmt.Errorf("project database name template must include token %v", DBNameToken)
+		return errors.Errorf("project database name template must include token %v", DBNameToken)
 	}
 	return nil
 }
@@ -236,7 +236,7 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 	keys, _ := common.ParseTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
-			return "", fmt.Errorf("token %q not found", key)
+			return "", errors.Errorf("token %q not found", key)
 		}
 		template = strings.ReplaceAll(template, key, tokens[key])
 	}
@@ -249,7 +249,7 @@ func formatTemplateRegexp(template string, tokens map[string]string) (string, er
 	keys, delimiters := common.ParseTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
-			return "", fmt.Errorf("token %q not found", key)
+			return "", errors.Errorf("token %q not found", key)
 		}
 		template = strings.ReplaceAll(template, key, tokens[key])
 	}
@@ -287,15 +287,15 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 
 	expr, err := formatTemplateRegexp(dbNameTemplate, labelMap)
 	if err != nil {
-		return "", fmt.Errorf("FormatTemplate(%q, %+v) failed with error: %v", dbNameTemplate, labelMap, err)
+		return "", errors.Wrapf(err, "FormatTemplate(%q, %+v) failed", dbNameTemplate, labelMap)
 	}
 	re, err := regexp.Compile(expr)
 	if err != nil {
-		return "", fmt.Errorf("regexp %q compiled failure, error: %v", expr, err)
+		return "", errors.Wrapf(err, "regexp %q compiled failure", expr)
 	}
 	names := re.FindStringSubmatch(databaseName)
 	if len(names) != 2 || names[1] == "" {
-		return "", fmt.Errorf("database name %q doesn't follow database name template %q", databaseName, dbNameTemplate)
+		return "", errors.Errorf("database name %q doesn't follow database name template %q", databaseName, dbNameTemplate)
 	}
 	return names[1], nil
 }

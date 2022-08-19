@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/resources/utils"
+	"github.com/pkg/errors"
 )
 
 type binaryName string
@@ -54,7 +55,7 @@ func getExecutableVersion(binName binaryName, resourceDir string) (string, error
 	case MySQLDump:
 		cmd = exec.Command(GetPath(MySQLDump, resourceDir), "-V")
 	default:
-		return "", fmt.Errorf("unknown binary name: %s", binName)
+		return "", errors.Errorf("unknown binary name: %s", binName)
 	}
 
 	cmd.Stdout = &version
@@ -75,7 +76,7 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
 	default:
-		return "", "", fmt.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+		return "", "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
 	}
 	return tarName, strings.TrimRight(tarName, "tar.gz"), nil
 }
@@ -84,18 +85,18 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 func Install(resourceDir string) error {
 	tarName, version, err := getTarNameAndVersion()
 	if err != nil {
-		return fmt.Errorf("failed to get tarball name and version, error: %w", err)
+		return errors.Wrap(err, "failed to get tarball name and version")
 	}
 
 	mysqlutilDir := path.Join(resourceDir, version)
 
 	if _, err := os.Stat(mysqlutilDir); err != nil {
 		if !os.IsNotExist(err) {
-			return fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlutilDir, err)
+			return errors.Wrapf(err, "failed to check binary directory path %q", mysqlutilDir)
 		}
 		// Install if not exist yet
 		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
-			return fmt.Errorf("cannot install mysqlutil, error: %w", err)
+			return errors.Wrap(err, "cannot install mysqlutil")
 		}
 	}
 
@@ -114,15 +115,15 @@ func Install(resourceDir string) error {
 	for _, fp := range checks {
 		if _, err := os.Stat(fp); err != nil {
 			if !os.IsNotExist(err) {
-				return fmt.Errorf("failed to check libncurses library path %q, error: %w", fp, err)
+				return errors.Wrapf(err, "failed to check libncurses library path %q", fp)
 			}
 			// Remove mysqlutil of old version and reinstall it
 			if err := os.RemoveAll(mysqlutilDir); err != nil {
-				return fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
+				return errors.Wrapf(err, "failed to remove the old version mysqlutil binary directory %q", mysqlutilDir)
 			}
 			// Install the current version
 			if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
-				return fmt.Errorf("cannot install mysqlutil, error: %w", err)
+				return errors.Wrap(err, "cannot install mysqlutil")
 			}
 			break
 		}
@@ -135,21 +136,21 @@ func Install(resourceDir string) error {
 func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 	if err := os.RemoveAll(tmpDir); err != nil {
-		return fmt.Errorf("failed to remove mysqlutil binaries temp directory %q, error: %w", tmpDir, err)
+		return errors.Wrapf(err, "failed to remove mysqlutil binaries temp directory %q", tmpDir)
 	}
 
 	f, err := resources.Open(tarName)
 	if err != nil {
-		return fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+		return errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
 	}
 	defer f.Close()
 
 	if err := utils.ExtractTarGz(f, tmpDir); err != nil {
-		return fmt.Errorf("failed to extract tar.gz file, error: %w", err)
+		return errors.Wrap(err, "failed to extract tar.gz file")
 	}
 
 	if err := os.Rename(tmpDir, mysqlutilDir); err != nil {
-		return fmt.Errorf("failed to rename mysqlutil binaries directory from %q to %q, error: %w", tmpDir, mysqlutilDir, err)
+		return errors.Wrapf(err, "failed to rename mysqlutil binaries directory from %q to %q", tmpDir, mysqlutilDir)
 	}
 
 	return nil

@@ -32,7 +32,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
 		},
@@ -43,7 +43,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: fmt.Sprintf("Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `%s`", invalidUKName),
+					Content: fmt.Sprintf("Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `%s`", invalidUKName),
 				},
 				{
 					Status:  advisor.Error,
@@ -71,7 +71,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
 		},
@@ -100,7 +100,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `uk_tech_book`",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `uk_tech_book`",
 				},
 			},
 		},
@@ -119,10 +119,10 @@ func TestNamingUKConvention(t *testing.T) {
 			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingUKConventionMismatch,
-					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
@@ -130,28 +130,17 @@ func TestNamingUKConvention(t *testing.T) {
 			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name))",
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingUKConventionMismatch,
-					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
-				},
-			},
-		},
-		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
-			Want: []advisor.Advice{
-				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingUKConventionMismatch,
-					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format:    "^uk_{{table}}_{{column_list}}$",
+		Format:    "^$|^uk_{{table}}_{{column_list}}$",
 		MaxLength: 64,
 	})
 	require.NoError(t, err)

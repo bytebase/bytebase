@@ -9,8 +9,8 @@ import (
 
 var (
 	// `gl` is the global logger.
-	// Other packages should use public methods like Info/Error to do the logging.
-	// If special logging is required (like log to a separate file for some special operations), we need to add other loggers.
+	// Other packages should use public methods such as Info/Error to do the logging.
+	// For other types of logging, e.g. logging to a separate file, they should use their own loggers.
 	gl     *zap.Logger
 	gLevel zap.AtomicLevel
 )
@@ -52,9 +52,6 @@ func Warn(msg string, fields ...zap.Field) {
 
 // Error wraps the zap Logger's Error method.
 func Error(msg string, fields ...zap.Field) {
-	// Append the stack info in Error logging for better debugging experience.
-	// Note that we should skip one stack frames so that the top frame start at the caller of log.Error.
-	fields = append(fields, zap.StackSkip("stack", 1))
 	gl.Error(msg, fields...)
 }
 

@@ -26,7 +26,7 @@ type TaskCheckStatementTypeExecutor struct {
 func (*TaskCheckStatementTypeExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.WithError(common.Internal, err)
+		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
 	}
 	if task == nil {
 		return []api.TaskCheckResult{
@@ -42,7 +42,7 @@ func (*TaskCheckStatementTypeExecutor) Run(ctx context.Context, server *Server, 
 
 	payload := &api.TaskCheckDatabaseStatementTypePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Errorf(common.Invalid, "invalid check statement type payload: %w", err)
+		return nil, common.Wrapf(err, common.Invalid, "invalid check statement type payload")
 	}
 
 	if payload.DbType != db.Postgres {

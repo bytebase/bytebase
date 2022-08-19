@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
@@ -29,12 +30,12 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 	pgUser := "bbexternal"
 	pgIns, err := postgres.Install(resourceDir, dataDir, pgUser)
 	if err != nil {
-		return nil, fmt.Errorf("cannot install postgres, error: %w", err)
+		return nil, errors.Wrap(err, "cannot install postgres")
 	}
 
 	err = pgIns.Start(port, os.Stderr, os.Stderr)
 	if err != nil {
-		return nil, fmt.Errorf("cannot start postgres server, error: %w", err)
+		return nil, errors.Wrap(err, "cannot start postgres server")
 	}
 
 	return &fakeExternalPg{

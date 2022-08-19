@@ -12,6 +12,7 @@ import (
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	ghostsql "github.com/github/gh-ost/go/sql"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -35,7 +36,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
 	return exec.runGhostMigration(ctx, server, task, payload.Statement)
 }
@@ -68,7 +69,7 @@ func getTableNameFromStatement(statement string) (string, error) {
 	statement = strings.Join(strings.Fields(statement), " ")
 	parser := ghostsql.NewParserFromAlterStatement(statement)
 	if !parser.HasExplicitTable() {
-		return "", fmt.Errorf("failed to parse table name from statement, statement: %v", statement)
+		return "", errors.Errorf("failed to parse table name from statement, statement: %v", statement)
 	}
 	return parser.GetExplicitTable(), nil
 }
@@ -117,7 +118,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	if config.port != "" {
 		configPort, err := strconv.Atoi(config.port)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert port from string to int, error: %w", err)
+			return nil, errors.Wrap(err, "failed to convert port from string to int")
 		}
 		port = configPort
 	}
@@ -138,20 +139,20 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.ThrottleHTTPTimeoutMillis = throttleHTTPTimeoutMillis
 
 	if migrationContext.AlterStatement == "" {
-		return nil, fmt.Errorf("alterStatement must be provided and must not be empty")
+		return nil, errors.Errorf("alterStatement must be provided and must not be empty")
 	}
 	parser := ghostsql.NewParserFromAlterStatement(migrationContext.AlterStatement)
 	migrationContext.AlterStatementOptions = parser.GetAlterStatementOptions()
 
 	if migrationContext.DatabaseName == "" {
 		if !parser.HasExplicitSchema() {
-			return nil, fmt.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
+			return nil, errors.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
 		}
 		migrationContext.DatabaseName = parser.GetExplicitSchema()
 	}
 	if migrationContext.OriginalTableName == "" {
 		if !parser.HasExplicitTable() {
-			return nil, fmt.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
+			return nil, errors.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
@@ -209,7 +210,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 		serverID: 10000000 + uint(task.ID),
 	})
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to init migrationContext for gh-ost, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -12,6 +12,7 @@ import (
 
 func TestNamingPKConvention(t *testing.T) {
 	maxLength := 32
+	invalidPKName := advisor.RandomString(33)
 
 	tests := []advisor.TestCase{
 		{
@@ -32,7 +33,27 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_id_name$\" but found \"tech_book_id_name\"",
+					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"tech_book_id_name\"",
+					Line:    1,
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf("ALTER TABLE tech_book ADD CONSTRAINT %s PRIMARY KEY (id, name)", invalidPKName),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingPKConventionMismatch,
+					Title:   "naming.index.pk",
+					Content: fmt.Sprintf("Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"%s\"", invalidPKName),
+					Line:    1,
+				},
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingPKConventionMismatch,
+					Title:   "naming.index.pk",
+					Content: fmt.Sprintf(`Primary key "%s" in table "tech_book" mismatches the naming convention, its length should be within %d characters`, invalidPKName, maxLength),
+					Line:    1,
 				},
 			},
 		},
@@ -48,13 +69,19 @@ func TestNamingPKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT, name VARCHAR(20), CONSTRAINT tech_book_name PRIMARY KEY (name))",
+			Statement: `
+				CREATE TABLE tech_book(
+					id INT,
+					name VARCHAR(20),
+					CONSTRAINT tech_book_name PRIMARY KEY (name)
+				)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_name$\" but found \"tech_book_name\"",
+					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_name$\" but found \"tech_book_name\"",
+					Line:    5,
 				},
 			},
 		},
@@ -62,10 +89,10 @@ func TestNamingPKConvention(t *testing.T) {
 			Statement: "CREATE TABLE tech_book(id INT, name VARCHAR(20), PRIMARY KEY (name))",
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingPKConventionMismatch,
-					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_name$\" but found \"\"",
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
@@ -73,21 +100,10 @@ func TestNamingPKConvention(t *testing.T) {
 			Statement: "CREATE TABLE tech_book(id INT, name VARCHAR(20) PRIMARY KEY)",
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingPKConventionMismatch,
-					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_name$\" but found \"\"",
-				},
-			},
-		},
-		{
-			Statement: "CREATE TABLE tech_book(id INT, name VARCHAR(20), PRIMARY KEY (name))",
-			Want: []advisor.Advice{
-				{
-					Status:  advisor.Error,
-					Code:    advisor.NamingPKConventionMismatch,
-					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_name$\" but found \"\"",
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
@@ -116,7 +132,8 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Line:    1,
 				},
 			},
 		},
@@ -145,7 +162,8 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Line:    1,
 				},
 			},
 		},
@@ -174,14 +192,15 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
-					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Line:    1,
 				},
 			},
 		},
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format:    "^pk_{{table}}_{{column_list}}$",
+		Format:    "^$|^pk_{{table}}_{{column_list}}$",
 		MaxLength: maxLength,
 	})
 	require.NoError(t, err)

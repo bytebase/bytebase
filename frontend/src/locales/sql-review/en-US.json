@@ -41,31 +41,31 @@
     },
     "naming-table": {
       "title": "Table naming check",
-      "description": "Enforce the table name format and length limit. Default snake_lower_case with 64 characters.",
+      "description": "Enforce the table name format and length limit. Default snake_lower_case with 63 characters.",
       "component": {
         "format": {
           "title": "Table name format (regex)"
         },
         "maxLength": {
-          "title": "Length limit (PostgreSQL is not supported)"
+          "title": "Length limit"
         }
       }
     },
     "naming-column": {
       "title": "Column naming check",
-      "description": "Enforce the column name format and length limit. Default snake_lower_case with 64 characters.",
+      "description": "Enforce the column name format and length limit. Default snake_lower_case with 63 characters.",
       "component": {
         "format": {
           "title": "Column name format (regex)"
         },
         "maxLength": {
-          "title": "Length limit (PostgreSQL is not supported)"
+          "title": "Length limit"
         }
       }
     },
     "naming-index-uk": {
       "title": "Unique key naming check",
-      "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> with 64 characters.",
+      "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> or empty within 63 characters.",
       "component": {
         "format": {
           "title": "Unique key name format",
@@ -75,13 +75,13 @@
           }
         },
         "maxLength": {
-          "title": "Length limit (PostgreSQL is not supported)"
+          "title": "Length limit"
         }
       }
     },
     "naming-index-pk": {
       "title": "Primary key naming check",
-      "description": "Enforce the primary key name format and length limit. Default pk_<table_name>_<column_list>.",
+      "description": "Enforce the primary key name format and length limit. Default pk_<table_name>_<column_list> or empty within 63 characters.",
       "component": {
         "format": {
           "title": "Primary key name format",
@@ -89,12 +89,15 @@
             "table": "The table name",
             "column_list": "Index column names, joined by _"
           }
+        },
+        "maxLength": {
+          "title": "Length limit"
         }
       }
     },
     "naming-index-fk": {
       "title": "Foreign key naming check",
-      "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> with 64 characters.",
+      "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> or empty within 63 characters.",
       "component": {
         "format": {
           "title": "Foreign key name format",
@@ -106,13 +109,13 @@
           }
         },
         "maxLength": {
-          "title": "Length limit (PostgreSQL is not supported)"
+          "title": "Length limit"
         }
       }
     },
     "naming-index-idx": {
       "title": "Index naming check",
-      "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> with 64 characters.",
+      "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> or empty within 63 characters.",
       "component": {
         "format": {
           "title": "Index name format",
@@ -122,7 +125,7 @@
           }
         },
         "maxLength": {
-          "title": "Length limit (PostgreSQL is not supported)"
+          "title": "Length limit"
         }
       }
     },

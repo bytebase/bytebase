@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/github/gh-ost/go/logic"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -29,7 +30,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
 			if !ok {
-				panicErr = fmt.Errorf("%v", r)
+				panicErr = errors.Errorf("%v", r)
 			}
 			result = []api.TaskCheckResult{
 				{
@@ -45,7 +46,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 	}()
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.WithError(common.Internal, err)
+		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
 	}
 	if task == nil {
 		return []api.TaskCheckResult{
@@ -76,13 +77,13 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "invalid database schema update gh-ost sync payload: %w", err)
+		return []api.TaskCheckResult{}, common.Wrapf(err, common.Internal, "invalid database schema update gh-ost sync payload")
 	}
 
 	databaseName := database.Name
 	tableName, err := getTableNameFromStatement(payload.Statement)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "failed to parse table name from statement, statement: %v, error: %w", payload.Statement, err)
+		return []api.TaskCheckResult{}, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{
@@ -102,7 +103,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 		serverID: 20000000 + uint(taskCheckRun.ID),
 	})
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "failed to create migration context, error: %w", err)
+		return []api.TaskCheckResult{}, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}
 
 	migrator := logic.NewMigrator(migrationContext, "bb")

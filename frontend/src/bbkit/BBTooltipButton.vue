@@ -2,7 +2,7 @@
   <NTooltip trigger="manual" :show="state.tooltipVisible">
     <template #trigger>
       <!--
-        <button disabled> will swallow all mouse related events like mouseover/mouseout...
+        <button disabled> will swallow all mouse related events such as mouseover/mouseout...
         so we need to handle it manually with lower level DOM pointer events
       -->
       <button

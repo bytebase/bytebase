@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -63,7 +64,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
-			return fmt.Errorf("failed to switch to database \"bytebase\", error: %v", err)
+			return errors.Wrap(err, "failed to switch to database \"bytebase\"")
 		}
 
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {

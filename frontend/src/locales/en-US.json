@@ -564,6 +564,7 @@
   },
   "instance": {
     "select": "Select instance",
+    "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",
     "sync-schema-now": "Sync schema now",
@@ -646,6 +647,7 @@
     "copy-grant-statement": "CREATE USER and GRANT statements copied to clipboard. Paste to your mysql client to apply.",
     "successfully-connected-instance": "Successfully connected instance.",
     "failed-to-connect-instance": "Failed to connect instance.",
+    "failed-to-connect-instance-localhost": "Failed to connect instance.\nIf you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
     "search-instance-name": "Search instance name",
     "no-read-only-data-source-support": "The {database} does not currently support creating read-only connections",
     "grants": "Grants"
@@ -762,7 +764,8 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
-    "contact-dba": "Please contact your DBA to config it"
+    "contact-dba": "Please contact your DBA to config it",
+    "no-succeed-vcs-migration-record": "No succeed migration record from VCS"
   },
   "database": {
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
@@ -843,8 +846,12 @@
       "restore-to-point-in-time": "Restore to point in time",
       "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
       "no-later-than-now": "Restore point-in-time cannot be later than now.",
+      "will-overwrite-current-database": "Will overwrite current database",
       "restore-before-last-migration": "Restore to the point before last migration",
-      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}."
+      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
+      "restore-to": "Restore",
+      "restore-to-new-db": " To new database",
+      "restore-to-in-place": "In place"
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
     "show-reserved-databases": "Show Bytebase reserved databases",
@@ -865,11 +872,11 @@
     "synced-at": "Synced at {time}",
     "not-found-last-successful-sync-was": "Not found, last successful sync was {time}",
     "view-unassigned-databases": "View unassigned databases",
-    "unassigned-databases": "Unassigned databases"
+    "unassigned-databases": "Unassigned databases",
+    "restore-database": "Restore database"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
-    "branch-specify-tip": "Tip: You can also use wildcard like 'feature/*",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",

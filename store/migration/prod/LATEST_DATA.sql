@@ -155,8 +155,37 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE instance_id_seq RESTART WITH 102;
+-- Create 1 "prod" instance (including * database and admin data source)
+INSERT INTO
+    instance (
+        id,
+        creator_id,
+        updater_id,
+        environment_id,
+        name,
+        engine,
+        engine_version,
+        host,
+        port,
+        external_link
+    )
+VALUES
+    (
+        102,
+        1,
+        1,
+        102,
+        'Sample Prod instance',
+        'POSTGRES',
+        '14.3',
+        'host.docker.internal',
+        '5433',
+        ''
+    );
 
+ALTER SEQUENCE instance_id_seq RESTART WITH 103;
+
+-- '*' db for test instance 101
 INSERT INTO
     db (
         id,
@@ -186,8 +215,39 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE db_id_seq RESTART WITH 102;
+-- * db for prod instance 102
+INSERT INTO
+    db (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        project_id,
+        name,
+        character_set,
+        "collation",
+        sync_status,
+        last_successful_sync_ts,
+        schema_version
+    )
+VALUES
+    (
+        102,
+        1,
+        1,
+        102,
+        1,
+        '*',
+        'utf8mb4',
+        'utf8mb4_general_ci',
+        'OK',
+        0,
+        ''
+    );
 
+ALTER SEQUENCE db_id_seq RESTART WITH 103;
+
+--  admin data source for test instance 101
 INSERT INTO
     data_source (
         id,
@@ -213,7 +273,33 @@ VALUES
         ''
     );
 
-ALTER SEQUENCE data_source_id_seq RESTART WITH 102;
+-- admin data source for prod instance 102
+INSERT INTO
+    data_source (
+        id,
+        creator_id,
+        updater_id,
+        instance_id,
+        database_id,
+        name,
+        TYPE,
+        username,
+        password
+    )
+VALUES
+    (
+        102,
+        1,
+        1,
+        102,
+        102,
+        'Admin data source',
+        'ADMIN',
+        'root',
+        ''
+    );
+
+ALTER SEQUENCE data_source_id_seq RESTART WITH 103;
 
 -- Create pipeline/stage/task/issue for onboarding
 -- Create pipeline 101 "Hello world"
@@ -328,8 +414,8 @@ VALUES
         1,
         1,
         101,
-        101,
-        101,
+        102,
+        102,
         NULL,
         'Let''s go',
         'bb.task.general',

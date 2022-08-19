@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -159,7 +160,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError,
-						fmt.Errorf("failed to find databases in the instance %d", id)).SetInternal(err)
+						errors.Errorf("failed to find databases in the instance %d", id)).SetInternal(err)
 				}
 				var databaseNameList []string
 				for _, database := range databases {
@@ -224,6 +225,36 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUserList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance user list response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/instance/:instanceID/user/:userID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		instanceID, err := strconv.Atoi(c.Param("instanceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
+		}
+		userID, err := strconv.Atoi(c.Param("userID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
+		}
+
+		instanceUserFind := &api.InstanceUserFind{
+			ID:         &userID,
+			InstanceID: &instanceID,
+		}
+		instanceUser, err := s.store.GetInstanceUser(ctx, instanceUserFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
+		}
+		if instanceUser == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instanceUser not found with instanceID: %v and userID: %v", instanceID, userID))
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUser); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
 		}
 		return nil
 	})
@@ -464,7 +495,7 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as socket file extension to differentiate different Postgres instances.
 	if engine == db.Postgres && port == fmt.Sprintf("%v", s.profile.DatastorePort) && host == common.GetPostgresSocketDir() {
-		return fmt.Errorf("instance doesn't exist for host %q and port %q", host, port)
+		return errors.Errorf("instance doesn't exist for host %q and port %q", host, port)
 	}
 	return nil
 }

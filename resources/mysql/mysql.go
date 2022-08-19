@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/resources/utils"
+	"github.com/pkg/errors"
 
 	// install mysql driver.
 	_ "github.com/go-sql-driver/mysql"
@@ -68,9 +69,9 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 		if time.Now().After(endTime) {
 			err := i.proc.Kill()
 			if err != nil {
-				return fmt.Errorf("mysql instance has started as process %d, but failed to kill it, error: %w", i.proc.Pid, err)
+				return errors.Wrapf(err, "mysql instance has started as process %d, but failed to kill it", i.proc.Pid)
 			}
-			return fmt.Errorf("failed to connect to mysql")
+			return errors.Errorf("failed to connect to mysql")
 		}
 	}
 
@@ -97,17 +98,17 @@ func Install(basedir, datadir, user string) (*Instance, error) {
 		version = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal"
 		extractFn = utils.ExtractTarXz
 	default:
-		return nil, fmt.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
+		return nil, errors.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
 
 	tarF, err := resources.Open(tarName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open mysql dist %q, error: %w", tarName, err)
+		return nil, errors.Wrapf(err, "failed to open mysql dist %q", tarName)
 	}
 	defer tarF.Close()
 
 	if err := extractFn(tarF, basedir); err != nil {
-		return nil, fmt.Errorf("failed to extract mysql distribution %q, error: %w", tarName, err)
+		return nil, errors.Wrapf(err, "failed to extract mysql distribution %q", tarName)
 	}
 
 	basedir = filepath.Join(basedir, version)
@@ -137,7 +138,7 @@ user=%s
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to initialize mysql, error: %w", err)
+		return nil, errors.Wrap(err, "failed to initialize mysql")
 	}
 
 	return &Instance{

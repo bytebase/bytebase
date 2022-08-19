@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -20,7 +20,7 @@ type LicenseService struct {
 }
 
 // Claims creates a struct that will be encoded to a JWT.
-// We add jwt.RegisteredClaims as an embedded type, to provide fields like name.
+// We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type Claims struct {
 	InstanceCount int    `json:"instanceCount"`
 	Trialing      bool   `json:"trialing"`
@@ -79,13 +79,13 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 
 		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.config.PublicKey))
 		if err != nil {
-			return nil, common.WithError(common.Invalid, err)
+			return nil, common.Wrap(err, common.Invalid)
 		}
 
 		return key, nil
 	})
 	if err != nil {
-		return nil, common.WithError(common.Invalid, err)
+		return nil, common.Wrap(err, common.Invalid)
 	}
 
 	if !token.Valid {
@@ -99,7 +99,7 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, error) {
 	err := claims.Valid()
 	if err != nil {
-		return nil, common.WithError(common.Invalid, err)
+		return nil, common.Wrap(err, common.Invalid)
 	}
 
 	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
@@ -133,7 +133,7 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 	}
 
 	if err := license.Valid(); err != nil {
-		return nil, common.WithError(common.Invalid, err)
+		return nil, common.Wrap(err, common.Invalid)
 	}
 
 	return license, nil
@@ -147,7 +147,7 @@ func (s *LicenseService) readLicense() (string, error) {
 	})
 
 	if len(settings) == 0 {
-		return "", common.Errorf(common.NotFound, "cannot find license with error %w", err)
+		return "", common.Wrapf(err, common.NotFound, "cannot find license")
 	}
 
 	return settings[0].Value, nil
@@ -172,6 +172,6 @@ func convertPlanType(candidate string) (api.PlanType, error) {
 	case api.FREE.String():
 		return api.FREE, nil
 	default:
-		return api.FREE, fmt.Errorf("cannot conver plan type %q", candidate)
+		return api.FREE, errors.Errorf("cannot conver plan type %q", candidate)
 	}
 }

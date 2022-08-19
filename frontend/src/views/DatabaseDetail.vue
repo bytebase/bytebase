@@ -118,6 +118,7 @@
           <button
             type="button"
             class="btn-normal"
+            :disabled="state.syncingSchema"
             @click.prevent="syncDatabaseSchema"
           >
             {{ $t("common.sync-now") }}

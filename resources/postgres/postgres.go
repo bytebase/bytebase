@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/utils"
+	"github.com/pkg/errors"
 )
 
 // Instance is a postgres instance installed by bytebase
@@ -63,7 +64,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	}
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
 
 	return nil
@@ -100,7 +101,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	case "linux":
 		tarName = "postgres-linux-x86_64.txz"
 	default:
-		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
+		return nil, errors.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 	version := strings.TrimRight(tarName, ".txz")
 	pgBinDir := path.Join(resourceDir, version)
@@ -110,39 +111,39 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	pgDumpNotExist := false
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to check pg_dump %q, error: %w", pgBinDir, err)
+			return nil, errors.Wrapf(err, "failed to check pg_dump %q", pgBinDir)
 		}
 		pgDumpNotExist = true
 	}
 	if pgDumpNotExist {
 		if err := os.RemoveAll(pgBinDir); err != nil {
-			return nil, fmt.Errorf("failed to remove binary directory path %q, error: %w", pgBinDir, err)
+			return nil, errors.Wrapf(err, "failed to remove binary directory path %q", pgBinDir)
 		}
 	}
 
 	if _, err := os.Stat(pgBinDir); err != nil {
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to check binary directory path %q, error: %w", pgBinDir, err)
+			return nil, errors.Wrapf(err, "failed to check binary directory path %q", pgBinDir)
 		}
 		// Install if not exist yet.
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := os.RemoveAll(tmpDir); err != nil {
-			return nil, fmt.Errorf("failed to remove postgres binary temp directory %q, error: %w", tmpDir, err)
+			return nil, errors.Wrapf(err, "failed to remove postgres binary temp directory %q", tmpDir)
 		}
 
 		f, err := resources.Open(tarName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+			return nil, errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
 		}
 		defer f.Close()
 
 		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
-			return nil, fmt.Errorf("failed to extract txz file, error: %w", err)
+			return nil, errors.Wrap(err, "failed to extract txz file")
 		}
 
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
-			return nil, fmt.Errorf("failed to rename postgres binary directory from %q to %q, error: %w", tmpDir, pgBinDir, err)
+			return nil, errors.Wrapf(err, "failed to rename postgres binary directory from %q to %q", tmpDir, pgBinDir)
 		}
 	}
 
@@ -164,7 +165,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	versionPath := filepath.Join(pgDataDir, "PG_VERSION")
 	_, err := os.Stat(versionPath)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to check postgres version in data directory path %q, error: %w", versionPath, err)
+		return errors.Wrapf(err, "failed to check postgres version in data directory path %q", versionPath)
 	}
 	initDBDone := false
 	if err == nil {
@@ -175,13 +176,13 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	if initDBDone {
 		// If file permission was mutated before, postgres cannot start up. We should change file permissions to 0700 for all pgdata files.
 		if err := os.Chmod(pgDataDir, 0700); err != nil {
-			return fmt.Errorf("failed to chmod postgres data directory %q to 0700, error: %w", pgDataDir, err)
+			return errors.Wrapf(err, "failed to chmod postgres data directory %q to 0700", pgDataDir)
 		}
 		return nil
 	}
 
 	if err := os.MkdirAll(pgDataDir, 0700); err != nil {
-		return fmt.Errorf("failed to make postgres data directory %q, error: %w", pgDataDir, err)
+		return errors.Wrapf(err, "failed to make postgres data directory %q", pgDataDir)
 	}
 
 	args := []string{
@@ -206,12 +207,12 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
-			return fmt.Errorf("failed to change owner of data directory %q to bytebase, error: %w", pgDataDir, err)
+			return errors.Wrapf(err, "failed to change owner of data directory %q to bytebase", pgDataDir)
 		}
 	}
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to initdb %q", p.String())
 	}
 
 	return nil
@@ -221,14 +222,14 @@ func shouldSwitchUser() (int, int, bool, error) {
 	sameUser := true
 	bytebaseUser, err := user.Current()
 	if err != nil {
-		return 0, 0, true, fmt.Errorf("failed to get current user, error: %w", err)
+		return 0, 0, true, errors.Wrap(err, "failed to get current user")
 	}
 	// If user runs Bytebase as root user, we will attempt to run as user `bytebase`.
 	// https://www.postgresql.org/docs/14/app-initdb.html
 	if bytebaseUser.Username == "root" {
 		bytebaseUser, err = user.Lookup("bytebase")
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("please run Bytebase as non-root user. You can use the following command to create a dedicated \"bytebase\" user to run the application: addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase")
+			return 0, 0, false, errors.Errorf("please run Bytebase as non-root user. You can use the following command to create a dedicated \"bytebase\" user to run the application: addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase")
 		}
 		sameUser = false
 	}
@@ -265,7 +266,7 @@ func (i *Instance) StartForTest(port int, stdout, stderr io.Writer) (err error) 
 	p.Stderr = stderr
 
 	if err := p.Run(); err != nil {
-		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
+		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
 
 	return nil

@@ -1,18 +1,26 @@
 package pg
 
 import (
-	"fmt"
-
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
+	"github.com/pkg/errors"
 )
 
 // convert converts the pg_query.Node to ast.Node.
-func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
+func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err error) {
 	defer func() {
 		if err == nil && res != nil {
-			res.SetText(text)
+			res.SetText(statement.Text)
+			res.SetLine(statement.Line)
+			switch n := res.(type) {
+			case *ast.CreateTableStmt:
+				err = parser.SetLineForCreateTableStmt(parser.Postgres, n)
+			case *ast.AlterTableStmt:
+				for _, item := range n.AlterItemList {
+					item.SetLine(n.Line())
+				}
+			}
 		}
 	}()
 	switch in := node.Node.(type) {
@@ -574,7 +582,7 @@ func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {
 	case pgquery.SetOperation_SETOP_EXCEPT:
 		return ast.SetOperationTypeExcept, nil
 	default:
-		return 0, fmt.Errorf("failed to parse set operation: unknown type %s", t)
+		return 0, errors.Errorf("failed to parse set operation: unknown type %s", t)
 	}
 }
 

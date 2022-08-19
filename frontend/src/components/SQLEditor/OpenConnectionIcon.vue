@@ -6,7 +6,7 @@
         @click="handleTriggerClick"
       />
     </template>
-    Open connection
+    {{ $t("sql-editor.open-connection") }}
   </NTooltip>
 </template>
 

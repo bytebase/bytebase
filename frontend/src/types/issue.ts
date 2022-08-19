@@ -10,6 +10,7 @@ import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { MigrationType } from "./instance";
+import { VCSPushEvent } from "./vcs";
 
 type IssueTypeGeneral = "bb.issue.general";
 
@@ -38,8 +39,8 @@ export type CreateDatabaseContext = {
   characterSet: string;
   collation: string;
   cluster: string;
-  backupId: BackupId;
-  backupName: string;
+  backupId?: BackupId;
+  backupName?: string;
   labels?: string; // JSON encoded
 };
 
@@ -58,6 +59,7 @@ export type UpdateSchemaGhostDetail = UpdateSchemaDetail & {
 export type UpdateSchemaContext = {
   migrationType: MigrationType;
   updateSchemaDetailList: UpdateSchemaDetail[];
+  vcsPushEvent?: VCSPushEvent;
 };
 
 export type UpdateSchemaGhostContext = {
@@ -66,7 +68,9 @@ export type UpdateSchemaGhostContext = {
 
 export type PITRContext = {
   databaseId: DatabaseId;
-  pointInTimeTs: number; // UNIX timestamp
+  pointInTimeTs?: number; // UNIX timestamp
+  backupId?: BackupId;
+  createDatabaseContext?: CreateDatabaseContext;
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types

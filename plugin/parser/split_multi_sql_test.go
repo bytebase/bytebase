@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,8 +12,8 @@ type testData struct {
 }
 
 type resData struct {
-	res []string
-	err error
+	res []SingleSQL
+	err string
 }
 
 func TestPGSplitMultiSQL(t *testing.T) {
@@ -22,9 +21,15 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)",
 			want: resData{
-				res: []string{
-					"CREATE TABLE t(a int);",
-					"CREATE TABLE t1(a int)",
+				res: []SingleSQL{
+					{
+						Text: "CREATE TABLE t(a int);",
+						Line: 1,
+					},
+					{
+						Text: "CREATE TABLE t1(a int)",
+						Line: 1,
+					},
 				},
 			},
 		},
@@ -32,9 +37,15 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			statement: `CREATE TABLE "tech_Book"(id int, name varchar(255));
 						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []string{
-					`CREATE TABLE "tech_Book"(id int, name varchar(255));`,
-					`INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
+				res: []SingleSQL{
+					{
+						Text: `CREATE TABLE "tech_Book"(id int, name varchar(255));`,
+						Line: 1,
+					},
+					{
+						Text: `INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
+						Line: 2,
+					},
 				},
 			},
 		},
@@ -45,11 +56,17 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						-- this is the comment.
 						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []string{
-					`/* this is the comment. */
+				res: []SingleSQL{
+					{
+						Text: `/* this is the comment. */
 						CREATE /* inline comment */TABLE "tech_Book"(id int, name varchar(255));`,
-					`-- this is the comment.
+						Line: 2,
+					},
+					{
+						Text: `-- this is the comment.
 						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
+						Line: 4,
+					},
 				},
 			},
 		},
@@ -64,7 +81,9 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						$$;
 						CREATE TABLE t(a int);`,
 			want: resData{
-				res: []string{`CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
+				res: []SingleSQL{
+					{
+						Text: `CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
 						LANGUAGE SQL
 						AS $$
 						/*this is the comment */
@@ -72,7 +91,12 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$$;`,
-					`CREATE TABLE t(a int);`,
+						Line: 1,
+					},
+					{
+						Text: `CREATE TABLE t(a int);`,
+						Line: 9,
+					},
 				},
 			},
 		},
@@ -87,7 +111,9 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						$tag_name$;
 						CREATE TABLE t(a int);`,
 			want: resData{
-				res: []string{`CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
+				res: []SingleSQL{
+					{
+						Text: `CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))
 						LANGUAGE SQL
 						AS $tag_name$
 						/*this is the comment */
@@ -95,38 +121,63 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$tag_name$;`,
-					`CREATE TABLE t(a int);`,
+						Line: 1,
+					},
+					{
+						Text: `CREATE TABLE t(a int);`,
+						Line: 9,
+					},
+				},
+			},
+		},
+		{
+			// test for Windows
+			statement: `CREATE TABLE t` + "\r\n" + `(a int);` + "\r\n" + `CREATE TABLE t1(b int);`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text: "CREATE TABLE t\r\n(a int);",
+						Line: 1,
+					},
+					{
+						Text: "CREATE TABLE t1(b int);",
+						Line: 3,
+					},
 				},
 			},
 		},
 		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid string: not found delimiter: ', but found EOF"),
+				err: "invalid string: not found delimiter: ', but found EOF",
 			},
 		},
 		{
 			statement: `INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid indentifier: not found delimiter: \", but found EOF"),
+				err: "invalid indentifier: not found delimiter: \", but found EOF",
 			},
 		},
 		{
 			statement: `/*INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("invalid comment: not found */, but found EOF"),
+				err: "invalid comment: not found */, but found EOF",
 			},
 		},
 		{
 			statement: `$$INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("scanTo failed: delimiter \"$$\" not found"),
+				err: "scanTo failed: delimiter \"$$\" not found",
 			},
 		},
 	}
 
 	for _, test := range tests {
 		res, err := SplitMultiSQL(Postgres, test.statement)
-		require.Equal(t, test.want, resData{res, err}, test.statement)
+		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 	}
 }

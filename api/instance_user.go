@@ -31,7 +31,10 @@ type InstanceUserUpsert struct {
 
 // InstanceUserFind is the API message for finding instance users.
 type InstanceUserFind struct {
-	InstanceID int
+	ID *int
+
+	// Related fields
+	InstanceID *int
 }
 
 func (find *InstanceUserFind) String() string {

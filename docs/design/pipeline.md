@@ -48,8 +48,8 @@ A PIPELINE consists of multiple STAGES. A STAGE consists of multiple TASKS.
 # General design consideration
 
 - Other mainstream products either have 3 or 4 layers.
-  We choose 3 layers omitting the most granular layer - Step. For now only GitLab has 4 layer systems
-  and its step is mostly used to model a lightweight step like shell script step. This seems like
+  We choose 3 layers omitting the most granular layer - Step. For now only GitLab has 4 layer systems,
+  and its step is mostly used to model a lightweight step similar to shell script step. This seems like
   an overkill for our case. On the other hand, 3 layer design such as Octopus seems to be sufficient.
 
 - All products agree on the smallest querable execution unit (having a dedicated API resource endpoint):
@@ -75,6 +75,6 @@ To wrap up, we finally arrive the same conclusion as spinnaker.
 
 # Domain specific design consideration
 
-- We require a stage to associate with an environment. In the future, we will introduce environment tiers which define rules like whether requires manual approval.
+- We require a stage to associate with an environment. In the future, we will introduce environment tiers which define rules such as requiring manual approval.
 
-- We require a task to associate with an database instance. This limits the task usage to database operations instead of general purpose task management. Since Bytebase is dealing with database domain, this tradeoff is fine. On the other hand, a task may or may not contain a database since tasks like creating new database, syncing the entire instance schema are not database specific.
+- We require a task to associate with an database instance. This limits the task usage to database operations instead of general purpose task management. Since Bytebase is dealing with database domain, this tradeoff is fine. On the other hand, a task may or may not contain a database since tasks such as creating new database, syncing the entire instance schema are not database specific.

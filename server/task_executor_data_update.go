@@ -3,11 +3,11 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 )
 
 // NewDataUpdateTaskExecutor creates a data update (DML) task executor.
@@ -24,7 +24,7 @@ type DataUpdateTaskExecutor struct {
 func (*DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database data update payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
 	return runMigration(ctx, server, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)

@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 )
 
 // tableRaw is the store model for an Table.
@@ -72,14 +73,14 @@ func (raw *tableRaw) toTable() *api.Table {
 func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
 	tableRaw, err := s.getTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Table with TableFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to get Table with TableFind[%+v]", find)
 	}
 	if tableRaw == nil {
 		return nil, nil
 	}
 	table, err := s.composeTable(ctx, tableRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", tableRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Table with tableRaw[%+v]", tableRaw)
 	}
 	return table, nil
 }
@@ -88,13 +89,13 @@ func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, 
 func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Table, error) {
 	tableRawList, err := s.findTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Table list, error: %w", err)
+		return nil, errors.Wrap(err, "failed to find Table list")
 	}
 	var tableList []*api.Table
 	for _, raw := range tableRawList {
 		table, err := s.composeTable(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Table with tableRaw[%+v]", raw)
 		}
 		tableList = append(tableList, table)
 	}
@@ -323,7 +324,7 @@ func (s *Store) getTableRaw(ctx context.Context, find *api.TableFind) (*tableRaw
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tables with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d tables with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -433,7 +434,7 @@ func (*Store) patchTableImpl(ctx context.Context, tx *sql.Tx, patch *api.TablePa
 		&tableRaw.Comment,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("table ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("table ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

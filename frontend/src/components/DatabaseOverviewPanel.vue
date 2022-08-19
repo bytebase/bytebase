@@ -69,7 +69,7 @@
         </dd>
       </div>
 
-      <div class="col-span-1 col-start-1">
+      <div v-if="!isPostgres" class="col-span-1 col-start-1">
         <dt class="text-sm font-medium text-control-light">
           {{ $t("common.created-at") }}
         </dt>
@@ -78,7 +78,7 @@
         </dd>
       </div>
 
-      <div class="col-span-1">
+      <div v-if="!isPostgres" class="col-span-1">
         <dt class="text-sm font-medium text-control-light">
           {{ $t("common.updated-at") }}
         </dt>
@@ -92,7 +92,7 @@
       <div class="text-lg leading-6 font-medium text-main mb-4">
         {{ $t("db.tables") }}
       </div>
-      <TableTable :table-list="tableList" />
+      <TableTable :database-engine="databaseEngine" :table-list="tableList" />
 
       <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
         {{ $t("db.views") }}
@@ -214,7 +214,13 @@ import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.v
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
-import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
+import {
+  Anomaly,
+  Database,
+  DataSource,
+  DataSourcePatch,
+  EngineType,
+} from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import {
@@ -255,6 +261,9 @@ export default defineComponent({
     const tableStore = useTableStore();
     const viewStore = useViewStore();
     const dbExtensionStore = useDBExtensionStore();
+
+    const databaseEngine = props.database.instance.engine as EngineType;
+    const isPostgres = computed(() => databaseEngine === "POSTGRES");
 
     const prepareTableList = () => {
       tableStore.fetchTableListByDatabaseId(props.database.id);
@@ -367,10 +376,10 @@ export default defineComponent({
     };
 
     const saveEditDataSource = () => {
-      const dataSourcePatch: DataSourcePatch = {
+      const dataSourcePatch = {
         username: state.editingDataSource?.username,
         password: state.editingDataSource?.password,
-      };
+      } as DataSourcePatch;
       dataSourceStore
         .patchDataSource({
           databaseId: state.editingDataSource?.databaseId as number,
@@ -405,6 +414,8 @@ export default defineComponent({
       cancelEditDataSource,
       saveEditDataSource,
       configInstance,
+      databaseEngine,
+      isPostgres,
     };
   },
 });

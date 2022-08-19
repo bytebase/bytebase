@@ -14,6 +14,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -98,15 +99,15 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	c.Logger().Infof("Create webhook for project %q", c.Param("id"))
 	b, err := io.ReadAll(c.Request().Body)
 	if err != nil {
-		return fmt.Errorf("failed to read create project hook request body, error %w", err)
+		return errors.Wrap(err, "failed to read create project hook request body")
 	}
 	webhookCreate := &gitlab.WebhookCreate{}
 	if err := json.Unmarshal(b, webhookCreate); err != nil {
-		return fmt.Errorf("failed to unmarshal create project hook request body, error %w", err)
+		return errors.Wrap(err, "failed to unmarshal create project hook request body")
 	}
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 	pd.webhooks = append(pd.webhooks, webhookCreate)
 
@@ -258,7 +259,7 @@ func (gl *GitLab) createProjectFile(c echo.Context) error {
 func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Trigger webhooks.
@@ -266,20 +267,20 @@ func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 		// Send post request.
 		req, err := http.NewRequest("POST", webhook.URL, bytes.NewReader(payload))
 		if err != nil {
-			return fmt.Errorf("fail to create a new POST request(%q), error: %w", webhook.URL, err)
+			return errors.Wrapf(err, "fail to create a new POST request(%q)", webhook.URL)
 		}
 		req.Header.Set("X-Gitlab-Token", webhook.SecretToken)
 		resp, err := gl.client.Do(req)
 		if err != nil {
-			return fmt.Errorf("fail to send a POST request(%q), error: %w", webhook.URL, err)
+			return errors.Wrapf(err, "fail to send a POST request(%q)", webhook.URL)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed to read http response body, error: %w", err)
+			return errors.Wrap(err, "failed to read http response body")
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+			return errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 		}
 		gl.echo.Logger.Infof("SendWebhookPush response body %s\n", body)
 	}
@@ -291,7 +292,7 @@ func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
 func (gl *GitLab) AddFiles(projectID string, files map[string]string) error {
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Save files
@@ -305,7 +306,7 @@ func (gl *GitLab) AddFiles(projectID string, files map[string]string) error {
 func (gl *GitLab) GetFiles(projectID string, filePaths ...string) (map[string]string, error) {
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return nil, fmt.Errorf("gitlab project %q doesn't exist", projectID)
+		return nil, errors.Errorf("gitlab project %q doesn't exist", projectID)
 	}
 
 	// Get files

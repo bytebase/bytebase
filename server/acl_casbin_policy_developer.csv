@@ -28,6 +28,7 @@ p, DEVELOPER, /policy/environment/{environmentID}, GET
 p, DEVELOPER, /instance, GET
 p, DEVELOPER, /instance/{id}, GET
 p, DEVELOPER, /instance/{id}/user, GET
+p, DEVELOPER, /instance/{id}/user/{userID}, GET
 p, DEVELOPER, /instance/{id}/migration/status, GET
 p, DEVELOPER, /instance/{id}/migration/history, GET
 p, DEVELOPER, /instance/{id}/migration/history/{historyID}, GET

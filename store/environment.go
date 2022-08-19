@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // environmentRaw is the store model for an Environment.
@@ -48,11 +49,11 @@ func (raw *environmentRaw) toEnvironment() *api.Environment {
 func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
 	environmentRaw, err := s.createEnvironmentRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Environment with EnvironmentCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Environment with EnvironmentCreate[%+v]", create)
 	}
 	environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Environment with environmentRaw[%+v], error: %w", environmentRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Environment with environmentRaw[%+v]", environmentRaw)
 	}
 	return environment, nil
 }
@@ -61,13 +62,13 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCr
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
 	environmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Environment list with EnvironmentFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Environment list with EnvironmentFind[%+v]", find)
 	}
 	var environmentList []*api.Environment
 	for _, raw := range environmentRawList {
 		environment, err := s.composeEnvironment(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Environment role with environmentRaw[%+v]", raw)
 		}
 		environmentList = append(environmentList, environment)
 	}
@@ -78,11 +79,11 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	environmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Environment with EnvironmentPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Environment with EnvironmentPatch[%+v]", patch)
 	}
 	environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error: %w", environmentRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Environment role with environmentRaw[%+v]", environmentRaw)
 	}
 	return environment, nil
 }
@@ -91,7 +92,7 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatc
 func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
 	envRaw, err := s.getEnvironmentByIDRaw(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get environment with ID %d, error: %w", id, err)
+		return nil, errors.Wrapf(err, "failed to get environment with ID %d", id)
 	}
 	if envRaw == nil {
 		return nil, nil
@@ -99,7 +100,7 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environmen
 
 	env, err := s.composeEnvironment(ctx, envRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose environment with environmentRaw[%+v], error: %w", envRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose environment with environmentRaw[%+v]", envRaw)
 	}
 
 	return env, nil
@@ -202,7 +203,7 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 	if len(envRawList) == 0 {
 		return nil, nil
 	} else if len(envRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
 	}
 	if err := s.cache.UpsertCache(api.EnvironmentCache, envRawList[0].ID, envRawList[0]); err != nil {
 		return nil, err
@@ -246,7 +247,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *api.
 		LIMIT 1
 	`).Scan(&order); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("no environment record found")}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("no environment record found")}
 		}
 		return nil, FormatError(err)
 	}
@@ -380,7 +381,7 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *sql.Tx, patch *api.E
 		&environment.Order,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("environment ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

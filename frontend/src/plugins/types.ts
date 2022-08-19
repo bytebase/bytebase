@@ -45,7 +45,7 @@ export type InputField = {
   // is very similar to the message field id in Protocol Buffers.
   id: FieldId;
   // Used as the key to generate UI artifacts (e.g. query parameter).
-  // Though changing it won't have catastrophic consequence like changing
+  // Though changing it won't have catastrophic consequence such as changing
   // id, we strongly recommend NOT to change it as well, otherwise, previous
   // generated artifacts based on this info such as URL would become invalid.
   slug: string;

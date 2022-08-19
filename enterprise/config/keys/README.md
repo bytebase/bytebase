@@ -29,7 +29,7 @@ In `enterprise/service/license.go`, we will use public key to parse JWT
 ```go
 token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
     if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-        return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+        return nil, errors.Errorf("unexpected signing method: %v", token.Header["alg"])
     }
 
     key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(env.Conf.LicensePubKey))

@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -110,7 +111,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get databases: %s", err)
+		return nil, errors.Wrap(err, "failed to get databases")
 	}
 	var databaseList []db.DatabaseMeta
 	for _, database := range databases {
@@ -141,7 +142,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get databases: %s", err)
+		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
 	schema := db.Schema{
@@ -162,7 +163,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database connection for %q: %s", databaseName, err)
+		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
@@ -174,7 +175,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	indicesMap := make(map[string][]*indexSchema)
 	indices, err := getIndices(txn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get indices from database %q: %s", databaseName, err)
+		return nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
 	}
 	for _, idx := range indices {
 		key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
@@ -184,7 +185,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Table statements.
 	tables, err := getPgTables(txn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tables from database %q: %s", databaseName, err)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
 	}
 	for _, tbl := range tables {
 		var dbTable db.Table
@@ -225,7 +226,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// View statements.
 	views, err := getViews(txn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get views from database %q: %s", databaseName, err)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
 	}
 	for _, view := range views {
 		var dbView db.View
@@ -240,7 +241,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Extensions.
 	extensions, err := getExtensions(txn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get extensions from database %q: %s", databaseName, err)
+		return nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
 	}
 	schema.ExtensionList = extensions
 
@@ -300,7 +301,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	constraints, err := getTableConstraints(txn)
 	if err != nil {
-		return nil, fmt.Errorf("getTableConstraints() got error: %v", err)
+		return nil, errors.Wrap(err, "failed to get table constraints")
 	}
 
 	var tables []*tableSchema
@@ -335,11 +336,11 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 
 	for _, tbl := range tables {
 		if err := getTable(txn, tbl); err != nil {
-			return nil, fmt.Errorf("getTable(%q, %q) got error %v", tbl.schemaName, tbl.name, err)
+			return nil, errors.Wrapf(err, "failed to call getTable(%q, %q)", tbl.schemaName, tbl.name)
 		}
 		columns, err := getTableColumns(txn, tbl.schemaName, tbl.name)
 		if err != nil {
-			return nil, fmt.Errorf("getTableColumns(%q, %q) got error %v", tbl.schemaName, tbl.name, err)
+			return nil, errors.Wrapf(err, "failed to call getTableColumns(%q, %q)", tbl.schemaName, tbl.name)
 		}
 		tbl.columns = columns
 
@@ -493,7 +494,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		// Return error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
 		if !def.Valid {
-			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
+			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
 		view.definition = def.String
 		views = append(views, &view)
@@ -504,7 +505,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 	for _, view := range views {
 		if err = getView(txn, view); err != nil {
-			return nil, fmt.Errorf("getPgView(%q, %q) got error %v", view.schemaName, view.name, err)
+			return nil, errors.Wrapf(err, "failed to call getPgView(%q, %q)", view.schemaName, view.name)
 		}
 	}
 	return views, nil
@@ -590,11 +591,11 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 	for _, idx := range indices {
 		if err = getIndex(txn, idx); err != nil {
-			return nil, fmt.Errorf("getIndex(%q, %q) got error %v", idx.schemaName, idx.name, err)
+			return nil, errors.Wrapf(err, "failed to call getIndex(%q, %q)", idx.schemaName, idx.name)
 		}
 
 		if err = getPrimary(txn, idx); err != nil {
-			return nil, fmt.Errorf("getPrimary(%q, %q) got error %v", idx.schemaName, idx.name, err)
+			return nil, errors.Wrapf(err, "failed to call getPrimary(%q, %q)", idx.schemaName, idx.name)
 		}
 	}
 
@@ -646,7 +647,7 @@ func convertBoolFromYesNo(s string) (bool, error) {
 	case "NO":
 		return false, nil
 	default:
-		return false, fmt.Errorf("unrecognized isNullable type %q", s)
+		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
 }
 
@@ -663,7 +664,7 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 	rc := regexp.MustCompile(`\((.*)\)`)
 	rm := rc.FindStringSubmatch(stmt)
 	if len(rm) == 0 {
-		return nil, fmt.Errorf("invalid index statement: %q", stmt)
+		return nil, errors.Errorf("invalid index statement: %q", stmt)
 	}
 	columnStmt := rm[1]
 
@@ -688,7 +689,7 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 		}
 		// Strip token
 		if len(token) == 0 {
-			return nil, fmt.Errorf("invalid index statement: %q", stmt)
+			return nil, errors.Errorf("invalid index statement: %q", stmt)
 		}
 		columnStmt = columnStmt[len(token):]
 		cols = append(cols, strings.TrimSpace(token))

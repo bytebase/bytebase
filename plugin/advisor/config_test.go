@@ -55,7 +55,7 @@ func TestConfigOverride(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "^table_[a-z]+(_[a-z]+)*$", nr.Format)
-			assert.Equal(t, 64, nr.MaxLength)
+			assert.Equal(t, 63, nr.MaxLength)
 		case "naming.column":
 			assert.Equal(t, SchemaRuleLevelWarning, rule.Level)
 
