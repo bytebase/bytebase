@@ -113,7 +113,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			countResult, err := s.store.CountMemberGroupByRoleAndStatus(ctx)
 			for _, count := range countResult {
 				if count.Role == api.Owner && count.RowStatus == api.Normal && count.Count == 1 {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Cannot archive the only unarchived owner in workspace").SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, "Cannot archive the only remaining owner in workspace").SetInternal(err)
 				}
 			}
 		}
