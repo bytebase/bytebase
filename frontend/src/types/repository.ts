@@ -81,14 +81,6 @@ export type ExternalRepositoryInfo = {
 
 export function baseDirectoryWebUrl(repository: Repository): string {
   if (repository.vcs.type == "GITLAB_SELF_HOST") {
-    // If branchFilter is empty (default branch) or branch filter contains wildcard,
-    // then we can't locate to the exact branch name, thus we will just return the repository web url
-    if (
-      isEmpty(repository.branchFilter) ||
-      repository.branchFilter.includes("*")
-    ) {
-      return repository.webUrl;
-    }
     let url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;
     if (!isEmpty(repository.baseDirectory)) {
       url += `/${repository.baseDirectory}`;
