@@ -114,14 +114,18 @@ func TestNamingFKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE book(id INT, author_id INT CONSTRAINT fk_book_author_id REFERENCES author (id))",
+			Statement: `
+				CREATE TABLE book(
+					id INT,
+					author_id INT CONSTRAINT fk_book_author_id REFERENCES author (id)
+				)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
 					Content: "Foreign key in table \"book\" mismatches the naming convention, expect \"^fk_book_author_id_author_id$\" but found \"fk_book_author_id\"",
-					Line:    1,
+					Line:    4,
 				},
 			},
 		},
