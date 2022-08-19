@@ -30,6 +30,9 @@ func runTests(t *testing.T, tests []testData) {
 			case *ast.CreateTableStmt:
 				for j, col := range n.ColumnList {
 					col.SetLine(test.columnLine[i][j])
+					for _, inlineCons := range col.ConstraintList {
+						inlineCons.SetLine(col.Line())
+					}
 				}
 				for j, cons := range n.ConstraintList {
 					cons.SetLine(test.constraintLine[i][j])

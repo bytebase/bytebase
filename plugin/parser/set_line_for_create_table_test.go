@@ -73,6 +73,9 @@ func TestPGCreateTableSetLine(t *testing.T) {
 		require.Equal(t, len(test.constraintLineList), len(node.ConstraintList))
 		for i, col := range node.ColumnList {
 			require.Equal(t, col.Line(), test.columnLineList[i], i)
+			for _, inlineCons := range col.ConstraintList {
+				require.Equal(t, test.columnLineList[i], inlineCons.Line())
+			}
 		}
 		for i, cons := range node.ConstraintList {
 			require.Equal(t, cons.Line(), test.constraintLineList[i], i)
