@@ -96,6 +96,7 @@ func (checker *namingUKConventionChecker) Visit(in ast.Node) ast.Visitor {
 				Code:    advisor.NamingUKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf(`Unique key in table "%s" mismatches the naming convention, expect %q but found "%s"`, indexData.tableName, regex, indexData.indexName),
+				Line:    indexData.line,
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -104,6 +105,7 @@ func (checker *namingUKConventionChecker) Visit(in ast.Node) ast.Visitor {
 				Code:    advisor.NamingUKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf(`Unique key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, indexData.indexName, indexData.tableName, checker.maxLength),
+				Line:    indexData.line,
 			})
 		}
 	}
@@ -117,26 +119,26 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.ConstraintList {
-			if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint); metadata != nil {
+			if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint, constraint.Line()); metadata != nil {
 				res = append(res, metadata)
 			}
 		}
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint, column.Line()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
 		}
 	case *ast.AddConstraintStmt:
 		constraint := node.Constraint
-		if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint); metadata != nil {
+		if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint, node.Line()); metadata != nil {
 			res = append(res, metadata)
 		}
 	case *ast.AddColumnListStmt:
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint, node.Line()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
@@ -154,6 +156,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.Index.Name,
 				tableName: node.Index.Table.Name,
+				line:      node.Line(),
 				metaData:  metaData,
 			})
 		}
@@ -167,6 +170,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
 				tableName: node.Table.Name,
+				line:      node.Line(),
 				metaData:  metaData,
 			})
 		}
@@ -181,6 +185,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
 				tableName: tableName,
+				line:      node.Line(),
 				metaData:  metaData,
 			})
 		}
@@ -189,7 +194,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 }
 
 // getUniqueKeyMetadata returns index metadata of a unique key constraint, nil if other constraints.
-func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string, tableName string, constraint *ast.ConstraintDef) *indexMetaData {
+func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string, tableName string, constraint *ast.ConstraintDef, line int) *indexMetaData {
 	switch constraint.Type {
 	case ast.ConstraintTypeUnique:
 		metaData := map[string]string{
@@ -199,6 +204,7 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 		return &indexMetaData{
 			indexName: constraint.Name,
 			tableName: tableName,
+			line:      line,
 			metaData:  metaData,
 		}
 	case ast.ConstraintTypeUniqueUsingIndex:
@@ -211,6 +217,7 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 			return &indexMetaData{
 				indexName: constraint.Name,
 				tableName: tableName,
+				line:      line,
 				metaData:  metaData,
 			}
 		}
