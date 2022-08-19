@@ -166,6 +166,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
 
+		if parseBranchNameFromRefs(pushEvent.Ref) != repo.BranchFilter {
+			return c.String(http.StatusOK, "")
+		}
+
 		if pushEvent.Repository.FullName != repo.ExternalID {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %s, want %s", pushEvent.Repository.FullName, repo.ExternalID))
 		}
@@ -244,6 +248,18 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	// attacks against regular equality operators, see
 	// https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks#validating-payloads-from-github
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
+}
+
+// parseBranchNameFromRefs is for GitHub.
+// GitLab can configure branches that trigger push events, but GitHub cannot do it. So we need parse the branch name from refs field in request.
+// https://docs.github.com/en/rest/git/refs
+func parseBranchNameFromRefs(ref string) string {
+	expectedPrefix := "refs/heads"
+	if !strings.HasPrefix(ref, "refs/heads/") {
+		log.Debug("ref is not prefix with expected prefix", zap.String("ref", ref), zap.String("expected prefix", expectedPrefix))
+		return ref
+	}
+	return ref[len(expectedPrefix):]
 }
 
 // We are observing the push webhook event so that we will receive the event either when:
