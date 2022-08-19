@@ -92,14 +92,19 @@ func TestNamingUKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), CONSTRAINT tech_book_name UNIQUE (name))",
+			Statement: `
+				CREATE TABLE tech_book(
+					id INT PRIMARY KEY,
+					name VARCHAR(20),
+					CONSTRAINT tech_book_name UNIQUE (name)
+				)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^$|^uk_tech_book_name$\" but found \"tech_book_name\"",
-					Line:    1,
+					Line:    5,
 				},
 			},
 		},
