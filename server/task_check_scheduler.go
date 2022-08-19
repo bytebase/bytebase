@@ -255,30 +255,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
 
-	if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
-		policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
-		}
-		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-			Statement: statement,
-			DbType:    database.Instance.Engine,
-			Charset:   database.CharacterSet,
-			Collation: database.Collation,
-			PolicyID:  policyID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
-		}
-		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatorID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckDatabaseStatementAdvise,
-			Payload:                 string(payload),
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		}); err != nil {
-			return nil, err
-		}
+	if err := s.scheduleSQLReviewTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated, database, statement); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
 
 	if database.Instance.Engine == db.Postgres {
@@ -337,6 +315,34 @@ func (s *TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	}
 }
 
+func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
+	if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
+		policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
+		}
+		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+			Statement: statement,
+			DbType:    database.Instance.Engine,
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
+			PolicyID:  policyID,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
+		}
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementAdvise,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func (s *TaskCheckScheduler) scheduleSyntaxCheckTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
 	if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
 		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
