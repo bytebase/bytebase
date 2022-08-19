@@ -1,5 +1,5 @@
 <template>
-  <form class="space-y-6 divide-y divide-block-border">
+  <div class="space-y-6 divide-y divide-block-border">
     <div class="divide-y divide-block-border">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template v-for="engine in engineList" :key="engine">
@@ -228,7 +228,7 @@
         </div>
       </div>
     </div>
-  </form>
+  </div>
   <BBAlert
     v-if="state.showCreateInstanceWarningModal"
     :style="'WARN'"
