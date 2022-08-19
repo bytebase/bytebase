@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -80,6 +81,19 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}, nil
 }
 
+func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupFilePath string) (string, error) {
+	backupFile, err := os.Create(backupFilePath)
+	if err != nil {
+		return "", errors.Errorf("failed to open backup path %q", backupFilePath)
+	}
+	defer backupFile.Close()
+	payload, err := driver.Dump(ctx, databaseName, backupFile, false /* schemaOnly */)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to dump database %q to local backup file %q", databaseName, backupFilePath)
+	}
+	return payload, nil
+}
+
 // backupDatabase will take a backup of a database.
 func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
 	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
@@ -89,24 +103,9 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 	defer driver.Close(ctx)
 
 	backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
-	backupFile, err := os.Create(backupFilePathLocal)
+	payload, err := dumpBackupFile(ctx, driver, databaseName, backupFilePathLocal)
 	if err != nil {
-		return "", errors.Errorf("failed to open backup path: %s", backup.Path)
-	}
-	defer backupFile.Close()
-	if backup.StorageBackend == api.BackupStorageBackendS3 {
-		defer func() {
-			if err := os.Remove(backupFilePathLocal); err != nil {
-				log.Warn("Failed to remove the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal))
-			} else {
-				log.Debug("Removed the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal))
-			}
-		}()
-	}
-
-	payload, err := driver.Dump(ctx, databaseName, backupFile, false /* schemaOnly */)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to dump database %q to local backup file %q", databaseName, backupFilePathLocal)
+		return "", errors.Wrapf(err, "failed to dump backup file %q", backupFilePathLocal)
 	}
 
 	switch backup.StorageBackend {
@@ -118,7 +117,16 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
 		}
-		defer bucketFileToUpload.Close()
+		defer func() {
+			if err := bucketFileToUpload.Close(); err != nil {
+				log.Warn("Failed to close the local backup file to upload", zap.String("path", backupFilePathLocal), zap.Error(err))
+			}
+			if err := os.Remove(backupFilePathLocal); err != nil {
+				log.Warn("Failed to remove the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal), zap.Error(err))
+			} else {
+				log.Debug("Successfully removed the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal), zap.Error(err))
+			}
+		}()
 		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
