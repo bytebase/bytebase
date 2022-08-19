@@ -40,7 +40,7 @@ func newMigrateCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				// nolint:revive
+				//nolint:revive
 				// f.Close() is intended to be deferred to the end of the function.
 				defer f.Close()
 				sqlReaders = append(sqlReaders, f)
