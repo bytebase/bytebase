@@ -166,7 +166,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
 
-		if parseBranchNameFromRefs(pushEvent.Ref) != repo.BranchFilter {
+		if branch, err := parseBranchNameFromGitHubRefs(pushEvent.Ref); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref").SetInternal(err)
+		} else if branch != repo.BranchFilter {
 			return c.String(http.StatusOK, "")
 		}
 
@@ -253,13 +255,13 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 // parseBranchNameFromRefs is for GitHub.
 // GitLab can configure branches that trigger push events, but GitHub cannot do it. So we need parse the branch name from refs field in request.
 // https://docs.github.com/en/rest/git/refs
-func parseBranchNameFromRefs(ref string) string {
+func parseBranchNameFromGitHubRefs(ref string) (string, error) {
 	expectedPrefix := "refs/heads/"
-	if !strings.HasPrefix(ref, expectedPrefix) {
+	if !strings.HasPrefix(ref, expectedPrefix) || len(expectedPrefix) == len(ref) {
 		log.Debug("ref is not prefix with expected prefix", zap.String("ref", ref), zap.String("expected prefix", expectedPrefix))
-		return ref
+		return ref, errors.Errorf("unexpected ref name %q without prefix %q", ref, expectedPrefix)
 	}
-	return ref[len(expectedPrefix):]
+	return ref[len(expectedPrefix):], nil
 }
 
 // We are observing the push webhook event so that we will receive the event either when:
