@@ -242,7 +242,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	if err != nil {
 		return nil, err
 	}
-
 	database, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 	if err != nil {
 		return nil, err
@@ -259,23 +258,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
 
-	if database.Instance.Engine == db.Postgres {
-		payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
-			Statement: statement,
-			DbType:    database.Instance.Engine,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
-		}
-		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatorID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckDatabaseStatementType,
-			Payload:                 string(payload),
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		}); err != nil {
-			return nil, err
-		}
+	if err := s.scheduleStmtTypeTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated, database, statement); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
 
 	taskCheckRunFind := &api.TaskCheckRunFind{
@@ -314,7 +298,27 @@ func (s *TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 		return "", errors.Errorf("invalid task type %s", task.Type)
 	}
 }
-
+func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
+	if database.Instance.Engine == db.Postgres {
+		payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+			Statement: statement,
+			DbType:    database.Instance.Engine,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
+		}
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementType,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
 	if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
 		policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
