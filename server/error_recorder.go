@@ -11,8 +11,7 @@ func errorRecorderMiddleware(_ *Server, next echo.HandlerFunc) echo.HandlerFunc 
 		defer func() {
 			responseCode := c.Response().Status
 
-			if responseCode == http.StatusInternalServerError {
-				//nolint
+			if responseCode == http.StatusInternalServerError { //nolint
 				// TODO(ZhengX): collect and store error details
 			}
 		}()
