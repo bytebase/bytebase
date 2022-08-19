@@ -69,14 +69,19 @@ func TestNamingPKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT, name VARCHAR(20), CONSTRAINT tech_book_name PRIMARY KEY (name))",
+			Statement: `
+				CREATE TABLE tech_book(
+					id INT,
+					name VARCHAR(20),
+					CONSTRAINT tech_book_name PRIMARY KEY (name)
+				)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_name$\" but found \"tech_book_name\"",
-					Line:    1,
+					Line:    5,
 				},
 			},
 		},
