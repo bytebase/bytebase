@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 )
@@ -52,7 +53,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
 						if !ok {
-							err = fmt.Errorf("%v", r)
+							err = errors.Errorf("%v", r)
 						}
 						log.Error("Task scheduler PANIC RECOVER", zap.Error(err))
 					}
@@ -255,7 +256,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 			return false, err
 		}
 		if instance == nil {
-			return false, fmt.Errorf("instance ID not found %v", task.InstanceID)
+			return false, errors.Errorf("instance ID not found %v", task.InstanceID)
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
@@ -310,7 +311,7 @@ func (s *TaskScheduler) canAutoApprove(ctx context.Context, task *api.Task) (boo
 func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
-		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
+		return false, errors.Wrap(err, "failed to check if task is blocked")
 	}
 	if blocked {
 		return false, nil
@@ -358,11 +359,11 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 	for _, blockingTaskIDString := range task.BlockedBy {
 		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
 		if err != nil {
-			return true, fmt.Errorf("failed to convert id string to int, id string: %v, error: %w", blockingTaskIDString, err)
+			return true, errors.Wrapf(err, "failed to convert id string to int, id string: %v", blockingTaskIDString)
 		}
 		blockingTask, err := s.server.store.GetTaskByID(ctx, blockingTaskID)
 		if err != nil {
-			return true, fmt.Errorf("failed to fetch the blocking task, id: %v, error: %w", blockingTaskID, err)
+			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %v", blockingTaskID)
 		}
 		if blockingTask.Status != api.TaskDone {
 			return true, nil

@@ -17,7 +17,7 @@
             v-if="isGhostTable(table)"
             text="gh-ost"
             :can-remove="false"
-            class="text-xs"
+            class="text-xs whitespace-nowrap"
           />
         </div>
       </BBTableCell>

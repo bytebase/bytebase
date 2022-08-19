@@ -2,6 +2,7 @@ package pg
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -9,6 +10,8 @@ import (
 )
 
 func TestPostgreSQLNamingTableConvention(t *testing.T) {
+	invalidTableName := advisor.RandomString(33)
+
 	tests := []advisor.TestCase{
 		{
 			Statement: "CREATE TABLE \"techBook\"(id int, name varchar(255))",
@@ -18,6 +21,17 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "\"techBook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf("CREATE TABLE \"%s\"(id int, name varchar(255))", invalidTableName),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingTableConventionMismatch,
+					Title:   "naming.table",
+					Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within 32 characters", invalidTableName),
 				},
 			},
 		},
@@ -97,7 +111,8 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 		},
 	}
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format: "^[a-z]+(_[a-z]+)*$",
+		Format:    "^[a-z]+(_[a-z]+)*$",
+		MaxLength: 32,
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SQLReviewRule{

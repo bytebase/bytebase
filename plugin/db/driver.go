@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/pkg/errors"
 )
 
 // Type is the type of a database.
@@ -259,10 +260,10 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
-		return nil, fmt.Errorf("invalid file path template: %q", filePathTemplate)
+		return nil, errors.Errorf("invalid file path template: %q", filePathTemplate)
 	}
 	if !myRegex.MatchString(filePath) {
-		return nil, fmt.Errorf("file path %q does not match file path template %q", filePath, filePathTemplate)
+		return nil, errors.Errorf("file path %q does not match file path template %q", filePath, filePathTemplate)
 	}
 
 	mi := &MigrationInfo{
@@ -288,7 +289,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 				case "migrate":
 					mi.Type = Migrate
 				default:
-					return nil, fmt.Errorf("file path %q contains invalid migration type %q, must be 'migrate' or 'data'", filePath, matchList[index])
+					return nil, errors.Errorf("file path %q contains invalid migration type %q, must be 'migrate' or 'data'", filePath, matchList[index])
 				}
 			case "DESCRIPTION":
 				mi.Description = matchList[index]
@@ -297,10 +298,10 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	}
 
 	if mi.Version == "" {
-		return nil, fmt.Errorf("file path %q does not contain {{VERSION}}, configured file path template %q", filePath, filePathTemplate)
+		return nil, errors.Errorf("file path %q does not contain {{VERSION}}, configured file path template %q", filePath, filePathTemplate)
 	}
 	if mi.Namespace == "" {
-		return nil, fmt.Errorf("file path %q does not contain {{DB_NAME}}, configured file path template %q", filePath, filePathTemplate)
+		return nil, errors.Errorf("file path %q does not contain {{DB_NAME}}, configured file path template %q", filePath, filePathTemplate)
 	}
 
 	if mi.Description == "" {
@@ -446,7 +447,7 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 	f, ok := drivers[dbType]
 	driversMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("db: unknown driver %v", dbType)
+		return nil, errors.Errorf("db: unknown driver %v", dbType)
 	}
 
 	driver, err := f(driverConfig).Open(ctx, dbType, connectionConfig, connCtx)

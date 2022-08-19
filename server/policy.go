@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -31,15 +32,15 @@ func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 	switch policyUpsert.Type {
 	case api.PolicyTypePipelineApproval:
 		if !s.feature(api.FeatureApprovalPolicy) {
-			return fmt.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
+			return errors.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeBackupPlan:
 		if !s.feature(api.FeatureBackupPolicy) {
-			return fmt.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
+			return errors.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeSQLReview:
 		if !s.feature(api.FeatureSQLReviewPolicy) {
-			return fmt.Errorf(api.FeatureSQLReviewPolicy.AccessErrorMessage())
+			return errors.Errorf(api.FeatureSQLReviewPolicy.AccessErrorMessage())
 		}
 	}
 	return nil

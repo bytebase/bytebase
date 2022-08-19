@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -91,7 +92,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if connectionInfo.Port != "" {
 				hostPort += ":" + connectionInfo.Port
 			}
-			resultSet.Error = fmt.Errorf("failed to connect %q for user %q, %w", hostPort, connectionInfo.Username, err).Error()
+			resultSet.Error = errors.Wrapf(err, "failed to connect %q for user %q", hostPort, connectionInfo.Username).Error()
 		} else {
 			defer db.Close(ctx)
 			if err := db.Ping(ctx); err != nil {
@@ -358,7 +359,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		}
 	}
 	if len(errorList) > 0 {
-		return fmt.Errorf("sync database schema errors, %s", strings.Join(errorList, ", "))
+		return errors.Errorf("sync database schema errors, %s", strings.Join(errorList, ", "))
 	}
 
 	return nil
@@ -401,7 +402,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		}
 		_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
 		if err != nil {
-			return nil, fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
+			return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to upsert user", instance.Name)
 		}
 	}
 
@@ -421,7 +422,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 			}
 			err := s.store.DeleteInstanceUser(ctx, userDelete)
 			if err != nil {
-				return nil, fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
+				return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to delete user: %s", instance.Name, user.Name)
 			}
 		}
 	}
@@ -438,7 +439,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 	}
 	dbList, err := s.store.FindDatabase(ctx, databaseFind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
 	}
 	for _, databaseMetadata := range instanceMeta.DatabaseList {
 		databaseName := databaseMetadata.Name
@@ -467,9 +468,9 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		}
 		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return nil, fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
+				return nil, errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 			}
-			return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
+			return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
 		}
 	}
 
@@ -495,9 +496,9 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 			database, err := s.store.PatchDatabase(ctx, databasePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
-					return nil, fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
+					return nil, errors.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
 				}
-				return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error: %w", instance.Name, database.Name, err)
+				return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, database.Name)
 			}
 		}
 	}
@@ -523,7 +524,7 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 	matchedDb, err := s.store.GetDatabase(ctx, databaseFind)
 	if err != nil {
-		return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
 	}
 
 	// Sync database schema
@@ -553,9 +554,9 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return fmt.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
+				return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
 			}
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, matchedDb.Name, err)
+			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, matchedDb.Name)
 		}
 		database = dbPatched
 	} else {
@@ -572,9 +573,9 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
+				return errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 			}
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
+			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
 		}
 		database = createdDatabase
 	}
@@ -607,7 +608,7 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 		Limit:    &limit,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get migration history for database %q, error %v", databaseName, err)
+		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
 	}
 	var schemaVersion string
 	if len(history) == 1 {

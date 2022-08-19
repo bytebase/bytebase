@@ -2,7 +2,8 @@ package common
 
 import (
 	"errors"
-	"fmt"
+
+	pkgerrors "github.com/pkg/errors"
 )
 
 // Code is the error code.
@@ -90,17 +91,24 @@ func ErrorMessage(err error) string {
 	return "Internal error."
 }
 
-// Errorf is a helper function to return an Error with given code, format and
-// arguments.
-func Errorf(code Code, format string, args ...interface{}) *Error {
+// Wrapf is a helper function to wrap an Error with given code and formatted message.
+func Wrapf(err error, code Code, format string, args ...interface{}) *Error {
 	return &Error{
 		Code: code,
-		Err:  fmt.Errorf(format, args...),
+		Err:  pkgerrors.Wrapf(err, format, args...),
 	}
 }
 
-// WithError is a helper function to return an Error with given code and error.
-func WithError(code Code, err error) *Error {
+// Errorf is a helper function to create an Error with given code and formatted message.
+func Errorf(code Code, format string, args ...interface{}) *Error {
+	return &Error{
+		Code: code,
+		Err:  pkgerrors.Errorf(format, args...),
+	}
+}
+
+// Wrap is a helper function to wrap an Error with given code.
+func Wrap(err error, code Code) *Error {
 	return &Error{
 		Code: code,
 		Err:  err,

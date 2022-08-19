@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -34,7 +35,7 @@ func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 	case SchemaRuleLevelWarning:
 		return Warn, nil
 	}
-	return "", fmt.Errorf("unexpected rule level type: %s", level)
+	return "", errors.Errorf("unexpected rule level type: %s", level)
 }
 
 // Type is the type of advisor.
@@ -154,6 +155,7 @@ type Advice struct {
 	Code    Code   `json:"code"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
+	Line    int    `json:"line"`
 }
 
 // MarshalLogObject constructs a field that carries Advice.
@@ -162,6 +164,7 @@ func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddInt("code", int(a.Code))
 	enc.AddString("title", a.Title)
 	enc.AddString("content", a.Content)
+	enc.AddInt("line", a.Line)
 	return nil
 }
 
@@ -226,12 +229,12 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown db advisor type %v", dbType)
+		return nil, errors.Errorf("advisor: unknown db advisor type %v", dbType)
 	}
 
 	f, ok := dbAdvisors[advType]
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
+		return nil, errors.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
 	}
 
 	return f.Check(ctx, statement)

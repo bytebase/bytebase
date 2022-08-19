@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -12,6 +13,8 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -86,34 +89,24 @@ func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
 
-	driverDB, err := driver.GetDBConnection(ctx, "")
-	if err != nil {
-		return true, nil, err
-	}
-	conn, err := driverDB.Conn(ctx)
-	if err != nil {
-		return true, nil, err
-	}
-	defer conn.Close()
-
-	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
-	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
-	if err != nil {
-		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
-		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
-	}
-	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
-
-	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
-		return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
+	switch task.Instance.Engine {
+	case db.Postgres:
+		if err := exec.pitrCutoverPostgres(ctx, driver, task, issue); err != nil {
+			return true, nil, errors.Wrap(err, "failed to do cutover for PostgreSQL")
+		}
+	case db.MySQL:
+		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
+			return true, nil, errors.Wrap(err, "failed to do cutover for MySQL")
+		}
+	default:
+		return true, nil, errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
 	}
 
 	log.Debug("Appending new migration history record")
@@ -133,7 +126,7 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 
 	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
-		return true, nil, fmt.Errorf("failed to add migration history record, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
 
 	// Sync database schema after restore is completed.
@@ -147,4 +140,80 @@ func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task,
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
+}
+
+func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
+	driverDB, err := driver.GetDBConnection(ctx, "")
+	if err != nil {
+		return err
+	}
+	conn, err := driverDB.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
+	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
+	if err != nil {
+		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
+		return errors.Wrap(err, "failed to swap the original and PITR database")
+	}
+	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
+	// TODO(dragonly): Only needed for in-place PITR.
+	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
+	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
+		return errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
+	}
+	return nil
+}
+
+func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
+	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+	pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
+	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
+	if err != nil {
+		return errors.Wrap(err, "failed to get connection for PostgreSQL")
+	}
+
+	// The original database may not exist.
+	// This is possible if there's a former task execution which successfully renamed original -> _del database and failed.
+	// Now we have the _del and the _pitr database.
+	existOriginal, err := pgDatabaseExist(ctx, db, task.Database.Name)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check existence of database %q", task.Database.Name)
+	}
+	if existOriginal {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
+			return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
+		}
+		log.Debug("Successfully renamed database", zap.String("from", task.Database.Name), zap.String("to", pitrOldDatabaseName))
+	}
+
+	// The _pitr database may not exist.
+	// This is possible if there's a former task execution which successfully renamed _pitr -> original database and failed.
+	// Now we have the _del and the original database.
+	existPITR, err := pgDatabaseExist(ctx, db, pitrDatabaseName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check existence of database %q", pitrDatabaseName)
+	}
+	if existPITR {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
+			return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
+		}
+		log.Debug("Successfully renamed database", zap.String("from", pitrDatabaseName), zap.String("to", task.Database.Name))
+	}
+
+	return nil
+}
+
+func pgDatabaseExist(ctx context.Context, db *sql.DB, database string) (bool, error) {
+	query := fmt.Sprintf("SELECT datname FROM pg_database WHERE datname='%s';", database)
+	var unused string
+	if err := db.QueryRowContext(ctx, query).Scan(&unused); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, util.FormatErrorWithQuery(err, query)
+	}
+	return true, nil
 }

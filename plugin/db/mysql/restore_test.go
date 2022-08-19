@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,7 +36,7 @@ func TestGetSafeName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		safeName := getSafeName(test.baseName, test.suffix)
+		safeName := util.GetSafeName(test.baseName, test.suffix)
 		a.Equal(test.expected, safeName)
 	}
 }
@@ -60,7 +61,7 @@ func TestGetPITRDatabaseName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		name := getPITRDatabaseName(test.database, int64(test.timestamp))
+		name := util.GetPITRDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
 	}
 }
@@ -85,7 +86,7 @@ func TestGetPITROldDatabaseName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		name := getPITROldDatabaseName(test.database, int64(test.timestamp))
+		name := util.GetPITROldDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
 	}
 }

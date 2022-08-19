@@ -565,6 +565,7 @@
   },
   "instance": {
     "select": "选择实例",
+    "select-database-user": "选择数据库用户",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
     "sync-schema-now": "随即同步 schema",
@@ -647,6 +648,7 @@
     "copy-grant-statement": "CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。",
     "successfully-connected-instance": "成功连接到实例。",
     "failed-to-connect-instance": "连接到实例失败。",
+    "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
     "no-read-only-data-source-support": "暂时不支持 {database} 创建只读连接",
     "grants": "权限"
@@ -763,7 +765,8 @@
     "establish-database-baseline": "建立「{name}」基线",
     "instance-missing-migration-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
-    "contact-dba": "请联系您的 DBA 进行配置。"
+    "contact-dba": "请联系您的 DBA 进行配置。",
+    "no-succeed-vcs-migration-record": "没有来自 VCS 的变更历史。"
   },
   "database": {
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "该表每隔约10分钟刷新一次，所以展示的可能不是最新信息。",
@@ -849,7 +852,11 @@
       "target-new-db": "新数据库",
       "will-overwrite-current-database": "会覆盖现有数据库",
       "restore-before-last-migration": "恢复到上次变更历史之前",
-      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。{link}。"
+      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。{link}。",
+      "will-overwrite-current-database": "会覆盖现有数据库",
+      "restore-to": "恢复到",
+      "restore-to-new-db": "新数据库",
+      "restore-to-in-place": "原数据库"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
     "show-reserved-databases": "显示 Bytebase 保留的数据库",
@@ -870,7 +877,8 @@
     "synced-at": "同步于 {time}",
     "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}",
     "view-unassigned-databases": "查看未分配的数据库",
-    "unassigned-databases": "未分配的数据库"
+    "unassigned-databases": "未分配的数据库",
+    "restore-database": "恢复数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

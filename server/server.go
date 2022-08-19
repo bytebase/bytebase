@@ -19,6 +19,7 @@ import (
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
@@ -130,7 +131,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
 	if err := mysqlutil.Install(resourceDir); err != nil {
-		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
+		return nil, errors.Wrap(err, "cannot install mysqlbinlog binary")
 	}
 
 	// Install Postgres.
@@ -159,19 +160,19 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
+		return nil, errors.Wrap(err, "cannot create MetadataDB instance")
 	}
 
 	// New store.DB instance that represents the db connection.
 	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
 	if err != nil {
-		return nil, fmt.Errorf("cannot new db: %w", err)
+		return nil, errors.Wrap(err, "cannot new db")
 	}
 
 	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
-		return nil, fmt.Errorf("cannot open db: %w", err)
+		return nil, errors.Wrap(err, "cannot open db")
 	}
 
 	cacheService := NewCacheService()
@@ -180,7 +181,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init config: %w", err)
+		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 
@@ -264,28 +265,29 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
-	if prof.Mode == common.ReleaseModeDev || prof.Debug {
-		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-			Skipper: func(c echo.Context) bool {
-				return !common.HasPrefixes(c.Path(), "/api", "/hook")
-			},
-			Format: `{"time":"${time_rfc3339}",` +
-				`"method":"${method}","uri":"${uri}",` +
-				`"status":${status},"error":"${error}"}` + "\n",
-		}))
-	}
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: func(c echo.Context) bool {
+			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
+				return true
+			}
+			return !common.HasPrefixes(c.Path(), "/api", "/hook")
+		},
+		Format: `{"time":"${time_rfc3339}",` +
+			`"method":"${method}","uri":"${uri}",` +
+			`"status":${status},"error":"${error}"}` + "\n",
+	}))
 	e.Use(recoverMiddleware)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)
 
-	apiGroup := e.Group("/api")
 	openAPIGroup := e.Group(openAPIPrefix)
 	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return openAPIMetricMiddleware(s, next)
 	})
 
+	apiGroup := e.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
 	})
@@ -344,7 +346,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create license service, error: %w", err)
+		return nil, errors.Wrap(err, "failed to create license service")
 	}
 
 	s.initSubscription()
@@ -392,7 +394,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial JWT token
 	value, err := common.RandomString(secretLength)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate random JWT secret, error: %w", err)
+		return nil, errors.Wrap(err, "failed to generate random JWT secret")
 	}
 	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,

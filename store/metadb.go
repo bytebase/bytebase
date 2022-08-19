@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -90,7 +91,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	log.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
 	if u.Scheme != "postgresql" {
-		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
+		return nil, errors.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
 	connCfg := dbdriver.ConnectionConfig{
@@ -103,7 +104,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	}
 
 	if connCfg.Username == "" {
-		return nil, fmt.Errorf("missing user in the --pg connection string")
+		return nil, errors.Errorf("missing user in the --pg connection string")
 	}
 
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
@@ -120,7 +121,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		hostInQuery := q.Get("host")
 		if hostInQuery != "" && host != "" {
 			// In this case, it is impossible to decide whether to use socket or tcp.
-			return nil, fmt.Errorf("please only using socket or host instead of both")
+			return nil, errors.Errorf("please only using socket or host instead of both")
 		}
 		connCfg.Host = host
 		if hostInQuery != "" {
@@ -130,7 +131,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	}
 
 	if u.Path == "" {
-		return nil, fmt.Errorf("missing database in the --pg connection string")
+		return nil, errors.Errorf("missing database in the --pg connection string")
 	}
 	connCfg.Database = u.Path[1:]
 

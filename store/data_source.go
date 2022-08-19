@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // dataSourceRaw is the store model for an DataSource.
@@ -66,11 +67,11 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSource, error) {
 	dataSourceRaw, err := s.createDataSourceRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create data source with DataSourceCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
 	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose data source with dataSourceRaw[%+v], error: %w", dataSourceRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
 	}
 	return dataSource, nil
 }
@@ -79,14 +80,14 @@ func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCrea
 func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
 	dataSourceRaw, err := s.getDataSourceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get data source with DataSourceFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to get data source with DataSourceFind[%+v]", find)
 	}
 	if dataSourceRaw == nil {
 		return nil, nil
 	}
 	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose data source with dataSourceRaw[%+v], error: %w", dataSourceRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
 	}
 	return dataSource, nil
 }
@@ -95,13 +96,13 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find DataSource list with DataSourceFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
 	}
 	var dataSourceList []*api.DataSource
 	for _, raw := range dataSourceRawList {
 		dataSource, err := s.composeDataSource(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", raw)
 		}
 		dataSourceList = append(dataSourceList, dataSource)
 	}
@@ -112,11 +113,11 @@ func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([
 func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch DataSource with DataSourcePatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch DataSource with DataSourcePatch[%+v]", patch)
 	}
 	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error: %w", dataSourceRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", dataSourceRaw)
 	}
 	return dataSource, nil
 }
@@ -130,7 +131,7 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 func (s *Store) createDataSourceRawTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) error {
 	_, err := s.createDataSourceImpl(ctx, tx, create)
 	if err != nil {
-		return fmt.Errorf("failed to create data source with DataSourceCreate[%+v], error: %w", create, err)
+		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
 	return nil
 }
@@ -206,7 +207,7 @@ func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) 
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -409,7 +410,7 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 		&dataSourceRaw.SslCa,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("DataSource not found with ID %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("DataSource not found with ID %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

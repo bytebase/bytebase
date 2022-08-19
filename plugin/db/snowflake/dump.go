@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 )
 
 // Dump and restore.
@@ -47,7 +48,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) e
 		var err error
 		dumpableDbNames, err = getDatabasesTxn(ctx, txn)
 		if err != nil {
-			return fmt.Errorf("failed to get databases: %s", err)
+			return errors.Wrap(err, "failed to get databases")
 		}
 	}
 

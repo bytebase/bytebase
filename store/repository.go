@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // repositoryRaw is the store model for a Repository.
@@ -81,11 +82,11 @@ func (raw *repositoryRaw) toRepository() *api.Repository {
 func (s *Store) CreateRepository(ctx context.Context, create *api.RepositoryCreate) (*api.Repository, error) {
 	repositoryRaw, err := s.createRepositoryRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Repository with RepositoryCreate[%+v], error: %w", create, err)
+		return nil, errors.Wrapf(err, "failed to create Repository with RepositoryCreate[%+v]", create)
 	}
 	repository, err := s.composeRepository(ctx, repositoryRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Repository with repositoryRaw[%+v], error: %w", repositoryRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", repositoryRaw)
 	}
 	return repository, nil
 }
@@ -94,14 +95,14 @@ func (s *Store) CreateRepository(ctx context.Context, create *api.RepositoryCrea
 func (s *Store) GetRepository(ctx context.Context, find *api.RepositoryFind) (*api.Repository, error) {
 	repositoryRaw, err := s.getRepositoryRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Repository with RepositoryFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to get Repository with RepositoryFind[%+v]", find)
 	}
 	if repositoryRaw == nil {
 		return nil, nil
 	}
 	repository, err := s.composeRepository(ctx, repositoryRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Repository with repositoryRaw[%+v], error: %w", repositoryRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", repositoryRaw)
 	}
 	return repository, nil
 }
@@ -110,13 +111,13 @@ func (s *Store) GetRepository(ctx context.Context, find *api.RepositoryFind) (*a
 func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
 	repositoryRawList, err := s.findRepositoryRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Repository list with RepositoryFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find Repository list with RepositoryFind[%+v]", find)
 	}
 	var repositoryList []*api.Repository
 	for _, raw := range repositoryRawList {
 		repository, err := s.composeRepository(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Repository with repositoryRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", raw)
 		}
 		repositoryList = append(repositoryList, repository)
 	}
@@ -127,11 +128,11 @@ func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([
 func (s *Store) PatchRepository(ctx context.Context, patch *api.RepositoryPatch) (*api.Repository, error) {
 	repositoryRaw, err := s.patchRepositoryRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Repository with RepositoryPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch Repository with RepositoryPatch[%+v]", patch)
 	}
 	repository, err := s.composeRepository(ctx, repositoryRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Repository with repositoryRaw[%+v], error: %w", repositoryRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose Repository with repositoryRaw[%+v]", repositoryRaw)
 	}
 	return repository, nil
 }
@@ -180,7 +181,7 @@ func (s *Store) composeRepository(ctx context.Context, raw *repositoryRaw) (*api
 	}
 	// We should always expect VCS to exist when ID isn't the default zero.
 	if repository.VCSID > 0 && vcs == nil {
-		return nil, fmt.Errorf("VCS not found for ID: %v", repository.VCSID)
+		return nil, errors.Errorf("VCS not found for ID: %v", repository.VCSID)
 	}
 	repository.VCS = vcs
 
@@ -246,7 +247,7 @@ func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) 
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d repositories with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d repositories with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }
@@ -601,7 +602,7 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 		&repository.RefreshToken,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("repository ID not found: %d", patch.ID)}
 		}
 		return nil, FormatError(err)
 	}

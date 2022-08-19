@@ -33,16 +33,16 @@ func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement strin
 	if err != nil {
 		return nil, err
 	}
-	// Naming length limit is not enabled for PG, the PG parser will auto slice the name to make sure its length <= 63
-	// Reference: https://stackoverflow.com/questions/27865770/how-long-can-postgresql-table-names-be
-	format, _, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+
+	format, maxLength, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingColumnConventionChecker{
-		level:  level,
-		title:  string(ctx.Rule.Type),
-		format: format,
+		level:     level,
+		title:     string(ctx.Rule.Type),
+		format:    format,
+		maxLength: maxLength,
 	}
 
 	for _, stmt := range stmts {
@@ -65,6 +65,7 @@ type namingColumnConventionChecker struct {
 	level      advisor.Status
 	title      string
 	format     *regexp.Regexp
+	maxLength  int
 }
 
 // Visit implements the ast.Visitor interface.
@@ -98,6 +99,15 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, column, checker.format),
+			})
+		}
+
+		if checker.maxLength > 0 && len(column) > checker.maxLength {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.NamingColumnConventionMismatch,
+				Title:   checker.title,
+				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, column, checker.maxLength),
 			})
 		}
 	}

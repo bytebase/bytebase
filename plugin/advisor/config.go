@@ -3,8 +3,8 @@ package advisor
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -52,7 +52,7 @@ func MergeSQLReviewRules(override *SQLReviewConfigOverride) ([]*SQLReviewRule, e
 
 	template := findTemplate(templateList, override.Template)
 	if template == nil {
-		return nil, fmt.Errorf("cannot find the template: %v", override.Template)
+		return nil, errors.Errorf("cannot find the template: %v", override.Template)
 	}
 
 	ruleUpdateMap := make(map[SQLReviewRuleType]*SQLReviewRuleData)

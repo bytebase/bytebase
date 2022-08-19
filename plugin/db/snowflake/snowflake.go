@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 
 	snow "github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
@@ -52,7 +53,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	if strings.Contains(config.Host, "@") {
 		parts := strings.Split(config.Host, "@")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("driver.Open() has invalid host %q", config.Host)
+			return nil, errors.Errorf("driver.Open() has invalid host %q", config.Host)
 		}
 		account, host = parts[0], parts[1]
 	} else {

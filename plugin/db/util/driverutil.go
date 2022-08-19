@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
@@ -21,7 +22,7 @@ import (
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
-	return common.Errorf(common.DbExecutionError, "failed to execute query %q, error: %w", query, err)
+	return common.Wrapf(err, common.DbExecutionError, "failed to execute query %q", query)
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
@@ -38,7 +39,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 		case strings.HasPrefix(line, "/*"):
 			if strings.Contains(line, "*/") {
 				if !strings.HasSuffix(line, "*/") {
-					return fmt.Errorf("`*/` must be the end of the line; new statement should start as a new line")
+					return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
 				}
 			} else {
 				comment = true
@@ -49,7 +50,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			continue
 		case comment && strings.Contains(line, "*/"):
 			if !strings.HasSuffix(line, "*/") {
-				return fmt.Errorf("`*/` must be the end of the line; new statement should start as a new line")
+				return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
 			}
 			comment = false
 			continue
@@ -76,7 +77,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			s = strings.Trim(s, "\n\t ")
 			if s != "" {
 				if err := f(s); err != nil {
-					return fmt.Errorf("execute query %q failed: %v", s, err)
+					return errors.Wrapf(err, "execute query %q failed", s)
 				}
 			}
 			s = ""
@@ -86,7 +87,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	s = strings.Trim(s, "\n\t ")
 	if s != "" {
 		if err := f(s); err != nil {
-			return fmt.Errorf("execute query %q failed: %v", s, err)
+			return errors.Wrapf(err, "execute query %q failed", s)
 		}
 	}
 
@@ -198,7 +199,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Convert version to stored version.
 	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
-		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
+		return 0, errors.Wrap(err, "failed to convert to stored version")
 	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
@@ -206,28 +207,28 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		Database: &m.Namespace,
 		Version:  &m.Version,
 	}); err != nil {
-		return -1, fmt.Errorf("check duplicate version error: %q", err)
+		return -1, errors.Wrap(err, "failed to check duplicate version")
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
 			return int64(list[0].ID),
 				common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
-			err := fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
+			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
 			log.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
 				return int64(list[0].ID), nil
 			}
-			return -1, common.WithError(common.MigrationPending, err)
+			return -1, common.Wrap(err, common.MigrationPending)
 		case db.Failed:
-			err := fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
+			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
 			log.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
 				return int64(list[0].ID), nil
 			}
-			return -1, common.WithError(common.MigrationFailed, err)
+			return -1, common.Wrap(err, common.MigrationFailed)
 		}
 	}
 
@@ -470,9 +471,9 @@ func FormatError(err error) error {
 	}
 
 	if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_version") {
-		return fmt.Errorf("version has already been applied")
+		return errors.Errorf("version has already been applied")
 	} else if strings.Contains(err.Error(), "bytebase_idx_unique_migration_history_namespace_sequence") {
-		return fmt.Errorf("concurrent migration")
+		return errors.Errorf("concurrent migration")
 	}
 
 	return err
@@ -494,7 +495,7 @@ func ToStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix str
 	}
 	major, minor, patch := fmt.Sprintf("%d", v.Major), fmt.Sprintf("%d", v.Minor), fmt.Sprintf("%d", v.Patch)
 	if len(major) > 4 || len(minor) > 4 || len(patch) > 4 {
-		return "", fmt.Errorf("invalid version %q, major, minor, patch version should be < 10000", version)
+		return "", errors.Errorf("invalid version %q, major, minor, patch version should be < 10000", version)
 	}
 	return fmt.Sprintf("%04s.%04s.%04s-%s", major, minor, patch, semanticVersionSuffix), nil
 }
@@ -506,27 +507,27 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 	}
 	idx := strings.Index(storedVersion, "-")
 	if idx < 0 {
-		return false, "", "", fmt.Errorf("invalid stored version %q, version should contain '-'", storedVersion)
+		return false, "", "", errors.Errorf("invalid stored version %q, version should contain '-'", storedVersion)
 	}
 	prefix, suffix := storedVersion[:idx], storedVersion[idx+1:]
 	parts := strings.Split(prefix, ".")
 	if len(parts) != 3 {
-		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	major, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	minor, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	patch, err := strconv.Atoi(parts[2])
 	if err != nil {
-		return false, "", "", fmt.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	if major >= 10000 || minor >= 10000 || patch >= 10000 {
-		return false, "", "", fmt.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
+		return false, "", "", errors.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
 	}
 	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -38,15 +39,15 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid database backup payload")
 	}
 
 	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find backup with ID %d, error: %w", payload.BackupID, err)
+		return true, nil, errors.Wrapf(err, "failed to find backup with ID %d", payload.BackupID)
 	}
 	if backup == nil {
-		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
+		return true, nil, errors.Errorf("backup %v not found", payload.BackupID)
 	}
 	log.Debug("Start database backup...",
 		zap.String("instance", task.Instance.Name),
@@ -67,7 +68,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		backupPatch.Comment = backupErr.Error()
 	}
 	if _, err := server.store.PatchBackup(ctx, &backupPatch); err != nil {
-		return true, nil, fmt.Errorf("failed to patch backup, error: %w", err)
+		return true, nil, errors.Wrap(err, "failed to patch backup")
 	}
 
 	if backupErr != nil {
@@ -89,7 +90,7 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 
 	f, err := os.Create(filepath.Join(server.profile.DataDir, backup.Path))
 	if err != nil {
-		return "", fmt.Errorf("failed to open backup path: %s", backup.Path)
+		return "", errors.Errorf("failed to open backup path: %s", backup.Path)
 	}
 	defer f.Close()
 

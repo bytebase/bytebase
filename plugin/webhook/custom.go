@@ -3,9 +3,10 @@ package webhook
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 // CustomWebhookResponse is the API message for Custom webhook response.
@@ -52,12 +53,12 @@ func (*CustomReceiver) post(context Context) error {
 
 	body, err := json.Marshal(&payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v (%w)", context.URL, err)
+		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", context.URL)
 	}
 	req, err := http.NewRequest("POST",
 		context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("failed to construct webhook POST request %v (%w)", context.URL, err)
+		return errors.Wrapf(err, "failed to construct webhook POST request to %s", context.URL)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -66,26 +67,26 @@ func (*CustomReceiver) post(context Context) error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %v (%w)", context.URL, err)
+		return errors.Wrapf(err, "failed to POST webhook to %s", context.URL)
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
+		return errors.Wrapf(err, "failed to read POST webhook response from %s", context.URL)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to POST webhook %v, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
+		return errors.Errorf("failed to POST webhook %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
 	}
 
 	webhookResponse := &CustomWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
-		return fmt.Errorf("malformed webhook response %v (%w)", context.URL, err)
+		return errors.Wrapf(err, "malformed webhook response from %s", context.URL)
 	}
 
 	if webhookResponse.Code != 0 {
-		return fmt.Errorf("receive error code sent by webhook server, code %d, msg: %s", webhookResponse.Code, webhookResponse.Message)
+		return errors.Errorf("receive error code sent by webhook server, code %d, msg: %s", webhookResponse.Code, webhookResponse.Message)
 	}
 
 	return nil

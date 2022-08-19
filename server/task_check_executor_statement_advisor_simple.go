@@ -24,7 +24,7 @@ type TaskCheckStatementAdvisorSimpleExecutor struct {
 func (*TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, _ *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Errorf(common.Invalid, "invalid check statement advise payload: %w", err)
+		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
 	}
 
 	var advisorType advisor.Type
@@ -57,7 +57,7 @@ func (*TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, _ *Server
 		payload.Statement,
 	)
 	if err != nil {
-		return nil, common.Errorf(common.Internal, "failed to check statement: %w", err)
+		return nil, common.Wrapf(err, common.Internal, "failed to check statement")
 	}
 
 	result = []api.TaskCheckResult{}

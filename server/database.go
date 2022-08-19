@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -32,7 +33,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
 		}
 		if instance == nil {
-			err := fmt.Errorf("instance ID not found %v", databaseCreate.InstanceID)
+			err := errors.Errorf("instance ID not found %v", databaseCreate.InstanceID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		databaseCreate.EnvironmentID = instance.EnvironmentID
@@ -41,7 +42,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", databaseCreate.ProjectID)).SetInternal(err)
 		}
 		if project == nil {
-			err := fmt.Errorf("project ID not found %v", databaseCreate.ProjectID)
+			err := errors.Errorf("project ID not found %v", databaseCreate.ProjectID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
@@ -787,7 +788,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 	// For scalability, each database can have up to four labels for now.
 	if len(labels) > api.DatabaseLabelSizeMax {
-		err := fmt.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
+		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
@@ -809,10 +810,10 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		}
 		baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, project.DBNameTemplate, labelsJSON)
 		if err != nil {
-			return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, project.DBNameTemplate, labelsJSON, err)
+			return errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", database.Name, project.DBNameTemplate, labelsJSON)
 		}
 		if _, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, tokens); err != nil {
-			err := fmt.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)
+			err := errors.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 	}
@@ -927,7 +928,7 @@ func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.Driv
 		connCtx,
 	)
 	if err != nil {
-		return nil, common.Errorf(common.DbConnectionFailure, "failed to connect database at %s:%s with user %q, error: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err)
+		return nil, common.Wrapf(err, common.DbConnectionFailure, "failed to connect database at %s:%s with user %q", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username)
 	}
 	return driver, nil
 }

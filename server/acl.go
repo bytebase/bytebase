@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/casbin/casbin/v2"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -84,7 +85,7 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 
 		if !pass {
 			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				fmt.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalID, role))
+				errors.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalID, role))
 		}
 
 		// Stores role into context.

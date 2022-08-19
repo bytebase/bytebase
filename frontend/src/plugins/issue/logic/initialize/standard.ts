@@ -1,5 +1,10 @@
 import { TemplateType } from "@/plugins";
-import { IssueCreate, MigrationType } from "@/types";
+import {
+  IssueCreate,
+  IssueCreateContext,
+  MigrationType,
+  UpdateSchemaContext,
+} from "@/types";
 import {
   findDatabaseListByQuery,
   BuildNewIssueContext,
@@ -28,7 +33,8 @@ export const buildNewStandardIssue = async (
   }
   const statement =
     migrationType === "BASELINE" ? ESTABLISH_BASELINE_SQL : VALIDATE_ONLY_SQL;
-  helper.issueCreate!.createContext = {
+
+  const createContext: IssueCreateContext = {
     migrationType,
     updateSchemaDetailList: databaseList.map((db) => {
       return {
@@ -39,6 +45,24 @@ export const buildNewStandardIssue = async (
     }),
   };
 
+  // If the database is within VCS project, try to find its latest and done migration history from VCS.
+  // If not found, keep the vcsPushEvent field empty and check in backend.
+  if (migrationType === "BASELINE" && databaseList.length === 1) {
+    const database = databaseList[0];
+    if (database.project.workflowType === "VCS") {
+      const migrationHistory =
+        helper.intanceStore.getLatestDoneVCSMigrationHistory(
+          database.instance.id,
+          database.name
+        );
+      if (migrationHistory) {
+        (createContext as UpdateSchemaContext).vcsPushEvent =
+          migrationHistory.payload?.pushEvent;
+      }
+    }
+  }
+
+  helper.issueCreate!.createContext = createContext;
   await helper.validate();
 
   // clean up createContext for standard issues

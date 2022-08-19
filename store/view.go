@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 )
 
 // viewRaw is the store model for an View.
@@ -57,13 +58,13 @@ func (raw *viewRaw) toView() *api.View {
 func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, error) {
 	viewRawList, err := s.findViewRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find View list with ViewFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find View list with ViewFind[%+v]", find)
 	}
 	var viewList []*api.View
 	for _, raw := range viewRawList {
 		view, err := s.composeView(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose View with viewRaw[%+v]", raw)
 		}
 		viewList = append(viewList, view)
 	}

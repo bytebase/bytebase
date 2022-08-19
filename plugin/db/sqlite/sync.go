@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -82,7 +83,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database connection for %q: %s", databaseName, err)
+		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -93,7 +94,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	indicesMap := make(map[string][]indexSchema)
 	indices, err := getIndices(txn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get indices from database %q: %s", databaseName, err)
+		return nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
 	}
 	for _, idx := range indices {
 		indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)

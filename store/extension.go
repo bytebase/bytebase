@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 )
 
 // dbExtensionRaw is the store model for an DBExtension.
@@ -59,13 +60,13 @@ func (raw *dbExtensionRaw) toDBExtension() *api.DBExtension {
 func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) ([]*api.DBExtension, error) {
 	dbExtensionRawList, err := s.findDBExtensionRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find dbExtension list with dbExtensionFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find dbExtension list with dbExtensionFind[%+v]", find)
 	}
 	var dbExtensionList []*api.DBExtension
 	for _, raw := range dbExtensionRawList {
 		dbExtension, err := s.composeDBExtension(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose dbExtension with dbExtensionRaw[%+v]", raw)
 		}
 		dbExtensionList = append(dbExtensionList, dbExtension)
 	}

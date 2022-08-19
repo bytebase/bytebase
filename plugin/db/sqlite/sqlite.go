@@ -10,6 +10,7 @@ import (
 
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -95,7 +96,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 func (driver *Driver) getDatabases() ([]string, error) {
 	files, err := ioutil.ReadDir(driver.dir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read directory %q, error %w", driver.dir, err)
+		return nil, errors.Wrapf(err, "failed to read directory %q", driver.dir)
 	}
 	var databases []string
 	for _, file := range files {
@@ -129,7 +130,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
 			parts := strings.Split(stmt, `'`)
 			if len(parts) != 3 {
-				return fmt.Errorf("invalid statement %q", stmt)
+				return errors.Errorf("invalid statement %q", stmt)
 			}
 			db, err := driver.GetDBConnection(ctx, parts[1])
 			if err != nil {

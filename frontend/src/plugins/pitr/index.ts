@@ -39,9 +39,14 @@ export const usePITRLogic = (database: Ref<Database>) => {
   );
 
   const pitrAvailable = computed((): { result: boolean; message: string } => {
-    const { instance } = database.value;
-
-    if (isPITRAvailableOnInstance(instance)) {
+    const { engine, engineVersion } = database.value.instance;
+    if (
+      engine === "MYSQL" &&
+      semverCompare(
+        engineVersion.split("-")[0],
+        MIN_PITR_SUPPORT_MYSQL_VERSION
+      ) >= 0
+    ) {
       if (doneBackupList.value.length > 0) {
         return { result: true, message: "ok" };
       }

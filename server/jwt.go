@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
+	pkgerrors "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -46,7 +47,7 @@ const (
 )
 
 // Claims creates a struct that will be encoded to a JWT.
-// We add jwt.RegisteredClaims as an embedded type, to provide fields like name.
+// We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type Claims struct {
 	Name string `json:"name"`
 	jwt.RegisteredClaims
@@ -60,7 +61,7 @@ func getPrincipalIDContextKey() string {
 func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode common.ReleaseMode, secret string) error {
 	accessToken, err := generateAccessToken(user, mode, secret)
 	if err != nil {
-		return fmt.Errorf("failed to generate access token: %w", err)
+		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
 
 	cookieExp := time.Now().Add(cookieExpDuration)
@@ -70,7 +71,7 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	// We generate here a new refresh token and saving it to the cookie.
 	refreshToken, err := generateRefreshToken(user, mode, secret)
 	if err != nil {
-		return fmt.Errorf("failed to generate refresh token: %w", err)
+		return pkgerrors.Wrap(err, "failed to generate refresh token")
 	}
 	setTokenCookie(c, refreshTokenCookieName, refreshToken, cookieExp)
 
@@ -189,14 +190,14 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 		claims := &Claims{}
 		accessToken, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
 			if t.Method.Alg() != jwt.SigningMethodHS256.Name {
-				return nil, fmt.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
+				return nil, pkgerrors.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
 			}
 			if kid, ok := t.Header["kid"].(string); ok {
 				if kid == "v1" {
 					return []byte(secret), nil
 				}
 			}
-			return nil, fmt.Errorf("unexpected access token kid=%v", t.Header["kid"])
+			return nil, pkgerrors.Errorf("unexpected access token kid=%v", t.Header["kid"])
 		})
 
 		if !audienceContains(claims.Audience, fmt.Sprintf(accessTokenAudienceFmt, mode)) {
@@ -249,7 +250,7 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 					refreshTokenClaims := &Claims{}
 					refreshToken, err := jwt.ParseWithClaims(rc.Value, refreshTokenClaims, func(t *jwt.Token) (interface{}, error) {
 						if t.Method.Alg() != jwt.SigningMethodHS256.Name {
-							return nil, fmt.Errorf("unexpected refresh token signing method=%v, expected %v", t.Header["alg"], jwt.SigningMethodHS256)
+							return nil, pkgerrors.Errorf("unexpected refresh token signing method=%v, expected %v", t.Header["alg"], jwt.SigningMethodHS256)
 						}
 
 						if kid, ok := t.Header["kid"].(string); ok {
@@ -257,7 +258,7 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 								return []byte(secret), nil
 							}
 						}
-						return nil, fmt.Errorf("unexpected refresh token kid=%v", t.Header["kid"])
+						return nil, pkgerrors.Errorf("unexpected refresh token kid=%v", t.Header["kid"])
 					})
 					if err != nil {
 						if err == jwt.ErrSignatureInvalid {

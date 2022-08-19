@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/pkg/errors"
 )
 
 // TaskExecutor is the task executor.
@@ -39,12 +40,12 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
 			if !ok {
-				panicErr = fmt.Errorf("%v", r)
+				panicErr = errors.Errorf("%v", r)
 			}
 			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr))
 			terminated = true
 			result = nil
-			err = fmt.Errorf("encounter internal error when executing task")
+			err = errors.Errorf("encounter internal error when executing task")
 		}
 	}()
 
@@ -57,7 +58,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		if migrationType == db.Data {
 			msg = "missing database when updating data"
 		}
-		return nil, fmt.Errorf(msg)
+		return nil, errors.Errorf(msg)
 	}
 	databaseName := task.Database.Name
 
@@ -92,7 +93,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare for database migration, error: %w", err)
+			return nil, errors.Wrap(err, "failed to prepare for database migration")
 		}
 		mi.Creator = vcsPushEvent.FileCommit.AuthorName
 
@@ -101,7 +102,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		}
 		bytes, err := json.Marshal(miPayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare for database migration, unable to marshal vcs push event payload, error: %w", err)
+			return nil, errors.Wrap(err, "failed to prepare for database migration, unable to marshal vcs push event payload")
 		}
 		mi.Payload = string(bytes)
 	}
@@ -120,7 +121,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	statement = strings.TrimSpace(statement)
 	// Only baseline can have empty sql statement, which indicates empty database.
 	if mi.Type != db.Baseline && statement == "" {
-		return nil, fmt.Errorf("empty statement")
+		return nil, errors.Errorf("empty statement")
 	}
 	// We will force migration for baseline and migrate type of migrations.
 	// This usually happens when the previous attempt fails and the client retries the migration.
@@ -151,7 +152,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return 0, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
+		return 0, "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
 	}
 	if setup {
 		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
@@ -210,7 +211,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	if writeBack {
 		dbName, err := api.GetBaseDatabaseName(mi.Database, project.DBNameTemplate, task.Database.Labels)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to get BaseDatabaseName for instance %q, database %q: %w", task.Instance.Name, task.Database.Name, err)
+			return true, nil, errors.Wrapf(err, "failed to get BaseDatabaseName for instance %q, database %q", task.Instance.Name, task.Database.Name)
 		}
 		latestSchemaFile := filepath.Join(repo.BaseDirectory, repo.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
@@ -218,10 +219,10 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 
 		vcs, err := server.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
+			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
 		if vcs == nil {
-			return true, nil, fmt.Errorf("VCS ID not found: %d", repo.VCSID)
+			return true, nil, errors.Errorf("VCS ID not found: %d", repo.VCSID)
 		}
 		repo.VCS = vcs
 
@@ -316,10 +317,10 @@ func findIssueByTask(ctx context.Context, server *Server, task *api.Task) (*api.
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
-		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, task_id: %v, error: %w", task.ID, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, task_id: %v", task.ID)
 	}
 	if issue == nil {
-		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v, error: %w", task.PipelineID, task.ID, err)
+		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v", task.PipelineID, task.ID)
 	}
 	return issue, nil
 }
@@ -330,10 +331,10 @@ func findRepositoryByTask(ctx context.Context, server *Server, task *api.Task) (
 	}
 	repo, err := server.store.GetRepository(ctx, repoFind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find linked repository for database %q", task.Database.Name)
+		return nil, errors.Errorf("failed to find linked repository for database %q", task.Database.Name)
 	}
 	if repo == nil {
-		return nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+		return nil, errors.Errorf("repository not found with project ID %v", task.Database.ProjectID)
 	}
 	return repo, nil
 }
@@ -363,7 +364,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			createSchemaFile = true
 			verb = "Create"
 		} else {
-			return "", fmt.Errorf("failed to fetch latest schema: %w", err)
+			return "", errors.Wrap(err, "failed to fetch latest schema")
 		}
 	}
 
@@ -383,10 +384,10 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// existing token pair has expired.
 	repo2, err := server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch repository for schema write-back: %v", err)
+		return "", errors.Wrap(err, "failed to fetch repository for schema write-back")
 	}
 	if repo2 == nil {
-		return "", fmt.Errorf("repository not found for schema write-back: %v", repository.ID)
+		return "", errors.Errorf("repository not found for schema write-back: %v", repository.ID)
 	}
 
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
@@ -415,7 +416,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		)
 
 		if err != nil {
-			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
+			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
 		}
 	} else {
 		log.Debug("Update latest schema file",
@@ -438,7 +439,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			schemaFileCommit,
 		)
 		if err != nil {
-			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
+			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
 		}
 	}
 
@@ -447,10 +448,10 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// existing token pair has expired.
 	repo2, err = server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch repository after schema write-back: %v", err)
+		return "", errors.Wrap(err, "failed to fetch repository after schema write-back")
 	}
 	if repo2 == nil {
-		return "", fmt.Errorf("repository not found after schema write-back: %v", repository.ID)
+		return "", errors.Errorf("repository not found after schema write-back: %v", repository.ID)
 	}
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
 	schemaFileMeta, err = vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
@@ -469,7 +470,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch latest schema file %s after update: %w", latestSchemaFile, err)
+		return "", errors.Wrapf(err, "failed to fetch latest schema file %s after update", latestSchemaFile)
 	}
 	return schemaFileMeta.LastCommitID, nil
 }

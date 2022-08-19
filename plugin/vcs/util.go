@@ -1,8 +1,9 @@
 package vcs
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Branch is the helper function returns the branch name from reference name.
@@ -13,5 +14,5 @@ func Branch(ref string) (string, error) {
 		return strings.TrimPrefix(ref, "refs/heads/"), nil
 	}
 
-	return "", fmt.Errorf("invalid Git ref: %s", ref)
+	return "", errors.Errorf("invalid Git ref: %s", ref)
 }

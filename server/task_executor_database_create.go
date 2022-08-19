@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -39,12 +40,12 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid create database payload: %w", err)
+		return true, nil, errors.Wrap(err, "invalid create database payload")
 	}
 
 	statement := strings.TrimSpace(payload.Statement)
 	if statement == "" {
-		return true, nil, fmt.Errorf("empty create database statement")
+		return true, nil, errors.Errorf("empty create database statement")
 	}
 
 	instance := task.Instance
@@ -96,7 +97,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		)
 	}
 	if issue == nil {
-		err := fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
+		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
 		log.Error(err.Error(),
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
@@ -166,16 +167,16 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if payload.Labels != "" {
 		project, err := server.store.GetProjectByID(ctx, payload.ProjectID)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to find project with ID %d", payload.ProjectID)
+			return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
 		}
 		if project == nil {
-			return true, nil, fmt.Errorf("project not found with ID %d", payload.ProjectID)
+			return true, nil, errors.Errorf("project not found with ID %d", payload.ProjectID)
 		}
 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
 		err = server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", database.ID)
+			return true, nil, errors.Errorf("failed to record database labels after creating database %v", database.ID)
 		}
 	}
 

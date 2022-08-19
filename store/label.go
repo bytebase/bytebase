@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/pkg/errors"
 )
 
 // labelKeyRaw is the store model for an LabelKey.
@@ -144,7 +145,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 
 		label, err := s.composeDatabaseLabel(ctx, labelRaw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose DatabaseLabel with databaseLabelRaw[%+v], error: %w", labelRaw, err)
+			return nil, errors.Wrapf(err, "failed to compose DatabaseLabel with databaseLabelRaw[%+v]", labelRaw)
 		}
 		ret = append(ret, label)
 	}
@@ -160,13 +161,13 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 func (s *Store) FindLabelKey(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	labelKeyRawList, err := s.findLabelKeyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find LabelKey list with LabelKeyFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find LabelKey list with LabelKeyFind[%+v]", find)
 	}
 	var labelKeyList []*api.LabelKey
 	for _, raw := range labelKeyRawList {
 		labelKey, err := s.composeLabelKey(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose LabelKey with labelKeyRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose LabelKey with labelKeyRaw[%+v]", raw)
 		}
 		labelKeyList = append(labelKeyList, labelKey)
 	}
@@ -177,11 +178,11 @@ func (s *Store) FindLabelKey(ctx context.Context, find *api.LabelKeyFind) ([]*ap
 func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*api.LabelKey, error) {
 	labelKeyRaw, err := s.patchLabelKeyRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch LabelKey with LabelKeyPatch[%+v], error: %w", patch, err)
+		return nil, errors.Wrapf(err, "failed to patch LabelKey with LabelKeyPatch[%+v]", patch)
 	}
 	labelKey, err := s.composeLabelKey(ctx, labelKeyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose LabelKey with labelKeyRaw[%+v], error: %w", labelKeyRaw, err)
+		return nil, errors.Wrapf(err, "failed to compose LabelKey with labelKeyRaw[%+v]", labelKeyRaw)
 	}
 	return labelKey, nil
 }
@@ -190,13 +191,13 @@ func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*a
 func (s *Store) FindDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	labelKeyRawList, err := s.findDatabaseLabelRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find DatabaseLabel list with DatabaseLabelFind[%+v], error: %w", find, err)
+		return nil, errors.Wrapf(err, "failed to find DatabaseLabel list with DatabaseLabelFind[%+v]", find)
 	}
 	var labelKeyList []*api.DatabaseLabel
 	for _, raw := range labelKeyRawList {
 		labelKey, err := s.composeDatabaseLabel(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose DatabaseLabel with labelKeyRaw[%+v], error: %w", raw, err)
+			return nil, errors.Wrapf(err, "failed to compose DatabaseLabel with labelKeyRaw[%+v]", raw)
 		}
 		labelKeyList = append(labelKeyList, labelKey)
 	}

@@ -1,8 +1,9 @@
 package api
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // UnknownID is the ID for unknowns.
@@ -36,5 +37,5 @@ func StringToSortOrder(s string) (SortOrder, error) {
 	case string(DESC):
 		return DESC, nil
 	}
-	return SortOrder(""), fmt.Errorf("%q cannot be converted to SortOrder", s)
+	return SortOrder(""), errors.Errorf("%q cannot be converted to SortOrder", s)
 }
