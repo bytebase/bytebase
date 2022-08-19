@@ -274,7 +274,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	return task, err
 }
 
-func (s *TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
+func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	switch task.Type {
 	case api.TaskDatabaseSchemaUpdate:
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
