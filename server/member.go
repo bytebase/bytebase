@@ -109,7 +109,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch member request").SetInternal(err)
 		}
 		// When archiving an owner, make sure there are other active owners.
-		if member.Role == "OWNER" && *memberPatch.RowStatus == "ARCHIVED" {
+		if member.Role == api.Owner && *memberPatch.RowStatus == string(api.Archived) {
 			countResult, err := s.store.CountMemberGroupByRoleAndStatus(ctx)
 			for _, count := range countResult {
 				if count.Role == "OWNER" && count.RowStatus == "NORMAL" && count.Count == 1 {
