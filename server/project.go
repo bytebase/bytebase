@@ -175,7 +175,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find issues in the project %d", id)).SetInternal(err)
 			}
 			if len(issueList) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, "You should resolve all issue under the project before archiving the project.")
+				return echo.NewHTTPError(http.StatusBadRequest, "Please resolve all the issues in it before archiving the project.")
 			}
 		}
 
