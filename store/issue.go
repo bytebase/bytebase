@@ -538,9 +538,9 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		args = append(args, *v)
 		args = append(args, *v)
 	}
-	if v := find.StatusList; v != nil {
+	if v := find.StatusList; len(v) != 0 {
 		list := []string{}
-		for _, status := range *v {
+		for _, status := range v {
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, status)
 		}

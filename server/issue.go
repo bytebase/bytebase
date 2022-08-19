@@ -57,7 +57,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			for _, status := range strings.Split(issueStatusListStr, ",") {
 				statusList = append(statusList, api.IssueStatus(status))
 			}
-			issueFind.StatusList = &statusList
+			issueFind.StatusList = statusList
 		}
 		if limitStr := c.QueryParam("limit"); limitStr != "" {
 			limit, err := strconv.Atoi(limitStr)
