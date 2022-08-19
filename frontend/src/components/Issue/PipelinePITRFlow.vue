@@ -7,6 +7,7 @@
     </PipelineStageList>
 
     <div
+      v-if="taskList.length > 1"
       class="task-list p-2 lg:flex lg:items-center relative space-y-2 lg:space-y-0"
     >
       <template v-for="(task, i) in taskList" :key="i">
@@ -27,7 +28,7 @@
                 v-if="isActiveTask(task)"
                 class="name w-5 h-5"
               />
-              <div class="name">{{ databaseOfTask(task).name }}</div>
+              <div class="name">{{ databaseNameOfTask(task) }}</div>
             </div>
             <div
               class="flex items-center px-1 py-1 whitespace-pre-wrap break-all"
@@ -51,15 +52,13 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import type {
-  Pipeline,
-  Stage,
-  StageCreate,
-  Task,
-  TaskCreate,
-  Database,
-} from "@/types";
-import { activeTask, activeTaskInStage, taskSlug } from "@/utils";
+import { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
+import {
+  activeTask,
+  activeTaskInStage,
+  extractDatabaseNameFromTask,
+  taskSlug,
+} from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseStore } from "@/store";
 import PipelineStageList from "./PipelineStageList.vue";
@@ -88,11 +87,8 @@ const taskList = computed(() => {
   return selectedStage.value.taskList;
 });
 
-const databaseOfTask = (task: Task | TaskCreate): Database => {
-  if (create.value) {
-    return databaseStore.getDatabaseById((task as TaskCreate).databaseId!);
-  }
-  return (task as Task).database!;
+const databaseNameOfTask = (task: Task | TaskCreate): string => {
+  return extractDatabaseNameFromTask(task);
 };
 
 const isSelectedTask = (task: Task | TaskCreate): boolean => {
