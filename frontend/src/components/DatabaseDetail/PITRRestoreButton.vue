@@ -102,7 +102,7 @@
 
           <div class="space-y-2">
             <label class="textlabel w-full flex flex-col gap-1">
-              {{ $t("database.pitr.target") }}
+              {{ $t("database.pitr.restore-to") }}
             </label>
             <div class="flex items-center gap-3 textlabel">
               <label class="flex items-center">
@@ -112,18 +112,8 @@
                   @input="state.target = 'IN-PLACE'"
                 />
                 <span class="ml-2">
-                  {{ $t("database.pitr.target-inplace") }}
+                  {{ $t("database.pitr.restore-to-in-place") }}
                 </span>
-                <NTooltip>
-                  <template #trigger>
-                    <heroicons-outline:exclamation-circle
-                      class="w-4 h-4 ml-1"
-                    />
-                  </template>
-                  <span class="whitespace-nowrap">
-                    {{ $t("database.pitr.will-overwrite-current-database") }}
-                  </span>
-                </NTooltip>
               </label>
               <label class="flex items-center gap-2">
                 <input
@@ -131,8 +121,18 @@
                   :checked="state.target === 'NEW'"
                   @input="state.target = 'NEW'"
                 />
-                <span>{{ $t("database.pitr.target-new-db") }}</span>
+                <span>{{ $t("database.pitr.restore-to-new-db") }}</span>
               </label>
+            </div>
+
+            <div
+              v-if="state.target === 'IN-PLACE'"
+              class="flex items-center gap-2 text-error mt-2"
+            >
+              <heroicons-outline:exclamation-circle class="w-4 h-4" />
+              <span class="whitespace-nowrap text-sm">
+                {{ $t("database.pitr.will-overwrite-current-database") }}
+              </span>
             </div>
           </div>
 
