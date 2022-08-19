@@ -15,7 +15,7 @@
 
 <script lang="ts">
 import { useInstanceStore } from "@/store";
-import { computed, defineComponent, reactive, watch } from "vue";
+import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { Instance } from "../types";
 
 interface LocalState {
@@ -32,6 +32,10 @@ export default defineComponent({
     },
     environmentId: {
       type: Number,
+      default: undefined,
+    },
+    filter: {
+      type: Function as PropType<(instance: Instance) => boolean>,
       default: undefined,
     },
     disabled: {
@@ -57,7 +61,7 @@ export default defineComponent({
     });
 
     const instanceList = computed(() => {
-      return rawInstanceList.value.filter((instance) => {
+      const list = rawInstanceList.value.filter((instance) => {
         if (instance.rowStatus === "NORMAL") {
           return true;
         }
@@ -67,6 +71,11 @@ export default defineComponent({
         }
         return false;
       });
+
+      if (!props.filter) {
+        return list;
+      }
+      return list.filter(props.filter);
     });
 
     // The instance list might change if environmentId changes, and the previous selected id
