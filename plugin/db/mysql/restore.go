@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -94,6 +95,7 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 }
 
 type binlogFileMeta struct {
+	Size         int64 `json:"size"`
 	FirstEventTs int64 `json:"first_event_ts"`
 }
 
@@ -620,24 +622,25 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 	}
 
-	if err := driver.writeBinlogMetadataFile(ctx, binlogFileToDownload.Name); err != nil {
+	if err := driver.writeBinlogMetadataFile(ctx, fileInfo); err != nil {
 		return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePath)
 	}
 
 	return nil
 }
 
-func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileName string) error {
-	eventTs, err := driver.parseLocalBinlogFirstEventTs(ctx, binlogFileName)
+func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileInfo fs.FileInfo) error {
+	eventTs, err := driver.parseLocalBinlogFirstEventTs(ctx, binlogFileInfo.Name())
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse the local binlog file %q's first binlog event ts", binlogFileName)
+		return errors.Wrapf(err, "failed to parse the local binlog file %q's first binlog event ts", binlogFileInfo.Name())
 	}
-	metadataFilePath := filepath.Join(driver.binlogMetaDir, binlogFileName+".meta")
+	metadataFilePath := filepath.Join(driver.binlogMetaDir, binlogFileInfo.Name()+".meta")
 	metadataFile, err := os.Create(metadataFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create binlog metadata file %q", metadataFilePath)
 	}
 	metadata := binlogFileMeta{
+		Size:         binlogFileInfo.Size(),
 		FirstEventTs: eventTs,
 	}
 	metadataBytes, err := json.Marshal(metadata)
