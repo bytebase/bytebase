@@ -229,6 +229,24 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return task, nil
 	}
 
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckDatabaseConnect,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+	}); err != nil {
+		return nil, err
+	}
+
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckInstanceMigrationSchema,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+	}); err != nil {
+		return nil, err
+	}
+
 	statement := ""
 
 	switch task.Type {
@@ -258,24 +276,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	}
 	if database == nil {
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
-	}
-
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseConnect,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckInstanceMigrationSchema,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-	}); err != nil {
-		return nil, err
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
