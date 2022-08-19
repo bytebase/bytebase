@@ -247,27 +247,9 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, err
 	}
 
-	statement := ""
-
-	switch task.Type {
-	case api.TaskDatabaseSchemaUpdate:
-		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return nil, errors.Wrap(err, "invalid database schema update payload")
-		}
-		statement = taskPayload.Statement
-	case api.TaskDatabaseDataUpdate:
-		taskPayload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return nil, errors.Wrap(err, "invalid database data update payload")
-		}
-		statement = taskPayload.Statement
-	case api.TaskDatabaseSchemaUpdateGhostSync:
-		taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return nil, errors.Wrap(err, "invalid database data update payload")
-		}
-		statement = taskPayload.Statement
+	statement, err := s.getStatement(task)
+	if err != nil {
+		return nil, err
 	}
 
 	database, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
@@ -365,6 +347,31 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	task.TaskCheckRunList = taskCheckRunList
 
 	return task, err
+}
+
+func (s *TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
+	switch task.Type {
+	case api.TaskDatabaseSchemaUpdate:
+		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdatePayload")
+		}
+		return taskPayload.Statement, nil
+	case api.TaskDatabaseDataUpdate:
+		taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return "", errors.Wrap(err, "invalid TaskDatabaseDataUpdatePayload")
+		}
+		return taskPayload.Statement, nil
+	case api.TaskDatabaseSchemaUpdateGhostSync:
+		taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdateGhostSyncPayload")
+		}
+		return taskPayload.Statement, nil
+	default:
+		return "", errors.Errorf("invalid task type %s", task.Type)
+	}
 }
 
 func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
