@@ -12,7 +12,7 @@
     <template #footer>
       <div class="flex flex-row justify-center pb-10">
         <div v-if="locale === 'en-US'" class="w-1/2 pt-2">
-          <a href="https://discord.gg/VHEXRDQq" target="_blank">
+          <a href="https://discord.gg/Fac9nmZ95j" target="_blank">
             <img
               src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
               alt="discord invitation"
