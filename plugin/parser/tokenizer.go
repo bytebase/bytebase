@@ -47,6 +47,9 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
 	for _, col := range node.ColumnList {
 		col.SetLine(node.Line())
+		for _, inlineCons := range col.ConstraintList {
+			inlineCons.SetLine(node.Line())
+		}
 	}
 	for _, cons := range node.ConstraintList {
 		cons.SetLine(node.Line())
@@ -81,6 +84,9 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 				if columnPos < len(node.ColumnList) &&
 					strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
 					node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+					for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
+						inlineConstraint.SetLine(node.ColumnList[columnPos].Line())
+					}
 				} else if constraintPos < len(node.ConstraintList) &&
 					matchTableConstraint(def, node.ConstraintList[constraintPos]) {
 					node.ConstraintList[constraintPos].SetLine(t.startLine + node.Line() - 1)
@@ -93,6 +99,9 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 			if columnPos < len(node.ColumnList) &&
 				strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
 				node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+				for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
+					inlineConstraint.SetLine(node.ColumnList[columnPos].Line())
+				}
 				columnPos++
 			} else if constraintPos < len(node.ConstraintList) &&
 				matchTableConstraint(def, node.ConstraintList[constraintPos]) {
