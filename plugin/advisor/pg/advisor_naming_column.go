@@ -70,7 +70,11 @@ type namingColumnConventionChecker struct {
 
 // Visit implements the ast.Visitor interface.
 func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
-	var columnList []string
+	type columnData struct {
+		name string
+		line int
+	}
+	var columnList []columnData
 	var tableName string
 
 	switch n := node.(type) {
@@ -78,36 +82,47 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 	case *ast.CreateTableStmt:
 		tableName = n.Name.Name
 		for _, col := range n.ColumnList {
-			columnList = append(columnList, col.ColumnName)
+			columnList = append(columnList, columnData{
+				name: col.ColumnName,
+				line: col.Line(),
+			})
 		}
 	// ALTER TABLE ADD COLUMN
 	case *ast.AddColumnListStmt:
 		tableName = n.Table.Name
 		for _, col := range n.ColumnList {
-			columnList = append(columnList, col.ColumnName)
+			columnList = append(columnList, columnData{
+				name: col.ColumnName,
+				line: n.Line(),
+			})
 		}
 	// ALTER TABLE RENAME COLUMN
 	case *ast.RenameColumnStmt:
 		tableName = n.Table.Name
-		columnList = append(columnList, n.NewName)
+		columnList = append(columnList, columnData{
+			name: n.NewName,
+			line: n.Line(),
+		})
 	}
 
 	for _, column := range columnList {
-		if !checker.format.MatchString(column) {
+		if !checker.format.MatchString(column.name) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, column, checker.format),
+				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, column.name, checker.format),
+				Line:    column.line,
 			})
 		}
 
-		if checker.maxLength > 0 && len(column) > checker.maxLength {
+		if checker.maxLength > 0 && len(column.name) > checker.maxLength {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, column, checker.maxLength),
+				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, column.name, checker.maxLength),
+				Line:    column.line,
 			})
 		}
 	}

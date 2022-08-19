@@ -34,6 +34,7 @@ func TestNamingPKConvention(t *testing.T) {
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"tech_book_id_name\"",
+					Line:    1,
 				},
 			},
 		},
@@ -45,12 +46,14 @@ func TestNamingPKConvention(t *testing.T) {
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: fmt.Sprintf("Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"%s\"", invalidPKName),
+					Line:    1,
 				},
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: fmt.Sprintf(`Primary key "%s" in table "tech_book" mismatches the naming convention, its length should be within %d characters`, invalidPKName, maxLength),
+					Line:    1,
 				},
 			},
 		},
@@ -66,13 +69,19 @@ func TestNamingPKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT, name VARCHAR(20), CONSTRAINT tech_book_name PRIMARY KEY (name))",
+			Statement: `
+				CREATE TABLE tech_book(
+					id INT,
+					name VARCHAR(20),
+					CONSTRAINT tech_book_name PRIMARY KEY (name)
+				)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_name$\" but found \"tech_book_name\"",
+					Line:    5,
 				},
 			},
 		},
@@ -124,6 +133,7 @@ func TestNamingPKConvention(t *testing.T) {
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Line:    1,
 				},
 			},
 		},
@@ -153,6 +163,7 @@ func TestNamingPKConvention(t *testing.T) {
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Line:    1,
 				},
 			},
 		},
@@ -182,6 +193,7 @@ func TestNamingPKConvention(t *testing.T) {
 					Code:    advisor.NamingPKConventionMismatch,
 					Title:   "naming.index.pk",
 					Content: "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id_name$\" but found \"pk_tech_book\"",
+					Line:    1,
 				},
 			},
 		},

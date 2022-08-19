@@ -76,6 +76,7 @@ type namingFKConventionChecker struct {
 type indexMetaData struct {
 	indexName string
 	tableName string
+	line      int
 	metaData  map[string]string
 }
 
@@ -100,6 +101,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf(`Foreign key in table "%s" mismatches the naming convention, expect %q but found "%s"`, indexData.tableName, regex, indexData.indexName),
+				Line:    indexData.line,
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -108,6 +110,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, indexData.indexName, indexData.tableName, checker.maxLength),
+				Line:    indexData.line,
 			})
 		}
 	}
@@ -121,26 +124,26 @@ func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData 
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.ConstraintList {
-			if metadata := getForeignKeyMetadata(constraint, node.Name.Name); metadata != nil {
+			if metadata := getForeignKeyMetadata(constraint, node.Name.Name, constraint.Line()); metadata != nil {
 				res = append(res, metadata)
 			}
 		}
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := getForeignKeyMetadata(constraint, node.Name.Name); metadata != nil {
+				if metadata := getForeignKeyMetadata(constraint, node.Name.Name, column.Line()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
 		}
 	case *ast.AddConstraintStmt:
 		constraint := node.Constraint
-		if metadata := getForeignKeyMetadata(constraint, node.Table.Name); metadata != nil {
+		if metadata := getForeignKeyMetadata(constraint, node.Table.Name, node.Line()); metadata != nil {
 			res = append(res, metadata)
 		}
 	case *ast.AddColumnListStmt:
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := getForeignKeyMetadata(constraint, node.Table.Name); metadata != nil {
+				if metadata := getForeignKeyMetadata(constraint, node.Table.Name, node.Line()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
@@ -150,7 +153,7 @@ func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData 
 }
 
 // getForeignKeyMetadata returns index metadata of a foreign key constraint, nil if other constraints.
-func getForeignKeyMetadata(constraint *ast.ConstraintDef, tableName string) *indexMetaData {
+func getForeignKeyMetadata(constraint *ast.ConstraintDef, tableName string, line int) *indexMetaData {
 	if constraint.Type == ast.ConstraintTypeForeign {
 		referencingColumnList := constraint.KeyList
 		referencedColumnList := constraint.Foreign.ColumnList
@@ -165,6 +168,7 @@ func getForeignKeyMetadata(constraint *ast.ConstraintDef, tableName string) *ind
 		return &indexMetaData{
 			indexName: constraint.Name,
 			tableName: tableName,
+			line:      line,
 			metaData:  metaData,
 		}
 	}
