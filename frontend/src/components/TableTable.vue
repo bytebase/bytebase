@@ -21,7 +21,7 @@
           />
         </div>
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell v-if="!isPostgres" class="w-[14%]">
         {{ table.engine }}
       </BBTableCell>
       <BBTableCell class="w-[14%]">
@@ -33,7 +33,7 @@
       <BBTableCell class="w-[14%]">
         {{ bytesToString(table.indexSize) }}
       </BBTableCell>
-      <BBTableCell class="w-[14%]">
+      <BBTableCell v-if="!isPostgres" class="w-[14%]">
         {{ humanizeTs(table.createdTs) }}
       </BBTableCell>
     </template>
@@ -71,6 +71,10 @@ export default defineComponent({
   name: "TableTable",
   components: { EllipsisText },
   props: {
+    databaseEngine: {
+      type: String,
+      default: "MYSQL",
+    },
     tableList: {
       required: true,
       type: Object as PropType<Table[]>,
@@ -80,30 +84,51 @@ export default defineComponent({
     const router = useRouter();
     const { t } = useI18n();
 
+    const isPostgres = computed(() => props.databaseEngine === "POSTGRES");
+
     const state = reactive<LocalState>({
       showReservedTableList: false,
     });
 
-    const columnList = computed(() => [
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("database.engine"),
-      },
-      {
-        title: t("database.row-count-est"),
-      },
-      {
-        title: t("database.data-size"),
-      },
-      {
-        title: t("database.index-size"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-    ]);
+    const columnList = computed(() => {
+      if (isPostgres.value) {
+        return [
+          {
+            title: t("common.name"),
+          },
+          {
+            title: t("database.row-count-est"),
+          },
+          {
+            title: t("database.data-size"),
+          },
+          {
+            title: t("database.index-size"),
+          },
+        ];
+      } else {
+        return [
+          {
+            title: t("common.name"),
+          },
+          {
+            title: t("database.engine"),
+          },
+          {
+            title: t("database.row-count-est"),
+          },
+          {
+            title: t("database.data-size"),
+          },
+          {
+            title: t("database.index-size"),
+          },
+          {
+            title: t("common.created-at"),
+          },
+        ];
+      }
+    });
 
     const regularTableList = computed(() =>
       props.tableList.filter((table) => !isGhostTable(table))
@@ -137,6 +162,7 @@ export default defineComponent({
     return {
       columnList,
       state,
+      isPostgres,
       bytesToString,
       clickTable,
       hasReservedTables,
