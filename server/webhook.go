@@ -258,7 +258,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 func parseBranchNameFromGitHubRefs(ref string) (string, error) {
 	expectedPrefix := "refs/heads/"
 	if !strings.HasPrefix(ref, expectedPrefix) || len(expectedPrefix) == len(ref) {
-		log.Debug("ref is not prefix with expected prefix", zap.String("ref", ref), zap.String("expected prefix", expectedPrefix))
+		log.Debug("ref is not prefix with expected prefix", zap.String("escaped ref", common.EscapeForLogging(ref)), zap.String("expected prefix", expectedPrefix))
 		return ref, errors.Errorf("unexpected ref name %q without prefix %q", ref, expectedPrefix)
 	}
 	return ref[len(expectedPrefix):], nil
