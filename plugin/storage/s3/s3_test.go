@@ -24,6 +24,8 @@ var (
 	}
 )
 
+// Only for manual test.
+// Should be skipped in CI.
 func TestS3Operations(t *testing.T) {
 	t.Skip()
 	a := require.New(t)

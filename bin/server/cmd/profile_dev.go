@@ -11,16 +11,11 @@ import (
 )
 
 func activeProfile(dataDir string, backupMeta backupMeta) server.Profile {
-	p := getBaseProfile()
+	p := getBaseProfile(backupMeta)
 	p.Mode = common.ReleaseModeDev
 	p.PgUser = "bbdev"
 	p.DataDir = dataDir
 	p.BackupRunnerInterval = 10 * time.Second
 	p.MetricConnectionKey = "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT"
-
-	p.BackupStorageBackend = backupMeta.storageBackend
-	p.BackupRegion = backupMeta.region
-	p.BackupBucket = backupMeta.bucket
-	p.BackupCredentialFile = backupMeta.credentialFile
 	return p
 }

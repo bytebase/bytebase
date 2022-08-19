@@ -102,24 +102,27 @@ var casbinDeveloperPolicy string
 // @schemes http
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, profile Profile) (*Server, error) {
+func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
-		profile:   profile,
+		profile:   prof,
 		startedTs: time.Now().Unix(),
 	}
 
 	// Display config
 	log.Info("-----Config BEGIN-----")
-	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
-	log.Info(fmt.Sprintf("server=%s:%d", profile.BackendHost, profile.BackendPort))
-	log.Info(fmt.Sprintf("datastore=%s:%d", profile.BackendHost, profile.DatastorePort))
-	log.Info(fmt.Sprintf("frontend=%s:%d", profile.FrontendHost, profile.FrontendPort))
-	log.Info(fmt.Sprintf("demoDataDir=%s", profile.DemoDataDir))
-	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
-	log.Info(fmt.Sprintf("demo=%t", profile.Demo))
-	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
-	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
+	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
+	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
+	log.Info(fmt.Sprintf("datastore=%s:%d", prof.BackendHost, prof.DatastorePort))
+	log.Info(fmt.Sprintf("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort))
+	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
+	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
+	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
+	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
+	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
+	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
+	log.Info(fmt.Sprintf("backupBucket=%s", prof.BackupBucket))
+	log.Info(fmt.Sprintf("backupRegion=%s", prof.BackupRegion))
+	log.Info(fmt.Sprintf("backupCredentialFile=%s", prof.BackupCredentialFile))
 	log.Info("-----Config END-------")
 
 	serverStarted := false
@@ -131,7 +134,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 
 	var err error
 
-	resourceDir := common.GetResourceDir(profile.DataDir)
+	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
 	if err := mysqlutil.Install(resourceDir); err != nil {
 		return nil, errors.Wrap(err, "cannot install mysqlbinlog binary")
@@ -139,8 +142,8 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 
 	// Install Postgres.
 	var pgDataDir string
-	if profile.useEmbedDB() {
-		pgDataDir = common.GetPostgresDataDir(profile.DataDir)
+	if prof.useEmbedDB() {
+		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
 	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
 	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
@@ -150,24 +153,24 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, profile.PgUser)
+	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
 	if err != nil {
 		return nil, err
 	}
 	s.pgInstanceDir = pgInstance.BaseDir
 
 	// New MetadataDB instance.
-	if profile.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, profile.PgUser, profile.DemoDataDir, profile.Mode)
+	if prof.useEmbedDB() {
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, profile.PgURL, profile.DemoDataDir, profile.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create MetadataDB instance")
 	}
 
 	// New store.DB instance that represents the db connection.
-	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
+	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot new db")
 	}
@@ -189,7 +192,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	s.secret = config.secret
 
 	e := echo.New()
-	e.Debug = profile.Debug
+	e.Debug = prof.Debug
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -201,19 +204,19 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	embedFrontend(e)
 	s.e = e
 
-	if profile.BackupBucket != "" {
-		credentials, err := s3bb.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
+	if prof.BackupBucket != "" {
+		credentials, err := s3bb.GetCredentialsFromFile(ctx, prof.BackupCredentialFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get credentials from file")
 		}
-		s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
+		s3Client, err := s3bb.NewClient(ctx, prof.BackupRegion, prof.BackupBucket, credentials)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create AWS S3 client")
 		}
 		s.s3Client = s3Client
 	}
 
-	if !profile.Readonly {
+	if !prof.Readonly {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
@@ -270,7 +273,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 		s.SchemaSyncer = NewSchemaSyncer(s)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, profile.BackupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
@@ -304,7 +307,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 
 	apiGroup := e.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(s.store, next, profile.Mode, config.secret)
+		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -317,7 +320,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, ce, next, profile.Readonly)
+		return aclMiddleware(s, ce, next, prof.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -359,7 +362,7 @@ func NewServer(ctx context.Context, profile Profile) (*Server, error) {
 	p.Use(e)
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.LicenseService, err = enterpriseService.NewLicenseService(profile.Mode, s.store)
+	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}

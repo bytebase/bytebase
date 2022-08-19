@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/server"
 )
 
-func getBaseProfile() server.Profile {
+func getBaseProfile(backupMeta backupMeta) server.Profile {
 	var demoDataDir string
 	if flags.demo {
 		demoName := string(common.ReleaseModeDev)
@@ -34,7 +34,10 @@ func getBaseProfile() server.Profile {
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
+		BackupStorageBackend: backupMeta.storageBackend,
+		BackupRegion:         backupMeta.region,
+		BackupBucket:         backupMeta.bucket,
+		BackupCredentialFile: backupMeta.credentialFile,
 	}
 }
 
