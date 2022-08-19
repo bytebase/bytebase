@@ -209,6 +209,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									zap.String("name", task.Name),
 									zap.Error(err),
 								)
+								return
 							}
 
 							issue, err := s.server.store.GetIssueByPipelineID(ctx, taskPatched.PipelineID)
