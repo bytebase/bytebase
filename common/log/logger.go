@@ -9,8 +9,8 @@ import (
 
 var (
 	// `gl` is the global logger.
-	// Other packages should use public methods like Info/Error to do the logging.
-	// If special logging is required (like log to a separate file for some special operations), we need to add other loggers.
+	// Other packages should use public methods such as Info/Error to do the logging.
+	// For other types of logging, e.g. logging to a separate file, they should use their own loggers.
 	gl     *zap.Logger
 	gLevel zap.AtomicLevel
 )

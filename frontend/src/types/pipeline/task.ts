@@ -136,7 +136,7 @@ export type Task = {
   type: TaskType;
   instance: Instance;
   earliestAllowedTs: number;
-  // Tasks like creating database may not have database.
+  // Tasks such as creating database may not have database.
   database?: Database;
   payload?: TaskPayload;
 

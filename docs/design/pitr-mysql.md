@@ -96,7 +96,7 @@ The full backup process seems very sophisticated. Why don't we just dump the log
 
 If we start to dump a logical backup called bk at time t, and the backup SQL runs for 10s and finishes at t+10. Then we get the binlog coordinates at t+10 and save it together with the backup metadata. When we want to do a PITR to the database state at t+20, we would restore the logical backup bk and replay the binlog from t+10 to t+20.
 
-Here is the problem: the logical backup is a [consistent read](https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html) of the database, which means that no matter how long it takes to run the SQL, **the backup content is just like reading a snapshot of the database at time t**.
+Here is the problem: the logical backup is a [consistent read](https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html) of the database, which means that no matter how long it takes to run the SQL, **the backup content is similar to a snapshot of the database at time t**.
 
 Now let's reconsider the binlog replay. After the logical backup bk is restored, the database is at the state of t. If we want to incrementally restore to t+20, we should replay the binlog from **t to t+20** instead of t+10 to t+20 as is described above. In short, this "simpler implementation" is actually buggy.
 
@@ -119,7 +119,7 @@ To accomplish the tasks described above, Bytebase will embed the newest version 
 
 When the backup is enabled for a specific database, Bytebase will check where the PITR requirements are met and automatically upgrade to PITR and download the binlog files.
 
-An example command is like this, and the `--ssl` parameters should be used [following the doc](https://dev.mysql.com/doc/refman/5.7/en/mysqlbinlog.html#option_mysqlbinlog_ssl) if required:
+Take a look at an example command below. The `--ssl` parameters should be used [following the doc](https://dev.mysql.com/doc/refman/5.7/en/mysqlbinlog.html#option_mysqlbinlog_ssl) if required:
 
 `mysqlbinlog mysql-bin.000001 --ssl=0 --read-from-remote-server --host=x --user=x --password=x --raw --result-file=/bytebase/binlog/`
 
@@ -144,7 +144,7 @@ When the point-in-time t1 is determined, Bytebase will take a series of actions 
     1. Abort the recovery will delete the pitr database.
     2. Execute the cutover: if the original database exists, rename the original database to old, and rename the pitr database to the original; if not exists, we just create the pitr table using the user-provided name.
 
-The timeline involved above could be roughly represented like this:
+The timeline involved above could be roughly represented as:
 (bk (t0), data changes, t1, data changes)
 
 The pitr database naming convention in step 2 is appending _pitr_${UNIX_TIMESTAMP} to the end of the original database name. We must check that the pitr database name does not contain more than 64 characters, which is [the limit of MySQL](https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html).
@@ -153,7 +153,7 @@ Step 6b uses a special MySQL syntax [`RENAME TABLE current_db.tbl_name TO other_
 
 After the recovery process described above, Bytebase will ask for the user’s manual approval to delete the old database.
 
-To restore binlog from the original to the pitr table as is described in step 4, Bytebase will use the [`--rewrite-db`](https://dev.mysql.com/doc/refman/8.0/en/mysqlbinlog.html#option_mysqlbinlog_rewrite-db) option. An example is like `mysqlbinlog --rewrite-db='dbtarget->dbtarget_pitr' --database=dbtarget_pitr binlog.00001`. The `--database` option filters changed database names, so should not use the original database name.
+To restore binlog from the original to the pitr table as is described in step 4, Bytebase will use the [`--rewrite-db`](https://dev.mysql.com/doc/refman/8.0/en/mysqlbinlog.html#option_mysqlbinlog_rewrite-db) option. An example will be `mysqlbinlog --rewrite-db='dbtarget->dbtarget_pitr' --database=dbtarget_pitr binlog.00001`. The `--database` option filters changed database names, so should not use the original database name.
 
 The database session used to accomplish this recovery task should disable binlog. The binlog is used as incremental backups of the database, and the recovery operation itself will also introduce data changes, which are actually a duplicate of the recovered data changes. We should prevent the duplicate from going into the incremental backups, i.e., the binlog.
 
@@ -176,7 +176,7 @@ When taking a backup of a database, now we also need to store the current positi
 
 To provide a search option with the timestamp and binlog position, we will encode both of them, where the timestamp is the time at which the statement began executing on the MySQL server and decoded from the [binlog event header](https://dev.mysql.com/doc/internals/en/event-header-fields.html). The timestamp is represented as the UNIX timestamp, i.e., the number of seconds since 1970 (UTC).
 
-An example of the PITR information is like this:
+An example of the PITR information will be:
 
 ```json
 {

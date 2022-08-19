@@ -68,7 +68,7 @@ type RepositoryCreate struct {
 	ExternalID         string `jsonapi:"attr,externalId"`
 	// Token belonged by the user linking the project to the VCS repository. We store this token together
 	// with the refresh token in the new repository record so we can use it to call VCS API on
-	// behalf of that user to perform tasks like webhook CRUD later.
+	// behalf of that user to perform tasks such as webhook CRUD later.
 	AccessToken        string `jsonapi:"attr,accessToken"`
 	ExpiresTs          int64  `jsonapi:"attr,expiresTs"`
 	RefreshToken       string `jsonapi:"attr,refreshToken"`

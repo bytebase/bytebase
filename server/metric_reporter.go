@@ -79,7 +79,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
-				// identify will be triggered in every schedule loop so that we can update the latest workspace profile like subscription plan.
+				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
 				m.identify(ctx)
 				for name, collector := range m.collectors {
 					log.Debug("Run metric collector", zap.String("collector", name))

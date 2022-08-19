@@ -208,7 +208,7 @@ type TaskCreate struct {
 	PipelineID int
 	StageID    int
 	InstanceID int `jsonapi:"attr,instanceId"`
-	// Tasks like creating database may not have database.
+	// Tasks such as creating database may not have database.
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
