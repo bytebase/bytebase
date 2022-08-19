@@ -221,32 +221,8 @@ func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, 
 
 // ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
-	// the following block is for timing task check
-	{
-		// we only set skipIfAlreadyTerminated to false when user explicitly want to reschedule a taskCheck
-		flag, err := s.shouldScheduleTimingTaskCheck(ctx, task, !skipIfAlreadyTerminated /* forceSchedule */)
-		if err != nil {
-			return nil, err
-		}
-
-		if flag {
-			taskCheckPayload, err := json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
-				EarliestAllowedTs: task.EarliestAllowedTs,
-			})
-			if err != nil {
-				return nil, err
-			}
-			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               creatorID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
-				Payload:                 string(taskCheckPayload),
-				SkipIfAlreadyTerminated: false,
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
+	if err := s.scheduleTimingTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule timing task check")
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
@@ -392,6 +368,33 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return task, err
 	}
 	return task, nil
+}
+
+func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+	// we only set skipIfAlreadyTerminated to false when user explicitly want to reschedule a taskCheck
+	flag, err := s.shouldScheduleTimingTaskCheck(ctx, task, !skipIfAlreadyTerminated /* forceSchedule */)
+	if err != nil {
+		return err
+	}
+	if flag {
+		taskCheckPayload, err := json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
+			EarliestAllowedTs: task.EarliestAllowedTs,
+		})
+		if err != nil {
+			return err
+		}
+		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckGeneralEarliestAllowedTime,
+			Payload:                 string(taskCheckPayload),
+			SkipIfAlreadyTerminated: false,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Returns true only if the task check run result is at least the minimum required level.
