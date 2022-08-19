@@ -465,8 +465,8 @@ func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool,
 }
 
 // GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
-func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
-	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
+func (driver *Driver) GetSortedLocalBinlogFiles() ([]BinlogFile, error) {
+	binlogFilesInfoLocal, err := ioutil.ReadDir(driver.binlogDir)
 	if err != nil {
 		return nil, err
 	}
@@ -549,7 +549,7 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	// Read the local binlog files.
-	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)
+	binlogFilesLocalSorted, err := driver.GetSortedLocalBinlogFiles()
 	if err != nil {
 		return errors.Wrap(err, "failed to read local binlog files")
 	}
@@ -648,7 +648,7 @@ func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]B
 
 // getBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
 func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*binlogCoordinate, error) {
-	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)
+	binlogFilesLocalSorted, err := driver.GetSortedLocalBinlogFiles()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read sorted local binlog files")
 	}
