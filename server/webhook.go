@@ -252,7 +252,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-// parseBranchNameFromRefs is for GitHub.
+// parseBranchNameFromGitHubRefs is for GitHub.
 // GitLab can configure branches that trigger push events, but GitHub cannot do it. So we need parse the branch name from refs field in request.
 // https://docs.github.com/en/rest/git/refs
 func parseBranchNameFromGitHubRefs(ref string) (string, error) {
