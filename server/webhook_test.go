@@ -320,3 +320,31 @@ func TestValidateGitHubWebhookSignature256(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestParseBranchNameFromRefs(t *testing.T) {
+	tests := []struct {
+		refs   string
+		expect string
+	}{
+		{
+			refs:   "refs/heads/main",
+			expect: "main",
+		},
+		{
+			refs:   "refs/heads/feat/heads",
+			expect: "feat/heads",
+		},
+		// Broken
+		{
+			refs:   "ref",
+			expect: "ref",
+		},
+		{
+			refs:   "refs/heads/",
+			expect: "",
+		},
+	}
+	for _, test := range tests {
+		assert.Equal(t, test.expect, parseBranchNameFromRefs(test.refs))
+	}
+}

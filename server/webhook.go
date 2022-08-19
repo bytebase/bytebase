@@ -254,8 +254,8 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 // GitLab can configure branches that trigger push events, but GitHub cannot do it. So we need parse the branch name from refs field in request.
 // https://docs.github.com/en/rest/git/refs
 func parseBranchNameFromRefs(ref string) string {
-	expectedPrefix := "refs/heads"
-	if !strings.HasPrefix(ref, "refs/heads/") {
+	expectedPrefix := "refs/heads/"
+	if !strings.HasPrefix(ref, expectedPrefix) {
 		log.Debug("ref is not prefix with expected prefix", zap.String("ref", ref), zap.String("expected prefix", expectedPrefix))
 		return ref
 	}
