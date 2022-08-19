@@ -14,3 +14,4 @@ export * from "./util";
 export * from "./label";
 export * from "./deployment";
 export * from "./principal";
+export * from "./sql-editor";
