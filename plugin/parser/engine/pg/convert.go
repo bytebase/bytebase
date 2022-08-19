@@ -13,6 +13,14 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		if err == nil && res != nil {
 			res.SetText(statement.Text)
 			res.SetLine(statement.Line)
+			switch n := res.(type) {
+			case *ast.CreateTableStmt:
+				err = parser.SetLineForCreateTableStmt(parser.Postgres, n)
+			case *ast.AlterTableStmt:
+				for _, item := range n.AlterItemList {
+					item.SetLine(n.Line())
+				}
+			}
 		}
 	}()
 	switch in := node.Node.(type) {
