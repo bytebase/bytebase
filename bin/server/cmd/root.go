@@ -193,8 +193,10 @@ func start() {
 	}
 
 	var profile server.Profile
-	// This enables backup to cloud, and all backup data will be stored in the supported cloud storage.
-	if flags.backupBucket != "" {
+	if flags.backupBucket == "" {
+		profile = activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal})
+	} else {
+		// This enables backup to cloud, and all backup data will be stored in the supported cloud storage.
 		if flags.backupCredential == "" {
 			log.Error("Must specify --backup-credential when --backup-bucket is present.")
 			return
@@ -213,8 +215,6 @@ func start() {
 		}
 		bucketMeta.credentialFile = flags.backupCredential
 		profile = activeProfile(flags.dataDir, bucketMeta)
-	} else {
-		profile = activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal})
 	}
 
 	var s *server.Server
