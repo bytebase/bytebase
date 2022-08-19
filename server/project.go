@@ -158,7 +158,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
 		}
 
-		// Verify some prerequisites before it's archived:
+		// Verify before it's archived:
 		// 1. the project has no database.
 		// 2. the status of issue of this project should be cancel or done.
 		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
