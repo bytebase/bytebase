@@ -30,7 +30,9 @@
         <template v-else-if="isGhostMode">
           <PipelineGhostFlow v-if="project" class="border-t border-b" />
         </template>
-        <template v-else-if="isPITRMode">
+        <template
+          v-else-if="isPITRMode || issue.type === 'bb.issue.database.create'"
+        >
           <PipelinePITRFlow v-if="project" class="border-t border-b" />
         </template>
         <template v-else>
