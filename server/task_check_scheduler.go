@@ -229,22 +229,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return task, nil
 	}
 
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseConnect,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckInstanceMigrationSchema,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-	}); err != nil {
-		return nil, err
+	if err := s.scheduleGeneralTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule general task check")
 	}
 
 	statement, err := s.getStatement(task)
@@ -372,6 +358,28 @@ func (s *TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	default:
 		return "", errors.Errorf("invalid task type %s", task.Type)
 	}
+}
+
+func (s *TaskCheckScheduler) scheduleGeneralTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckDatabaseConnect,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+	}); err != nil {
+		return err
+	}
+
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckInstanceMigrationSchema,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
