@@ -233,6 +233,10 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Wrap(err, "failed to schedule general task check")
 	}
 
+	if err := s.scheduleGhostTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule gh-ost task check")
+	}
+
 	statement, err := s.getStatement(task)
 	if err != nil {
 		return nil, err
@@ -244,17 +248,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	}
 	if database == nil {
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
-	}
-
-	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatorID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckGhostSync,
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		}); err != nil {
-			return nil, err
-		}
 	}
 
 	if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
@@ -379,6 +372,20 @@ func (s *TaskCheckScheduler) scheduleGeneralTaskCheck(ctx context.Context, task 
 		return err
 	}
 
+	return nil
+}
+
+func (s *TaskCheckScheduler) scheduleGhostTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckGhostSync,
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		}); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
