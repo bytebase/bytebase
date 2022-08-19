@@ -296,7 +296,6 @@ import type {
   Stage,
   StageCreate,
   Instance,
-  TaskDatabaseCreatePayload,
   DatabaseLabel,
   Principal,
 } from "@/types";
@@ -309,6 +308,7 @@ import {
   hidePrefix,
   taskSlug,
   isOwnerOfProject,
+  extractDatabaseNameFromTask,
 } from "@/utils";
 import {
   hasFeature,
@@ -397,23 +397,7 @@ const fieldValue = <T = string>(field: InputField): T => {
 };
 
 const databaseName = computed((): string | undefined => {
-  if (props.database) {
-    return props.database.name;
-  }
-
-  const stage = selectedStage.value as Stage;
-  if (
-    stage.taskList[0].type == "bb.task.database.create" ||
-    stage.taskList[0].type == "bb.task.database.restore"
-  ) {
-    if (create.value) {
-      const stage = selectedStage.value as StageCreate;
-      return stage.taskList[0].databaseName;
-    }
-    return ((stage.taskList[0] as Task).payload as TaskDatabaseCreatePayload)
-      .databaseName;
-  }
-  return undefined;
+  return extractDatabaseNameFromTask(selectedTask.value);
 });
 
 const environment = computed((): Environment => {

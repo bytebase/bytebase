@@ -1,14 +1,16 @@
 import { computed, Ref, watch } from "vue";
 import semverCompare from "semver/functions/compare";
 import {
+  CreateDatabaseContext,
   Database,
+  Instance,
   IssueCreate,
   MigrationHistory,
   PITRContext,
-  SYSTEM_BOT_ID,
 } from "@/types";
 import {
   useBackupListByDatabaseId,
+  useCurrentUser,
   useInstanceStore,
   useIssueStore,
 } from "@/store";
@@ -16,8 +18,17 @@ import { useI18n } from "vue-i18n";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
+export const isPITRAvailableOnInstance = (instance: Instance): boolean => {
+  const { engine, engineVersion } = instance;
+  return (
+    engine === "MYSQL" &&
+    semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION) >= 0
+  );
+};
+
 export const usePITRLogic = (database: Ref<Database>) => {
   const { t } = useI18n();
+  const currentUser = useCurrentUser();
   const instanceStore = useInstanceStore();
 
   const backupList = useBackupListByDatabaseId(
@@ -80,18 +91,20 @@ export const usePITRLogic = (database: Ref<Database>) => {
 
   const createPITRIssue = async (
     pointTimeTs: number,
+    createDatabaseContext: CreateDatabaseContext | undefined = undefined,
     params: Partial<IssueCreate> = {}
   ) => {
     const issueStore = useIssueStore();
     const createContext: PITRContext = {
       databaseId: database.value.id,
       pointInTimeTs: pointTimeTs,
+      createDatabaseContext,
     };
     const issueCreate: IssueCreate = {
       name: `Restore database [${database.value.name}]`,
       type: "bb.issue.database.restore.pitr",
       description: "",
-      assigneeId: SYSTEM_BOT_ID,
+      assigneeId: currentUser.value.id,
       projectId: database.value.project.id,
       payload: {},
       createContext,
