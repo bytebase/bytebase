@@ -707,37 +707,6 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
-	// this is the last task in a stage and was just completed, we are moving to a new stage.
-	// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
-	if taskPatched.Status == "DONE" && issue != nil {
-		environmentID := getNextTaskEnvironmentID(issue.Pipeline.StageList, taskPatched)
-		if environmentID == api.UnknownID {
-			log.Error("getNextTaskEnvironmentID returns api.UnknownID which should never happen")
-		} else {
-			ok, err := s.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to check if the current assignee can still be")
-			}
-			if !ok {
-				// reassign the issue to a new assignee if the current one doesn't fit.
-				assigneeID, err := s.getDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to get a default assignee")
-				}
-				patch := &api.IssuePatch{
-					ID:         issue.ID,
-					UpdaterID:  api.SystemBotID,
-					AssigneeID: &assigneeID,
-				}
-				updatedIssue, err := s.store.PatchIssue(ctx, patch)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to update the issue assignee with issuePatch %+v", patch)
-				}
-				issue = updatedIssue
-			}
-		}
-	}
-
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
@@ -849,17 +818,4 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 	}
 	// never reached
 	return api.UnknownID, errors.New("invalid assigneeGroupValue")
-}
-
-func getNextTaskEnvironmentID(stageList []*api.Stage, task *api.Task) int {
-	for i, stage := range stageList {
-		if stage.ID == task.StageID {
-			if i != len(stageList)-1 && stage.TaskList[len(stage.TaskList)-1].ID == task.ID {
-				return stageList[i+1].EnvironmentID
-			}
-			return stage.EnvironmentID
-		}
-	}
-	// should never happen
-	return api.UnknownID
 }
