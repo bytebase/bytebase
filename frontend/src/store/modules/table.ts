@@ -125,7 +125,7 @@ export const useTableStore = defineStore("table", {
 
     async fetchTableListByDatabaseId(databaseId: DatabaseId) {
       const data = (await axios.get(`/api/database/${databaseId}/table`)).data;
-      const tableList = data.data.map((table: ResourceObject) => {
+      const tableList: Table[] = data.data.map((table: ResourceObject) => {
         return convert(table, data.included);
       });
 
