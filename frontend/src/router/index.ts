@@ -259,7 +259,7 @@ const routes: Array<RouteRecordRaw> = [
             // perspective, they are more familiar with the "user" concept.
             // We make an exception to use a shorthand here because it's a commonly
             // accessed endpoint, and maybe in the future, we will further provide a
-            // shortlink like u/<<uid>>
+            // shortlink such as u/<<uid>>
             path: "u/:principalId",
             name: "workspace.profile",
             meta: {
