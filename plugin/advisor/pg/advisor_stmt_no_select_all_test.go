@@ -16,6 +16,7 @@ func TestNoSelectAll(t *testing.T) {
 					Code:    advisor.StatementSelectAll,
 					Title:   "statement.select.no-select-all",
 					Content: "\"SELECT * FROM t\" uses SELECT all",
+					Line:    1,
 				},
 			},
 		},
@@ -38,6 +39,19 @@ func TestNoSelectAll(t *testing.T) {
 					Code:    advisor.StatementSelectAll,
 					Title:   "statement.select.no-select-all",
 					Content: "\"SELECT a, b FROM (SELECT * from t1, t2) t\" uses SELECT all",
+					Line:    1,
+				},
+			},
+		},
+		{
+			Statement: "INSERT INTO t SELECT * FROM t1",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.StatementSelectAll,
+					Title:   "statement.select.no-select-all",
+					Content: "\"INSERT INTO t SELECT * FROM t1\" uses SELECT all",
+					Line:    1,
 				},
 			},
 		},
