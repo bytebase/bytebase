@@ -227,7 +227,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SQLReviewRuleType, payload st
 // For example, if the template is "{{DB_NAME}}_hello_{{LOCATION}}", then the tokens will be ["{{DB_NAME}}", "{{LOCATION}}"],
 // and the delimiters will be ["_hello_"].
 // The caller will usually replace the tokens with a normal string, or a regexp. In the latter case, it will be a problem
-// if there are special regexp characters like "$" in the delimiters. The caller should escape the delimiters in such cases.
+// if there are special regexp characters such as "$" in the delimiters. The caller should escape the delimiters in such cases.
 func parseTemplateTokens(template string) ([]string, []string) {
 	r := regexp.MustCompile(`{{[^{}]+}}`)
 	tokens := r.FindAllString(template, -1)

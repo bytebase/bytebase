@@ -14,7 +14,7 @@ Most of the time, we only want to do partial update on the resource, and we shou
 
 ## Use resource id for addressing the specific resource
 
-Bytebase uses auto incremental ID as the primary key for all resources. To address a particular resource, we use GET `/issue/42`, if we want to support other addressing mechanism like using resource name, we should use query parameter like `.issue/42?name=foo`
+Bytebase uses auto-incremental ID as the primary key for all resources. To address a particular resource, we use GET `/issue/42`. If we want to support other addressing mechanism, we should use query parameters such as `.issue/42?name=foo`
 
 ## Use lower case, kebab-case for phrases
 
