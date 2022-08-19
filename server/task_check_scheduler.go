@@ -251,25 +251,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
 	}
 
-	if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
-		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-			Statement: statement,
-			DbType:    database.Instance.Engine,
-			Charset:   database.CharacterSet,
-			Collation: database.Collation,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
-		}
-		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatorID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckDatabaseStatementSyntax,
-			Payload:                 string(payload),
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		}); err != nil {
-			return nil, err
-		}
+	if err := s.scheduleSyntaxCheckTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated, database, statement); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
 
 	if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
@@ -354,6 +337,30 @@ func (s *TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	}
 }
 
+func (s *TaskCheckScheduler) scheduleSyntaxCheckTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
+	if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
+		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+			Statement: statement,
+			DbType:    database.Instance.Engine,
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
+		}
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementSyntax,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *TaskCheckScheduler) scheduleGeneralTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 		CreatorID:               creatorID,
@@ -414,6 +421,7 @@ func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *
 	}); err != nil {
 		return err
 	}
+	return nil
 }
 
 // Returns true only if the task check run result is at least the minimum required level.
