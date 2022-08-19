@@ -692,7 +692,7 @@ func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) 
 	if issueFind.ProjectID != nil {
 		params["project"] = fmt.Sprintf("%d", *issueFind.ProjectID)
 	}
-	if issueFind.StatusList != nil && len(issueFind.StatusList) > 0 {
+	if len(issueFind.StatusList) > 0 {
 		var sl []string
 		for _, status := range issueFind.StatusList {
 			sl = append(sl, string(status))
