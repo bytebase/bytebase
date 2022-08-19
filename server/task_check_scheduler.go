@@ -225,149 +225,150 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Wrap(err, "failed to schedule timing task check")
 	}
 
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		statement := ""
-
-		switch task.Type {
-		case api.TaskDatabaseSchemaUpdate:
-			taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-				return nil, errors.Wrap(err, "invalid database schema update payload")
-			}
-			statement = taskPayload.Statement
-		case api.TaskDatabaseDataUpdate:
-			taskPayload := &api.TaskDatabaseDataUpdatePayload{}
-			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-				return nil, errors.Wrap(err, "invalid database data update payload")
-			}
-			statement = taskPayload.Statement
-		case api.TaskDatabaseSchemaUpdateGhostSync:
-			taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-				return nil, errors.Wrap(err, "invalid database data update payload")
-			}
-			statement = taskPayload.Statement
-		}
-
-		database, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
-		if err != nil {
-			return nil, err
-		}
-		if database == nil {
-			return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
-		}
-
-		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatorID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckDatabaseConnect,
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatorID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckInstanceMigrationSchema,
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               creatorID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckGhostSync,
-				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
-			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-				Statement: statement,
-				DbType:    database.Instance.Engine,
-				Charset:   database.CharacterSet,
-				Collation: database.Collation,
-			})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
-			}
-			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               creatorID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckDatabaseStatementSyntax,
-				Payload:                 string(payload),
-				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
-			policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
-			}
-			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-				Statement: statement,
-				DbType:    database.Instance.Engine,
-				Charset:   database.CharacterSet,
-				Collation: database.Collation,
-				PolicyID:  policyID,
-			})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
-			}
-			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               creatorID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckDatabaseStatementAdvise,
-				Payload:                 string(payload),
-				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-			}); err != nil {
-				return nil, err
-			}
-		}
-
-		if database.Instance.Engine == db.Postgres {
-			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
-				Statement: statement,
-				DbType:    database.Instance.Engine,
-			})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
-			}
-			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-				CreatorID:               creatorID,
-				TaskID:                  task.ID,
-				Type:                    api.TaskCheckDatabaseStatementType,
-				Payload:                 string(payload),
-				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-			}); err != nil {
-				return nil, err
-			}
-		}
-
-		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskID: &task.ID,
-		}
-		taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
-		if err != nil {
-			return nil, err
-		}
-		task.TaskCheckRunList = taskCheckRunList
-
-		return task, err
+	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+		return task, nil
 	}
-	return task, nil
+
+	statement := ""
+
+	switch task.Type {
+	case api.TaskDatabaseSchemaUpdate:
+		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return nil, errors.Wrap(err, "invalid database schema update payload")
+		}
+		statement = taskPayload.Statement
+	case api.TaskDatabaseDataUpdate:
+		taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return nil, errors.Wrap(err, "invalid database data update payload")
+		}
+		statement = taskPayload.Statement
+	case api.TaskDatabaseSchemaUpdateGhostSync:
+		taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return nil, errors.Wrap(err, "invalid database data update payload")
+		}
+		statement = taskPayload.Statement
+	}
+
+	database, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	if database == nil {
+		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
+	}
+
+	_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckDatabaseConnect,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckInstanceMigrationSchema,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckGhostSync,
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
+		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+			Statement: statement,
+			DbType:    database.Instance.Engine,
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
+		}
+		_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementSyntax,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
+		policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
+		}
+		payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+			Statement: statement,
+			DbType:    database.Instance.Engine,
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
+			PolicyID:  policyID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
+		}
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementAdvise,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	if database.Instance.Engine == db.Postgres {
+		payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+			Statement: statement,
+			DbType:    database.Instance.Engine,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
+		}
+		if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatorID,
+			TaskID:                  task.ID,
+			Type:                    api.TaskCheckDatabaseStatementType,
+			Payload:                 string(payload),
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID: &task.ID,
+	}
+	taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+	if err != nil {
+		return nil, err
+	}
+	task.TaskCheckRunList = taskCheckRunList
+
+	return task, err
 }
 
 func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
