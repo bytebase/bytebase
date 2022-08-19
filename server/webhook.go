@@ -253,7 +253,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 }
 
 // parseBranchNameFromGitHubRefs is for GitHub.
-// GitLab can configure branches that trigger push events, but GitHub cannot do it. So we need parse the branch name from refs field in request.
+// GitLab webhook has the option to listen to push events to a certain branch while GitHub doesn't. So we need to manually parse the branch name from the refs field in the request.
 // https://docs.github.com/en/rest/git/refs
 func parseBranchNameFromGitHubRefs(ref string) (string, error) {
 	expectedPrefix := "refs/heads/"
