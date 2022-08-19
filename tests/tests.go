@@ -148,6 +148,8 @@ func getTestPort(testName string) int {
 
 		"TestSQLReviewForMySQL",
 		"TestSQLReviewForPostgreSQL",
+
+		"TestArchiveProject",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -496,6 +498,20 @@ func (ctl *controller) createProject(projectCreate api.ProjectCreate) (*api.Proj
 		return nil, errors.Wrap(err, "fail to unmarshal post project response")
 	}
 	return project, nil
+}
+
+func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &projectPatch); err != nil {
+		return errors.Wrap(err, "failed to marshal project patch")
+	}
+
+	_, err := ctl.patch(fmt.Sprintf("/project/%d", projectPatch.ID), buf)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // getProjects gets the environments.
