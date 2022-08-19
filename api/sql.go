@@ -31,7 +31,7 @@ type SQLSyncSchema struct {
 // For now, we only support readonly / SELECT.
 type SQLExecute struct {
 	InstanceID int `jsonapi:"attr,instanceId"`
-	// For engines like MySQL, databaseName can be empty.
+	// For engines such as MySQL, databaseName can be empty.
 	DatabaseName string `jsonapi:"attr,databaseName"`
 	Statement    string `jsonapi:"attr,statement"`
 	// For now, Readonly must be true
