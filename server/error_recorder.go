@@ -6,12 +6,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func errorRecorderMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc {
+func errorRecorderMiddleware(_ *Server, next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) (err error) {
 		defer func() {
 			responseCode := c.Response().Status
 
 			if responseCode == http.StatusInternalServerError {
+				//nolint
 				// TODO(ZhengX): collect and store error details
 			}
 		}()
