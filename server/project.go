@@ -160,7 +160,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// Verify before it's archived:
 		// 1. the project has no database.
-		// 2. the status of issue of this project should be cancel or done.
+		// 2. the issue status of this project should be cancel or done.
 		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
 			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
 			if err != nil {
