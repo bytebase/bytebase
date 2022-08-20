@@ -148,6 +148,8 @@ func getTestPort(testName string) int {
 
 		"TestSQLReviewForMySQL",
 		"TestSQLReviewForPostgreSQL",
+
+		"TestArchiveProject",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -498,6 +500,20 @@ func (ctl *controller) createProject(projectCreate api.ProjectCreate) (*api.Proj
 	return project, nil
 }
 
+func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &projectPatch); err != nil {
+		return errors.Wrap(err, "failed to marshal project patch")
+	}
+
+	_, err := ctl.patch(fmt.Sprintf("/project/%d", projectPatch.ID), buf)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // getProjects gets the environments.
 func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
 	body, err := ctl.get("/environment", nil)
@@ -676,9 +692,9 @@ func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) 
 	if issueFind.ProjectID != nil {
 		params["project"] = fmt.Sprintf("%d", *issueFind.ProjectID)
 	}
-	if issueFind.StatusList != nil && len(*issueFind.StatusList) > 0 {
+	if len(issueFind.StatusList) > 0 {
 		var sl []string
-		for _, status := range *issueFind.StatusList {
+		for _, status := range issueFind.StatusList {
 			sl = append(sl, string(status))
 		}
 		params["status"] = strings.Join(sl, ",")
