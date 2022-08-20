@@ -213,7 +213,7 @@ type IssueFind struct {
 	PipelineID *int
 	// Find issue where principalID is either creator, assignee or subscriber
 	PrincipalID *int
-	StatusList  *[]IssueStatus
+	StatusList  []IssueStatus
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
 }
