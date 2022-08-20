@@ -455,6 +455,9 @@ func findProjectMemberImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectMem
 	if v := find.PrincipalID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Role; v != nil {
+		where, args = append(where, fmt.Sprintf("role = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.RoleProvider; v != nil {
 		where, args = append(where, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
 	}
