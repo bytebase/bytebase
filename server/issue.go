@@ -877,6 +877,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		ProjectID: projectID,
 	}
 
+	// PITR to new db: task 1
 	if c.CreateDatabaseCtx != nil {
 		targetInstance, err := s.store.GetInstanceByID(ctx, c.CreateDatabaseCtx.InstanceID)
 		if err != nil {
@@ -907,7 +908,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	restoreTaskCreate := api.TaskCreate{
-		Name:       fmt.Sprintf("Restore PITR database %q", originDatabase.Name),
 		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabaseRestorePITRRestore,
 		InstanceID: originDatabase.InstanceID,
@@ -917,11 +917,16 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	if payloadRestore.TargetInstanceID != nil {
+		// PITR to new database: task 2
+		restoreTaskCreate.Name = fmt.Sprintf("Restore to new database %q", *payloadRestore.DatabaseName)
 		restoreTaskCreate.DatabaseName = c.CreateDatabaseCtx.DatabaseName
+	} else {
+		// PITR in place: task 1
+		restoreTaskCreate.Name = fmt.Sprintf("Restore to PITR database %q", originDatabase.Name)
 	}
 	taskCreateList = append(taskCreateList, restoreTaskCreate)
 
-	// In-place restore needs a cutover task.
+	// PITR in place: task 2
 	if payloadRestore.TargetInstanceID == nil {
 		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 		bytesCutover, err := json.Marshal(payloadCutover)
