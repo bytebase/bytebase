@@ -35,6 +35,7 @@ func getBaseProfile() server.Profile {
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
+		DisableMetric:        flags.disableMetric,
 	}
 }
 
