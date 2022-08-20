@@ -362,7 +362,7 @@ func (s *Server) initSubscription() {
 
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
-	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo
+	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo && !s.profile.DisableMetric
 	if enabled {
 		metricReporter := NewMetricReporter(s, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
