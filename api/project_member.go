@@ -72,6 +72,7 @@ type ProjectMemberFind struct {
 	// Related fields
 	ProjectID    *int
 	PrincipalID  *int
+	Role         *Role
 	RoleProvider *ProjectRoleProvider
 }
 
