@@ -114,7 +114,7 @@ func TestNamingFKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: `
+			Statement: `-- this is the first line.
 				CREATE TABLE book(
 					id INT,
 					author_id INT CONSTRAINT fk_book_author_id REFERENCES author (id)

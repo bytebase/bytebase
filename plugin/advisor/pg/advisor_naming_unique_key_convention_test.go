@@ -92,7 +92,7 @@ func TestNamingUKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: `
+			Statement: `-- this is the first line.
 				CREATE TABLE tech_book(
 					id INT PRIMARY KEY,
 					name VARCHAR(20),

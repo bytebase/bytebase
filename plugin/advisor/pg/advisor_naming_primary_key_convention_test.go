@@ -69,7 +69,7 @@ func TestNamingPKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: `
+			Statement: `-- this is the first line.
 				CREATE TABLE tech_book(
 					id INT,
 					name VARCHAR(20),
