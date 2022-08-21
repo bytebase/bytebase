@@ -128,6 +128,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
+
+		// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
+		// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
+		// We respond to this event so as not to mislead users.
+		if eventType == github.WebhookPing {
+			return c.String(http.StatusOK, "OK")
+		}
+
 		if eventType != github.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 		}
