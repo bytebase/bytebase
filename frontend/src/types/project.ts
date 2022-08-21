@@ -23,6 +23,8 @@ export type ProjectRoleProviderPayload = {
   lastSyncTs: number;
 };
 
+export type ProjectSchemaMigrationType = "DDL" | "SDL";
+
 export const EmptyProjectRoleProviderPayload: ProjectRoleProviderPayload = {
   vcsRole: "",
   lastSyncTs: 0,
@@ -50,6 +52,7 @@ export type Project = {
   tenantMode: ProjectTenantMode;
   dbNameTemplate: string;
   roleProvider: ProjectRoleProvider;
+  schemaMigrationType: ProjectSchemaMigrationType;
 };
 
 export type ProjectCreate = {
@@ -59,6 +62,7 @@ export type ProjectCreate = {
   tenantMode: ProjectTenantMode;
   dbNameTemplate: string;
   roleProvider: ProjectRoleProvider;
+  schemaMigrationType: ProjectSchemaMigrationType;
 };
 
 export type ProjectPatch = {
@@ -69,6 +73,7 @@ export type ProjectPatch = {
   name?: string;
   key?: string;
   roleProvider?: ProjectRoleProvider;
+  schemaMigrationType?: ProjectSchemaMigrationType;
 };
 
 // Project Member

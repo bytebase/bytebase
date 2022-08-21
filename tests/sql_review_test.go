@@ -287,8 +287,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test SQL Review Project",
-		Key:  "TestSQLReview",
+		Name:                "Test SQL Review Project",
+		Key:                 "TestSQLReview",
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 
@@ -640,8 +641,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test SQL Review Project",
-		Key:  "TestSQLReview",
+		Name:                "Test SQL Review Project",
+		Key:                 "TestSQLReview",
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 

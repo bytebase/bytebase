@@ -36,8 +36,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestSchemaUpdate",
+		Name:                "Test Project",
+		Key:                 "TestSchemaUpdate",
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 
@@ -374,8 +375,9 @@ func TestVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 				},
 			)
 			a.NoError(err)
@@ -384,18 +386,19 @@ func TestVCS(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
-					ProjectID:          project.ID,
-					Name:               "Test Repository",
-					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					BranchFilter:       "feature/foo",
-					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
-					ExternalID:         test.externalID,
-					AccessToken:        "accessToken1",
-					RefreshToken:       "refreshToken1",
+					VCSID:               vcs.ID,
+					ProjectID:           project.ID,
+					Name:                "Test Repository",
+					FullPath:            test.repositoryFullPath,
+					WebURL:              fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:        "feature/foo",
+					BaseDirectory:       baseDirectory,
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
+					FilePathTemplate:    "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+					SchemaPathTemplate:  "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					ExternalID:          test.externalID,
+					AccessToken:         "accessToken1",
+					RefreshToken:        "refreshToken1",
 				},
 			)
 			a.NoError(err)

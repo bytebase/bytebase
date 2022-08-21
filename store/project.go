@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/metric"
-	"github.com/pkg/errors"
 )
 
 // projectRaw is the store model for a Project.
@@ -25,13 +26,14 @@ type projectRaw struct {
 	UpdatedTs int64
 
 	// Domain specific fields
-	Name           string
-	Key            string
-	WorkflowType   api.ProjectWorkflowType
-	Visibility     api.ProjectVisibility
-	TenantMode     api.ProjectTenantMode
-	DBNameTemplate string
-	RoleProvider   api.ProjectRoleProvider
+	Name                string
+	Key                 string
+	WorkflowType        api.ProjectWorkflowType
+	Visibility          api.ProjectVisibility
+	TenantMode          api.ProjectTenantMode
+	DBNameTemplate      string
+	RoleProvider        api.ProjectRoleProvider
+	SchemaMigrationType api.ProjectSchemaMigrationType
 }
 
 // toProject creates an instance of Project based on the projectRaw.
@@ -46,13 +48,14 @@ func (raw *projectRaw) toProject() *api.Project {
 		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
-		Name:           raw.Name,
-		Key:            raw.Key,
-		WorkflowType:   raw.WorkflowType,
-		Visibility:     raw.Visibility,
-		TenantMode:     raw.TenantMode,
-		DBNameTemplate: raw.DBNameTemplate,
-		RoleProvider:   raw.RoleProvider,
+		Name:                raw.Name,
+		Key:                 raw.Key,
+		WorkflowType:        raw.WorkflowType,
+		Visibility:          raw.Visibility,
+		TenantMode:          raw.TenantMode,
+		DBNameTemplate:      raw.DBNameTemplate,
+		RoleProvider:        raw.RoleProvider,
+		SchemaMigrationType: raw.SchemaMigrationType,
 	}
 }
 
@@ -319,10 +322,11 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 			visibility,
 			tenant_mode,
 			db_name_template,
-			role_provider
+			role_provider,
+			schema_migration_type
 		)
-		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
+		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_migration_type
 	`
 	var project projectRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -333,6 +337,7 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 		create.TenantMode,
 		create.DBNameTemplate,
 		create.RoleProvider,
+		create.SchemaMigrationType,
 	).Scan(
 		&project.ID,
 		&project.RowStatus,
@@ -347,6 +352,7 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 		&project.TenantMode,
 		&project.DBNameTemplate,
 		&project.RoleProvider,
+		&project.SchemaMigrationType,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -383,7 +389,8 @@ func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]
 			visibility,
 			tenant_mode,
 			db_name_template,
-			role_provider
+			role_provider,
+		    schema_migration_type
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -411,6 +418,7 @@ func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]
 			&project.TenantMode,
 			&project.DBNameTemplate,
 			&project.RoleProvider,
+			&project.SchemaMigrationType,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -443,6 +451,9 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 	if v := patch.RoleProvider; v != nil {
 		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.SchemaMigrationType; v != nil {
+		set, args = append(set, fmt.Sprintf("schema_migration_type = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -452,7 +463,7 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_migration_type
 	`, len(args)),
 		args...,
 	).Scan(
@@ -469,6 +480,7 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 		&project.TenantMode,
 		&project.DBNameTemplate,
 		&project.RoleProvider,
+		&project.SchemaMigrationType,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}

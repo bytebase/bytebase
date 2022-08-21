@@ -71,7 +71,32 @@
         :disabled="!allowEdit"
       />
     </div>
-    <div>
+    <div v-if="isDev">
+      <div class="textlabel">
+        {{ $t("project.settings.schema-migration-type") }}
+        <span class="text-red-600">*</span>
+      </div>
+      <BBSelect
+        id="schemamigrationtype"
+        :selected-item="repositoryConfig.schemaMigrationType"
+        :item-list="['DDL', 'SDL']"
+        class="mt-1"
+        @select-item="
+          (type) => {
+            repositoryConfig.schemaMigrationType = type;
+          }
+        "
+      >
+        <template #menuItem="{ item }">
+          {{
+            $t(
+              `project.settings.select-schema-migration-type-${item.toLowerCase()}`
+            )
+          }}
+        </template>
+      </BBSelect>
+    </div>
+    <div v-if="repositoryConfig.schemaMigrationType != 'SDL'">
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
@@ -136,10 +161,16 @@
         >
       </div>
       <div class="mt-1 textinfolabel">
-        {{ $t("repository.schema-writeback-description") }}
-        <span class="font-medium text-main">{{
-          $t("repository.schema-writeback-protected-branch")
-        }}</span>
+        <span v-if="repositoryConfig.schemaMigrationType != 'SDL'">
+          {{ $t("repository.schema-writeback-description") }}
+          <span>&nbsp;</span>
+          <span class="font-medium text-main">{{
+            $t("repository.schema-writeback-protected-branch")
+          }}</span>
+        </span>
+        <span v-if="repositoryConfig.schemaMigrationType == 'SDL'">
+          {{ $t("project.settings.schema-sdl-description") }}
+        </span>
       </div>
       <input
         id="schemapathtemplate"
@@ -171,7 +202,7 @@
         }}
       </div>
     </div>
-    <div>
+    <div v-if="repositoryConfig.schemaMigrationType != 'SDL'">
       <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}

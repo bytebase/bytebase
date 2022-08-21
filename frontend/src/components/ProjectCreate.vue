@@ -170,6 +170,7 @@ export default defineComponent({
         tenantMode: "DISABLED",
         dbNameTemplate: "",
         roleProvider: "BYTEBASE",
+        schemaMigrationType: "DDL",
       },
       showFeatureModal: false,
       enableDbNameTemplate: false,

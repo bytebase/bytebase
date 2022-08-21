@@ -221,6 +221,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
 
+		if repositoryCreate.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
+			// FIXME(jc): We do not yet support file path template for state-based
+			// migration, thus we cheat here to pass validations and to avoid major
+			// refactoring for MVP.
+			repositoryCreate.FilePathTemplate = "{{DB_NAME}}__{{VERSION}}__{{TYPE}}.sql"
+		}
+
 		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create linked repository request: %s", err.Error()))
 		}
@@ -307,6 +314,18 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
+		_, err = s.store.PatchProject(ctx,
+			&api.ProjectPatch{
+				ID:                  project.ID,
+				UpdaterID:           c.Get(getPrincipalIDContextKey()).(int),
+				SchemaMigrationType: &repositoryCreate.SchemaMigrationType,
+			},
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch project").SetInternal(err)
+		}
+
+		repository.SchemaMigrationType = repositoryCreate.SchemaMigrationType
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal link project repository response").SetInternal(err)
@@ -324,6 +343,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
+		project, err := s.store.GetProjectByID(ctx, projectID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
+
 		repoFind := &api.RepositoryFind{
 			ProjectID: &projectID,
 		}
@@ -337,6 +364,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Retrieved %d repository list for project ID: %d, expect at most 1", len(repoList), projectID)).SetInternal(err)
 		}
 
+		if len(repoList) == 1 {
+			repoList[0].SchemaMigrationType = project.SchemaMigrationType
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, repoList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectID)).SetInternal(err)
@@ -404,6 +434,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repo := repoList[0]
 		repoPatch.ID = repo.ID
+
+		if project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL ||
+			(repoPatch.SchemaMigrationType != nil && api.ProjectSchemaMigrationType(*repoPatch.SchemaMigrationType) == api.ProjectSchemaMigrationTypeSDL) {
+			// FIXME(jc): We do not yet support file path template for state-based
+			// migration, thus we cheat here to pass validations and to avoid major
+			// refactoring for MVP.
+			filePathTemplate := "{{DB_NAME}}__{{VERSION}}__{{TYPE}}.sql"
+			repoPatch.FilePathTemplate = &filePathTemplate
+		}
+
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
@@ -468,6 +508,21 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
+		if repoPatch.SchemaMigrationType != nil {
+			project.SchemaMigrationType = api.ProjectSchemaMigrationType(*repoPatch.SchemaMigrationType)
+			_, err = s.store.PatchProject(ctx,
+				&api.ProjectPatch{
+					ID:                  project.ID,
+					UpdaterID:           c.Get(getPrincipalIDContextKey()).(int),
+					SchemaMigrationType: &project.SchemaMigrationType,
+				},
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch project").SetInternal(err)
+			}
+		}
+
+		updatedRepo.SchemaMigrationType = project.SchemaMigrationType
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedRepo); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project repository response: %v", projectID)).SetInternal(err)

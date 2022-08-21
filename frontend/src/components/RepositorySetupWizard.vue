@@ -144,6 +144,7 @@ export default defineComponent({
           filePathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
             : DEFAULT_FILE_PATH_TEMPLATE,
+          schemaMigrationType: "DDL",
           schemaPathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE
             : DEFAULT_SCHEMA_PATH_TEMPLATE,
@@ -188,6 +189,8 @@ export default defineComponent({
           branchFilter: state.config.repositoryConfig.branchFilter,
           baseDirectory: state.config.repositoryConfig.baseDirectory,
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
+          schemaMigrationType:
+            state.config.repositoryConfig.schemaMigrationType,
           schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
           sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
           externalId: externalId,

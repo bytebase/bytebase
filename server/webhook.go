@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -24,6 +25,8 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -78,10 +81,17 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("project", repo.Project.Name),
 		)
 
-		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList)
+		includeModified := false
+		issueCreator := s.createIssueFromMigrationScript
+		if repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
+			includeModified = true
+			issueCreator = s.createIssueFromSchemaFile
+		}
+
 		var createdMessageList []string
+		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, includeModified)
 		for _, item := range distinctFileList {
-			createdMessage, created, httpErr := s.createIssueFromPushEvent(
+			createdMessage, created, httpErr := issueCreator(
 				ctx,
 				repo,
 				vcs.PushEvent{
@@ -200,7 +210,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				messages := strings.SplitN(commit.Message, "\n\n", 2)
 				messageTitle := messages[0]
 
-				createdMessage, created, httpErr := s.createIssueFromPushEvent(
+				createdMessage, created, httpErr := s.createIssueFromMigrationScript(
 					ctx,
 					repo,
 					vcs.PushEvent{
@@ -298,7 +308,7 @@ type distinctFileItem struct {
 	fileName    string
 }
 
-func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
+func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit, includeModified bool) []distinctFileItem {
 	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []distinctFileItem
 	for _, commit := range commitList {
@@ -312,26 +322,31 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", common.EscapeForLogging(commit.ID)), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
 		}
 
-		for _, added := range commit.AddedList {
-			isNew := true
+		addDistinctFile := func(fileName string) {
 			item := distinctFileItem{
 				createdTime: createdTime,
 				commit:      commit,
-				fileName:    added,
+				fileName:    fileName,
 			}
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
-				if added == file.fileName {
-					isNew = false
+				if item.fileName == file.fileName {
 					if file.createdTime.Before(createdTime) {
 						distinctFileList[i] = item
 					}
-					break
+					return
 				}
 			}
+			distinctFileList = append(distinctFileList, item)
+		}
 
-			if isNew {
-				distinctFileList = append(distinctFileList, item)
+		for _, added := range commit.AddedList {
+			addDistinctFile(added)
+		}
+
+		if includeModified {
+			for _, modified := range commit.ModifiedList {
+				addDistinctFile(modified)
 			}
 		}
 	}
@@ -435,11 +450,11 @@ func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEv
 	return string(createContext), nil
 }
 
-// createIssueFromPushEvent attempts to create a new issue for the given file of
-// the push event. It returns "created=true" when a new issue has been created,
-// along with the creation message to be presented in the UI. An *echo.HTTPError
-// is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
+// createIssueFromMigrationScript attempts to create a new issue for the given
+// file of the push event. It returns "created=true" when a new issue has been
+// created, along with the creation message to be presented in the UI. An
+// *echo.HTTPError is returned in case of the error during the process.
+func (s *Server) createIssueFromMigrationScript(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
 	fileEscaped := common.EscapeForLogging(file)
 	log.Debug("Processing added file...",
 		zap.String("file", fileEscaped),
@@ -587,6 +602,269 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 			errMsg = "Failed to create data update issue"
 		}
 		return "", false, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+	}
+
+	// Create a project activity after successfully creating the issue as the result of the push event
+	bytes, err := json.Marshal(
+		api.ActivityProjectRepositoryPushPayload{
+			VCSPushEvent: pushEvent,
+			IssueID:      issue.ID,
+			IssueName:    issue.Name,
+		},
+	)
+	if err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   creatorID,
+		ContainerID: repo.ProjectID,
+		Type:        api.ActivityProjectRepositoryPush,
+		Level:       api.ActivityInfo,
+		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
+		Payload:     string(bytes),
+	}
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+	}
+
+	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, fileEscaped), true, nil
+}
+
+// createIssueFromSchemaFile uses given file of the push event to compute and
+// create a new issue for the schema diff. It returns "created=true" when a new
+// issue has been created, along with the creation message to be presented in
+// the UI. An *echo.HTTPError is returned in case of the error during the
+// process.
+func (s *Server) createIssueFromSchemaFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
+	fileEscaped := common.EscapeForLogging(file)
+	log.Debug("Processing changed file...",
+		zap.String("file", fileEscaped),
+		zap.String("commit", common.EscapeForLogging(pushEvent.FileCommit.ID)),
+	)
+
+	if !strings.HasPrefix(fileEscaped, repo.BaseDirectory) {
+		log.Debug("Ignored committed file, not under base directory.",
+			zap.String("file", fileEscaped),
+			zap.String("base_directory", repo.BaseDirectory),
+		)
+		return "", false, nil
+	}
+
+	schemaFilePathRegex := strings.ReplaceAll(repo.SchemaPathTemplate, "{{DB_NAME}}", "(?P<DB_NAME>[a-zA-Z0-9+-=/_#?!$. ]+)")
+	re, err := regexp.Compile(path.Join(repo.BaseDirectory, schemaFilePathRegex))
+	if err != nil {
+		log.Warn("Invalid schema path template.",
+			zap.String("schema_path_template", repo.SchemaPathTemplate),
+			zap.Error(err),
+		)
+	}
+
+	match := re.FindStringSubmatch(fileEscaped)
+	if len(match) == 0 {
+		log.Debug("Ignored non-schema file.",
+			zap.String("file", fileEscaped),
+		)
+		return "", false, nil
+	}
+
+	var dbName string
+	for i, name := range re.SubexpNames() {
+		if i != 0 && name == "DB_NAME" {
+			dbName = match[i]
+		}
+	}
+	if dbName == "" {
+		log.Debug("Ignored schema file without a database name.",
+			zap.String("file", fileEscaped),
+		)
+		return "", false, nil
+	}
+
+	// Create a WARNING project activity if committed file is ignored
+	var createIgnoredFileActivity = func(err error) {
+		log.Warn("Ignored committed file",
+			zap.String("file", fileEscaped),
+			zap.Error(err),
+		)
+		bytes, marshalErr := json.Marshal(
+			api.ActivityProjectRepositoryPushPayload{
+				VCSPushEvent: pushEvent,
+			},
+		)
+		if marshalErr != nil {
+			log.Warn("Failed to construct project activity payload to record ignored repository committed file",
+				zap.Error(marshalErr),
+			)
+			return
+		}
+
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: repo.ProjectID,
+			Type:        api.ActivityProjectRepositoryPush,
+			Level:       api.ActivityWarn,
+			Comment:     fmt.Sprintf("Ignored committed file %q, %s.", fileEscaped, err.Error()),
+			Payload:     string(bytes),
+		}
+		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+		if err != nil {
+			log.Warn("Failed to create project activity to record ignored repository committed file",
+				zap.Error(err),
+			)
+		}
+	}
+
+	// Retrieve the latest AccessToken and RefreshToken as the previous
+	// ReadFileContent call may have updated the stored token pair. ReadFileContent
+	// will fetch and store the new token pair if the existing token pair has
+	// expired.
+	repo2, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+	if err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+	}
+	if repo2 == nil {
+		return "", false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+	}
+
+	// Retrieve the schema file by reading the file content
+	content, err := vcs.Get(repo2.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+		ctx,
+		common.OauthContext{
+			ClientID:     repo2.VCS.ApplicationID,
+			ClientSecret: repo2.VCS.Secret,
+			AccessToken:  repo2.AccessToken,
+			RefreshToken: repo2.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repo2.ID),
+		},
+		repo2.VCS.InstanceURL,
+		repo2.ExternalID,
+		fileEscaped,
+		pushEvent.FileCommit.ID,
+	)
+	if err != nil {
+		createIgnoredFileActivity(err)
+		return "", false, nil
+	}
+
+	// Retrieve the current schema dump from the database
+	databases, err := s.store.FindDatabase(ctx,
+		&api.DatabaseFind{
+			ProjectID: &repo.ProjectID,
+			Name:      &dbName,
+		},
+	)
+	if err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database %q", dbName)).SetInternal(err)
+	} else if len(databases) == 0 {
+		createIgnoredFileActivity(errors.Errorf("No database found with name %q", dbName))
+		return "", false, nil
+	}
+	// FIXME(jc): We pick the first database for now.
+	database := databases[0]
+
+	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
+	if err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get driver for database %q", dbName)).SetInternal(err)
+	}
+	defer func() { _ = driver.Close(ctx) }()
+
+	var schemaBuf bytes.Buffer
+	if _, err = driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to dump schema for database %q", dbName)).SetInternal(err)
+	}
+
+	// Extract existing tables
+	nodes, err := parser.Parse(parser.Postgres, parser.Context{}, schemaBuf.String())
+	if err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse schema for database %q", dbName)).SetInternal(err)
+	}
+	existingTables := make(map[string]struct{})
+	for _, node := range nodes {
+		if n, ok := node.(*ast.CreateTableStmt); ok {
+			existingTables[n.Name.Name] = struct{}{}
+		}
+	}
+
+	// Extract desired tables
+	nodes, err = parser.Parse(parser.Postgres, parser.Context{}, content)
+	if err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse schema file").SetInternal(err)
+	}
+
+	var tableList []string
+	var script bytes.Buffer
+	for _, node := range nodes {
+		if n, ok := node.(*ast.CreateTableStmt); ok {
+			if _, ok := existingTables[n.Name.Name]; !ok {
+				_, _ = script.WriteString(n.Text())
+				_, _ = script.WriteString("\n")
+				tableList = append(tableList, n.Name.Name)
+			}
+		}
+	}
+	if len(tableList) == 0 {
+		createIgnoredFileActivity(errors.New("No new tables found"))
+		return "", false, nil
+	}
+
+	// Create schema update issue.
+	creatorID := api.SystemBotID
+	if pushEvent.FileCommit.AuthorEmail != "" {
+		committerPrinciple, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
+		if err != nil {
+			log.Error("failed to find the principal with committer email",
+				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+				zap.Error(err),
+			)
+		}
+		if committerPrinciple == nil {
+			log.Debug("cannot find the principal with committer email, use system bot instead",
+				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+			)
+		} else {
+			creatorID = committerPrinciple.ID
+		}
+	}
+
+	mi := &db.MigrationInfo{
+		Version:     strconv.FormatInt(pushEvent.FileCommit.CreatedTs, 10),
+		Namespace:   dbName,
+		Database:    dbName,
+		Source:      db.VCS,
+		Type:        db.Migrate,
+		Description: fmt.Sprintf("Create new tables %v", tableList),
+	}
+
+	// FIXME(jc): We don't have a typical migration file for state-based migration,
+	// thus we need to cheat here to avoid major refactoring for MVP.
+	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, fmt.Sprintf("%s__%d__migrate.sql", dbName, pushEvent.FileCommit.CreatedTs))
+
+	var createContext string
+	if repo.Project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return "", false, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+		createContext, err = createTenantSchemaUpdateIssue(mi, pushEvent, script.String())
+	} else {
+		createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, pushEvent, fileEscaped, script.String())
+	}
+	if err != nil {
+		createIgnoredFileActivity(err)
+		return "", false, nil
+	}
+
+	issueCreate := &api.IssueCreate{
+		ProjectID:     repo.ProjectID,
+		Name:          fmt.Sprintf("%s by %s", mi.Description, strings.TrimPrefix(file, repo.BaseDirectory+"/")),
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   pushEvent.FileCommit.Message,
+		AssigneeID:    api.SystemBotID,
+		CreateContext: createContext,
+	}
+	issue, err := s.createIssue(ctx, issueCreate, creatorID)
+	if err != nil {
+		return "", false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create schema update issue").SetInternal(err)
 	}
 
 	// Create a project activity after successfully creating the issue as the result of the push event

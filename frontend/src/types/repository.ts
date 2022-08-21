@@ -1,7 +1,7 @@
 import isEmpty from "lodash-es/isEmpty";
 import { ProjectId, RepositoryId, VCSId } from "./id";
 import { Principal } from "./principal";
-import { Project } from "./project";
+import { Project, ProjectSchemaMigrationType } from "./project";
 import { VCS } from "./vcs";
 
 export type Repository = {
@@ -27,6 +27,7 @@ export type Repository = {
   baseDirectory: string;
   branchFilter: string;
   filePathTemplate: string;
+  schemaMigrationType: ProjectSchemaMigrationType;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
   // e.g. In GitLab, this is the corresponding project id.
@@ -44,6 +45,7 @@ export type RepositoryCreate = {
   branchFilter: string;
   baseDirectory: string;
   filePathTemplate: string;
+  schemaMigrationType: ProjectSchemaMigrationType;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
   externalId: string;
@@ -56,6 +58,7 @@ export type RepositoryPatch = {
   baseDirectory?: string;
   branchFilter?: string;
   filePathTemplate?: string;
+  schemaMigrationType?: ProjectSchemaMigrationType;
   schemaPathTemplate?: string;
   sheetPathTemplate?: string;
 };
@@ -64,6 +67,7 @@ export type RepositoryConfig = {
   baseDirectory: string;
   branchFilter: string;
   filePathTemplate: string;
+  schemaMigrationType: ProjectSchemaMigrationType;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
 };

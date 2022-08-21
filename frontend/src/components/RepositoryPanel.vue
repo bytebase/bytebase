@@ -124,6 +124,7 @@ export default defineComponent({
         baseDirectory: props.repository.baseDirectory,
         branchFilter: props.repository.branchFilter,
         filePathTemplate: props.repository.filePathTemplate,
+        schemaMigrationType: props.repository.schemaMigrationType,
         schemaPathTemplate: props.repository.schemaPathTemplate,
         sheetPathTemplate: props.repository.sheetPathTemplate,
       },
@@ -136,6 +137,7 @@ export default defineComponent({
           baseDirectory: cur.baseDirectory,
           branchFilter: cur.branchFilter,
           filePathTemplate: cur.filePathTemplate,
+          schemaMigrationType: cur.schemaMigrationType,
           schemaPathTemplate: cur.schemaPathTemplate,
           sheetPathTemplate: cur.sheetPathTemplate,
         };
@@ -160,6 +162,8 @@ export default defineComponent({
             state.repositoryConfig.baseDirectory ||
           props.repository.filePathTemplate !=
             state.repositoryConfig.filePathTemplate ||
+          props.repository.schemaMigrationType !=
+            state.repositoryConfig.schemaMigrationType ||
           props.repository.schemaPathTemplate !=
             state.repositoryConfig.schemaPathTemplate ||
           props.repository.sheetPathTemplate !=
@@ -195,6 +199,13 @@ export default defineComponent({
       ) {
         repositoryPatch.filePathTemplate =
           state.repositoryConfig.filePathTemplate;
+      }
+      if (
+        props.repository.schemaMigrationType !=
+        state.repositoryConfig.schemaMigrationType
+      ) {
+        repositoryPatch.schemaMigrationType =
+          state.repositoryConfig.schemaMigrationType;
       }
       if (
         props.repository.schemaPathTemplate !=

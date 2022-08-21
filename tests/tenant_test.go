@@ -42,9 +42,10 @@ func TestTenant(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name:       "Test Project",
-		Key:        "TestSchemaUpdate",
-		TenantMode: api.TenantModeTenant,
+		Name:                "Test Project",
+		Key:                 "TestSchemaUpdate",
+		TenantMode:          api.TenantModeTenant,
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 
@@ -304,9 +305,10 @@ func TestTenantVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name:       "Test VCS Project",
-					Key:        "TestVCSSchemaUpdate",
-					TenantMode: api.TenantModeTenant,
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					TenantMode:          api.TenantModeTenant,
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 				},
 			)
 			a.NoError(err)
@@ -315,18 +317,19 @@ func TestTenantVCS(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
-					ProjectID:          project.ID,
-					Name:               "Test Repository",
-					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					BranchFilter:       "feature/foo",
-					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: ".{{DB_NAME}}__LATEST.sql",
-					ExternalID:         test.externalID,
-					AccessToken:        "accessToken1",
-					RefreshToken:       "refreshToken1",
+					VCSID:               vcs.ID,
+					ProjectID:           project.ID,
+					Name:                "Test Repository",
+					FullPath:            test.repositoryFullPath,
+					WebURL:              fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:        "feature/foo",
+					BaseDirectory:       baseDirectory,
+					FilePathTemplate:    "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
+					SchemaPathTemplate:  ".{{DB_NAME}}__LATEST.sql",
+					ExternalID:          test.externalID,
+					AccessToken:         "accessToken1",
+					RefreshToken:        "refreshToken1",
 				},
 			)
 			a.NoError(err)
@@ -516,10 +519,11 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name:           "Test Project",
-		Key:            "TestSchemaUpdate",
-		TenantMode:     api.TenantModeTenant,
-		DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+		Name:                "Test Project",
+		Key:                 "TestSchemaUpdate",
+		TenantMode:          api.TenantModeTenant,
+		DBNameTemplate:      "{{DB_NAME}}_{{TENANT}}",
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 
@@ -751,10 +755,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name:           "Test VCS Project",
-					Key:            "TestVCSSchemaUpdate",
-					TenantMode:     api.TenantModeTenant,
-					DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					TenantMode:          api.TenantModeTenant,
+					DBNameTemplate:      "{{DB_NAME}}_{{TENANT}}",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 				},
 			)
 			a.NoError(err)
@@ -763,18 +768,19 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
-					ProjectID:          project.ID,
-					Name:               "Test Repository",
-					FullPath:           test.repositoryFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					BranchFilter:       "feature/foo",
-					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: ".{{DB_NAME}}__LATEST.sql",
-					ExternalID:         test.externalID,
-					AccessToken:        "accessToken1",
-					RefreshToken:       "refreshToken1",
+					VCSID:               vcs.ID,
+					ProjectID:           project.ID,
+					Name:                "Test Repository",
+					FullPath:            test.repositoryFullPath,
+					WebURL:              fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:        "feature/foo",
+					BaseDirectory:       baseDirectory,
+					FilePathTemplate:    "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
+					SchemaPathTemplate:  ".{{DB_NAME}}__LATEST.sql",
+					ExternalID:          test.externalID,
+					AccessToken:         "accessToken1",
+					RefreshToken:        "refreshToken1",
 				},
 			)
 			a.NoError(err)
