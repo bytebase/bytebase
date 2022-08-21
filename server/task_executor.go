@@ -10,12 +10,13 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/pkg/errors"
 )
 
 // TaskExecutor is the task executor.
@@ -179,7 +180,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		}
 	}
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
+	writeBack := (vcsPushEvent != nil) && (repo.Project.SchemaMigrationType != api.ProjectSchemaMigrationTypeSDL) && (repo.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {

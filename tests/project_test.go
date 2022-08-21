@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/tests/fake"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 )
 
 func TestArchiveProject(t *testing.T) {
@@ -53,9 +54,10 @@ func TestArchiveProject(t *testing.T) {
 
 	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
 		project, err := ctl.createProject(api.ProjectCreate{
-			Name:       "ProjectWithDatabase",
-			Key:        "PWD",
-			TenantMode: api.TenantModeDisabled,
+			Name:                "ProjectWithDatabase",
+			Key:                 "PWD",
+			TenantMode:          api.TenantModeDisabled,
+			SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 		})
 		a.NoError(err)
 
@@ -74,9 +76,10 @@ func TestArchiveProject(t *testing.T) {
 
 	t.Run("ArchiveProjectWithOpenIssue", func(t *testing.T) {
 		project, err := ctl.createProject(api.ProjectCreate{
-			Name:       "ProjectWithOpenIssue",
-			Key:        "PWO",
-			TenantMode: api.TenantModeDisabled,
+			Name:                "ProjectWithOpenIssue",
+			Key:                 "PWO",
+			TenantMode:          api.TenantModeDisabled,
+			SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 		})
 		a.NoError(err)
 

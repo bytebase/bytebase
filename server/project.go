@@ -221,6 +221,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
 
+		if project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
+			// FIXME(jc): We do not yet support file path template for state-based
+			// migration, thus we cheat here to pass validations and to avoid major
+			// refactoring for MVP.
+			repositoryCreate.FilePathTemplate = "{{DB_NAME}}__{{VERSION}}__{{TYPE}}.sql"
+		}
+
 		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create linked repository request: %s", err.Error()))
 		}
@@ -367,6 +374,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
+
+		if project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
+			// FIXME(jc): We do not yet support file path template for state-based
+			// migration, thus we cheat here to pass validations and to avoid major
+			// refactoring for MVP.
+			filePathTemplate := "{{DB_NAME}}__{{VERSION}}__{{TYPE}}.sql"
+			repoPatch.FilePathTemplate = &filePathTemplate
 		}
 
 		if repoPatch.FilePathTemplate != nil {

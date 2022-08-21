@@ -98,8 +98,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Ghost Project",
-		Key:  "TestGhostSchemaUpdate",
+		Name:                "Test Ghost Project",
+		Key:                 "TestGhostSchemaUpdate",
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 

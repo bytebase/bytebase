@@ -42,9 +42,10 @@ func TestTenant(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name:       "Test Project",
-		Key:        "TestSchemaUpdate",
-		TenantMode: api.TenantModeTenant,
+		Name:                "Test Project",
+		Key:                 "TestSchemaUpdate",
+		TenantMode:          api.TenantModeTenant,
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 
@@ -304,9 +305,10 @@ func TestTenantVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name:       "Test VCS Project",
-					Key:        "TestVCSSchemaUpdate",
-					TenantMode: api.TenantModeTenant,
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					TenantMode:          api.TenantModeTenant,
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 				},
 			)
 			a.NoError(err)
@@ -516,10 +518,11 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name:           "Test Project",
-		Key:            "TestSchemaUpdate",
-		TenantMode:     api.TenantModeTenant,
-		DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+		Name:                "Test Project",
+		Key:                 "TestSchemaUpdate",
+		TenantMode:          api.TenantModeTenant,
+		DBNameTemplate:      "{{DB_NAME}}_{{TENANT}}",
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 
@@ -751,10 +754,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name:           "Test VCS Project",
-					Key:            "TestVCSSchemaUpdate",
-					TenantMode:     api.TenantModeTenant,
-					DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					TenantMode:          api.TenantModeTenant,
+					DBNameTemplate:      "{{DB_NAME}}_{{TENANT}}",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 				},
 			)
 			a.NoError(err)

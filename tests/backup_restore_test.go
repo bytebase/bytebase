@@ -135,9 +135,10 @@ func TestPITR(t *testing.T) {
 	a.NoError(err)
 
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name:       "PITRTest",
-		Key:        "PTT",
-		TenantMode: api.TenantModeDisabled,
+		Name:                "PITRTest",
+		Key:                 "PTT",
+		TenantMode:          api.TenantModeDisabled,
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 

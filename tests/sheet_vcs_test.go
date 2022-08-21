@@ -67,8 +67,9 @@ func TestSheetVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 				},
 			)
 			a.NoError(err)

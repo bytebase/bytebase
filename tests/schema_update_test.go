@@ -36,8 +36,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Project",
-		Key:  "TestSchemaUpdate",
+		Name:                "Test Project",
+		Key:                 "TestSchemaUpdate",
+		SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 	})
 	a.NoError(err)
 
@@ -374,8 +375,9 @@ func TestVCS(t *testing.T) {
 			// Create a project.
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name: "Test VCS Project",
-					Key:  "TestVCSSchemaUpdate",
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeDDL,
 				},
 			)
 			a.NoError(err)
