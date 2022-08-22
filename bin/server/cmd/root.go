@@ -100,7 +100,7 @@ var (
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
 
-		// Cloud backup configs
+		// Cloud backup configs.
 		backupRegion     string
 		backupBucket     string
 		backupCredential string
