@@ -707,7 +707,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
-	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
+	// If every task in the pipeline completes, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
 	if taskPatched.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
@@ -719,8 +719,15 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
 		}
 		//TODO(p0ny): concurrency
+		taskAllDone := true
 		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
-		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == taskPatched.ID {
+		for _, task := range lastStage.TaskList {
+			if task.Status != api.TaskDone {
+				taskAllDone = false
+				break
+			}
+		}
+		if taskAllDone {
 			if issue == nil {
 				status := api.PipelineDone
 				pipelinePatch := &api.PipelinePatch{

@@ -169,6 +169,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	databaseName := task.Database.Name
 	issue, err := findIssueByTask(ctx, server, task)
 	if err != nil {
+		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
 	var repo *api.Repository
@@ -317,7 +318,6 @@ func runMigration(ctx context.Context, server *Server, task *api.Task, migration
 func findIssueByTask(ctx context.Context, server *Server, task *api.Task) (*api.Issue, error) {
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, task_id: %v", task.ID)
 	}
 	if issue == nil {
