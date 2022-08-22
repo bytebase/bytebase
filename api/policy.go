@@ -129,7 +129,7 @@ type PipelineApprovalPolicy struct {
 	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
 }
 
-func (pa PipelineApprovalPolicy) String() (string, error) {
+func (pa *PipelineApprovalPolicy) String() (string, error) {
 	s, err := json.Marshal(pa)
 	if err != nil {
 		return "", err
@@ -152,7 +152,7 @@ type AssigneeGroup struct {
 	Value     AssigneeGroupValue `json:"value"`
 }
 
-func (p AssigneeGroup) String() (string, error) {
+func (p *AssigneeGroup) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err
@@ -167,7 +167,7 @@ type BackupPlanPolicy struct {
 	RetentionPeriodTs int `json:"retentionPeriodTs"`
 }
 
-func (bp BackupPlanPolicy) String() (string, error) {
+func (bp *BackupPlanPolicy) String() (string, error) {
 	s, err := json.Marshal(bp)
 	if err != nil {
 		return "", err
@@ -248,13 +248,15 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 func GetDefaultPolicy(pType PolicyType) (string, error) {
 	switch pType {
 	case PolicyTypePipelineApproval:
-		return PipelineApprovalPolicy{
+		policy := PipelineApprovalPolicy{
 			Value: PipelineApprovalValueManualAlways,
-		}.String()
+		}
+		return policy.String()
 	case PolicyTypeBackupPlan:
-		return BackupPlanPolicy{
+		policy := BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,
-		}.String()
+		}
+		return policy.String()
 	case PolicyTypeSQLReview:
 		// TODO(ed): we may need to define the default SQL review policy payload in the PR of policy data migration.
 		return "{}", nil
