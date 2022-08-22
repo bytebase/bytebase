@@ -150,8 +150,31 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 	startPos := t.cursor
 	for {
 		switch {
+		case t.char(0) == eofRune:
+			s := t.getString(startPos, t.pos())
+			if !emptyString(s) {
+				res = append(res, SingleSQL{
+					Text: s,
+					Line: t.startLine,
+				})
+			}
+			return res, nil
 		case t.equalWordCaseInsensitive(delimiter):
 			t.skip(uint(len(delimiter)))
+			res = append(res, SingleSQL{
+				Text: t.getString(startPos, t.pos()-startPos),
+				Line: t.startLine,
+			})
+			t.skipBlank()
+			t.startLine = t.line
+			startPos = t.pos()
+		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
+		case t.equalWordCaseInsensitive(delimiterRuneList):
+			t.skip(uint(len(delimiterRuneList)))
+			t.skipBlank()
+			delimiterStart := t.pos()
+			t.skipToBlank()
+			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
 			res = append(res, SingleSQL{
 				Text: t.getString(startPos, t.pos()-startPos),
 				Line: t.startLine,
@@ -179,29 +202,6 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 			if err := t.scanIdentifier('`'); err != nil {
 				return nil, err
 			}
-		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
-		case t.equalWordCaseInsensitive(delimiterRuneList):
-			t.skip(uint(len(delimiterRuneList)))
-			t.skipBlank()
-			delimiterStart := t.pos()
-			t.skipToBlank()
-			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
-			res = append(res, SingleSQL{
-				Text: t.getString(startPos, t.pos()-startPos),
-				Line: t.startLine,
-			})
-			t.skipBlank()
-			t.startLine = t.line
-			startPos = t.pos()
-		case t.char(0) == eofRune:
-			s := t.getString(startPos, t.pos())
-			if !emptyString(s) {
-				res = append(res, SingleSQL{
-					Text: s,
-					Line: t.startLine,
-				})
-			}
-			return res, nil
 		case t.char(0) == '\n':
 			t.line++
 			t.skip(1)
