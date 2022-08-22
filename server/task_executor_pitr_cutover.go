@@ -183,6 +183,10 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		return errors.Wrapf(err, "failed to check existence of database %q", task.Database.Name)
 	}
 	if existOriginal {
+		// Kill connections to the original database in the beginning of cutover.
+		if err := pgKillConnectionsToDatabase(ctx, db, task.Database.Name); err != nil {
+			return err
+		}
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
 			return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
 		}
@@ -197,12 +201,29 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		return errors.Wrapf(err, "failed to check existence of database %q", pitrDatabaseName)
 	}
 	if existPITR {
+		// Kill connections to the original database again in case that the clients reconnect to the original database.
+		if err := pgKillConnectionsToDatabase(ctx, db, task.Database.Name); err != nil {
+			return err
+		}
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
 			return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
 		}
 		log.Debug("Successfully renamed database", zap.String("from", pitrDatabaseName), zap.String("to", task.Database.Name))
 	}
 
+	return nil
+}
+
+func pgKillConnectionsToDatabase(ctx context.Context, db *sql.DB, database string) error {
+	stmt := `
+	SELECT pg_terminate_backend( pid )
+	FROM pg_stat_activity
+	WHERE pid <> pg_backend_pid( )
+	  AND datname = $1;
+`
+	if _, err := db.ExecContext(ctx, stmt, database); err != nil {
+		return errors.Wrapf(err, "failed to kill all connections to database %q", database)
+	}
 	return nil
 }
 
