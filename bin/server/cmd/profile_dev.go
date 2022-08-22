@@ -10,8 +10,8 @@ import (
 	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string, backupMeta backupMeta) server.Profile {
-	p := getBaseProfile(backupMeta)
+func activeProfile(dataDir string) server.Profile {
+	p := getBaseProfile()
 	p.Mode = common.ReleaseModeDev
 	p.PgUser = "bbdev"
 	p.DataDir = dataDir

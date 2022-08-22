@@ -105,6 +105,8 @@ var (
 		backupBucket     string
 		backupCredential string
 	}
+	backupStorageBackend = api.BackupStorageBackendLocal // This is parsed from flags.backupBucket
+
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
@@ -179,6 +181,26 @@ func checkDataDir() error {
 	return nil
 }
 
+func checkCloudBackupFlags() error {
+	if flags.backupBucket == "" {
+		return nil
+	}
+	if flags.backupCredential == "" {
+		return errors.Errorf("must specify --backup-credential when --backup-bucket is present")
+	}
+	bucketMeta, err := parseBucketURI(flags.backupBucket)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse backup bucket")
+	}
+	if bucketMeta.storageBackend == api.BackupStorageBackendS3 {
+		if flags.backupRegion == "" {
+			return errors.Errorf("must specify --backup-region for AWS S3 backup")
+		}
+		backupStorageBackend = api.BackupStorageBackendS3
+	}
+	return nil
+}
+
 func start() {
 	if flags.debug {
 		log.SetLevel(zap.DebugLevel)
@@ -195,30 +217,11 @@ func start() {
 		return
 	}
 
-	var profile server.Profile
-	if flags.backupBucket == "" {
-		profile = activeProfile(flags.dataDir, backupMeta{storageBackend: api.BackupStorageBackendLocal})
-	} else {
-		// This enables backup to cloud, and all backup data will be stored in the supported cloud storage.
-		if flags.backupCredential == "" {
-			log.Error("Must specify --backup-credential when --backup-bucket is present.")
-			return
-		}
-		bucketMeta, err := parseBucketURI(flags.backupBucket)
-		if err != nil {
-			log.Error("failed to parse backup bucket", zap.Error(err))
-			return
-		}
-		if bucketMeta.storageBackend == api.BackupStorageBackendS3 {
-			if flags.backupRegion == "" {
-				log.Error("Must specify --backup-region for AWS S3 backup.")
-				return
-			}
-			bucketMeta.region = flags.backupRegion
-		}
-		bucketMeta.credentialFile = flags.backupCredential
-		profile = activeProfile(flags.dataDir, bucketMeta)
+	if err := checkCloudBackupFlags(); err != nil {
+		log.Error("invalid flags for cloud backup", zap.Error(err))
+		return
 	}
+	profile := activeProfile(flags.dataDir)
 
 	var s *server.Server
 	// Setup signal handlers.
