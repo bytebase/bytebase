@@ -1062,14 +1062,15 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
 		}
 	case db.Postgres:
-		var buf bytes.Buffer
+		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
+		// We need to grant the database owner to the data source admin role so that Bytebase can have permission on the database.
 		if adminDatasourceUser != "" {
-			buf.WriteString(fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser))
+			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
 		}
 		if createDatabaseContext.Collation == "" {
-			buf.WriteString(fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;\n", databaseName, createDatabaseContext.CharacterSet))
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, createDatabaseContext.CharacterSet)
 		} else {
-			buf.WriteString(fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;\n", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation))
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
 		}
 		// Set the database owner.
 		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
@@ -1079,11 +1080,10 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 		// ERROR:  must be member of role "hello"
 		//
 		// For tenant project, the schema for the newly created database will belong to the same owner.
-		buf.WriteString(fmt.Sprintf("ALTER DATABASE \"%s\" OWNER TO %s;\n", databaseName, createDatabaseContext.Owner))
+		stmt = fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;\n", stmt, databaseName, createDatabaseContext.Owner)
 		if schema != "" {
-			buf.WriteString(fmt.Sprintf("\\connect \"%s\";\n%s", databaseName, schema))
+			stmt = fmt.Sprintf("%s\n\\connect \"%s\";\n%s", stmt, databaseName, schema)
 		}
-		stmt = buf.String()
 	case db.ClickHouse:
 		clusterPart := ""
 		if createDatabaseContext.Cluster != "" {
