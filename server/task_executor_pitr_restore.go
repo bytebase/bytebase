@@ -245,9 +245,8 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BRANCH migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
-	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
 
-	if err := exec.updateProgress(ctx, mysqlTargetDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
+	if err := exec.updateProgress(ctx, mysqlTargetDriver, backupFile, startBinlogInfo); err != nil {
 		return nil, errors.Wrap(err, "failed to setup progress update process")
 	}
 
@@ -259,7 +258,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to restore full backup in the new database")
 		}
-		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, targetTs, mysqlSourceDriver.GetBinlogDir()); err != nil {
+		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, targetTs); err != nil {
 			log.Error("failed to perform a PITR restore in the new database",
 				zap.Int("issueID", issue.ID),
 				zap.String("databaseName", *payload.DatabaseName),
@@ -344,15 +343,15 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo api.BinlogInfo, binlogDir string) error {
+func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo api.BinlogInfo) error {
 	backupFileInfo, err := backupFile.Stat()
 	if err != nil {
 		return errors.Wrapf(err, "failed to get stat of backup file %q", backupFile.Name())
 	}
 	backupFileBytes := backupFileInfo.Size()
-	replayBinlogPaths, err := mysql.GetBinlogReplayList(startBinlogInfo, binlogDir)
+	replayBinlogPaths, err := driver.GetBinlogReplayList(startBinlogInfo)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get binlog replay list with startBinlogInfo %+v in binlog directory %q", startBinlogInfo, binlogDir)
+		return errors.Wrapf(err, "failed to get binlog replay list with startBinlogInfo %+v in binlog directory %q", startBinlogInfo, driver.GetBinlogDir())
 	}
 	totalBinlogBytes, err := common.GetFileSizeSum(replayBinlogPaths)
 	if err != nil {
