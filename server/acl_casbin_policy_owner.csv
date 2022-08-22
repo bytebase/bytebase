@@ -38,6 +38,7 @@ p, OWNER, /instance, GET
 p, OWNER, /instance/{id}, GET
 p, OWNER, /instance/{id}, PATCH
 p, OWNER, /instance/{id}/user, GET
+p, OWNER, /instance/{id}/user/{userID}, GET
 p, OWNER, /instance/{id}/migration, POST
 p, OWNER, /instance/{id}/migration/status, GET
 p, OWNER, /instance/{id}/migration/history, GET

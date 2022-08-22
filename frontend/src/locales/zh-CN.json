@@ -565,6 +565,7 @@
   },
   "instance": {
     "select": "选择实例",
+    "select-database-user": "选择数据库用户",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
     "sync-schema-now": "随即同步 schema",
@@ -846,9 +847,9 @@
       "restore-to-point-in-time": "恢复到指定时间点",
       "no-earlier-than": "恢复的时间点不能早于 [{earliest}] (最早可用的备份)。",
       "no-later-than-now": "恢复的时间点不能晚于当前时间。",
+      "will-overwrite-current-database": "会覆盖现有数据库",
       "restore-before-last-migration": "恢复到上次变更历史之前",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。{link}。",
-      "will-overwrite-current-database": "会覆盖现有数据库",
       "restore-to": "恢复到",
       "restore-to-new-db": "新数据库",
       "restore-to-in-place": "原数据库"
@@ -877,7 +878,6 @@
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
-    "branch-specify-tip": "诀窍: 可以使用诸如 \"feature/*\" 这样的通配符",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",

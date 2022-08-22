@@ -34,6 +34,7 @@ func getBaseProfile(backupMeta backupMeta) server.Profile {
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
+		DisableMetric:        flags.disableMetric,
 		BackupStorageBackend: backupMeta.storageBackend,
 		BackupRegion:         backupMeta.region,
 		BackupBucket:         backupMeta.bucket,

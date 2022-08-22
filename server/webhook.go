@@ -128,6 +128,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
+
+		// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
+		// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
+		// We respond to this event so as not to mislead users.
+		if eventType == github.WebhookPing {
+			return c.String(http.StatusOK, "OK")
+		}
+
 		if eventType != github.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 		}
@@ -164,6 +172,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		var pushEvent github.WebhookPushEvent
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+		}
+
+		if branch, err := parseBranchNameFromGitHubRefs(pushEvent.Ref); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref").SetInternal(err)
+		} else if branch != repo.BranchFilter {
+			return c.String(http.StatusOK, "")
 		}
 
 		if pushEvent.Repository.FullName != repo.ExternalID {
@@ -244,6 +258,18 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	// attacks against regular equality operators, see
 	// https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks#validating-payloads-from-github
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
+}
+
+// parseBranchNameFromGitHubRefs is for GitHub.
+// GitLab webhook has the option to listen to push events to a certain branch while GitHub doesn't. So we need to manually parse the branch name from the refs field in the request.
+// https://docs.github.com/en/rest/git/refs
+func parseBranchNameFromGitHubRefs(ref string) (string, error) {
+	expectedPrefix := "refs/heads/"
+	if !strings.HasPrefix(ref, expectedPrefix) || len(expectedPrefix) == len(ref) {
+		log.Debug("ref is not prefix with expected prefix", zap.String("escaped ref", common.EscapeForLogging(ref)), zap.String("expected prefix", expectedPrefix))
+		return ref, errors.Errorf("unexpected ref name %q without prefix %q", ref, expectedPrefix)
+	}
+	return ref[len(expectedPrefix):], nil
 }
 
 // We are observing the push webhook event so that we will receive the event either when:
@@ -598,11 +624,13 @@ func isSkipGeneratedSchemaFile(repository *api.Repository, added string) bool {
 			"ENV_NAME",
 			"DB_NAME",
 		}
-		schemafilePathRegex := repository.SchemaPathTemplate
+
+		// Escape "." characters to match literals instead of using it as a wildcard.
+		schemaFilePathRegex := strings.ReplaceAll(repository.SchemaPathTemplate, ".", `\.`)
 		for _, placeholder := range placeholderList {
-			schemafilePathRegex = strings.ReplaceAll(schemafilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+			schemaFilePathRegex = strings.ReplaceAll(schemaFilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
 		}
-		myRegex, err := regexp.Compile(schemafilePathRegex)
+		myRegex, err := regexp.Compile(schemaFilePathRegex)
 		if err != nil {
 			log.Warn("Invalid schema path template.", zap.String("schema_path_template",
 				repository.SchemaPathTemplate),

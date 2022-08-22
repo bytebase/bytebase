@@ -34,7 +34,7 @@ type backupRaw struct {
 	MigrationHistoryVersion string
 	Path                    string
 	Comment                 string
-	// Payload contains data like PITR info, which will not be created at first.
+	// Payload contains data such as PITR info, which will not be created at first.
 	// When backup runner executes the real backup job, it will fill this field.
 	Payload api.BackupPayload
 }

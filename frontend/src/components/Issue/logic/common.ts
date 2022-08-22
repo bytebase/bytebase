@@ -87,6 +87,10 @@ export const useCommonLogic = () => {
 
     const issueEntity = issue.value as Issue;
 
+    if (issueEntity.type === "bb.issue.database.restore.pitr") {
+      return false;
+    }
+
     if (issueEntity.type === "bb.issue.database.create") {
       // For standard mode projects, we are not allowed to edit the database
       // creation SQL statement.

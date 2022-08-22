@@ -122,6 +122,8 @@ type WebhookType string
 const (
 	// WebhookPush is the webhook type for push.
 	WebhookPush WebhookType = "push"
+	// WebhookPing is the webhook type for ping.
+	WebhookPing WebhookType = "ping"
 )
 
 // WebhookInfo represents a GitHub API response for the webhook information.

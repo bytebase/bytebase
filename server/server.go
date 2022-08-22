@@ -295,6 +295,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
 	e.Use(recoverMiddleware)
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return errorRecorderMiddleware(s, next)
+	})
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
@@ -380,7 +383,7 @@ func (s *Server) initSubscription() {
 
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
-	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo
+	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo && !s.profile.DisableMetric
 	if enabled {
 		metricReporter := NewMetricReporter(s, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))

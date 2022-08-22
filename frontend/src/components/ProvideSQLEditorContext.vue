@@ -3,49 +3,37 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
-import { reactive, onMounted, nextTick } from "vue";
+import { uniqBy } from "lodash-es";
+import { reactive, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 import {
   useCurrentUser,
   useDatabaseStore,
-  useInstanceStore,
-  useProjectStore,
-  useTableStore,
   useSQLEditorStore,
   useTabStore,
   useSheetStore,
   useDebugStore,
+  useInstanceStore,
 } from "@/store";
-import {
-  Instance,
-  Database,
-  Table,
-  ConnectionAtom,
-  ConnectionAtomType,
-  UNKNOWN_ID,
-  InstanceId,
-  DatabaseId,
-  Project,
-} from "@/types";
+import { Instance, Database, ConnectionAtom, UNKNOWN_ID } from "@/types";
+import { mapConnectionAtom } from "@/utils";
+
+type LocalState = {
+  instanceList: Instance[];
+  databaseList: Database[];
+};
 
 const route = useRoute();
 
-const state = reactive<{
-  projectList: Project[];
-  instanceIdList: Map<InstanceId, Instance["name"]>;
-  databaseIdList: Map<DatabaseId, Database["name"]>;
-}>({
-  projectList: [],
-  instanceIdList: new Map(),
-  databaseIdList: new Map(),
+const state = reactive<LocalState>({
+  instanceList: [],
+  databaseList: [],
 });
 
 const currentUser = useCurrentUser();
-const projectStore = useProjectStore();
+const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
-const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
@@ -53,98 +41,43 @@ const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout
-  if (currentUser.value.id != UNKNOWN_ID) {
-    state.projectList = await projectStore.fetchProjectListByUser({
-      userId: currentUser.value.id,
-    });
+  if (currentUser.value.id === UNKNOWN_ID) {
+    return;
   }
+  instanceStore.fetchInstanceList();
 
-  const promises = state.projectList.map(async (project) => {
-    const databaseList = await databaseStore.fetchDatabaseList({
-      projectId: project.id,
-      syncStatus: "OK",
-    });
-    if (databaseList.length >= 0) {
-      databaseList.forEach((database: Database) => {
-        state.databaseIdList.set(database.id, database.name);
-        state.instanceIdList.set(database.instance.id, database.instance.name);
-      });
-    }
+  // `databaseList` is the database list accessible by current user.
+  // Only accessible instances and databases will be listed in the tree.
+  const databaseList = await databaseStore.fetchDatabaseList({
+    syncStatus: "OK",
   });
-
-  await Promise.all(promises);
+  state.instanceList = uniqBy(
+    databaseList.map((db) => db.instance),
+    (instance) => instance.id
+  );
+  state.databaseList = databaseList;
 };
 
 const prepareSQLEditorContext = async () => {
   let connectionTree: ConnectionAtom[] = [];
 
-  const mapConnectionAtom =
-    (type: ConnectionAtomType, parentId: number) =>
-    (item: Instance | Database | Table) => {
-      const connectionAtom: ConnectionAtom = {
-        parentId,
-        id: item.id,
-        key: `${type}-${item.id}`,
-        label: item.name,
-        type,
-      };
+  const { instanceList, databaseList } = state;
+  connectionTree = instanceList.map(mapConnectionAtom("instance", 0));
 
-      return connectionAtom;
-    };
-
-  const instanceList = await useInstanceStore().fetchInstanceList();
-  const filteredInstanceList = instanceList.filter((instance: Instance) =>
-    state.instanceIdList.has(instance.id)
-  );
-  connectionTree = filteredInstanceList.map(mapConnectionAtom("instance", 0));
-
-  for (const instance of filteredInstanceList) {
-    const databaseList = await databaseStore.fetchDatabaseList({
-      instanceId: instance.id,
-      syncStatus: "OK",
-    });
-
+  for (const instance of instanceList) {
     const instanceItem = connectionTree.find(
       (item: ConnectionAtom) => item.id === instance.id
     )!;
-    const filteredDatabaseList = databaseList.filter((database: Database) =>
-      state.databaseIdList.has(database.id)
-    );
 
-    instanceItem.children = filteredDatabaseList.map(
-      mapConnectionAtom("database", instance.id)
-    );
+    instanceItem.children = databaseList
+      .filter((db) => db.instance.id === instance.id)
+      .map(mapConnectionAtom("database", instance.id));
 
     sqlEditorStore.setConnectionTree(connectionTree);
   }
 
-  // fetch table list in next tick
-  nextTick(async () => {
-    const tempConnectionTree = cloneDeep(connectionTree);
-    const tempFilteredInstanceList = cloneDeep(filteredInstanceList);
-    for (const instance of tempFilteredInstanceList) {
-      const instanceItem = tempConnectionTree.find(
-        (item: ConnectionAtom) => item.id === instance.id
-      );
-      if (instanceItem && instanceItem.children) {
-        await Promise.all(
-          instanceItem.children.map(async (db) => {
-            const tableList = await tableStore.fetchTableListByDatabaseId(
-              db.id
-            );
-            const databaseItem = instanceItem.children!.find(
-              (item: ConnectionAtom) => item.id === db.id
-            );
-            databaseItem!.children = tableList.map(
-              mapConnectionAtom("table", db.id)
-            );
-            return Promise.resolve(null);
-          })
-        );
-      }
-    }
-    sqlEditorStore.setConnectionTree(tempConnectionTree);
-  });
+  // Won't fetch tableList for every database here.
+  // Will fetch them asynchronously only when a database node opens.
 };
 
 // Get sheetId from query.
