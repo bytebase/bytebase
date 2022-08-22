@@ -206,6 +206,9 @@ type PITRContext struct {
 type IssueFind struct {
 	ID *int
 
+	// If specified, we will do a JOIN query, to find the issue whose project is not archived.
+	ExcludedIssueInArchiveProject *bool
+
 	// Related fields
 	ProjectID *int
 

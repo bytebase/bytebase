@@ -538,13 +538,32 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		args = append(args, *v)
 		args = append(args, *v)
 	}
+	if v := find.ExcludedIssueInArchiveProject; v != nil && *v {
+		archivedStatus := api.Archived
+		archivedProject, err := findProjectImpl(ctx, tx, &api.ProjectFind{RowStatus: &archivedStatus})
+		if err != nil {
+			return nil, err
+		}
+		var projectIDList []int
+		for _, project := range archivedProject {
+			projectIDList = append(projectIDList, project.ID)
+		}
+		if len(projectIDList) != 0 {
+			var notIn []string
+			for idx := range projectIDList {
+				args = append(args, projectIDList[idx])
+				notIn = append(notIn, fmt.Sprintf("$%d", len(args)))
+			}
+			where = append(where, fmt.Sprintf("project_id NOT IN (%s)", strings.Join(notIn, ",")))
+		}
+	}
 	if len(find.StatusList) != 0 {
 		list := []string{}
 		for _, status := range find.StatusList {
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("status IN (%s)", strings.Join(list, ",")))
 	}
 
 	var query = `
