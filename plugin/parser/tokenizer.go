@@ -106,7 +106,7 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error
 			//   UNIQUE(b)
 			// )
 			// We don't need to consider the ',' in UNIQUE(a, b)
-			if parentheses != 1 {
+			if parentheses > 1 {
 				t.skip(1)
 				continue
 			}
