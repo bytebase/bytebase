@@ -40,8 +40,8 @@ func newTokenizer(statement string) *tokenizer {
 	return t
 }
 
-// setLineForCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
-func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
+// setLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
+func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error {
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
@@ -72,6 +72,10 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 		case '\n':
 			t.line++
 			t.skip(1)
+		case '\'':
+			if err := t.scanString('\''); err != nil {
+				return err
+			}
 		case '(':
 			parentheses++
 			t.skip(1)
@@ -95,6 +99,17 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 			}
 			t.skip(1)
 		case ',':
+			// e.g. CREATE TABLE t(
+			//   a int,
+			//   b int,
+			//   UNIQUE(a, b),
+			//   UNIQUE(b)
+			// )
+			// We don't need to consider the ',' in UNIQUE(a, b)
+			if parentheses > 1 {
+				t.skip(1)
+				continue
+			}
 			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
 			if columnPos < len(node.ColumnList) &&
 				strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
