@@ -34,6 +34,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/plugin/storage"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/pkg/errors"
 
@@ -553,8 +554,13 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 	return true
 }
 
+func getBinlogRelativeDir(binlogDir string) string {
+	instanceID := filepath.Base(binlogDir)
+	return filepath.Join("backup", "instance", instanceID)
+}
+
 // Download binlog files on server.
-func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList []binlogFileMeta, binlogFilesOnServerSorted []BinlogFile, downloadLatestBinlogFile bool) error {
+func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList []binlogFileMeta, binlogFilesOnServerSorted []BinlogFile, downloadLatestBinlogFile bool, uploader storage.Uploader) error {
 	if len(binlogFilesOnServerSorted) == 0 {
 		log.Debug("No binlog file found on server to download")
 		return nil
@@ -570,13 +576,25 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList 
 			continue
 		}
 		_, exist := metaMap[fileOnServer.Seq]
-		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
+		binlogFilePath := filepath.Join(driver.binlogDir, fileOnServer.Name)
 		if !exist {
 			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
-				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
-				return errors.Wrapf(err, "failed to download binlog file %q", path)
+				log.Error("Failed to download binlog file", zap.String("path", binlogFilePath), zap.Error(err))
+				return errors.Wrapf(err, "failed to download binlog file %q", binlogFilePath)
 			}
-			// TODO(dragonly): upload to s3.
+			// TODO(dragonly): upload to s3 using a unified cloud storage interface.
+			if uploader != nil {
+				dir := getBinlogRelativeDir(driver.binlogDir)
+				binlogFile, err := os.Open(binlogFilePath)
+				if err != nil {
+					return errors.Wrapf(err, "failed to open local binlog file %q for uploading", binlogFilePath)
+				}
+				defer binlogFile.Close()
+				defer os.Remove(binlogFilePath)
+				if err := uploader.UploadObject(ctx, path.Join(dir, fileOnServer.Name), binlogFile); err != nil {
+					return errors.Wrapf(err, "failed to upload binlog file %q to cloud storage", fileOnServer.Name)
+				}
+			}
 		}
 	}
 	return nil
@@ -588,7 +606,7 @@ func (driver *Driver) GetBinlogDir() string {
 }
 
 // FetchAllBinlogFilesFromMySQL downloads all binlog files on server to `binlogDir`.
-func (driver *Driver) FetchAllBinlogFilesFromMySQL(ctx context.Context, downloadLatestBinlogFile bool) error {
+func (driver *Driver) FetchAllBinlogFilesFromMySQL(ctx context.Context, downloadLatestBinlogFile bool, uploader storage.Uploader) error {
 	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
 		return errors.Wrapf(err, "failed to create binlog directory %q", driver.binlogDir)
 	}
@@ -609,7 +627,7 @@ func (driver *Driver) FetchAllBinlogFilesFromMySQL(ctx context.Context, download
 		return errors.Wrap(err, "failed to read local binlog files")
 	}
 
-	return driver.downloadBinlogFilesOnServer(ctx, metaList, binlogFilesOnServerSorted, downloadLatestBinlogFile)
+	return driver.downloadBinlogFilesOnServer(ctx, metaList, binlogFilesOnServerSorted, downloadLatestBinlogFile, uploader)
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.

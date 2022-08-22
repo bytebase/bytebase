@@ -127,7 +127,7 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 				log.Debug("Successfully removed the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal))
 			}
 		}()
-		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
+		if err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
 		log.Debug("Successfully uploaded backup to s3 bucket.")

@@ -237,7 +237,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	if err := mysqlDriver.FetchAllBinlogFilesFromMySQL(ctx, false /* downloadLatestBinlogFile */); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFilesFromMySQL(ctx, false /* downloadLatestBinlogFile */, r.server.s3Client); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}
