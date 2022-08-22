@@ -96,6 +96,8 @@ var (
 		// pgURL must follow PostgreSQL connection URIs pattern.
 		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 		pgURL string
+		// disableMetric is the flag to disable the metric collector.
+		disableMetric bool
 	}
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -131,6 +133,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo-name", "", "name of the demo to use when running in demo mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
+	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------

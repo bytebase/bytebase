@@ -158,14 +158,24 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
 		}
 
-		// Ensure the project has no database before it's archived.
+		// Verify before archiving the project:
+		// 1. the project has no database.
+		// 2. the issue status of this project should be canceled or done.
 		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
 			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find databases in the project %d", id)).SetInternal(err)
 			}
 			if len(databases) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, "You should transfer all databases under the project before archiving the project.")
+				return echo.NewHTTPError(http.StatusBadRequest, "Please transfer all databases under the project before archiving the project.")
+			}
+
+			issueList, err := s.store.FindIssue(ctx, &api.IssueFind{ProjectID: &id, StatusList: []api.IssueStatus{api.IssueOpen}})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find issues in the project %d", id)).SetInternal(err)
+			}
+			if len(issueList) > 0 {
+				return echo.NewHTTPError(http.StatusBadRequest, "Please resolve all the issues in it before archiving the project.")
 			}
 		}
 

@@ -62,6 +62,8 @@ type Profile struct {
 	PgURL string
 	// MetricConnectionKey is the connection key for metric.
 	MetricConnectionKey string
+	// DisableMetric will disable the metric collector.
+	DisableMetric bool
 }
 
 func (prof *Profile) useEmbedDB() bool {

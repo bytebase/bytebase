@@ -450,7 +450,7 @@ func TestTenantVCS(t *testing.T) {
 			issues, err := ctl.getIssues(
 				api.IssueFind{
 					ProjectID:  &project.ID,
-					StatusList: &openStatus,
+					StatusList: openStatus,
 				},
 			)
 			a.NoError(err)
@@ -903,7 +903,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			issues, err := ctl.getIssues(
 				api.IssueFind{
 					ProjectID:  &project.ID,
-					StatusList: &openStatus,
+					StatusList: openStatus,
 				},
 			)
 			a.NoError(err)

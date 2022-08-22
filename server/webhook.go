@@ -128,6 +128,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
+
+		// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
+		// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
+		// We respond to this event so as not to mislead users.
+		if eventType == github.WebhookPing {
+			return c.String(http.StatusOK, "OK")
+		}
+
 		if eventType != github.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 		}
@@ -616,11 +624,13 @@ func isSkipGeneratedSchemaFile(repository *api.Repository, added string) bool {
 			"ENV_NAME",
 			"DB_NAME",
 		}
-		schemafilePathRegex := repository.SchemaPathTemplate
+
+		// Escape "." characters to match literals instead of using it as a wildcard.
+		schemaFilePathRegex := strings.ReplaceAll(repository.SchemaPathTemplate, ".", `\.`)
 		for _, placeholder := range placeholderList {
-			schemafilePathRegex = strings.ReplaceAll(schemafilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+			schemaFilePathRegex = strings.ReplaceAll(schemaFilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
 		}
-		myRegex, err := regexp.Compile(schemafilePathRegex)
+		myRegex, err := regexp.Compile(schemaFilePathRegex)
 		if err != nil {
 			log.Warn("Invalid schema path template.", zap.String("schema_path_template",
 				repository.SchemaPathTemplate),
