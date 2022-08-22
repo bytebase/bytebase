@@ -624,11 +624,13 @@ func isSkipGeneratedSchemaFile(repository *api.Repository, added string) bool {
 			"ENV_NAME",
 			"DB_NAME",
 		}
-		schemafilePathRegex := repository.SchemaPathTemplate
+
+		// Escape "." characters to match literals instead of using it as a wildcard.
+		schemaFilePathRegex := strings.ReplaceAll(repository.SchemaPathTemplate, ".", `\.`)
 		for _, placeholder := range placeholderList {
-			schemafilePathRegex = strings.ReplaceAll(schemafilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+			schemaFilePathRegex = strings.ReplaceAll(schemaFilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
 		}
-		myRegex, err := regexp.Compile(schemafilePathRegex)
+		myRegex, err := regexp.Compile(schemaFilePathRegex)
 		if err != nil {
 			log.Warn("Invalid schema path template.", zap.String("schema_path_template",
 				repository.SchemaPathTemplate),
