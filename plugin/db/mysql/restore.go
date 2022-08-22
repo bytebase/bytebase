@@ -98,7 +98,6 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 }
 
 type binlogFileMeta struct {
-	Size         int64 `json:"size"`
 	FirstEventTs int64 `json:"first_event_ts"`
 }
 
@@ -640,7 +639,6 @@ func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileInf
 		return errors.Wrapf(err, "failed to create binlog metadata file %q", metadataFilePath)
 	}
 	metadata := binlogFileMeta{
-		Size:         binlogFileInfo.Size(),
 		FirstEventTs: eventTs,
 	}
 	metadataBytes, err := json.Marshal(metadata)
