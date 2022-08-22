@@ -2,6 +2,7 @@ package pg
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/pkg/errors"
 )
 
@@ -135,15 +136,23 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	}
 	defer txn.Rollback()
 
-	f := func(stmt string) error {
-		if _, err := txn.Exec(stmt); err != nil {
+	scanner := bufio.NewScanner(sc)
+	var buffer bytes.Buffer
+	for scanner.Scan() {
+		if _, err := buffer.WriteString(scanner.Text()); err != nil {
 			return err
 		}
-		return nil
 	}
 
-	if err := util.ApplyMultiStatements(sc, f); err != nil {
+	statements, err := parser.SplitMultiSQL(parser.Postgres, buffer.String())
+	if err != nil {
 		return err
+	}
+
+	for _, stmt := range statements {
+		if _, err := txn.Exec(stmt.Text); err != nil {
+			return err
+		}
 	}
 
 	return txn.Commit()
