@@ -101,11 +101,11 @@ var (
 		disableMetric bool
 
 		// Cloud backup configs.
-		backupRegion     string
-		backupBucket     string
-		backupCredential string
+		backupStorageBackend api.BackupStorageBackend
+		backupRegion         string
+		backupBucket         string
+		backupCredential     string
 	}
-	backupStorageBackend = api.BackupStorageBackendLocal // This is parsed from flags.backupBucket
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -185,7 +185,6 @@ func checkCloudBackupFlags() error {
 	if flags.backupRegion == "" {
 		return errors.Errorf("must specify --backup-region for AWS S3 backup")
 	}
-	backupStorageBackend = api.BackupStorageBackendS3
 	return nil
 }
 
