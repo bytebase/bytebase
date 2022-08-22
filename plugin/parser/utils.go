@@ -27,7 +27,7 @@ func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt)
 	switch engineType {
 	case Postgres:
 		t := newTokenizer(node.Text())
-		return t.setLineForCreateTableStmt(node)
+		return t.setLineForPGCreateTableStmt(node)
 	default:
 		return errors.Errorf("engine type is not supported: %s", engineType)
 	}
