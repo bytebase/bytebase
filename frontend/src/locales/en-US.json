@@ -716,7 +716,7 @@
   "policy": {
     "approval": {
       "name": "Approval Policy",
-      "tip": "The policy is not applied retroactively.",
+      "tip": "The policy is applied to issues retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
       "manual-info": "Tasks will only be executed after being manually approved.",
