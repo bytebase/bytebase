@@ -147,6 +147,7 @@ func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Conte
 	return maxRetentionPeriodTs, nil
 }
 
+// TODO(dragonly): Remove metadata as well.
 func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error {
 	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
 	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
@@ -155,7 +156,6 @@ func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error
 	}
 	for _, binlogFileInfo := range binlogFileInfoList {
 		if _, err := mysql.GetBinlogNameSeq(binlogFileInfo.Name()); err != nil {
-			log.Warn("Found an irregular file in binlog directory.", zap.String("path", binlogFileInfo.Name()))
 			continue // next binlog file
 		}
 		// We use modification time of local binlog files which is later than the modification time of that on the MySQL server,
