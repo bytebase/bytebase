@@ -38,7 +38,7 @@ func GetCredentialsFromFile(ctx context.Context, credentialsFileName string) (aw
 func NewClient(ctx context.Context, region, bucket string, credentials aws.Credentials) (*Client, error) {
 	cfg, err := awsconfig.LoadDefaultConfig(ctx,
 		awsconfig.WithRegion(region),
-		awsconfig.WithCredentialsProvider(awscredentials.NewStaticCredentialsProvider(credentials.AccessKeyID, credentials.SecretAccessKey, credentials.SessionToken)),
+		awsconfig.WithCredentialsProvider(awscredentials.NewStaticCredentialsProvider(credentials.AccessKeyID, credentials.SecretAccessKey, "")),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load AWS S3 config")
