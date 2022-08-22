@@ -718,6 +718,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		if pipeline == nil {
 			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
 		}
+		//TODO(p0ny): concurrency
 		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
 		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == taskPatched.ID {
 			if issue == nil {

@@ -89,7 +89,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					if _, err := s.server.ScheduleNextTaskIfNeeded(ctx, pipeline); err != nil {
+					if err := s.server.ScheduleNextTaskIfNeeded(ctx, pipeline); err != nil {
 						log.Error("Failed to schedule next running task",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),

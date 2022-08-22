@@ -316,7 +316,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
+	if err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
@@ -1357,6 +1357,7 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 	}
 }
 
+//TODO(p0ny): concurrent
 func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {

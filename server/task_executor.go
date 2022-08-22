@@ -188,6 +188,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
 			var lastTask *api.Task
+			//TODO(p0ny): concurrency
 			for i := len(issue.Pipeline.StageList) - 1; i >= 0; i-- {
 				stage := issue.Pipeline.StageList[i]
 				if len(stage.TaskList) > 0 {
