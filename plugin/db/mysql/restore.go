@@ -51,6 +51,9 @@ const (
 	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the letter case specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
 	// Name comparisons are not case-sensitive.
 	LetterCaseOnDiskLowerCaseCmp = 2
+
+	// binlog metadata file suffix.
+	binlogMetaSuffix = ".meta"
 )
 
 // BinlogFile is the metadata of the MySQL binlog file.
@@ -478,9 +481,9 @@ func (driver *Driver) GetSortedLocalBinlogFiles() ([]BinlogFile, error) {
 		return nil, err
 	}
 	var binlogFilesLocal []BinlogFile
+	// TODO(dragonly): Get binlog files according to the metadata files.
 	for _, fileInfo := range binlogFilesInfoLocal {
-		if fileInfo.IsDir() {
-			// There's a metadata/ dir containing binlog metadata files.
+		if strings.HasSuffix(fileInfo.Name(), binlogMetaSuffix) {
 			continue
 		}
 		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
@@ -547,9 +550,6 @@ func (driver *Driver) GetBinlogDir() string {
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
 	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
 		return errors.Wrapf(err, "failed to create binlog directory %q", driver.binlogDir)
-	}
-	if err := os.MkdirAll(driver.binlogMetaDir, os.ModePerm); err != nil {
-		return errors.Wrapf(err, "failed to create binlog metadata directory %q", driver.binlogDir)
 	}
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
@@ -634,7 +634,7 @@ func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileInf
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse the local binlog file %q's first binlog event ts", binlogFileInfo.Name())
 	}
-	metadataFilePath := filepath.Join(driver.binlogMetaDir, binlogFileInfo.Name()+".meta")
+	metadataFilePath := filepath.Join(driver.binlogDir, binlogFileInfo.Name()+".meta")
 	metadataFile, err := os.Create(metadataFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create binlog metadata file %q", metadataFilePath)

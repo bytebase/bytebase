@@ -156,9 +156,6 @@ func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error
 	}
 	for _, binlogFileInfo := range binlogFileInfoList {
 		if _, err := mysql.GetBinlogNameSeq(binlogFileInfo.Name()); err != nil {
-			if binlogFileInfo.Name() != "metadata" {
-				log.Warn("Found an irregular file in binlog directory.", zap.String("name", binlogFileInfo.Name()))
-			}
 			continue // next binlog file
 		}
 		// We use modification time of local binlog files which is later than the modification time of that on the MySQL server,

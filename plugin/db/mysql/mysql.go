@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/bytebase/bytebase/common"
@@ -35,7 +34,6 @@ type Driver struct {
 	dbType        db.Type
 	resourceDir   string
 	binlogDir     string
-	binlogMetaDir string
 	db            *sql.DB
 
 	replayBinlogCounter *common.CountingReader
@@ -43,9 +41,8 @@ type Driver struct {
 
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
-		resourceDir:   dc.ResourceDir,
-		binlogDir:     dc.BinlogDir,
-		binlogMetaDir: filepath.Join(dc.BinlogDir, "metadata"),
+		resourceDir: dc.ResourceDir,
+		binlogDir:   dc.BinlogDir,
 	}
 }
 
