@@ -262,8 +262,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 			a.NoError(err)
 		}
 
-		driver := Driver{binlogDir: tmpDir}
-		result, err := driver.GetBinlogReplayList(test.startBinlogInfo)
+		result, err := GetBinlogReplayList(test.startBinlogInfo, tmpDir)
 		if test.err {
 			a.Error(err)
 		} else {

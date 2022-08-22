@@ -94,12 +94,12 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`, read binlog from `driver.binlogDir``.
 func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	return driver.replayBinlogReadFromDir(ctx, originalDatabase, targetDatabase, startBinlogInfo, targetTs)
+	return driver.replayBinlogReadFromDir(ctx, originalDatabase, targetDatabase, startBinlogInfo, targetTs, driver.binlogDir)
 }
 
 // replayBinlogReadFromDir replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`, read binlog from `binlogDir`.
-func (driver *Driver) replayBinlogReadFromDir(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	replayBinlogPaths, err := driver.GetBinlogReplayList(startBinlogInfo)
+func (driver *Driver) replayBinlogReadFromDir(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64, binlogDir string) error {
+	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, binlogDir)
 	if err != nil {
 		return err
 	}
@@ -201,8 +201,8 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 }
 
 // ReplayBinlogToDatabase replays the binlog of originDatabaseName to the targetDatabaseName.
-func (driver *Driver) ReplayBinlogToDatabase(ctx context.Context, originDatabaseName, targetDatabaseName string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	return driver.replayBinlogReadFromDir(ctx, originDatabaseName, targetDatabaseName, startBinlogInfo, targetTs)
+func (driver *Driver) ReplayBinlogToDatabase(ctx context.Context, originDatabaseName, targetDatabaseName string, startBinlogInfo api.BinlogInfo, targetTs int64, binlogDir string) error {
+	return driver.replayBinlogReadFromDir(ctx, originDatabaseName, targetDatabaseName, startBinlogInfo, targetTs, binlogDir)
 }
 
 // ReplayBinlogToPITRDatabase replays binlog to the PITR database.
@@ -235,15 +235,15 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 }
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
-func (driver *Driver) GetBinlogReplayList(startBinlogInfo api.BinlogInfo) ([]string, error) {
+func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
 	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse the start binlog file name %q", startBinlogInfo.FileName)
 	}
 
-	binlogFiles, err := ioutil.ReadDir(driver.binlogDir)
+	binlogFiles, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot read binlog directory %s", driver.binlogDir)
+		return nil, errors.Wrapf(err, "cannot read binlog directory %s", binlogDir)
 	}
 
 	var binlogFilesToReplay []BinlogFile
@@ -277,7 +277,7 @@ func (driver *Driver) GetBinlogReplayList(startBinlogInfo api.BinlogInfo) ([]str
 
 	var binlogReplayList []string
 	for _, binlogFile := range binlogFilesToReplaySorted {
-		binlogReplayList = append(binlogReplayList, filepath.Join(driver.binlogDir, binlogFile.Name))
+		binlogReplayList = append(binlogReplayList, filepath.Join(binlogDir, binlogFile.Name))
 	}
 
 	return binlogReplayList, nil
