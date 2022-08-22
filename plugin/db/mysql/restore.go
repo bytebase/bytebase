@@ -258,7 +258,7 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 
 	var binlogFilesToReplay []BinlogFile
 	for _, f := range binlogFiles {
-		if f.IsDir() {
+		if strings.HasSuffix(f.Name(), binlogMetaSuffix) {
 			continue
 		}
 		binlogFile, err := newBinlogFile(f.Name(), f.Size())
