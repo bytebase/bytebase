@@ -125,13 +125,6 @@ var (
 	}
 )
 
-type backupMeta struct {
-	storageBackend api.BackupStorageBackend
-	region         string
-	bucket         string
-	credentialFile string
-}
-
 // Execute executes the root command.
 func Execute() error {
 	return rootCmd.Execute()
@@ -185,19 +178,14 @@ func checkCloudBackupFlags() error {
 	if flags.backupBucket == "" {
 		return nil
 	}
+	flags.backupBucket = strings.TrimPrefix(flags.backupBucket, "s3://")
 	if flags.backupCredential == "" {
 		return errors.Errorf("must specify --backup-credential when --backup-bucket is present")
 	}
-	bucketMeta, err := parseBucketURI(flags.backupBucket)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse backup bucket")
+	if flags.backupRegion == "" {
+		return errors.Errorf("must specify --backup-region for AWS S3 backup")
 	}
-	if bucketMeta.storageBackend == api.BackupStorageBackendS3 {
-		if flags.backupRegion == "" {
-			return errors.Errorf("must specify --backup-region for AWS S3 backup")
-		}
-		backupStorageBackend = api.BackupStorageBackendS3
-	}
+	backupStorageBackend = api.BackupStorageBackendS3
 	return nil
 }
 
@@ -257,29 +245,4 @@ func start() {
 
 	// Wait for CTRL-C.
 	<-ctx.Done()
-}
-
-// Examples:
-//   s3://example-bucket
-//   gcs://example-bucket
-func parseBucketURI(uri string) (backupMeta, error) {
-	parts := strings.Split(uri, "://")
-	if len(parts) != 2 {
-		return backupMeta{}, errors.Errorf("invalid bucket URI %q, expected format is s3://${BUCKET_NAME}", uri)
-	}
-
-	backend, bucket := parts[0], parts[1]
-	if strings.Contains(bucket, "/") {
-		return backupMeta{}, errors.Errorf("invalid bucket URI %q, expecting no / in the BUCKET_NAME", uri)
-	}
-
-	switch strings.ToUpper(backend) {
-	case string(api.BackupStorageBackendS3):
-		return backupMeta{
-			storageBackend: api.BackupStorageBackendS3,
-			bucket:         bucket,
-		}, nil
-	default:
-		return backupMeta{}, errors.Errorf("unsupported storage backend %q", backend)
-	}
 }
