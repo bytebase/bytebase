@@ -183,7 +183,7 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		return errors.Wrapf(err, "failed to check existence of database %q", task.Database.Name)
 	}
 	if existOriginal {
-		// Kill connections to the original database before cutover.
+		// Kill connections to the original database in the beginning of cutover.
 		if err := pgKillConnectionsToDatabase(ctx, db, task.Database.Name); err != nil {
 			return err
 		}
