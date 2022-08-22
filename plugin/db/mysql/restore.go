@@ -545,8 +545,8 @@ func (driver *Driver) GetBinlogDir() string {
 	return driver.binlogDir
 }
 
-// FetchAllBinlogFilesFromMySQL downloads all binlog files on server to `binlogDir`.
-func (driver *Driver) FetchAllBinlogFilesFromMySQL(ctx context.Context, downloadLatestBinlogFile bool) error {
+// FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
+func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
 	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
 		return errors.Wrapf(err, "failed to create binlog directory %q", driver.binlogDir)
 	}
@@ -568,10 +568,6 @@ func (driver *Driver) FetchAllBinlogFilesFromMySQL(ctx context.Context, download
 	}
 
 	return driver.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, downloadLatestBinlogFile)
-}
-
-func getSortedLocalBinlogFilesMeta(binlogDir string) ([]binlogFileMeta, error) {
-
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
