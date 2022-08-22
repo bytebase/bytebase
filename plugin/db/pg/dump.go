@@ -139,7 +139,9 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	scanner := bufio.NewScanner(sc)
 	var buffer bytes.Buffer
 	for scanner.Scan() {
-		buffer.WriteString(scanner.Text())
+		if _, err := buffer.WriteString(scanner.Text()); err != nil {
+			return err
+		}
 	}
 
 	statements, err := parser.SplitMultiSQL(parser.Postgres, buffer.String())
