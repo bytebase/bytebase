@@ -15,7 +15,7 @@
         } in databaseListGroupByEnvironment"
         :key="environment.id"
       >
-        <div class="flex items-center gap-x-2 mb-2 mt-4">
+        <label class="flex items-center gap-x-2 mb-2 mt-4">
           <input
             type="checkbox"
             class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-[calc(1rem+1px)]"
@@ -28,7 +28,7 @@
             @input="toggleAllDatabasesSelectionForEnvironment(environment, databaseListInEnvironment, ($event.target as HTMLInputElement).checked)"
           />
           <div>{{ environment.name }}</div>
-        </div>
+        </label>
         <div class="relative bg-white rounded-md -space-y-px">
           <template
             v-for="(database, dbIndex) in databaseListInEnvironment"
