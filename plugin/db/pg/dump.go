@@ -2,7 +2,6 @@ package pg
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -136,23 +135,15 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 	}
 	defer txn.Rollback()
 
-	scanner := bufio.NewScanner(sc)
-	var buffer bytes.Buffer
-	for scanner.Scan() {
-		if _, err := buffer.WriteString(scanner.Text()); err != nil {
+	f := func(stmt string) error {
+		if _, err := txn.Exec(stmt); err != nil {
 			return err
 		}
+		return nil
 	}
 
-	statements, err := parser.SplitMultiSQL(parser.Postgres, buffer.String())
-	if err != nil {
+	if _, err := parser.SplitMultiSQLStream(parser.Postgres, sc, f); err != nil {
 		return err
-	}
-
-	for _, stmt := range statements {
-		if _, err := txn.Exec(stmt.Text); err != nil {
-			return err
-		}
 	}
 
 	return txn.Commit()

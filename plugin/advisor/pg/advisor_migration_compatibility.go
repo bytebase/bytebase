@@ -54,15 +54,19 @@ func (*CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 }
 
 type compatibilityChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
+	adviceList      []advisor.Advice
+	level           advisor.Status
+	title           string
+	text            string
+	lastCreateTable string
 }
 
 func (checker *compatibilityChecker) Visit(node ast.Node) ast.Visitor {
 	code := advisor.Ok
 	switch n := node.(type) {
+	// CREATE TABLE
+	case *ast.CreateTableStmt:
+		checker.lastCreateTable = n.Name.Name
 	// DROP DATABASE
 	case *ast.DropDatabaseStmt:
 		code = advisor.CompatibilityDropDatabase
@@ -74,35 +78,45 @@ func (checker *compatibilityChecker) Visit(node ast.Node) ast.Visitor {
 		code = advisor.CompatibilityDropTable
 	// ALTER TABLE RENAME COLUMN
 	case *ast.RenameColumnStmt:
-		code = advisor.CompatibilityRenameColumn
+		if checker.lastCreateTable != n.Table.Name {
+			code = advisor.CompatibilityRenameColumn
+		}
 	// ALTER TABLE DROP COLUMN
 	case *ast.DropColumnStmt:
-		code = advisor.CompatibilityDropColumn
+		if checker.lastCreateTable != n.Table.Name {
+			code = advisor.CompatibilityDropColumn
+		}
 	case *ast.AddConstraintStmt:
-		switch n.Constraint.Type {
-		// ADD PRIMARY KEY/ ADD PRIMARY KEY USING INDEX
-		case ast.ConstraintTypePrimary, ast.ConstraintTypePrimaryUsingIndex:
-			code = advisor.CompatibilityAddPrimaryKey
-		// ADD UNIQUE CONSTRAINT
-		case ast.ConstraintTypeUnique:
-			// ConstraintTypeUniqueUsingIndex doesn't add a new constraint or unique index.
-			code = advisor.CompatibilityAddUniqueKey
-		// ADD FOREIGIN KEY
-		case ast.ConstraintTypeForeign:
-			code = advisor.CompatibilityAddForeignKey
-		// ADD CHECK
-		case ast.ConstraintTypeCheck:
-			if !n.Constraint.SkipValidation {
-				code = advisor.CompatibilityAddCheck
+		if checker.lastCreateTable != n.Table.Name {
+			switch n.Constraint.Type {
+			// ADD PRIMARY KEY/ ADD PRIMARY KEY USING INDEX
+			case ast.ConstraintTypePrimary, ast.ConstraintTypePrimaryUsingIndex:
+				code = advisor.CompatibilityAddPrimaryKey
+			// ADD UNIQUE CONSTRAINT
+			case ast.ConstraintTypeUnique:
+				// ConstraintTypeUniqueUsingIndex doesn't add a new constraint or unique index.
+				code = advisor.CompatibilityAddUniqueKey
+			// ADD FOREIGIN KEY
+			case ast.ConstraintTypeForeign:
+				code = advisor.CompatibilityAddForeignKey
+			// ADD CHECK
+			case ast.ConstraintTypeCheck:
+				if !n.Constraint.SkipValidation {
+					code = advisor.CompatibilityAddCheck
+				}
 			}
 		}
 	// ALTER TABLE ALTER COLUMN TYPE
 	case *ast.AlterColumnTypeStmt:
-		code = advisor.CompatibilityAlterColumn
+		if checker.lastCreateTable != n.Table.Name {
+			code = advisor.CompatibilityAlterColumn
+		}
 	// CREATE UNIQUE INDEX
 	case *ast.CreateIndexStmt:
-		if n.Index.Unique {
-			code = advisor.CompatibilityAddUniqueKey
+		if checker.lastCreateTable != n.Index.Table.Name {
+			if n.Index.Unique {
+				code = advisor.CompatibilityAddUniqueKey
+			}
 		}
 	}
 

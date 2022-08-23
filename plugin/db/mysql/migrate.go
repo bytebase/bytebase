@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -250,63 +249,5 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	// TODO(zp):  modified param database of `util.FindMigrationHistoryList` when we support *mysql* database level.
-	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase)
-	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
-	if err != nil {
-		if !strings.Contains(err.Error(), "invalid stored version") {
-			return nil, err
-		}
-		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
-			return nil, err
-		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase)
-	}
-	return history, err
-}
-
-func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
-	sqldb, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
-	if err != nil {
-		return err
-	}
-	query := `SELECT id, version FROM bytebase.migration_history`
-	rows, err := sqldb.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	type ver struct {
-		id      int
-		version string
-	}
-	var vers []ver
-	for rows.Next() {
-		var v ver
-		if err := rows.Scan(&v.id, &v.version); err != nil {
-			return err
-		}
-		vers = append(vers, v)
-	}
-	if err := rows.Err(); err != nil {
-		return util.FormatErrorWithQuery(err, query)
-	}
-
-	updateQuery := `
-		UPDATE
-			bytebase.migration_history
-		SET
-			version = ?
-		WHERE id = ? AND version = ?
-	`
-	for _, v := range vers {
-		if strings.HasPrefix(v.version, util.NonSemanticPrefix) {
-			continue
-		}
-		newVersion := fmt.Sprintf("%s%s", util.NonSemanticPrefix, v.version)
-		if _, err := sqldb.Exec(updateQuery, newVersion, v.id, v.version); err != nil {
-			return err
-		}
-	}
-	return nil
+	return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase)
 }

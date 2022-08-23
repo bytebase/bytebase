@@ -226,6 +226,18 @@
     @apply origin-bottom-left;
     animation: thumb-up 1s ease-in-out infinite;
   }
+
+  /* Remove the ticker in the number field for webkit */
+  input.hide-ticker::-webkit-outer-spin-button,
+  input.hide-ticker::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Remove the ticker in the number field for Firefox */
+  input[type="number"].hide-ticker {
+    -moz-appearance: textfield;
+  }
 }
 
 .fade-enter-active,

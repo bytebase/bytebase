@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -74,7 +73,6 @@ func (*DiscordReceiver) post(context Context) error {
 		Type:        "rich",
 		Description: context.Description,
 		URL:         context.Link,
-		Timestamp:   time.Unix(context.CreatedTs, 0).Format(timeFormat),
 		Author: DiscordWebhookEmbedAuthor{
 			Name: fmt.Sprintf("%s (%s)", context.CreatorName, context.CreatorEmail),
 		},

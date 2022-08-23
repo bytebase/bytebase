@@ -249,8 +249,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, PropType, computed } from "vue";
-import { useRouter } from "vue-router";
+import { defineComponent, reactive, PropType, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { kebabCase } from "lodash-es";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
@@ -295,6 +295,7 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const router = useRouter();
+    const route = useRoute();
     const commandStore = useCommandStore();
     const subscriptionStore = useSubscriptionStore();
 
@@ -312,6 +313,10 @@ export default defineComponent({
         return idFromSlug(parts[parts.length - 1]);
       }
       return undefined;
+    });
+
+    watch(route, () => {
+      state.showModal = false;
     });
 
     const createProject = () => {
