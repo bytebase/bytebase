@@ -30,7 +30,9 @@
           <heroicons-solid:arrow-circle-left class="w-6 h-6" />
         </button>
         <div v-else class="pl-6"></div>
-        {{ item.title }}
+        <slot name="item" :item="item" :index="index">
+          {{ item.title }}
+        </slot>
         <button
           v-if="
             index != tabItemList.length - 1 &&

@@ -15,6 +15,12 @@
                 >
                   {{ database.name }}
 
+                  <ProtectedEnvironmentIcon
+                    :environment="database.instance.environment"
+                    tooltip
+                    class="w-5 h-5"
+                  />
+
                   <BBBadge
                     v-if="isPITRDatabase(database)"
                     text="PITR"

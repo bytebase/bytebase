@@ -87,7 +87,13 @@
         <span>{{ issue.name }}</span>
       </BBTableCell>
       <BBTableCell class="table-cell">
-        {{ activeEnvironmentName(issue) }}
+        <div class="flex items-center">
+          {{ activeEnvironmentName(issue) }}
+          <ProtectedEnvironmentIcon
+            class="ml-1"
+            :environment="activeEnvironment(issue.pipeline)"
+          />
+        </div>
       </BBTableCell>
       <BBTableCell class="table-cell">
         {{ activeDatabaseName(issue) }}
@@ -141,6 +147,7 @@ import {
   activeTaskInStage,
 } from "../../utils";
 import { Issue, Task } from "../../types";
+import ProtectedEnvironmentIcon from "../Environment/ProtectedEnvironmentIcon.vue";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -208,7 +215,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "IssueTable",
-  components: { IssueStatusIcon },
+  components: { IssueStatusIcon, ProtectedEnvironmentIcon },
   props: {
     issueSectionList: {
       required: true,
@@ -297,6 +304,7 @@ export default defineComponent({
     return {
       state,
       columnList: columnListMap.get(props.mode)!,
+      activeEnvironment,
       activeEnvironmentName,
       activeDatabaseName,
       taskStepList,
