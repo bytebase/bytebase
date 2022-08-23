@@ -12,6 +12,16 @@
         (db) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
       "
     >
+      <template #selection-all="{ databaseList: renderedDatabaseList }">
+        <input
+          v-if="renderedDatabaseList.length > 0"
+          type="checkbox"
+          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          v-bind="getAllSelectionState(renderedDatabaseList)"
+          @input="toggleAllDatabasesSelection(renderedDatabaseList, ($event.target as HTMLInputElement).checked)"
+        />
+      </template>
+
       <template #selection="{ database }">
         <input
           type="checkbox"
@@ -91,6 +101,28 @@ const toggleDatabaseSelection = (database: Database, on: boolean) => {
     state.selectedDatabaseIdList.add(database.id);
   } else {
     state.selectedDatabaseIdList.delete(database.id);
+  }
+};
+
+const getAllSelectionState = (
+  databaseList: Database[]
+): { checked: boolean; indeterminate: boolean } => {
+  const allCount = databaseList.length;
+  const selectedCount = state.selectedDatabaseIdList.size;
+  return {
+    checked: selectedCount === allCount,
+    indeterminate: selectedCount > 0 && selectedCount !== allCount,
+  };
+};
+
+const toggleAllDatabasesSelection = (
+  databaseList: Database[],
+  on: boolean
+): void => {
+  if (on) {
+    state.selectedDatabaseIdList = new Set(databaseList.map((db) => db.id));
+  } else {
+    state.selectedDatabaseIdList.clear();
   }
 };
 

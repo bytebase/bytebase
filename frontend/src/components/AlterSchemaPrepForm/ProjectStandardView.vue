@@ -15,7 +15,20 @@
         } in databaseListGroupByEnvironment"
         :key="environment.id"
       >
-        <div class="mb-2 mt-4">{{ environment.name }}</div>
+        <label class="flex items-center gap-x-2 mb-2 mt-4">
+          <input
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-[calc(1rem+1px)]"
+            v-bind="
+              getAllSelectionStateForEnvironment(
+                environment,
+                databaseListInEnvironment
+              )
+            "
+            @input="toggleAllDatabasesSelectionForEnvironment(environment, databaseListInEnvironment, ($event.target as HTMLInputElement).checked)"
+          />
+          <div>{{ environment.name }}</div>
+        </label>
         <div class="relative bg-white rounded-md -space-y-px">
           <template
             v-for="(database, dbIndex) in databaseListInEnvironment"
@@ -192,6 +205,37 @@ export default defineComponent({
       return list.includes(databaseId);
     };
 
+    const getAllSelectionStateForEnvironment = (
+      environment: Environment,
+      databaseList: Database[]
+    ): { checked: boolean; indeterminate: boolean } => {
+      const allCount = databaseList.length;
+      const selectedIds =
+        props.state.selectedDatabaseIdListForEnvironment.get(environment.id) ||
+        [];
+      const selectedCount = selectedIds.length;
+
+      return {
+        checked: selectedCount === allCount,
+        indeterminate: selectedCount > 0 && selectedCount !== allCount,
+      };
+    };
+
+    const toggleAllDatabasesSelectionForEnvironment = (
+      environment: Environment,
+      databaseList: Database[],
+      on: boolean
+    ) => {
+      if (on) {
+        props.state.selectedDatabaseIdListForEnvironment.set(
+          environment.id,
+          databaseList.map((db) => db.id)
+        );
+      } else {
+        props.state.selectedDatabaseIdListForEnvironment.delete(environment.id);
+      }
+    };
+
     const selectDatabase = (db: Database) => {
       emit("select-database", db);
     };
@@ -200,6 +244,8 @@ export default defineComponent({
       databaseListGroupByEnvironment,
       toggleDatabaseIdForEnvironment,
       isDatabaseSelectedForEnvironment,
+      getAllSelectionStateForEnvironment,
+      toggleAllDatabasesSelectionForEnvironment,
       selectDatabase,
     };
   },
