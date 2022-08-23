@@ -255,20 +255,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
 	query := `
-		SELECT usename AS role_name,
-			CASE
-				 WHEN usesuper AND usecreatedb THEN
-				 CAST('superuser, create database' AS pg_catalog.text)
-				 WHEN usesuper THEN
-					CAST('superuser' AS pg_catalog.text)
-				 WHEN usecreatedb THEN
-					CAST('create database' AS pg_catalog.text)
-				 ELSE
-					CAST('' AS pg_catalog.text)
-			END role_attributes
-		FROM pg_catalog.pg_user
-		ORDER BY role_name
-			`
+		SELECT r.rolname, r.rolsuper, r.rolinherit, r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolvaliduntil, r.rolbypassrls
+		FROM pg_catalog.pg_roles r
+		WHERE r.rolname !~ '^pg_';
+	`
 	var userList []db.User
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
@@ -278,17 +268,51 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 
 	for rows.Next() {
 		var role string
-		var attr string
+		var super, inherit, createRole, createDB, canLogin, replication, bypassRLS bool
+		var rolValidUtil sql.NullString
 		if err := rows.Scan(
 			&role,
-			&attr,
+			&super,
+			&inherit,
+			&createRole,
+			&createDB,
+			&canLogin,
+			&replication,
+			&rolValidUtil,
+			&bypassRLS,
 		); err != nil {
 			return nil, err
 		}
 
+		var attributes []string
+		if super {
+			attributes = append(attributes, "Superuser")
+		}
+		if !inherit {
+			attributes = append(attributes, "No inheritance")
+		}
+		if createRole {
+			attributes = append(attributes, "Create role")
+		}
+		if createDB {
+			attributes = append(attributes, "Create DB")
+		}
+		if !canLogin {
+			attributes = append(attributes, "Cannot login")
+		}
+		if replication {
+			attributes = append(attributes, "Replication")
+		}
+		if rolValidUtil.Valid {
+			attributes = append(attributes, fmt.Sprintf("Password valid until %s", rolValidUtil.String))
+		}
+		if bypassRLS {
+			attributes = append(attributes, "Bypass RLS+")
+		}
+
 		userList = append(userList, db.User{
 			Name:  role,
-			Grant: attr,
+			Grant: strings.Join(attributes, ", "),
 		})
 	}
 	if err := rows.Err(); err != nil {
