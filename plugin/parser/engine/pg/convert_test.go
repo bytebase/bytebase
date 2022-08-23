@@ -1520,3 +1520,20 @@ func TestCopyStmt(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestUnconvertStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "SHOW TABLES",
+			want: []ast.Node{&ast.UnconvertedStmt{}},
+			statementList: []parser.SingleSQL{
+				{
+					Text: "SHOW TABLES",
+					Line: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
