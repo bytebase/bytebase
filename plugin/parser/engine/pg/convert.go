@@ -362,6 +362,8 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &copyStmt, nil
+	default:
+		return &ast.UnconvertedStmt{}, nil
 	}
 
 	return nil, nil
