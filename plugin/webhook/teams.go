@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -73,10 +72,9 @@ func (*TeamsReceiver) post(context Context) error {
 		Title:      context.Title,
 		SectionList: []TeamsWebhookSection{
 			{
-				ActivityTitle:    fmt.Sprintf("%s (%s)", context.CreatorName, context.CreatorEmail),
-				ActivitySubtitle: time.Unix(context.CreatedTs, 0).Format(timeFormat),
-				FactList:         factList,
-				Text:             context.Description,
+				ActivityTitle: fmt.Sprintf("%s (%s)", context.CreatorName, context.CreatorEmail),
+				FactList:      factList,
+				Text:          context.Description,
 			},
 		},
 		ActionList: []TeamsWebhookAction{

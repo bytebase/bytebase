@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -44,7 +43,6 @@ func (*DingTalkReceiver) post(context Context) error {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("##### **By:** %s (%s)", context.CreatorName, context.CreatorEmail))
-	metaStrList = append(metaStrList, fmt.Sprintf("##### **At:** %s", time.Unix(context.CreatedTs, 0).Format(timeFormat)))
 
 	text := fmt.Sprintf("# %s\n%s\n##### [View in Bytebase](%s)", context.Title, strings.Join(metaStrList, "\n"), context.Link)
 	if context.Description != "" {

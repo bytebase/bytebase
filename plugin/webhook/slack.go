@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -96,14 +95,6 @@ func (*SlackReceiver) post(context Context) error {
 		Text: &SlackWebhookBlockMarkdown{
 			Type: "mrkdwn",
 			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
-		},
-	})
-
-	blockList = append(blockList, SlackWebhookBlock{
-		Type: "section",
-		Text: &SlackWebhookBlockMarkdown{
-			Type: "mrkdwn",
-			Text: fmt.Sprintf("At: %s", time.Unix(context.CreatedTs, 0).Format(timeFormat)),
 		},
 	})
 
