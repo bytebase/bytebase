@@ -421,7 +421,7 @@ useEventListener("keydown", keyboardHandler);
 const currentUser = useCurrentUser();
 
 const prepareActivityList = () => {
-  activityStore.fetchActivityListForIssue(issue.value.id);
+  activityStore.fetchActivityListForIssue(issue.value);
 };
 
 watchEffect(prepareActivityList);
