@@ -5,10 +5,14 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	tidbparser "github.com/pingcap/tidb/parser"
+	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/stretchr/testify/require"
 
 	// Register postgres parser driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 type setLineTestData struct {
@@ -91,6 +95,88 @@ func TestPGCreateTableSetLine(t *testing.T) {
 		}
 		for i, cons := range node.ConstraintList {
 			require.Equal(t, cons.Line(), test.constraintLineList[i], i)
+		}
+	}
+}
+
+func TestMySQLCreateTableSetLine(t *testing.T) {
+	tests := []setLineTestData{
+		{
+			statement: `-- this is the first line.
+			CREATE TABLE t(
+				a int, B int,
+				C int,
+				D int NOT NULL,
+				INDEX (a),
+				KEY (a),
+				CONSTRAINT unique_a UNIQUE (a),
+				UNIQUE (b, c),
+				PRIMARY KEY (d),CHECK (a > 0),
+
+				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
+			)
+			`,
+			columnLineList:     []int{3, 3, 4, 5},
+			constraintLineList: []int{6, 7, 8, 9, 10, 10, 12},
+		},
+		{
+			// test for Windows.
+			statement: "\r\n" +
+				"CREATE TABLE t(" + "\r\n" +
+				"a int, B int," + "\r\n" +
+				"C int," + "\r\n" +
+				`D int NOT NULL,` + "\r\n" +
+				"CONSTRAINT unique_a UNIQUE (a)," + "\r\n" +
+				"UNIQUE (b, c)," + "\r\n" +
+				"PRIMARY KEY (d),CHECK (a > 0)," + "\r\n" +
+				"\r\n" +
+				"FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)" + "\r\n" +
+				")",
+			columnLineList:     []int{3, 3, 4, 5},
+			constraintLineList: []int{6, 7, 8, 8, 10},
+		},
+		{
+			statement: `-- this is the first line.
+			CREATE TABLE t(
+				a int PRIMARY KEY,
+				b int CHECK(b>1), c int UNIQUE
+			)
+			`,
+			columnLineList:     []int{3, 4, 4},
+			constraintLineList: []int{},
+		},
+		{
+			statement: `-- complex example
+			CREATE TABLE t(
+				a int PRIMARY KEY,
+				name varchar(255) DEFAULT 'UNIQUE on (a, b, c)(',
+				UNIQUE(a, name),
+				UNIQUE(name)
+			)
+			`,
+			columnLineList:     []int{3, 4},
+			constraintLineList: []int{5, 6},
+		},
+	}
+
+	for _, test := range tests {
+		p := tidbparser.New()
+		p.EnableWindowFunc(true)
+		nodeList, _, err := p.Parse(test.statement, "", "")
+		require.NoError(t, err)
+		require.Len(t, nodeList, 1)
+		node, ok := nodeList[0].(*tidbast.CreateTableStmt)
+		require.True(t, ok)
+		require.Equal(t, len(test.columnLineList), len(node.Cols))
+		require.Equal(t, len(test.constraintLineList), len(node.Constraints))
+		node.SetOriginTextPosition(1)
+		err = parser.SetLineForMySQLCreateTableStmt(node)
+		require.NoError(t, err)
+		for i, col := range node.Cols {
+			require.Equal(t, col.OriginTextPosition(), test.columnLineList[i], i)
+		}
+		for i, cons := range node.Constraints {
+			require.Equal(t, cons.OriginTextPosition(), test.constraintLineList[i], i)
 		}
 	}
 }
