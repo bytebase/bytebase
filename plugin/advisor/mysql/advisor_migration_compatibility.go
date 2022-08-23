@@ -55,15 +55,19 @@ func (*CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 }
 
 type compatibilityChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
+	adviceList      []advisor.Advice
+	level           advisor.Status
+	title           string
+	lastCreateTable string
 }
 
 // Enter implements the ast.Visitor interface.
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
+	// CREATE TABLE
+	case *ast.CreateTableStmt:
+		v.lastCreateTable = node.Table.Name.O
 	// DROP DATABASE
 	case *ast.DropDatabaseStmt:
 		code = advisor.CompatibilityDropDatabase
@@ -75,6 +79,9 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 		code = advisor.CompatibilityDropTable
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
+		if node.Table.Name.O == v.lastCreateTable {
+			break
+		}
 		for _, spec := range node.Specs {
 			// RENAME COLUMN
 			if spec.Tp == ast.AlterTableRenameColumn {
@@ -143,7 +150,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	// CREATE UNIQUE INDEX
 	case *ast.CreateIndexStmt:
-		if node.KeyType == ast.IndexKeyTypeUnique {
+		if v.lastCreateTable != node.Table.Name.O && node.KeyType == ast.IndexKeyTypeUnique {
 			code = advisor.CompatibilityAddUniqueKey
 		}
 	}
