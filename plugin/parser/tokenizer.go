@@ -547,6 +547,9 @@ func (t *tokenizer) char(after uint) rune {
 
 func (t *tokenizer) skip(step uint) {
 	t.cursor += step
+	for t.cursor > t.len && t.scanner != nil {
+		t.scan()
+	}
 	if t.cursor > t.len {
 		t.cursor = t.len
 	}

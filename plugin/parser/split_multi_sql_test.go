@@ -384,5 +384,12 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			errStr = err.Error()
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
+
+		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement))
+		errStr = ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 	}
 }
