@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -16,7 +19,15 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/resources/postgres"
 )
+
+// pgConnectionInfo represents the embeded postgres instance connection info.
+type pgConnectionInfo struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+}
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
@@ -68,6 +79,38 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create instance response").SetInternal(err)
 		}
+		return nil
+	})
+
+	g.POST("/instance/new-embeded-pg", func(c echo.Context) error {
+		pgUser := "postgres"
+		commonPreffix := "bb-pg"
+		randomSuffix := string(rune(time.Now().Unix()))
+
+		baseDir := fmt.Sprintf("%s/%s_%s", common.GetPostgresSocketDir(), commonPreffix, randomSuffix)
+		resourceDir := path.Join(baseDir, "resources")
+		dataDir := path.Join(baseDir, "pgdata")
+
+		pgInstance, err := postgres.Install(resourceDir, dataDir, pgUser)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to install embeded postgres instance").SetInternal(err)
+		}
+
+		port, err := common.GetFreePort()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get free port").SetInternal(err)
+		}
+
+		err = pgInstance.Start(port, os.Stderr, os.Stderr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embeded postgres instance").SetInternal(err)
+		}
+
+		c.JSON(http.StatusOK, pgConnectionInfo{
+			Host:     common.GetPostgresSocketDir(),
+			Port:     port,
+			Username: pgUser,
+		})
 		return nil
 	})
 
