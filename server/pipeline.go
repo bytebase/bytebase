@@ -9,7 +9,6 @@ import (
 
 // ScheduleActiveStageTask tries to schedule the tasks in the active stage.
 func (s *Server) ScheduleActiveStageTask(ctx context.Context, pipeline *api.Pipeline) error {
-	//TODO(p0ny): concurrent
 	skipIfAlreadyTerminated := true
 	stage := getActiveStage(pipeline.StageList)
 	if stage == nil {
