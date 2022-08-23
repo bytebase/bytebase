@@ -103,8 +103,8 @@
         </label>
         <div class="w-[16rem]">
           <input
-            type="text"
-            class="textfield w-full"
+            type="number"
+            class="textfield w-full hide-ticker"
             :placeholder="String(DEFAULT_BACKUP_RETENTION_PERIOD_DAYS)"
             :value="retentionPeriodDaysInputValue"
             @input="(e: any) => setRetentionPeriodDays(e.target.value)"
