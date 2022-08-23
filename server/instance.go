@@ -112,8 +112,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Username: pgUser,
 		}
 
-		c.JSON(http.StatusOK, connectionInfo)
-		return nil
+		return c.JSON(http.StatusOK, connectionInfo)
 	})
 
 	g.GET("/instance", func(c echo.Context) error {
