@@ -17,6 +17,9 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case Postgres:
 		t := newTokenizer(statement)
 		return t.splitPostgreSQLMultiSQL()
+	case MySQL, TiDB:
+		t := newTokenizer(statement)
+		return t.splitMySQLMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}

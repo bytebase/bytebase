@@ -13,8 +13,9 @@ const (
 )
 
 var (
-	beginRuneList  = []rune{'B', 'E', 'G', 'I', 'N'}
-	atomicRuneList = []rune{'A', 'T', 'M', 'I', 'C'}
+	beginRuneList     = []rune{'B', 'E', 'G', 'I', 'N'}
+	atomicRuneList    = []rune{'A', 'T', 'O', 'M', 'I', 'C'}
+	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
 
 type tokenizer struct {
@@ -154,6 +155,77 @@ func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
 	return false
 }
 
+// splitMySQLMultiSQL splits the statement to a string slice.
+func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
+	var res []SingleSQL
+	delimiter := []rune{';'}
+
+	t.skipBlank()
+	t.startLine = t.line
+	startPos := t.cursor
+	for {
+		switch {
+		case t.char(0) == eofRune:
+			s := t.getString(startPos, t.pos())
+			if !emptyString(s) {
+				res = append(res, SingleSQL{
+					Text: s,
+					Line: t.startLine,
+				})
+			}
+			return res, nil
+		case t.equalWordCaseInsensitive(delimiter):
+			t.skip(uint(len(delimiter)))
+			res = append(res, SingleSQL{
+				Text: t.getString(startPos, t.pos()-startPos),
+				Line: t.startLine,
+			})
+			t.skipBlank()
+			t.startLine = t.line
+			startPos = t.pos()
+		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
+		case t.equalWordCaseInsensitive(delimiterRuneList):
+			t.skip(uint(len(delimiterRuneList)))
+			t.skipBlank()
+			delimiterStart := t.pos()
+			t.skipToBlank()
+			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
+			res = append(res, SingleSQL{
+				Text: t.getString(startPos, t.pos()-startPos),
+				Line: t.startLine,
+			})
+			t.skipBlank()
+			t.startLine = t.line
+			startPos = t.pos()
+		case t.char(0) == '/' && t.char(1) == '*':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '-' && t.char(1) == '-':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '#':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '\'' || t.char(0) == '"':
+			if err := t.scanString(t.char(0)); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '`':
+			if err := t.scanIdentifier('`'); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '\n':
+			t.line++
+			t.skip(1)
+		default:
+			t.skip(1)
+		}
+	}
+}
+
 // splitPostgreSQLMultiSQL splits the statement to a string slice.
 // We mainly considered:
 //   - comments
@@ -262,6 +334,7 @@ func (t *tokenizer) scanIdentifier(delimiter rune) error {
 //     '.'
 //.
 // And this is extensible.
+// For MySQL, user can enclose string within double quote(").
 func (t *tokenizer) scanString(delimiter rune) error {
 	if t.char(0) != delimiter {
 		return errors.Errorf("string doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
@@ -323,18 +396,12 @@ func (t *tokenizer) scanComment() error {
 		}
 	case t.char(0) == '-' && t.char(1) == '-':
 		t.skip(2)
-		for {
-			switch t.char(0) {
-			case '\n':
-				t.line++
-				t.skip(1)
-				return nil
-			case eofRune:
-				return nil
-			default:
-				t.skip(1)
-			}
-		}
+		t.skipToNewLine()
+		return nil
+	case t.char(0) == '#':
+		t.skip(1)
+		t.skipToNewLine()
+		return nil
 	}
 	return errors.Errorf("no comment found")
 }
@@ -416,6 +483,27 @@ func (t *tokenizer) skipBlank() {
 		}
 		r = t.char(0)
 	}
+}
+
+func (t *tokenizer) skipToBlank() {
+	r := t.char(0)
+	for r != ' ' && r != '\n' && r != '\r' && r != '\t' {
+		t.skip(1)
+		r = t.char(0)
+	}
+}
+
+func (t *tokenizer) skipToNewLine() {
+	r := t.char(0)
+	for r != '\n' {
+		if r == eofRune {
+			return
+		}
+		t.skip(1)
+		r = t.char(0)
+	}
+	t.line++
+	t.skip(1)
 }
 
 func (t *tokenizer) pos() uint {
