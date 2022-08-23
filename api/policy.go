@@ -19,6 +19,9 @@ type AssigneeGroupValue string
 // BackupPlanPolicySchedule is value for backup plan policy.
 type BackupPlanPolicySchedule string
 
+// EnvironmentTierValue is the value for environment tier policy.
+type EnvironmentTierValue string
+
 const (
 	// DefaultPolicyID is the ID of the default policy.
 	DefaultPolicyID int = 0
@@ -29,6 +32,8 @@ const (
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
 	// PolicyTypeSQLReview is the sql review policy type.
 	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
+	// PolicyTypeEnvironmentTier is the tier of an environment.
+	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -44,6 +49,11 @@ const (
 	BackupPlanPolicyScheduleDaily BackupPlanPolicySchedule = "DAILY"
 	// BackupPlanPolicyScheduleWeekly is WEEKLY backup plan policy value.
 	BackupPlanPolicyScheduleWeekly BackupPlanPolicySchedule = "WEEKLY"
+
+	// EnvironmentTierValueProtected is PROTECTED environment tier value.
+	EnvironmentTierValueProtected EnvironmentTierValue = "PROTECTED"
+	// EnvironmentTierValueUnprotected is UNPROTECTED environment tier value.
+	EnvironmentTierValueUnprotected EnvironmentTierValue = "UNPROTECTED"
 )
 
 var (
@@ -52,6 +62,7 @@ var (
 		PolicyTypePipelineApproval: true,
 		PolicyTypeBackupPlan:       true,
 		PolicyTypeSQLReview:        true,
+		PolicyTypeEnvironmentTier:  true,
 	}
 )
 
@@ -129,7 +140,7 @@ type PipelineApprovalPolicy struct {
 	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
 }
 
-func (pa PipelineApprovalPolicy) String() (string, error) {
+func (pa *PipelineApprovalPolicy) String() (string, error) {
 	s, err := json.Marshal(pa)
 	if err != nil {
 		return "", err
@@ -152,7 +163,7 @@ type AssigneeGroup struct {
 	Value     AssigneeGroupValue `json:"value"`
 }
 
-func (p AssigneeGroup) String() (string, error) {
+func (p *AssigneeGroup) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err
@@ -167,7 +178,7 @@ type BackupPlanPolicy struct {
 	RetentionPeriodTs int `json:"retentionPeriodTs"`
 }
 
-func (bp BackupPlanPolicy) String() (string, error) {
+func (bp *BackupPlanPolicy) String() (string, error) {
 	s, err := json.Marshal(bp)
 	if err != nil {
 		return "", err
@@ -193,6 +204,28 @@ func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) 
 	return &sr, nil
 }
 
+// EnvironmentTierPolicy is the tier of an environment.
+type EnvironmentTierPolicy struct {
+	EnvironmentTier EnvironmentTierValue `json:"environmentTier"`
+}
+
+func (p *EnvironmentTierPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// UnmarshalEnvironmentTierPolicy will unmarshal payload to environment tier policy.
+func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, error) {
+	var p EnvironmentTierPolicy
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal environment tier policy %q", payload)
+	}
+	return &p, nil
+}
+
 // ValidatePolicy will validate the policy type and payload values.
 func ValidatePolicy(pType PolicyType, payload string) error {
 	if !PolicyTypes[pType] {
@@ -216,10 +249,10 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			if group.IssueType != IssueDatabaseSchemaUpdate &&
 				group.IssueType != IssueDatabaseSchemaUpdateGhost &&
 				group.IssueType != IssueDatabaseDataUpdate {
-				return errors.Errorf("found invalid assignee group issue type %q in pipeline approval policy", group.IssueType)
+				return errors.Errorf("invalid assignee group issue type %q", group.IssueType)
 			}
 			if issueTypeSeen[group.IssueType] {
-				return errors.Errorf("found duplicated assignee group issue type %q in pipeline approval policy", group.IssueType)
+				return errors.Errorf("duplicate assignee group issue type %q", group.IssueType)
 			}
 			issueTypeSeen[group.IssueType] = true
 		}
@@ -239,6 +272,14 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if err := sr.Validate(); err != nil {
 			return errors.Wrap(err, "invalid SQL review policy")
 		}
+	case PolicyTypeEnvironmentTier:
+		p, err := UnmarshalEnvironmentTierPolicy(payload)
+		if err != nil {
+			return err
+		}
+		if p.EnvironmentTier != EnvironmentTierValueProtected && p.EnvironmentTier != EnvironmentTierValueUnprotected {
+			return errors.Errorf("invalid environment tier value %q", p.EnvironmentTier)
+		}
 	}
 	return nil
 }
@@ -248,16 +289,23 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 func GetDefaultPolicy(pType PolicyType) (string, error) {
 	switch pType {
 	case PolicyTypePipelineApproval:
-		return PipelineApprovalPolicy{
+		policy := PipelineApprovalPolicy{
 			Value: PipelineApprovalValueManualAlways,
-		}.String()
+		}
+		return policy.String()
 	case PolicyTypeBackupPlan:
-		return BackupPlanPolicy{
+		policy := BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,
-		}.String()
+		}
+		return policy.String()
 	case PolicyTypeSQLReview:
 		// TODO(ed): we may need to define the default SQL review policy payload in the PR of policy data migration.
 		return "{}", nil
+	case PolicyTypeEnvironmentTier:
+		policy := EnvironmentTierPolicy{
+			EnvironmentTier: EnvironmentTierValueUnprotected,
+		}
+		return policy.String()
 	}
 	return "", nil
 }
