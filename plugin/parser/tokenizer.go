@@ -23,12 +23,16 @@ var (
 )
 
 type tokenizer struct {
-	scanner   *bufio.Scanner
 	buffer    []rune
 	cursor    uint
 	len       uint
 	line      int
 	startLine int
+
+	// steaming API specific field
+	scanner *bufio.Scanner
+	f       func(string) error
+	scanErr error
 }
 
 // newTokenizer creates a new tokenizer.
@@ -63,12 +67,13 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return 0, nil, nil
 }
 
-func newStreamTokenizer(src io.Reader) *tokenizer {
+func newStreamTokenizer(src io.Reader, f func(string) error) *tokenizer {
 	t := &tokenizer{
-		scanner:   bufio.NewScanner(src),
 		cursor:    0,
 		line:      1,
 		startLine: 1,
+		scanner:   bufio.NewScanner(src),
+		f:         f,
 	}
 	t.scanner.Split(scanLines)
 	if t.scanner.Scan() {
@@ -317,20 +322,30 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
+				if t.f == nil {
+					res = append(res, SingleSQL{
+						Text: s,
+						Line: t.startLine,
+					})
+				}
+				if err := t.processStreaming(s); err != nil {
+					return nil, err
+				}
+			}
+			return res, t.scanErr
+		case t.equalWordCaseInsensitive(delimiter):
+			t.skip(uint(len(delimiter)))
+			text := t.getString(startPos, t.pos()-startPos)
+			if t.f == nil {
 				res = append(res, SingleSQL{
-					Text: s,
+					Text: text,
 					Line: t.startLine,
 				})
 			}
-			return res, nil
-		case t.equalWordCaseInsensitive(delimiter):
-			t.skip(uint(len(delimiter)))
-			res = append(res, SingleSQL{
-				Text: t.getString(startPos, t.pos()-startPos),
-				Line: t.startLine,
-			})
 			t.skipBlank()
-			t.truncate(t.pos())
+			if err := t.processStreaming(text); err != nil {
+				return nil, err
+			}
 			t.startLine = t.line
 			startPos = t.pos()
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
@@ -340,12 +355,17 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 			delimiterStart := t.pos()
 			t.skipToBlank()
 			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
-			res = append(res, SingleSQL{
-				Text: t.getString(startPos, t.pos()-startPos),
-				Line: t.startLine,
-			})
+			text := t.getString(startPos, t.pos()-startPos)
+			if t.f == nil {
+				res = append(res, SingleSQL{
+					Text: text,
+					Line: t.startLine,
+				})
+			}
 			t.skipBlank()
-			t.truncate(t.pos())
+			if err := t.processStreaming(text); err != nil {
+				return nil, err
+			}
 			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == '/' && t.char(1) == '*':
@@ -422,23 +442,33 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			}
 		case t.char(0) == ';':
 			t.skip(1)
-			res = append(res, SingleSQL{
-				Text: t.getString(startPos, t.pos()-startPos),
-				Line: t.startLine,
-			})
+			text := t.getString(startPos, t.pos()-startPos)
+			if t.f == nil {
+				res = append(res, SingleSQL{
+					Text: text,
+					Line: t.startLine,
+				})
+			}
 			t.skipBlank()
-			t.truncate(t.pos())
+			if err := t.processStreaming(text); err != nil {
+				return nil, err
+			}
 			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
-				res = append(res, SingleSQL{
-					Text: s,
-					Line: t.startLine,
-				})
+				if t.f == nil {
+					res = append(res, SingleSQL{
+						Text: s,
+						Line: t.startLine,
+					})
+				}
+				if err := t.processStreaming(s); err != nil {
+					return nil, err
+				}
 			}
-			return res, nil
+			return res, t.scanErr
 		// return error when meeting BEGIN ATOMIC.
 		case t.equalWordCaseInsensitive(beginRuneList):
 			t.skip(uint(len(beginRuneList)))
@@ -618,9 +648,23 @@ func (t *tokenizer) scan() {
 			t.len = uint(len(t.buffer))
 		} else {
 			t.buffer = append(t.buffer, eofRune)
+			t.scanErr = t.scanner.Err()
 			t.scanner = nil
 		}
 	}
+}
+
+func (t *tokenizer) processStreaming(statement string) error {
+	if t.f == nil {
+		return nil
+	}
+
+	if err := t.f(statement); err != nil {
+		return errors.Wrapf(err, "execute query %q failed", statement)
+	}
+
+	t.truncate(t.pos())
+	return nil
 }
 
 // truncate will return the buffer after pos.

@@ -181,7 +181,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 
-		res, err = SplitMultiSQLStream(Postgres, strings.NewReader(test.statement))
+		res, err = SplitMultiSQLStream(Postgres, strings.NewReader(test.statement), nil)
 		errStr = ""
 		if err != nil {
 			errStr = err.Error()
@@ -385,7 +385,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		}
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 
-		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement))
+		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement), nil)
 		errStr = ""
 		if err != nil {
 			errStr = err.Error()
