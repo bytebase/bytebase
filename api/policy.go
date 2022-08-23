@@ -52,6 +52,8 @@ const (
 
 	// EnvironmentTierValueProtected is PROTECTED environment tier value.
 	EnvironmentTierValueProtected EnvironmentTierValue = "PROTECTED"
+	// EnvironmentTierValueUnprotected is UNPROTECTED environment tier value.
+	EnvironmentTierValueUnprotected EnvironmentTierValue = "UNPROTECTED"
 )
 
 var (
@@ -204,7 +206,7 @@ func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) 
 
 // EnvironmentTierPolicy is the tier of an environment.
 type EnvironmentTierPolicy struct {
-	EnvironmentTierList []EnvironmentTierValue `json:"environmentTierList"`
+	EnvironmentTier EnvironmentTierValue `json:"environmentTier"`
 }
 
 func (p *EnvironmentTierPolicy) String() (string, error) {
@@ -275,10 +277,8 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if err != nil {
 			return err
 		}
-		for _, tier := range p.EnvironmentTierList {
-			if tier != EnvironmentTierValueProtected {
-				return errors.Errorf("invalid environment tier value %q", tier)
-			}
+		if p.EnvironmentTier != EnvironmentTierValueProtected && p.EnvironmentTier != EnvironmentTierValueUnprotected {
+			return errors.Errorf("invalid environment tier value %q", p.EnvironmentTier)
 		}
 	}
 	return nil
@@ -303,7 +303,7 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		return "{}", nil
 	case PolicyTypeEnvironmentTier:
 		policy := EnvironmentTierPolicy{
-			EnvironmentTierList: []EnvironmentTierValue{},
+			EnvironmentTier: EnvironmentTierValueUnprotected,
 		}
 		return policy.String()
 	}
