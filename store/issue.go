@@ -538,7 +538,8 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		args = append(args, *v)
 		args = append(args, *v)
 	}
-	if v := find.ExcludedIssueInArchiveProject; v != nil && *v {
+	// If no specified project, filter out issues belonging to archived project
+	if find.ProjectID == nil {
 		archivedStatus := api.Archived
 		archivedProject, err := findProjectImpl(ctx, tx, &api.ProjectFind{RowStatus: &archivedStatus})
 		if err != nil {
@@ -557,6 +558,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 			where = append(where, fmt.Sprintf("project_id NOT IN (%s)", strings.Join(notIn, ",")))
 		}
 	}
+
 	if len(find.StatusList) != 0 {
 		list := []string{}
 		for _, status := range find.StatusList {
