@@ -125,6 +125,12 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *environmentRaw) (*a
 	}
 	env.Updater = updater
 
+	tier, err := s.GetEnvironmentTierPolicyByEnvID(ctx, env.ID)
+	if err != nil {
+		return nil, err
+	}
+	env.Tier = tier.EnvironmentTier
+
 	return env, nil
 }
 

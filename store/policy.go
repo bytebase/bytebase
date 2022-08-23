@@ -212,6 +212,19 @@ func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID i
 	return policy.ID, nil
 }
 
+// GetEnvironmentTierPolicyByEnvID will get the environment tier policy for an environment.
+func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environmentID int) (*api.EnvironmentTierPolicy, error) {
+	pType := api.PolicyTypeEnvironmentTier
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		EnvironmentID: &environmentID,
+		Type:          &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.UnmarshalEnvironmentTierPolicy(policy.Payload)
+}
+
 //
 // private functions
 //
