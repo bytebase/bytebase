@@ -172,8 +172,14 @@ working on the code:
 
    Change the open file limit if you encounter "error: too many open files".
 
-   ```
+   ```bash
    ulimit -n 10240
+   ```
+
+   If you need additional runtime parameters such as --backup-bucket, please add them like this:
+
+   ```bash
+   air -c scripts/.air.toml -- --backup-region us-east-1 --backup-bucket s3:\\/\\/example-bucket --backup-credential ~/.aws/credentials
    ```
 
 1. Start frontend (with live reload).
