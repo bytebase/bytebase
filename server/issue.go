@@ -44,7 +44,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		issueFind := &api.IssueFind{}
-
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
 			projectID, err := strconv.Atoi(projectIDStr)
