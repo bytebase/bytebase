@@ -69,9 +69,13 @@ func newStreamTokenizer(src io.Reader) *tokenizer {
 		startLine: 1,
 	}
 	t.scanner.Split(scanLines)
-	t.scanner.Scan()
-	t.buffer = []rune(t.scanner.Text())
-	t.len = uint(len(t.buffer))
+	if t.scanner.Scan() {
+		t.buffer = []rune(t.scanner.Text())
+		t.len = uint(len(t.buffer))
+	} else {
+		t.scanner = nil
+		t.buffer = append(t.buffer, eofRune)
+	}
 	return t
 }
 
