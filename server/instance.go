@@ -22,7 +22,7 @@ import (
 	"github.com/bytebase/bytebase/resources/postgres"
 )
 
-// pgConnectionInfo represents the embeded postgres instance connection info.
+// pgConnectionInfo represents the embedded postgres instance connection info.
 type pgConnectionInfo struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
@@ -82,7 +82,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/instance/new-embeded-pg", func(c echo.Context) error {
+	g.POST("/instance/new-embedded-pg", func(c echo.Context) error {
 		pgUser := "postgres"
 		commonPreffix := "bb-pg"
 		randomSuffix := string(rune(time.Now().Unix()))
@@ -93,7 +93,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		pgInstance, err := postgres.Install(resourceDir, dataDir, pgUser)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to install embeded postgres instance").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to install embedded postgres instance").SetInternal(err)
 		}
 
 		port, err := common.GetFreePort()
@@ -103,14 +103,16 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		err = pgInstance.Start(port, os.Stderr, os.Stderr)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embeded postgres instance").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
 		}
 
-		c.JSON(http.StatusOK, pgConnectionInfo{
+		connectionInfo := pgConnectionInfo{
 			Host:     common.GetPostgresSocketDir(),
 			Port:     port,
 			Username: pgUser,
-		})
+		}
+
+		c.JSON(http.StatusOK, connectionInfo)
 		return nil
 	})
 
