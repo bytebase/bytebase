@@ -181,15 +181,14 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
 	writeBack := (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
-	// For tenant mode project, we will only write back latest schema file on the last task.
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
 		return true, nil, err
 	}
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
+			// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
 			var lastTask *api.Task
-			//TODO(p0ny): concurrency
 			for i := len(issue.Pipeline.StageList) - 1; i >= 0; i-- {
 				stage := issue.Pipeline.StageList[i]
 				if len(stage.TaskList) > 0 {
