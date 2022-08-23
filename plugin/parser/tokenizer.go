@@ -220,6 +220,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 				Line: t.startLine,
 			})
 			t.skipBlank()
+			t.truncate(t.pos())
 			t.startLine = t.line
 			startPos = t.pos()
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
@@ -234,6 +235,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 				Line: t.startLine,
 			})
 			t.skipBlank()
+			t.truncate(t.pos())
 			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == '/' && t.char(1) == '*':
