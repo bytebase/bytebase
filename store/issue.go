@@ -124,8 +124,13 @@ func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issu
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", raw)
 		}
+		// If no specified project, filter out issues belonging to archived project
+		if issue.Project == nil || issue.Project.RowStatus == api.Archived {
+			continue
+		}
 		issueList = append(issueList, issue)
 	}
+
 	return issueList, nil
 }
 
@@ -538,27 +543,6 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		args = append(args, *v)
 		args = append(args, *v)
 	}
-	// If no specified project, filter out issues belonging to archived project
-	if find.ProjectID == nil {
-		archivedStatus := api.Archived
-		archivedProject, err := findProjectImpl(ctx, tx, &api.ProjectFind{RowStatus: &archivedStatus})
-		if err != nil {
-			return nil, err
-		}
-		var projectIDList []int
-		for _, project := range archivedProject {
-			projectIDList = append(projectIDList, project.ID)
-		}
-		if len(projectIDList) != 0 {
-			var notIn []string
-			for idx := range projectIDList {
-				args = append(args, projectIDList[idx])
-				notIn = append(notIn, fmt.Sprintf("$%d", len(args)))
-			}
-			where = append(where, fmt.Sprintf("project_id NOT IN (%s)", strings.Join(notIn, ",")))
-		}
-	}
-
 	if len(find.StatusList) != 0 {
 		list := []string{}
 		for _, status := range find.StatusList {
