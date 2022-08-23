@@ -117,7 +117,7 @@ func (driver *Driver) readBinlogMetaFile(fileName string) (binlogFileMeta, error
 	return meta, nil
 }
 
-// ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`, read binlog from `driver.binlogDir``.
+// ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`, read binlog from `driver.binlogDir“.
 func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
 	return driver.replayBinlogReadFromDir(ctx, originalDatabase, targetDatabase, startBinlogInfo, targetTs, driver.binlogDir)
 }
@@ -266,7 +266,7 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		return nil, errors.Wrapf(err, "cannot parse the start binlog file name %q", startBinlogInfo.FileName)
 	}
 
-	binlogFiles, err := ioutil.ReadDir(binlogDir)
+	binlogFiles, err := os.ReadDir(binlogDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot read binlog directory %s", binlogDir)
 	}
@@ -276,7 +276,11 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		if strings.HasSuffix(f.Name(), binlogMetaSuffix) {
 			continue
 		}
-		binlogFile, err := newBinlogFile(f.Name(), f.Size())
+		fileInfo, err := f.Info()
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot get file info %s", f.Name())
+		}
+		binlogFile, err := newBinlogFile(f.Name(), fileInfo.Size())
 		if err != nil {
 			return nil, err
 		}
@@ -526,7 +530,7 @@ func sortBinlogFilesMeta(binlogFilesMeta []binlogFileMeta) []binlogFileMeta {
 
 // GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
 func (driver *Driver) GetSortedLocalBinlogFiles() ([]BinlogFile, error) {
-	binlogFilesInfoLocal, err := ioutil.ReadDir(driver.binlogDir)
+	binlogFilesInfoLocal, err := os.ReadDir(driver.binlogDir)
 	if err != nil {
 		return nil, err
 	}
@@ -536,7 +540,11 @@ func (driver *Driver) GetSortedLocalBinlogFiles() ([]BinlogFile, error) {
 		if strings.HasSuffix(fileInfo.Name(), binlogMetaSuffix) {
 			continue
 		}
-		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
+		fi, err := fileInfo.Info()
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot get file info %s", fileInfo.Name())
+		}
+		binlogFile, err := newBinlogFile(fileInfo.Name(), fi.Size())
 		if err != nil {
 			return nil, err
 		}

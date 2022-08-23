@@ -1,10 +1,14 @@
 package parser
 
 import (
+	"bufio"
+	"bytes"
+	"io"
 	"strings"
 	"unicode"
 
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 )
 
@@ -19,26 +23,176 @@ var (
 )
 
 type tokenizer struct {
-	statement []rune
+	buffer    []rune
 	cursor    uint
 	len       uint
 	line      int
 	startLine int
+
+	// steaming API specific field
+	scanner *bufio.Scanner
+	f       func(string) error
+	scanErr error
 }
 
 // newTokenizer creates a new tokenizer.
 // Notice: we append an additional eofRune in the statement. This is a sentinel rune.
 func newTokenizer(statement string) *tokenizer {
 	t := &tokenizer{
-		statement: []rune(statement),
+		buffer:    []rune(statement),
 		cursor:    0,
 		line:      1,
 		startLine: 1,
 	}
-	t.len = uint(len(t.statement))
+	t.len = uint(len(t.buffer))
 	// append an additional eofRune.
-	t.statement = append(t.statement, eofRune)
+	t.buffer = append(t.buffer, eofRune)
 	return t
+}
+
+// scanLines is a split function for a Scanner that each line of text, also contains trailing end-of-line marker.
+func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		// We have a full newline-terminated line.
+		return i + 1, data[0 : i+1], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+func newStreamTokenizer(src io.Reader, f func(string) error) *tokenizer {
+	t := &tokenizer{
+		cursor:    0,
+		line:      1,
+		startLine: 1,
+		scanner:   bufio.NewScanner(src),
+		f:         f,
+	}
+	t.scanner.Split(scanLines)
+	if t.scanner.Scan() {
+		t.buffer = []rune(t.scanner.Text())
+		t.len = uint(len(t.buffer))
+	} else {
+		t.scanner = nil
+		t.buffer = append(t.buffer, eofRune)
+	}
+	return t
+}
+
+func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
+	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
+	// and the identifiers don't equal any keywords in CREATE TABLE statements.
+	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
+	for _, col := range node.Cols {
+		col.SetOriginTextPosition(node.OriginTextPosition())
+	}
+	for _, cons := range node.Constraints {
+		cons.SetOriginTextPosition(node.OriginTextPosition())
+	}
+
+	columnPos := 0
+	constraintPos := 0
+	// find the '(' for CREATE TABLE ... ( ... )
+	if err := t.scanTo([]rune{'('}); err != nil {
+		return err
+	}
+
+	// parentheses is the flag for matching parentheses.
+	parentheses := 1
+	t.skipBlank()
+	startPos := t.pos()
+	t.startLine = t.line
+	for {
+		switch t.char(0) {
+		case '\n':
+			t.line++
+			t.skip(1)
+		case '\'', '"':
+			if err := t.scanString(t.char(0)); err != nil {
+				return err
+			}
+		case '(':
+			parentheses++
+			t.skip(1)
+		case ')':
+			parentheses--
+			if parentheses == 0 {
+				// This means we find the corresponding ')' for the first '(' in CREATE TABLE statements.
+				// We need to check the definition and return.
+				def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
+				if columnPos < len(node.Cols) &&
+					strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
+					node.Cols[columnPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				} else if constraintPos < len(node.Constraints) &&
+					matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
+					node.Constraints[constraintPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				}
+				return nil
+			}
+			t.skip(1)
+		case ',':
+			// e.g. CREATE TABLE t(
+			//   a int,
+			//   b int,
+			//   UNIQUE(a, b),
+			//   UNIQUE(b)
+			// )
+			// We don't need to consider the ',' in UNIQUE(a, b)
+			if parentheses > 1 {
+				t.skip(1)
+				continue
+			}
+			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
+			if columnPos < len(node.Cols) &&
+				strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
+				node.Cols[columnPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				columnPos++
+			} else if constraintPos < len(node.Constraints) &&
+				matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
+				node.Constraints[constraintPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				constraintPos++
+			}
+			t.skip(1)
+			t.skipBlank()
+			startPos = t.pos()
+			t.startLine = t.line
+		case eofRune:
+			return nil
+		default:
+			t.skip(1)
+		}
+	}
+}
+
+func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
+	text = strings.ToLower(text)
+	if cons.Name != "" {
+		return strings.Contains(text, strings.ToLower(cons.Name))
+	}
+	switch cons.Tp {
+	case tidbast.ConstraintCheck:
+		return strings.Contains(text, "check")
+	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
+		return strings.Contains(text, "unique")
+	case tidbast.ConstraintPrimaryKey:
+		return strings.Contains(text, "primary key")
+	case tidbast.ConstraintForeignKey:
+		return strings.Contains(text, "foreign key")
+	case tidbast.ConstraintIndex:
+		notUnique := !strings.Contains(text, "unique")
+		notPrimary := !strings.Contains(text, "primary key")
+		notForeign := !strings.Contains(text, "foreign key")
+		isIndex := strings.Contains(text, "index") || strings.Contains(text, "key")
+		return notUnique && notPrimary && notForeign && isIndex
+	}
+	return false
 }
 
 // setLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
@@ -168,19 +322,30 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
+				if t.f == nil {
+					res = append(res, SingleSQL{
+						Text: s,
+						Line: t.startLine,
+					})
+				}
+				if err := t.processStreaming(s); err != nil {
+					return nil, err
+				}
+			}
+			return res, t.scanErr
+		case t.equalWordCaseInsensitive(delimiter):
+			t.skip(uint(len(delimiter)))
+			text := t.getString(startPos, t.pos()-startPos)
+			if t.f == nil {
 				res = append(res, SingleSQL{
-					Text: s,
+					Text: text,
 					Line: t.startLine,
 				})
 			}
-			return res, nil
-		case t.equalWordCaseInsensitive(delimiter):
-			t.skip(uint(len(delimiter)))
-			res = append(res, SingleSQL{
-				Text: t.getString(startPos, t.pos()-startPos),
-				Line: t.startLine,
-			})
 			t.skipBlank()
+			if err := t.processStreaming(text); err != nil {
+				return nil, err
+			}
 			t.startLine = t.line
 			startPos = t.pos()
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
@@ -190,11 +355,17 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 			delimiterStart := t.pos()
 			t.skipToBlank()
 			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
-			res = append(res, SingleSQL{
-				Text: t.getString(startPos, t.pos()-startPos),
-				Line: t.startLine,
-			})
+			text := t.getString(startPos, t.pos()-startPos)
+			if t.f == nil {
+				res = append(res, SingleSQL{
+					Text: text,
+					Line: t.startLine,
+				})
+			}
 			t.skipBlank()
+			if err := t.processStreaming(text); err != nil {
+				return nil, err
+			}
 			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == '/' && t.char(1) == '*':
@@ -271,22 +442,33 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			}
 		case t.char(0) == ';':
 			t.skip(1)
-			res = append(res, SingleSQL{
-				Text: t.getString(startPos, t.pos()-startPos),
-				Line: t.startLine,
-			})
+			text := t.getString(startPos, t.pos()-startPos)
+			if t.f == nil {
+				res = append(res, SingleSQL{
+					Text: text,
+					Line: t.startLine,
+				})
+			}
 			t.skipBlank()
+			if err := t.processStreaming(text); err != nil {
+				return nil, err
+			}
 			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
-				res = append(res, SingleSQL{
-					Text: s,
-					Line: t.startLine,
-				})
+				if t.f == nil {
+					res = append(res, SingleSQL{
+						Text: s,
+						Line: t.startLine,
+					})
+				}
+				if err := t.processStreaming(s); err != nil {
+					return nil, err
+				}
 			}
-			return res, nil
+			return res, t.scanErr
 		// return error when meeting BEGIN ATOMIC.
 		case t.equalWordCaseInsensitive(beginRuneList):
 			t.skip(uint(len(beginRuneList)))
@@ -459,16 +641,69 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 	}
 }
 
+func (t *tokenizer) scan() {
+	if t.scanner != nil {
+		if t.scanner.Scan() {
+			t.buffer = append(t.buffer, []rune(t.scanner.Text())...)
+			t.len = uint(len(t.buffer))
+		} else {
+			t.buffer = append(t.buffer, eofRune)
+			t.scanErr = t.scanner.Err()
+			t.scanner = nil
+		}
+	}
+}
+
+func (t *tokenizer) processStreaming(statement string) error {
+	if t.f == nil {
+		return nil
+	}
+
+	if err := t.f(statement); err != nil {
+		return errors.Wrapf(err, "execute query %q failed", statement)
+	}
+
+	t.truncate(t.pos())
+	return nil
+}
+
+// truncate will return the buffer after pos.
+// Before:
+// buffer [.............]
+//               |
+//              pos
+// After:        |
+// buffer       [.......].
+func (t *tokenizer) truncate(pos uint) {
+	if pos > t.len {
+		pos = t.len
+	}
+
+	t.buffer = t.buffer[pos:]
+	t.len = uint(len(t.buffer))
+	if t.len > 0 && t.buffer[t.len-1] == eofRune {
+		t.len--
+	}
+	t.cursor -= pos
+}
+
 func (t *tokenizer) char(after uint) rune {
+	for t.cursor+after >= t.len && t.scanner != nil {
+		t.scan()
+	}
+
 	if t.cursor+after >= t.len {
 		return eofRune
 	}
 
-	return t.statement[t.cursor+after]
+	return t.buffer[t.cursor+after]
 }
 
 func (t *tokenizer) skip(step uint) {
 	t.cursor += step
+	for t.cursor > t.len && t.scanner != nil {
+		t.scan()
+	}
 	if t.cursor > t.len {
 		t.cursor = t.len
 	}
@@ -519,7 +754,7 @@ func (t *tokenizer) runeList(startPos uint, length uint) []rune {
 	if endPos > t.len {
 		endPos = t.len
 	}
-	return t.statement[startPos:endPos]
+	return t.buffer[startPos:endPos]
 }
 
 func (t *tokenizer) equalWordCaseInsensitive(word []rune) bool {

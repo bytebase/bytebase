@@ -14,7 +14,9 @@ export const PLAN_SCHEDULES: BackupPlanPolicySchedule[] = [
 export const AVAILABLE_DAYS_OF_WEEK = [...Array(7).keys()]; // [0...6]
 export const AVAILABLE_HOURS_OF_DAY = [...Array(24).keys()]; // [0...23]
 
-export const DEFAULT_BACKUP_RETENTION_PERIOD_TS = 7 * 3600 * 24; // 7 days
+export const DEFAULT_BACKUP_RETENTION_PERIOD_DAYS = 7;
+export const DEFAULT_BACKUP_RETENTION_PERIOD_TS =
+  DEFAULT_BACKUP_RETENTION_PERIOD_DAYS * 3600 * 24; // 7 days
 
 export function parseScheduleFromBackupSetting(
   backupSetting: BackupSettingEdit

@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -178,7 +177,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	a.NoError(err)
 
 	t.Log("Download binlog files in empty dir")
-	binlogFilesBefore, err := ioutil.ReadDir(binlogDir)
+	binlogFilesBefore, err := os.ReadDir(binlogDir)
 	a.NoError(err)
 	for _, file := range binlogFilesBefore {
 		path := filepath.Join(binlogDir, file.Name())
@@ -198,7 +197,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	t.Log("Truncate or delete downloaded files and re-download")
 	rand.Seed(time.Now().Unix())
 	// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
-	binlogFiles, err := ioutil.ReadDir(binlogDir)
+	binlogFiles, err := os.ReadDir(binlogDir)
 	a.NoError(err)
 	for _, file := range binlogFiles {
 		path := filepath.Join(binlogDir, file.Name())

@@ -103,13 +103,10 @@
         </label>
         <div class="w-[16rem]">
           <input
-            type="text"
+            type="number"
+            class="textfield w-full hide-ticker"
+            :placeholder="String(DEFAULT_BACKUP_RETENTION_PERIOD_DAYS)"
             :value="retentionPeriodDaysInputValue"
-            class="textfield w-full"
-            :class="
-              state.setting.retentionPeriodTs <= 0 &&
-              '!border-red-600 focus:!ring-red-600'
-            "
             @input="(e: any) => setRetentionPeriodDays(e.target.value)"
           />
         </div>
@@ -158,7 +155,7 @@ import {
   AVAILABLE_HOURS_OF_DAY,
   PLAN_SCHEDULES,
   DEFAULT_BACKUP_RETENTION_PERIOD_TS,
-  levelOfSchedule,
+  DEFAULT_BACKUP_RETENTION_PERIOD_DAYS,
   localFromUTC,
   localToUTC,
   parseScheduleFromBackupSetting,
@@ -250,10 +247,6 @@ const isValid = computed((): boolean => {
     return true;
   }
 
-  if (!setting.retentionPeriodTs || setting.retentionPeriodTs <= 0) {
-    return false;
-  }
-
   return true;
 });
 
@@ -263,6 +256,10 @@ const handleSave = async () => {
   }
 
   const { setting } = state;
+  if (setting.enabled && setting.retentionPeriodTs <= 0) {
+    // Set default value to retentionPeriodTs if needed.
+    setting.retentionPeriodTs = DEFAULT_BACKUP_RETENTION_PERIOD_TS;
+  }
 
   const newBackupSetting: BackupSettingUpsert = {
     databaseId: props.database.id,
