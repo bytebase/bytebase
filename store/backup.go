@@ -546,11 +546,7 @@ func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Backup
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
-		payload, err := json.Marshal(*patch.Payload)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.ID)
