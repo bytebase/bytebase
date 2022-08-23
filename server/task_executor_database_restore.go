@@ -130,20 +130,39 @@ func (*DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, server 
 	}
 	defer driver.Close(ctx)
 
-	backupPath := backup.Path
-	if !filepath.IsAbs(backupPath) {
-		backupPath = filepath.Join(server.profile.DataDir, backupPath)
+	backupAbsPathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+
+	if backup.StorageBackend == api.BackupStorageBackendS3 {
+		if err := downloadBackupFileFromCloud(ctx, server, backup.Path, backupAbsPathLocal); err != nil {
+			return errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
+		}
+		defer os.Remove(backupAbsPathLocal)
 	}
 
-	f, err := os.Open(backupPath)
+	backupFileLocal, err := os.Open(backupAbsPathLocal)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open backup file at %s", backupPath)
+		return errors.Wrapf(err, "failed to open backup file at %s", backupAbsPathLocal)
 	}
-	defer f.Close()
+	defer backupFileLocal.Close()
 
-	if err := driver.Restore(ctx, f); err != nil {
+	if err := driver.Restore(ctx, backupFileLocal); err != nil {
 		return errors.Wrap(err, "failed to restore backup")
 	}
+
+	return nil
+}
+
+func downloadBackupFileFromCloud(ctx context.Context, server *Server, backupPath, backupAbsPathLocal string) error {
+	log.Debug("Downloading backup file from s3 bucket.", zap.String("path", backupPath))
+	backupFileDownload, err := os.Create(backupAbsPathLocal)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create local backup file %q for downloading from s3 bucket", backupAbsPathLocal)
+	}
+	defer backupFileDownload.Close()
+	if _, err := server.s3Client.DownloadObject(ctx, backupPath, backupFileDownload); err != nil {
+		return errors.Wrapf(err, "failed to download backup file %q from s3 bucket", backupPath)
+	}
+	log.Debug("Successfully downloaded backup file from s3 bucket.")
 	return nil
 }
 
