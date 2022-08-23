@@ -352,7 +352,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			if _, err = s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
 				CreatorID:   taskPatched.CreatorID,
-				ContainerID: issue.ID,
+				ContainerID: taskPatched.PipelineID,
 				Type:        api.ActivityPipelineTaskStatementUpdate,
 				Payload:     string(payload),
 				Level:       api.ActivityInfo,
@@ -447,7 +447,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   taskPatched.CreatorID,
-			ContainerID: issue.ID,
+			ContainerID: taskPatched.PipelineID,
 			Type:        api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 			Payload:     string(payload),
 			Level:       api.ActivityInfo,
@@ -665,17 +665,13 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		return nil, errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
 	}
 
-	containerID := task.PipelineID
-	if issue != nil {
-		containerID = issue.ID
-	}
 	level := api.ActivityInfo
 	if taskPatched.Status == api.TaskFailed {
 		level = api.ActivityError
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   taskStatusPatch.UpdaterID,
-		ContainerID: containerID,
+		ContainerID: task.PipelineID,
 		Type:        api.ActivityPipelineTaskStatusUpdate,
 		Level:       level,
 		Payload:     string(payload),
