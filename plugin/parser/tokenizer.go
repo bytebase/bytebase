@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 )
 
@@ -78,6 +79,115 @@ func newStreamTokenizer(src io.Reader) *tokenizer {
 		t.buffer = append(t.buffer, eofRune)
 	}
 	return t
+}
+
+func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
+	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
+	// and the identifiers don't equal any keywords in CREATE TABLE statements.
+	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
+	for _, col := range node.Cols {
+		col.SetOriginTextPosition(node.OriginTextPosition())
+	}
+	for _, cons := range node.Constraints {
+		cons.SetOriginTextPosition(node.OriginTextPosition())
+	}
+
+	columnPos := 0
+	constraintPos := 0
+	// find the '(' for CREATE TABLE ... ( ... )
+	if err := t.scanTo([]rune{'('}); err != nil {
+		return err
+	}
+
+	// parentheses is the flag for matching parentheses.
+	parentheses := 1
+	t.skipBlank()
+	startPos := t.pos()
+	t.startLine = t.line
+	for {
+		switch t.char(0) {
+		case '\n':
+			t.line++
+			t.skip(1)
+		case '\'', '"':
+			if err := t.scanString(t.char(0)); err != nil {
+				return err
+			}
+		case '(':
+			parentheses++
+			t.skip(1)
+		case ')':
+			parentheses--
+			if parentheses == 0 {
+				// This means we find the corresponding ')' for the first '(' in CREATE TABLE statements.
+				// We need to check the definition and return.
+				def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
+				if columnPos < len(node.Cols) &&
+					strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
+					node.Cols[columnPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				} else if constraintPos < len(node.Constraints) &&
+					matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
+					node.Constraints[constraintPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				}
+				return nil
+			}
+			t.skip(1)
+		case ',':
+			// e.g. CREATE TABLE t(
+			//   a int,
+			//   b int,
+			//   UNIQUE(a, b),
+			//   UNIQUE(b)
+			// )
+			// We don't need to consider the ',' in UNIQUE(a, b)
+			if parentheses > 1 {
+				t.skip(1)
+				continue
+			}
+			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
+			if columnPos < len(node.Cols) &&
+				strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
+				node.Cols[columnPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				columnPos++
+			} else if constraintPos < len(node.Constraints) &&
+				matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
+				node.Constraints[constraintPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				constraintPos++
+			}
+			t.skip(1)
+			t.skipBlank()
+			startPos = t.pos()
+			t.startLine = t.line
+		case eofRune:
+			return nil
+		default:
+			t.skip(1)
+		}
+	}
+}
+
+func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
+	text = strings.ToLower(text)
+	if cons.Name != "" {
+		return strings.Contains(text, strings.ToLower(cons.Name))
+	}
+	switch cons.Tp {
+	case tidbast.ConstraintCheck:
+		return strings.Contains(text, "check")
+	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
+		return strings.Contains(text, "unique")
+	case tidbast.ConstraintPrimaryKey:
+		return strings.Contains(text, "primary key")
+	case tidbast.ConstraintForeignKey:
+		return strings.Contains(text, "foreign key")
+	case tidbast.ConstraintIndex:
+		notUnique := !strings.Contains(text, "unique")
+		notPrimary := !strings.Contains(text, "primary key")
+		notForeign := !strings.Contains(text, "foreign key")
+		isIndex := strings.Contains(text, "index") || strings.Contains(text, "key")
+		return notUnique && notPrimary && notForeign && isIndex
+	}
+	return false
 }
 
 // setLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
