@@ -10,7 +10,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
@@ -101,10 +100,9 @@ var (
 		disableMetric bool
 
 		// Cloud backup configs.
-		backupStorageBackend api.BackupStorageBackend
-		backupRegion         string
-		backupBucket         string
-		backupCredential     string
+		backupRegion     string
+		backupBucket     string
+		backupCredential string
 	}
 
 	rootCmd = &cobra.Command{

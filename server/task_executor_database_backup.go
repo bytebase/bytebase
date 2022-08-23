@@ -117,20 +117,18 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
 		}
-		defer func() {
-			if err := bucketFileToUpload.Close(); err != nil {
-				log.Warn("Failed to close the local backup file to upload", zap.String("path", backupFilePathLocal), zap.Error(err))
-			}
-			if err := os.Remove(backupFilePathLocal); err != nil {
-				log.Warn("Failed to remove the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal), zap.Error(err))
-			} else {
-				log.Debug("Successfully removed the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal))
-			}
-		}()
+		defer bucketFileToUpload.Close()
+
 		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
 		log.Debug("Successfully uploaded backup to s3 bucket.")
+
+		if err := os.Remove(backupFilePathLocal); err != nil {
+			log.Warn("Failed to remove the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal), zap.Error(err))
+		} else {
+			log.Debug("Successfully removed the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal))
+		}
 		return payload, nil
 	default:
 		return "", errors.Errorf("backup to %s not implemented yet", backup.StorageBackend)
