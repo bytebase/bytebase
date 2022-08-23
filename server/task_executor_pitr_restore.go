@@ -213,7 +213,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	}
 
 	log.Debug("Downloading all binlog files")
-	if err := mysqlSourceDriver.FetchAllBinlogFilesFromMySQL(ctx, true /* downloadLatestBinlogFile */); err != nil {
+	if err := mysqlSourceDriver.FetchAllBinlogFilesFromMySQL(ctx, true /* downloadLatestBinlogFile */, server.s3Client); err != nil {
 		return nil, err
 	}
 

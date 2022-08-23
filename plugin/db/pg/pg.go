@@ -250,7 +250,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 					return err
 				}
 			}
-		} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
+		} else if strings.HasPrefix(stmt, "GRANT") || strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 				return err
 			}

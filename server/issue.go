@@ -848,6 +848,11 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		schemaVersion = common.DefaultMigrationVersion()
 	}
 
+	// Get admin data source username.
+	adminDataSource := api.DataSourceFromInstanceWithType(&instance, api.Admin)
+	if adminDataSource == nil {
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+	}
 	payload := api.TaskDatabaseCreatePayload{
 		ProjectID:     project.ID,
 		CharacterSet:  c.CharacterSet,
@@ -855,7 +860,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Labels:        c.Labels,
 		SchemaVersion: schemaVersion,
 	}
-	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
+	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, adminDataSource.Username, schema)
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
@@ -1042,7 +1047,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	return nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, schema string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, adminDatasourceUser, schema string) (string, string) {
 	databaseName := createDatabaseContext.DatabaseName
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
@@ -1057,10 +1062,15 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
 		}
 	case db.Postgres:
+		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
+		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
+		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
+			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
+		}
 		if createDatabaseContext.Collation == "" {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;", databaseName, createDatabaseContext.CharacterSet)
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, createDatabaseContext.CharacterSet)
 		} else {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
 		}
 		// Set the database owner.
 		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.

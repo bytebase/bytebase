@@ -100,12 +100,11 @@ var (
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
 
-		// Cloud backup configs
+		// Cloud backup configs.
 		backupRegion     string
 		backupBucket     string
 		backupCredential string
 	}
-	backupStorageBackend = api.BackupStorageBackendLocal // This is parsed from flags.backupBucket
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -154,7 +153,7 @@ func init() {
 	// TODO(dragonly): Add GCS usages when it's supported.
 	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
-	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS credential files.")
+	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -185,18 +184,15 @@ func checkCloudBackupFlags() error {
 	if flags.backupBucket == "" {
 		return nil
 	}
+	if !strings.HasPrefix(flags.backupBucket, "s3://") {
+		return errors.Errorf("only support bucket URI starting with s3://")
+	}
+	flags.backupBucket = strings.TrimPrefix(flags.backupBucket, "s3://")
 	if flags.backupCredential == "" {
 		return errors.Errorf("must specify --backup-credential when --backup-bucket is present")
 	}
-	bucketMeta, err := parseBucketURI(flags.backupBucket)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse backup bucket")
-	}
-	if bucketMeta.storageBackend == api.BackupStorageBackendS3 {
-		if flags.backupRegion == "" {
-			return errors.Errorf("must specify --backup-region for AWS S3 backup")
-		}
-		backupStorageBackend = api.BackupStorageBackendS3
+	if flags.backupRegion == "" {
+		return errors.Errorf("must specify --backup-region for AWS S3 backup")
 	}
 	return nil
 }

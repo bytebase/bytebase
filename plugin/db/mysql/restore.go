@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -105,14 +104,15 @@ type binlogFileMeta struct {
 	seq int64
 }
 
-func readBinlogMetaFile(fileName string) (binlogFileMeta, error) {
-	fileContent, err := os.ReadFile(fileName)
+func (driver *Driver) readBinlogMetaFile(fileName string) (binlogFileMeta, error) {
+	metaFilePath := filepath.Join(driver.binlogDir, fileName)
+	fileContent, err := os.ReadFile(metaFilePath)
 	if err != nil {
-		return binlogFileMeta{}, errors.Wrapf(err, "failed to read binlog metadata file %q", fileName)
+		return binlogFileMeta{}, errors.Wrapf(err, "failed to read binlog metadata file %q", metaFilePath)
 	}
 	var meta binlogFileMeta
 	if err := json.Unmarshal(fileContent, &meta); err != nil {
-		return binlogFileMeta{}, errors.Wrapf(err, "failed to unmarshal binlog metadata file %q", fileName)
+		return binlogFileMeta{}, errors.Wrapf(err, "failed to unmarshal binlog metadata file %q", metaFilePath)
 	}
 	return meta, nil
 }
@@ -500,7 +500,7 @@ func (driver *Driver) getSortedLocalBinlogFilesMeta() ([]binlogFileMeta, error) 
 		if !strings.HasSuffix(fileInfo.Name(), binlogMetaSuffix) {
 			continue
 		}
-		meta, err := readBinlogMetaFile(fileInfo.Name())
+		meta, err := driver.readBinlogMetaFile(fileInfo.Name())
 		if err != nil {
 			return nil, err
 		}
@@ -576,24 +576,18 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList 
 			continue
 		}
 		_, exist := metaMap[fileOnServer.Seq]
-		binlogFilePath := filepath.Join(driver.binlogDir, fileOnServer.Name)
 		if !exist {
-			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+			binlogFilePath := filepath.Join(driver.binlogDir, fileOnServer.Name)
+			if err := driver.downloadBinlogFileFromServer(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to download binlog file", zap.String("path", binlogFilePath), zap.Error(err))
 				return errors.Wrapf(err, "failed to download binlog file %q", binlogFilePath)
 			}
+			if err := driver.writeBinlogMetadataFile(ctx, fileOnServer.Name); err != nil {
+				return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePath)
+			}
 			// TODO(dragonly): upload to s3 using a unified cloud storage interface.
 			if uploader != nil {
-				dir := getBinlogRelativeDir(driver.binlogDir)
-				binlogFile, err := os.Open(binlogFilePath)
-				if err != nil {
-					return errors.Wrapf(err, "failed to open local binlog file %q for uploading", binlogFilePath)
-				}
-				defer binlogFile.Close()
-				defer os.Remove(binlogFilePath)
-				if err := uploader.UploadObject(ctx, path.Join(dir, fileOnServer.Name), binlogFile); err != nil {
-					return errors.Wrapf(err, "failed to upload binlog file %q to cloud storage", fileOnServer.Name)
-				}
+				driver.uploadBinlogFileToCloud(ctx, uploader, fileOnServer.Name)
 			}
 		}
 	}
@@ -634,7 +628,7 @@ func (driver *Driver) FetchAllBinlogFilesFromMySQL(ctx context.Context, download
 // If isLast is true, it means that this is the last binlog file containing the targetTs event.
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
-func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
+func (driver *Driver) downloadBinlogFileFromServer(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
 	mysqlbinlogResultFileDir := strings.TrimRight(driver.binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
@@ -681,19 +675,43 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 	}
 
-	if err := driver.writeBinlogMetadataFile(ctx, fileInfo); err != nil {
-		return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePath)
+	return nil
+}
+
+func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader storage.Uploader, binlogFileName string) error {
+	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileName)
+	binlogFile, err := os.Open(binlogFilePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open local binlog file %q for uploading", binlogFilePath)
+	}
+	defer binlogFile.Close()
+	defer os.Remove(binlogFilePath)
+	relativeDir := getBinlogRelativeDir(driver.binlogDir)
+	if err := uploader.UploadObject(ctx, path.Join(relativeDir, binlogFileName), binlogFile); err != nil {
+		return errors.Wrapf(err, "failed to upload binlog file %q to cloud storage", binlogFileName)
+	}
+
+	metaFileName := binlogFileName + binlogMetaSuffix
+	metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
+	metaFile, err := os.Open(metaFilePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open local binlog metadata file %q for uploading", metaFilePath)
+	}
+	defer metaFile.Close()
+	defer os.Remove(metaFilePath)
+	if err := uploader.UploadObject(ctx, path.Join(relativeDir, metaFileName), metaFile); err != nil {
+		return errors.Wrapf(err, "failed to upload binlog metadata file %q to cloud storage", metaFileName)
 	}
 
 	return nil
 }
 
-func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileInfo fs.FileInfo) error {
-	eventTs, err := driver.parseLocalBinlogFirstEventTs(ctx, binlogFileInfo.Name())
+func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileName string) error {
+	eventTs, err := driver.parseLocalBinlogFirstEventTs(ctx, binlogFileName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse the local binlog file %q's first binlog event ts", binlogFileInfo.Name())
+		return errors.Wrapf(err, "failed to parse the local binlog file %q's first binlog event ts", binlogFileName)
 	}
-	metadataFilePath := filepath.Join(driver.binlogDir, binlogFileInfo.Name()+".meta")
+	metadataFilePath := filepath.Join(driver.binlogDir, binlogFileName+".meta")
 	metadataFile, err := os.Create(metadataFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create binlog metadata file %q", metadataFilePath)

@@ -417,13 +417,7 @@ const onSubmit = async (comment: string) => {
 };
 
 const allowApplyTaskTransitionToStage = (transition: TaskStatusTransition) => {
-  // Only available for tenant mode, Which means
-  // 1. the project is tenant mode
-  // 2. the issue type is schema.update or data.update
-  if (!isTenantMode.value) {
-    return false;
-  }
-
+  // Only available for the issue type of schema.update and data.update.
   const stage = currentTask.value.stage;
 
   // Only available when the stage has multiple tasks.
