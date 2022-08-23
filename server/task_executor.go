@@ -261,13 +261,9 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 				)
 			}
 
-			containerID := task.PipelineID
-			if issue != nil {
-				containerID = issue.ID
-			}
 			activityCreate := &api.ActivityCreate{
 				CreatorID:   task.CreatorID,
-				ContainerID: containerID,
+				ContainerID: task.PipelineID,
 				Type:        api.ActivityPipelineTaskFileCommit,
 				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
