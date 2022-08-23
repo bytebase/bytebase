@@ -658,7 +658,8 @@
     "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
     "create": "Create Environment",
     "restore": "Restore this environment",
-    "successfully-updated-environment": "Successfully updated environment '{name}'."
+    "successfully-updated-environment": "Successfully updated environment '{name}'.",
+    "protected": "Protected"
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",
@@ -736,6 +737,10 @@
       "daily-info": "Enforce every database to backup daily.",
       "weekly": "Weekly backup",
       "weekly-info": "Enforce every database to backup weekly."
+    },
+    "environment-tier": {
+      "name": "Environment tier",
+      "mark-env-as-protected": "Mark as protected environment"
     }
   },
   "migration-history": {
@@ -1347,6 +1352,10 @@
       "bb-feature-backup-policy": {
         "title": "Backup policy",
         "desc": "Backup policy will auto-backup your database based on the schedule."
+      },
+      "bb-feature-environment-tier-policy": {
+        "title": "Environment tier",
+        "desc": "Mark environment as protected."
       },
       "bb-feature-sql-review": {
         "title": "SQL review policy",

@@ -8,7 +8,13 @@
     @select-item="(env) => $emit('select-environment-id', env.id)"
   >
     <template #menuItem="{ item: environment }">
-      {{ environmentName(environment) }}
+      <div class="flex items-center">
+        {{ environmentName(environment) }}
+        <ProtectedEnvironmentIcon
+          class="ml-1 group-hover:text-main-text"
+          :environment="environment"
+        />
+      </div>
     </template>
   </BBSelect>
 </template>

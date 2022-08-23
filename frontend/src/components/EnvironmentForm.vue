@@ -14,6 +14,32 @@
           @input="state.environment.name = ($event.target as HTMLInputElement).value"
         />
       </div>
+
+      <div class="col-span-1">
+        <label class="textlabel flex items-center">
+          {{ $t("policy.environment-tier.name") }}
+          <FeatureBadge
+            feature="bb.feature.environment-tier-policy"
+            class="text-accent"
+          />
+        </label>
+        <div class="mt-4 flex flex-col space-y-4">
+          <div class="flex space-x-4">
+            <BBCheckbox
+              :value="(state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier === 'PROTECTED'"
+              @toggle="on => {
+                (state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier = on ? 'PROTECTED' : 'UNPROTECTED'
+              }"
+            />
+            <div>
+              <div class="textlabel">
+                {{ $t("policy.environment-tier.mark-env-as-protected") }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="col-span-1">
         <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
         <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
@@ -257,6 +283,7 @@ import type {
   Environment,
   EnvironmentCreate,
   EnvironmentPatch,
+  EnvironmentTierPolicyPayload,
   PipelineApprovalPolicyPayload,
   Policy,
   SQLReviewPolicy,
@@ -269,6 +296,7 @@ interface LocalState {
   environment: Environment | EnvironmentCreate;
   approvalPolicy: Policy;
   backupPolicy: Policy;
+  environmentTierPolicy: Policy;
 }
 
 const ROUTE_NAME = "setting.workspace.sql-review";
@@ -290,6 +318,10 @@ const props = defineProps({
     required: true,
     type: Object as PropType<Policy>,
   },
+  environmentTierPolicy: {
+    required: true,
+    type: Object as PropType<Policy>,
+  },
 });
 
 const emit = defineEmits([
@@ -304,6 +336,7 @@ const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   approvalPolicy: cloneDeep(props.approvalPolicy),
   backupPolicy: cloneDeep(props.backupPolicy),
+  environmentTierPolicy: cloneDeep(props.environmentTierPolicy),
 });
 
 const router = useRouter();
@@ -370,6 +403,13 @@ watch(
   }
 );
 
+watch(
+  () => props.environmentTierPolicy,
+  (cur: Policy) => {
+    state.environmentTierPolicy = cloneDeep(cur);
+  }
+);
+
 const currentUser = useCurrentUser();
 
 const environmentList = useEnvironmentList();
@@ -399,7 +439,11 @@ const allowCreate = computed(() => {
 });
 
 const valueChanged = (
-  field?: "environment" | "approvalPolicy" | "backupPolicy"
+  field?:
+    | "environment"
+    | "approvalPolicy"
+    | "backupPolicy"
+    | "environmentTierPolicy"
 ): boolean => {
   switch (field) {
     case "environment":
@@ -408,12 +452,15 @@ const valueChanged = (
       return !isEqual(props.approvalPolicy, state.approvalPolicy);
     case "backupPolicy":
       return !isEqual(props.backupPolicy, state.backupPolicy);
+    case "environmentTierPolicy":
+      return !isEqual(props.environmentTierPolicy, state.environmentTierPolicy);
 
     default:
       return (
         !isEqual(props.environment, state.environment) ||
         !isEqual(props.approvalPolicy, state.approvalPolicy) ||
-        !isEqual(props.backupPolicy, state.backupPolicy)
+        !isEqual(props.backupPolicy, state.backupPolicy) ||
+        !isEqual(props.environmentTierPolicy, state.environmentTierPolicy)
       );
   }
 };
@@ -423,7 +470,13 @@ const revertEnvironment = () => {
 };
 
 const createEnvironment = () => {
-  emit("create", state.environment, state.approvalPolicy, state.backupPolicy);
+  emit(
+    "create",
+    state.environment,
+    state.approvalPolicy,
+    state.backupPolicy,
+    state.environmentTierPolicy
+  );
 };
 
 const updateEnvironment = () => {
@@ -434,10 +487,12 @@ const updateEnvironment = () => {
     emit("update", patchedEnvironment);
   }
 
+  const environmentId = (state.environment as Environment).id;
+
   if (!isEqual(props.approvalPolicy, state.approvalPolicy)) {
     emit(
       "update-policy",
-      (state.environment as Environment).id,
+      environmentId,
       "bb.policy.pipeline-approval",
       state.approvalPolicy
     );
@@ -446,9 +501,18 @@ const updateEnvironment = () => {
   if (!isEqual(props.backupPolicy, state.backupPolicy)) {
     emit(
       "update-policy",
-      (state.environment as Environment).id,
+      environmentId,
       "bb.policy.backup-plan",
       state.backupPolicy
+    );
+  }
+
+  if (!isEqual(props.environmentTierPolicy, state.environmentTierPolicy)) {
+    emit(
+      "update-policy",
+      environmentId,
+      "bb.policy.environment-tier",
+      state.environmentTierPolicy
     );
   }
 };
