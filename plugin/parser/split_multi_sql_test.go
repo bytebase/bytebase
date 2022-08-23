@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -175,6 +176,13 @@ func TestPGSplitMultiSQL(t *testing.T) {
 	for _, test := range tests {
 		res, err := SplitMultiSQL(Postgres, test.statement)
 		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
+
+		res, err = SplitMultiSQLStream(Postgres, strings.NewReader(test.statement))
+		errStr = ""
 		if err != nil {
 			errStr = err.Error()
 		}
@@ -372,6 +380,13 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	for _, test := range tests {
 		res, err := SplitMultiSQL(MySQL, test.statement)
 		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+		require.Equal(t, test.want, resData{res, errStr}, test.statement)
+
+		res, err = SplitMultiSQLStream(MySQL, strings.NewReader(test.statement))
+		errStr = ""
 		if err != nil {
 			errStr = err.Error()
 		}
