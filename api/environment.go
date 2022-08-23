@@ -18,8 +18,9 @@ type Environment struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
-	Name  string `jsonapi:"attr,name"`
-	Order int    `jsonapi:"attr,order"`
+	Name  string               `jsonapi:"attr,name"`
+	Order int                  `jsonapi:"attr,order"`
+	Tier  EnvironmentTierValue `jsonapi:"attr,tier"`
 }
 
 // EnvironmentCreate is the API message for creating an environment.
