@@ -33,6 +33,9 @@ func SplitMultiSQLStream(engineType EngineType, src io.Reader) ([]SingleSQL, err
 	case Postgres:
 		t := newStreamTokenizer(src)
 		return t.splitPostgreSQLMultiSQL()
+	case MySQL, TiDB:
+		t := newStreamTokenizer(src)
+		return t.splitMySQLMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
