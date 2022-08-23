@@ -124,8 +124,13 @@ func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issu
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", raw)
 		}
+		// If no specified project, filter out issues belonging to archived project
+		if issue.Project == nil || issue.Project.RowStatus == api.Archived {
+			continue
+		}
 		issueList = append(issueList, issue)
 	}
+
 	return issueList, nil
 }
 
@@ -544,7 +549,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, status)
 		}
-		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
+		where = append(where, fmt.Sprintf("status IN (%s)", strings.Join(list, ",")))
 	}
 
 	var query = `
