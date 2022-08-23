@@ -14,7 +14,7 @@ const (
 
 var (
 	beginRuneList     = []rune{'B', 'E', 'G', 'I', 'N'}
-	atomicRuneList    = []rune{'A', 'T', 'M', 'I', 'C'}
+	atomicRuneList    = []rune{'A', 'T', 'O', 'M', 'I', 'C'}
 	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
 
