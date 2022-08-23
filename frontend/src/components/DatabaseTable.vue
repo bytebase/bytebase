@@ -7,10 +7,31 @@
     :right-bordered="bordered"
     :top-bordered="bordered"
     :bottom-bordered="bordered"
+    :custom-header="true"
     header-class="capitalize"
     data-label="bb-database-table"
     @click-row="clickDatabase"
   >
+    <template #header>
+      <tr>
+        <th
+          v-for="(column, index) in columnList"
+          :key="index"
+          scope="col"
+          class="py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
+          :class="[
+            !showSelectionColumn && index === 0 ? 'pl-4' : 'pl-2',
+            column.center && 'text-center pr-2',
+          ]"
+        >
+          <template v-if="showSelectionColumn && index === 0">
+            <slot name="selection-all" :database-list="mixedDatabaseList" />
+          </template>
+          <template v-else>{{ column.title }}</template>
+        </th>
+      </tr>
+    </template>
+
     <template #body="{ rowData: database }: { rowData: Database }">
       <BBTableCell v-if="showSelectionColumn" class="w-[1%]">
         <!-- width: 1% means as narrow as possible -->
