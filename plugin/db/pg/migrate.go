@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -302,71 +301,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if driver.strictUseDb() {
 		database = driver.strictDatabase
 	}
-	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, database)
-	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
-	// Skip this backfill for bytebase's database "bb" with user "bb". We will use the one in pg_engine.go instead.
-	isBytebaseDatabase := strings.Contains(driver.baseDSN, "user=bb") && strings.Contains(driver.baseDSN, "host=/tmp")
-	if err != nil && !isBytebaseDatabase {
-		if !strings.Contains(err.Error(), "invalid stored version") {
-			return nil, err
-		}
-		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
-			return nil, err
-		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase)
-	}
-	return history, err
-}
-
-func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
-	var sqldb *sql.DB
-	var err error
-	if !driver.strictUseDb() {
-		sqldb, err = driver.GetDBConnection(ctx, db.BytebaseDatabase)
-	}
-	if err != nil {
-		return err
-	}
-
-	query := `SELECT id, version FROM migration_history`
-	rows, err := sqldb.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	type ver struct {
-		id      int
-		version string
-	}
-	var vers []ver
-	for rows.Next() {
-		var v ver
-		if err := rows.Scan(&v.id, &v.version); err != nil {
-			return err
-		}
-		vers = append(vers, v)
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	updateQuery := `
-		UPDATE
-			migration_history
-		SET
-			version = $1
-		WHERE id = $2 AND version = $3
-	`
-	for _, v := range vers {
-		if strings.HasPrefix(v.version, util.NonSemanticPrefix) {
-			continue
-		}
-		newVersion := fmt.Sprintf("%s%s", util.NonSemanticPrefix, v.version)
-		if _, err := sqldb.Exec(updateQuery, newVersion, v.id, v.version); err != nil {
-			return err
-		}
-	}
-	return nil
+	return util.FindMigrationHistoryList(ctx, query, params, driver, database)
 }
 
 func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
