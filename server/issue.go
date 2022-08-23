@@ -1063,7 +1063,7 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 		}
 	case db.Postgres:
 		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
-		// We need to grant the database owner to the data source admin role so that Bytebase can have permission on the database.
+		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
 		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
 			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
 		}
