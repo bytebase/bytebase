@@ -1,7 +1,17 @@
 <template>
-  <NTooltip v-if="environment.tier === 'PROTECTED'" :disabled="!tooltip">
+  <NTooltip
+    v-if="environment.tier === 'PROTECTED'"
+    :disabled="!tooltip"
+    :delay="0"
+    :show-arrow="false"
+    :animated="false"
+    placement="top-start"
+  >
     <template #trigger>
-      <heroicons-solid:shield-exclamation v-bind="$attrs" />
+      <heroicons-solid:shield-exclamation
+        class="text-control inline-block"
+        v-bind="$attrs"
+      />
     </template>
 
     <span>{{ $t("environment.protected") }}</span>
