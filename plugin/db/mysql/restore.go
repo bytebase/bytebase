@@ -585,9 +585,10 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList 
 			if err := driver.writeBinlogMetadataFile(ctx, fileOnServer.Name); err != nil {
 				return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePath)
 			}
-			// TODO(dragonly): upload to s3 using a unified cloud storage interface.
 			if uploader != nil {
-				driver.uploadBinlogFileToCloud(ctx, uploader, fileOnServer.Name)
+				if err := driver.uploadBinlogFileToCloud(ctx, uploader, fileOnServer.Name); err != nil {
+					return errors.Wrapf(err, "failed to upload binlog file %q to cloud storage", binlogFilePath)
+				}
 			}
 		}
 	}
@@ -680,6 +681,8 @@ func (driver *Driver) downloadBinlogFileFromServer(ctx context.Context, binlogFi
 
 func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader storage.Uploader, binlogFileName string) error {
 	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileName)
+	metaFileName := binlogFileName + binlogMetaSuffix
+	metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
 	binlogFile, err := os.Open(binlogFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open local binlog file %q for uploading", binlogFilePath)
@@ -688,17 +691,17 @@ func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader stor
 	defer os.Remove(binlogFilePath)
 	relativeDir := getBinlogRelativeDir(driver.binlogDir)
 	if err := uploader.UploadObject(ctx, path.Join(relativeDir, binlogFileName), binlogFile); err != nil {
+		// Remove the local metadata file so that it can be re-uploaded later.
+		os.Remove(metaFilePath)
 		return errors.Wrapf(err, "failed to upload binlog file %q to cloud storage", binlogFileName)
 	}
 
-	metaFileName := binlogFileName + binlogMetaSuffix
-	metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
 	metaFile, err := os.Open(metaFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open local binlog metadata file %q for uploading", metaFilePath)
 	}
 	defer metaFile.Close()
-	defer os.Remove(metaFilePath)
+	// We leave the local metadata file to indicate that the binlog file has been uploaded successfully.
 	if err := uploader.UploadObject(ctx, path.Join(relativeDir, metaFileName), metaFile); err != nil {
 		return errors.Wrapf(err, "failed to upload binlog metadata file %q to cloud storage", metaFileName)
 	}

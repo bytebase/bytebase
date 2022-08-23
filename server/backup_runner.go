@@ -122,7 +122,6 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
-			log.Debug("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
