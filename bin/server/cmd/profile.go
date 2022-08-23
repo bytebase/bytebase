@@ -18,10 +18,8 @@ func getBaseProfile() server.Profile {
 		}
 		demoDataDir = fmt.Sprintf("demo/%s", demoName)
 	}
-	var backupStorageBackend api.BackupStorageBackend
-	if flags.backupBucket == "" {
-		backupStorageBackend = api.BackupStorageBackendLocal
-	} else {
+	backupStorageBackend := api.BackupStorageBackendLocal
+	if flags.backupBucket != "" {
 		backupStorageBackend = api.BackupStorageBackendS3
 	}
 	// Using flags.port + 1 as our datastore port

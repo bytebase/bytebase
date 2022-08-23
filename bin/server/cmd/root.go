@@ -145,7 +145,7 @@ func init() {
 	// TODO(dragonly): Add GCS usages when it's supported.
 	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
-	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS credential files.")
+	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -175,6 +175,9 @@ func checkDataDir() error {
 func checkCloudBackupFlags() error {
 	if flags.backupBucket == "" {
 		return nil
+	}
+	if !strings.HasPrefix(flags.backupBucket, "s3://") {
+		return errors.Errorf("only support bucket URI starting with s3://")
 	}
 	flags.backupBucket = strings.TrimPrefix(flags.backupBucket, "s3://")
 	if flags.backupCredential == "" {
