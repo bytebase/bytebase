@@ -669,7 +669,6 @@ func (driver *Driver) downloadBinlogFileFromServer(ctx context.Context, binlogFi
 		return errors.Wrap(err, "failed to execute mysqlbinlog binary")
 	}
 
-	log.Debug("Checking downloaded binlog file stat", zap.String("path", binlogFilePath))
 	fileInfo, err := os.Stat(binlogFilePath)
 	if err != nil {
 		log.Error("Failed to get stat of the binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
@@ -713,6 +712,7 @@ func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader stor
 	if err := uploader.UploadObject(ctx, path.Join(relativeDir, metaFileName), metaFile); err != nil {
 		return errors.Wrapf(err, "failed to upload binlog metadata file %q to cloud storage", metaFileName)
 	}
+	log.Debug("Successfully uploaded binlog file to cloud storage", zap.String("path", binlogFilePath))
 
 	return nil
 }
