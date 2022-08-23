@@ -537,7 +537,7 @@ func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Backup
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status=$%d", len(args)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Status; v != nil {
 		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
