@@ -118,7 +118,13 @@
         </div>
       </BBTableCell>
       <BBTableCell v-if="showEnvironmentColumn" class="w-[10%]">
-        {{ environmentName(database.instance.environment) }}
+        <div class="flex items-center">
+          {{ environmentName(database.instance.environment) }}
+          <ProtectedEnvironmentIcon
+            class="ml-1"
+            :environment="database.instance.environment"
+          />
+        </div>
       </BBTableCell>
       <BBTableCell v-if="showInstanceColumn" class="w-[25%]">
         <div class="flex flex-row items-center space-x-1">
