@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
@@ -150,7 +149,7 @@ func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Conte
 // TODO(dragonly): Remove metadata as well.
 func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error {
 	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
-	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
+	binlogFileInfoList, err := os.ReadDir(binlogDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read backup directory %q", binlogDir)
 	}
@@ -161,7 +160,12 @@ func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error
 		// We use modification time of local binlog files which is later than the modification time of that on the MySQL server,
 		// which in turn is later than the last event timestamp of the binlog file.
 		// This is not accurate and gives about 10 minutes (backup runner interval) more retention time to the binlog files, which is acceptable.
-		expireTime := binlogFileInfo.ModTime().Add(time.Duration(retentionPeriodTs) * time.Second)
+		fileInfo, err := binlogFileInfo.Info()
+		if err != nil {
+			log.Warn("Failed to get file info.", zap.String("path", binlogFileInfo.Name()), zap.Error(err))
+			continue
+		}
+		expireTime := fileInfo.ModTime().Add(time.Duration(retentionPeriodTs) * time.Second)
 		if time.Now().After(expireTime) {
 			binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
 			if err := os.Remove(binlogFilePath); err != nil {
