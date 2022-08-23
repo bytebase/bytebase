@@ -719,11 +719,12 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
 		}
 		taskAllDone := true
-		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
-		for _, task := range lastStage.TaskList {
-			if task.Status != api.TaskDone {
-				taskAllDone = false
-				break
+		for _, stage := range pipeline.StageList {
+			for _, task := range stage.TaskList {
+				if task.Status != api.TaskDone {
+					taskAllDone = false
+					break
+				}
 			}
 		}
 		if taskAllDone {
