@@ -87,6 +87,34 @@ func TestBasic(t *testing.T) {
 				},
 			},
 		},
+		{
+			Statement: `
+				CREATE TABLE t(a int);
+				CREATE UNIQUE INDEX uk_t_a on t(a);
+			`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD PRIMARY KEY (a);
+			`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SQLReviewRule{
