@@ -7,13 +7,16 @@ import {
   ActivityId,
   ActivityPatch,
   ActivityState,
+  Issue,
   IssueId,
   PrincipalId,
   ProjectId,
   ResourceObject,
+  UNKNOWN_ID,
 } from "@/types";
 import { useAuthStore } from "./auth";
 import { getPrincipalFromIncludedList } from "./principal";
+import { useIssueStore } from "./issue";
 
 function convert(
   activity: ResourceObject,
@@ -99,15 +102,15 @@ export const useActivityStore = defineStore("activity", {
       );
       return activityList;
     },
-    async fetchActivityListForIssue(issueId: IssueId) {
+    async fetchActivityListForIssue(issue: Issue) {
       const requestListForIssue = this.fetchActivityList({
         typePrefix: "bb.issue.",
-        container: issueId,
+        container: issue.id,
         order: "ASC",
       });
       const requestListForPipeline = this.fetchActivityList({
         typePrefix: "bb.pipeline.",
-        container: issueId,
+        container: issue.pipeline.id,
         order: "ASC",
       });
       const [listForIssue, listForPipeline] = await Promise.all([
@@ -124,8 +127,18 @@ export const useActivityStore = defineStore("activity", {
         return a.id - b.id;
       });
 
-      this.setActivityListForIssue({ issueId, activityList: mergedList });
+      this.setActivityListForIssue({
+        issueId: issue.id,
+        activityList: mergedList,
+      });
       return mergedList;
+    },
+    async fetchActivityListByIssueId(issueId: IssueId) {
+      const issue = useIssueStore().getIssueById(issueId);
+      if (issue.id === UNKNOWN_ID) {
+        return;
+      }
+      this.fetchActivityListForIssue(issue);
     },
     // We do not store the returned list because the caller will specify different limits
     async fetchActivityListForProject({
@@ -211,7 +224,7 @@ export const useActivityStore = defineStore("activity", {
 
       // There might exist other activities happened since the last fetch, so we do a full refetch.
       if (newActivity.type.startsWith("bb.issue.")) {
-        this.fetchActivityListForIssue(newActivity.containerId);
+        this.fetchActivityListByIssueId(newActivity.containerId);
       }
 
       return createdActivity;
@@ -236,7 +249,7 @@ export const useActivityStore = defineStore("activity", {
       ).data;
       const updatedActivity = convert(data.data, data.included);
 
-      this.fetchActivityListForIssue(updatedActivity.containerId);
+      this.fetchActivityListByIssueId(updatedActivity.containerId);
 
       return updatedActivity;
     },
@@ -244,7 +257,7 @@ export const useActivityStore = defineStore("activity", {
       await axios.delete(`/api/activity/${activity.id}`);
 
       if (activity.type.startsWith("bb.issue.")) {
-        this.fetchActivityListForIssue(activity.containerId);
+        this.fetchActivityListByIssueId(activity.containerId);
       }
     },
     async deleteActivityById(id: number) {

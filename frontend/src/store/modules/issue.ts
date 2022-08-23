@@ -234,7 +234,7 @@ export const useIssueStore = defineStore("issue", {
         issue: updatedIssue,
       });
 
-      useActivityStore().fetchActivityListForIssue(issueId);
+      useActivityStore().fetchActivityListByIssueId(issueId);
 
       return updatedIssue;
     },
@@ -260,7 +260,7 @@ export const useIssueStore = defineStore("issue", {
         issue: updatedIssue,
       });
 
-      useActivityStore().fetchActivityListForIssue(issueId);
+      useActivityStore().fetchActivityListByIssueId(issueId);
 
       return updatedIssue;
     },
