@@ -215,6 +215,11 @@ export default defineComponent({
             state.backupPolicy = policy;
           } else if (type === "bb.policy.environment-tier") {
             state.environmentTierPolicy = policy;
+            // Write the value to state.environment entity. So that we don't
+            // need to re-fetch it front the server.
+            state.environment.tier = (
+              policy.payload as EnvironmentTierPolicyPayload
+            ).environmentTier;
           }
 
           pushNotification({

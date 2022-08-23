@@ -658,7 +658,8 @@
     "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
     "create": "Create Environment",
     "restore": "Restore this environment",
-    "successfully-updated-environment": "Successfully updated environment '{name}'."
+    "successfully-updated-environment": "Successfully updated environment '{name}'.",
+    "protected": "Protected"
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",

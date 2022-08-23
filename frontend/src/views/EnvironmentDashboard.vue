@@ -12,10 +12,7 @@
       >
         <div class="flex items-center">
           {{ item.title }}
-          <ProtectedEnvironmentIcon
-            v-if="isProtectedEnvironment(item.data!)"
-            class="ml-1"
-          />
+          <ProtectedEnvironmentIcon :environment="item.data!" class="ml-1" />
         </div>
       </template>
 
@@ -319,11 +316,5 @@ const selectEnvironment = (index: number) => {
     name: "workspace.environment",
     hash: "#" + environmentList.value[index].id,
   });
-};
-
-const isProtectedEnvironment = (environment: Environment) => {
-  // TODO: need the backend to compose the environment-tier policy as an env's
-  // attribute
-  return false;
 };
 </script>
