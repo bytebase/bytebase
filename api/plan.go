@@ -182,7 +182,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureRBAC:                  {false, true, true},
 	Feature3rdPartyAuth:          {false, true, true},
 	FeatureBranding:              {false, true, true},
-	FeatureEnvironmentTierPolicy: {false, true, true},
+	FeatureEnvironmentTierPolicy: {false, false, true},
 }
 
 // Plan is the API message for a plan.
