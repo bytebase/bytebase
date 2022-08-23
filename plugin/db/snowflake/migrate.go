@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -279,52 +278,6 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase)
-}
-
-func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
-	sqldb, err := driver.GetDBConnection(ctx, "bytebase")
-	if err != nil {
-		return err
-	}
-	query := `SELECT id, version FROM bytebase.public.migration_history`
-	rows, err := sqldb.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	type ver struct {
-		id      int
-		version string
-	}
-	var vers []ver
-	for rows.Next() {
-		var v ver
-		if err := rows.Scan(&v.id, &v.version); err != nil {
-			return err
-		}
-		vers = append(vers, v)
-	}
-	if err := rows.Err(); err != nil {
-		return util.FormatErrorWithQuery(err, query)
-	}
-
-	updateQuery := `
-		UPDATE
-			bytebase.public.migration_history
-		SET
-			version = ?
-		WHERE id = ? AND version = ?
-	`
-	for _, v := range vers {
-		if strings.HasPrefix(v.version, util.NonSemanticPrefix) {
-			continue
-		}
-		newVersion := fmt.Sprintf("%s%s", util.NonSemanticPrefix, v.version)
-		if _, err := sqldb.Exec(updateQuery, newVersion, v.id, v.version); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
