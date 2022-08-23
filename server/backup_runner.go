@@ -266,7 +266,6 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 		mu.Unlock()
 
 		db := backupSetting.Database
-		log.Info("backupSetting", zap.Any("hh", backupSetting))
 		if db.Name == api.AllDatabaseName {
 			// Skip backup job for wildcard database `*`.
 			continue
