@@ -219,13 +219,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 
-	statements, err := parser.SplitMultiSQL(parser.Postgres, statement)
-	if err != nil {
-		return err
-	}
 	var remainingStmts []string
-	for _, statement := range statements {
-		stmt := strings.TrimLeft(statement.Text, " \t")
+	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
@@ -275,6 +270,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		} else {
 			remainingStmts = append(remainingStmts, stmt)
 		}
+		return nil
+	}
+
+	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
+		return err
 	}
 
 	if len(remainingStmts) == 0 {
