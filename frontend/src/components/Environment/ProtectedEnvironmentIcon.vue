@@ -1,6 +1,6 @@
 <template>
   <NTooltip
-    v-if="environment.tier === 'PROTECTED'"
+    v-if="enabled"
     :disabled="!tooltip"
     :delay="0"
     :show-arrow="false"
@@ -19,8 +19,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { Environment } from "@/types";
+import { featureToRef } from "@/store";
 
 export default defineComponent({
   name: "ProtectedEnvironmentIcon",
@@ -34,6 +35,20 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+  },
+  setup(props) {
+    const hasEnvironmentTierPolicyFeature = featureToRef(
+      "bb.feature.environment-tier-policy"
+    );
+
+    const enabled = computed((): boolean => {
+      if (!hasEnvironmentTierPolicyFeature.value) {
+        return false;
+      }
+      return props.environment.tier === "PROTECTED";
+    });
+
+    return { enabled };
   },
 });
 </script>
