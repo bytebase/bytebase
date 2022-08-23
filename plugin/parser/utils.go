@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"io"
+
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	"github.com/pkg/errors"
 )
@@ -16,6 +18,17 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	switch engineType {
 	case Postgres:
 		t := newTokenizer(statement)
+		return t.splitPostgreSQLMultiSQL()
+	default:
+		return nil, errors.Errorf("engine type is not supported: %s", engineType)
+	}
+}
+
+// SplitMultiSQLStream splits statement stream into a slice of the single SQL.
+func SplitMultiSQLStream(engineType EngineType, src io.Reader) ([]SingleSQL, error) {
+	switch engineType {
+	case Postgres:
+		t := newStreamTokenizer(src)
 		return t.splitPostgreSQLMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)

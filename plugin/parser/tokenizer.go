@@ -1,6 +1,9 @@
 package parser
 
 import (
+	"bufio"
+	"bytes"
+	"io"
 	"strings"
 	"unicode"
 
@@ -18,7 +21,8 @@ var (
 )
 
 type tokenizer struct {
-	statement []rune
+	scanner   *bufio.Scanner
+	buffer    []rune
 	cursor    uint
 	len       uint
 	line      int
@@ -29,14 +33,45 @@ type tokenizer struct {
 // Notice: we append an additional eofRune in the statement. This is a sentinel rune.
 func newTokenizer(statement string) *tokenizer {
 	t := &tokenizer{
-		statement: []rune(statement),
+		buffer:    []rune(statement),
 		cursor:    0,
 		line:      1,
 		startLine: 1,
 	}
-	t.len = uint(len(t.statement))
+	t.len = uint(len(t.buffer))
 	// append an additional eofRune.
-	t.statement = append(t.statement, eofRune)
+	t.buffer = append(t.buffer, eofRune)
+	return t
+}
+
+// scanLines is a split function for a Scanner that each line of text, also contains trailing end-of-line marker.
+func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		// We have a full newline-terminated line.
+		return i + 1, data[0 : i+1], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+func newStreamTokenizer(src io.Reader) *tokenizer {
+	t := &tokenizer{
+		scanner:   bufio.NewScanner(src),
+		cursor:    0,
+		line:      1,
+		startLine: 1,
+	}
+	t.scanner.Split(scanLines)
+	t.scanner.Scan()
+	t.buffer = []rune(t.scanner.Text())
+	t.len = uint(len(t.buffer))
 	return t
 }
 
@@ -204,6 +239,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 				Line: t.startLine,
 			})
 			t.skipBlank()
+			t.truncate(t.pos())
 			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == eofRune:
@@ -392,12 +428,48 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 	}
 }
 
+func (t *tokenizer) scan() {
+	if t.scanner != nil {
+		if t.scanner.Scan() {
+			t.buffer = append(t.buffer, []rune(t.scanner.Text())...)
+			t.len = uint(len(t.buffer))
+		} else {
+			t.buffer = append(t.buffer, eofRune)
+			t.scanner = nil
+		}
+	}
+}
+
+// truncate will return the buffer after pos.
+// Before:
+// buffer [.............]
+//               |
+//              pos
+// After:        |
+// buffer       [.......].
+func (t *tokenizer) truncate(pos uint) {
+	if pos > t.len {
+		pos = t.len
+	}
+
+	t.buffer = t.buffer[pos:]
+	t.len = uint(len(t.buffer))
+	if t.len > 0 && t.buffer[t.len-1] == eofRune {
+		t.len--
+	}
+	t.cursor -= pos
+}
+
 func (t *tokenizer) char(after uint) rune {
+	for t.cursor+after >= t.len && t.scanner != nil {
+		t.scan()
+	}
+
 	if t.cursor+after >= t.len {
 		return eofRune
 	}
 
-	return t.statement[t.cursor+after]
+	return t.buffer[t.cursor+after]
 }
 
 func (t *tokenizer) skip(step uint) {
@@ -431,7 +503,7 @@ func (t *tokenizer) runeList(startPos uint, length uint) []rune {
 	if endPos > t.len {
 		endPos = t.len
 	}
-	return t.statement[startPos:endPos]
+	return t.buffer[startPos:endPos]
 }
 
 func (t *tokenizer) equalWordCaseInsensitive(word []rune) bool {
