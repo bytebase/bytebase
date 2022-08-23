@@ -13,8 +13,9 @@ const (
 )
 
 var (
-	beginRuneList  = []rune{'B', 'E', 'G', 'I', 'N'}
-	atomicRuneList = []rune{'A', 'T', 'M', 'I', 'C'}
+	beginRuneList     = []rune{'B', 'E', 'G', 'I', 'N'}
+	atomicRuneList    = []rune{'A', 'T', 'O', 'M', 'I', 'C'}
+	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
 
 type tokenizer struct {
@@ -40,13 +41,16 @@ func newTokenizer(statement string) *tokenizer {
 	return t
 }
 
-// setLineForCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
-func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
+// setLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
+func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error {
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
 	for _, col := range node.ColumnList {
 		col.SetLine(node.Line())
+		for _, inlineCons := range col.ConstraintList {
+			inlineCons.SetLine(node.Line())
+		}
 	}
 	for _, cons := range node.ConstraintList {
 		cons.SetLine(node.Line())
@@ -69,6 +73,10 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 		case '\n':
 			t.line++
 			t.skip(1)
+		case '\'':
+			if err := t.scanString('\''); err != nil {
+				return err
+			}
 		case '(':
 			parentheses++
 			t.skip(1)
@@ -81,6 +89,9 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 				if columnPos < len(node.ColumnList) &&
 					strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
 					node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+					for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
+						inlineConstraint.SetLine(node.ColumnList[columnPos].Line())
+					}
 				} else if constraintPos < len(node.ConstraintList) &&
 					matchTableConstraint(def, node.ConstraintList[constraintPos]) {
 					node.ConstraintList[constraintPos].SetLine(t.startLine + node.Line() - 1)
@@ -89,10 +100,24 @@ func (t *tokenizer) setLineForCreateTableStmt(node *ast.CreateTableStmt) error {
 			}
 			t.skip(1)
 		case ',':
+			// e.g. CREATE TABLE t(
+			//   a int,
+			//   b int,
+			//   UNIQUE(a, b),
+			//   UNIQUE(b)
+			// )
+			// We don't need to consider the ',' in UNIQUE(a, b)
+			if parentheses > 1 {
+				t.skip(1)
+				continue
+			}
 			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
 			if columnPos < len(node.ColumnList) &&
 				strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
 				node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+				for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
+					inlineConstraint.SetLine(node.ColumnList[columnPos].Line())
+				}
 				columnPos++
 			} else if constraintPos < len(node.ConstraintList) &&
 				matchTableConstraint(def, node.ConstraintList[constraintPos]) {
@@ -128,6 +153,77 @@ func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
 		return strings.Contains(text, "foreign key")
 	}
 	return false
+}
+
+// splitMySQLMultiSQL splits the statement to a string slice.
+func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
+	var res []SingleSQL
+	delimiter := []rune{';'}
+
+	t.skipBlank()
+	t.startLine = t.line
+	startPos := t.cursor
+	for {
+		switch {
+		case t.char(0) == eofRune:
+			s := t.getString(startPos, t.pos())
+			if !emptyString(s) {
+				res = append(res, SingleSQL{
+					Text: s,
+					Line: t.startLine,
+				})
+			}
+			return res, nil
+		case t.equalWordCaseInsensitive(delimiter):
+			t.skip(uint(len(delimiter)))
+			res = append(res, SingleSQL{
+				Text: t.getString(startPos, t.pos()-startPos),
+				Line: t.startLine,
+			})
+			t.skipBlank()
+			t.startLine = t.line
+			startPos = t.pos()
+		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
+		case t.equalWordCaseInsensitive(delimiterRuneList):
+			t.skip(uint(len(delimiterRuneList)))
+			t.skipBlank()
+			delimiterStart := t.pos()
+			t.skipToBlank()
+			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
+			res = append(res, SingleSQL{
+				Text: t.getString(startPos, t.pos()-startPos),
+				Line: t.startLine,
+			})
+			t.skipBlank()
+			t.startLine = t.line
+			startPos = t.pos()
+		case t.char(0) == '/' && t.char(1) == '*':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '-' && t.char(1) == '-':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '#':
+			if err := t.scanComment(); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '\'' || t.char(0) == '"':
+			if err := t.scanString(t.char(0)); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '`':
+			if err := t.scanIdentifier('`'); err != nil {
+				return nil, err
+			}
+		case t.char(0) == '\n':
+			t.line++
+			t.skip(1)
+		default:
+			t.skip(1)
+		}
+	}
 }
 
 // splitPostgreSQLMultiSQL splits the statement to a string slice.
@@ -238,6 +334,7 @@ func (t *tokenizer) scanIdentifier(delimiter rune) error {
 //     '.'
 //.
 // And this is extensible.
+// For MySQL, user can enclose string within double quote(").
 func (t *tokenizer) scanString(delimiter rune) error {
 	if t.char(0) != delimiter {
 		return errors.Errorf("string doesn't start with delimiter: %c, but found: %c", delimiter, t.char(0))
@@ -299,18 +396,12 @@ func (t *tokenizer) scanComment() error {
 		}
 	case t.char(0) == '-' && t.char(1) == '-':
 		t.skip(2)
-		for {
-			switch t.char(0) {
-			case '\n':
-				t.line++
-				t.skip(1)
-				return nil
-			case eofRune:
-				return nil
-			default:
-				t.skip(1)
-			}
-		}
+		t.skipToNewLine()
+		return nil
+	case t.char(0) == '#':
+		t.skip(1)
+		t.skipToNewLine()
+		return nil
 	}
 	return errors.Errorf("no comment found")
 }
@@ -392,6 +483,27 @@ func (t *tokenizer) skipBlank() {
 		}
 		r = t.char(0)
 	}
+}
+
+func (t *tokenizer) skipToBlank() {
+	r := t.char(0)
+	for r != ' ' && r != '\n' && r != '\r' && r != '\t' {
+		t.skip(1)
+		r = t.char(0)
+	}
+}
+
+func (t *tokenizer) skipToNewLine() {
+	r := t.char(0)
+	for r != '\n' {
+		if r == eofRune {
+			return
+		}
+		t.skip(1)
+		r = t.char(0)
+	}
+	t.line++
+	t.skip(1)
 }
 
 func (t *tokenizer) pos() uint {

@@ -785,3 +785,37 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 
 	return nil
 }
+
+func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
+	}
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		// use SystemBot for auto approval tasks.
+		return api.SystemBotID, nil
+	}
+
+	var groupValue *api.AssigneeGroupValue
+	for i, group := range policy.AssigneeGroupList {
+		if group.IssueType == issueType {
+			groupValue = &policy.AssigneeGroupList[i].Value
+			break
+		}
+	}
+	if groupValue == nil {
+		member, err := s.getAnyWorkspaceOwnerOrDBA(ctx)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")
+		}
+		return member.PrincipalID, nil
+	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
+		projectMember, err := s.getAnyProjectOwner(ctx, projectID)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get a project owner")
+		}
+		return projectMember.PrincipalID, nil
+	}
+	// never reached
+	return api.UnknownID, errors.New("invalid assigneeGroupValue")
+}

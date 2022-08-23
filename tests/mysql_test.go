@@ -187,7 +187,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	}
 	err = mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */)
 	a.NoError(err)
-	binlogFilesDownloaded, err := pluginmysql.GetSortedLocalBinlogFiles(binlogDir)
+	binlogFilesDownloaded, err := mysqlDriver.GetSortedLocalBinlogFiles()
 	a.NoError(err)
 	a.Equal(numBinlogFiles, len(binlogFilesDownloaded))
 	for j := range binlogFilesDownloaded {
@@ -208,7 +208,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	t.Log("Fetch binlog files")
 	err = mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */)
 	a.NoError(err)
-	binlogFilesDownloaded, err = pluginmysql.GetSortedLocalBinlogFiles(binlogDir)
+	binlogFilesDownloaded, err = mysqlDriver.GetSortedLocalBinlogFiles()
 	a.NoError(err)
 	t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
 	truncateIndex := rand.Intn(numBinlogFiles)
@@ -225,7 +225,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	t.Log("Re-downloading binlog files")
 	err = mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */)
 	a.NoError(err)
-	binlogFilesDownloadedAgain, err := pluginmysql.GetSortedLocalBinlogFiles(binlogDir)
+	binlogFilesDownloadedAgain, err := mysqlDriver.GetSortedLocalBinlogFiles()
 	a.NoError(err)
 	a.Equal(numBinlogFiles, len(binlogFilesDownloadedAgain))
 	for i := range binlogFilesDownloadedAgain {

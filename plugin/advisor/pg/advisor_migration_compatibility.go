@@ -112,6 +112,7 @@ func (checker *compatibilityChecker) Visit(node ast.Node) ast.Visitor {
 			Code:    code,
 			Title:   checker.title,
 			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", checker.text),
+			Line:    node.Line(),
 		})
 	}
 	return checker

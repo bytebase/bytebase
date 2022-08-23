@@ -716,7 +716,7 @@
   "policy": {
     "approval": {
       "name": "Approval Policy",
-      "tip": "The policy is not applied retroactively.",
+      "tip": "The policy is applied to issues retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
       "manual-info": "Tasks will only be executed after being manually approved.",
@@ -846,9 +846,9 @@
       "restore-to-point-in-time": "Restore to point in time",
       "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
       "no-later-than-now": "Restore point-in-time cannot be later than now.",
+      "will-overwrite-current-database": "Will overwrite current database",
       "restore-before-last-migration": "Restore to the point before last migration",
       "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
-      "will-overwrite-current-database": "Will overwrite current database",
       "restore-to": "Restore",
       "restore-to-new-db": " To new database",
       "restore-to-in-place": "In place"
@@ -877,7 +877,6 @@
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
-    "branch-specify-tip": "Tip: You can also use wildcard like \"feature/*\"",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",

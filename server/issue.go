@@ -57,7 +57,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			for _, status := range strings.Split(issueStatusListStr, ",") {
 				statusList = append(statusList, api.IssueStatus(status))
 			}
-			issueFind.StatusList = &statusList
+			issueFind.StatusList = statusList
 		}
 		if limitStr := c.QueryParam("limit"); limitStr != "" {
 			limit, err := strconv.Atoi(limitStr)
@@ -266,20 +266,23 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	// validate the assignee if we are going to actually create the issue (NOT ValidateOnly).
-	if !issueCreate.ValidateOnly {
-		// pipeline generation logic was moved to the backend, so the frontend needs to get the generated pipeline first in order to send a user-filled issue back.
-		// ValidateOnly means that we merely generate issue for the frontend so there is no need to check the assignee since it's a dummy value and will be set by the user later.
-		if issueCreate.AssigneeID == api.UnknownID {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
-		}
-		ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+	if issueCreate.AssigneeID == api.UnknownID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
+	}
+	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
+	if issueCreate.AssigneeID == api.SystemBotID {
+		assigneeID, err := s.getDefaultAssigneeID(ctx, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
 		}
-		if !ok {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
-		}
+		issueCreate.AssigneeID = assigneeID
+	}
+	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
+	}
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
 	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate, creatorID)
@@ -845,6 +848,11 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		schemaVersion = common.DefaultMigrationVersion()
 	}
 
+	// Get admin data source username.
+	adminDataSource := api.DataSourceFromInstanceWithType(&instance, api.Admin)
+	if adminDataSource == nil {
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+	}
 	payload := api.TaskDatabaseCreatePayload{
 		ProjectID:     project.ID,
 		CharacterSet:  c.CharacterSet,
@@ -852,7 +860,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Labels:        c.Labels,
 		SchemaVersion: schemaVersion,
 	}
-	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
+	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, adminDataSource.Username, schema)
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
@@ -877,6 +885,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		ProjectID: projectID,
 	}
 
+	// PITR to new db: task 1
 	if c.CreateDatabaseCtx != nil {
 		targetInstance, err := s.store.GetInstanceByID(ctx, c.CreateDatabaseCtx.InstanceID)
 		if err != nil {
@@ -907,7 +916,6 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	restoreTaskCreate := api.TaskCreate{
-		Name:       fmt.Sprintf("Restore PITR database %q", originDatabase.Name),
 		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabaseRestorePITRRestore,
 		InstanceID: originDatabase.InstanceID,
@@ -917,11 +925,16 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	}
 
 	if payloadRestore.TargetInstanceID != nil {
+		// PITR to new database: task 2
+		restoreTaskCreate.Name = fmt.Sprintf("Restore to new database %q", *payloadRestore.DatabaseName)
 		restoreTaskCreate.DatabaseName = c.CreateDatabaseCtx.DatabaseName
+	} else {
+		// PITR in place: task 1
+		restoreTaskCreate.Name = fmt.Sprintf("Restore to PITR database %q", originDatabase.Name)
 	}
 	taskCreateList = append(taskCreateList, restoreTaskCreate)
 
-	// In-place restore needs a cutover task.
+	// PITR in place: task 2
 	if payloadRestore.TargetInstanceID == nil {
 		payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 		bytesCutover, err := json.Marshal(payloadCutover)
@@ -1034,7 +1047,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	return nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, schema string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, adminDatasourceUser, schema string) (string, string) {
 	databaseName := createDatabaseContext.DatabaseName
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
@@ -1049,10 +1062,15 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
 		}
 	case db.Postgres:
+		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
+		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
+		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
+			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
+		}
 		if createDatabaseContext.Collation == "" {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;", databaseName, createDatabaseContext.CharacterSet)
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, createDatabaseContext.CharacterSet)
 		} else {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
 		}
 		// Set the database owner.
 		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.

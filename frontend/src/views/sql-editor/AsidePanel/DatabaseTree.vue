@@ -13,16 +13,17 @@
         </template>
       </n-input>
     </div>
-    <div class="databases-tree--tree overflow-y-auto">
+    <div class="databases-tree--tree overflow-y-scroll">
       <n-tree
         block-line
         :data="treeData"
         :pattern="searchPattern"
-        :default-expanded-keys="defaultExpanedKeys"
+        :default-expanded-keys="defaultExpandedKeys"
         :selected-keys="selectedKeys"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
+        :on-load="loadSubTree"
       />
       <n-dropdown
         placement="bottom-start"
@@ -44,7 +45,7 @@
 <script lang="ts" setup>
 import { cloneDeep, omit, escape } from "lodash-es";
 import { TreeOption, DropdownOption } from "naive-ui";
-import { ref, computed, h, nextTick, onMounted } from "vue";
+import { ref, computed, h, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
@@ -54,12 +55,19 @@ import {
   Database,
   UNKNOWN_ID,
 } from "@/types";
-import { useDatabaseStore, useInstanceStore, useSQLEditorStore } from "@/store";
-import { connectionSlug, getHighlightHTMLByKeyWords } from "@/utils";
-import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
-import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
-import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
+import {
+  useDatabaseStore,
+  useInstanceStore,
+  useSQLEditorStore,
+  useTableStore,
+} from "@/store";
+import {
+  connectionSlug,
+  getHighlightHTMLByKeyWords,
+  mapConnectionAtom,
+} from "@/utils";
 import OpenConnectionIcon from "@/components/SQLEditor/OpenConnectionIcon.vue";
+import { generateInstanceNode, generateTableItem } from "./utils";
 
 type Position = {
   x: number;
@@ -72,7 +80,7 @@ const router = useRouter();
 const instanceStore = useInstanceStore();
 const sqlEditorStore = useSQLEditorStore();
 
-const defaultExpanedKeys = ref<string[]>([]);
+const defaultExpandedKeys = ref<string[]>([]);
 const searchPattern = ref();
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
@@ -85,7 +93,7 @@ const sheetContext = ref<DropdownOption>();
 onMounted(() => {
   const ctx = sqlEditorStore.connectionContext;
   if (ctx.hasSlug) {
-    defaultExpanedKeys.value = [
+    defaultExpandedKeys.value = [
       `instance-${ctx.instanceId}`,
       `database-${ctx.databaseId}`,
     ];
@@ -114,40 +122,21 @@ const dropdownOptions = computed(() => {
   }
 });
 
-const treeData = computed(() => {
-  const tree = cloneDeep(sqlEditorStore.connectionTree);
+const generateTreeData = () => {
+  return sqlEditorStore.connectionTree.map((item) =>
+    generateInstanceNode(item, instanceStore)
+  );
+};
 
-  return tree.map((instanceItem) => {
-    const instance = instanceStore.getInstanceById(instanceItem.id);
+const treeData = ref<ConnectionAtom[]>([]);
 
-    return {
-      ...instanceItem,
-      children: instanceItem.children?.map((databaseItem) => {
-        return {
-          ...databaseItem,
-          children: databaseItem.children?.map((tableItem) => {
-            return {
-              ...tableItem,
-              isLeaf: true,
-              prefix: () =>
-                h(HeroiconsOutlineTable, {
-                  class: "h-4 w-4",
-                }),
-            };
-          }),
-          prefix: () =>
-            h(HeroiconsOutlineDatabase, {
-              class: "h-4 w-4",
-            }),
-        };
-      }),
-      prefix: () =>
-        h(InstanceEngineIconVue, {
-          instance,
-        }),
-    };
-  });
-});
+watch(
+  () => sqlEditorStore.connectionTree,
+  () => {
+    treeData.value = generateTreeData();
+  },
+  { immediate: true }
+);
 
 const getFlattenConnectionTree = () => {
   const tree = sqlEditorStore.connectionTree;
@@ -274,6 +263,16 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   });
 
   return renderSuffixHTML;
+};
+
+const loadSubTree = async (item: ConnectionAtom) => {
+  const mapper = mapConnectionAtom("table", item.id);
+  if (item.type === "database") {
+    const tableList = await useTableStore().fetchTableListByDatabaseId(item.id);
+
+    item.children = tableList.map((table) => generateTableItem(mapper(table)));
+    return;
+  }
 };
 
 const gotoAlterSchema = (option: any) => {

@@ -17,6 +17,9 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case Postgres:
 		t := newTokenizer(statement)
 		return t.splitPostgreSQLMultiSQL()
+	case MySQL, TiDB:
+		t := newTokenizer(statement)
+		return t.splitMySQLMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
@@ -27,7 +30,7 @@ func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt)
 	switch engineType {
 	case Postgres:
 		t := newTokenizer(node.Text())
-		return t.setLineForCreateTableStmt(node)
+		return t.setLineForPGCreateTableStmt(node)
 	default:
 		return errors.Errorf("engine type is not supported: %s", engineType)
 	}

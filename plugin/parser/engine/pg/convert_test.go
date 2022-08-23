@@ -26,12 +26,20 @@ func runTests(t *testing.T, tests []testData) {
 			test.want[i].SetText(test.statementList[i].Text)
 			test.want[i].SetLine(test.statementList[i].Line)
 
-			if createTable, ok := test.want[i].(*ast.CreateTableStmt); ok {
-				for j, col := range createTable.ColumnList {
+			switch n := test.want[i].(type) {
+			case *ast.CreateTableStmt:
+				for j, col := range n.ColumnList {
 					col.SetLine(test.columnLine[i][j])
+					for _, inlineCons := range col.ConstraintList {
+						inlineCons.SetLine(col.Line())
+					}
 				}
-				for j, cons := range createTable.ConstraintList {
+				for j, cons := range n.ConstraintList {
 					cons.SetLine(test.constraintLine[i][j])
+				}
+			case *ast.AlterTableStmt:
+				for _, item := range n.AlterItemList {
+					item.SetLine(n.Line())
 				}
 			}
 		}
@@ -1504,6 +1512,23 @@ func TestCopyStmt(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text: "COPY tech_book FROM '/file/path/in/file/system'",
+					Line: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestUnconvertStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "SHOW TABLES",
+			want: []ast.Node{&ast.UnconvertedStmt{}},
+			statementList: []parser.SingleSQL{
+				{
+					Text: "SHOW TABLES",
 					Line: 1,
 				},
 			},

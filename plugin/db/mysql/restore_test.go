@@ -177,23 +177,13 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 func TestGetReplayBinlogPathList(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		subDirNames     []string
 		binlogFileNames []string
 		startBinlogInfo api.BinlogInfo
 		expect          []string
 		err             bool
 	}{
 		{
-			// Test skip directory
-			subDirNames:     []string{"subdir_a", "subdir_b"},
-			binlogFileNames: []string{},
-			startBinlogInfo: api.BinlogInfo{},
-			expect:          []string{},
-			err:             false,
-		},
-		{
 			// Test skip stale binlog
-			subDirNames:     []string{},
 			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
 			startBinlogInfo: api.BinlogInfo{
 				FileName: "binlog.000002",
@@ -203,8 +193,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 			err:    false,
 		},
 		{
-			// Test binlogs no hole
-			subDirNames:     []string{},
+			// Test binlog files no hole
 			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000004"},
 			startBinlogInfo: api.BinlogInfo{
 				FileName: "binlog.000002",
@@ -215,7 +204,6 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		},
 		{
 			// Test mysql-bin prefix
-			subDirNames:     []string{},
 			binlogFileNames: []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
 			startBinlogInfo: api.BinlogInfo{
 				FileName: "bin.000001",
@@ -226,7 +214,6 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		},
 		{
 			// Test out of binlog.999999
-			subDirNames:     []string{},
 			binlogFileNames: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
 			startBinlogInfo: api.BinlogInfo{
 				FileName: "binlog.999999",
@@ -235,25 +222,10 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 			expect: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
 			err:    false,
 		},
-		{
-			subDirNames:     []string{"sub_dir"},
-			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
-			startBinlogInfo: api.BinlogInfo{
-				FileName: "binlog.000002",
-				Position: 0xdeadbeaf,
-			},
-			expect: []string{"binlog.000002", "binlog.000003"},
-			err:    false,
-		},
 	}
 
 	for _, test := range tests {
 		tmpDir := t.TempDir()
-
-		for _, subDir := range test.subDirNames {
-			err := os.MkdirAll(filepath.Join(tmpDir, subDir), os.ModePerm)
-			a.NoError(err)
-		}
 
 		for _, binlogFileName := range test.binlogFileNames {
 			f, err := os.Create(filepath.Join(tmpDir, binlogFileName))

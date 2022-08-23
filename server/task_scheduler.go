@@ -202,13 +202,49 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							_, err = s.server.patchTaskStatus(ctx, task, taskStatusPatch)
+							taskPatched, err := s.server.patchTaskStatus(ctx, task, taskStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task as DONE",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
 									zap.Error(err),
 								)
+								return
+							}
+
+							issue, err := s.server.store.GetIssueByPipelineID(ctx, taskPatched.PipelineID)
+							if err != nil {
+								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", taskPatched.PipelineID), zap.Error(err))
+								return
+							}
+							// The task has finished, and we may move to a new stage.
+							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
+							if issue != nil {
+								if stage := getActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
+									environmentID := stage.EnvironmentID
+									ok, err := s.server.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+									if err != nil {
+										log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
+										return
+									}
+									if !ok {
+										// reassign the issue to a new assignee if the current one doesn't fit.
+										assigneeID, err := s.server.getDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
+										if err != nil {
+											log.Error("failed to get a default assignee", zap.Error(err))
+											return
+										}
+										patch := &api.IssuePatch{
+											ID:         issue.ID,
+											UpdaterID:  api.SystemBotID,
+											AssigneeID: &assigneeID,
+										}
+										if _, err := s.server.store.PatchIssue(ctx, patch); err != nil {
+											log.Error("failed to update the issue assignee", zap.Any("issuePatch", patch))
+											return
+										}
+									}
+								}
 							}
 							return
 						}
@@ -370,4 +406,15 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 		}
 	}
 	return false, nil
+}
+
+func getActiveStage(stageList []*api.Stage) *api.Stage {
+	for _, stage := range stageList {
+		for _, task := range stage.TaskList {
+			if task.Status != api.TaskDone {
+				return stage
+			}
+		}
+	}
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
@@ -319,4 +320,69 @@ func TestValidateGitHubWebhookSignature256(t *testing.T) {
 		assert.True(t, got)
 		assert.NoError(t, err)
 	})
+}
+
+func TestParseBranchNameFromGitHubRefs(t *testing.T) {
+	tests := []struct {
+		refs   string
+		expect string
+		err    bool
+	}{
+		{
+			refs:   "refs/heads/main",
+			expect: "main",
+			err:    false,
+		},
+		{
+			refs:   "refs/heads/feat/heads",
+			expect: "feat/heads",
+			err:    false,
+		},
+		// Broken
+		{
+			refs: "ref",
+			err:  true,
+		},
+		{
+			refs:   "refs/heads/",
+			expect: "",
+			err:    true,
+		},
+	}
+	for _, test := range tests {
+		branch, err := parseBranchNameFromGitHubRefs(test.refs)
+		if test.err {
+			assert.Error(t, err)
+		} else {
+			assert.Equal(t, test.expect, branch)
+		}
+	}
+}
+
+func TestIsSkipGeneratedSchemaFile(t *testing.T) {
+	tests := []struct {
+		repository *api.Repository
+		added      string
+		want       bool
+	}{
+		{
+			repository: &api.Repository{
+				SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+			},
+			added: "Prod/.db__LATEST.sql",
+			want:  true,
+		},
+		{
+			repository: &api.Repository{
+				SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+			},
+			added: "Prod/Adb__LATEST.sql",
+			want:  false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.added, func(t *testing.T) {
+			assert.Equal(t, test.want, isSkipGeneratedSchemaFile(test.repository, test.added))
+		})
+	}
 }
