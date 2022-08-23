@@ -12,7 +12,10 @@
       >
         <div class="flex items-center">
           {{ item.title }}
-          <ProtectedEnvironmentIcon v-if="isProtectedEnvironment(item.data!)" />
+          <ProtectedEnvironmentIcon
+            v-if="isProtectedEnvironment(item.data!)"
+            class="ml-1"
+          />
         </div>
       </template>
 
@@ -72,6 +75,7 @@
 <script lang="ts" setup>
 import { onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
+import { isEqual } from "lodash-es";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
@@ -96,7 +100,7 @@ import {
   useEnvironmentStore,
   useEnvironmentList,
 } from "@/store";
-import { isEqual } from "lodash-es";
+import ProtectedEnvironmentIcon from "../components/Environment/ProtectedEnvironmentIcon.vue";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
