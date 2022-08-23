@@ -74,7 +74,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = errors.Errorf("%v", r)
 						}
-						log.Error("Metrics reporter PANIC RECOVER", zap.Error(err))
+						log.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
 					}
 				}()
 

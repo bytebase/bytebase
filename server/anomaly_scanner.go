@@ -53,7 +53,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = errors.Errorf("%v", r)
 						}
-						log.Error("Anomaly scanner PANIC RECOVER", zap.Error(err))
+						log.Error("Anomaly scanner PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
 					}
 				}()
 
