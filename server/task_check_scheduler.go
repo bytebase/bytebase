@@ -48,7 +48,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = errors.Errorf("%v", r)
 						}
-						log.Error("Task check scheduler PANIC RECOVER", zap.Error(err))
+						log.Error("Task check scheduler PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
 					}
 				}()
 
