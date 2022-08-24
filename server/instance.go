@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -16,7 +17,15 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/resources/postgres"
 )
+
+// pgConnectionInfo represents the embedded postgres instance connection info.
+type pgConnectionInfo struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+}
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
@@ -468,6 +477,28 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.Name)).SetInternal(err)
 		}
 		return nil
+	})
+
+	// Initial and start an embedded postgres instance and there should be only one currently.
+	// Its port and dataDir are fixed values.
+	g.POST("/instance/new-embedded-pg", func(c echo.Context) error {
+		pgUser := "postgres"
+		port := 23333
+		dataDir := fmt.Sprintf("%s/%s", s.profile.DataDir, "tmp-pgdata")
+
+		if err := postgres.InitDB(s.pgInstance.BaseDir, dataDir, pgUser); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to init embedded postgres database").SetInternal(err)
+		}
+
+		if err := postgres.Start(port, s.pgInstance.BaseDir, dataDir, os.Stderr, os.Stderr); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
+		}
+
+		return c.JSON(http.StatusOK, pgConnectionInfo{
+			Host:     common.GetPostgresSocketDir(),
+			Port:     port,
+			Username: pgUser,
+		})
 	})
 }
 
