@@ -162,8 +162,11 @@ func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Dr
 		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
 			return errors.Wrap(err, "failed to do cutover for MySQL")
 		}
+	default:
+		return errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
 	}
-	return errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
+
+	return errors.Errorf("must not reach here")
 }
 
 func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
