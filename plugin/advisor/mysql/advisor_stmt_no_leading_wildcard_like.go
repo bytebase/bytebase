@@ -51,6 +51,7 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string
 				Code:    advisor.StatementLeadingWildcardLike,
 				Title:   string(ctx.Rule.Type),
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
+				Line:    stmtNode.OriginTextPosition(),
 			})
 		}
 	}
