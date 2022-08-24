@@ -78,7 +78,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("project", repo.Project.Name),
 		)
 
-		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, false)
+		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, false /* includeModified */)
 		var createdMessageList []string
 		for _, item := range distinctFileList {
 			createdMessage, created, httpErr := s.createIssueFromPushEvent(
