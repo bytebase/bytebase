@@ -128,12 +128,21 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer txn.Rollback()
+
+	owner, err := driver.GetCurrentDatabaseOwner()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get the OWNER of the current database")
+	}
+
+	if _, err := txn.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s;", owner)); err != nil {
+		return errors.Wrapf(err, "failed to set role to %q", owner)
+	}
 
 	f := func(stmt string) error {
 		if _, err := txn.Exec(stmt); err != nil {
@@ -144,6 +153,10 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 
 	if _, err := parser.SplitMultiSQLStream(parser.Postgres, sc, f); err != nil {
 		return err
+	}
+
+	if _, err := txn.ExecContext(ctx, "SET LOCAL ROLE NONE;"); err != nil {
+		return errors.Wrap(err, "failed to reset role")
 	}
 
 	return txn.Commit()
