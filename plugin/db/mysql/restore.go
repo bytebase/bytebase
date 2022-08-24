@@ -579,13 +579,14 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList 
 	}
 	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
 	for _, fileOnServer := range binlogFilesOnServerSorted {
-		if fileOnServer.Name == latestBinlogFileOnServer.Name && !downloadLatestBinlogFile {
+		isLast := fileOnServer.Name == latestBinlogFileOnServer.Name
+		if isLast && !downloadLatestBinlogFile {
 			continue
 		}
 		_, exist := metaMap[fileOnServer.Seq]
-		if !exist {
+		if !exist || isLast {
 			binlogFilePath := filepath.Join(driver.binlogDir, fileOnServer.Name)
-			if err := driver.downloadBinlogFileFromServer(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+			if err := driver.downloadBinlogFileFromServer(ctx, fileOnServer, isLast); err != nil {
 				log.Error("Failed to download binlog file", zap.String("path", binlogFilePath), zap.Error(err))
 				return errors.Wrapf(err, "failed to download binlog file %q", binlogFilePath)
 			}
