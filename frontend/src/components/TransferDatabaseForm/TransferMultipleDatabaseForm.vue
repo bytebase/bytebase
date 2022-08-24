@@ -32,22 +32,33 @@
       </template>
     </DatabaseTable>
     <!-- Update button group -->
-    <div class="pt-4 border-t border-block-border flex justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="$emit('dismiss')"
-      >
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        type="button"
-        class="btn-primary py-2 px-4 ml-3"
-        :disabled="!allowTransfer"
-        @click.prevent="transferDatabase"
-      >
-        {{ $t("common.transfer") }}
-      </button>
+    <div class="pt-4 border-t border-block-border flex justify-between">
+      <div>
+        <div v-if="state.selectedDatabaseIdList.size > 0" class="textinfolabel">
+          {{
+            $t("database.selected-n-databases", {
+              n: state.selectedDatabaseIdList.size,
+            })
+          }}
+        </div>
+      </div>
+      <div class="flex items-center">
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="$emit('dismiss')"
+        >
+          {{ $t("common.cancel") }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary py-2 px-4 ml-3"
+          :disabled="!allowTransfer"
+          @click.prevent="transferDatabase"
+        >
+          {{ $t("common.transfer") }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
