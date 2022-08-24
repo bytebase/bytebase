@@ -54,7 +54,7 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
-import { Database, DatabaseId, Project } from "@/types";
+import { Database, DatabaseId } from "@/types";
 import { TransferSource } from "./utils";
 
 type LocalState = {
@@ -62,10 +62,6 @@ type LocalState = {
 };
 
 const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
   transferSource: {
     type: String as PropType<TransferSource>,
     required: true,
@@ -86,15 +82,10 @@ const state = reactive<LocalState>({
 });
 
 watch(
-  [() => props.project, () => props.transferSource, () => props.databaseList],
+  () => props.transferSource,
   () => {
-    // We won't clear the selected database ID list.
-    // We will keep IDs that are still valid in the new props.databaseList.
-    const currentIdList = [...state.selectedDatabaseIdList.values()];
-    const validIdSet = new Set(props.databaseList.map((db) => db.id));
-    const newIdList = currentIdList.filter((id) => validIdSet.has(id));
-
-    state.selectedDatabaseIdList = new Set(newIdList);
+    // Clear selected database ID list when transferSource changed.
+    state.selectedDatabaseIdList.clear();
   }
 );
 
@@ -125,10 +116,15 @@ const toggleAllDatabasesSelection = (
   databaseList: Database[],
   on: boolean
 ): void => {
+  const set = state.selectedDatabaseIdList;
   if (on) {
-    state.selectedDatabaseIdList = new Set(databaseList.map((db) => db.id));
+    databaseList.forEach((db) => {
+      set.add(db.id);
+    });
   } else {
-    state.selectedDatabaseIdList.clear();
+    databaseList.forEach((db) => {
+      set.delete(db.id);
+    });
   }
 };
 

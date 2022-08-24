@@ -19,7 +19,6 @@
 
   <TransferMultipleDatabaseForm
     v-else
-    :project="project"
     :transfer-source="state.transferSource"
     :database-list="databaseList"
     @dismiss="$emit('dismiss')"
