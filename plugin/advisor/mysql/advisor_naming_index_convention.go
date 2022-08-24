@@ -120,6 +120,7 @@ type indexMetaData struct {
 	indexName string
 	tableName string
 	metaData  map[string]string
+	line      int
 }
 
 // getMetaDataList returns the list of index with meta data.
