@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -84,16 +83,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 	g.POST("/instance/new-embedded-pg", func(c echo.Context) error {
 		pgUser := "postgres"
-		commonPreffix := "bb-pg"
-		randomSuffix := string(rune(time.Now().Unix()))
+		commonPreffix := "tmp-pgdata"
+		randomSuffix := fmt.Sprintf("%d", time.Now().Unix())
+		dataDir := fmt.Sprintf("%s/%s-%s", s.profile.DataDir, commonPreffix, randomSuffix)
 
-		baseDir := fmt.Sprintf("%s/%s_%s", common.GetPostgresSocketDir(), commonPreffix, randomSuffix)
-		resourceDir := path.Join(baseDir, "resources")
-		dataDir := path.Join(baseDir, "pgdata")
-
-		pgInstance, err := postgres.Install(resourceDir, dataDir, pgUser)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to install embedded postgres instance").SetInternal(err)
+		if err := postgres.InitDB(s.pgInstance.BaseDir, dataDir, pgUser); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to InitPgDBDir").SetInternal(err)
 		}
 
 		port, err := common.GetFreePort()
@@ -101,18 +96,15 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get free port").SetInternal(err)
 		}
 
-		err = pgInstance.Start(port, os.Stderr, os.Stderr)
-		if err != nil {
+		if err = postgres.Start(port, s.pgInstance.BaseDir, dataDir, os.Stderr, os.Stderr); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
 		}
 
-		connectionInfo := pgConnectionInfo{
+		return c.JSON(http.StatusOK, pgConnectionInfo{
 			Host:     common.GetPostgresSocketDir(),
 			Port:     port,
 			Username: pgUser,
-		}
-
-		return c.JSON(http.StatusOK, connectionInfo)
+		})
 	})
 
 	g.GET("/instance", func(c echo.Context) error {
