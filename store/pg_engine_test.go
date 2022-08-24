@@ -150,7 +150,6 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = postgres.Start(pgPort, pgInstance.BaseDir, pgInstance.DataDir, os.Stderr, os.Stderr)
 	require.NoError(t, err)
 	pgInstance.Port = pgPort
-	defer postgres.Stop(pgInstance.BaseDir, pgInstance.DataDir, os.Stdout, os.Stderr)
 
 	ctx := context.Background()
 	connCfg := dbdriver.ConnectionConfig{
@@ -211,6 +210,9 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 	// The extra one is for the initial schema setup.
 	require.Len(t, histories, len(devMigrations)+1)
+
+	err = postgres.Stop(pgInstance.BaseDir, pgInstance.DataDir, os.Stdout, os.Stderr)
+	require.NoError(t, err)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
