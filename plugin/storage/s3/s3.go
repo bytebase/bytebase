@@ -69,14 +69,15 @@ func (c *Client) DownloadObject(ctx context.Context, path string, w io.WriterAt)
 
 // UploadObject uploads an object with the path.
 // Defaults to multipart upload with chunk size 5MB.
-func (c *Client) UploadObject(ctx context.Context, path string, body io.Reader) (*manager.UploadOutput, error) {
+func (c *Client) UploadObject(ctx context.Context, path string, body io.Reader) error {
 	uploader := manager.NewUploader(c.c)
-	return uploader.Upload(ctx, &s3.PutObjectInput{
+	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &c.bucket,
 		Key:               &path,
 		Body:              body,
 		ChecksumAlgorithm: types.ChecksumAlgorithmSha256,
 	})
+	return err
 }
 
 // DeleteObject deletes the object with path.
