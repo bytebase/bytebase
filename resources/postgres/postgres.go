@@ -24,72 +24,10 @@ import (
 type Instance struct {
 	// BaseDir is the directory where the postgres binary is installed.
 	BaseDir string
-	// dataDir is the directory where the postgres data is stored.
-	dataDir string
-	// port is the port number of the postgres instance.
-	port int
-}
-
-// Port returns the port number of the postgres instance.
-func (i Instance) Port() int { return i.port }
-
-// Start starts a postgres instance on given port, outputs to stdout and stderr.
-//
-// If port is 0, then it will choose a random unused port.
-//
-// If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
-// Otherwise, returns immediately.
-func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
-	pgbin := filepath.Join(i.BaseDir, "bin", "pg_ctl")
-
-	i.port = port
-
-	// See -p -k -h option definitions in the link below.
-	// https://www.postgresql.org/docs/current/app-postgres.html
-	p := exec.Command(pgbin, "start", "-w",
-		"-D", i.dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -h ""`, i.port, common.GetPostgresSocketDir()))
-
-	p.Stdout = stdout
-	p.Stderr = stderr
-	uid, _, sameUser, err := shouldSwitchUser()
-	if err != nil {
-		return err
-	}
-	if !sameUser {
-		p.SysProcAttr = &syscall.SysProcAttr{
-			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
-		}
-	}
-
-	if err := p.Run(); err != nil {
-		return errors.Wrapf(err, "failed to start postgres %q", p.String())
-	}
-
-	return nil
-}
-
-// Stop stops a postgres instance, outputs to stdout and stderr.
-func (i *Instance) Stop(stdout, stderr io.Writer) error {
-	pgbin := filepath.Join(i.BaseDir, "bin", "pg_ctl")
-	p := exec.Command(pgbin, "stop", "-w",
-		"-D", i.dataDir)
-
-	p.Stderr = stderr
-	p.Stdout = stdout
-	uid, _, sameUser, err := shouldSwitchUser()
-	if err != nil {
-		return err
-	}
-	if !sameUser {
-		p.SysProcAttr = &syscall.SysProcAttr{
-			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
-		}
-	}
-
-	return p.Run()
+	// DataDir is the directory where the postgres data is stored.
+	DataDir string
+	// Port is the port number of the postgres instance.
+	Port int
 }
 
 // Install returns the postgres binary depending on the OS.
@@ -149,19 +87,72 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 
 	// We will initialize Postgres only when pgDataDir is set.
 	if pgDataDir != "" {
-		if err := initDB(pgBinDir, pgDataDir, pgUser); err != nil {
+		if err := InitDB(pgBinDir, pgDataDir, pgUser); err != nil {
 			return nil, err
 		}
 	}
 
 	return &Instance{
 		BaseDir: pgBinDir,
-		dataDir: pgDataDir,
+		DataDir: pgDataDir,
 	}, nil
 }
 
-// initDB inits a postgres database if not yet.
-func initDB(pgBinDir, pgDataDir, pgUser string) error {
+// Start starts a postgres database instance.
+// If port is 0, then it will choose a random unused port.
+func Start(port int, baseDir string, dataDir string, stdout, stderr io.Writer) (err error) {
+	pgbin := filepath.Join(baseDir, "bin", "pg_ctl")
+
+	// See -p -k -h option definitions in the link below.
+	// https://www.postgresql.org/docs/current/app-postgres.html
+	p := exec.Command(pgbin, "start", "-w",
+		"-D", dataDir,
+		"-o", fmt.Sprintf(`-p %d -k %s -h ""`, port, common.GetPostgresSocketDir()))
+
+	p.Stdout = stdout
+	p.Stderr = stderr
+	uid, _, sameUser, err := shouldSwitchUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+	}
+
+	if err := p.Run(); err != nil {
+		return errors.Wrapf(err, "failed to start postgres %q", p.String())
+	}
+
+	return nil
+}
+
+// Stop stops a postgres instance, outputs to stdout and stderr.
+func Stop(pgBinDir, pgDataDir string, stdout, stderr io.Writer) error {
+	pgbin := filepath.Join(pgBinDir, "bin", "pg_ctl")
+	p := exec.Command(pgbin, "stop", "-w",
+		"-D", pgDataDir)
+
+	p.Stderr = stderr
+	p.Stdout = stdout
+	uid, _, sameUser, err := shouldSwitchUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		p.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
+			Credential: &syscall.Credential{Uid: uint32(uid)},
+		}
+	}
+
+	return p.Run()
+}
+
+// InitDB inits a postgres database if not yet.
+func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 	versionPath := filepath.Join(pgDataDir, "PG_VERSION")
 	_, err := os.Stat(versionPath)
 	if err != nil && !os.IsNotExist(err) {
@@ -246,21 +237,15 @@ func shouldSwitchUser() (int, int, bool, error) {
 }
 
 // StartForTest starts a postgres instance on localhost given port, outputs to stdout and stderr.
-//
 // If port is 0, then it will choose a random unused port.
-//
-// If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
-// Otherwise, returns immediately.
-func (i *Instance) StartForTest(port int, stdout, stderr io.Writer) (err error) {
-	pgbin := filepath.Join(i.BaseDir, "bin", "pg_ctl")
-
-	i.port = port
+func StartForTest(port int, pgBinDir, pgDataDir string, stdout, stderr io.Writer) (err error) {
+	pgbin := filepath.Join(pgBinDir, "bin", "pg_ctl")
 
 	// See -p -k -h option definitions in the link below.
 	// https://www.postgresql.org/docs/current/app-postgres.html
 	p := exec.Command(pgbin, "start", "-w",
-		"-D", i.dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -h 127.0.0.1`, i.port, common.GetPostgresSocketDir()))
+		"-D", pgDataDir,
+		"-o", fmt.Sprintf(`-p %d -k %s -h 127.0.0.1`, port, common.GetPostgresSocketDir()))
 
 	p.Stdout = stdout
 	p.Stderr = stderr
@@ -282,13 +267,14 @@ func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
 		t.Fatal(err)
 	}
 	t.Log("Starting PostgreSQL...")
-	if err := i.StartForTest(port, os.Stdout, os.Stderr); err != nil {
+	if err := StartForTest(port, i.BaseDir, i.DataDir, os.Stdout, os.Stderr); err != nil {
 		t.Fatal(err)
 	}
+	i.Port = port
 
 	stopFn := func() {
 		t.Log("Stopping PostgreSQL...")
-		if err := i.Stop(os.Stdout, os.Stderr); err != nil {
+		if err := Stop(i.BaseDir, i.DataDir, os.Stdout, os.Stderr); err != nil {
 			t.Fatal(err)
 		}
 	}

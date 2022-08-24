@@ -56,13 +56,13 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile       Profile
-	e             *echo.Echo
-	pgInstanceDir string
-	metaDB        *store.MetadataDB
-	store         *store.Store
-	startedTs     int64
-	secret        string
+	profile    Profile
+	e          *echo.Echo
+	pgInstance *postgres.Instance
+	metaDB     *store.MetadataDB
+	store      *store.Store
+	startedTs  int64
+	secret     string
 
 	s3Client *s3bb.Client
 
@@ -157,7 +157,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.pgInstanceDir = pgInstance.BaseDir
+	s.pgInstance = pgInstance
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
