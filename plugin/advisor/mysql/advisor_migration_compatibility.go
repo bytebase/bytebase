@@ -154,6 +154,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:    code,
 			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", in.Text()),
+			Line:    in.OriginTextPosition(),
 		})
 	}
 	return in, false
