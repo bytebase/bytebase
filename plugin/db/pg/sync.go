@@ -307,9 +307,10 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	var tables []*tableSchema
 	query := "" +
 		"SELECT tbl.schemaname, tbl.tablename, tbl.tableowner, " +
-		"pg_table_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass)" +
-		"pg_indexes_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass)" +
-		"FROM pg_catalog.pg_tables;"
+		"pg_table_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass), " +
+		"pg_indexes_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass) " +
+		"FROM pg_catalog.pg_tables tbl " +
+		"WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema');"
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
