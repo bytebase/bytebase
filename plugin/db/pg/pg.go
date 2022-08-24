@@ -214,7 +214,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	owner, err := driver.getCurrentDatabaseOwner()
+	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
 		return err
 	}
@@ -259,7 +259,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 				return err
 			}
 			// Update current owner
-			if owner, err = driver.getCurrentDatabaseOwner(); err != nil {
+			if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
 				return err
 			}
 		} else if isSuperuserStatement(stmt) {
@@ -319,7 +319,8 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	return databaseName, nil
 }
 
-func (driver *Driver) getCurrentDatabaseOwner() (string, error) {
+// GetCurrentDatabaseOwner gets the role of the current database.
+func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	const query = `
 		SELECT
 			u.rolname
