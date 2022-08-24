@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -85,6 +86,18 @@ func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 
+func retry(maxRetry int, f func() error) error {
+	var errList error
+	for i := 0; i < maxRetry; i++ {
+		if err := f(); err != nil {
+			errList = multierr.Append(errList, errors.Wrap(err, "failed to do cutover for PostgreSQL"))
+		} else {
+			return nil
+		}
+	}
+	return errList
+}
+
 // pitrCutover performs the PITR cutover algorithm:
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
@@ -98,7 +111,9 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	switch task.Instance.Engine {
 	case db.Postgres:
-		if err := exec.pitrCutoverPostgres(ctx, driver, task, issue); err != nil {
+		if err := retry(3, func() error {
+			return exec.pitrCutoverPostgres(ctx, driver, task, issue)
+		}); err != nil {
 			return true, nil, errors.Wrap(err, "failed to do cutover for PostgreSQL")
 		}
 	case db.MySQL:
