@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -79,32 +78,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create instance response").SetInternal(err)
 		}
 		return nil
-	})
-
-	g.POST("/instance/new-embedded-pg", func(c echo.Context) error {
-		pgUser := "postgres"
-		commonPreffix := "tmp-pgdata"
-		randomSuffix := fmt.Sprintf("%d", time.Now().Unix())
-		dataDir := fmt.Sprintf("%s/%s-%s", s.profile.DataDir, commonPreffix, randomSuffix)
-
-		if err := postgres.InitDB(s.pgInstance.BaseDir, dataDir, pgUser); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to InitPgDBDir").SetInternal(err)
-		}
-
-		port, err := common.GetFreePort()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get free port").SetInternal(err)
-		}
-
-		if err = postgres.Start(port, s.pgInstance.BaseDir, dataDir, os.Stderr, os.Stderr); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
-		}
-
-		return c.JSON(http.StatusOK, pgConnectionInfo{
-			Host:     common.GetPostgresSocketDir(),
-			Port:     port,
-			Username: pgUser,
-		})
 	})
 
 	g.GET("/instance", func(c echo.Context) error {
@@ -504,6 +477,28 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.Name)).SetInternal(err)
 		}
 		return nil
+	})
+
+	// Initial and start an embedded postgres instance and there should be only one currently.
+	// Its port and dataDir are fixed values.
+	g.POST("/instance/new-embedded-pg", func(c echo.Context) error {
+		pgUser := "postgres"
+		port := 23333
+		dataDir := fmt.Sprintf("%s/%s", s.profile.DataDir, "tmp-pgdata")
+
+		if err := postgres.InitDB(s.pgInstance.BaseDir, dataDir, pgUser); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to init embedded postgres database").SetInternal(err)
+		}
+
+		if err := postgres.Start(port, s.pgInstance.BaseDir, dataDir, os.Stderr, os.Stderr); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
+		}
+
+		return c.JSON(http.StatusOK, pgConnectionInfo{
+			Host:     common.GetPostgresSocketDir(),
+			Port:     port,
+			Username: pgUser,
+		})
 	})
 }
 
