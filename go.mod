@@ -37,7 +37,6 @@ require (
 	github.com/swaggo/swag v1.8.4
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.11.0
-	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	gopkg.in/yaml.v3 v3.0.1
@@ -142,6 +141,7 @@ require (
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220805013720-a33c5aa5df48 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418 // indirect
