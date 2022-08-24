@@ -104,11 +104,14 @@ const toggleDatabaseSelection = (database: Database, on: boolean) => {
 const getAllSelectionState = (
   databaseList: Database[]
 ): { checked: boolean; indeterminate: boolean } => {
-  const allCount = databaseList.length;
-  const selectedCount = state.selectedDatabaseIdList.size;
+  const set = state.selectedDatabaseIdList;
+
+  const checked = databaseList.every((db) => set.has(db.id));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.id));
+
   return {
-    checked: selectedCount === allCount,
-    indeterminate: selectedCount > 0 && selectedCount !== allCount,
+    checked,
+    indeterminate,
   };
 };
 
