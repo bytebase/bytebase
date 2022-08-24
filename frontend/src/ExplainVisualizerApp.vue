@@ -15,8 +15,8 @@
 import { computed } from "vue";
 import { Plan as pev2 } from "pev2";
 import { parse } from "qs";
-import "pev2/dist/style.css";
 import { readExplainFromToken } from "@/utils/pev2";
+import "pev2/dist/style.css";
 
 const token = computed(() => {
   const query = location.search.replace(/^\?/, "");
