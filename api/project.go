@@ -130,11 +130,11 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name                *string              `jsonapi:"attr,name"`
-	Key                 *string              `jsonapi:"attr,key"`
-	WorkflowType        *ProjectWorkflowType `jsonapi:"attr,workflowType"`
-	RoleProvider        *string              `jsonapi:"attr,roleProvider"`
-	SchemaMigrationType *string              `jsonapi:"attr,schemaMigrationType"` // NOTE: We can't use *ProjectSchemaMigrationType because "google/jsonapi" doesn't support.
+	Name                *string `jsonapi:"attr,name"`
+	Key                 *string `jsonapi:"attr,key"`
+	WorkflowType        *string `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
+	RoleProvider        *string `jsonapi:"attr,roleProvider"`
+	SchemaMigrationType *string `jsonapi:"attr,schemaMigrationType"` // NOTE: We can't use *ProjectSchemaMigrationType because "google/jsonapi" doesn't support.
 }
 
 var (
