@@ -720,6 +720,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 		if isTaskAllDone(pipeline) {
 			if issue == nil {
+				// backup tasks don't have corresponding issues.
 				status := api.PipelineDone
 				pipelinePatch := &api.PipelinePatch{
 					ID:        pipeline.ID,
