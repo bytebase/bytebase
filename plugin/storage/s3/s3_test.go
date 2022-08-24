@@ -34,11 +34,9 @@ func TestS3Operations(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("ListObjects", func(t *testing.T) {
-		resp, err := client.ListObjects(ctx, "backup/")
+		list, err := client.ListObjects(ctx, "backup/")
 		a.NoError(err)
-		for _, obj := range resp.Contents {
-			log.Info("Object", zap.Any("*", obj))
-		}
+		log.Info("list", zap.Strings("list", list))
 	})
 
 	t.Run("UploadObjects", func(t *testing.T) {
@@ -51,9 +49,8 @@ func TestS3Operations(t *testing.T) {
 	t.Run("DownloadObjects", func(t *testing.T) {
 		file, err := os.CreateTemp(t.TempDir(), "blob")
 		a.NoError(err)
-		n, err := client.DownloadObject(ctx, "backup/test/blob", file)
+		err = client.DownloadObject(ctx, "backup/test/blob", file)
 		a.NoError(err)
-		log.Info("Downloaded", zap.Int64("length", n))
 	})
 
 	t.Run("DeleteObjects", func(t *testing.T) {

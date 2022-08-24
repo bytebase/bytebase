@@ -159,7 +159,7 @@ func downloadBackupFileFromCloud(ctx context.Context, server *Server, backupPath
 		return errors.Wrapf(err, "failed to create local backup file %q for downloading from s3 bucket", backupAbsPathLocal)
 	}
 	defer backupFileDownload.Close()
-	if _, err := server.s3Client.DownloadObject(ctx, backupPath, backupFileDownload); err != nil {
+	if err := server.s3Client.DownloadObject(ctx, backupPath, backupFileDownload); err != nil {
 		return errors.Wrapf(err, "failed to download backup file %q from s3 bucket", backupPath)
 	}
 	log.Debug("Successfully downloaded backup file from s3 bucket.")

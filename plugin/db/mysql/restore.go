@@ -349,6 +349,66 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 	return driver.getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
 }
 
+func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, downloader storage.Downloader) error {
+	if downloader == nil {
+		return nil
+	}
+	metaListLocal, err := driver.getBinlogMetaFileListLocal()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get local binlog metadata file list in directory %q", driver.binlogDir)
+	}
+	metaMapLocal := make(map[string]bool)
+	for _, meta := range metaListLocal {
+		metaMapLocal[meta] = true
+	}
+
+	metaListOnClod, err := driver.getBinlogMetaFileListOnCloud(ctx, downloader)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
+	}
+	var metaListDownload []string
+	for _, meta := range metaListOnClod {
+		if _, ok := metaMapLocal[meta]; !ok {
+			metaListDownload = append(metaListDownload, meta)
+		}
+	}
+
+	relativeDir := getBinlogRelativeDir(driver.binlogDir)
+	for _, meta := range metaListDownload {
+		metaFile, err := os.Create(filepath.Join(driver.binlogDir, meta))
+		if err := downloader.DownloadObject(ctx, path.Join(relativeDir, meta)); err != nil {
+		}
+	}
+}
+
+func (driver *Driver) getBinlogMetaFileListOnCloud(ctx context.Context, downloader storage.Downloader) ([]string, error) {
+	pathList, err := downloader.ListObject(ctx, driver.binlogDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", driver.binlogDir)
+	}
+	var names []string
+	for _, path := range pathList {
+		if strings.HasSuffix(path, binlogMetaSuffix) {
+			names = append(names, filepath.Base(path))
+		}
+	}
+	return names, nil
+}
+
+func (driver *Driver) getBinlogMetaFileListLocal() ([]string, error) {
+	list, err := os.ReadDir(driver.binlogDir)
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, entry := range list {
+		if strings.HasSuffix(entry.Name(), binlogMetaSuffix) {
+			names = append(names, entry.Name())
+		}
+	}
+	return names, nil
+}
+
 func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
 	type backupBinlogCoordinate struct {
 		binlogCoordinate

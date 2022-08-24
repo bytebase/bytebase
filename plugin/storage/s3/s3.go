@@ -50,21 +50,31 @@ func NewClient(ctx context.Context, region, bucket string, credentials aws.Crede
 }
 
 // ListObjects lists objects with prefix in their names.
-func (c *Client) ListObjects(ctx context.Context, prefix string) (*s3.ListObjectsV2Output, error) {
-	return c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+// TODO(dragonly): support pagination.
+func (c *Client) ListObjects(ctx context.Context, prefix string) ([]string, error) {
+	resp, err := c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: &c.bucket,
 		Prefix: &prefix,
 	})
+	if err != nil {
+		return nil, err
+	}
+	var list []string
+	for _, obj := range resp.Contents {
+		list = append(list, *obj.Key)
+	}
+	return list, nil
 }
 
 // DownloadObject downloads the object with path.
 // Defaults to multipart download with chunk size 5MB.
-func (c *Client) DownloadObject(ctx context.Context, path string, w io.WriterAt) (int64, error) {
+func (c *Client) DownloadObject(ctx context.Context, path string, w io.WriterAt) error {
 	downloader := manager.NewDownloader(c.c)
-	return downloader.Download(ctx, w, &s3.GetObjectInput{
+	_, err := downloader.Download(ctx, w, &s3.GetObjectInput{
 		Bucket: &c.bucket,
 		Key:    &path,
 	})
+	return err
 }
 
 // UploadObject uploads an object with the path.
