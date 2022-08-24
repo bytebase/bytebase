@@ -205,6 +205,10 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		if err := pgKillConnectionsToDatabase(ctx, db, task.Database.Name); err != nil {
 			return err
 		}
+		// Kill connection to the _pitr database in case there's someone connecting to all of the existing databases like postgres-exporter.
+		if err := pgKillConnectionsToDatabase(ctx, db, pitrDatabaseName); err != nil {
+			return err
+		}
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
 			return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
 		}
