@@ -905,6 +905,7 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
+
   const authStore = useAuthStore();
   const databaseStore = useDatabaseStore();
   const environmentStore = useEnvironmentStore();
