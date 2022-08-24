@@ -1261,7 +1261,8 @@
     "format": "格式化",
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
-    "open-connection": "打开连接"
+    "open-connection": "打开连接",
+    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。"
   },
   "label": {
     "empty-label-value": "<空值>",

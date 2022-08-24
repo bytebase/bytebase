@@ -1260,7 +1260,8 @@
     "format": "Format",
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
-    "open-connection": "Open connection"
+    "open-connection": "Open connection",
+    "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment."
   },
   "label": {
     "empty-label-value": "<Empty Value>",
