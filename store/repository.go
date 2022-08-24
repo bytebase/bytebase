@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/pkg/errors"
 )
 
 // repositoryRaw is the store model for a Repository.
@@ -276,7 +277,7 @@ func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPat
 // createRepositoryImpl creates a new repository.
 func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *api.RepositoryCreate) (*repositoryRaw, error) {
 	// Updates the project workflow_type to "VCS"
-	workflowType := api.VCSWorkflow
+	workflowType := string(api.VCSWorkflow)
 	projectPatch := api.ProjectPatch{
 		ID:           create.ProjectID,
 		UpdaterID:    create.CreatorID,
@@ -612,7 +613,7 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 // deleteRepositoryImpl permanently deletes a repository by ID.
 func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *sql.Tx, delete *api.RepositoryDelete) error {
 	// Updates the project workflow_type to "UI"
-	workflowType := api.UIWorkflow
+	workflowType := string(api.UIWorkflow)
 	projectPatch := api.ProjectPatch{
 		ID:           delete.ProjectID,
 		UpdaterID:    delete.DeleterID,
