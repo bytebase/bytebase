@@ -210,7 +210,6 @@ const showVisualizeButton = computed((): boolean => {
 });
 
 const visualizeExplain = () => {
-  // console.log(tabStore.currentTab.queryResult);
   try {
     const statement = tabStore.currentTab.executeParams?.query || "";
     if (!statement) return;
