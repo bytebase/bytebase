@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsTaskAllDone(t *testing.T) {
+func TestAreAllTasksDone(t *testing.T) {
 	tests := []struct {
 		pipeline *api.Pipeline
 		want     bool
@@ -80,7 +80,7 @@ func TestIsTaskAllDone(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res := isTaskAllDone(test.pipeline)
+		res := areAllTasksDone(test.pipeline)
 		assert.Equal(t, test.want, res)
 	}
 }

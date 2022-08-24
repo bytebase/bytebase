@@ -718,7 +718,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		if pipeline == nil {
 			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
 		}
-		if isTaskAllDone(pipeline) {
+		if areAllTasksDone(pipeline) {
 			if issue == nil {
 				// System-generated tasks such as backup tasks don't have corresponding issues.
 				status := api.PipelineDone
@@ -820,7 +820,7 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 	return api.UnknownID, errors.New("invalid assigneeGroupValue")
 }
 
-func isTaskAllDone(pipeline *api.Pipeline) bool {
+func areAllTasksDone(pipeline *api.Pipeline) bool {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status != api.TaskDone {
