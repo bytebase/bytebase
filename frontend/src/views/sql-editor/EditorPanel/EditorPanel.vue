@@ -2,6 +2,13 @@
   <div class="flex h-full w-full flex-col justify-start items-start">
     <EditorAction @save-sheet="handleSaveSheet" />
 
+    <div
+      v-if="isProtectedEnvironment"
+      class="w-full py-1 px-4 bg-warning text-white"
+    >
+      {{ $t("sql-editor.sql-execute-in-protected-environment") }}
+    </div>
+
     <template v-if="!sqlEditorStore.isDisconnected">
       <SQLEditor @save-sheet="handleSaveSheet" />
     </template>
@@ -27,9 +34,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
-import { useTabStore, useSQLEditorStore, useSheetStore } from "@/store";
+import {
+  useTabStore,
+  useSQLEditorStore,
+  useSheetStore,
+  useInstanceStore,
+} from "@/store";
 import { defaultTabName } from "@/utils/tab";
 import EditorAction from "./EditorAction.vue";
 import SQLEditor from "./SQLEditor.vue";
@@ -40,8 +52,15 @@ import SaveSheetModal from "./SaveSheetModal.vue";
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
+const instanceStore = useInstanceStore();
 
 const isShowSaveSheetModal = ref(false);
+
+const isProtectedEnvironment = computed(() => {
+  const { instanceId } = sqlEditorStore.connectionContext;
+  const instance = instanceStore.getInstanceById(instanceId);
+  return instance.environment.tier === "PROTECTED";
+});
 
 const handleClose = () => {
   sqlEditorStore.setSQLEditorState({
