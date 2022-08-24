@@ -48,6 +48,7 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([
 		title:           string(ctx.Rule.Type),
 		requiredColumns: requiredColumns,
 		tables:          make(tableState),
+		line:            make(map[string]int),
 	}
 
 	for _, stmtNode := range root {
@@ -63,6 +64,7 @@ type columnRequirementChecker struct {
 	title           string
 	requiredColumns columnSet
 	tables          tableState
+	line            map[string]int
 }
 
 // Enter implements the ast.Visitor interface.
@@ -84,6 +86,7 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// RENAME COLUMN
 			case ast.AlterTableRenameColumn:
 				v.renameColumn(table, spec.OldColumnName.Name.O, spec.NewColumnName.Name.O)
+				v.line[table] = node.OriginTextPosition()
 			// ADD COLUMNS
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
@@ -91,10 +94,14 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 				}
 			// DROP COLUMN
 			case ast.AlterTableDropColumn:
-				v.dropColumn(table, spec.OldColumnName.Name.O)
+				if v.dropColumn(table, spec.OldColumnName.Name.O) {
+					v.line[table] = node.OriginTextPosition()
+				}
 			// CHANGE COLUMN
 			case ast.AlterTableChangeColumn:
-				v.renameColumn(table, spec.OldColumnName.Name.O, spec.NewColumns[0].Name.Name.O)
+				if v.renameColumn(table, spec.OldColumnName.Name.O, spec.NewColumns[0].Name.Name.O) {
+					v.line[table] = node.OriginTextPosition()
+				}
 			}
 		}
 	}
@@ -125,6 +132,7 @@ func (v *columnRequirementChecker) generateAdviceList() []advisor.Advice {
 				Code:    advisor.NoRequiredColumn,
 				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+				Line:    v.line[tableName],
 			})
 		}
 	}
@@ -155,11 +163,11 @@ func (v *columnRequirementChecker) initFullTable(name string) columnSet {
 	return table
 }
 
-func (v *columnRequirementChecker) renameColumn(table string, oldColumn string, newColumn string) {
+func (v *columnRequirementChecker) renameColumn(table string, oldColumn string, newColumn string) bool {
 	_, oldNeed := v.requiredColumns[oldColumn]
 	_, newNeed := v.requiredColumns[newColumn]
 	if !oldNeed && !newNeed {
-		return
+		return false
 	}
 	t, ok := v.tables[table]
 	if !ok {
@@ -173,11 +181,12 @@ func (v *columnRequirementChecker) renameColumn(table string, oldColumn string, 
 	if newNeed {
 		t[newColumn] = true
 	}
+	return oldNeed
 }
 
-func (v *columnRequirementChecker) dropColumn(table string, column string) {
+func (v *columnRequirementChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.requiredColumns[column]; !ok {
-		return
+		return false
 	}
 	t, ok := v.tables[table]
 	if !ok {
@@ -186,6 +195,7 @@ func (v *columnRequirementChecker) dropColumn(table string, column string) {
 		t = v.initFullTable(table)
 	}
 	t[column] = false
+	return true
 }
 
 func (v *columnRequirementChecker) addColumn(table string, column string) {
@@ -202,6 +212,7 @@ func (v *columnRequirementChecker) addColumn(table string, column string) {
 }
 
 func (v *columnRequirementChecker) createTable(node *ast.CreateTableStmt) {
+	v.line[node.Table.Name.O] = node.OriginTextPosition()
 	v.initEmptyTable(node.Table.Name.O)
 	for _, column := range node.Cols {
 		v.addColumn(node.Table.Name.O, column.Name.Name.O)
