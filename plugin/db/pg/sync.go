@@ -399,9 +399,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.collation_name,
 		cols.udt_schema,
 		cols.udt_name,
-		pg_catalog.col_description(c.oid, cols.ordinal_position::int) as column_comment
-	FROM INFORMATION_SCHEMA.COLUMNS AS cols, pg_catalog.pg_class c
-	WHERE table_schema=$1 AND table_name=$2 AND cols.table_schema=c.relnamespace::regnamespace::text AND cols.table_name=c.relname;`
+		pg_catalog.col_description((quote_ident(table_schema) || '.' || quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+	FROM INFORMATION_SCHEMA.COLUMNS AS cols
+	WHERE table_schema=$1 AND table_name=$2;`
 	rows, err := txn.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
