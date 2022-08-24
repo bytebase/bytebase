@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ScheduleActiveStageTask tries to schedule the tasks in the active stage.
-func (s *Server) ScheduleActiveStageTask(ctx context.Context, pipeline *api.Pipeline) error {
+// ScheduleActiveStage tries to schedule the tasks in the active stage.
+func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
 	stage := getActiveStage(pipeline.StageList)
 	if stage == nil {
 		return nil
