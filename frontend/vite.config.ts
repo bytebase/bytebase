@@ -39,10 +39,7 @@ export default defineConfig(() => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, "index.html"),
-          "explain-visualizer": resolve(
-            __dirname,
-            "public/explain-visualizer.html"
-          ),
+          "explain-visualizer": resolve(__dirname, "explain-visualizer.html"),
         },
       },
     },

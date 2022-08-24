@@ -12,7 +12,6 @@ import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
 import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
 import SheetDashboardLayout from "../layouts/SheetDashboardLayout.vue";
-import { PEV2Page } from "@/views/pev2";
 import { t } from "../plugins/i18n";
 import {
   useAuthStore,
@@ -62,11 +61,6 @@ const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
 // console.log(useProjectWebhookStore());
 
 const routes: Array<RouteRecordRaw> = [
-  {
-    path: "/pev2",
-    name: "pev2",
-    component: PEV2Page,
-  },
   {
     path: "/auth",
     name: AUTH_MODULE,
@@ -911,12 +905,6 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
-
-  if (to.name === "pev2") {
-    // /pev2 is just a PostgreSQL Explain Visualizer tool.
-    // So we don't need any store and login checks.
-    next();
-  }
 
   const authStore = useAuthStore();
   const databaseStore = useDatabaseStore();
