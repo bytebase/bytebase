@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
@@ -494,7 +493,7 @@ func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool,
 }
 
 func (driver *Driver) getSortedLocalBinlogFilesMeta() ([]binlogFileMeta, error) {
-	metaFileInfoListLocal, err := ioutil.ReadDir(driver.binlogDir)
+	metaFileInfoListLocal, err := os.ReadDir(driver.binlogDir)
 	if err != nil {
 		return nil, err
 	}
