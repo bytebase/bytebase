@@ -10,7 +10,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
@@ -123,13 +122,6 @@ var (
 		},
 	}
 )
-
-type backupMeta struct {
-	storageBackend api.BackupStorageBackend
-	region         string
-	bucket         string
-	credentialFile string
-}
 
 // Execute executes the root command.
 func Execute() error {
@@ -253,29 +245,4 @@ func start() {
 
 	// Wait for CTRL-C.
 	<-ctx.Done()
-}
-
-// Examples:
-//   s3://example-bucket
-//   gcs://example-bucket
-func parseBucketURI(uri string) (backupMeta, error) {
-	parts := strings.Split(uri, "://")
-	if len(parts) != 2 {
-		return backupMeta{}, errors.Errorf("invalid bucket URI %q, expected format is s3://${BUCKET_NAME}", uri)
-	}
-
-	backend, bucket := parts[0], parts[1]
-	if strings.Contains(bucket, "/") {
-		return backupMeta{}, errors.Errorf("invalid bucket URI %q, expecting no / in the BUCKET_NAME", uri)
-	}
-
-	switch strings.ToUpper(backend) {
-	case string(api.BackupStorageBackendS3):
-		return backupMeta{
-			storageBackend: api.BackupStorageBackendS3,
-			bucket:         bucket,
-		}, nil
-	default:
-		return backupMeta{}, errors.Errorf("unsupported storage backend %q", backend)
-	}
 }

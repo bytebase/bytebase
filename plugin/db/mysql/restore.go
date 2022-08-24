@@ -699,7 +699,9 @@ func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader stor
 	relativeDir := getBinlogRelativeDir(driver.binlogDir)
 	if err := uploader.UploadObject(ctx, path.Join(relativeDir, binlogFileName), binlogFile); err != nil {
 		// Remove the local metadata file so that it can be re-uploaded later.
-		os.Remove(metaFilePath)
+		if err := os.Remove(metaFilePath); err != nil {
+			log.Warn("Failed to remove binlog metadata file %q when error occurs in uploading binlog file", zap.String("binlogFile", binlogFilePath), zap.Error(err))
+		}
 		return errors.Wrapf(err, "failed to upload binlog file %q to cloud storage", binlogFileName)
 	}
 
