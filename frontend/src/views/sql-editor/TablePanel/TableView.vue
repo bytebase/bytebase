@@ -221,7 +221,7 @@ const visualizeExplain = () => {
 
     const token = createExplainToken(statement, explain);
 
-    window.open(`/pev2?token=${token}`, "_blank");
+    window.open(`/explain-visualizer.html?token=${token}`, "_blank");
     console.log(token);
   } catch {
     // nothing
