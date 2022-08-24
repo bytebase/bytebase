@@ -1261,7 +1261,8 @@
     "format": "格式化",
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
-    "open-connection": "打开连接"
+    "open-connection": "打开连接",
+    "visualize-explain": "可视化 Explain"
   },
   "label": {
     "empty-label-value": "<空值>",

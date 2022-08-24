@@ -1260,7 +1260,8 @@
     "format": "Format",
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
-    "open-connection": "Open connection"
+    "open-connection": "Open connection",
+    "visualize-explain": "Visualize Explain"
   },
   "label": {
     "empty-label-value": "<Empty Value>",

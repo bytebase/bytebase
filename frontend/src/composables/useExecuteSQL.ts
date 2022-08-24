@@ -12,14 +12,7 @@ import {
 } from "../components/MonacoEditor/sqlParser";
 import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
 import { BBNotificationStyle } from "@/bbkit/types";
-
-type ExecuteConfig = {
-  databaseType: string;
-};
-
-type ExecuteOption = {
-  explain: boolean;
-};
+import { ExecuteConfig, ExecuteOption } from "@/types";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
@@ -134,12 +127,22 @@ const useExecuteSQL = () => {
       tabStore.updateCurrentTab({
         queryResult: sqlResultSet.data as any,
         adviceList: sqlResultSet.adviceList,
+        executeParams: {
+          query,
+          config,
+          option,
+        },
       });
       sqlEditorStore.fetchQueryHistoryList();
     } catch (error) {
       tabStore.updateCurrentTab({
         queryResult: undefined,
         adviceList: undefined,
+        executeParams: {
+          query,
+          config,
+          option,
+        },
       });
       notify("CRITICAL", error as string);
     } finally {
