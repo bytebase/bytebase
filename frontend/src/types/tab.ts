@@ -15,12 +15,12 @@ export interface TabInfo {
   savedAt: string;
   statement: string;
   selectedStatement: string;
-  // [columnNames: string[], types: string[], data: any[][]]
   executeParams?: {
     query: string;
     config: ExecuteConfig;
     option?: Partial<ExecuteOption>;
   };
+  // [columnNames: string[], types: string[], data: any[][]]
   queryResult?: [string[], string[], any[][]];
   sheetId?: SheetId;
   adviceList?: Advice[];

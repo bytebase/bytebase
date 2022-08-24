@@ -211,10 +211,13 @@ const showVisualizeButton = computed((): boolean => {
 
 const visualizeExplain = () => {
   try {
-    const statement = tabStore.currentTab.executeParams?.query || "";
+    const { executeParams, queryResult } = tabStore.currentTab;
+    if (!executeParams || !queryResult) return;
+
+    const statement = executeParams.query || "";
     if (!statement) return;
 
-    const lines: string[][] = tabStore.currentTab.queryResult?.[2] || [];
+    const lines: string[][] = queryResult[2];
     const explain = lines.map((line) => line[0]).join("\n");
     if (!explain) return;
 
