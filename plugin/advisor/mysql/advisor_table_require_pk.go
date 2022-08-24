@@ -43,6 +43,7 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 		level:    level,
 		title:    string(ctx.Rule.Type),
 		tables:   make(tablePK),
+		line:     make(map[string]int),
 		database: ctx.Database,
 	}
 
@@ -58,6 +59,7 @@ type tableRequirePKChecker struct {
 	level      advisor.Status
 	title      string
 	tables     tablePK
+	line       map[string]int
 	database   *catalog.Database
 }
 
@@ -67,6 +69,7 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		v.createTable(node)
+		v.line[node.Table.Name.O] = node.OriginTextPosition()
 	// DROP TABLE
 	case *ast.DropTableStmt:
 		for _, table := range node.Tables {
@@ -85,24 +88,30 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// DROP PRIMARY KEY
 			case ast.AlterTableDropPrimaryKey:
 				v.initEmptyTable(tableName)
+				v.line[tableName] = node.OriginTextPosition()
 			// DROP INDEX
 			case ast.AlterTableDropIndex:
 				if strings.ToUpper(spec.Name) == primaryKeyName {
 					v.initEmptyTable(tableName)
+					v.line[tableName] = node.OriginTextPosition()
 				}
 			// ADD COLUMNS
 			case ast.AlterTableAddColumns:
 				v.addPKIfExistByCols(tableName, spec.NewColumns)
 			// CHANGE COLUMN
 			case ast.AlterTableChangeColumn:
-				v.changeColumn(tableName, spec.OldColumnName.Name.String(), spec.NewColumns[0].Name.Name.String())
+				if v.changeColumn(tableName, spec.OldColumnName.Name.String(), spec.NewColumns[0].Name.Name.String()) {
+					v.line[tableName] = node.OriginTextPosition()
+				}
 				v.addPKIfExistByCols(tableName, spec.NewColumns[:1])
 			// MODIFY COLUMN
 			case ast.AlterTableModifyColumn:
 				v.addPKIfExistByCols(tableName, spec.NewColumns[:1])
 			// DROP COLUMN
 			case ast.AlterTableDropColumn:
-				v.dropColumn(tableName, spec.OldColumnName.Name.String())
+				if v.dropColumn(tableName, spec.OldColumnName.Name.String()) {
+					v.line[tableName] = node.OriginTextPosition()
+				}
 			}
 		}
 	}
@@ -124,6 +133,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 				Code:    advisor.TableNoPK,
 				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
+				Line:    v.line[tableName],
 			})
 		}
 	}
@@ -156,26 +166,31 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 	}
 }
 
-func (v *tableRequirePKChecker) dropColumn(table string, column string) {
+func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		v.tables[table] = make(columnSet)
 		_, pk := v.database.FindIndex(&catalog.IndexFind{
 			TableName: table,
 			IndexName: primaryKeyName,
 		})
 		if pk == nil {
-			return
+			return false
 		}
 		v.tables[table] = newColumnSet(pk.ExpressionList)
 	}
 
+	pk := v.tables[table]
+	_, columnInPK := pk[column]
 	delete(v.tables[table], column)
+	return columnInPK
 }
 
-func (v *tableRequirePKChecker) changeColumn(table string, oldColumn string, newColumn string) {
-	v.dropColumn(table, oldColumn)
-	pk := v.tables[table]
-	pk[newColumn] = true
+func (v *tableRequirePKChecker) changeColumn(table string, oldColumn string, newColumn string) bool {
+	if v.dropColumn(table, oldColumn) {
+		pk := v.tables[table]
+		pk[newColumn] = true
+		return true
+	}
+	return false
 }
 
 func (v *tableRequirePKChecker) addPKIfExistByCols(table string, columns []*ast.ColumnDef) {
