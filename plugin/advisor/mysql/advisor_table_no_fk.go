@@ -71,6 +71,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:    advisor.TableHasFK,
 					Title:   checker.title,
 					Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
+					Line:    constraint.OriginTextPosition(),
 				})
 			}
 		}
@@ -82,6 +83,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:    advisor.TableHasFK,
 					Title:   checker.title,
 					Content: fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
+					Line:    in.OriginTextPosition(),
 				})
 			}
 		}
