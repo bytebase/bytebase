@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync/atomic"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -86,18 +87,6 @@ func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 
-func retry(maxRetry int, f func() error) error {
-	var errList error
-	for i := 0; i < maxRetry; i++ {
-		if err := f(); err != nil {
-			errList = multierr.Append(errList, errors.Wrap(err, "failed to do cutover for PostgreSQL"))
-		} else {
-			return nil
-		}
-	}
-	return errList
-}
-
 // pitrCutover performs the PITR cutover algorithm:
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
@@ -109,19 +98,8 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	switch task.Instance.Engine {
-	case db.Postgres:
-		if err := retry(3, func() error {
-			return exec.pitrCutoverPostgres(ctx, driver, task, issue)
-		}); err != nil {
-			return true, nil, errors.Wrap(err, "failed to do cutover for PostgreSQL")
-		}
-	case db.MySQL:
-		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
-			return true, nil, errors.Wrap(err, "failed to do cutover for MySQL")
-		}
-	default:
-		return true, nil, errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
+	if err := exec.doCutover(ctx, driver, server, task, issue); err != nil {
+		return true, nil, err
 	}
 
 	log.Debug("Appending new migration history record")
@@ -155,6 +133,38 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
+}
+
+func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
+	switch task.Instance.Engine {
+	case db.Postgres:
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		maxRetry := 3
+		retry := 0
+		var errList error
+		for {
+			select {
+			case <-ticker.C:
+				retry++
+				if err := exec.pitrCutoverPostgres(ctx, driver, task, issue); err != nil {
+					errList = multierr.Append(errList, errors.Wrap(err, "failed to do cutover for PostgreSQL"))
+					if retry == maxRetry {
+						return errors.Wrapf(errList, "failed to do cutover for PostgreSQL after retried for %d times", maxRetry)
+					}
+				} else {
+					return nil
+				}
+			case <-ctx.Done():
+				return errors.Errorf("context is canceled when doing cutover for PostgreSQL")
+			}
+		}
+	case db.MySQL:
+		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
+			return errors.Wrap(err, "failed to do cutover for MySQL")
+		}
+	}
+	return errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
 }
 
 func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
