@@ -9,7 +9,6 @@ import (
 
 // ScheduleActiveStageTask tries to schedule the tasks in the active stage.
 func (s *Server) ScheduleActiveStageTask(ctx context.Context, pipeline *api.Pipeline) error {
-	skipIfAlreadyTerminated := true
 	stage := getActiveStage(pipeline.StageList)
 	if stage == nil {
 		return nil
@@ -17,7 +16,7 @@ func (s *Server) ScheduleActiveStageTask(ctx context.Context, pipeline *api.Pipe
 	for _, task := range stage.TaskList {
 		switch task.Status {
 		case api.TaskPendingApproval:
-			task, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, skipIfAlreadyTerminated)
+			task, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */)
 			if err != nil {
 				return err
 			}
@@ -42,7 +41,7 @@ func (s *Server) ScheduleActiveStageTask(ctx context.Context, pipeline *api.Pipe
 				}
 			}
 		case api.TaskPending:
-			if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, skipIfAlreadyTerminated); err != nil {
+			if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */); err != nil {
 				return err
 			}
 			_, err := s.TaskScheduler.ScheduleIfNeeded(ctx, task)
