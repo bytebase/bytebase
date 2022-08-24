@@ -56,6 +56,7 @@
 import { computed, PropType, reactive, watch } from "vue";
 import { Database, DatabaseId } from "@/types";
 import { TransferSource } from "./utils";
+import { useDatabaseStore } from "@/store";
 
 type LocalState = {
   selectedDatabaseIdList: Set<DatabaseId>;
@@ -76,6 +77,8 @@ const emit = defineEmits<{
   (e: "dismiss"): void;
   (e: "submit", databaseList: Database[]): void;
 }>();
+
+const databaseStore = useDatabaseStore();
 
 const state = reactive<LocalState>({
   selectedDatabaseIdList: new Set(),
@@ -136,8 +139,10 @@ const allowTransfer = computed(() => state.selectedDatabaseIdList.size > 0);
 const transferDatabase = () => {
   if (state.selectedDatabaseIdList.size === 0) return;
 
-  const databaseList = [...state.selectedDatabaseIdList.values()].map(
-    (id) => props.databaseList.find((db) => db.id === id)!
+  // If a database can be selected, it must be fetched already.
+  // So it's safe that we won't get <<Unknown database>> here.
+  const databaseList = [...state.selectedDatabaseIdList.values()].map((id) =>
+    databaseStore.getDatabaseById(id)
   );
   emit("submit", databaseList);
 };
