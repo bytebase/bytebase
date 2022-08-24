@@ -90,7 +90,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					if err := s.server.ScheduleActiveStage(ctx, pipeline); err != nil {
-						log.Error("Failed to schedule the tasks in the active stage",
+						log.Error("Failed to schedule tasks in the active stage",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),
 						)
