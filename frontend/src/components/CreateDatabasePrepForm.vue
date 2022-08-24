@@ -277,6 +277,7 @@ import {
   UNKNOWN_ID,
   Instance,
   InstanceUserId,
+  PITRContext,
 } from "../types";
 import {
   buildDatabaseNameByTemplateAndLabelList,
@@ -515,10 +516,38 @@ export default defineComponent({
         owner = instanceUser.name;
       }
 
+      if (isTenantProject.value) {
+        if (!hasFeature("bb.feature.multi-tenancy")) {
+          state.showFeatureModal = true;
+          return;
+        }
+      }
+      // Do not submit non-selected optional labels
+      const labelList = state.labelList.filter((label) => !!label.value);
+
+      const createDatabaseContext: CreateDatabaseContext = {
+        instanceId: instanceId,
+        databaseName: databaseName,
+        owner,
+        characterSet:
+          state.characterSet || defaultCharset(selectedInstance.value.engine),
+        collation:
+          state.collation || defaultCollation(selectedInstance.value.engine),
+        cluster: state.cluster,
+        labels: JSON.stringify(labelList),
+      };
+
       if (props.backup) {
+        // If props.backup is specified, we create a PITR issue
+        // with createDatabaseContext
+        const createContext: PITRContext = {
+          databaseId: props.backup.databaseId,
+          backupId: props.backup.id,
+          createDatabaseContext,
+        };
         newIssue = {
           name: `Create database '${databaseName}' from backup '${props.backup.name}'`,
-          type: "bb.issue.database.create",
+          type: "bb.issue.database.restore.pitr",
           description: `Creating database '${databaseName}' from backup '${props.backup.name}'`,
           assigneeId: state.assigneeId!,
           projectId: state.projectId!,
@@ -526,23 +555,11 @@ export default defineComponent({
             stageList: [],
             name: "",
           },
-          createContext: {
-            instanceId: instanceId,
-            databaseName: databaseName,
-            owner,
-            characterSet:
-              state.characterSet ||
-              defaultCharset(selectedInstance.value.engine),
-            collation:
-              state.collation ||
-              defaultCollation(selectedInstance.value.engine),
-            cluster: state.cluster,
-            backupId: props.backup.id,
-            backupName: props.backup.name,
-          },
+          createContext,
           payload: {},
         };
       } else {
+        // Otherwise we create a simple database.create issue.
         newIssue = {
           name: `Create database '${databaseName}'`,
           type: "bb.issue.database.create",
@@ -553,31 +570,10 @@ export default defineComponent({
             stageList: [],
             name: "",
           },
-          createContext: {
-            instanceId: instanceId,
-            databaseName: databaseName,
-            owner,
-            characterSet:
-              state.characterSet ||
-              defaultCharset(selectedInstance.value.engine),
-            collation:
-              state.collation ||
-              defaultCollation(selectedInstance.value.engine),
-            cluster: state.cluster,
-          },
+          createContext: createDatabaseContext,
           payload: {},
         };
       }
-      if (isTenantProject.value) {
-        if (!hasFeature("bb.feature.multi-tenancy")) {
-          state.showFeatureModal = true;
-          return;
-        }
-      }
-      const context = newIssue.createContext as CreateDatabaseContext;
-      // Do not submit non-selected optional labels
-      const labelList = state.labelList.filter((label) => !!label.value);
-      context.labels = JSON.stringify(labelList);
 
       state.creating = true;
       useIssueStore()

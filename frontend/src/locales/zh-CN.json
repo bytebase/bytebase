@@ -659,7 +659,8 @@
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
     "restore": "恢复此环境",
-    "successfully-updated-environment": "环境'{0}'更新成功"
+    "successfully-updated-environment": "环境'{0}'更新成功",
+    "protected": "受保护的"
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",
@@ -737,6 +738,10 @@
       "daily-info": "每日备份数据库。",
       "weekly": "每周",
       "weekly-info": "每周备份数据库。"
+    },
+    "environment-tier": {
+      "name": "环境级别",
+      "mark-env-as-protected": "标记为受保护的环境"
     }
   },
   "migration-history": {
@@ -1256,7 +1261,9 @@
     "format": "格式化",
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
-    "open-connection": "打开连接"
+    "open-connection": "打开连接",
+    "visualize-explain": "可视化 Explain",
+    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。"
   },
   "label": {
     "empty-label-value": "<空值>",
@@ -1348,6 +1355,10 @@
       "bb-feature-backup-policy": {
         "title": "备份策略",
         "desc": "「备份策略」可以根据指定的周期自动备份数据库"
+      },
+      "bb-feature-environment-tier-policy": {
+        "title": "环境级别",
+        "desc": "「环境级别」可以将环境标记为受保护的"
       },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",

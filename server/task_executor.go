@@ -169,6 +169,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	databaseName := task.Database.Name
 	issue, err := findIssueByTask(ctx, server, task)
 	if err != nil {
+		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
 	var repo *api.Repository
@@ -180,13 +181,13 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
 	writeBack := (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
-	// For tenant mode project, we will only write back latest schema file on the last task.
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
 		return true, nil, err
 	}
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
+			// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
 			var lastTask *api.Task
 			for i := len(issue.Pipeline.StageList) - 1; i >= 0; i-- {
 				stage := issue.Pipeline.StageList[i]
@@ -261,13 +262,9 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 				)
 			}
 
-			containerID := task.PipelineID
-			if issue != nil {
-				containerID = issue.ID
-			}
 			activityCreate := &api.ActivityCreate{
 				CreatorID:   task.CreatorID,
-				ContainerID: containerID,
+				ContainerID: task.PipelineID,
 				Type:        api.ActivityPipelineTaskFileCommit,
 				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
@@ -316,7 +313,6 @@ func runMigration(ctx context.Context, server *Server, task *api.Task, migration
 func findIssueByTask(ctx context.Context, server *Server, task *api.Task) (*api.Issue, error) {
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, task_id: %v", task.ID)
 	}
 	if issue == nil {

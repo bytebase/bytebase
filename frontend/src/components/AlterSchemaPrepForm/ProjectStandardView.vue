@@ -28,6 +28,10 @@
             @input="toggleAllDatabasesSelectionForEnvironment(environment, databaseListInEnvironment, ($event.target as HTMLInputElement).checked)"
           />
           <div>{{ environment.name }}</div>
+          <ProtectedEnvironmentIcon
+            class="w-4 h-4 -ml-1"
+            :environment="environment"
+          />
         </label>
         <div class="relative bg-white rounded-md -space-y-px">
           <template

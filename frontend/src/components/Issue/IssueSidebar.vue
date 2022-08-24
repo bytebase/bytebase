@@ -190,9 +190,10 @@
       </h2>
       <router-link
         :to="`/environment/${environmentSlug(environment)}`"
-        class="col-span-2 text-sm font-medium text-main hover:underline"
+        class="col-span-2 text-sm font-medium text-main hover:underline flex items-center"
       >
         {{ environmentName(environment) }}
+        <ProtectedEnvironmentIcon class="ml-1" :environment="environment" />
       </router-link>
 
       <template v-for="label in visibleLabelList" :key="label.key">
@@ -323,6 +324,7 @@ import {
   useIssueLogic,
   useAllowProjectOwnerToApprove,
 } from "./logic";
+import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
 
 dayjs.extend(isSameOrAfter);
 
