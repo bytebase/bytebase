@@ -35,6 +35,14 @@ export default defineConfig(() => {
       Icons(),
       yaml(),
     ],
+    build: {
+      rollupOptions: {
+        input: {
+          main: resolve(__dirname, "index.html"),
+          "explain-visualizer": resolve(__dirname, "explain-visualizer.html"),
+        },
+      },
+    },
     server: {
       port: SERVER_PORT,
       proxy: {
