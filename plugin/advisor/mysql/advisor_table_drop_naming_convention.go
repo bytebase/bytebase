@@ -76,6 +76,7 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:    advisor.TableDropNamingConventionMismatch,
 					Title:   v.title,
 					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name.O, v.format),
+					Line:    node.OriginTextPosition(),
 				})
 			}
 		}

@@ -39,6 +39,7 @@ func (*NoSelectAllAdvisor) Check(ctx advisor.Context, statement string) ([]advis
 	}
 	for _, stmtNode := range root {
 		checker.text = stmtNode.Text()
+		checker.line = stmtNode.OriginTextPosition()
 		(stmtNode).Accept(checker)
 	}
 
@@ -58,6 +59,7 @@ type noSelectAllChecker struct {
 	level      advisor.Status
 	title      string
 	text       string
+	line       int
 }
 
 // Enter implements the ast.Visitor interface.
@@ -70,6 +72,7 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:    advisor.StatementSelectAll,
 					Title:   v.title,
 					Content: fmt.Sprintf("\"%s\" uses SELECT all", v.text),
+					Line:    v.line,
 				})
 				break
 			}
