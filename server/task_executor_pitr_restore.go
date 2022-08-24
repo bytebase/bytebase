@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/plugin/db/pg"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/store"
 	"github.com/pkg/errors"
@@ -312,11 +313,21 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	}
 	defer backupFile.Close()
 
-	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
 	if err != nil {
 		return nil, err
 	}
 	defer driver.Close(ctx)
+
+	pgDriver, ok := driver.(*pg.Driver)
+	if !ok {
+		log.Error("Failed to cast driver to pg.Driver")
+		return nil, errors.Errorf("[internal] cast driver to pg.Driver failed")
+	}
+	originalOwner, err := pgDriver.GetCurrentDatabaseOwner()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get the OWNER of database %q", task.Database.Name)
+	}
 
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
@@ -328,7 +339,7 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s;", pitrDatabaseName)); err != nil {
 		return nil, errors.Wrapf(err, "failed to drop the dirty PITR database %q left from a former task execution", pitrDatabaseName)
 	}
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s;", pitrDatabaseName)); err != nil {
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s WITH OWNER %s;", pitrDatabaseName, originalOwner)); err != nil {
 		return nil, errors.Wrapf(err, "failed to create the PITR database %q", pitrDatabaseName)
 	}
 	// Switch to the PITR database.
