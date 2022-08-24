@@ -150,17 +150,17 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: `INSERT INTO "public"."table"("id","content")
 			VALUES
-			(204268,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
-			(204169,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
-			(204159,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
+			(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
+			(133,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
+			(1444,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
 			want: resData{
 				res: []SingleSQL{
 					{
 						Text: `INSERT INTO "public"."table"("id","content")
 			VALUES
-			(204268,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
-			(204169,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
-			(204159,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
+			(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
+			(133,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
+			(1444,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
 						Line: 1,
 					},
 				},
