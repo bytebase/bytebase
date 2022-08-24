@@ -82,13 +82,14 @@ type WebhookCommitAuthor struct {
 
 // WebhookCommit is the API message for webhook commit.
 type WebhookCommit struct {
-	ID        string              `json:"id"`
-	Title     string              `json:"title"`
-	Message   string              `json:"message"`
-	Timestamp string              `json:"timestamp"`
-	URL       string              `json:"url"`
-	Author    WebhookCommitAuthor `json:"author"`
-	AddedList []string            `json:"added"`
+	ID           string              `json:"id"`
+	Title        string              `json:"title"`
+	Message      string              `json:"message"`
+	Timestamp    string              `json:"timestamp"`
+	URL          string              `json:"url"`
+	Author       WebhookCommitAuthor `json:"author"`
+	AddedList    []string            `json:"added"`
+	ModifiedList []string            `json:"modified"`
 }
 
 // WebhookPushEvent is the API message for webhook push event.
