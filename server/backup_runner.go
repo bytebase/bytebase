@@ -182,6 +182,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 	archive := api.Archived
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
+		UpdaterID: api.SystemBotID,
 		RowStatus: &archive,
 	}
 	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
