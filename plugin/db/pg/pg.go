@@ -319,6 +319,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	return databaseName, nil
 }
 
+// GetCurrentDatabaseOwner gets the role of the current database.
 func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	const query = `
 		SELECT
