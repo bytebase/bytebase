@@ -148,6 +148,25 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			},
 		},
 		{
+			statement: `INSERT INTO "public"."table"("id","content")
+			VALUES
+			(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
+			(133,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
+			(1444,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text: `INSERT INTO "public"."table"("id","content")
+			VALUES
+			(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
+			(133,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
+			(1444,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
+						Line: 1,
+					},
+				},
+			},
+		},
+		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
 				err: "invalid string: not found delimiter: ', but found EOF",
