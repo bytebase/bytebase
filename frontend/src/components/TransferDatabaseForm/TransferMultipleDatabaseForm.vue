@@ -88,7 +88,13 @@ const state = reactive<LocalState>({
 watch(
   [() => props.project, () => props.transferSource, () => props.databaseList],
   () => {
-    state.selectedDatabaseIdList.clear();
+    // We won't clear the selected database ID list.
+    // We will keep IDs that are still valid in the new props.databaseList.
+    const currentIdList = [...state.selectedDatabaseIdList.values()];
+    const validIdSet = new Set(props.databaseList.map((db) => db.id));
+    const newIdList = currentIdList.filter((id) => validIdSet.has(id));
+
+    state.selectedDatabaseIdList = new Set(newIdList);
   }
 );
 
