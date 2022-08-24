@@ -3,8 +3,10 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -44,6 +46,20 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		issueFind := &api.IssueFind{}
+
+		if pageToken := c.QueryParams().Get("token"); pageToken != "" {
+			if maxID, err := unmarshalPageToken(pageToken); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
+			} else {
+				issueFind.MaxID = &maxID
+			}
+		} else {
+			maxID := math.MaxUint32
+			issueFind.MaxID = &maxID
+			limit := api.DefaultNumberOfItemsInPage
+			issueFind.Limit = &limit
+		}
+
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
 			projectID, err := strconv.Atoi(projectIDStr)
@@ -84,8 +100,18 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			s.setTaskProgressForIssue(issue)
 		}
 
+		issueResponse := &api.IssueResponse{}
+		issueResponse.Issues = issueList
+		nextMaxIssueID := *issueFind.MaxID
+		if len(issueList) > 0 {
+			nextMaxIssueID = issueList[len(issueList)-1].ID
+		}
+		if issueResponse.NextToken, err = marshalPageToken(nextMaxIssueID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal page token").SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, issueResponse); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue list response").SetInternal(err)
 		}
 		return nil
@@ -1370,4 +1396,30 @@ func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
 	}
 	// use the last stage if all done
 	return pipeline.StageList[len(pipeline.StageList)-1].EnvironmentID
+}
+
+func marshalPageToken(lastIssueID int) (string, error) {
+	b, err := json.Marshal(lastIssueID)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal page token")
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+func unmarshalPageToken(pageToken string) (int, error) {
+	if pageToken == "" {
+		return 0, nil
+	}
+
+	bs, err := base64.StdEncoding.DecodeString(pageToken)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to decode page token")
+	}
+
+	var lastIssueID int
+	if err := json.Unmarshal(bs, &lastIssueID); err != nil {
+		return 0, errors.Wrap(err, "failed to unmarshal page token")
+	}
+
+	return lastIssueID, nil
 }

@@ -543,6 +543,10 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		args = append(args, *v)
 		args = append(args, *v)
 	}
+	if v := find.MaxID; v != nil {
+		where, args = append(where, fmt.Sprintf("id < $%d", len(args)+1)), append(args, *v)
+	}
+
 	if len(find.StatusList) != 0 {
 		list := []string{}
 		for _, status := range find.StatusList {
@@ -569,7 +573,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 			payload
 		FROM issue
 		WHERE ` + strings.Join(where, " AND ")
-	query += " ORDER BY updated_ts DESC"
+	query += " ORDER BY id DESC"
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}

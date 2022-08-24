@@ -60,6 +60,11 @@ const (
 	IssueFieldSQL IssueFieldID = "7"
 )
 
+const (
+	// DefaultNumberOfItemsInPage is the default number of items in a page.
+	DefaultNumberOfItemsInPage = 10
+)
+
 // Issue is the API message for an issue.
 type Issue struct {
 	ID int `jsonapi:"primary,issue"`
@@ -87,6 +92,12 @@ type Issue struct {
 	Assignee       *Principal   `jsonapi:"relation,assignee"`
 	SubscriberList []*Principal `jsonapi:"relation,subscriberList"`
 	Payload        string       `jsonapi:"attr,payload"`
+}
+
+// IssueResponse is the API message for an issue response.
+type IssueResponse struct {
+	Issues    []*Issue `jsonapi:"attr,issues"`
+	NextToken string   `jsonapi:"attr,nextToken"`
 }
 
 // IssueCreate is the API message for creating an issue.
@@ -214,6 +225,8 @@ type IssueFind struct {
 	// Find issue where principalID is either creator, assignee or subscriber
 	PrincipalID *int
 	StatusList  []IssueStatus
+	// If specified, only find issues whose ID is smaller that MaxID
+	MaxID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
 }
