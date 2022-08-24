@@ -45,13 +45,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		var err error
 		issueFind := &api.IssueFind{}
 
 		if pageToken := c.QueryParams().Get("token"); pageToken != "" {
-			if maxID, err := unmarshalPageToken(pageToken); err != nil {
+			if *issueFind.MaxID, err = unmarshalPageToken(pageToken); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
-			} else {
-				issueFind.MaxID = &maxID
 			}
 		} else {
 			maxID := math.MaxUint32
