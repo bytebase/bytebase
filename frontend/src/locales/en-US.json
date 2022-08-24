@@ -1261,6 +1261,7 @@
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
     "open-connection": "Open connection",
+    "visualize-explain": "Visualize Explain",
     "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment."
   },
   "label": {
