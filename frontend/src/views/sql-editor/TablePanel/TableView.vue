@@ -221,7 +221,6 @@ const visualizeExplain = () => {
     const token = createExplainToken(statement, explain);
 
     window.open(`/explain-visualizer.html?token=${token}`, "_blank");
-    console.log(token);
   } catch {
     // nothing
   }
