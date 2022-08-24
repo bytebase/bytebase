@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -138,20 +137,20 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
 	switch task.Instance.Engine {
 	case db.Postgres:
+		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
 		maxRetry := 3
 		retry := 0
-		var errList error
 		for {
 			select {
 			case <-ticker.C:
 				retry++
 				if err := exec.pitrCutoverPostgres(ctx, driver, task, issue); err != nil {
-					errList = multierr.Append(errList, errors.Wrap(err, "failed to do cutover for PostgreSQL"))
 					if retry == maxRetry {
-						return errors.Wrapf(errList, "failed to do cutover for PostgreSQL after retried for %d times", maxRetry)
+						return errors.Wrapf(err, "failed to do cutover for PostgreSQL after retried for %d times", maxRetry)
 					}
+					log.Debug("Failed to do cutover for PostgreSQL. Retry later.", zap.Error(err))
 				} else {
 					return nil
 				}
