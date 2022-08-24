@@ -1,5 +1,13 @@
 import { Advice, SheetId } from "../types";
 
+export type ExecuteConfig = {
+  databaseType: string;
+};
+
+export type ExecuteOption = {
+  explain: boolean;
+};
+
 export interface TabInfo {
   id: string;
   name: string;
@@ -8,6 +16,11 @@ export interface TabInfo {
   statement: string;
   selectedStatement: string;
   // [columnNames: string[], types: string[], data: any[][]]
+  executeParams?: {
+    query: string;
+    config: ExecuteConfig;
+    option?: Partial<ExecuteOption>;
+  };
   queryResult?: [string[], string[], any[][]];
   sheetId?: SheetId;
   adviceList?: Advice[];
