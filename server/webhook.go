@@ -78,7 +78,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("project", repo.Project.Name),
 		)
 
-		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList)
+		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, false /* includeModified */)
 		var createdMessageList []string
 		for _, item := range distinctFileList {
 			createdMessage, created, httpErr := s.createIssueFromPushEvent(
@@ -298,7 +298,7 @@ type distinctFileItem struct {
 	fileName    string
 }
 
-func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
+func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit, includeModified bool) []distinctFileItem {
 	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []distinctFileItem
 	for _, commit := range commitList {
@@ -312,26 +312,31 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", common.EscapeForLogging(commit.ID)), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
 		}
 
-		for _, added := range commit.AddedList {
-			isNew := true
+		addDistinctFile := func(fileName string) {
 			item := distinctFileItem{
 				createdTime: createdTime,
 				commit:      commit,
-				fileName:    added,
+				fileName:    fileName,
 			}
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
-				if added == file.fileName {
-					isNew = false
+				if item.fileName == file.fileName {
 					if file.createdTime.Before(createdTime) {
 						distinctFileList[i] = item
 					}
-					break
+					return
 				}
 			}
+			distinctFileList = append(distinctFileList, item)
+		}
 
-			if isNew {
-				distinctFileList = append(distinctFileList, item)
+		for _, added := range commit.AddedList {
+			addDistinctFile(added)
+		}
+
+		if includeModified {
+			for _, modified := range commit.ModifiedList {
+				addDistinctFile(modified)
 			}
 		}
 	}
