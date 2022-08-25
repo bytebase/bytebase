@@ -144,8 +144,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 			}
-			environmentID := stage.EnvironmentID
-			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
