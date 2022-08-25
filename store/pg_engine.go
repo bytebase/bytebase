@@ -660,6 +660,11 @@ type Tx struct {
 	now time.Time
 }
 
+func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	panic("sdfsfd")
+	// return tx.PTx.QueryRowContext(ctx, query, args...)
+}
+
 // FormatError returns err as a Bytebase error, if possible.
 // Otherwise returns the original error.
 func FormatError(err error) error {
