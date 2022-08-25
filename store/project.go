@@ -39,7 +39,7 @@ type projectRaw struct {
 // toProject creates an instance of Project based on the projectRaw.
 // This is intended to be called when we need to compose a Project relationship.
 func (raw *projectRaw) toProject() *api.Project {
-	project := &api.Project{
+	return &api.Project{
 		ID: raw.ID,
 
 		RowStatus: raw.RowStatus,
@@ -48,18 +48,15 @@ func (raw *projectRaw) toProject() *api.Project {
 		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
-		Name:           raw.Name,
-		Key:            raw.Key,
-		WorkflowType:   raw.WorkflowType,
-		Visibility:     raw.Visibility,
-		TenantMode:     raw.TenantMode,
-		DBNameTemplate: raw.DBNameTemplate,
-		RoleProvider:   raw.RoleProvider,
+		Name:                raw.Name,
+		Key:                 raw.Key,
+		WorkflowType:        raw.WorkflowType,
+		Visibility:          raw.Visibility,
+		TenantMode:          raw.TenantMode,
+		DBNameTemplate:      raw.DBNameTemplate,
+		RoleProvider:        raw.RoleProvider,
+		SchemaMigrationType: raw.SchemaMigrationType,
 	}
-	if raw.SchemaMigrationType != "" {
-		project.SchemaMigrationType = raw.SchemaMigrationType
-	}
-	return project
 }
 
 // GetProjectByID gets an instance of Project.
