@@ -507,9 +507,8 @@ func (t *tokenizer) scanIdentifier(delimiter rune) error {
 	}
 }
 
-// There are two ways to include a single quote('), using \' or ''.
-// We only handle the case \', because the second case '' does not require special handling.
-// In more detail, we can think of 'this is a string contains ''.' as 'this is a string contains ' and '.'.
+// There are two ways to include a single quote('), using \' or two single-quotes.
+// We only handle the case \', because the second case does not require special handling.
 // And this is extensible.
 // For MySQL, user can enclose string within double quote(").
 func (t *tokenizer) scanString(delimiter rune) error {
