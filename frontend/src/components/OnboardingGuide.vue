@@ -15,8 +15,8 @@ import { UNKNOWN_ID } from "@/types";
 import { isOwner } from "@/utils";
 import CreateDatabaseGuide from "./OnboardingGuides/CreateDatabaseGuide.vue";
 
-const guideStore = useOnboardingGuideStore();
 const currentUser = useCurrentUser();
+const guideStore = useOnboardingGuideStore();
 
 const shouldShowCreateDatabaseGuide = ref(false);
 
@@ -39,7 +39,9 @@ watch(
     if (currentUser.value.id !== UNKNOWN_ID) {
       shouldShowCreateDatabaseGuide.value =
         await checkShouldShowCreateDatabaseGuide();
-      guideStore.setGuideName("create-database-guide");
+      if (shouldShowCreateDatabaseGuide.value) {
+        guideStore.setGuideName("create-database");
+      }
     }
   },
   {

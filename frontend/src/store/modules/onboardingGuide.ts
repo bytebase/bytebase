@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
-import { OnboardingGuideState } from "@/types";
+import { OnboardingGuideType, OnboardingGuideState } from "@/types";
 
 export const useOnboardingGuideStore = defineStore("onboarding_guide", {
   state: (): OnboardingGuideState => ({
-    guideName: "",
+    guideName: undefined,
   }),
   actions: {
-    setGuideName(guideName: string) {
+    setGuideName(guideName: OnboardingGuideType) {
       this.guideName = guideName;
     },
   },

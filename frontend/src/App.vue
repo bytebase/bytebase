@@ -22,7 +22,7 @@
     </NDialogProvider>
   </NConfigProvider>
 
-  <!-- onboarding guide telport to document.body -->
+  <!-- teleport onboarding guide to document.body -->
   <teleport to="body">
     <OnboardingGuide />
   </teleport>
