@@ -12,12 +12,12 @@ This is a SQL review rule generator. It's used for implementing a specific SQL r
    )
    ```
    You need write both code and the comment.
-2. run
+2. build the generator.
    ```shell
    go build
    ```
    in `/plugin/advisor/generator`
-3. run
+3. run generator to generate the framework code.
    ```shell
    ./generator --flag {AdvisorType}
    ```

@@ -139,7 +139,7 @@ func generateFile(filePath, tempelatePath, advisorType, advisorName, advisorComm
 }
 
 func init() {
-	cmd.PersistentFlags().StringVar(&flags.rule, "rule", "", "rule name you want to generate. This rule type and comment must exist in /plugin/advisor/advisor.go")
+	cmd.PersistentFlags().StringVar(&flags.rule, "rule", "", "rule type you want to generate. This rule type and comment must exist in /plugin/advisor/advisor.go")
 }
 
 func main() {
