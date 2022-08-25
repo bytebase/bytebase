@@ -879,7 +879,8 @@
     "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}",
     "view-unassigned-databases": "查看未分配的数据库",
     "unassigned-databases": "未分配的数据库",
-    "restore-database": "恢复数据库"
+    "restore-database": "恢复数据库",
+    "selected-n-databases": "已选择 {n} 个数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
