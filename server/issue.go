@@ -53,7 +53,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
 			}
 		} else {
-			maxID := math.MaxUint32
+			maxID := math.MaxInt32
 			issueFind.MaxID = &maxID
 			limit := api.DefaultNumberOfItemsInPage
 			issueFind.Limit = &limit
