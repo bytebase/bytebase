@@ -96,7 +96,7 @@ type Issue struct {
 
 // IssueResponse is the API message for an issue response.
 type IssueResponse struct {
-	Issues    []*Issue `jsonapi:"attr,issues"`
+	Issues    []*Issue `jsonapi:"relation,issues"`
 	NextToken string   `jsonapi:"attr,nextToken"`
 }
 
