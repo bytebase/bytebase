@@ -194,7 +194,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		a.Equal(binlogFilesOnServerSorted[j].Size, binlogFilesDownloaded[j].Size)
 	}
 
-	t.Log("Truncate or delete downloaded files and re-download")
+	t.Log("Delete some downloaded files and re-download")
 	rand.Seed(time.Now().Unix())
 	// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
 	binlogFiles, err := os.ReadDir(binlogDir)
@@ -210,15 +210,10 @@ func TestFetchBinlogFiles(t *testing.T) {
 	binlogFilesDownloaded, err = mysqlDriver.GetSortedLocalBinlogFiles()
 	a.NoError(err)
 	t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
-	truncateIndex := rand.Intn(numBinlogFiles)
-	path := filepath.Join(binlogDir, binlogFilesDownloaded[truncateIndex].Name)
-	t.Logf("Truncating file %s", binlogFilesDownloaded[truncateIndex].Name)
-	err = os.Truncate(path, 1)
-	a.NoError(err)
 	deleteIndex := rand.Intn(numBinlogFiles)
-	path = filepath.Join(binlogDir, binlogFilesDownloaded[deleteIndex].Name)
+	deletePath := filepath.Join(binlogDir, binlogFilesDownloaded[deleteIndex].Name)
 	t.Logf("Deleting file %s", binlogFilesDownloaded[deleteIndex].Name)
-	err = os.Remove(path)
+	err = os.Remove(deletePath)
 	a.NoError(err)
 	// Re-download and check.
 	t.Log("Re-downloading binlog files")
