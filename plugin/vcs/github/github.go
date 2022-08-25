@@ -1,3 +1,4 @@
+// Package github is the plugin for GitHub.
 package github
 
 import (
@@ -473,7 +474,9 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read OAuth response body, code %v", resp.StatusCode)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	oauthResp := new(oauthResponse)
 	if err := json.Unmarshal(body, oauthResp); err != nil {

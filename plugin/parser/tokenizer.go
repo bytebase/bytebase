@@ -399,19 +399,20 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 
 // splitPostgreSQLMultiSQL splits the statement to a string slice.
 // We mainly considered:
-//   - comments
-//     - style /* comments */
-//     - style -- comments
-//   - string
-//     - style 'string'
-//     - style $$ string $$
-//   - identifier
-//     - style "indentifier"
+//
+//	comments
+//	- style /* comments */
+//	- style -- comments
+//	string
+//	- style 'string'
+//	- style $$ string $$
+//	identifier
+//	- style "indentifier"
 //
 // Notice:
 //   - We support PostgreSQL CREATE PROCEDURE statement with $$ $$ style,
-//       but do not support BEGIN ATOMIC ... END; style.
-//       See https://www.postgresql.org/docs/14/sql-createprocedure.html.
+//     but do not support BEGIN ATOMIC ... END; style.
+//     See https://www.postgresql.org/docs/14/sql-createprocedure.html.
 func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 	var res []SingleSQL
 
@@ -508,13 +509,7 @@ func (t *tokenizer) scanIdentifier(delimiter rune) error {
 
 // There are two ways to include a single quote('), using \' or ''.
 // We only handle the case \', because the second case '' does not require special handling.
-// In more detail, we can think of
-//     'this is a string contains ''.'
-// as
-//     'this is a string contains '
-// and
-//     '.'
-//.
+// In more detail, we can think of 'this is a string contains ''.' as 'this is a string contains ' and '.'.
 // And this is extensible.
 // For MySQL, user can enclose string within double quote(").
 func (t *tokenizer) scanString(delimiter rune) error {
@@ -670,8 +665,10 @@ func (t *tokenizer) processStreaming(statement string) error {
 // truncate will return the buffer after pos.
 // Before:
 // buffer [.............]
-//               |
-//              pos
+//
+//	 |
+//	pos
+//
 // After:        |
 // buffer       [.......].
 func (t *tokenizer) truncate(pos uint) {

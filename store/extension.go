@@ -112,9 +112,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 	return nil
 }
 
-//
 // private functions.
-//
 func generateDBExtensionActions(oldDBExtensionRawList []*dbExtensionRaw, extensionList []db.Extension, databaseID int) ([]*api.DBExtensionDelete, []*api.DBExtensionCreate) {
 	var newDBExtensionList []*api.DBExtensionCreate
 	for _, dbExtension := range extensionList {

@@ -1,3 +1,4 @@
+// Package oauth provides library for VCS plugins.
 package oauth
 
 import (

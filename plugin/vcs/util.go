@@ -1,3 +1,4 @@
+// Package vcs provides the utilities for VCS plugins.
 package vcs
 
 import (
