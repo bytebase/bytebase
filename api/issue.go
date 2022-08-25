@@ -62,7 +62,7 @@ const (
 
 const (
 	// DefaultNumberOfItemsInPage is the default number of items in a page.
-	DefaultNumberOfItemsInPage = 10
+	DefaultNumberOfItemsInPage = 1000
 )
 
 // Issue is the API message for an issue.

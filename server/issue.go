@@ -57,8 +57,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		} else {
 			maxID := math.MaxInt32
 			issueFind.MaxID = &maxID
-			limit := api.DefaultNumberOfItemsInPage
-			issueFind.Limit = &limit
 		}
 
 		projectIDStr := c.QueryParams().Get("project")
@@ -81,6 +79,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
 			}
+			issueFind.Limit = &limit
+		} else {
+			limit := api.DefaultNumberOfItemsInPage
 			issueFind.Limit = &limit
 		}
 		userIDStr := c.QueryParams().Get("user")
