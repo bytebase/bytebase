@@ -8,6 +8,8 @@
 import { ref, watch } from "vue";
 import {
   useCurrentUser,
+  useProjectStore,
+  useInstanceStore,
   useDatabaseStore,
   useOnboardingGuideStore,
 } from "@/store";
@@ -21,10 +23,17 @@ const guideStore = useOnboardingGuideStore();
 const shouldShowCreateDatabaseGuide = ref(false);
 
 const checkShouldShowCreateDatabaseGuide = async () => {
-  // Show create database guide when user is owner and no database data at all.
+  // Show create database guide when user is owner and no data at all.
   if (isOwner(currentUser.value.role)) {
+    const instanceList = await useInstanceStore().fetchInstanceList();
+    const projectList = await useProjectStore().fetchAllProjectList();
     const databaseList = await useDatabaseStore().fetchDatabaseList();
-    if (databaseList.length === 0) {
+
+    if (
+      instanceList.length === 0 &&
+      projectList.length === 0 &&
+      databaseList.length === 0
+    ) {
       return true;
     }
   }

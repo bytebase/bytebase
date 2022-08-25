@@ -165,7 +165,7 @@ export const useProjectStore = defineStore("project", {
       const data = (await axios.get(`/api/project`)).data;
       const projectList = data.data.map((project: ResourceObject) => {
         return convert(project, data.included);
-      });
+      }) as Project[];
 
       this.upsertProjectList(projectList);
       return projectList;
