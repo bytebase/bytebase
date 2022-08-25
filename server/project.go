@@ -170,7 +170,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, "Please transfer all databases under the project before archiving the project.")
 			}
 
-			issueList, err := s.store.FindIssue(ctx, &api.IssueFind{ProjectID: &id, StatusList: []api.IssueStatus{api.IssueOpen}})
+			issueList, err := s.store.FindIssueStripped(ctx, &api.IssueFind{ProjectID: &id, StatusList: []api.IssueStatus{api.IssueOpen}})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find issues in the project %d", id)).SetInternal(err)
 			}
