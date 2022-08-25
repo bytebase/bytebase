@@ -608,8 +608,8 @@ func (driver *Driver) GetBinlogDir() string {
 	return driver.binlogDir
 }
 
-// FetchAllBinlogFilesFromMySQL downloads all binlog files on server to `binlogDir`.
-func (driver *Driver) FetchAllBinlogFilesFromMySQL(ctx context.Context, downloadLatestBinlogFile bool, uploader storage.Uploader) error {
+// FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
+func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool, uploader storage.Uploader) error {
 	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
 		return errors.Wrapf(err, "failed to create binlog directory %q", driver.binlogDir)
 	}

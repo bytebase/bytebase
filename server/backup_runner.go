@@ -244,7 +244,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	if r.server.profile.BackupStorageBackend == api.BackupStorageBackendS3 {
 		uploader = r.server.s3Client
 	}
-	if err := mysqlDriver.FetchAllBinlogFilesFromMySQL(ctx, false /* downloadLatestBinlogFile */, uploader); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, uploader); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}

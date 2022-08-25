@@ -218,7 +218,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	if server.profile.BackupStorageBackend == api.BackupStorageBackendS3 {
 		uploader = server.s3Client
 	}
-	if err := mysqlSourceDriver.FetchAllBinlogFilesFromMySQL(ctx, true /* downloadLatestBinlogFile */, uploader); err != nil {
+	if err := mysqlSourceDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, uploader); err != nil {
 		return nil, err
 	}
 
