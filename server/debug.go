@@ -29,6 +29,23 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 
 		return currentDebugState(c)
 	})
+
+	g.GET("/debug/log", func(c echo.Context) error {
+		var errorRecordList []*api.ErrorRecord
+
+		s.errorRecordRing.Do(func(p interface{}) {
+			if p != nil {
+				errorRecordList = append(errorRecordList, p.(*api.ErrorRecord))
+			}
+		})
+
+		debugLog := api.DebugLog{
+			RecordList: errorRecordList,
+			Count:      len(errorRecordList),
+		}
+
+		return c.JSON(http.StatusOK, debugLog)
+	})
 }
 
 func currentDebugState(c echo.Context) error {

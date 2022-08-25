@@ -9,3 +9,9 @@ type Debug struct {
 type DebugPatch struct {
 	IsDebug bool `jsonapi:"attr,isDebug"`
 }
+
+// DebugLog is the API message for debug log.
+type DebugLog struct {
+	RecordList []*ErrorRecord `jsonapi:"relation,recordList"`
+	Count      int            `jsonapi:"attr,count"`
+}

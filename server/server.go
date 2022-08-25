@@ -2,6 +2,7 @@
 package server
 
 import (
+	"container/ring"
 	"context"
 	"fmt"
 	"net/http"
@@ -41,6 +42,9 @@ import (
 // openAPIPrefix is the API prefix for Bytebase OpenAPI.
 const openAPIPrefix = "/v1"
 
+// errorRecordCount is the count limit for error records
+const errorRecordCount = 100
+
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
@@ -57,13 +61,15 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile    Profile
-	e          *echo.Echo
-	pgInstance *postgres.Instance
-	metaDB     *store.MetadataDB
-	store      *store.Store
-	startedTs  int64
-	secret     string
+	profile         Profile
+	e               *echo.Echo
+	pgInstance      *postgres.Instance
+	metaDB          *store.MetadataDB
+	store           *store.Store
+	startedTs       int64
+	secret          string
+	errorRecordRing *ring.Ring
+	errorRecordMu   sync.RWMutex
 
 	s3Client *s3bb.Client
 
@@ -105,8 +111,9 @@ var casbinDeveloperPolicy string
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
-		profile:   prof,
-		startedTs: time.Now().Unix(),
+		profile:         prof,
+		startedTs:       time.Now().Unix(),
+		errorRecordRing: ring.New(errorRecordCount),
 	}
 
 	// Display config
@@ -284,6 +291,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return errorRecorderMiddleware(s, next)
+	})
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {

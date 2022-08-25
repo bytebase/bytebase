@@ -1,6 +1,8 @@
 package server
 
 import (
+	"runtime/debug"
+
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -15,6 +17,8 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 				if !ok {
 					err = errors.Errorf("%v", r)
 				}
+				c.Set("errorMessage", err.Error())
+				c.Set("panicStackTrace", string(debug.Stack()))
 				log.Error("Middleware PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
 
 				c.Error(err)
