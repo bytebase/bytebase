@@ -113,7 +113,7 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 }
 
 // FindIssueStripped finds a list of issues in stripped format.
-// We do not load the pipeline reduce the size of response payload and complexity of composing the issue list.
+// We do not load the pipeline in order to reduce the size of the response payload and the complexity of composing the issue list.
 func (s *Store) FindIssueStripped(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
 	if err != nil {
