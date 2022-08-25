@@ -112,8 +112,9 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 	return issue, nil
 }
 
-// FindIssue finds a list of Issue instances.
-func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
+// FindIssueStripped finds a list of issues in stripped format.
+// We do not load the pipeline reduce the size of response payload and complexity of composing the issue list.
+func (s *Store) FindIssueStripped(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Issue list with IssueFind[%+v]", find)

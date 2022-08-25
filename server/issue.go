@@ -43,7 +43,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		// We do not load the pipeline reduce the size of response payload and complexity of composing the issue list.
 		issueFind := &api.IssueFind{}
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
@@ -76,12 +75,14 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			issueFind.PrincipalID = &userID
 		}
 
-		issueList, err := s.store.FindIssue(ctx, issueFind)
+		issueList, err := s.store.FindIssueStripped(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
 
-		// We don't set task progress to reduce the size of response payload.
+		for _, issue := range issueList {
+			s.setTaskProgressForIssue(issue)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
