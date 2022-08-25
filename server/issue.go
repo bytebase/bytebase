@@ -75,7 +75,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			issueFind.PrincipalID = &userID
 		}
 
-		issueList, err := s.store.FindIssue(ctx, issueFind)
+		issueList, err := s.store.FindIssueStripped(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
