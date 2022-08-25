@@ -91,7 +91,7 @@ var (
 			fmt.Printf("Try to generate %s...\n", fileName)
 			fmt.Printf("SQL rule type is %s\n", flags.rule)
 			fmt.Printf("Advisor name is %s\n", advisorName)
-			fmt.Printf("This rule is check for %s\n", advisorComment)
+			fmt.Printf("This rule checks for %s\n", advisorComment)
 			fmt.Printf("Checker name is %s\n", checkerName)
 			fmt.Printf("Test name is %s\n", testName)
 
