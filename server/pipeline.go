@@ -18,7 +18,7 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 		case api.TaskPendingApproval:
 			task, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to schedule check")
 			}
 			policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
 			if err != nil {
@@ -28,7 +28,7 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 				// transit into Pending for ManualNever (auto-approval) tasks if all required task checks passed.
 				ok, err := s.TaskScheduler.canAutoApprove(ctx, task)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to check if can auto-approve")
 				}
 				if ok {
 					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
@@ -36,17 +36,17 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 						UpdaterID: api.SystemBotID,
 						Status:    api.TaskPending,
 					}); err != nil {
-						return err
+						return errors.Wrap(err, "failed to change task status")
 					}
 				}
 			}
 		case api.TaskPending:
 			if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */); err != nil {
-				return err
+				return errors.Wrap(err, "failed to schedule check")
 			}
 			_, err := s.TaskScheduler.ScheduleIfNeeded(ctx, task)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to schedule task")
 			}
 		}
 	}
