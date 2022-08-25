@@ -428,7 +428,7 @@ const updateInstance = (field: string, value: string) => {
 };
 
 const handleWarningModalOkClick = async () => {
-  // When user get the warning of incorrect instance info, in create-database-guide onboarding guide,
+  // When user get the warning of incorrect instance info in creating database onboarding guide,
   // we'd like to display the `create an embedded PostgreSQL database` button instead of `ignore and create`.
   if (isInOnboaringCreateDatabaseGuide.value) {
     const connectionInfo =
