@@ -526,21 +526,12 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 		if fileOnServer.Name == latestBinlogFileOnServer.Name && !downloadLatestBinlogFile {
 			continue
 		}
-		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
+		_, existLocal := binlogFilesLocalMap[fileOnServer.Name]
 		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
 		if !existLocal {
 			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
 				return errors.Wrapf(err, "failed to download binlog file %q", path)
-			}
-		} else if fileLocal.Size != fileOnServer.Size {
-			log.Debug("Found incomplete local binlog file",
-				zap.String("path", path),
-				zap.Int64("sizeLocal", fileLocal.Size),
-				zap.Int64("sizeOnServer", fileOnServer.Size))
-			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
-				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return errors.Wrapf(err, "failed to re-download inconsistent local binlog file %q", path)
 			}
 		}
 	}
