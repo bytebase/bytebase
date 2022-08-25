@@ -663,14 +663,14 @@ func (t *tokenizer) processStreaming(statement string) error {
 }
 
 // truncate will return the buffer after pos.
-// Before:
-// buffer [.............]
-//
-//	 |
-//	pos
-//
-// After:        |
-// buffer       [.......].
+/*
+Before:
+buffer [.............]
+              |
+             pos
+After:        |
+buffer       [.......].
+*/
 func (t *tokenizer) truncate(pos uint) {
 	if pos > t.len {
 		pos = t.len
