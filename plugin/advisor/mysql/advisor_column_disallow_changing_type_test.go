@@ -10,14 +10,13 @@ func TestColumnDisallowChangingType(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
 			Statement: ``,
-			Want:      []advisor.Advice{
-				//	{
-				//		Status:  ,
-				//		Code:    ,
-				//		Title:   ,
-				//		Content: ,
-				//		Line:    ,
-				//	},
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
 			},
 		},
 	}
