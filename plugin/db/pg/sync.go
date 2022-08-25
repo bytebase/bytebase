@@ -630,7 +630,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 	isPrimaryQuery := `
-		SELECT count(*)
+		SELECT 1
 		FROM information_schema.table_constraints
 		WHERE constraint_schema = $1
 		  AND constraint_name = $2
@@ -639,12 +639,16 @@ func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 		  AND constraint_type = 'PRIMARY KEY'
 	`
 
-	var yes int
-	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&yes); err != nil {
+	var unused string
+	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&unused); err != nil {
+		if err == sql.ErrNoRows {
+			// The query returns empty row, which means not primary key.
+			return nil
+		}
 		return err
 	}
 
-	idx.primary = (yes == 1)
+	idx.primary = true
 	return nil
 }
 
