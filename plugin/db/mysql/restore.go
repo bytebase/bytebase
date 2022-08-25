@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"math"
 	"os"
 	"os/exec"
@@ -523,24 +522,17 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	}
 	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
 	for _, fileOnServer := range binlogFilesOnServerSorted {
-		if fileOnServer.Name == latestBinlogFileOnServer.Name && !downloadLatestBinlogFile {
+		isLatest := fileOnServer.Name == latestBinlogFileOnServer.Name
+		if isLatest && !downloadLatestBinlogFile {
 			continue
 		}
-		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
+		_, existLocal := binlogFilesLocalMap[fileOnServer.Name]
 		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
-		if !existLocal {
-			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+		// Always re-download the latest binlog file.
+		if !existLocal || isLatest {
+			if err := driver.downloadBinlogFile(ctx, fileOnServer, isLatest); err != nil {
 				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
 				return errors.Wrapf(err, "failed to download binlog file %q", path)
-			}
-		} else if fileLocal.Size != fileOnServer.Size {
-			log.Debug("Found incomplete local binlog file",
-				zap.String("path", path),
-				zap.Int64("sizeLocal", fileLocal.Size),
-				zap.Int64("sizeOnServer", fileOnServer.Size))
-			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
-				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return errors.Wrapf(err, "failed to re-download inconsistent local binlog file %q", path)
 			}
 		}
 	}
@@ -582,8 +574,9 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
 func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
+	tempDir := os.TempDir()
 	// for mysqlbinlog binary, --result-file must end with '/'
-	mysqlbinlogResultFileDir := strings.TrimRight(driver.binlogDir, "/") + "/"
+	mysqlbinlogResultFileDir := strings.TrimRight(tempDir, "/") + "/"
 	// TODO(zp): support ssl?
 	args := []string{
 		binlogFileToDownload.Name,
@@ -607,40 +600,46 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	cmd.Stderr = os.Stderr
 
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
-	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileToDownload.Name)
+	binlogFilePathTemp := filepath.Join(tempDir, binlogFileToDownload.Name)
+	defer os.Remove(binlogFilePathTemp)
 	if err := cmd.Run(); err != nil {
 		log.Error("Failed to execute mysqlbinlog binary", zap.Error(err))
 		return errors.Wrap(err, "failed to execute mysqlbinlog binary")
 	}
 
-	log.Debug("Checking downloaded binlog file stat", zap.String("path", binlogFilePath))
-	fileInfo, err := os.Stat(binlogFilePath)
+	log.Debug("Checking downloaded binlog file stat", zap.String("path", binlogFilePathTemp))
+	binlogFileInfo, err := os.Stat(binlogFilePathTemp)
 	if err != nil {
-		log.Error("Failed to get stat of the binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
-		return errors.Wrapf(err, "failed to get stat of the binlog file %q", binlogFilePath)
+		log.Error("Failed to get stat of the binlog file.", zap.String("path", binlogFilePathTemp), zap.Error(err))
+		return errors.Wrapf(err, "failed to get stat of the binlog file %q", binlogFilePathTemp)
 	}
-	if !isLast && fileInfo.Size() != binlogFileToDownload.Size {
+	if !isLast && binlogFileInfo.Size() != binlogFileToDownload.Size {
 		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server earlier.",
 			zap.String("binlog", binlogFileToDownload.Name),
 			zap.Int64("sizeInfo", binlogFileToDownload.Size),
-			zap.Int64("downloadedSize", fileInfo.Size()),
+			zap.Int64("downloadedSize", binlogFileInfo.Size()),
 		)
-		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePath, fileInfo.Size(), binlogFileToDownload.Size)
+		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePathTemp, binlogFileInfo.Size(), binlogFileToDownload.Size)
 	}
 
-	if err := driver.writeBinlogMetadataFile(ctx, fileInfo); err != nil {
-		return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePath)
+	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileInfo.Name())
+	if err := os.Rename(binlogFilePathTemp, binlogFilePath); err != nil {
+		return errors.Wrapf(err, "failed to rename %q to %q", binlogFilePathTemp, binlogFilePath)
+	}
+
+	if err := driver.writeBinlogMetadataFile(ctx, binlogFileInfo.Name()); err != nil {
+		return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePathTemp)
 	}
 
 	return nil
 }
 
-func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileInfo fs.FileInfo) error {
-	eventTs, err := driver.parseLocalBinlogFirstEventTs(ctx, binlogFileInfo.Name())
+func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileName string) error {
+	eventTs, err := driver.parseLocalBinlogFirstEventTs(ctx, binlogFileName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse the local binlog file %q's first binlog event ts", binlogFileInfo.Name())
+		return errors.Wrapf(err, "failed to parse the local binlog file %q's first binlog event ts", binlogFileName)
 	}
-	metadataFilePath := filepath.Join(driver.binlogDir, binlogFileInfo.Name()+".meta")
+	metadataFilePath := filepath.Join(driver.binlogDir, binlogFileName+".meta")
 	metadataFile, err := os.Create(metadataFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create binlog metadata file %q", metadataFilePath)
