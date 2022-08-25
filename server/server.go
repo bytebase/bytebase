@@ -42,7 +42,7 @@ import (
 // openAPIPrefix is the API prefix for Bytebase OpenAPI.
 const openAPIPrefix = "/v1"
 
-// errorRecordCount is the count limit for error records
+// errorRecordCount is the count limit for error records.
 const errorRecordCount = 100
 
 // Server is the Bytebase server.
