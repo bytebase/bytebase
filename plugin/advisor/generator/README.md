@@ -26,4 +26,4 @@ This is a SQL review rule generator. It's used for implementing a specific SQL r
    ```shell
    ./generator --flag MySQLColumnDisallowChangingType
    ```
-4. write the core code in generated files.
+4. Implement the rule-specific logic in the generated files.
