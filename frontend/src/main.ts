@@ -41,7 +41,7 @@ import "./plugins/demo/style.css";
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
 
-axios.defaults.timeout = 10000;
+axios.defaults.timeout = 30000;
 axios.interceptors.request.use((request) => {
   if (isDev() && request.url!.startsWith("/api")) {
     console.debug(
