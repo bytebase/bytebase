@@ -94,6 +94,11 @@ export const useIssueStore = defineStore("issue", {
   state: (): IssueState => ({
     issueById: new Map(),
   }),
+  getters: {
+    issueList: (state) => {
+      return Array.from(state.issueById, ([_, value]) => value);
+    },
+  },
   actions: {
     getIssueById(issueId: IssueId): Issue {
       if (issueId == EMPTY_ID) {
@@ -137,8 +142,13 @@ export const useIssueStore = defineStore("issue", {
       const issueList: Issue[] = data.data.map((issue: ResourceObject) => {
         return convert(issue, data.included);
       });
+      for (const issue of issueList) {
+        this.setIssueById({
+          issueId: issue.id,
+          issue,
+        });
+      }
 
-      // The caller consumes directly, so we don't store it.
       return issueList;
     },
     async fetchIssueById(issueId: IssueId) {

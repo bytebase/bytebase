@@ -121,7 +121,11 @@ export const useProjectStore = defineStore("project", {
   state: (): ProjectState => ({
     projectById: new Map(),
   }),
-
+  getters: {
+    projectList: (state) => {
+      return Array.from(state.projectById, ([_, value]) => value);
+    },
+  },
   actions: {
     convert(instance: ResourceObject, includedList: ResourceObject[]): Project {
       return convert(instance, includedList || []);

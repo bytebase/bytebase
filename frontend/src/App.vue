@@ -21,6 +21,11 @@
       </BBModalStack>
     </NDialogProvider>
   </NConfigProvider>
+
+  <!-- onboarding guide telport to document.body -->
+  <teleport to="body">
+    <OnboardingGuide />
+  </teleport>
 </template>
 
 <script lang="ts" setup>
