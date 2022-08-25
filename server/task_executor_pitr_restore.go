@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/bytebase/bytebase/plugin/storage"
+	"github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/store"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -214,7 +214,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	}
 
 	log.Debug("Downloading all binlog files")
-	var uploader storage.Uploader
+	var uploader *s3.Client
 	if server.profile.BackupStorageBackend == api.BackupStorageBackendS3 {
 		uploader = server.s3Client
 	}

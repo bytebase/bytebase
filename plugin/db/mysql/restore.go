@@ -32,7 +32,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/bytebase/bytebase/plugin/storage"
+	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/pkg/errors"
 
@@ -567,7 +567,7 @@ func getBinlogRelativeDir(binlogDir string) string {
 }
 
 // Download binlog files on server.
-func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList []binlogFileMeta, binlogFilesOnServerSorted []BinlogFile, downloadLatestBinlogFile bool, uploader storage.Uploader) error {
+func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList []binlogFileMeta, binlogFilesOnServerSorted []BinlogFile, downloadLatestBinlogFile bool, uploader *bbs3.Client) error {
 	if len(binlogFilesOnServerSorted) == 0 {
 		log.Debug("No binlog file found on server to download")
 		return nil
@@ -609,7 +609,7 @@ func (driver *Driver) GetBinlogDir() string {
 }
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
-func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool, uploader storage.Uploader) error {
+func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool, uploader *bbs3.Client) error {
 	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
 		return errors.Wrapf(err, "failed to create binlog directory %q", driver.binlogDir)
 	}
@@ -686,7 +686,7 @@ func (driver *Driver) downloadBinlogFileFromServer(ctx context.Context, binlogFi
 	return nil
 }
 
-func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader storage.Uploader, binlogFileName string) error {
+func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader *bbs3.Client, binlogFileName string) error {
 	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileName)
 	metaFileName := binlogFileName + binlogMetaSuffix
 	metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
@@ -697,7 +697,7 @@ func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader stor
 	defer binlogFile.Close()
 	defer os.Remove(binlogFilePath)
 	relativeDir := getBinlogRelativeDir(driver.binlogDir)
-	if err := uploader.UploadObject(ctx, path.Join(relativeDir, binlogFileName), binlogFile); err != nil {
+	if _, err := uploader.UploadObject(ctx, path.Join(relativeDir, binlogFileName), binlogFile); err != nil {
 		// Remove the local metadata file so that it can be re-uploaded later.
 		if err := os.Remove(metaFilePath); err != nil {
 			log.Warn("Failed to remove binlog metadata file %q when error occurs in uploading binlog file", zap.String("binlogFile", binlogFilePath), zap.Error(err))
@@ -711,7 +711,7 @@ func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader stor
 	}
 	defer metaFile.Close()
 	// We leave the local metadata file to indicate that the binlog file has been uploaded successfully.
-	if err := uploader.UploadObject(ctx, path.Join(relativeDir, metaFileName), metaFile); err != nil {
+	if _, err := uploader.UploadObject(ctx, path.Join(relativeDir, metaFileName), metaFile); err != nil {
 		return errors.Wrapf(err, "failed to upload binlog metadata file %q to cloud storage", metaFileName)
 	}
 	log.Debug("Successfully uploaded binlog file to cloud storage", zap.String("path", binlogFilePath))
