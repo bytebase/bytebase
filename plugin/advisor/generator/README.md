@@ -1,4 +1,4 @@
-This is a SQL review rule generator. It's useful to implement a SQL review rule.
+This is a SQL review rule generator. It's used for implementing a specific SQL review rule.
 
 ## How To Use
 
