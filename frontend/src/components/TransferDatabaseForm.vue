@@ -12,13 +12,13 @@
         :project="project"
         :transfer-source="state.transferSource"
         @change="state.transferSource = $event"
+        @search-text-change="state.searchText = $event"
       />
     </template>
   </TransferSingleDatabaseForm>
 
   <TransferMultipleDatabaseForm
     v-else
-    :project="project"
     :transfer-source="state.transferSource"
     :database-list="databaseList"
     @dismiss="$emit('dismiss')"
@@ -29,6 +29,7 @@
         :project="project"
         :transfer-source="state.transferSource"
         @change="state.transferSource = $event"
+        @search-text-change="state.searchText = $event"
       />
     </template>
   </TransferMultipleDatabaseForm>
@@ -67,6 +68,7 @@ import {
 
 interface LocalState {
   transferSource: TransferSource;
+  searchText: string;
   loading: boolean;
 }
 
@@ -87,6 +89,7 @@ const currentUser = useCurrentUser();
 
 const state = reactive<LocalState>({
   transferSource: props.projectId === DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
+  searchText: "",
   loading: false,
 });
 
@@ -119,6 +122,11 @@ const databaseList = computed(() => {
     list = cloneDeep(
       databaseStore.getDatabaseListByPrincipalId(currentUser.value.id)
     ).filter((item: Database) => item.project.id != props.projectId);
+  }
+
+  const keyword = state.searchText.trim();
+  if (keyword) {
+    list = list.filter((db) => db.name.toLowerCase().includes(keyword));
   }
 
   return sortDatabaseList(list, environmentList.value);

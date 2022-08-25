@@ -15,6 +15,7 @@
         autocomplete="off"
         name="search"
         class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
+        :value="state.value"
         :placeholder="placeholder"
         @input="(e: any) => $emit('change-text', e.target.value)"
       />
@@ -23,17 +24,29 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults } from "vue";
-withDefaults(
+import { reactive, watch, withDefaults } from "vue";
+
+const props = withDefaults(
   defineProps<{
     placeholder?: string;
+    value?: string;
   }>(),
   {
     placeholder: "Search",
+    value: "",
   }
 );
 
 defineEmits<{
   (event: "change-text", value: string): void;
 }>();
+
+const state = reactive({
+  value: props.value,
+});
+
+watch(
+  () => props.value,
+  (value) => (state.value = value)
+);
 </script>
