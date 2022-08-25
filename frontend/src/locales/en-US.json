@@ -879,7 +879,7 @@
     "view-unassigned-databases": "View unassigned databases",
     "unassigned-databases": "Unassigned databases",
     "restore-database": "Restore database",
-    "selected-n-databases": "Selected {n} database | Selected {n} databases"
+    "selected-n-databases": "{n} database selected | {n} databases selected"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
