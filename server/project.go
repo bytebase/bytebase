@@ -42,9 +42,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
 		}
-		if projectCreate.SchemaMigrationType == "" {
-			projectCreate.SchemaMigrationType = api.ProjectSchemaMigrationTypeDDL
-		}
 		project, err := s.store.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
