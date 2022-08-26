@@ -107,10 +107,12 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
 
             if (tokenListBeforeDot.length === 1) {
               // if the input is "x." x might be a
-              // - "{database_name}."
-              const maybeDatabaseName = tokenListBeforeDot[0];
-              await provideTableAutoCompletion(maybeDatabaseName);
-              // - "{table_name}."
+              // - "{database_name}." (mysql)
+              if (dialect.value === "mysql") {
+                const maybeDatabaseName = tokenListBeforeDot[0];
+                await provideTableAutoCompletion(maybeDatabaseName);
+              }
+              // - "{table_name}." (mysql)
               const maybeTableName = tokenListBeforeDot[0];
               if (dialect.value === "mysql") {
                 await provideColumnAutoCompletion(maybeTableName);
