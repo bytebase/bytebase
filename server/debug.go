@@ -31,20 +31,34 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 	})
 
 	g.GET("/debug/log", func(c echo.Context) error {
-		var errorRecordList []*api.ErrorRecord
+		var errorRecordList []*api.DebugLog
+		var incrID int
 
-		s.errorRecordRing.Do(func(p interface{}) {
+		s.errorRecordRing.Mutex.RLock()
+		defer s.errorRecordRing.Mutex.RUnlock()
+
+		s.errorRecordRing.Ring.Do(func(p interface{}) {
 			if p != nil {
-				errorRecordList = append(errorRecordList, p.(*api.ErrorRecord))
+				incrID++
+				log := &api.DebugLog{
+					ID:          incrID,
+					RecordTs:    p.(*api.ErrorRecord).RecordTs,
+					Method:      p.(*api.ErrorRecord).Method,
+					RequestPath: p.(*api.ErrorRecord).RequestPath,
+					Role:        p.(*api.ErrorRecord).Role,
+					Error:       p.(*api.ErrorRecord).Error,
+					StackTrace:  p.(*api.ErrorRecord).StackTrace,
+				}
+				errorRecordList = append(errorRecordList, log)
 			}
 		})
 
-		debugLog := api.DebugLog{
-			RecordList: errorRecordList,
-			Count:      len(errorRecordList),
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, errorRecordList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal debug log response").SetInternal(err)
 		}
 
-		return c.JSON(http.StatusOK, debugLog)
+		return nil
 	})
 }
 

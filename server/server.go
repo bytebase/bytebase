@@ -68,8 +68,7 @@ type Server struct {
 	store           *store.Store
 	startedTs       int64
 	secret          string
-	errorRecordRing *ring.Ring
-	errorRecordMu   sync.RWMutex
+	errorRecordRing api.ErrorRecordRing
 
 	s3Client *s3bb.Client
 
@@ -111,9 +110,12 @@ var casbinDeveloperPolicy string
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
-		profile:         prof,
-		startedTs:       time.Now().Unix(),
-		errorRecordRing: ring.New(errorRecordCount),
+		profile:   prof,
+		startedTs: time.Now().Unix(),
+		errorRecordRing: api.ErrorRecordRing{
+			Ring:  ring.New(errorRecordCount),
+			Mutex: sync.RWMutex{},
+		},
 	}
 
 	// Display config
@@ -291,9 +293,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return errorRecorderMiddleware(s, next)
-	})
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		errorRecorderMiddleware(err, s, c, e)
+	}
+
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {

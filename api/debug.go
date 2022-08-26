@@ -12,6 +12,11 @@ type DebugPatch struct {
 
 // DebugLog is the API message for debug log.
 type DebugLog struct {
-	RecordList []*ErrorRecord `jsonapi:"relation,recordList"`
-	Count      int            `jsonapi:"attr,count"`
+	ID          int    `jsonapi:"primary,log"`
+	RecordTs    int64  `jsonapi:"attr,recordTs"`
+	Method      string `jsonapi:"attr,method"`
+	RequestPath string `jsonapi:"attr,requestPath"`
+	Role        Role   `jsonapi:"attr,role"`
+	Error       string `jsonapi:"attr,error"`
+	StackTrace  string `jsonapi:"attr,stackTrace"`
 }
