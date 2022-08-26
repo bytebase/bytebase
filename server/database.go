@@ -838,7 +838,7 @@ func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Insta
 		ctx,
 		instance.Engine,
 		db.DriverConfig{
-			PgInstanceDir: s.pgInstanceDir,
+			PgInstanceDir: s.pgInstance.BaseDir,
 			ResourceDir:   common.GetResourceDir(s.profile.DataDir),
 			BinlogDir:     getBinlogAbsDir(s.profile.DataDir, instance.ID),
 		},

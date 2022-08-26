@@ -1,3 +1,4 @@
+// Package mysqlutil provides the resource for MySQL utility packages.
 package mysqlutil
 
 import (
@@ -43,7 +44,7 @@ func GetPath(binName binaryName, resourceDir string) string {
 	return "UNKNOWN_BINARY"
 }
 
-// getExecutableVersion returns the raw output of ``binName` -V`.
+// getExecutableVersion returns the raw output of "binName -V".
 func getExecutableVersion(binName binaryName, resourceDir string) (string, error) {
 	var cmd *exec.Cmd
 	var version bytes.Buffer

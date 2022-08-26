@@ -1,3 +1,4 @@
+// Package main is the main binary for SQL review service.
 package main
 
 import (

@@ -184,7 +184,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		err = os.Remove(path)
 		a.NoError(err)
 	}
-	err = mysqlDriver.FetchAllBinlogFilesFromMySQL(ctx, true /* downloadLatestBinlogFile */, nil)
+	err = mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, nil)
 	a.NoError(err)
 	binlogFilesDownloaded, err := mysqlDriver.GetSortedLocalBinlogFiles()
 	a.NoError(err)
@@ -196,7 +196,20 @@ func TestFetchBinlogFiles(t *testing.T) {
 
 	t.Log("Delete some downloaded files and re-download")
 	rand.Seed(time.Now().Unix())
-
+	// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
+	binlogFiles, err := os.ReadDir(binlogDir)
+	a.NoError(err)
+	for _, file := range binlogFiles {
+		path := filepath.Join(binlogDir, file.Name())
+		err = os.Remove(path)
+		a.NoError(err)
+	}
+	t.Log("Fetch binlog files")
+	err = mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, nil)
+	a.NoError(err)
+	binlogFilesDownloaded, err = mysqlDriver.GetSortedLocalBinlogFiles()
+	a.NoError(err)
+	t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
 	deleteIndex := rand.Intn(numBinlogFiles)
 	deletePath := filepath.Join(binlogDir, binlogFilesDownloaded[deleteIndex].Name)
 	t.Logf("Deleting file %s", binlogFilesDownloaded[deleteIndex].Name)
@@ -206,7 +219,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	a.NoError(err)
 	// Re-download and check.
 	t.Log("Re-downloading binlog files")
-	err = mysqlDriver.FetchAllBinlogFilesFromMySQL(ctx, true /* downloadLatestBinlogFile */, nil)
+	err = mysqlDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, nil)
 	a.NoError(err)
 	binlogFilesDownloadedAgain, err := mysqlDriver.GetSortedLocalBinlogFiles()
 	a.NoError(err)

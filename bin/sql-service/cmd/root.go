@@ -1,3 +1,4 @@
+// Package cmd provides the cobra CLI implementation for SQL review service.
 package cmd
 
 import (

@@ -22,7 +22,15 @@
           `${data.length} ${t("sql-editor.rows", data.length)}`
         }}</span>
       </div>
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-center gap-x-3">
+        <NButton
+          v-if="showVisualizeButton"
+          text
+          type="primary"
+          @click="visualizeExplain"
+        >
+          {{ $t("sql-editor.visualize-explain") }}
+        </NButton>
         <NDropdown
           trigger="hover"
           :options="exportDropdownOptions"
@@ -69,8 +77,8 @@ import { useResizeObserver } from "@vueuse/core";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
-
 import { useTabStore, useSQLEditorStore } from "@/store";
+import { createExplainToken } from "@/utils";
 
 interface State {
   search: string;
@@ -194,4 +202,30 @@ useResizeObserver(tableViewRef, (entries) => {
   const { height } = entry.contentRect;
   tableMaxHeight.value = height;
 });
+
+const showVisualizeButton = computed((): boolean => {
+  const { databaseType } = sqlEditorStore.connectionContext;
+  const { executeParams } = tabStore.currentTab;
+  return databaseType === "POSTGRES" && !!executeParams?.option?.explain;
+});
+
+const visualizeExplain = () => {
+  try {
+    const { executeParams, queryResult } = tabStore.currentTab;
+    if (!executeParams || !queryResult) return;
+
+    const statement = executeParams.query || "";
+    if (!statement) return;
+
+    const lines: string[][] = queryResult[2];
+    const explain = lines.map((line) => line[0]).join("\n");
+    if (!explain) return;
+
+    const token = createExplainToken(statement, explain);
+
+    window.open(`/explain-visualizer.html?token=${token}`, "_blank");
+  } catch {
+    // nothing
+  }
+};
 </script>

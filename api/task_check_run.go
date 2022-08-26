@@ -99,6 +99,10 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 type TaskCheckDatabaseStatementTypePayload struct {
 	Statement string  `json:"statement,omitempty"`
 	DbType    db.Type `json:"dbType,omitempty"`
+
+	// MySQL special fields.
+	Charset   string `json:"charset,omitempty"`
+	Collation string `json:"collation,omitempty"`
 }
 
 // Namespace is the namespace for task check result.

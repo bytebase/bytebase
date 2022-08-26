@@ -535,18 +535,23 @@ func (*Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFi
 // patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
 func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
 	// Build UPDATE clause.
-	set, args := []string{}, []interface{}{}
-	set, args = append(set, fmt.Sprintf("updater_id = $%d", len(args)+1)), append(args, patch.UpdaterID)
-	set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, patch.Status)
-	set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, patch.Comment)
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
-	if patch.Payload == "" {
-		patch.Payload = "{}"
+	if v := patch.Status; v != nil {
+		set, args = append(set, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Comment; v != nil {
+		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		if *v == "" {
+			*v = "{}"
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
 
-	set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, patch.Payload)
 	args = append(args, patch.ID)
 
 	var backupRaw backupRaw

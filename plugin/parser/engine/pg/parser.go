@@ -1,3 +1,4 @@
+// Package pg implements the parser for PostgreSQL.
 package pg
 
 import (

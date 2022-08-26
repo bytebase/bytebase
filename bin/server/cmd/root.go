@@ -1,3 +1,4 @@
+// Package cmd implements the cobra CLI for Bytebase server.
 package cmd
 
 import (

@@ -512,6 +512,17 @@ export const useInstanceStore = defineStore("instance", {
 
       return historyList;
     },
+    async createEmbeddedPostgresInstance() {
+      const data = (
+        await axios.post<{
+          host: string;
+          port: number;
+          username: string;
+        }>("/api/instance/new-embedded-pg")
+      ).data;
+
+      return data;
+    },
   },
 });
 

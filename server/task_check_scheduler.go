@@ -299,12 +299,17 @@ func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	}
 }
 func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
-	if database.Instance.Engine != db.Postgres {
+	switch database.Instance.Engine {
+	case db.Postgres:
+	case db.MySQL, db.TiDB:
+	default:
 		return nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
 		Statement: statement,
 		DbType:    database.Instance.Engine,
+		Charset:   database.CharacterSet,
+		Collation: database.Collation,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)

@@ -42,7 +42,8 @@ export const showGuideDialog = async (
     return;
   }
 
-  const targetElement = await waitForTargetElement(guideStep.selectors);
+  // NOTE: stay empty value for now.
+  const targetElement = await waitForTargetElement("");
   if (targetElement) {
     // After got the targetElement, remove the guide dialog again
     // to ensure that only one guide dialog is shown at a time.

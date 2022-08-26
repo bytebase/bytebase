@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/plugin/storage"
+	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -181,6 +181,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 	archive := api.Archived
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
+		UpdaterID: api.SystemBotID,
 		RowStatus: &archive,
 	}
 	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
@@ -240,11 +241,11 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	var uploader storage.Uploader
+	var uploader *bbs3.Client
 	if r.server.profile.BackupStorageBackend == api.BackupStorageBackendS3 {
 		uploader = r.server.s3Client
 	}
-	if err := mysqlDriver.FetchAllBinlogFilesFromMySQL(ctx, false /* downloadLatestBinlogFile */, uploader); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, uploader); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}

@@ -3,31 +3,41 @@
     <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mb-2">
       {{ $t("quick-action.unassigned-db-hint") }}
     </div>
-    <div class="radio-set-row">
-      <label class="radio">
-        <input
-          v-model="state.transferSource"
-          tabindex="-1"
-          type="radio"
-          class="btn"
-          value="DEFAULT"
+    <div class="flex items-center justify-between">
+      <div class="radio-set-row">
+        <label class="radio">
+          <input
+            v-model="state.transferSource"
+            tabindex="-1"
+            type="radio"
+            class="btn"
+            value="DEFAULT"
+          />
+          <span class="label">
+            {{ $t("quick-action.from-unassigned-databases") }}
+          </span>
+        </label>
+        <label class="radio">
+          <input
+            v-model="state.transferSource"
+            tabindex="-1"
+            type="radio"
+            class="btn"
+            value="OTHER"
+          />
+          <span class="label">
+            {{ $t("quick-action.from-projects") }}
+          </span>
+        </label>
+      </div>
+      <div>
+        <BBTableSearch
+          class="m-px"
+          :value="searchText"
+          :placeholder="$t('database.search-database-name')"
+          @change-text="(text) => $emit('search-text-change', text)"
         />
-        <span class="label">
-          {{ $t("quick-action.from-unassigned-databases") }}
-        </span>
-      </label>
-      <label class="radio">
-        <input
-          v-model="state.transferSource"
-          tabindex="-1"
-          type="radio"
-          class="btn"
-          value="OTHER"
-        />
-        <span class="label">
-          {{ $t("quick-action.from-projects") }}
-        </span>
-      </label>
+      </div>
     </div>
   </div>
 </template>
@@ -50,10 +60,15 @@ const props = defineProps({
     type: String as PropType<TransferSource>,
     required: true,
   },
+  searchText: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits<{
   (event: "change", src: TransferSource): void;
+  (event: "search-text-change", searchText: string): void;
 }>();
 
 const state = reactive<LocalState>({

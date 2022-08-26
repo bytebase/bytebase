@@ -120,6 +120,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:    code,
 			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" doesn't use InnoDB engine", in.Text()),
+			Line:    in.OriginTextPosition(),
 		})
 	}
 	return in, false
