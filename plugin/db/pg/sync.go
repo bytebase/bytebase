@@ -639,7 +639,7 @@ func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 		  AND constraint_type = 'PRIMARY KEY'
 	`
 
-	var unused string
+	var isPrimary bool
 	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&unused); err != nil {
 		if err == sql.ErrNoRows {
 			// The query returns empty row, which means not primary key.
