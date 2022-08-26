@@ -6,7 +6,7 @@
       ref="editorRef"
       v-model:value="sqlCode"
       class="w-full h-full"
-      :language="selectedLanguage"
+      :dialect="selectedDialect"
       :readonly="readonly"
       @change="handleChange"
       @change-selection="handleChangeSelection"
@@ -30,6 +30,7 @@ import {
 } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import { SQLDialect } from "@/types";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -54,15 +55,12 @@ const selectedInstance = computed(() => {
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
-const selectedLanguage = computed(() => {
+const selectedDialect = computed((): SQLDialect => {
   const engine = selectedInstanceEngine.value;
-  if (engine === "MySQL") {
-    return "mysql";
-  }
   if (engine === "PostgreSQL") {
-    return "pgsql";
+    return "postgresql";
   }
-  return "sql";
+  return "mysql";
 });
 const readonly = computed(() => sheetStore.isReadOnly);
 

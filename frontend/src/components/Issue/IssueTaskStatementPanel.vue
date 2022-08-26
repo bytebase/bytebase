@@ -126,6 +126,7 @@
       :value="state.editStatement"
       :readonly="!state.editing"
       :auto-focus="false"
+      :dialect="dialect"
       @change="onStatementChange"
       @ready="handleMonacoEditorReady"
     />
@@ -177,7 +178,7 @@ import {
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { baseDirectoryWebUrl, Issue, Repository } from "@/types";
+import { baseDirectoryWebUrl, Issue, Repository, SQLDialect } from "@/types";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
@@ -210,6 +211,7 @@ export default defineComponent({
       issue,
       create,
       allowEditStatement,
+      selectedDatabase,
       selectedStatement: statement,
       updateStatement,
       allowApplyStatementToOtherStages,
@@ -227,6 +229,15 @@ export default defineComponent({
 
     const editorRef = ref<InstanceType<typeof MonacoEditor>>();
     const overrideSQLDialog = useDialog();
+
+    const dialect = computed((): SQLDialect => {
+      const db = selectedDatabase.value;
+      if (db?.instance.engine === "POSTGRES") {
+        return "postgresql";
+      }
+      // fallback to mysql dialect anyway
+      return "mysql";
+    });
 
     const formatOnSave = computed({
       get: () => uiStateStore.issueFormatStatementOnSave,
@@ -389,6 +400,7 @@ export default defineComponent({
       allowEditStatement,
       statement,
       allowApplyStatementToOtherStages,
+      dialect,
       formatOnSave,
       state,
       editorRef,

@@ -11,11 +11,11 @@ import {
   onMounted,
   ref,
   toRef,
-  toRaw,
   nextTick,
   onUnmounted,
   watch,
   shallowRef,
+  PropType,
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
 import { Database, SQLDialect, Table } from "@/types";
@@ -27,8 +27,8 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  language: {
-    type: String,
+  dialect: {
+    type: String as PropType<SQLDialect>,
     default: "mysql",
   },
   readonly: {
@@ -49,7 +49,7 @@ const emit = defineEmits<{
 }>();
 
 const sqlCode = toRef(props, "value");
-const language = toRef(props, "language");
+const dialect = toRef(props, "dialect");
 const readOnly = toRef(props, "readonly");
 const monacoInstanceRef = ref();
 const editorContainerRef = ref<HTMLDivElement>();
@@ -62,7 +62,7 @@ const getEditorInstance = () => {
   const { monaco, formatContent, setPositionAtEndOfLine } =
     monacoInstanceRef.value;
 
-  const model = monaco.editor.createModel(sqlCode.value, toRaw(language.value));
+  const model = monaco.editor.createModel(sqlCode.value, "sql");
   const editorInstance = monaco.editor.create(editorContainerRef.value, {
     model,
     tabSize: 2,
@@ -101,7 +101,7 @@ const getEditorInstance = () => {
       if (readOnly.value) {
         return;
       }
-      formatContent(editorInstance, language.value as SQLDialect);
+      formatContent(editorInstance, dialect.value);
       nextTick(() => setPositionAtEndOfLine(editorInstance));
     },
   });
@@ -147,10 +147,13 @@ onMounted(async () => {
     formatContent,
     setContent,
     setAutoCompletionContext,
+    setDialect,
     setPositionAtEndOfLine,
-  } = await useMonaco(language.value);
+  } = await useMonaco(dialect.value);
 
   if (!editorContainerRef.value) {
+    // Give up creating monaco editor if the component has been unmounted
+    // very quickly.
     return;
   }
 
@@ -177,6 +180,8 @@ onMounted(async () => {
   nextTick(() => {
     emit("ready");
   });
+
+  watch(dialect, () => setDialect(dialect.value));
 });
 
 onUnmounted(() => {
@@ -245,7 +250,7 @@ const formatEditorContent = () => {
   }
   monacoInstanceRef.value?.formatContent(
     editorInstanceRef.value!,
-    language.value as SQLDialect
+    dialect.value
   );
   nextTick(() => {
     monacoInstanceRef.value?.setPositionAtEndOfLine(editorInstanceRef.value!);
