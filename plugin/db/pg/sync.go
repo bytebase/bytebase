@@ -630,7 +630,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 	isPrimaryQuery := `
-		SELECT 1
+		SELECT EXISTS (SELECT 1
 		FROM information_schema.table_constraints
 		WHERE constraint_schema = $1
 		  AND constraint_name = $2
