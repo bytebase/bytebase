@@ -403,6 +403,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
 		}
+	case SchemaRuleColumnDisallowChangeType:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnDisallowChangingType, nil
+		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
 		case db.MySQL, db.TiDB:
