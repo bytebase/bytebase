@@ -640,7 +640,7 @@ func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 	`
 
 	var isPrimary bool
-	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&unused); err != nil {
+	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&isPrimary); err != nil {
 		if err == sql.ErrNoRows {
 			// The query returns empty row, which means not primary key.
 			return nil
