@@ -174,8 +174,6 @@ export const useIssueStore = defineStore("issue", {
         this.setIssueById({ issueId: issue.id, issue })
       );
 
-      // The caller consumes directly, so we don't store it.
-
       const nextToken = isPagedResponse(responseData, "issues")
         ? responseData.data.attributes.nextToken
         : "";
