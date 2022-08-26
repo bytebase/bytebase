@@ -1,3 +1,4 @@
+// Package mysql is the plugin for MySQL driver.
 package mysql
 
 import (

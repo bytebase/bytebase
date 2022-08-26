@@ -114,7 +114,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			issueFind.SubscriberID = &subscriberID
 		}
 
-		issueList, err := s.store.FindIssue(ctx, issueFind)
+		issueList, err := s.store.FindIssueStripped(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
@@ -188,8 +188,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
-			environmentID := getActiveTaskEnvironmentID(issue.Pipeline)
-			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+			stage := getActiveStage(issue.Pipeline.StageList)
+			if stage == nil {
+				// all stages have finished, use the last stage
+				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+			}
+			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
@@ -365,7 +369,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
+	if err := s.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
@@ -1404,21 +1408,6 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 			}
 		}
 	}
-}
-
-func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status == api.TaskPendingApproval ||
-				task.Status == api.TaskPending ||
-				task.Status == api.TaskRunning ||
-				task.Status == api.TaskCanceled {
-				return stage.EnvironmentID
-			}
-		}
-	}
-	// use the last stage if all done
-	return pipeline.StageList[len(pipeline.StageList)-1].EnvironmentID
 }
 
 func marshalPageToken(lastIssueID int) (string, error) {

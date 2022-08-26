@@ -70,11 +70,11 @@
         <BBAttention
           class="mb-1"
           :style="'WARN'"
-          :title="$t('instance.sentence.create-user-example.postgres.warn')"
+          :title="$t('instance.sentence.create-user-example.postgresql.warn')"
         />
         <i18n-t
           tag="p"
-          keypath="instance.sentence.create-user-example.postgres.template"
+          keypath="instance.sentence.create-user-example.postgresql.template"
         >
           <template #password>
             <span class="text-red-600">YOUR_DB_PWD</span>

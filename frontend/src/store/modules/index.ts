@@ -41,3 +41,4 @@ export * from "./vcs";
 export * from "./view";
 export * from "./db_extension";
 export * from "./sqlReview";
+export * from "./onboardingGuide";

@@ -38,6 +38,7 @@ func TestRequirePK(t *testing.T) {
 					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
+					Line:    1,
 				},
 			},
 		},
@@ -74,11 +75,12 @@ func TestRequirePK(t *testing.T) {
 					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
+					Line:    2,
 				},
 			},
 		},
 		{
-			Statement: "CREATE TABLE t(id INT PRIMARY KEY);" +
+			Statement: "CREATE TABLE t(id INT PRIMARY KEY);\n" +
 				"ALTER TABLE t DROP INDEX `PRIMARY`",
 			Want: []advisor.Advice{
 				{
@@ -86,6 +88,7 @@ func TestRequirePK(t *testing.T) {
 					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
+					Line:    2,
 				},
 			},
 		},
@@ -170,18 +173,20 @@ func TestRequirePK(t *testing.T) {
 					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
+					Line:    2,
 				},
 			},
 		},
 		{
 			// Use MockCatalogService
-			Statement: `ALTER TABLE t DROP COLUMN id, DROP COLUMN name`,
+			Statement: `ALTER TABLE tech_book DROP COLUMN id, DROP COLUMN name`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
-					Content: "Table `t` requires PRIMARY KEY",
+					Content: "Table `tech_book` requires PRIMARY KEY",
+					Line:    1,
 				},
 			},
 		},
@@ -207,6 +212,7 @@ func TestRequirePK(t *testing.T) {
 					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `tech_book` requires PRIMARY KEY",
+					Line:    2,
 				},
 			},
 		},

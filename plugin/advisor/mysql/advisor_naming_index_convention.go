@@ -96,6 +96,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 				Code:    advisor.NamingIndexConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
+				Line:    indexData.line,
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -104,6 +105,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 				Code:    advisor.NamingIndexConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+				Line:    indexData.line,
 			})
 		}
 	}
@@ -120,6 +122,7 @@ type indexMetaData struct {
 	indexName string
 	tableName string
 	metaData  map[string]string
+	line      int
 }
 
 // getMetaDataList returns the list of index with meta data.
@@ -142,6 +145,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					indexName: constraint.Name,
 					tableName: node.Table.Name.String(),
 					metaData:  metaData,
+					line:      constraint.OriginTextPosition(),
 				})
 			}
 		}
@@ -168,6 +172,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					indexName: spec.ToKey.String(),
 					tableName: node.Table.Name.String(),
 					metaData:  metaData,
+					line:      in.OriginTextPosition(),
 				})
 			case ast.AlterTableAddConstraint:
 				if spec.Constraint.Tp == ast.ConstraintIndex {
@@ -184,6 +189,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 						indexName: spec.Constraint.Name,
 						tableName: node.Table.Name.String(),
 						metaData:  metaData,
+						line:      in.OriginTextPosition(),
 					})
 				}
 			}
@@ -202,6 +208,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				indexName: node.IndexName,
 				tableName: node.Table.Name.String(),
 				metaData:  metaData,
+				line:      in.OriginTextPosition(),
 			})
 		}
 	}

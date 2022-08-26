@@ -169,7 +169,8 @@ CREATE TABLE project (
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
     role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
-    schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP'
+    schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP',
+    schema_migration_type TEXT NOT NULL CHECK (schema_migration_type IN ('DDL', 'SDL')) DEFAULT 'DDL'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);

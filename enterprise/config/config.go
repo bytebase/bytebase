@@ -1,3 +1,4 @@
+// Package config provides configuration interface for enterprise licensing.
 package config
 
 import (

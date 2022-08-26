@@ -330,9 +330,11 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 
 	var tables []*tableSchema
 	query := "" +
-		"SELECT tbl.schemaname, tbl.tablename, tbl.tableowner, pg_table_size(c.oid), pg_indexes_size(c.oid) " +
-		"FROM pg_catalog.pg_tables tbl, pg_catalog.pg_class c " +
-		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema') AND tbl.schemaname=c.relnamespace::regnamespace::text AND tbl.tablename = c.relname;"
+		"SELECT tbl.schemaname, tbl.tablename, tbl.tableowner, " +
+		"pg_table_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass), " +
+		"pg_indexes_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass) " +
+		"FROM pg_catalog.pg_tables tbl " +
+		"WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema');"
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -375,7 +377,7 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 }
 
 func getTable(txn *sql.Tx, tbl *tableSchema) error {
-	countQuery := fmt.Sprintf(`SELECT COUNT(1) FROM "%s"."%s";`, tbl.schemaName, tbl.name)
+	countQuery := fmt.Sprintf(`SELECT GREATEST(reltuples::bigint, 0::BIGINT) AS estimate FROM pg_class WHERE oid = (quote_ident('%s') || '.' || quote_ident('%s'))::regclass;`, tbl.schemaName, tbl.name)
 	rows, err := txn.Query(countQuery)
 	if err != nil {
 		return err
@@ -421,9 +423,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.collation_name,
 		cols.udt_schema,
 		cols.udt_name,
-		pg_catalog.col_description(c.oid, cols.ordinal_position::int) as column_comment
-	FROM INFORMATION_SCHEMA.COLUMNS AS cols, pg_catalog.pg_class c
-	WHERE table_schema=$1 AND table_name=$2 AND cols.table_schema=c.relnamespace::regnamespace::text AND cols.table_name=c.relname;`
+		pg_catalog.col_description((quote_ident(table_schema) || '.' || quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+	FROM INFORMATION_SCHEMA.COLUMNS AS cols
+	WHERE table_schema=$1 AND table_name=$2;`
 	rows, err := txn.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
@@ -628,21 +630,21 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 	isPrimaryQuery := `
-		SELECT count(*)
-		FROM information_schema.table_constraints
-		WHERE constraint_schema = $1
-		  AND constraint_name = $2
-		  AND table_schema = $1
-		  AND table_name = $3
-		  AND constraint_type = 'PRIMARY KEY'
+		SELECT EXISTS (SELECT 1
+			FROM information_schema.table_constraints
+			WHERE constraint_schema = $1
+				AND constraint_name = $2
+				AND table_schema = $1
+				AND table_name = $3
+				AND constraint_type = 'PRIMARY KEY')
 	`
 
-	var yes int
-	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&yes); err != nil {
+	var isPrimary bool
+	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&isPrimary); err != nil {
 		return err
 	}
 
-	idx.primary = (yes == 1)
+	idx.primary = isPrimary
 	return nil
 }
 

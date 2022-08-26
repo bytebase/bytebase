@@ -1,4 +1,4 @@
-// Bytebase cli command.
+// Package main is the main package for bb CLI.
 package main
 
 import (

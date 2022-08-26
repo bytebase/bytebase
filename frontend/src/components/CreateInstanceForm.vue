@@ -232,15 +232,10 @@
   <BBAlert
     v-if="state.showCreateInstanceWarningModal"
     :style="'WARN'"
-    :ok-text="$t('instance.ignore-and-create')"
+    :ok-text="warningModalOkText"
     :title="$t('instance.connection-info-seems-to-be-incorrect')"
     :description="state.createInstanceWarning"
-    @ok="
-      () => {
-        state.showCreateInstanceWarningModal = false;
-        doCreate();
-      }
-    "
+    @ok="handleWarningModalOkClick"
     @cancel="state.showCreateInstanceWarningModal = false"
   ></BBAlert>
 </template>
@@ -261,7 +256,12 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useInstanceStore, useSQLStore } from "@/store";
+import {
+  pushNotification,
+  useInstanceStore,
+  useOnboardingGuideStore,
+  useSQLStore,
+} from "@/store";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -331,6 +331,19 @@ const defaultPort = computed(() => {
 
 const showSSL = computed((): boolean => {
   return state.instance.engine === "CLICKHOUSE";
+});
+
+const isInOnboaringCreateDatabaseGuide = computed(() => {
+  const guideName = useOnboardingGuideStore().guideName;
+  return guideName === "create-database";
+});
+
+const warningModalOkText = computed(() => {
+  if (isInOnboaringCreateDatabaseGuide.value) {
+    return t("instance.create-an-onboarding-postgresql-instance");
+  } else {
+    return t("instance.ignore-and-create");
+  }
 });
 
 watch(showSSL, (ssl) => {
@@ -412,6 +425,33 @@ const updateInstance = (field: string, value: string) => {
     str = value.trim();
   }
   (state.instance as any)[field] = str;
+};
+
+const handleWarningModalOkClick = async () => {
+  // When user get the warning of incorrect instance info in creating database onboarding guide,
+  // we'd like to display the `create an embedded PostgreSQL database` button instead of `ignore and create`.
+  if (isInOnboaringCreateDatabaseGuide.value) {
+    const connectionInfo =
+      await useInstanceStore().createEmbeddedPostgresInstance();
+    state.instance = {
+      ...state.instance,
+      engine: "POSTGRES",
+      host: connectionInfo.host,
+      port: String(connectionInfo.port),
+      username: connectionInfo.username,
+      password: "",
+    };
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.success"),
+      description: t("instance.successfully-created-postgresql-instance"),
+    });
+    state.showCreateInstanceWarningModal = false;
+  } else {
+    state.showCreateInstanceWarningModal = false;
+    doCreate();
+  }
 };
 
 const cancel = () => {

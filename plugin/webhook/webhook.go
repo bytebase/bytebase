@@ -1,3 +1,4 @@
+// Package webhook provides the webhook implementations for various messaging platforms.
 package webhook
 
 import (

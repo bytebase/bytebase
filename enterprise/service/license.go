@@ -1,3 +1,4 @@
+// Package service implements the enterprise license service.
 package service
 
 import (

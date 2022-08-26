@@ -1,3 +1,4 @@
+// Package clickhouse is the plugin for ClickHouse driver.
 package clickhouse
 
 import (

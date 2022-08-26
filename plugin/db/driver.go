@@ -1,3 +1,4 @@
+// Package db provides the interfaces and libraries for database driver plugins.
 package db
 
 import (

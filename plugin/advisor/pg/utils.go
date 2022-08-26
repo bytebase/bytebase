@@ -1,3 +1,4 @@
+// Package pg implements the SQL advisor rules for PostgreSQL.
 package pg
 
 import (

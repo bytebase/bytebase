@@ -1,3 +1,4 @@
+// Package metric is the interfaces for telemetry metrics.
 package metric
 
 // Name is the metric name.

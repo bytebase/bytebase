@@ -1,3 +1,4 @@
+// Package mysql implements the SQL advisor rules for MySQL.
 package mysql
 
 import (

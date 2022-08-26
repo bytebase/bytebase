@@ -703,7 +703,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
-	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
+	// If every task in the pipeline completes, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
 	if taskPatched.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
@@ -714,9 +714,9 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		if pipeline == nil {
 			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
 		}
-		lastStage := pipeline.StageList[len(pipeline.StageList)-1]
-		if lastStage.TaskList[len(lastStage.TaskList)-1].ID == taskPatched.ID {
+		if areAllTasksDone(pipeline) {
 			if issue == nil {
+				// System-generated tasks such as backup tasks don't have corresponding issues.
 				status := api.PipelineDone
 				pipelinePatch := &api.PipelinePatch{
 					ID:        pipeline.ID,
@@ -814,4 +814,15 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 	}
 	// never reached
 	return api.UnknownID, errors.New("invalid assigneeGroupValue")
+}
+
+func areAllTasksDone(pipeline *api.Pipeline) bool {
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status != api.TaskDone {
+				return false
+			}
+		}
+	}
+	return true
 }

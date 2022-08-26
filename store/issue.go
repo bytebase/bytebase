@@ -112,20 +112,21 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 	return issue, nil
 }
 
-// FindIssue finds a list of Issue instances.
-func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
+// FindIssueStripped finds a list of issues in stripped format.
+// We do not load the pipeline in order to reduce the size of the response payload and the complexity of composing the issue list.
+func (s *Store) FindIssueStripped(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Issue list with IssueFind[%+v]", find)
 	}
 	var issueList []*api.Issue
 	for _, raw := range issueRawList {
-		issue, err := s.composeIssue(ctx, raw)
+		issue, err := s.composeIssueStripped(ctx, raw)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", raw)
 		}
 		// If no specified project, filter out issues belonging to archived project
-		if issue.Project == nil || issue.Project.RowStatus == api.Archived {
+		if issue == nil || issue.Project == nil || issue.Project.RowStatus == api.Archived {
 			continue
 		}
 		issueList = append(issueList, issue)
@@ -367,6 +368,90 @@ func (s *Store) composeIssue(ctx context.Context, raw *issueRaw) (*api.Issue, er
 	if err != nil {
 		return nil, err
 	}
+	issue.Pipeline = pipeline
+
+	return issue, nil
+}
+
+// composeIssueStripped is a stripped version of compose issue only used in listing issues
+// for reducing the cost and payload of composing a full issue.
+func (s *Store) composeIssueStripped(ctx context.Context, raw *issueRaw) (*api.Issue, error) {
+	issue := raw.toIssue()
+
+	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Updater = updater
+
+	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Assignee = assignee
+
+	// TODO(d): add subscriber caching.
+	issueSubscriberFind := &api.IssueSubscriberFind{
+		IssueID: &issue.ID,
+	}
+	issueSubscriberList, err := s.FindIssueSubscriber(ctx, issueSubscriberFind)
+	if err != nil {
+		return nil, err
+	}
+	for _, issueSub := range issueSubscriberList {
+		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
+	}
+
+	project, err := s.GetProjectByID(ctx, issue.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	issue.Project = project
+
+	// Creating a stripped pipeline.
+	find := &api.PipelineFind{ID: &issue.PipelineID}
+	pipelineRaw, err := s.getPipelineRaw(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get Pipeline with ID %d", issue.PipelineID)
+	}
+	if pipelineRaw == nil {
+		return nil, nil
+	}
+	pipeline := pipelineRaw.toPipeline()
+
+	stageRawList, err := s.findStageRaw(ctx, &api.StageFind{PipelineID: &issue.PipelineID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find Stage list with StageFind[%+v]", find)
+	}
+	var stageList []*api.Stage
+	for _, raw := range stageRawList {
+		stage := raw.toStage()
+		env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+		if err != nil {
+			return nil, err
+		}
+		stage.Environment = env
+		taskFind := &api.TaskFind{
+			PipelineID: &stage.PipelineID,
+			StageID:    &stage.ID,
+		}
+		taskRawList, err := s.findTaskRaw(ctx, taskFind)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find task list with TaskFind[%+v]", taskFind)
+		}
+		for _, taskRaw := range taskRawList {
+			stage.TaskList = append(stage.TaskList, taskRaw.toTask())
+		}
+		stageList = append(stageList, stage)
+	}
+	pipeline.StageList = stageList
+
 	issue.Pipeline = pipeline
 
 	return issue, nil

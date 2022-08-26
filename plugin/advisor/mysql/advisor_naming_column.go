@@ -73,14 +73,21 @@ type namingColumnConventionChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var columnList []string
+	type columnData struct {
+		name string
+		line int
+	}
+	var columnList []columnData
 	var tableName string
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		tableName = node.Table.Name.O
 		for _, column := range node.Cols {
-			columnList = append(columnList, column.Name.Name.O)
+			columnList = append(columnList, columnData{
+				name: column.Name.Name.O,
+				line: column.OriginTextPosition(),
+			})
 		}
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
@@ -89,34 +96,45 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			switch spec.Tp {
 			// RENAME COLUMN
 			case ast.AlterTableRenameColumn:
-				columnList = append(columnList, spec.NewColumnName.Name.O)
+				columnList = append(columnList, columnData{
+					name: spec.NewColumnName.Name.O,
+					line: in.OriginTextPosition(),
+				})
 			// ADD COLUMNS
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
-					columnList = append(columnList, column.Name.Name.O)
+					columnList = append(columnList, columnData{
+						name: column.Name.Name.O,
+						line: in.OriginTextPosition(),
+					})
 				}
 			// CHANGE COLUMN
 			case ast.AlterTableChangeColumn:
-				columnList = append(columnList, spec.NewColumns[0].Name.Name.O)
+				columnList = append(columnList, columnData{
+					name: spec.NewColumns[0].Name.Name.O,
+					line: in.OriginTextPosition(),
+				})
 			}
 		}
 	}
 
 	for _, column := range columnList {
-		if !v.format.MatchString(column) {
+		if !v.format.MatchString(column.name) {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
+				Line:    column.line,
 			})
 		}
-		if v.maxLength > 0 && len(column) > v.maxLength {
+		if v.maxLength > 0 && len(column.name) > v.maxLength {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column, v.maxLength),
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
+				Line:    column.line,
 			})
 		}
 	}

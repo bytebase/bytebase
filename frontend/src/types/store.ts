@@ -9,6 +9,7 @@ import {
   View,
   DBExtension,
   Sheet,
+  OnboardingGuideType,
 } from ".";
 import { Activity } from "./activity";
 import { ServerInfo } from "./actuator";
@@ -218,4 +219,8 @@ export interface SheetState {
 
 export interface DebugState {
   isDebug: boolean;
+}
+
+export interface OnboardingGuideState {
+  guideName?: OnboardingGuideType;
 }
