@@ -64,7 +64,10 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
           if (lastToken.endsWith(".") && lastToken !== ".") {
             // The auto-completion trigger is "."
 
-            const tokenListBeforeDot = lastToken.slice(0, -1).split(".");
+            const tokenListBeforeDot = lastToken
+              .slice(0, -1)
+              .split(".")
+              .map((word) => word.replace(/[`'"]/g, "")); // remove quotes
 
             const provideTableAutoCompletion = async (databaseName: string) => {
               const database = databaseList.value.find(
@@ -117,7 +120,7 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
                 // since public can be omitted by default
                 await provideColumnAutoCompletion(`public.${maybeTableName}`);
               }
-              // - alias (not supported)
+              // - alias (can not recognize yet)
             }
 
             if (tokenListBeforeDot.length === 2) {
