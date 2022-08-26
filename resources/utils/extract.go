@@ -1,3 +1,4 @@
+// Package utils provides the library for installing resources..
 package utils
 
 import (

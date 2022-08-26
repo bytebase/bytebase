@@ -1,3 +1,4 @@
+// Package main is the Go code generator for SQL review rules.
 package main
 
 import (

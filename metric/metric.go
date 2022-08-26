@@ -1,3 +1,4 @@
+// Package metric provides the API definition for metrics.
 package metric
 
 import (
