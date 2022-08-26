@@ -12,10 +12,10 @@ import (
 
 	// install mysql driver.
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
+	// register pg driver.
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
 	// install pg driver.
 	"github.com/xo/dburl"
-
-	_ "github.com/bytebase/bytebase/plugin/db/pg"
 )
 
 func getDatabase(u *dburl.URL) string {
