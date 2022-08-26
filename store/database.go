@@ -8,10 +8,11 @@ import (
 	"math/rand"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/metric"
-	"github.com/pkg/errors"
 )
 
 // databaseRaw is the store model for an Database.

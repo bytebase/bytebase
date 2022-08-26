@@ -6,13 +6,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/segment"
 	"github.com/bytebase/bytebase/store"
-	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 )

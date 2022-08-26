@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
-	"github.com/pkg/errors"
 
 	// Register postgres driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"

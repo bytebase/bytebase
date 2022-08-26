@@ -3,11 +3,12 @@ package collector
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common/log"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 var _ metric.Collector = (*instanceCountCollector)(nil)

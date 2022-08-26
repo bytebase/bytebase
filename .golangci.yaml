@@ -34,6 +34,10 @@ run:
     - mysql
 
 linters-settings:
+  goimports:
+    # Put imports beginning with prefix after 3rd-party packages.
+    # It's a comma-separated list of prefixes.
+    local-prefixes: github.com/bytebase/bytebase
   revive:
     # Default to run all linters so that new rules in the future could automatically be added to the static check.
     enable-all-rules: true

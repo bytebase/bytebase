@@ -7,11 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/common/log"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common/log"
 )
 
 const (

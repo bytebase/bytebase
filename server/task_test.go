@@ -3,8 +3,9 @@ package server
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 func TestAreAllTasksDone(t *testing.T) {

@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 // Status is the advisor result status.

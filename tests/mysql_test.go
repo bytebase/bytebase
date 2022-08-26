@@ -10,12 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/bytebase/bytebase/common/log"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 )
 
 func TestCheckEngineInnoDB(t *testing.T) {
