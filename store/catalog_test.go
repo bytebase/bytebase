@@ -3,9 +3,10 @@ package store
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestConvertIndexList(t *testing.T) {

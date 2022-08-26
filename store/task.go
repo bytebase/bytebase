@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/metric"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // taskRaw is the store model for an Task.

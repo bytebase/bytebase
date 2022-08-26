@@ -3,8 +3,9 @@ package server
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 // ScheduleActiveStage tries to schedule the tasks in the active stage.

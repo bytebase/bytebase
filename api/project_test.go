@@ -3,8 +3,9 @@ package api
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 func TestGetTemplateTokens(t *testing.T) {

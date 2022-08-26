@@ -3,10 +3,11 @@ package server
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 func TestGetPeerTenantDatabase(t *testing.T) {

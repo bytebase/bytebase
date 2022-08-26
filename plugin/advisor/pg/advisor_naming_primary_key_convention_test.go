@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 func TestNamingPKConvention(t *testing.T) {
