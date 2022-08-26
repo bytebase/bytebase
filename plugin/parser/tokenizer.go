@@ -110,18 +110,34 @@ func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt
 	startPos := t.pos()
 	t.startLine = t.line
 	for {
-		switch t.char(0) {
-		case '\n':
+		switch {
+		case t.char(0) == '\n':
 			t.line++
 			t.skip(1)
-		case '\'', '"':
+		case t.char(0) == '/' && t.char(1) == '*':
+			if err := t.scanComment(); err != nil {
+				return err
+			}
+		case t.char(0) == '-' && t.char(1) == '-':
+			if err := t.scanComment(); err != nil {
+				return err
+			}
+		case t.char(0) == '#':
+			if err := t.scanComment(); err != nil {
+				return err
+			}
+		case t.char(0) == '\'' || t.char(0) == '"':
 			if err := t.scanString(t.char(0)); err != nil {
 				return err
 			}
-		case '(':
+		case t.char(0) == '`':
+			if err := t.scanIdentifier('`'); err != nil {
+				return err
+			}
+		case t.char(0) == '(':
 			parentheses++
 			t.skip(1)
-		case ')':
+		case t.char(0) == ')':
 			parentheses--
 			if parentheses == 0 {
 				// This means we find the corresponding ')' for the first '(' in CREATE TABLE statements.
@@ -137,7 +153,7 @@ func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt
 				return nil
 			}
 			t.skip(1)
-		case ',':
+		case t.char(0) == ',':
 			// e.g. CREATE TABLE t(
 			//   a int,
 			//   b int,
@@ -163,7 +179,7 @@ func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt
 			t.skipBlank()
 			startPos = t.pos()
 			t.startLine = t.line
-		case eofRune:
+		case t.char(0) == eofRune:
 			return nil
 		default:
 			t.skip(1)
@@ -223,18 +239,34 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error
 	startPos := t.pos()
 	t.startLine = t.line
 	for {
-		switch t.char(0) {
-		case '\n':
+		switch {
+		case t.char(0) == '\n':
 			t.line++
 			t.skip(1)
-		case '\'':
+		case t.char(0) == '/' && t.char(1) == '*':
+			if err := t.scanComment(); err != nil {
+				return err
+			}
+		case t.char(0) == '-' && t.char(1) == '-':
+			if err := t.scanComment(); err != nil {
+				return err
+			}
+		case t.char(0) == '\'':
 			if err := t.scanString('\''); err != nil {
 				return err
 			}
-		case '(':
+		case t.char(0) == '$':
+			if err := t.scanDoubleDollarQuotedString(); err != nil {
+				return err
+			}
+		case t.char(0) == '"':
+			if err := t.scanIdentifier('"'); err != nil {
+				return err
+			}
+		case t.char(0) == '(':
 			parentheses++
 			t.skip(1)
-		case ')':
+		case t.char(0) == ')':
 			parentheses--
 			if parentheses == 0 {
 				// This means we find the corresponding ')' for the first '(' in CREATE TABLE statements.
@@ -253,7 +285,7 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error
 				return nil
 			}
 			t.skip(1)
-		case ',':
+		case t.char(0) == ',':
 			// e.g. CREATE TABLE t(
 			//   a int,
 			//   b int,
@@ -282,7 +314,7 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error
 			t.skipBlank()
 			startPos = t.pos()
 			t.startLine = t.line
-		case eofRune:
+		case t.char(0) == eofRune:
 			return nil
 		default:
 			t.skip(1)
