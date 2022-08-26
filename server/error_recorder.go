@@ -12,6 +12,7 @@ import (
 func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo) {
 	req := c.Request()
 	res := c.Response()
+	var errorMessage string
 
 	// -----------------------------------Echo's DefaultHTTPErrorHandler BEGIN----------------------------------------
 
@@ -27,19 +28,20 @@ func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo)
 				he = herr
 			}
 		}
+		errorMessage = he.Error()
 	} else {
 		he = &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
 			Message: http.StatusText(http.StatusInternalServerError),
 		}
+		errorMessage = err.Error()
 	}
 
-	errMsg := he.Error()
 	code := he.Code
 	message := he.Message
 	if m, ok := he.Message.(string); ok {
 		if e.Debug {
-			message = echo.Map{"message": m, "error": errMsg}
+			message = echo.Map{"message": m, "error": errorMessage}
 		} else {
 			message = echo.Map{"message": m}
 		}
@@ -57,31 +59,29 @@ func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo)
 
 	// -----------------------------------Echo's DefaultHTTPErrorHandler END------------------------------------------
 
-	defer func() {
-		if res.Status == http.StatusInternalServerError {
-			var role api.Role
-			if r, ok := c.Get(getRoleContextKey()).(api.Role); ok {
-				role = r
-			}
-
-			var stackTrace string
-			// Record stackTrace for non-echo-internal errors.
-			if !isHTTPError || he.Internal == nil {
-				stackTrace = string(debug.Stack())
-			}
-
-			s.errorRecordRing.Mutex.Lock()
-			defer s.errorRecordRing.Mutex.Unlock()
-
-			s.errorRecordRing.Ring.Value = &api.ErrorRecord{
-				RecordTs:    time.Now().Unix(),
-				Method:      req.Method,
-				RequestPath: req.URL.Path,
-				Role:        role,
-				Error:       errMsg,
-				StackTrace:  stackTrace,
-			}
-			s.errorRecordRing.Ring = s.errorRecordRing.Ring.Next()
+	if res.Status == http.StatusInternalServerError {
+		var role api.Role
+		if r, ok := c.Get(getRoleContextKey()).(api.Role); ok {
+			role = r
 		}
-	}()
+
+		var stackTrace string
+		// Record stackTrace for non-echo-internal errors.
+		if !isHTTPError || he.Internal == nil {
+			stackTrace = string(debug.Stack())
+		}
+
+		s.errorRecordRing.Mutex.Lock()
+		defer s.errorRecordRing.Mutex.Unlock()
+
+		s.errorRecordRing.Ring.Value = &api.ErrorRecord{
+			RecordTs:    time.Now().Unix(),
+			Method:      req.Method,
+			RequestPath: req.URL.Path,
+			Role:        role,
+			Error:       errorMessage,
+			StackTrace:  stackTrace,
+		}
+		s.errorRecordRing.Ring = s.errorRecordRing.Ring.Next()
+	}
 }
