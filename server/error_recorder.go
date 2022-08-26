@@ -59,7 +59,6 @@ func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo)
 
 	defer func() {
 		if res.Status == http.StatusInternalServerError {
-
 			var role api.Role
 			if r, ok := c.Get(getRoleContextKey()).(api.Role); ok {
 				role = r
