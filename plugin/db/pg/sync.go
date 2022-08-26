@@ -645,7 +645,7 @@ func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 		return err
 	}
 
-	idx.primary = true
+	idx.primary = isPrimary
 	return nil
 }
 
