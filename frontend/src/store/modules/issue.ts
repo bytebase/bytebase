@@ -3,6 +3,7 @@ import axios from "axios";
 import {
   empty,
   EMPTY_ID,
+  isPagedResponse,
   Issue,
   IssueCreate,
   IssueId,
@@ -25,6 +26,7 @@ import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { usePipelineStore } from "./pipeline";
 import { useProjectStore } from "./project";
+import { convertEntityList } from "./utils";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
@@ -90,6 +92,27 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   };
 }
 
+function getIssueFromIncludedList(
+  data:
+    | ResourceIdentifier<ResourceObject>
+    | ResourceIdentifier<ResourceObject>[]
+    | undefined,
+  includedList: ResourceObject[]
+): Issue {
+  if (data == null) {
+    return empty("ISSUE");
+  }
+  for (const item of includedList || []) {
+    if (item.type !== "issue") {
+      continue;
+    }
+    if (item.id == (data as ResourceIdentifier).id) {
+      return convert(item, includedList);
+    }
+  }
+  return empty("ISSUE");
+}
+
 export const useIssueStore = defineStore("issue", {
   state: (): IssueState => ({
     issueById: new Map(),
@@ -105,19 +128,21 @@ export const useIssueStore = defineStore("issue", {
     setIssueById({ issueId, issue }: { issueId: IssueId; issue: Issue }) {
       this.issueById.set(issueId, issue);
     },
-    async fetchIssueList({
+    async fetchPagedIssueList({
       issueStatusList,
       userId,
       projectId,
       limit,
+      token,
     }: {
       issueStatusList?: IssueStatus[];
       userId?: PrincipalId;
       projectId?: ProjectId;
       limit?: number;
+      token?: string;
     }) {
       const queryList = [];
-      if (issueStatusList) {
+      if (issueStatusList && issueStatusList.length > 0) {
         queryList.push(`status=${issueStatusList.join(",")}`);
       }
       if (userId) {
@@ -129,17 +154,42 @@ export const useIssueStore = defineStore("issue", {
       if (limit) {
         queryList.push(`limit=${limit}`);
       }
+      if (token) {
+        queryList.push(`token=${token}`);
+      }
+
       let url = "/api/issue";
       if (queryList.length > 0) {
         url += `?${queryList.join("&")}`;
       }
-      const data = (await axios.get(url)).data;
-      const issueList: Issue[] = data.data.map((issue: ResourceObject) => {
-        return convert(issue, data.included);
-      });
+      const responseData = (await axios.get(url)).data;
+      const issueList = convertEntityList(
+        responseData,
+        "issues",
+        convert,
+        getIssueFromIncludedList
+      );
 
-      // The caller consumes directly, so we don't store it.
-      return issueList;
+      issueList.forEach((issue) =>
+        this.setIssueById({ issueId: issue.id, issue })
+      );
+
+      const nextToken = isPagedResponse(responseData, "issues")
+        ? responseData.data.attributes.nextToken
+        : "";
+      return {
+        nextToken,
+        issueList,
+      };
+    },
+    async fetchIssueList(params: {
+      issueStatusList?: IssueStatus[];
+      userId?: PrincipalId;
+      projectId?: ProjectId;
+      limit?: number;
+    }) {
+      const result = await this.fetchPagedIssueList(params);
+      return result.issueList;
     },
     async fetchIssueById(issueId: IssueId) {
       const data = (await axios.get(`/api/issue/${issueId}`)).data;
