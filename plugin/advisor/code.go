@@ -43,8 +43,9 @@ const (
 	NamingPKConventionMismatch Code = 306
 
 	// 401 ~ 499 column error code.
-	NoRequiredColumn Code = 401
-	ColumnCanNotNull Code = 402
+	NoRequiredColumn             Code = 401
+	ColumnCanNotNull             Code = 402
+	NotNullColumnWithNullDefault Code = 404
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
