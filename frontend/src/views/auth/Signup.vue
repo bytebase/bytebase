@@ -72,13 +72,10 @@
                 "
               >
                 <heroicons-outline:eye
-                  v-show="state.showPassword"
+                  v-if="state.showPassword"
                   class="w-4 h-4"
                 />
-                <heroicons-outline:eye-slash
-                  v-show="!state.showPassword"
-                  class="w-4 h-4"
-                />
+                <heroicons-outline:eye-slash v-else class="w-4 h-4" />
               </div>
             </div>
           </div>
@@ -120,13 +117,10 @@
                 "
               >
                 <heroicons-outline:eye
-                  v-show="state.showPassword"
+                  v-if="state.showPassword"
                   class="w-4 h-4"
                 />
-                <heroicons-outline:eye-slash
-                  v-show="!state.showPassword"
-                  class="w-4 h-4"
-                />
+                <heroicons-outline:eye-slash v-else class="w-4 h-4" />
               </div>
             </div>
           </div>
