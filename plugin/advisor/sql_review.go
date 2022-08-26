@@ -65,6 +65,8 @@ const (
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
 	SchemaRuleColumnNotNull SQLReviewRuleType = "column.no-null"
+	// SchemaRuleColumnDisallowChangeType disallow change column type.
+	SchemaRuleColumnDisallowChangeType SQLReviewRuleType = "column.disallow-change-type"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
