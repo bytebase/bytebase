@@ -1,3 +1,10 @@
+export type BBButtonType =
+  | "NORMAL"
+  | "PRIMARY"
+  | "SECONDARY"
+  | "DANGER"
+  | "SUCCESS";
+
 export type BBButtonConfirmStyle =
   | "DELETE"
   | "ARCHIVE"
