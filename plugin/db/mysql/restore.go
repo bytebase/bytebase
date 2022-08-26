@@ -775,6 +775,9 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 		return errors.Wrapf(err, "failed to rename %q to %q", binlogFilePathTemp, binlogFilePath)
 	}
 
+	if err := driver.writeBinlogMetadataFile(ctx, binlogFileInfo.Name()); err != nil {
+		return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePathTemp)
+	}
 	return nil
 }
 
