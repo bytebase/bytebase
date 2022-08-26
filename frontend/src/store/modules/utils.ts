@@ -36,7 +36,7 @@ export function convertEntityList<T, K extends string>(
   }
 
   const resourceList = responseData.data as ResourceObject[];
-  return resourceList.map((issue: ResourceObject) => {
-    return convert(issue, responseData.included ?? []);
+  return resourceList.map((obj: ResourceObject) => {
+    return convert(obj, responseData.included ?? []);
   });
 }
