@@ -377,7 +377,7 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 }
 
 func getTable(txn *sql.Tx, tbl *tableSchema) error {
-	countQuery := fmt.Sprintf(`SELECT COUNT(1) FROM "%s"."%s";`, tbl.schemaName, tbl.name)
+	countQuery := fmt.Sprintf(`SELECT GREATEST(reltuples::bigint, 0::BIGINT) AS estimate FROM pg_class WHERE oid = (quote_ident('%s') || '.' || quote_ident('%s'))::regclass;`, tbl.schemaName, tbl.name)
 	rows, err := txn.Query(countQuery)
 	if err != nil {
 		return err

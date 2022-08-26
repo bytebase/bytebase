@@ -41,6 +41,6 @@
   "i18n-ally.enabledFrameworks": ["vue"],
   "i18n-ally.parserOptions": {},
   "go.lintOnSave": "workspace",
-  "go.lintTool": "revive",
+  "go.lintTool": "golangci-lint",
   "go.buildTags": "mysql"
 }
