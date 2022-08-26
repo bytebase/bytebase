@@ -99,30 +99,18 @@ const getTargetElementWithSelector = (selector: string) => {
   return targetElement;
 };
 
-const getTargetElementBySelectors = (selectorsList: string[][]) => {
-  for (const selectors of selectorsList) {
-    for (const selector of selectors) {
-      const targetElement = getTargetElementWithSelector(selector);
-      if (targetElement) {
-        return targetElement;
-      }
-    }
-  }
-  return null;
-};
-
 // waitForTargetElement will wait for the target element to be available in the DOM.
 export const waitForTargetElement = (
-  selectors: string[][]
+  selector: string
 ): Promise<HTMLElement> => {
   return new Promise((resolve) => {
-    let targetElement = getTargetElementBySelectors(selectors);
+    let targetElement = getTargetElementWithSelector(selector);
     if (targetElement) {
       return resolve(targetElement);
     }
 
     const observer = new MutationObserver(() => {
-      targetElement = getTargetElementBySelectors(selectors);
+      targetElement = getTargetElementWithSelector(selector);
       if (targetElement) {
         observer.disconnect();
         return resolve(targetElement);

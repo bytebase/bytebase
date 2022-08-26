@@ -117,6 +117,11 @@ export const useIssueStore = defineStore("issue", {
   state: (): IssueState => ({
     issueById: new Map(),
   }),
+  getters: {
+    issueList: (state) => {
+      return [...state.issueById.values()];
+    },
+  },
   actions: {
     getIssueById(issueId: IssueId): Issue {
       if (issueId == EMPTY_ID) {
