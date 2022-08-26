@@ -44,8 +44,9 @@ func TestS3Operations(t *testing.T) {
 	t.Run("UploadObjects", func(t *testing.T) {
 		buf := make([]byte, 10*1024*1024)
 		blob := bytes.NewReader(buf)
-		_, err := client.UploadObject(ctx, "backup/test/blob", blob)
+		resp, err := client.UploadObject(ctx, "backup/test/blob", blob)
 		a.NoError(err)
+		log.Info("Uploaded", zap.String("name", *resp.Key))
 	})
 
 	t.Run("DownloadObjects", func(t *testing.T) {
