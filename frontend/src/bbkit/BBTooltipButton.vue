@@ -5,17 +5,23 @@
         <button disabled> will swallow all mouse related events such as mouseover/mouseout...
         so we need to handle it manually with lower level DOM pointer events
       -->
-      <button
-        type="button"
-        v-bind="$attrs"
-        :disabled="disabled"
-        :class="[`btn-${props.type}`, $attrs.class]"
-        @click.prevent="$emit('click')"
-        @pointerenter="showTooltip"
-        @pointerleave="hideTooltip"
+      <slot
+        name="button"
+        :show-tooltip="showTooltip"
+        :hide-tooltip="hideTooltip"
       >
-        <slot name="default"></slot>
-      </button>
+        <button
+          type="button"
+          v-bind="$attrs"
+          :disabled="disabled"
+          :class="[`btn-${props.type}`, $attrs.class]"
+          @click.prevent="$emit('click')"
+          @pointerenter="showTooltip"
+          @pointerleave="hideTooltip"
+        >
+          <slot name="default"></slot>
+        </button>
+      </slot>
     </template>
     <slot name="tooltip"></slot>
   </NTooltip>
