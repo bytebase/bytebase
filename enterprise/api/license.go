@@ -1,3 +1,4 @@
+// Package api provides the API definition for enterprise service.
 package api
 
 import (

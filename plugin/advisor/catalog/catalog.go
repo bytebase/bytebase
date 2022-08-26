@@ -1,3 +1,4 @@
+// Package catalog provides API definition for catalog service.
 package catalog
 
 import (

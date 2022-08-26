@@ -1,3 +1,4 @@
+// Package pg is the plugin for PostgreSQL driver.
 package pg
 
 import (

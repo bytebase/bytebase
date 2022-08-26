@@ -1,3 +1,4 @@
+// Package postgres provides the resource for PostgreSQL server and utility packages.
 package postgres
 
 import (

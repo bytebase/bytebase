@@ -26,17 +26,20 @@ const (
 
 // ConstraintDef is struct for constraint definition.
 // For PRIMARY:
-//     Name:    It's the PK constraint name.
-//     KeyList: It's the name list of the columns in PK.
+//
+//	Name:    It's the PK constraint name.
+//	KeyList: It's the name list of the columns in PK.
 //
 // For UNIQUE
-//     Name:    It's the UK constraint name.
-//     KeyList: It's the name list of the columns in UK.
+//
+//	Name:    It's the UK constraint name.
+//	KeyList: It's the name list of the columns in UK.
 //
 // For Foreign
-//     Name:    It's the FK constraint name.
-//     KeyList: It's the name list of the columns in FK.
-//     Foreign: It's the reference content for this FK.
+//
+//	Name:    It's the FK constraint name.
+//	KeyList: It's the name list of the columns in FK.
+//	Foreign: It's the reference content for this FK.
 type ConstraintDef struct {
 	node
 
