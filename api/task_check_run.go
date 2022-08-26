@@ -226,7 +226,7 @@ func IsSyntaxCheckSupported(dbType db.Type, _ common.ReleaseMode) bool {
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType db.Type, _ common.ReleaseMode) bool {
-	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
+	if dbType == db.Postgres || dbType == db.MySQL {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
 			return false
