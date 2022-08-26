@@ -167,13 +167,34 @@ export const useIssueStore = defineStore("issue", {
       if (queryList.length > 0) {
         url += `?${queryList.join("&")}`;
       }
-      const data = (await axios.get(url)).data;
-      const issueList: Issue[] = data.data.map((issue: ResourceObject) => {
-        return convert(issue, data.included);
-      });
+      const responseData = (await axios.get(url)).data;
+      const issueList = convertEntityList(
+        responseData,
+        "issues",
+        convert,
+        getIssueFromIncludedList
+      );
 
-      // The caller consumes directly, so we don't store it.
-      return issueList;
+      issueList.forEach((issue) =>
+        this.setIssueById({ issueId: issue.id, issue })
+      );
+
+      const nextToken = isPagedResponse(responseData, "issues")
+        ? responseData.data.attributes.nextToken
+        : "";
+      return {
+        nextToken,
+        issueList,
+      };
+    },
+    async fetchIssueList(params: {
+      issueStatusList?: IssueStatus[];
+      userId?: PrincipalId;
+      projectId?: ProjectId;
+      limit?: number;
+    }) {
+      const result = await this.fetchPagedIssueList(params);
+      return result.issueList;
     },
     async fetchIssueById(issueId: IssueId) {
       const data = (await axios.get(`/api/issue/${issueId}`)).data;
