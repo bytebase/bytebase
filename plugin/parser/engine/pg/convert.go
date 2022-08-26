@@ -735,8 +735,17 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 }
 
 func convertColumnDef(in *pgquery.Node_ColumnDef) (*ast.ColumnDef, error) {
+	// FIXME: this is a stupid implementation just for demo
+	var typeName string
+	for _, n := range in.ColumnDef.TypeName.Names {
+		if n.Node.(*pgquery.Node_String_).String_.Str == "pg_catelog" {
+			continue
+		}
+		typeName = n.Node.(*pgquery.Node_String_).String_.Str
+	}
 	column := &ast.ColumnDef{
 		ColumnName: in.ColumnDef.Colname,
+		ColumnType: typeName,
 	}
 
 	for _, cons := range in.ColumnDef.Constraints {
