@@ -636,7 +636,7 @@ func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 		  AND constraint_name = $2
 		  AND table_schema = $1
 		  AND table_name = $3
-		  AND constraint_type = 'PRIMARY KEY)'
+		  AND constraint_type = 'PRIMARY KEY')
 	`
 
 	var isPrimary bool
