@@ -1,3 +1,4 @@
+// Package main is the main binary for Bytebase service.
 package main
 
 import (

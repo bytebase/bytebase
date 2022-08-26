@@ -1,3 +1,4 @@
+// Package snowflake is the plugin for Snowflake driver.
 package snowflake
 
 import (

@@ -1,3 +1,4 @@
+// Package gitlab is the plugin for GitLab.
 package gitlab
 
 import (
@@ -82,13 +83,14 @@ type WebhookCommitAuthor struct {
 
 // WebhookCommit is the API message for webhook commit.
 type WebhookCommit struct {
-	ID        string              `json:"id"`
-	Title     string              `json:"title"`
-	Message   string              `json:"message"`
-	Timestamp string              `json:"timestamp"`
-	URL       string              `json:"url"`
-	Author    WebhookCommitAuthor `json:"author"`
-	AddedList []string            `json:"added"`
+	ID           string              `json:"id"`
+	Title        string              `json:"title"`
+	Message      string              `json:"message"`
+	Timestamp    string              `json:"timestamp"`
+	URL          string              `json:"url"`
+	Author       WebhookCommitAuthor `json:"author"`
+	AddedList    []string            `json:"added"`
+	ModifiedList []string            `json:"modified"`
 }
 
 // WebhookPushEvent is the API message for webhook push event.
@@ -242,7 +244,9 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read OAuth response body, code %v", resp.StatusCode)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	oauthResp := new(oauthResponse)
 	if err := json.Unmarshal(body, oauthResp); err != nil {

@@ -89,8 +89,8 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					if _, err := s.server.ScheduleNextTaskIfNeeded(ctx, pipeline); err != nil {
-						log.Error("Failed to schedule next running task",
+					if err := s.server.ScheduleActiveStage(ctx, pipeline); err != nil {
+						log.Error("Failed to schedule tasks in the active stage",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),
 						)
@@ -367,9 +367,9 @@ func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, 
 }
 
 // ScheduleIfNeeded schedules the task if
-//   1. its required check does not contain error in the latest run.
-//   2. it has no blocking tasks.
-//   3. it has passed the earliest allowed time.
+//  1. its required check does not contain error in the latest run.
+//  2. it has no blocking tasks.
+//  3. it has passed the earliest allowed time.
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
 	schedule, err := s.canSchedule(ctx, task)
 	if err != nil {

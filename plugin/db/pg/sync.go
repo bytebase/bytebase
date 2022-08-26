@@ -255,20 +255,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
 	query := `
-		SELECT usename AS role_name,
-			CASE
-				 WHEN usesuper AND usecreatedb THEN
-				 CAST('superuser, create database' AS pg_catalog.text)
-				 WHEN usesuper THEN
-					CAST('superuser' AS pg_catalog.text)
-				 WHEN usecreatedb THEN
-					CAST('create database' AS pg_catalog.text)
-				 ELSE
-					CAST('' AS pg_catalog.text)
-			END role_attributes
-		FROM pg_catalog.pg_user
-		ORDER BY role_name
-			`
+		SELECT r.rolname, r.rolsuper, r.rolinherit, r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolvaliduntil, r.rolbypassrls
+		FROM pg_catalog.pg_roles r
+		WHERE r.rolname !~ '^pg_';
+	`
 	var userList []db.User
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
@@ -278,17 +268,51 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 
 	for rows.Next() {
 		var role string
-		var attr string
+		var super, inherit, createRole, createDB, canLogin, replication, bypassRLS bool
+		var rolValidUtil sql.NullString
 		if err := rows.Scan(
 			&role,
-			&attr,
+			&super,
+			&inherit,
+			&createRole,
+			&createDB,
+			&canLogin,
+			&replication,
+			&rolValidUtil,
+			&bypassRLS,
 		); err != nil {
 			return nil, err
 		}
 
+		var attributes []string
+		if super {
+			attributes = append(attributes, "Superuser")
+		}
+		if !inherit {
+			attributes = append(attributes, "No inheritance")
+		}
+		if createRole {
+			attributes = append(attributes, "Create role")
+		}
+		if createDB {
+			attributes = append(attributes, "Create DB")
+		}
+		if !canLogin {
+			attributes = append(attributes, "Cannot login")
+		}
+		if replication {
+			attributes = append(attributes, "Replication")
+		}
+		if rolValidUtil.Valid {
+			attributes = append(attributes, fmt.Sprintf("Password valid until %s", rolValidUtil.String))
+		}
+		if bypassRLS {
+			attributes = append(attributes, "Bypass RLS+")
+		}
+
 		userList = append(userList, db.User{
 			Name:  role,
-			Grant: attr,
+			Grant: strings.Join(attributes, ", "),
 		})
 	}
 	if err := rows.Err(); err != nil {
@@ -306,9 +330,11 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 
 	var tables []*tableSchema
 	query := "" +
-		"SELECT tbl.schemaname, tbl.tablename, tbl.tableowner, pg_table_size(c.oid), pg_indexes_size(c.oid) " +
-		"FROM pg_catalog.pg_tables tbl, pg_catalog.pg_class c " +
-		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema') AND tbl.schemaname=c.relnamespace::regnamespace::text AND tbl.tablename = c.relname;"
+		"SELECT tbl.schemaname, tbl.tablename, tbl.tableowner, " +
+		"pg_table_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass), " +
+		"pg_indexes_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass) " +
+		"FROM pg_catalog.pg_tables tbl " +
+		"WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema');"
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -351,7 +377,7 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 }
 
 func getTable(txn *sql.Tx, tbl *tableSchema) error {
-	countQuery := fmt.Sprintf(`SELECT COUNT(1) FROM "%s"."%s";`, tbl.schemaName, tbl.name)
+	countQuery := fmt.Sprintf(`SELECT GREATEST(reltuples::bigint, 0::BIGINT) AS estimate FROM pg_class WHERE oid = (quote_ident('%s') || '.' || quote_ident('%s'))::regclass;`, tbl.schemaName, tbl.name)
 	rows, err := txn.Query(countQuery)
 	if err != nil {
 		return err
@@ -397,9 +423,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.collation_name,
 		cols.udt_schema,
 		cols.udt_name,
-		pg_catalog.col_description(c.oid, cols.ordinal_position::int) as column_comment
-	FROM INFORMATION_SCHEMA.COLUMNS AS cols, pg_catalog.pg_class c
-	WHERE table_schema=$1 AND table_name=$2 AND cols.table_schema=c.relnamespace::regnamespace::text AND cols.table_name=c.relname;`
+		pg_catalog.col_description((quote_ident(table_schema) || '.' || quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+	FROM INFORMATION_SCHEMA.COLUMNS AS cols
+	WHERE table_schema=$1 AND table_name=$2;`
 	rows, err := txn.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
@@ -604,21 +630,21 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 	isPrimaryQuery := `
-		SELECT count(*)
-		FROM information_schema.table_constraints
-		WHERE constraint_schema = $1
-		  AND constraint_name = $2
-		  AND table_schema = $1
-		  AND table_name = $3
-		  AND constraint_type = 'PRIMARY KEY'
+		SELECT EXISTS (SELECT 1
+			FROM information_schema.table_constraints
+			WHERE constraint_schema = $1
+				AND constraint_name = $2
+				AND table_schema = $1
+				AND table_name = $3
+				AND constraint_type = 'PRIMARY KEY')
 	`
 
-	var yes int
-	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&yes); err != nil {
+	var isPrimary bool
+	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&isPrimary); err != nil {
 		return err
 	}
 
-	idx.primary = (yes == 1)
+	idx.primary = isPrimary
 	return nil
 }
 

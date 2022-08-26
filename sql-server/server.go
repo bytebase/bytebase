@@ -1,3 +1,4 @@
+// Package sqlserver is the binary for SQL review server.
 package sqlserver
 
 import (

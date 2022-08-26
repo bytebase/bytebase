@@ -1,3 +1,4 @@
+// Package tests provides integration tests for backend services.
 package tests
 
 import (

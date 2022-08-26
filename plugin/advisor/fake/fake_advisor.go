@@ -1,3 +1,4 @@
+// Package fake implements a fake SQL advisor.
 package fake
 
 import (

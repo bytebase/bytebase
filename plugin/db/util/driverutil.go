@@ -1,3 +1,4 @@
+// Package util provides the library for database drivers.
 package util
 
 import (

@@ -210,7 +210,6 @@ func TestFetchBinlogFiles(t *testing.T) {
 	binlogFilesDownloaded, err = mysqlDriver.GetSortedLocalBinlogFiles()
 	a.NoError(err)
 	t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
-
 	deleteIndex := rand.Intn(numBinlogFiles)
 	deletePath := filepath.Join(binlogDir, binlogFilesDownloaded[deleteIndex].Name)
 	t.Logf("Deleting file %s", binlogFilesDownloaded[deleteIndex].Name)

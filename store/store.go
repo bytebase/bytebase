@@ -1,3 +1,4 @@
+// Package store is the implementation for managing Bytebase's own metadata in a PostgreSQL database.
 package store
 
 import (

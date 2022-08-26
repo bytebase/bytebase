@@ -280,11 +280,11 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.String("database", database.Name),
 				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 				zap.Error(err))
-			goto SchemaDriftEnd
+			return
 		}
 		// Skip drift check if migration schema is not ready (we have instance anomaly to cover that)
 		if setup {
-			goto SchemaDriftEnd
+			return
 		}
 		var schemaBuf bytes.Buffer
 		if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /*schemaOnly*/); err != nil {
@@ -301,7 +301,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 					zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 					zap.Error(err))
 			}
-			goto SchemaDriftEnd
+			return
 		}
 		limit := 1
 		list, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
@@ -314,7 +314,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.String("database", database.Name),
 				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 				zap.Error(err))
-			goto SchemaDriftEnd
+			return
 		}
 		if len(list) > 0 {
 			if list[0].Schema != schemaBuf.String() {
@@ -360,7 +360,6 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 			}
 		}
 	}
-SchemaDriftEnd:
 }
 
 func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {

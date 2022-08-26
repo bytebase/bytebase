@@ -84,6 +84,9 @@ const (
 	// MySQLColumnNoNull is an advisor type for MySQL column no NULL value.
 	MySQLColumnNoNull Type = "bb.plugin.advisor.mysql.column.no-null"
 
+	// MySQLColumnDisallowChangingType is an advisor type for MySQL disallow changing column type.
+	MySQLColumnDisallowChangingType Type = "bb.plugin.advisor.mysql.column.disallow-changing-type"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 

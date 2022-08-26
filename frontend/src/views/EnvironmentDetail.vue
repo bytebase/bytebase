@@ -3,10 +3,13 @@
     <ArchiveBanner v-if="state.environment.rowStatus == 'ARCHIVED'" />
   </div>
   <EnvironmentForm
-    v-if="state.approvalPolicy && state.backupPolicy"
+    v-if="
+      state.approvalPolicy && state.backupPolicy && state.environmentTierPolicy
+    "
     :environment="state.environment"
     :approval-policy="state.approvalPolicy"
     :backup-policy="state.backupPolicy"
+    :environment-tier-policy="state.environmentTierPolicy"
     @update="doUpdate"
     @archive="doArchive"
     @restore="doRestore"
@@ -33,6 +36,8 @@ import {
   DefaultSchedulePolicy,
   PipelineApprovalPolicyPayload,
   BackupPlanPolicyPayload,
+  EnvironmentTierPolicyPayload,
+  DefaultEnvironmentTier,
 } from "../types";
 import { idFromSlug } from "../utils";
 import {
@@ -48,9 +53,11 @@ interface LocalState {
   showArchiveModal: boolean;
   approvalPolicy?: Policy;
   backupPolicy?: Policy;
+  environmentTierPolicy?: Policy;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
-    | "bb.feature.backup-policy";
+    | "bb.feature.backup-policy"
+    | "bb.feature.environment-tier-policy";
 }
 
 export default defineComponent({
@@ -79,22 +86,33 @@ export default defineComponent({
     });
 
     const preparePolicy = () => {
+      const environmentId = (state.environment as Environment).id;
+
       policyStore
         .fetchPolicyByEnvironmentAndType({
-          environmentId: (state.environment as Environment).id,
+          environmentId,
           type: "bb.policy.pipeline-approval",
         })
-        .then((policy: Policy) => {
+        .then((policy) => {
           state.approvalPolicy = policy;
         });
 
       policyStore
         .fetchPolicyByEnvironmentAndType({
-          environmentId: (state.environment as Environment).id,
+          environmentId,
           type: "bb.policy.backup-plan",
         })
-        .then((policy: Policy) => {
+        .then((policy) => {
           state.backupPolicy = policy;
+        });
+
+      policyStore
+        .fetchPolicyByEnvironmentAndType({
+          environmentId,
+          type: "bb.policy.environment-tier",
+        })
+        .then((policy) => {
+          state.environmentTierPolicy = policy;
         });
     };
 
@@ -173,6 +191,15 @@ export default defineComponent({
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
+      if (
+        type === "bb.policy.environment-tier" &&
+        (policy.payload as EnvironmentTierPolicyPayload).environmentTier !==
+          DefaultEnvironmentTier &&
+        !hasFeature("bb.feature.environment-tier-policy")
+      ) {
+        state.missingRequiredFeature = "bb.feature.environment-tier-policy";
+        return;
+      }
       policyStore
         .upsertPolicyByEnvironmentAndType({
           environmentId,
@@ -186,6 +213,13 @@ export default defineComponent({
             state.approvalPolicy = policy;
           } else if (type === "bb.policy.backup-plan") {
             state.backupPolicy = policy;
+          } else if (type === "bb.policy.environment-tier") {
+            state.environmentTierPolicy = policy;
+            // Write the value to state.environment entity. So that we don't
+            // need to re-fetch it front the server.
+            state.environment.tier = (
+              policy.payload as EnvironmentTierPolicyPayload
+            ).environmentTier;
           }
 
           pushNotification({
