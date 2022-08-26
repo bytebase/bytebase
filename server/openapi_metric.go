@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/labstack/echo/v4"
+
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/labstack/echo/v4"
 )
 
 func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc {

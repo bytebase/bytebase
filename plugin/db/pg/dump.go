@@ -10,9 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/pkg/errors"
 )
 
 // Dump dumps the database.

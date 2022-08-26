@@ -1,10 +1,11 @@
 package server
 
 import (
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common/log"
 )
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

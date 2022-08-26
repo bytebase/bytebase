@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
-	"go.uber.org/zap"
 )
 
 // NewDefaultTaskExecutor creates a default task executor.

@@ -11,8 +11,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/bytebase/bytebase/resources/utils"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/resources/utils"
 )
 
 type binaryName string

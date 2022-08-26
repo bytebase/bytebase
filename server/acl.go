@@ -10,9 +10,10 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/pkg/errors"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/labstack/echo/v4"
 )
 
 const (

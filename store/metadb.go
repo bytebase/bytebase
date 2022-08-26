@@ -6,12 +6,13 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // MetadataDB abstracts the underlying Postgres instance.

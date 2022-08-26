@@ -7,12 +7,13 @@ import (
 	"path"
 	"testing"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )
