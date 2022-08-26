@@ -57,7 +57,7 @@
               <input
                 id="password"
                 v-model="state.password"
-                :type="state.showPassword.initial ? 'text' : 'password'"
+                :type="state.showPassword ? 'text' : 'password'"
                 autocomplete="off"
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
@@ -67,16 +67,16 @@
                 class="hover:cursor-pointer absolute right-3"
                 @click="
                   () => {
-                    state.showPassword.initial = !state.showPassword.initial;
+                    state.showPassword = !state.showPassword;
                   }
                 "
               >
                 <heroicons-outline:eye
-                  v-show="state.showPassword.initial"
+                  v-show="state.showPassword"
                   class="w-4 h-4"
                 />
                 <heroicons-outline:eye-slash
-                  v-show="!state.showPassword.initial"
+                  v-show="!state.showPassword"
                   class="w-4 h-4"
                 />
               </div>
@@ -104,7 +104,7 @@
               <input
                 id="password-confirm"
                 v-model="state.passwordConfirm"
-                :type="state.showPassword.confirm ? 'text' : 'password'"
+                :type="state.showPassword ? 'text' : 'password'"
                 autocomplete="off"
                 :placeholder="$t('auth.sign-up.confirm-password-placeholder')"
                 required
@@ -115,16 +115,16 @@
                 class="hover:cursor-pointer absolute right-3"
                 @click="
                   () => {
-                    state.showPassword.confirm = !state.showPassword.confirm;
+                    state.showPassword = !state.showPassword;
                   }
                 "
               >
                 <heroicons-outline:eye
-                  v-show="state.showPassword.confirm"
+                  v-show="state.showPassword"
                   class="w-4 h-4"
                 />
                 <heroicons-outline:eye-slash
-                  v-show="!state.showPassword.confirm"
+                  v-show="!state.showPassword"
                   class="w-4 h-4"
                 />
               </div>
@@ -243,10 +243,7 @@ interface LocalState {
   name: string;
   nameManuallyEdited: boolean;
   acceptTermsAndPolicy: boolean;
-  showPassword: {
-    initial: boolean;
-    confirm: boolean;
-  };
+  showPassword: boolean;
 }
 
 export default defineComponent({
@@ -264,10 +261,7 @@ export default defineComponent({
       name: "",
       nameManuallyEdited: false,
       acceptTermsAndPolicy: true,
-      showPassword: {
-        initial: false,
-        confirm: false,
-      },
+      showPassword: false,
     });
 
     onUnmounted(() => {
