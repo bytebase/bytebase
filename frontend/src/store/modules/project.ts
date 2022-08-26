@@ -123,7 +123,7 @@ export const useProjectStore = defineStore("project", {
   }),
   getters: {
     projectList: (state) => {
-      return Array.from(state.projectById, ([_, value]) => value);
+      return [...state.projectById.values()];
     },
   },
   actions: {

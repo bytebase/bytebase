@@ -119,7 +119,7 @@ export const useIssueStore = defineStore("issue", {
   }),
   getters: {
     issueList: (state) => {
-      return Array.from(state.issueById, ([_, value]) => value);
+      return [...state.issueById.values()];
     },
   },
   actions: {
