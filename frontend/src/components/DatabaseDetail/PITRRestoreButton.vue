@@ -13,7 +13,7 @@
           :disabled="pitrButtonDisabled"
           @pointerenter="showTooltip"
           @pointerleave="hideTooltip"
-          @click="(action) => onClickPITRButton(action as any)"
+          @click="(action) => onClickPITRButton(action as PITRButtonAction)"
         >
           <template #default="{ action }">
             <span>{{ action.text }}</span>
@@ -198,6 +198,7 @@ type PITRTarget = "IN-PLACE" | "NEW";
 
 type Mode = "LAST_MIGRATION" | "CUSTOM";
 type Step = "LAST_MIGRATION_INFO" | "PITR_FORM";
+type PITRButtonAction = ButtonAction<{ step: Step; mode: Mode }>;
 
 interface LocalState {
   showDatabasePITRModal: boolean;
@@ -248,34 +249,24 @@ const pitrButtonDisabled = computed((): boolean => {
   return !props.allowAdmin || !pitrAvailable.value.result;
 });
 
-const buttonActionList = computed(
-  (): ButtonAction<{
-    step: Step;
-    mode: Mode;
-  }>[] => {
-    return [
-      {
-        key: "CUSTOM",
-        text: t("database.pitr.restore-to-point-in-time"),
-        type: "NORMAL",
-        params: { step: "PITR_FORM", mode: "CUSTOM" },
-      },
-      {
-        key: "LAST_MIGRATION",
-        text: t("database.pitr.restore-before-last-migration"),
-        type: "NORMAL",
-        params: { step: "LAST_MIGRATION_INFO", mode: "LAST_MIGRATION" },
-      },
-    ];
-  }
-);
+const buttonActionList = computed((): PITRButtonAction[] => {
+  return [
+    {
+      key: "CUSTOM",
+      text: t("database.pitr.restore-to-point-in-time"),
+      type: "NORMAL",
+      params: { step: "PITR_FORM", mode: "CUSTOM" },
+    },
+    {
+      key: "LAST_MIGRATION",
+      text: t("database.pitr.restore-before-last-migration"),
+      type: "NORMAL",
+      params: { step: "LAST_MIGRATION_INFO", mode: "LAST_MIGRATION" },
+    },
+  ];
+});
 
-const onClickPITRButton = (
-  action: ButtonAction<{
-    step: Step;
-    mode: Mode;
-  }>
-) => {
+const onClickPITRButton = (action: PITRButtonAction) => {
   const { step, mode } = action.params;
   openDialog(step, mode);
 };
