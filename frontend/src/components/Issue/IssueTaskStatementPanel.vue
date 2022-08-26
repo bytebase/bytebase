@@ -266,6 +266,13 @@ export default defineComponent({
       updateEditorHeight();
     };
 
+    watch([databaseList, tableList], () => {
+      editorRef.value?.setEditorAutoCompletionContext(
+        databaseList.value,
+        tableList.value
+      );
+    });
+
     const updateEditorHeight = () => {
       const contentHeight =
         editorRef.value?.editorInstance?.getContentHeight() as number;

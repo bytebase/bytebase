@@ -6,8 +6,9 @@ package tests
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/resources/mysql"
 )
 
 func TestPrepare(t *testing.T) {

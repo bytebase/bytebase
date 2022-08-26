@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/pkg/errors"
 )
 
 // settingRaw is the store model for an Setting.

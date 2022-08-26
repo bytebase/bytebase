@@ -7,13 +7,14 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/bytebase/bytebase/api"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"github.com/labstack/echo/v4"
 )
 
 var (

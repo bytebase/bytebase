@@ -6,9 +6,10 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/pkg/errors"
 )
 
 // How to add a SQL review rule:
@@ -67,6 +68,8 @@ const (
 	SchemaRuleColumnNotNull SQLReviewRuleType = "column.no-null"
 	// SchemaRuleColumnDisallowChangeType disallow change column type.
 	SchemaRuleColumnDisallowChangeType SQLReviewRuleType = "column.disallow-change-type"
+	// SchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
+	SchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "column.set-default-for-not-null"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -399,6 +402,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLColumnNoNull, nil
 		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
+		}
+	case SchemaRuleColumnSetDefaultForNotNull:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {

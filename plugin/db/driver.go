@@ -10,8 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // Type is the type of a database.

@@ -2,8 +2,9 @@
 package cmd
 
 import (
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/spf13/cobra"
+
+	"github.com/bytebase/bytebase/common/log"
 )
 
 // NewRootCmd creates the root command.

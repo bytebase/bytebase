@@ -6,8 +6,9 @@ import (
 	"encoding/gob"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/bytebase/bytebase/api"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 var (

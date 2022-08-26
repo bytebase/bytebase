@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/metric"
-	"github.com/pkg/errors"
 )
 
 // issueRaw is the store model for an Issue.
