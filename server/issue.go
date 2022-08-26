@@ -84,13 +84,34 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			limit := api.DefaultNumberOfItemsInPage
 			issueFind.Limit = &limit
 		}
-		userIDStr := c.QueryParams().Get("user")
-		if userIDStr != "" {
+
+		if userIDStr := c.QueryParam("user"); userIDStr != "" {
 			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("user query parameter is not a number: %s", userIDStr)).SetInternal(err)
 			}
 			issueFind.PrincipalID = &userID
+		}
+		if creatorIDStr := c.QueryParam("creator"); creatorIDStr != "" {
+			creatorID, err := strconv.Atoi(creatorIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("creator query parameter is not a number: %s", creatorIDStr)).SetInternal(err)
+			}
+			issueFind.CreatorID = &creatorID
+		}
+		if assigneeIDStr := c.QueryParam("assignee"); assigneeIDStr != "" {
+			assigneeID, err := strconv.Atoi(assigneeIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee query parameter is not a number: %s", assigneeIDStr)).SetInternal(err)
+			}
+			issueFind.AssigneeID = &assigneeID
+		}
+		if subscriberIDStr := c.QueryParam("subscriber"); subscriberIDStr != "" {
+			subscriberID, err := strconv.Atoi(subscriberIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("subscriber query parameter is not a number: %s", subscriberIDStr)).SetInternal(err)
+			}
+			issueFind.SubscriberID = &subscriberID
 		}
 
 		issueList, err := s.store.FindIssue(ctx, issueFind)

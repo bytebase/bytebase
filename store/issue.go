@@ -538,10 +538,22 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
+		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.New("principal_id cannot be used with creator_id, assignee_id, or subscriber_id")}
+		}
 		where = append(where, fmt.Sprintf("(creator_id = $%d OR assignee_id = $%d OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d))", len(args)+1, len(args)+2, len(args)+3))
 		args = append(args, *v)
 		args = append(args, *v)
 		args = append(args, *v)
+	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.AssigneeID; v != nil {
+		where, args = append(where, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.SubscriberID; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.MaxID; v != nil {
 		where, args = append(where, fmt.Sprintf("id < $%d", len(args)+1)), append(args, *v)

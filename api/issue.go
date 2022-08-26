@@ -224,7 +224,13 @@ type IssueFind struct {
 	PipelineID *int
 	// Find issue where principalID is either creator, assignee or subscriber
 	PrincipalID *int
-	StatusList  []IssueStatus
+	// To support pagination, we add into creator, assignee and subscriber.
+	// Only principleID or one of the following three fields can be set.
+	CreatorID    *int
+	AssigneeID   *int
+	SubscriberID *int
+
+	StatusList []IssueStatus
 	// If specified, only find issues whose ID is smaller that MaxID
 	MaxID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
