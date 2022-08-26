@@ -122,6 +122,7 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
                 // since "public" schema can be omitted by default
                 await provideColumnAutoCompletion(`public.${maybeTableName}`);
               }
+              // "{schema_name}." (postgresql) - will implement next time
               // - alias (can not recognize yet)
             }
 
@@ -140,6 +141,7 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
                 const maybeTableNameWithSchema = tokenListBeforeDot.join(".");
                 await provideColumnAutoCompletion(maybeTableNameWithSchema);
               }
+              // "{database_name}.{schema_name}." (postgresql) - will implement next time
             }
 
             if (
