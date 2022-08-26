@@ -34,6 +34,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				UNIQUE (b, c),
 				PRIMARY KEY (d),CHECK (a > 0),
 
+				-- it's a comment.
 				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
 			)
 			`,
@@ -114,6 +115,7 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 				UNIQUE (b, c),
 				PRIMARY KEY (d),CHECK (a > 0),
 
+				-- it's a comment.
 				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
 			)
 			`,
