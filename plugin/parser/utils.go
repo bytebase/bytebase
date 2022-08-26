@@ -3,9 +3,10 @@ package parser
 import (
 	"io"
 
-	"github.com/bytebase/bytebase/plugin/parser/ast"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.

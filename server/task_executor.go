@@ -10,12 +10,13 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/pkg/errors"
 )
 
 // TaskExecutor is the task executor.

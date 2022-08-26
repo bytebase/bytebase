@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 // demoDataPath is the path prefix for demo data.

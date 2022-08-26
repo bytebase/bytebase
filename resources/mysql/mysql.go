@@ -16,8 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/resources/utils"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/resources/utils"
 
 	// install mysql driver.
 	_ "github.com/go-sql-driver/mysql"

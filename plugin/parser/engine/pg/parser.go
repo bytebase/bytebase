@@ -2,10 +2,11 @@
 package pg
 
 import (
-	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/ast"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 var (

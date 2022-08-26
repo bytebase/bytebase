@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/pkg/errors"
 )
 
 // policyRaw is the store model for an Policy.

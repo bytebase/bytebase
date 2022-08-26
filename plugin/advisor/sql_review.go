@@ -6,9 +6,10 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/pkg/errors"
 )
 
 // How to add a SQL review rule:

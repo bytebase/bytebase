@@ -9,14 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.

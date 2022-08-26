@@ -11,12 +11,13 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/server"
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
