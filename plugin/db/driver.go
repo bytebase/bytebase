@@ -255,9 +255,17 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	}
 
 	// Escape "." characters to match literals instead of using it as a wildcard.
-	filePathRegex := strings.ReplaceAll(filePathTemplate, ".", `\.`)
+	filePathRegex := strings.ReplaceAll(filePathTemplate, `.`, `\.`)
+	if err := IsDoubleAsteriskInTemplateValid(filePathRegex); err != nil {
+		return nil, err
+	}
+	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
+	if err := IsSingleAsteriskInTemplateValid(filePathRegex); err != nil {
+		return nil, err
+	}
+	filePathRegex = strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]*/`)
 	for _, placeholder := range placeholderList {
-		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=_#?!$. ]+)", placeholder))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
@@ -490,4 +498,22 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 		parts = append(parts, param)
 	}
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
+}
+
+func IsSingleAsteriskInTemplateValid(pathTemplate string) error {
+	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 1)
+}
+
+func IsDoubleAsteriskInTemplateValid(pathTemplate string) error {
+	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 2)
+}
+
+func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes int) error {
+	base := strings.Repeat(`\*`, asteriskTimes)
+	str := fmt.Sprintf(`([^\/]+%s)|(%s[^\/]+)|(^(%s))|((%s)$)`, base, base, base, base)
+	re := regexp.MustCompile(str)
+	if re.MatchString(pathTemplate) {
+		return errors.Errorf("path template %s contains invalid double asterisk", pathTemplate)
+	}
+	return nil
 }
