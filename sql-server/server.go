@@ -7,16 +7,18 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/bytebase/bytebase/docs/sqlservice" // initial the swagger doc
-	"github.com/bytebase/bytebase/plugin/metric/segment"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
+	_ "github.com/bytebase/bytebase/docs/sqlservice" // initial the swagger doc
+	"github.com/bytebase/bytebase/plugin/metric/segment"
+
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 )
 
 // Server is the Bytebase server.

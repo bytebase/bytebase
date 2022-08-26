@@ -9,12 +9,13 @@ import (
 
 	metricAPI "github.com/bytebase/bytebase/metric"
 
+	"github.com/labstack/echo/v4"
+	"gopkg.in/yaml.v3"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/labstack/echo/v4"
-	"gopkg.in/yaml.v3"
 )
 
 var (

@@ -3,11 +3,12 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/ast"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 
 	// Register postgres parser driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"

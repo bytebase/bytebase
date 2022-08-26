@@ -8,11 +8,12 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/xo/dburl"
+
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 func newMigrateCmd() *cobra.Command {

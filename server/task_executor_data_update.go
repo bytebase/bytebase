@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/pkg/errors"
 )
 
 // NewDataUpdateTaskExecutor creates a data update (DML) task executor.

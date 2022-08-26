@@ -4,11 +4,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common/log"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 type metricReporter struct {

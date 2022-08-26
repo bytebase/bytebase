@@ -9,6 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
@@ -17,8 +20,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/pg"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/store"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
