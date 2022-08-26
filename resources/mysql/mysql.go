@@ -1,6 +1,7 @@
 //go:build mysql
 // +build mysql
 
+// Package mysql provides the resource for MySQL server and utility packages.
 package mysql
 
 import (
@@ -15,8 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/resources/utils"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/resources/utils"
 
 	// install mysql driver.
 	_ "github.com/go-sql-driver/mysql"
@@ -35,7 +37,9 @@ type Instance struct {
 }
 
 // Port returns the port of the mysql instance.
-func (i Instance) Port() int { return i.port }
+func (i Instance) Port() int {
+	return i.port
+}
 
 // Start starts the mysql instance on the given port, outputs to stdout and stderr.
 // Waits at most `waitSec` seconds for the mysql instance to ready for connection.

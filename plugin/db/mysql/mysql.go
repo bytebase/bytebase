@@ -1,3 +1,4 @@
+// Package mysql is the plugin for MySQL driver.
 package mysql
 
 import (
@@ -6,13 +7,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-sql-driver/mysql"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/go-sql-driver/mysql"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 var (

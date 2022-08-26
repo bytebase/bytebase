@@ -1,3 +1,4 @@
+import { BBButtonType } from "@/bbkit/types";
 import { uniq } from "lodash-es";
 import {
   Database,
@@ -165,7 +166,7 @@ export interface TaskStatusTransition {
   type: TaskStatusTransitionType;
   to: TaskStatus;
   buttonName: string;
-  buttonClass: string;
+  buttonType: BBButtonType;
 }
 
 const TASK_STATUS_TRANSITION_LIST: Map<
@@ -178,7 +179,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
       type: "RUN",
       to: "RUNNING",
       buttonName: "common.run",
-      buttonClass: "btn-primary",
+      buttonType: "PRIMARY",
     },
   ],
   [
@@ -187,7 +188,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
       type: "APPROVE",
       to: "PENDING",
       buttonName: "common.approve",
-      buttonClass: "btn-primary",
+      buttonType: "PRIMARY",
     },
   ],
   [
@@ -196,7 +197,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
       type: "RETRY",
       to: "RUNNING",
       buttonName: "common.retry",
-      buttonClass: "btn-primary",
+      buttonType: "PRIMARY",
     },
   ],
   [
@@ -205,7 +206,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
       type: "CANCEL",
       to: "PENDING",
       buttonName: "common.cancel",
-      buttonClass: "btn-primary",
+      buttonType: "NORMAL",
     },
   ],
 ]);

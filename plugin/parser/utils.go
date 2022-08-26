@@ -1,8 +1,12 @@
 package parser
 
 import (
-	"github.com/bytebase/bytebase/plugin/parser/ast"
+	"io"
+
+	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.
@@ -17,6 +21,23 @@ func SplitMultiSQL(engineType EngineType, statement string) ([]SingleSQL, error)
 	case Postgres:
 		t := newTokenizer(statement)
 		return t.splitPostgreSQLMultiSQL()
+	case MySQL, TiDB:
+		t := newTokenizer(statement)
+		return t.splitMySQLMultiSQL()
+	default:
+		return nil, errors.Errorf("engine type is not supported: %s", engineType)
+	}
+}
+
+// SplitMultiSQLStream splits statement stream into a slice of the single SQL.
+func SplitMultiSQLStream(engineType EngineType, src io.Reader, f func(string) error) ([]SingleSQL, error) {
+	switch engineType {
+	case Postgres:
+		t := newStreamTokenizer(src, f)
+		return t.splitPostgreSQLMultiSQL()
+	case MySQL, TiDB:
+		t := newStreamTokenizer(src, f)
+		return t.splitMySQLMultiSQL()
 	default:
 		return nil, errors.Errorf("engine type is not supported: %s", engineType)
 	}
@@ -27,8 +48,15 @@ func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt)
 	switch engineType {
 	case Postgres:
 		t := newTokenizer(node.Text())
-		return t.setLineForCreateTableStmt(node)
+		return t.setLineForPGCreateTableStmt(node)
 	default:
 		return errors.Errorf("engine type is not supported: %s", engineType)
 	}
+}
+
+// SetLineForMySQLCreateTableStmt sets the line for columns and table constraints in MySQL CREATE TABLE statments.
+// This is a temporary function. Because we do not convert tidb AST to our AST. So we have to implement this.
+// TODO(rebelice): remove it.
+func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
+	return newTokenizer(node.Text()).setLineForMySQLCreateTableStmt(node)
 }

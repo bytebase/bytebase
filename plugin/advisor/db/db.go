@@ -1,3 +1,4 @@
+// Package db provides the database utility for SQL advisor.
 package db
 
 import (

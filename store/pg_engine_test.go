@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -147,9 +148,9 @@ func TestMigrationCompatibility(t *testing.T) {
 	pgDir := t.TempDir()
 	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
 	require.NoError(t, err)
-	err = pgInstance.Start(pgPort, os.Stdout, os.Stderr)
+	err = postgres.Start(pgPort, pgInstance.BaseDir, pgInstance.DataDir, os.Stderr, os.Stderr)
 	require.NoError(t, err)
-	defer pgInstance.Stop(os.Stdout, os.Stderr)
+	pgInstance.Port = pgPort
 
 	ctx := context.Background()
 	connCfg := dbdriver.ConnectionConfig{
@@ -210,6 +211,9 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 	// The extra one is for the initial schema setup.
 	require.Len(t, histories, len(devMigrations)+1)
+
+	err = postgres.Stop(pgInstance.BaseDir, pgInstance.DataDir, os.Stdout, os.Stderr)
+	require.NoError(t, err)
 }
 
 func TestGetCutoffVersion(t *testing.T) {

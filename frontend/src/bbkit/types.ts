@@ -1,3 +1,10 @@
+export type BBButtonType =
+  | "NORMAL"
+  | "PRIMARY"
+  | "SECONDARY"
+  | "DANGER"
+  | "SUCCESS";
+
 export type BBButtonConfirmStyle =
   | "DELETE"
   | "ARCHIVE"
@@ -17,10 +24,11 @@ export type BBTableSectionDataSource<T> = {
   list: T[];
 };
 
-export type BBTabItem = {
+export type BBTabItem<T = any> = {
   title: string;
   // Used as the anchor
   id: string;
+  data?: T;
 };
 
 export type BBTabFilterItem = {

@@ -1,3 +1,4 @@
+// Package webhook provides the webhook implementations for various messaging platforms.
 package webhook
 
 import (
@@ -11,8 +12,7 @@ var (
 	receiverMu sync.RWMutex
 	receivers  = make(map[string]Receiver)
 	// Based on the local test, Teams sometimes cannot finish the request in 1 second, so use 3s.
-	timeout    = 3 * time.Second
-	timeFormat = "2006-01-02 15:04:05"
+	timeout = 3 * time.Second
 )
 
 // meta is the webhook metadata.

@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/pingcap/tidb/parser/ast"
 )
 
 var (
@@ -97,6 +98,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingTableConventionMismatch,
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
+				Line:    in.OriginTextPosition(),
 			})
 		}
 		if v.maxLength > 0 && len(tableName) > v.maxLength {
@@ -105,6 +107,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingTableConventionMismatch,
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, v.maxLength),
+				Line:    in.OriginTextPosition(),
 			})
 		}
 	}

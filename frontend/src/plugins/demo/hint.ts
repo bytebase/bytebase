@@ -21,7 +21,7 @@ export const showHints = async (hintDataList: HintData[]) => {
       return;
     }
 
-    const targetElement = await waitForTargetElement([[hintData.selector]]);
+    const targetElement = await waitForTargetElement(hintData.selector);
     if (targetElement) {
       renderHint(targetElement, hintData, index);
     } else {

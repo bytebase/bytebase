@@ -1,3 +1,4 @@
+// Package pg is the plugin for PostgreSQL driver.
 package pg
 
 import (
@@ -214,18 +215,13 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	owner, err := driver.getCurrentDatabaseOwner()
+	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
 		return err
 	}
 
-	statements, err := parser.SplitMultiSQL(parser.Postgres, statement)
-	if err != nil {
-		return err
-	}
 	var remainingStmts []string
-	for _, statement := range statements {
-		stmt := strings.TrimLeft(statement.Text, " \t")
+	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
@@ -250,7 +246,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 					return err
 				}
 			}
-		} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
+		} else if strings.HasPrefix(stmt, "GRANT") || strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 				return err
 			}
@@ -264,17 +260,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 				return err
 			}
 			// Update current owner
-			if owner, err = driver.getCurrentDatabaseOwner(); err != nil {
+			if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
 				return err
 			}
 		} else if isSuperuserStatement(stmt) {
+			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
+			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
+			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
+			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
+			if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
+				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
+			}
 			// Use superuser privilege to run privileged statements.
-			remainingStmts = append(remainingStmts, "SET LOCAL ROLE NONE;")
+			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
 			remainingStmts = append(remainingStmts, stmt)
-			remainingStmts = append(remainingStmts, fmt.Sprintf("SET LOCAL ROLE %s;", owner))
 		} else {
 			remainingStmts = append(remainingStmts, stmt)
 		}
+		return nil
+	}
+
+	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
+		return err
 	}
 
 	if len(remainingStmts) == 0 {
@@ -319,7 +326,8 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	return databaseName, nil
 }
 
-func (driver *Driver) getCurrentDatabaseOwner() (string, error) {
+// GetCurrentDatabaseOwner gets the role of the current database.
+func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 	const query = `
 		SELECT
 			u.rolname

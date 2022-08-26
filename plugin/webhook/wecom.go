@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -43,7 +42,6 @@ func (*WeComReceiver) post(context Context) error {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("By: <font color=\"comment\">%s (%s)</font>", context.CreatorName, context.CreatorEmail))
-	metaStrList = append(metaStrList, fmt.Sprintf("At: <font color=\"comment\">%s</font>", time.Unix(context.CreatedTs, 0).Format(timeFormat)))
 
 	status := ""
 	switch context.Level {

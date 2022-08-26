@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/pkg/errors"
 )
 
 // environmentRaw is the store model for an Environment.
@@ -124,6 +125,12 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *environmentRaw) (*a
 		return nil, err
 	}
 	env.Updater = updater
+
+	tier, err := s.GetEnvironmentTierPolicyByEnvID(ctx, env.ID)
+	if err != nil {
+		return nil, err
+	}
+	env.Tier = tier.EnvironmentTier
 
 	return env, nil
 }

@@ -1,3 +1,4 @@
+// Package clickhouse is the plugin for ClickHouse driver.
 package clickhouse
 
 import (
@@ -8,12 +9,13 @@ import (
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 var (

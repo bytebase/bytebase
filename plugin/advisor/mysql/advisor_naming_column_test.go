@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 func TestNamingColumnConvention(t *testing.T) {
@@ -21,6 +22,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    1,
 				},
 			},
 		},
@@ -32,6 +34,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: fmt.Sprintf("`book`.`%s` mismatches column naming convention, its length should be within 64 characters", invalidColumnName),
+					Line:    1,
 				},
 			},
 		},
@@ -55,6 +58,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    2,
 				},
 			},
 		},
@@ -83,6 +87,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    7,
 				},
 			},
 		},
@@ -121,6 +126,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`contentString` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    6,
 				},
 			},
 		},
@@ -140,24 +146,28 @@ func TestNamingColumnConvention(t *testing.T) {
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`createdTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`updaterId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    4,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`student`.`createdTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    8,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`student`.`updatedTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    9,
 				},
 			},
 		},

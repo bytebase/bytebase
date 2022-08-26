@@ -1,3 +1,4 @@
+// Package server implements the API server for Bytebase.
 package server
 
 import (
@@ -31,6 +32,7 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
+	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/store"
@@ -55,13 +57,15 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile       Profile
-	e             *echo.Echo
-	pgInstanceDir string
-	metaDB        *store.MetadataDB
-	store         *store.Store
-	startedTs     int64
-	secret        string
+	profile    Profile
+	e          *echo.Echo
+	pgInstance *postgres.Instance
+	metaDB     *store.MetadataDB
+	store      *store.Store
+	startedTs  int64
+	secret     string
+
+	s3Client *s3bb.Client
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -117,6 +121,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
 	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
+	log.Info(fmt.Sprintf("backupBucket=%s", prof.BackupBucket))
+	log.Info(fmt.Sprintf("backupRegion=%s", prof.BackupRegion))
+	log.Info(fmt.Sprintf("backupCredentialFile=%s", prof.BackupCredentialFile))
 	log.Info("-----Config END-------")
 
 	serverStarted := false
@@ -151,7 +158,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.pgInstanceDir = pgInstance.BaseDir
+	s.pgInstance = pgInstance
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
@@ -197,6 +204,18 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	embedFrontend(e)
 	s.e = e
+
+	if prof.BackupBucket != "" {
+		credentials, err := s3bb.GetCredentialsFromFile(ctx, prof.BackupCredentialFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get credentials from file")
+		}
+		s3Client, err := s3bb.NewClient(ctx, prof.BackupRegion, prof.BackupBucket, credentials)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create AWS S3 client")
+		}
+		s.s3Client = s3Client
+	}
 
 	if !prof.Readonly {
 		// Task scheduler
@@ -277,9 +296,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
 	e.Use(recoverMiddleware)
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return errorRecorderMiddleware(s, next)
-	})
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")

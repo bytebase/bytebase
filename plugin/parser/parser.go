@@ -1,3 +1,4 @@
+// Package parser provides the interfaces and libraries for SQL parser.
 package parser
 
 import (

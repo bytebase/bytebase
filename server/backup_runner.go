@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
@@ -12,13 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // NewBackupRunner creates a new backup runner.
@@ -59,7 +59,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = errors.Errorf("%v", r)
 						}
-						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
+						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
 					}
 				}()
 				r.startAutoBackups(ctx, runningTasks, &mu)
@@ -113,7 +113,6 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 
 	for _, instance := range instanceList {
 		if instance.Engine != db.MySQL {
-			log.Debug("Instance is not a MySQL instance. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
@@ -122,7 +121,6 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
-			log.Debug("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
@@ -147,21 +145,26 @@ func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Conte
 	return maxRetentionPeriodTs, nil
 }
 
+// TODO(dragonly): Remove metadata as well.
 func (r *BackupRunner) purgeBinlogFiles(instanceID, retentionPeriodTs int) error {
 	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
-	binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
+	binlogFileInfoList, err := os.ReadDir(binlogDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read backup directory %q", binlogDir)
 	}
 	for _, binlogFileInfo := range binlogFileInfoList {
 		if _, err := mysql.GetBinlogNameSeq(binlogFileInfo.Name()); err != nil {
-			log.Warn("Found an irregular file in binlog directory.", zap.String("path", binlogFileInfo.Name()))
 			continue // next binlog file
 		}
 		// We use modification time of local binlog files which is later than the modification time of that on the MySQL server,
 		// which in turn is later than the last event timestamp of the binlog file.
 		// This is not accurate and gives about 10 minutes (backup runner interval) more retention time to the binlog files, which is acceptable.
-		expireTime := binlogFileInfo.ModTime().Add(time.Duration(retentionPeriodTs) * time.Second)
+		fileInfo, err := binlogFileInfo.Info()
+		if err != nil {
+			log.Warn("Failed to get file info.", zap.String("path", binlogFileInfo.Name()), zap.Error(err))
+			continue
+		}
+		expireTime := fileInfo.ModTime().Add(time.Duration(retentionPeriodTs) * time.Second)
 		if time.Now().After(expireTime) {
 			binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
 			if err := os.Remove(binlogFilePath); err != nil {
@@ -178,6 +181,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 	archive := api.Archived
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
+		UpdaterID: api.SystemBotID,
 		RowStatus: &archive,
 	}
 	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
@@ -237,7 +241,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, r.server.s3Client); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}

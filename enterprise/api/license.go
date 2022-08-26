@@ -1,11 +1,13 @@
+// Package api provides the API definition for enterprise service.
 package api
 
 import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 // validPlans is a string array of valid plan types.

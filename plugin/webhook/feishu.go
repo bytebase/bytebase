@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -91,15 +90,6 @@ func (*FeishuReceiver) post(context Context) error {
 		sectionList = append(sectionList, FeishuWebhookPostSection{
 			Tag:  "text",
 			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
-		})
-		contentList = append(contentList, sectionList)
-	}
-
-	{
-		sectionList := []FeishuWebhookPostSection{}
-		sectionList = append(sectionList, FeishuWebhookPostSection{
-			Tag:  "text",
-			Text: fmt.Sprintf("At: %s", time.Unix(context.CreatedTs, 0).Format(timeFormat)),
 		})
 		contentList = append(contentList, sectionList)
 	}

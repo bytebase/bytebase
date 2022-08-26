@@ -1,3 +1,4 @@
+// Package db provides the interfaces and libraries for database driver plugins.
 package db
 
 import (
@@ -9,8 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // Type is the type of a database.

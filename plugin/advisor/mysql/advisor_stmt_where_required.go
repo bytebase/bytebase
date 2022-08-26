@@ -40,6 +40,7 @@ func (*WhereRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]
 	}
 	for _, stmtNode := range root {
 		checker.text = stmtNode.Text()
+		checker.line = stmtNode.OriginTextPosition()
 		(stmtNode).Accept(checker)
 	}
 
@@ -59,6 +60,7 @@ type whereRequirementChecker struct {
 	level      advisor.Status
 	title      string
 	text       string
+	line       int
 }
 
 // Enter implements the ast.Visitor interface.
@@ -88,6 +90,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:    code,
 			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
+			Line:    v.line,
 		})
 	}
 	return in, false

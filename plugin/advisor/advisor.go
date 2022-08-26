@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 // Status is the advisor result status.
@@ -83,6 +84,9 @@ const (
 
 	// MySQLColumnNoNull is an advisor type for MySQL column no NULL value.
 	MySQLColumnNoNull Type = "bb.plugin.advisor.mysql.column.no-null"
+
+	// MySQLColumnDisallowChangingType is an advisor type for MySQL disallow changing column type.
+	MySQLColumnDisallowChangingType Type = "bb.plugin.advisor.mysql.column.disallow-changing-type"
 
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"

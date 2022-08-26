@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 func TestMySQLNamingTableConvention(t *testing.T) {
@@ -21,6 +22,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    1,
 				},
 			},
 		},
@@ -43,6 +45,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within 64 characters", invalidTableName),
+					Line:    1,
 				},
 			},
 		},
@@ -54,6 +57,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    1,
 				},
 			},
 		},
@@ -76,6 +80,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    1,
 				},
 			},
 		},
@@ -87,12 +92,14 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    1,
 				},
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Line:    1,
 				},
 			},
 		},

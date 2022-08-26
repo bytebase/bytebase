@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 func TestNamingIndexConvention(t *testing.T) {
@@ -33,6 +34,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found `tech_book_id_name`",
+					Line:    1,
 				},
 			},
 		},
@@ -44,12 +46,14 @@ func TestNamingIndexConvention(t *testing.T) {
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: fmt.Sprintf("Index in table `tech_book` mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found `%s`", invalidIndexName),
+					Line:    1,
 				},
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: fmt.Sprintf("Index `%s` in table `tech_book` mismatches the naming convention, its length should be within 64 characters", invalidIndexName),
+					Line:    1,
 				},
 			},
 		},
@@ -79,6 +83,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found `idx_tech_book`",
+					Line:    1,
 				},
 			},
 		},
@@ -101,6 +106,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found `tech_book_id_name`",
+					Line:    1,
 				},
 			},
 		},

@@ -1,3 +1,4 @@
+// Package segment implements the reporter for segment.
 package segment
 
 import (

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 const (
@@ -120,6 +121,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:    code,
 			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" doesn't use InnoDB engine", in.Text()),
+			Line:    in.OriginTextPosition(),
 		})
 	}
 	return in, false

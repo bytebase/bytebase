@@ -1,3 +1,4 @@
+// Package config provides configuration interface for enterprise licensing.
 package config
 
 import (
@@ -5,10 +6,11 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 )
 
 //go:embed keys

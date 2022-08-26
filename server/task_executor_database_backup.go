@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
@@ -56,17 +58,20 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	)
 
 	backupPayload, backupErr := exec.backupDatabase(ctx, server, task.Instance, task.Database.Name, backup)
+	backupStatus := string(api.BackupStatusDone)
+	comment := ""
+	if backupErr != nil {
+		backupStatus = string(api.BackupStatusFailed)
+		comment = backupErr.Error()
+	}
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
-		Status:    string(api.BackupStatusDone),
+		Status:    &backupStatus,
 		UpdaterID: api.SystemBotID,
-		Comment:   "",
-		Payload:   backupPayload,
+		Comment:   &comment,
+		Payload:   &backupPayload,
 	}
-	if backupErr != nil {
-		backupPatch.Status = string(api.BackupStatusFailed)
-		backupPatch.Comment = backupErr.Error()
-	}
+
 	if _, err := server.store.PatchBackup(ctx, &backupPatch); err != nil {
 		return true, nil, errors.Wrap(err, "failed to patch backup")
 	}
@@ -80,6 +85,19 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}, nil
 }
 
+func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupFilePath string) (string, error) {
+	backupFile, err := os.Create(backupFilePath)
+	if err != nil {
+		return "", errors.Errorf("failed to open backup path %q", backupFilePath)
+	}
+	defer backupFile.Close()
+	payload, err := driver.Dump(ctx, databaseName, backupFile, false /* schemaOnly */)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to dump database %q to local backup file %q", databaseName, backupFilePath)
+	}
+	return payload, nil
+}
+
 // backupDatabase will take a backup of a database.
 func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
 	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
@@ -88,18 +106,37 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 	}
 	defer driver.Close(ctx)
 
-	f, err := os.Create(filepath.Join(server.profile.DataDir, backup.Path))
+	backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+	payload, err := dumpBackupFile(ctx, driver, databaseName, backupFilePathLocal)
 	if err != nil {
-		return "", errors.Errorf("failed to open backup path: %s", backup.Path)
-	}
-	defer f.Close()
-
-	payload, err := driver.Dump(ctx, databaseName, f, false /* schemaOnly */)
-	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to dump backup file %q", backupFilePathLocal)
 	}
 
-	return payload, nil
+	switch backup.StorageBackend {
+	case api.BackupStorageBackendLocal:
+		return payload, nil
+	case api.BackupStorageBackendS3:
+		log.Debug("Uploading backup to s3 bucket.", zap.String("bucket", server.s3Client.GetBucket()), zap.String("path", backupFilePathLocal))
+		bucketFileToUpload, err := os.Open(backupFilePathLocal)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
+		}
+		defer bucketFileToUpload.Close()
+
+		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
+			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
+		}
+		log.Debug("Successfully uploaded backup to s3 bucket.")
+
+		if err := os.Remove(backupFilePathLocal); err != nil {
+			log.Warn("Failed to remove the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal), zap.Error(err))
+		} else {
+			log.Debug("Successfully removed the local backup file after uploading to s3 bucket.", zap.String("path", backupFilePathLocal))
+		}
+		return payload, nil
+	default:
+		return "", errors.Errorf("backup to %s not implemented yet", backup.StorageBackend)
+	}
 }
 
 // Get backup dir relative to the data dir.

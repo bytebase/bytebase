@@ -1,3 +1,4 @@
+// Package cmd provides the cobra CLI implementation for SQL review service.
 package cmd
 
 import (
@@ -8,11 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	server "github.com/bytebase/bytebase/sql-server"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"

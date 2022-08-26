@@ -89,6 +89,10 @@ const (
 	//
 	// e.g. One can configure rules for database schema or SQL query.
 	FeatureSQLReviewPolicy FeatureType = "bb.feature.sql-review"
+	// FeatureEnvironmentTierPolicy allows user to set the tier of an environment.
+	//
+	// e.g. set the tier to "PROTECTED" for the production environment.
+	FeatureEnvironmentTierPolicy FeatureType = "bb.feature.environment-tier"
 
 	// Admin & Security.
 
@@ -140,6 +144,8 @@ func (e FeatureType) Name() string {
 		return "3rd party auth"
 	case FeatureBranding:
 		return "Branding"
+	case FeatureEnvironmentTierPolicy:
+		return "Environment tier"
 	}
 	return ""
 }
@@ -163,19 +169,20 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan.
 var FeatureMatrix = map[FeatureType][3]bool{
-	"bb.feature.schema-drift":       {false, true, true},
-	"bb.feature.task-schedule-time": {false, true, true},
-	"bb.feature.multi-tenancy":      {false, true, true},
-	"bb.feature.dba-workflow":       {false, false, true},
-	"bb.feature.data-source":        {false, false, false},
-	"bb.feature.ghost":              {false, true, true},
-	"bb.feature.pitr":               {false, true, true},
-	"bb.feature.approval-policy":    {false, true, true},
-	"bb.feature.backup-policy":      {false, true, true},
-	"bb.feature.sql-review":         {false, true, true},
-	"bb.feature.rbac":               {false, true, true},
-	"bb.feature.3rd-party-auth":     {false, true, true},
-	"bb.feature.branding":           {false, true, true},
+	FeatureSchemaDrift:           {false, true, true},
+	FeatureTaskScheduleTime:      {false, true, true},
+	FeatureMultiTenancy:          {false, true, true},
+	FeatureDBAWorkflow:           {false, false, true},
+	FeatureDataSource:            {false, false, false},
+	FeatureGhost:                 {false, true, true},
+	FeaturePITR:                  {false, true, true},
+	FeatureApprovalPolicy:        {false, true, true},
+	FeatureBackupPolicy:          {false, true, true},
+	FeatureSQLReviewPolicy:       {false, true, true},
+	FeatureRBAC:                  {false, true, true},
+	Feature3rdPartyAuth:          {false, true, true},
+	FeatureBranding:              {false, true, true},
+	FeatureEnvironmentTierPolicy: {false, false, true},
 }
 
 // Plan is the API message for a plan.

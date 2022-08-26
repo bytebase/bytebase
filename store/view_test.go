@@ -3,9 +3,10 @@ package store
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateViewActions(t *testing.T) {

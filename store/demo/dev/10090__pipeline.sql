@@ -188,48 +188,4 @@ VALUES
         'OPEN'
     );
 
--- Pipeline for task dependency
-INSERT INTO
-    pipeline (
-        id,
-        creator_id,
-        created_ts,
-        updater_id,
-        updated_ts,
-        name,
-        status
-    )
-VALUES
-    (
-        9010,
-        1,
-        1624879944,
-        1,
-        1624879944,
-        'Pipeline - Task Dependency',
-        'OPEN'
-    );
-
--- Pipeline for PITR tasks
-INSERT INTO
-    pipeline (
-        id,
-        creator_id,
-        created_ts,
-        updater_id,
-        updated_ts,
-        name,
-        status
-    )
-VALUES
-    (
-        9011,
-        1,
-        1652429962,
-        1,
-        1652429962,
-        'Pipeline - PITR',
-        'OPEN'
-    );
-
-ALTER SEQUENCE pipeline_id_seq RESTART WITH 9012;
+ALTER SEQUENCE pipeline_id_seq RESTART WITH 9010;

@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"strconv"
 	"sync/atomic"
+	"time"
+
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -14,8 +18,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
@@ -96,17 +98,8 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	switch task.Instance.Engine {
-	case db.Postgres:
-		if err := exec.pitrCutoverPostgres(ctx, driver, task, issue); err != nil {
-			return true, nil, errors.Wrap(err, "failed to do cutover for PostgreSQL")
-		}
-	case db.MySQL:
-		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
-			return true, nil, errors.Wrap(err, "failed to do cutover for MySQL")
-		}
-	default:
-		return true, nil, errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
+	if err := exec.doCutover(ctx, driver, server, task, issue); err != nil {
+		return true, nil, err
 	}
 
 	log.Debug("Appending new migration history record")
@@ -140,6 +133,40 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
+}
+
+func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
+	switch task.Instance.Engine {
+	case db.Postgres:
+		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		maxRetry := 3
+		retry := 0
+		for {
+			select {
+			case <-ticker.C:
+				retry++
+				if err := exec.pitrCutoverPostgres(ctx, driver, task, issue); err != nil {
+					if retry == maxRetry {
+						return errors.Wrapf(err, "failed to do cutover for PostgreSQL after retried for %d times", maxRetry)
+					}
+					log.Debug("Failed to do cutover for PostgreSQL. Retry later.", zap.Error(err))
+				} else {
+					return nil
+				}
+			case <-ctx.Done():
+				return errors.Errorf("context is canceled when doing cutover for PostgreSQL")
+			}
+		}
+	case db.MySQL:
+		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
+			return errors.Wrap(err, "failed to do cutover for MySQL")
+		}
+		return nil
+	default:
+		return errors.Errorf("invalid database type %q for cutover task", task.Instance.Engine)
+	}
 }
 
 func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
@@ -183,6 +210,10 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		return errors.Wrapf(err, "failed to check existence of database %q", task.Database.Name)
 	}
 	if existOriginal {
+		// Kill connections to the original database in the beginning of cutover.
+		if err := pgKillConnectionsToDatabase(ctx, db, task.Database.Name); err != nil {
+			return err
+		}
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", task.Database.Name, pitrOldDatabaseName)); err != nil {
 			return errors.Wrapf(err, "failed to rename database %q to %q", task.Database.Name, pitrOldDatabaseName)
 		}
@@ -197,12 +228,33 @@ func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver 
 		return errors.Wrapf(err, "failed to check existence of database %q", pitrDatabaseName)
 	}
 	if existPITR {
+		// Kill connections to the original database again in case that the clients reconnect to the original database.
+		if err := pgKillConnectionsToDatabase(ctx, db, task.Database.Name); err != nil {
+			return err
+		}
+		// Kill connection to the _pitr database in case there's someone connecting to all of the existing databases like postgres-exporter.
+		if err := pgKillConnectionsToDatabase(ctx, db, pitrDatabaseName); err != nil {
+			return err
+		}
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", pitrDatabaseName, task.Database.Name)); err != nil {
 			return errors.Wrapf(err, "failed to rename database %q to %q", pitrDatabaseName, task.Database.Name)
 		}
 		log.Debug("Successfully renamed database", zap.String("from", pitrDatabaseName), zap.String("to", task.Database.Name))
 	}
 
+	return nil
+}
+
+func pgKillConnectionsToDatabase(ctx context.Context, db *sql.DB, database string) error {
+	stmt := `
+	SELECT pg_terminate_backend( pid )
+	FROM pg_stat_activity
+	WHERE pid <> pg_backend_pid( )
+	  AND datname = $1;
+`
+	if _, err := db.ExecContext(ctx, stmt, database); err != nil {
+		return errors.Wrapf(err, "failed to kill all connections to database %q", database)
+	}
 	return nil
 }
 

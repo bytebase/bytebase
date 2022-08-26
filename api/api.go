@@ -1,3 +1,4 @@
+// Package api provides the definition of all APIs.
 package api
 
 import (

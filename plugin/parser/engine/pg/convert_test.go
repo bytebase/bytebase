@@ -3,9 +3,10 @@ package pg
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
-	"github.com/stretchr/testify/require"
 )
 
 type testData struct {
@@ -1512,6 +1513,23 @@ func TestCopyStmt(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text: "COPY tech_book FROM '/file/path/in/file/system'",
+					Line: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestUnconvertStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "SHOW TABLES",
+			want: []ast.Node{&ast.UnconvertedStmt{}},
+			statementList: []parser.SingleSQL{
+				{
+					Text: "SHOW TABLES",
 					Line: 1,
 				},
 			},

@@ -12,7 +12,8 @@ import {
 export type PolicyType =
   | "bb.policy.pipeline-approval"
   | "bb.policy.backup-plan"
-  | "bb.policy.sql-review";
+  | "bb.policy.sql-review"
+  | "bb.policy.environment-tier";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
@@ -25,6 +26,14 @@ export type PipelineApprovalPolicyPayload = {
 
 export const DefaultApprovalPolicy: PipelineApprovalPolicyValue =
   "MANUAL_APPROVAL_ALWAYS";
+
+export type EnvironmentTier = "PROTECTED" | "UNPROTECTED";
+
+export type EnvironmentTierPolicyPayload = {
+  environmentTier: EnvironmentTier;
+};
+
+export const DefaultEnvironmentTier: EnvironmentTier = "UNPROTECTED";
 
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
@@ -62,7 +71,8 @@ export type AssigneeGroup = {
 export type PolicyPayload =
   | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
-  | SQLReviewPolicyPayload;
+  | SQLReviewPolicyPayload
+  | EnvironmentTierPolicyPayload;
 
 export type Policy = {
   id: PolicyId;

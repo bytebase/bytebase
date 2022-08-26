@@ -1,10 +1,11 @@
+// Package sqlite is the plugin for SQLite driver.
 package sqlite
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -94,7 +95,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 func (driver *Driver) getDatabases() ([]string, error) {
-	files, err := ioutil.ReadDir(driver.dir)
+	files, err := os.ReadDir(driver.dir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read directory %q", driver.dir)
 	}

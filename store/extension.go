@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/pkg/errors"
 )
 
 // dbExtensionRaw is the store model for an DBExtension.
@@ -112,9 +113,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 	return nil
 }
 
-//
 // private functions.
-//
 func generateDBExtensionActions(oldDBExtensionRawList []*dbExtensionRaw, extensionList []db.Extension, databaseID int) ([]*api.DBExtensionDelete, []*api.DBExtensionCreate) {
 	var newDBExtensionList []*api.DBExtensionCreate
 	for _, dbExtension := range extensionList {

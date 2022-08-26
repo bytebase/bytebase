@@ -2,20 +2,30 @@
   <NTooltip trigger="manual" :show="state.tooltipVisible">
     <template #trigger>
       <!--
-        <button disabled> will swallow all mouse related events such as mouseover/mouseout...
-        so we need to handle it manually with lower level DOM pointer events
+        Allowing to overwrite the entire button
+        with manual tooltip control functions
       -->
-      <button
-        type="button"
-        v-bind="$attrs"
-        :disabled="disabled"
-        :class="[`btn-${props.type}`, $attrs.class]"
-        @click.prevent="$emit('click')"
-        @pointerenter="showTooltip"
-        @pointerleave="hideTooltip"
+      <slot
+        name="button"
+        :show-tooltip="showTooltip"
+        :hide-tooltip="hideTooltip"
       >
-        <slot name="default"></slot>
-      </button>
+        <!--
+          <button disabled> will swallow all mouse related events such as mouseover/mouseout...
+          so we need to handle it manually with lower level DOM pointer events
+        -->
+        <button
+          type="button"
+          v-bind="$attrs"
+          :disabled="disabled"
+          :class="[`btn-${props.type}`, $attrs.class]"
+          @click.prevent="$emit('click')"
+          @pointerenter="showTooltip"
+          @pointerleave="hideTooltip"
+        >
+          <slot name="default"></slot>
+        </button>
+      </slot>
     </template>
     <slot name="tooltip"></slot>
   </NTooltip>

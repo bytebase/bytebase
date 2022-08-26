@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/pkg/errors"
 )
 
 // viewRaw is the store model for an View.
@@ -105,9 +106,7 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 	return nil
 }
 
-//
 // private functions.
-//
 func generateViewActions(oldViewRawList []*viewRaw, viewList []db.View, databaseID int) ([]*api.ViewDelete, []*api.ViewCreate) {
 	var viewCreateList []*api.ViewCreate
 	for _, view := range viewList {

@@ -75,7 +75,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			issueFind.PrincipalID = &userID
 		}
 
-		issueList, err := s.store.FindIssue(ctx, issueFind)
+		issueList, err := s.store.FindIssueStripped(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
@@ -139,8 +139,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
-			environmentID := getActiveTaskEnvironmentID(issue.Pipeline)
-			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+			stage := getActiveStage(issue.Pipeline.StageList)
+			if stage == nil {
+				// all stages have finished, use the last stage
+				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+			}
+			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
@@ -316,7 +320,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
-	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
+	if err := s.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
@@ -848,6 +852,11 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		schemaVersion = common.DefaultMigrationVersion()
 	}
 
+	// Get admin data source username.
+	adminDataSource := api.DataSourceFromInstanceWithType(&instance, api.Admin)
+	if adminDataSource == nil {
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+	}
 	payload := api.TaskDatabaseCreatePayload{
 		ProjectID:     project.ID,
 		CharacterSet:  c.CharacterSet,
@@ -855,7 +864,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Labels:        c.Labels,
 		SchemaVersion: schemaVersion,
 	}
-	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
+	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, adminDataSource.Username, schema)
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
@@ -1042,7 +1051,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	return nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, schema string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, adminDatasourceUser, schema string) (string, string) {
 	databaseName := createDatabaseContext.DatabaseName
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
@@ -1057,10 +1066,15 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
 		}
 	case db.Postgres:
+		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
+		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
+		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
+			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
+		}
 		if createDatabaseContext.Collation == "" {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;", databaseName, createDatabaseContext.CharacterSet)
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, createDatabaseContext.CharacterSet)
 		} else {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
 		}
 		// Set the database owner.
 		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
@@ -1345,19 +1359,4 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 			}
 		}
 	}
-}
-
-func getActiveTaskEnvironmentID(pipeline *api.Pipeline) int {
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status == api.TaskPendingApproval ||
-				task.Status == api.TaskPending ||
-				task.Status == api.TaskRunning ||
-				task.Status == api.TaskCanceled {
-				return stage.EnvironmentID
-			}
-		}
-	}
-	// use the last stage if all done
-	return pipeline.StageList[len(pipeline.StageList)-1].EnvironmentID
 }

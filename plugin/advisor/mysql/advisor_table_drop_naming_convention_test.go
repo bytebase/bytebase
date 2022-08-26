@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 func TestMySQLTableDropNamingConvention(t *testing.T) {
@@ -29,6 +30,7 @@ func TestMySQLTableDropNamingConvention(t *testing.T) {
 					Code:    advisor.TableDropNamingConventionMismatch,
 					Title:   "table.drop-naming-convention",
 					Content: "`foo` mismatches drop table naming convention, naming format should be \"_delete$\"",
+					Line:    1,
 				},
 			},
 		},
@@ -40,6 +42,7 @@ func TestMySQLTableDropNamingConvention(t *testing.T) {
 					Code:    advisor.TableDropNamingConventionMismatch,
 					Title:   "table.drop-naming-convention",
 					Content: "`bar` mismatches drop table naming convention, naming format should be \"_delete$\"",
+					Line:    1,
 				},
 			},
 		},

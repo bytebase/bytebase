@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/pingcap/tidb/parser/ast"
 )
 
 var (
@@ -94,6 +95,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingUKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
+				Line:    indexData.line,
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -102,6 +104,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingUKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Unique key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+				Line:    indexData.line,
 			})
 		}
 	}
@@ -135,6 +138,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					indexName: constraint.Name,
 					tableName: node.Table.Name.String(),
 					metaData:  metaData,
+					line:      constraint.OriginTextPosition(),
 				})
 			}
 		}
@@ -161,6 +165,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					indexName: spec.ToKey.String(),
 					tableName: node.Table.Name.String(),
 					metaData:  metaData,
+					line:      in.OriginTextPosition(),
 				})
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
@@ -178,6 +183,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 						indexName: spec.Constraint.Name,
 						tableName: node.Table.Name.String(),
 						metaData:  metaData,
+						line:      in.OriginTextPosition(),
 					})
 				}
 			}
@@ -196,6 +202,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				indexName: node.IndexName,
 				tableName: node.Table.Name.String(),
 				metaData:  metaData,
+				line:      in.OriginTextPosition(),
 			})
 		}
 	}

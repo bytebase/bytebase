@@ -18,6 +18,10 @@ func getBaseProfile() server.Profile {
 		}
 		demoDataDir = fmt.Sprintf("demo/%s", demoName)
 	}
+	backupStorageBackend := api.BackupStorageBackendLocal
+	if flags.backupBucket != "" {
+		backupStorageBackend = api.BackupStorageBackendS3
+	}
 	// Using flags.port + 1 as our datastore port
 	datastorePort := flags.port + 1
 
@@ -34,8 +38,11 @@ func getBaseProfile() server.Profile {
 		Version:              version,
 		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
 		DisableMetric:        flags.disableMetric,
+		BackupStorageBackend: backupStorageBackend,
+		BackupRegion:         flags.backupRegion,
+		BackupBucket:         flags.backupBucket,
+		BackupCredentialFile: flags.backupCredential,
 	}
 }
 

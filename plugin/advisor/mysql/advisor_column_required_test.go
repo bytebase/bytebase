@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 func TestColumnRequirement(t *testing.T) {
@@ -18,6 +19,7 @@ func TestColumnRequirement(t *testing.T) {
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id",
+					Line:    1,
 				},
 			},
 		},
@@ -51,6 +53,7 @@ func TestColumnRequirement(t *testing.T) {
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
+					Line:    7,
 				},
 			},
 		},
@@ -85,6 +88,7 @@ func TestColumnRequirement(t *testing.T) {
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
+					Line:    7,
 				},
 			},
 		},
@@ -119,6 +123,7 @@ func TestColumnRequirement(t *testing.T) {
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
+					Line:    7,
 				},
 			},
 		},
@@ -153,6 +158,7 @@ func TestColumnRequirement(t *testing.T) {
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: updater_id",
+					Line:    1,
 				},
 			},
 		},
@@ -189,12 +195,14 @@ func TestColumnRequirement(t *testing.T) {
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
+					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `student` requires columns: creator_id, updater_id",
+					Line:    6,
 				},
 			},
 		},

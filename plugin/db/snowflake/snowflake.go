@@ -1,3 +1,4 @@
+// Package snowflake is the plugin for Snowflake driver.
 package snowflake
 
 import (
@@ -6,11 +7,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/pkg/errors"
 
 	snow "github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"

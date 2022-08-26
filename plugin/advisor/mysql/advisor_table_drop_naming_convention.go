@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/pingcap/tidb/parser/ast"
 )
 
 var (
@@ -76,6 +77,7 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Code:    advisor.TableDropNamingConventionMismatch,
 					Title:   v.title,
 					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name.O, v.format),
+					Line:    node.OriginTextPosition(),
 				})
 			}
 		}

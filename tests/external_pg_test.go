@@ -7,12 +7,13 @@ import (
 	"path"
 	"testing"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )
@@ -33,10 +34,11 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 		return nil, errors.Wrap(err, "cannot install postgres")
 	}
 
-	err = pgIns.Start(port, os.Stderr, os.Stderr)
+	err = postgres.Start(port, pgIns.BaseDir, pgIns.DataDir, os.Stderr, os.Stderr)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot start postgres server")
 	}
+	pgIns.Port = port
 
 	return &fakeExternalPg{
 		pgIns:  pgIns,
@@ -46,7 +48,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 }
 
 func (f *fakeExternalPg) Destroy() error {
-	return f.pgIns.Stop(os.Stderr, os.Stderr)
+	return postgres.Stop(f.pgIns.BaseDir, f.pgIns.DataDir, os.Stderr, os.Stderr)
 }
 func TestBootWithExternalPg(t *testing.T) {
 	t.Parallel()

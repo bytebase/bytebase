@@ -3,9 +3,10 @@ package mysql
 import (
 	"fmt"
 
+	"github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/pingcap/tidb/parser/ast"
 )
 
 var (
@@ -62,6 +63,7 @@ type columnNoNullChecker struct {
 type columnName struct {
 	tableName  string
 	columnName string
+	line       int
 }
 
 // Enter implements the ast.Visitor interface.
@@ -75,6 +77,7 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 				columns = append(columns, columnName{
 					tableName:  node.Table.Name.String(),
 					columnName: column.Name.Name.String(),
+					line:       column.OriginTextPosition(),
 				})
 			}
 		}
@@ -89,6 +92,7 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 						columns = append(columns, columnName{
 							tableName:  node.Table.Name.String(),
 							columnName: column.Name.Name.String(),
+							line:       node.OriginTextPosition(),
 						})
 					}
 				}
@@ -98,6 +102,7 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 					columns = append(columns, columnName{
 						tableName:  node.Table.Name.String(),
 						columnName: spec.NewColumns[0].Name.Name.String(),
+						line:       node.OriginTextPosition(),
 					})
 				}
 			}
@@ -110,6 +115,7 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:    advisor.ColumnCanNotNull,
 			Title:   v.title,
 			Content: fmt.Sprintf("`%s`.`%s` can not have NULL value", column.tableName, column.columnName),
+			Line:    column.line,
 		})
 	}
 

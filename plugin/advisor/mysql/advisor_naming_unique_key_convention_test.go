@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 func TestNamingUKConvention(t *testing.T) {
@@ -33,6 +34,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `tech_book_id_name`",
+					Line:    1,
 				},
 			},
 		},
@@ -44,12 +46,14 @@ func TestNamingUKConvention(t *testing.T) {
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: fmt.Sprintf("Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `%s`", invalidUKName),
+					Line:    1,
 				},
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: fmt.Sprintf("Unique key `%s` in table `tech_book` mismatches the naming convention, its length should be within 64 characters", invalidUKName),
+					Line:    1,
 				},
 			},
 		},
@@ -72,6 +76,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `tech_book_id_name`",
+					Line:    1,
 				},
 			},
 		},
@@ -101,6 +106,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found `uk_tech_book`",
+					Line:    1,
 				},
 			},
 		},

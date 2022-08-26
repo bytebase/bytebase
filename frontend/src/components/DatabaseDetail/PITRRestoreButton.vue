@@ -1,43 +1,30 @@
 <template>
-  <div class="relative mr-6">
+  <div class="flex relative mr-6">
     <BBTooltipButton
       type="normal"
       tooltip-mode="DISABLED-ONLY"
-      class="group"
       :disabled="pitrButtonDisabled"
       @click="openDialog"
     >
-      <div class="flex items-center gap-x-2">
-        <span>{{ $t("database.pitr.restore-to-point-in-time") }}</span>
-        <FeatureBadge
-          feature="bb.feature.disaster-recovery-pitr"
-          class="text-accent"
-        />
+      <template #button="{ showTooltip, hideTooltip }">
+        <BBContextMenuButton
+          preference-key="pitr"
+          :action-list="buttonActionList"
+          :disabled="pitrButtonDisabled"
+          @pointerenter="showTooltip"
+          @pointerleave="hideTooltip"
+          @click="(action) => onClickPITRButton(action as PITRButtonAction)"
+        >
+          <template #default="{ action }">
+            <span>{{ action.text }}</span>
+            <FeatureBadge
+              feature="bb.feature.disaster-recovery-pitr"
+              class="text-accent ml-2 -mr-1"
+            />
+          </template>
+        </BBContextMenuButton>
+      </template>
 
-        <template v-if="lastMigrationHistory && !pitrButtonDisabled">
-          <span class="border-l border-control-light pl-2 -mr-1">
-            <heroicons-outline:chevron-down />
-          </span>
-
-          <div
-            class="hidden group-hover:flex whitespace-nowrap absolute right-0 -bottom-[1px] transform translate-y-[100%] z-50 rounded-md bg-white shadow-lg"
-            @click.prevent.stop="
-              openDialog('LAST_MIGRATION_INFO', 'LAST_MIGRATION')
-            "
-          >
-            <div
-              class="flex flex-col items-end py-1"
-              role="menu"
-              aria-orientation="vertical"
-              aria-labelledby="user-menu"
-            >
-              <div class="menu-item">
-                {{ $t("database.pitr.restore-before-last-migration") }}
-              </div>
-            </div>
-          </div>
-        </template>
-      </div>
       <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
         {{ pitrAvailable.message }}
       </template>
@@ -205,11 +192,13 @@ import { issueSlug } from "@/utils";
 import { featureToRef } from "@/store";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
 import { CreatePITRDatabaseContext } from "./utils";
+import type { ButtonAction } from "@/bbkit/BBContextMenuButton.vue";
 
 type PITRTarget = "IN-PLACE" | "NEW";
 
 type Mode = "LAST_MIGRATION" | "CUSTOM";
 type Step = "LAST_MIGRATION_INFO" | "PITR_FORM";
+type PITRButtonAction = ButtonAction<{ step: Step; mode: Mode }>;
 
 interface LocalState {
   showDatabasePITRModal: boolean;
@@ -259,6 +248,28 @@ const { pitrAvailable, doneBackupList, lastMigrationHistory, createPITRIssue } =
 const pitrButtonDisabled = computed((): boolean => {
   return !props.allowAdmin || !pitrAvailable.value.result;
 });
+
+const buttonActionList = computed((): PITRButtonAction[] => {
+  return [
+    {
+      key: "CUSTOM",
+      text: t("database.pitr.restore-to-point-in-time"),
+      type: "NORMAL",
+      params: { step: "PITR_FORM", mode: "CUSTOM" },
+    },
+    {
+      key: "LAST_MIGRATION",
+      text: t("database.pitr.restore-before-last-migration"),
+      type: "NORMAL",
+      params: { step: "LAST_MIGRATION_INFO", mode: "LAST_MIGRATION" },
+    },
+  ];
+});
+
+const onClickPITRButton = (action: PITRButtonAction) => {
+  const { step, mode } = action.params;
+  openDialog(step, mode);
+};
 
 const earliest = computed((): number => {
   if (!pitrAvailable.value) {

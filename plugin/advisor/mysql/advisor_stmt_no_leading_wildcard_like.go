@@ -3,10 +3,11 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 const (
@@ -51,6 +52,7 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement string
 				Code:    advisor.StatementLeadingWildcardLike,
 				Title:   string(ctx.Rule.Type),
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
+				Line:    stmtNode.OriginTextPosition(),
 			})
 		}
 	}

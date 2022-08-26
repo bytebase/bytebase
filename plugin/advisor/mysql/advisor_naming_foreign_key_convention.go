@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/pingcap/tidb/parser/ast"
 )
 
 var (
@@ -92,6 +93,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
+				Line:    indexData.line,
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -100,6 +102,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+				Line:    indexData.line,
 			})
 		}
 	}
@@ -140,6 +143,7 @@ func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData 
 					indexName: constraint.Name,
 					tableName: node.Table.Name.String(),
 					metaData:  metaData,
+					line:      constraint.OriginTextPosition(),
 				})
 			}
 		}
@@ -165,6 +169,7 @@ func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData 
 					indexName: spec.Constraint.Name,
 					tableName: node.Table.Name.String(),
 					metaData:  metaData,
+					line:      in.OriginTextPosition(),
 				})
 			}
 		}
