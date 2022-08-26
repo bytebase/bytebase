@@ -116,7 +116,9 @@ func TestRetry_Exceeded(t *testing.T) {
 	token := "expired"
 
 	_, _, err := retry(ctx, nil, &token,
-		func(_ context.Context, _ *http.Client, _ *string) error { return nil },
+		func(_ context.Context, _ *http.Client, _ *string) error {
+			return nil
+		},
 		func() (*http.Response, error) {
 			return &http.Response{
 				StatusCode: http.StatusBadRequest,

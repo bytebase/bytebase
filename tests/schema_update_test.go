@@ -351,7 +351,9 @@ func TestVCS(t *testing.T) {
 			ctl := &controller{}
 			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
 			a.NoError(err)
-			defer func() { _ = ctl.Close(ctx) }()
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
 
 			err = ctl.Login()
 			a.NoError(err)

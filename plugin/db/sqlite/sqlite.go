@@ -1,3 +1,4 @@
+// Package sqlite is the plugin for SQLite driver.
 package sqlite
 
 import (

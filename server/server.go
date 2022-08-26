@@ -1,3 +1,4 @@
+// Package server implements the API server for Bytebase.
 package server
 
 import (
