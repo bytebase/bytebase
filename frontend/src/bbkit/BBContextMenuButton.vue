@@ -160,6 +160,7 @@ const handleClickActionList = (action: ButtonAction) => {
 
   const storage = getStorage();
   if (storage) {
+    // Save the selected action as the default action
     storage.value = action.key;
   }
 
