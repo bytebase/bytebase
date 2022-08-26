@@ -107,17 +107,17 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
 
             if (tokenListBeforeDot.length === 1) {
               // if the input is "x." x might be a
-              // - database name
+              // - "{database_name}."
               const maybeDatabaseName = tokenListBeforeDot[0];
               await provideTableAutoCompletion(maybeDatabaseName);
-              // - table name
+              // - "{table_name}."
               const maybeTableName = tokenListBeforeDot[0];
               if (dialect.value === "mysql") {
                 await provideColumnAutoCompletion(maybeTableName);
               }
               if (dialect.value === "postgresql") {
-                // for postgresql, we try "public.x"
-                // since public can be omitted by default
+                // for postgresql, we also try "public.{database_name}."
+                // since "public" schema can be omitted by default
                 await provideColumnAutoCompletion(`public.${maybeTableName}`);
               }
               // - alias (can not recognize yet)
@@ -125,8 +125,8 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
 
             if (tokenListBeforeDot.length === 2) {
               // if the input is "x.y." it might be
-              // - {database_name}.{table_name}. (mysql)
-              // - {schema_name}.{table_name}. (postgresql)
+              // - "{database_name}.{table_name}." (mysql)
+              // - "{schema_name}.{table_name}." (postgresql)
               const [maybeDatabaseName, maybeTableName] = tokenListBeforeDot;
               if (dialect.value === "mysql") {
                 await provideColumnAutoCompletion(
@@ -145,7 +145,7 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
               tokenListBeforeDot.length === 3
             ) {
               // if the input is "x.y.z." it might be
-              // - {database_name}.{schema_name}.{table_name} (postgresql only)
+              // - "{database_name}.{schema_name}.{table_name}." (postgresql only)
               //   and bytebase save {schema_name}.{table_name} as the table name
               const [maybeDatabaseName, maybeSchemaName, maybeTableName] =
                 tokenListBeforeDot;
@@ -157,6 +157,8 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
             }
           } else {
             // The auto-completion trigger is SPACE
+            // We didn't walk the AST, so still we don't know which type of
+            // clause we are in. So we provide some naive suggestions.
 
             // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
             const suggestionsForDatabase =
