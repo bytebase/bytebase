@@ -4,8 +4,9 @@
   >
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
-        v-if="quickAction == 'quickaction.bb.instance.create'"
+        v-if="quickAction === 'quickaction.bb.instance.create'"
         class="flex flex-col items-center w-28"
+        data-label="bb-quick-action-add-instance"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
           <heroicons-outline:plus-sm class="w-6 h-6" />
@@ -16,7 +17,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.user.manage'"
+        v-if="quickAction === 'quickaction.bb.user.manage'"
         class="flex flex-col items-center w-28"
       >
         <router-link to="/setting/member" class="btn-icon-primary p-3">
@@ -30,36 +31,9 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.database.query'"
+        v-if="quickAction === 'quickaction.bb.database.create'"
         class="flex flex-col items-center w-28"
-      >
-        <button class="btn-icon-primary p-3">
-          <heroicons-outline:search class="w-6 h-6" />
-        </button>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main tracking-tight"
-        >
-          {{ $t("common.query") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction == 'quickaction.bb.database.data.edit'"
-        class="flex flex-col items-center w-28"
-      >
-        <button class="btn-icon-primary p-3">
-          <heroicons-outline:pencil-alt class="w-6 h-6" />
-        </button>
-        <h3
-          class="mt-1 text-center text-base font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.edit-data") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction == 'quickaction.bb.database.create'"
-        class="flex flex-col items-center w-28"
+        data-label="bb-quick-action-new-db"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
           <heroicons-outline:database class="w-6 h-6" />
@@ -72,7 +46,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.database.request'"
+        v-if="quickAction === 'quickaction.bb.database.request'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
@@ -86,7 +60,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.database.schema.update'"
+        v-if="quickAction === 'quickaction.bb.database.schema.update'"
         class="flex flex-col items-center w-28"
       >
         <button
@@ -102,7 +76,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.database.data.update'"
+        v-if="quickAction === 'quickaction.bb.database.data.update'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3" @click.prevent="changeData">
@@ -114,7 +88,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.database.troubleshoot'"
+        v-if="quickAction === 'quickaction.bb.database.troubleshoot'"
         class="flex flex-col items-center w-28"
       >
         <router-link to="/issue/new" class="btn-icon-primary p-3">
@@ -126,7 +100,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.environment.create'"
+        v-if="quickAction === 'quickaction.bb.environment.create'"
         class="flex flex-col items-center w-36"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
@@ -138,7 +112,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.environment.reorder'"
+        v-if="quickAction === 'quickaction.bb.environment.reorder'"
         class="flex flex-col items-center w-28"
       >
         <button
@@ -153,8 +127,9 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.project.create'"
+        v-if="quickAction === 'quickaction.bb.project.create'"
         class="flex flex-col items-center w-28"
+        data-label="bb-quick-action-new-project"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
           <heroicons-outline:template class="w-6 h-6" />
@@ -165,7 +140,7 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.project.database.transfer'"
+        v-if="quickAction === 'quickaction.bb.project.database.transfer'"
         class="flex flex-col items-center w-28"
       >
         <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">

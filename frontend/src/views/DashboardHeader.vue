@@ -24,6 +24,7 @@
             to="/project"
             class="bar-link px-2 py-2 rounded-md"
             :class="getRouteLinkClass('/project')"
+            data-label="bb-header-project-button"
           >
             {{ $t("common.projects") }}
           </router-link>

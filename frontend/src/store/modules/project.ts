@@ -121,7 +121,11 @@ export const useProjectStore = defineStore("project", {
   state: (): ProjectState => ({
     projectById: new Map(),
   }),
-
+  getters: {
+    projectList: (state) => {
+      return [...state.projectById.values()];
+    },
+  },
   actions: {
     convert(instance: ResourceObject, includedList: ResourceObject[]): Project {
       return convert(instance, includedList || []);
@@ -161,7 +165,7 @@ export const useProjectStore = defineStore("project", {
       const data = (await axios.get(`/api/project`)).data;
       const projectList = data.data.map((project: ResourceObject) => {
         return convert(project, data.included);
-      });
+      }) as Project[];
 
       this.upsertProjectList(projectList);
       return projectList;
