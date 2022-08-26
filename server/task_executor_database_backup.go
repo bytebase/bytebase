@@ -122,7 +122,7 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 		}
 		defer bucketFileToUpload.Close()
 
-		if err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
+		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
 		log.Debug("Successfully uploaded backup to s3 bucket.")

@@ -51,44 +51,33 @@ func NewClient(ctx context.Context, region, bucket string, credentials aws.Crede
 }
 
 // ListObjects lists objects with prefix in their names.
-// TODO(dragonly): support pagination.
-func (c *Client) ListObjects(ctx context.Context, prefix string) ([]string, error) {
-	resp, err := c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+func (c *Client) ListObjects(ctx context.Context, prefix string) (*s3.ListObjectsV2Output, error) {
+	return c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: &c.bucket,
 		Prefix: &prefix,
 	})
-	if err != nil {
-		return nil, err
-	}
-	var list []string
-	for _, obj := range resp.Contents {
-		list = append(list, *obj.Key)
-	}
-	return list, nil
 }
 
 // DownloadObject downloads the object with path.
 // Defaults to multipart download with chunk size 5MB.
-func (c *Client) DownloadObject(ctx context.Context, path string, w io.WriterAt) error {
+func (c *Client) DownloadObject(ctx context.Context, path string, w io.WriterAt) (int64, error) {
 	downloader := manager.NewDownloader(c.c)
-	_, err := downloader.Download(ctx, w, &s3.GetObjectInput{
+	return downloader.Download(ctx, w, &s3.GetObjectInput{
 		Bucket: &c.bucket,
 		Key:    &path,
 	})
-	return err
 }
 
 // UploadObject uploads an object with the path.
 // Defaults to multipart upload with chunk size 5MB.
-func (c *Client) UploadObject(ctx context.Context, path string, body io.Reader) error {
+func (c *Client) UploadObject(ctx context.Context, path string, body io.Reader) (*manager.UploadOutput, error) {
 	uploader := manager.NewUploader(c.c)
-	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
+	return uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &c.bucket,
 		Key:               &path,
 		Body:              body,
 		ChecksumAlgorithm: types.ChecksumAlgorithmSha256,
 	})
-	return err
 }
 
 // DeleteObject deletes the object with path.
