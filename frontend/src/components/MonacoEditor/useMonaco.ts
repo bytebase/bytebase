@@ -116,7 +116,7 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
                 await provideColumnAutoCompletion(maybeTableName);
               }
               if (dialect.value === "postgresql") {
-                // for postgresql, we also try "public.{database_name}."
+                // for postgresql, we also try "public.{table_name}."
                 // since "public" schema can be omitted by default
                 await provideColumnAutoCompletion(`public.${maybeTableName}`);
               }
