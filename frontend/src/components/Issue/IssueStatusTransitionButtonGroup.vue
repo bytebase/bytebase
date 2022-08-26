@@ -22,7 +22,7 @@
         <BBContextMenuButton
           preference-key="task-status-transition"
           :action-list="getButtonActionList(transition)"
-          @click="(action) => onClickTaskStatusTransitionActionButton(action as ButtonAction<TaskStatusTransitionButtonActionParams>)"
+          @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
         />
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
@@ -152,10 +152,10 @@ interface UpdateStatusModalState {
   isTransiting: boolean;
 }
 
-type TaskStatusTransitionButtonActionParams = {
+type TaskStatusTransitionButtonAction = ButtonAction<{
   transition: TaskStatusTransition;
   target: "TASK" | "STAGE";
-};
+}>;
 
 const { t } = useI18n();
 const menu = ref<InstanceType<typeof BBContextMenu>>();
@@ -255,7 +255,7 @@ const currentTask = computed(() => {
 });
 
 const getButtonActionList = (transition: TaskStatusTransition) => {
-  const actionList: ButtonAction<TaskStatusTransitionButtonActionParams>[] = [];
+  const actionList: TaskStatusTransitionButtonAction[] = [];
   const { type, buttonName, buttonType } = transition;
   actionList.push({
     key: `${type}-TASK`,
@@ -279,7 +279,7 @@ const getButtonActionList = (transition: TaskStatusTransition) => {
 };
 
 const onClickTaskStatusTransitionActionButton = (
-  action: ButtonAction<TaskStatusTransitionButtonActionParams>
+  action: TaskStatusTransitionButtonAction
 ) => {
   const { transition, target } = action.params;
   tryStartStageOrTaskStatusTransition(transition, target);
