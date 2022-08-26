@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/xo/dburl"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
@@ -15,7 +16,6 @@ import (
 	// register pg driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
 	// install pg driver.
-	"github.com/xo/dburl"
 )
 
 func getDatabase(u *dburl.URL) string {
