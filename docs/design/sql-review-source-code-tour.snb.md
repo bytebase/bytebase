@@ -64,7 +64,7 @@ We use TiDB parser as the MySQL dialect parser. And we implement the ast.Visitor
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/mysql/advisor_naming_table.go?L71-92
 
-After checking out all new table names, we check them.
+The advisor checks all new table names based on the rule.
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/mysql/advisor_naming_table.go?L94-113
 
