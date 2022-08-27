@@ -302,9 +302,15 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
 	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
-	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	readOnly := true
+	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
+	// https://github.com/pingcap/tidb/issues/34626
+	if dbType == db.TiDB {
+		readOnly = false
+	}
+	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
 	if err != nil {
 		return nil, err
 	}
