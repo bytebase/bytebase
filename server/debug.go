@@ -41,13 +41,15 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 			if p != nil {
 				incrID++
 				log := &api.DebugLog{
-					ID:          incrID,
-					RecordTs:    p.(*api.ErrorRecord).RecordTs,
-					Method:      p.(*api.ErrorRecord).Method,
-					RequestPath: p.(*api.ErrorRecord).RequestPath,
-					Role:        p.(*api.ErrorRecord).Role,
-					Error:       p.(*api.ErrorRecord).Error,
-					StackTrace:  p.(*api.ErrorRecord).StackTrace,
+					ID: incrID,
+					Record: api.ErrorRecord{
+						RecordTs:    p.(*api.ErrorRecord).RecordTs,
+						Method:      p.(*api.ErrorRecord).Method,
+						RequestPath: p.(*api.ErrorRecord).RequestPath,
+						Role:        p.(*api.ErrorRecord).Role,
+						Error:       p.(*api.ErrorRecord).Error,
+						StackTrace:  p.(*api.ErrorRecord).StackTrace,
+					},
 				}
 				errorRecordList = append(errorRecordList, log)
 			}
