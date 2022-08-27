@@ -36,7 +36,7 @@ Because of the plugin architecture, each SQL advisor needs to call Register to r
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/advisor.go?L211-231
 
-Also, we have a (SQL review type, SQL dialect) to SQL advisor mapping.
+Also, we have a tuple (SQL review type, SQL dialect) to SQL advisor mapping.
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L323-331
 
