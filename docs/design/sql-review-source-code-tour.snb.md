@@ -32,7 +32,7 @@ The SQL advisor is a plugin in Bytebase backend. The advisor needs to implement 
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/advisor.go?L201-204
 
-Because the plugin architecture, each SQL advisor needs to call Register to registe itself.
+Because of the plugin architecture, each SQL advisor needs to call Register to register itself.
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/advisor.go?L211-231
 
