@@ -172,3 +172,30 @@ func (d *Database) FindPrimaryKey(find *PrimaryKeyFind) *Index {
 	}
 	return nil
 }
+
+// ColumnFind is for find column.
+type ColumnFind struct {
+	SchemaName string
+	TableName  string
+	ColumnName string
+}
+
+// FindColumn finds the column.
+func (d *Database) FindColumn(find *ColumnFind) *Column {
+	for _, schema := range d.SchemaList {
+		if schema.Name != find.SchemaName {
+			continue
+		}
+		for _, table := range schema.TableList {
+			if table.Name != find.TableName {
+				continue
+			}
+			for _, column := range table.ColumnList {
+				if column.Name == find.ColumnName {
+					return column
+				}
+			}
+		}
+	}
+	return nil
+}
