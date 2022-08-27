@@ -38,8 +38,14 @@ var (
 					{
 						Name: MockTableName,
 						ColumnList: []*catalog.Column{
-							{Name: "id"},
-							{Name: "name"},
+							{
+								Name: "id",
+								Type: "int",
+							},
+							{
+								Name: "name",
+								Type: "varchar(255)",
+							},
 						},
 						IndexList: []*catalog.Index{
 							{
