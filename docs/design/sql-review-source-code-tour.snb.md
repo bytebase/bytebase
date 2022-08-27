@@ -1,0 +1,107 @@
+# SQL Review Source Code Tour
+
+This is best viewed on [Sourcegraph](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/sql-review-source-code-tour.snb.md).
+
+## Introduction
+
+Bytebase provides the SQL review feature to check out SQL anti-pattern and give some advice.
+
+## Overview
+
+![SQL Review Overview](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-review-overview.webp)
+
+The inputs for SQL review are SQL review policy, SQL statement and catalog. Then SQL review will return advice list. 
+
+## The SQL Review Policy
+
+The SQL review policy contains policy name and a set of SQL review rules.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L124-128
+
+The SQL review rule contains Type, Level and rule dependent Payload.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L143-150
+
+The Type specifies the rule. The Level defines the error level for this rule, Error, Warning or Disabled.
+
+## The SQL Advisor
+
+We implement each rule as a SQL advisor in Bytebase. The SQL advisor is SQL dialect dependent, because we should use different SQL parser for each SQL dialect.
+
+The SQL advisor is a plugin in Bytebase backend. The advisor need implement the Check function.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/advisor.go?L201-204
+
+Because the plugin architecture, each SQL advisor needs to call Register to registe itself.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/advisor.go?L211-231
+
+Also, we have a (SQL review type, SQL dialect) to SQL advisor mapping.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L323-331
+
+We implemented some MySQL dialect(MySQL and TiDB) and PostgreSQL advisors. Here we introduce the MySQL table naming convention advisor as an example. 
+
+### The MySQL TableNamingConvention Advisor
+
+This advisor checks the table naming convention. Let’s implement the Check function.
+
+First, we should parse the SQL statement.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/mysql/advisor_naming_table.go?L27-32
+
+Then, we need to get the error level and payload.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/mysql/advisor_naming_table.go?L34-41
+
+The TableNamingConvention needs the naming format and max length which store in the rule payload.
+
+Next, we should check the new table names in SQL statement. If any of them break this rule, we should add an advice. To make this purpose, we should visit the AST(Abstract Syntax Tree) to find out all new table names.
+
+So we need to focus on CREATE TABLE, ALTER TABLE RENAME and RENAME TABLE statements.
+
+We use TiDB parser as the MySQL dialect parser. And we implement the ast.Visitor interface to visit the TiDB parser AST.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/mysql/advisor_naming_table.go?L71-92
+
+After checking out all new table names, we check them.
+
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/mysql/advisor_naming_table.go?L94-113
+
+
+## The Catalog
+
+The catalog is the schema information for a database. For some rules, we need some information in catalog. e.g. if we have a SQL `ALTER TABLE t RENAME INDEX uk to uk_name; and `we want to check the columns in this index, we can not get this information from this SQL statement. So we need catalog in this case.
+
+
+## How to Implement a SQL Advisor
+
+Each SQL advisor has some almost identical skeleton code. So we write a generator to generate them. It locates in `/plugin/advisor/generator` . The generator only supports MySQL dialect now. It will support PostgreSQL later.
+
+To use it, you need:
+
+1. Add the `Advisor Type` and the comment in `/plugin/advisor/advisor.go` .
+
+	https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L69-70
+
+2. Build the generator in `/plugin/advisor/generator`. 
+	```shell
+	go build
+	```
+
+3. run generator in `/plugin/advisor/generator`  to generate the skeleton code.
+	```shell
+	./generator —flag {AdvisorType}
+	```
+
+	e.g.
+	```shell
+	./generator —flag MySQLColumnDisallowChangingType
+	```
+
+Then you can implement the rule-specific logic in the generated files.
+
+## Further Readings
+
+- [Source Code Tour](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
+- [Docs](https://bytebase.com/docs)
