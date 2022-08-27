@@ -54,7 +54,7 @@ Then, we need to get the error level and payload.
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/mysql/advisor_naming_table.go?L34-41
 
-The TableNamingConvention needs the naming format and max length which store in the rule payload.
+The TableNamingConvention needs the naming format and maximum length which stores in the rule payload.
 
 Next, we should check the new table names in SQL statement. If any of them break this rule, we should add an advice. To make this purpose, we should visit the AST(Abstract Syntax Tree) to find out all new table names.
 
