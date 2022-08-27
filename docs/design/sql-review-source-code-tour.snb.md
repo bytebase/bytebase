@@ -76,7 +76,7 @@ The catalog is the schema information for a database. For some rules, we need so
 
 ## How to Implement a SQL Advisor
 
-Each SQL advisor has some almost identical skeleton code. So we write a generator to generate them. It locates in `/plugin/advisor/generator` . The generator only supports MySQL dialect now. It will support PostgreSQL later.
+Since all SQL advisors have a nearly identical skeleton, we have implemented a code generator located at `/plugin/advisor/generator`. The generator only supports MySQL dialect for now with PostgreSQL support coming later.
 
 To use it, you need:
 
