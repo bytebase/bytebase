@@ -18,7 +18,7 @@ The SQL review policy contains policy name and a set of SQL review rules.
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L124-128
 
-The SQL review rule contains Type, Level and rule dependent Payload.
+The SQL review rule contains Type, Level, and rule-specific Payload.
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L143-150
 
