@@ -39,15 +39,18 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 		defer s.errorRecordRing.RWMutex.RUnlock()
 
 		s.errorRecordRing.Ring.Do(func(p interface{}) {
-			if p != nil {
-				if errRecord, ok := p.(*api.ErrorRecord); ok {
-					incrementID++
-					errorRecordList = append(errorRecordList, &api.DebugLog{
-						ID:          incrementID,
-						ErrorRecord: *errRecord,
-					})
-				}
+			if p == nil {
+				return
 			}
+			errRecord, ok := p.(*api.ErrorRecord)
+			if !ok {
+				return
+			}
+			errorRecordList = append(errorRecordList, &api.DebugLog{
+				ID:          incrementID,
+				ErrorRecord: *errRecord,
+			})
+			incrementID++
 		})
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
