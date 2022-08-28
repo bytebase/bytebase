@@ -48,7 +48,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		issueFind := &api.IssueFind{}
 
 		pageToken := c.QueryParams().Get("token")
-		sinceID, err := unmarshalPageToken(pageToken)
+		// We use descending order by default for issues.
+		sinceID, err := unmarshalPageToken(pageToken, api.DESC)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
 		}
@@ -120,11 +121,13 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issueResponse := &api.IssueResponse{}
 		issueResponse.Issues = issueList
-		nextMaxIssueID := *issueFind.SinceID
+
+		nextSinceID := sinceID
 		if len(issueList) > 0 {
-			nextMaxIssueID = issueList[len(issueList)-1].ID
+			// Decrement the ID as we use decreasing order by default.
+			nextSinceID = issueList[len(issueList)-1].ID - 1
 		}
-		if issueResponse.NextToken, err = marshalPageToken(nextMaxIssueID); err != nil {
+		if issueResponse.NextToken, err = marshalPageToken(nextSinceID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal page token").SetInternal(err)
 		}
 
@@ -1405,8 +1408,8 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 	}
 }
 
-func marshalPageToken(lastIssueID int) (string, error) {
-	b, err := json.Marshal(lastIssueID)
+func marshalPageToken(id int) (string, error) {
+	b, err := json.Marshal(id)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to marshal page token")
 	}
@@ -1414,8 +1417,11 @@ func marshalPageToken(lastIssueID int) (string, error) {
 }
 
 // unmarshalPageToken unmarshals the page token, and returns the last issue ID. If the page token nil empty, it returns MaxInt32.
-func unmarshalPageToken(pageToken string) (int, error) {
+func unmarshalPageToken(pageToken string, sortOrder api.SortOrder) (int, error) {
 	if pageToken == "" {
+		if sortOrder == api.ASC {
+			return 0, nil
+		}
 		return math.MaxInt32, nil
 	}
 
@@ -1424,10 +1430,10 @@ func unmarshalPageToken(pageToken string) (int, error) {
 		return 0, errors.Wrap(err, "failed to decode page token")
 	}
 
-	var lastIssueID int
-	if err := json.Unmarshal(bs, &lastIssueID); err != nil {
+	var id int
+	if err := json.Unmarshal(bs, &id); err != nil {
 		return 0, errors.Wrap(err, "failed to unmarshal page token")
 	}
 
-	return lastIssueID, nil
+	return id, nil
 }

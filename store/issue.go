@@ -642,7 +642,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.SinceID; v != nil {
-		where, args = append(where, fmt.Sprintf("id < $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id <= $%d", len(args)+1)), append(args, *v)
 	}
 
 	if len(find.StatusList) != 0 {
