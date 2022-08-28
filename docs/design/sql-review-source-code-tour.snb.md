@@ -78,28 +78,7 @@ The catalog is the schema information for a database. For some rules, we need so
 
 Since all SQL advisors have a nearly identical skeleton, we have implemented a code generator located at `/plugin/advisor/generator`. The generator only supports MySQL dialect for now with PostgreSQL support coming later.
 
-To use it, you need:
-
-1. Add the `Advisor Type` and the comment in `/plugin/advisor/advisor.go` .
-
-	https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L69-70
-
-2. Build the generator in `/plugin/advisor/generator`. 
-	```shell
-	go build
-	```
-
-3. run generator in `/plugin/advisor/generator`  to generate the skeleton code.
-	```shell
-	./generator —flag {AdvisorType}
-	```
-
-	e.g.
-	```shell
-	./generator —flag MySQLColumnDisallowChangingType
-	```
-
-Then you can implement the rule-specific logic in the generated files.
+https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/generator/README.md
 
 ## Further Readings
 
