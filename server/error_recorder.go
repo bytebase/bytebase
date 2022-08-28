@@ -10,54 +10,12 @@ import (
 )
 
 func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo) {
+	e.DefaultHTTPErrorHandler(err, c)
+
 	req := c.Request()
 	res := c.Response()
-	var errorMessage string
-
-	// -----------------------------------Echo's DefaultHTTPErrorHandler BEGIN----------------------------------------
-
-	if res.Committed {
-		return
-	}
 
 	he, isHTTPError := err.(*echo.HTTPError)
-
-	if isHTTPError {
-		if he.Internal != nil {
-			if herr, ok := he.Internal.(*echo.HTTPError); ok {
-				he = herr
-			}
-		}
-		errorMessage = he.Error()
-	} else {
-		he = &echo.HTTPError{
-			Code:    http.StatusInternalServerError,
-			Message: http.StatusText(http.StatusInternalServerError),
-		}
-		errorMessage = err.Error()
-	}
-
-	code := he.Code
-	message := he.Message
-	if m, ok := he.Message.(string); ok {
-		if e.Debug {
-			message = echo.Map{"message": m, "error": errorMessage}
-		} else {
-			message = echo.Map{"message": m}
-		}
-	}
-
-	// Send response
-	if c.Request().Method == http.MethodHead {
-		err = c.NoContent(he.Code)
-	} else {
-		err = c.JSON(code, message)
-	}
-	if err != nil {
-		e.Logger.Error(err)
-	}
-
-	// -----------------------------------Echo's DefaultHTTPErrorHandler END------------------------------------------
 
 	if res.Status == http.StatusInternalServerError {
 		var role api.Role
@@ -66,8 +24,11 @@ func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo)
 		}
 
 		var stackTrace string
-		// Record stackTrace for non-echo-internal errors.
+		// There're basically two kinds of errors: internal HTTP errors and runtime panics.
+		// If we encounter runtime panics, we can report the stack trace for debugging.
 		if !isHTTPError || he.Internal == nil {
+			// Deal with runtime panics.
+			// Record the stack trace manually since we don't know where it'll happen.
 			stackTrace = string(debug.Stack())
 		}
 
@@ -79,7 +40,7 @@ func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo)
 			Method:      req.Method,
 			RequestPath: req.URL.Path,
 			Role:        role,
-			Error:       errorMessage,
+			Error:       err.Error(),
 			StackTrace:  stackTrace,
 		}
 		s.errorRecordRing.Ring = s.errorRecordRing.Ring.Next()

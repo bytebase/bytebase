@@ -2,7 +2,6 @@
 package server
 
 import (
-	"container/ring"
 	"context"
 	"fmt"
 	"net/http"
@@ -41,9 +40,6 @@ import (
 
 // openAPIPrefix is the API prefix for Bytebase OpenAPI.
 const openAPIPrefix = "/v1"
-
-// errorRecordCount is the count limit for error records.
-const errorRecordCount = 100
 
 // Server is the Bytebase server.
 type Server struct {
@@ -110,12 +106,9 @@ var casbinDeveloperPolicy string
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
-		profile:   prof,
-		startedTs: time.Now().Unix(),
-		errorRecordRing: api.ErrorRecordRing{
-			Ring:  ring.New(errorRecordCount),
-			Mutex: sync.RWMutex{},
-		},
+		profile:         prof,
+		startedTs:       time.Now().Unix(),
+		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
 	// Display config
