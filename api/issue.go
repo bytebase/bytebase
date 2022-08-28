@@ -231,8 +231,8 @@ type IssueFind struct {
 	SubscriberID *int
 
 	StatusList []IssueStatus
-	// If specified, only find issues whose ID is smaller that MaxID
-	MaxID *int
+	// If specified, only find issues whose ID is smaller that SinceID.
+	SinceID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
 }

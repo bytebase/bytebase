@@ -47,16 +47,12 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		issueFind := &api.IssueFind{}
 
-		if pageToken := c.QueryParams().Get("token"); pageToken != "" {
-			maxID, err := unmarshalPageToken(pageToken)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
-			}
-			issueFind.MaxID = &maxID
-		} else {
-			maxID := math.MaxInt32
-			issueFind.MaxID = &maxID
+		pageToken := c.QueryParams().Get("token")
+		sinceID, err := unmarshalPageToken(pageToken)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
 		}
+		issueFind.SinceID = &sinceID
 
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
@@ -124,7 +120,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		issueResponse := &api.IssueResponse{}
 		issueResponse.Issues = issueList
-		nextMaxIssueID := *issueFind.MaxID
+		nextMaxIssueID := *issueFind.SinceID
 		if len(issueList) > 0 {
 			nextMaxIssueID = issueList[len(issueList)-1].ID
 		}
@@ -1417,9 +1413,10 @@ func marshalPageToken(lastIssueID int) (string, error) {
 	return base64.StdEncoding.EncodeToString(b), nil
 }
 
+// unmarshalPageToken unmarshals the page token, and returns the last issue ID. If the page token nil empty, it returns MaxInt32.
 func unmarshalPageToken(pageToken string) (int, error) {
 	if pageToken == "" {
-		return 0, nil
+		return math.MaxInt32, nil
 	}
 
 	bs, err := base64.StdEncoding.DecodeString(pageToken)
