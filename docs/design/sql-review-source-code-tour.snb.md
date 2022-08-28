@@ -8,7 +8,7 @@ Bytebase provides the SQL review feature to check out SQL anti-pattern and give 
 
 ## Overview
 
-![SQL Review Overview](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-review-overview.webp)
+![SQL Review Overview](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/design/assets/sql-review-overview.webp)
 
 The inputs for SQL review are SQL review policy, SQL statement, and catalog (schema info). The output is an advice list. 
 
