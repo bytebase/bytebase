@@ -76,7 +76,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 			issueFind.Limit = &limit
 		} else {
-			limit := api.DefaultNumberOfItemsInPage
+			limit := api.DefaultPageSize
 			issueFind.Limit = &limit
 		}
 

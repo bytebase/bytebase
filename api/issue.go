@@ -60,11 +60,6 @@ const (
 	IssueFieldSQL IssueFieldID = "7"
 )
 
-const (
-	// DefaultNumberOfItemsInPage is the default number of items in a page.
-	DefaultNumberOfItemsInPage = 1000
-)
-
 // Issue is the API message for an issue.
 type Issue struct {
 	ID int `jsonapi:"primary,issue"`
