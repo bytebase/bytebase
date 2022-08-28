@@ -3,8 +3,10 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -44,6 +46,15 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		issueFind := &api.IssueFind{}
+
+		pageToken := c.QueryParams().Get("token")
+		// We use descending order by default for issues.
+		sinceID, err := unmarshalPageToken(pageToken, api.DESC)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
+		}
+		issueFind.SinceID = &sinceID
+
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
 			projectID, err := strconv.Atoi(projectIDStr)
@@ -65,14 +76,38 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
 			}
 			issueFind.Limit = &limit
+		} else {
+			limit := api.DefaultPageSize
+			issueFind.Limit = &limit
 		}
-		userIDStr := c.QueryParams().Get("user")
-		if userIDStr != "" {
+
+		if userIDStr := c.QueryParam("user"); userIDStr != "" {
 			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("user query parameter is not a number: %s", userIDStr)).SetInternal(err)
 			}
 			issueFind.PrincipalID = &userID
+		}
+		if creatorIDStr := c.QueryParam("creator"); creatorIDStr != "" {
+			creatorID, err := strconv.Atoi(creatorIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("creator query parameter is not a number: %s", creatorIDStr)).SetInternal(err)
+			}
+			issueFind.CreatorID = &creatorID
+		}
+		if assigneeIDStr := c.QueryParam("assignee"); assigneeIDStr != "" {
+			assigneeID, err := strconv.Atoi(assigneeIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee query parameter is not a number: %s", assigneeIDStr)).SetInternal(err)
+			}
+			issueFind.AssigneeID = &assigneeID
+		}
+		if subscriberIDStr := c.QueryParam("subscriber"); subscriberIDStr != "" {
+			subscriberID, err := strconv.Atoi(subscriberIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("subscriber query parameter is not a number: %s", subscriberIDStr)).SetInternal(err)
+			}
+			issueFind.SubscriberID = &subscriberID
 		}
 
 		issueList, err := s.store.FindIssueStripped(ctx, issueFind)
@@ -84,8 +119,20 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			s.setTaskProgressForIssue(issue)
 		}
 
+		issueResponse := &api.IssueResponse{}
+		issueResponse.Issues = issueList
+
+		nextSinceID := sinceID
+		if len(issueList) > 0 {
+			// Decrement the ID as we use decreasing order by default.
+			nextSinceID = issueList[len(issueList)-1].ID - 1
+		}
+		if issueResponse.NextToken, err = marshalPageToken(nextSinceID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal page token").SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, issueResponse); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue list response").SetInternal(err)
 		}
 		return nil
@@ -1359,4 +1406,34 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 			}
 		}
 	}
+}
+
+func marshalPageToken(id int) (string, error) {
+	b, err := json.Marshal(id)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal page token")
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+// unmarshalPageToken unmarshals the page token, and returns the last issue ID. If the page token nil empty, it returns MaxInt32.
+func unmarshalPageToken(pageToken string, sortOrder api.SortOrder) (int, error) {
+	if pageToken == "" {
+		if sortOrder == api.ASC {
+			return 0, nil
+		}
+		return math.MaxInt32, nil
+	}
+
+	bs, err := base64.StdEncoding.DecodeString(pageToken)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to decode page token")
+	}
+
+	var id int
+	if err := json.Unmarshal(bs, &id); err != nil {
+		return 0, errors.Wrap(err, "failed to unmarshal page token")
+	}
+
+	return id, nil
 }
