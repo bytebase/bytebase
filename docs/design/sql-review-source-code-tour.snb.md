@@ -56,7 +56,7 @@ https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advis
 
 The TableNamingConvention needs the naming format and maximum length which stores in the rule payload.
 
-Next, we should check the new table names in SQL statement. If any of them break this rule, we should add an advice. To make this purpose, we should visit the AST(Abstract Syntax Tree) to find out all new table names.
+Next, we should check the new table names in SQL statement. If any of them break this rule, we should emit a corresponding advice. To achieve this, we should visit the AST(Abstract Syntax Tree) to find out all new table names.
 
 So we need to focus on CREATE TABLE, ALTER TABLE RENAME and RENAME TABLE statements.
 
