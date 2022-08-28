@@ -40,21 +40,11 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 
 		s.errorRecordRing.Ring.Do(func(p interface{}) {
 			if p != nil {
-				if p, ok := p.(*api.ErrorRecord); ok {
-					log := &api.DebugLog{
-						ID: incrementID,
-						ErrorRecord: api.ErrorRecord{
-							RecordTs:    p.RecordTs,
-							Method:      p.Method,
-							RequestPath: p.RequestPath,
-							Role:        p.Role,
-							Error:       p.Error,
-							StackTrace:  p.StackTrace,
-						},
-					}
-					incrementID++
-					errorRecordList = append(errorRecordList, log)
-				}
+				incrementID++
+				errorRecordList = append(errorRecordList, &api.DebugLog{
+					ID:          incrementID,
+					ErrorRecord: *p.(*api.ErrorRecord),
+				})
 			}
 		})
 
