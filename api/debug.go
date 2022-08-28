@@ -12,6 +12,6 @@ type DebugPatch struct {
 
 // DebugLog is the API message for debug log.
 type DebugLog struct {
-	ID     int         `jsonapi:"primary,log"`
+	ID     int         `jsonapi:"primary,debugLog"`
 	Record ErrorRecord `jsonapi:"attr,errorRecord"`
 }

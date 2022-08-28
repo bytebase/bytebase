@@ -29,7 +29,8 @@ func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo)
 		// If we encounter runtime panics, we can report the stack trace for debugging.
 		if !isHTTPError || he.Internal == nil {
 			// Deal with runtime panics.
-			// Record the stack trace manually since we don't know where it'll happen.
+			// Since we don't know where future panics will occur, we will manually record the stack trace here
+			// so that we can handle all possible panics.
 			stackTrace = string(debug.Stack())
 		}
 
