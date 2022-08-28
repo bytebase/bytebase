@@ -40,7 +40,7 @@ Also, we define a SQL advisor mapping with tuple <SQL review type, SQL dialect>.
 
 https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advisor/sql_review.go?L323-331
 
-We have implemented some MySQL dialects (MySQL and TiDB) and PostgreSQL advisors. Here, we introduce the MySQL table naming convention advisor as an example. 
+We have implemented some MySQL dialects (MySQL and TiDB) and PostgreSQL advisors. Below, we present the implementation of the MySQL table naming convention advisor. 
 
 ### The MySQL TableNamingConvention Advisor
 
