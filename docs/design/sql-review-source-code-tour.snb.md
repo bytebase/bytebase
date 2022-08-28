@@ -58,7 +58,7 @@ The TableNamingConvention needs the naming format and maximum length which store
 
 Next, we should check the new table names in SQL statement. If any of them break this rule, we should emit a corresponding advice. To achieve this, we should visit the AST(Abstract Syntax Tree) to find out all new table names.
 
-So we need to focus on CREATE TABLE, ALTER TABLE RENAME and RENAME TABLE statements.
+So we need to cover CREATE TABLE, ALTER TABLE RENAME, and RENAME TABLE statements.
 
 We use TiDB parser as the MySQL dialect parser. And we implement the ast.Visitor interface to visit the TiDB parser AST.
 
