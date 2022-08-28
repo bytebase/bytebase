@@ -33,7 +33,8 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 
 	g.GET("/debug/log", func(c echo.Context) error {
 		var errorRecordList []*api.DebugLog
-		var incrementID int // This ID is used as primary key in jsonapi.
+		// incrementID is used as primary key in jsonapi.
+		var incrementID int
 
 		s.errorRecordRing.RWMutex.RLock()
 		defer s.errorRecordRing.RWMutex.RUnlock()
