@@ -5,11 +5,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/pkg/errors"
 )
 
 var (

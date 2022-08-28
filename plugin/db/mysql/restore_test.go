@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetSafeName(t *testing.T) {

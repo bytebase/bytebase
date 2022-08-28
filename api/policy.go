@@ -3,8 +3,9 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 // PolicyType is the type or name of a policy.

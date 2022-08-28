@@ -19,40 +19,11 @@
         v-for="(transition, index) in applicableTaskStatusTransitionList"
         :key="index"
       >
-        <button
-          type="button"
-          class="flex items-center gap-x-3 group relative overflow-visible"
-          :class="transition.buttonClass"
-          @click.prevent="tryStartTaskStatusTransition(transition)"
-        >
-          <span>
-            {{ $t(transition.buttonName) }}
-          </span>
-          <template v-if="allowApplyTaskTransitionToStage(transition)">
-            <span class="border-l pl-2 -mr-2">
-              <heroicons-outline:chevron-down />
-            </span>
-            <div
-              class="hidden group-hover:flex whitespace-nowrap absolute right-0 -bottom-[2px] transform translate-y-[100%] z-50 rounded-md bg-white shadow-lg"
-              @click.prevent.stop="tryStartStageStatusTransition(transition)"
-            >
-              <div
-                class="flex flex-col items-end py-1"
-                role="menu"
-                aria-orientation="vertical"
-                aria-labelledby="user-menu"
-              >
-                <div class="menu-item">
-                  {{
-                    $t("issue.action-to-current-stage", {
-                      action: $t(transition.buttonName),
-                    })
-                  }}
-                </div>
-              </div>
-            </div>
-          </template>
-        </button>
+        <BBContextMenuButton
+          preference-key="task-status-transition"
+          :action-list="getButtonActionList(transition)"
+          @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
+        />
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
         <button
@@ -159,6 +130,7 @@ import {
   useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
+import type { ButtonAction } from "@/bbkit/BBContextMenuButton.vue";
 
 export type IssueContext = {
   currentUser: Principal;
@@ -180,6 +152,11 @@ interface UpdateStatusModalState {
   isTransiting: boolean;
 }
 
+type TaskStatusTransitionButtonAction = ButtonAction<{
+  transition: TaskStatusTransition;
+  target: "TASK" | "STAGE";
+}>;
+
 const { t } = useI18n();
 const menu = ref<InstanceType<typeof BBContextMenu>>();
 
@@ -189,7 +166,6 @@ const {
   template: issueTemplate,
   activeTaskOfPipeline,
   doCreate,
-  isTenantMode,
 } = useIssueLogic();
 const { changeIssueStatus, changeStageAllTaskStatus, changeTaskStatus } =
   useExtraIssueLogic();
@@ -258,14 +234,6 @@ const tryStartStageOrTaskStatusTransition = (
   updateStatusModalState.show = true;
 };
 
-const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
-  tryStartStageOrTaskStatusTransition(transition, "TASK");
-};
-
-const tryStartStageStatusTransition = (transition: StageStatusTransition) => {
-  tryStartStageOrTaskStatusTransition(transition, "STAGE");
-};
-
 const doTaskStatusTransition = (
   transition: TaskStatusTransition,
   task: Task,
@@ -285,6 +253,37 @@ const doStageStatusTransition = (
 const currentTask = computed(() => {
   return activeTaskOfPipeline((issue.value as Issue).pipeline);
 });
+
+const getButtonActionList = (transition: TaskStatusTransition) => {
+  const actionList: TaskStatusTransitionButtonAction[] = [];
+  const { type, buttonName, buttonType } = transition;
+  actionList.push({
+    key: `${type}-TASK`,
+    text: t(buttonName),
+    type: buttonType,
+    params: { transition, target: "TASK" },
+  });
+
+  if (allowApplyTaskTransitionToStage(transition)) {
+    actionList.push({
+      key: `${type}-STAGE`,
+      text: t("issue.action-to-current-stage", {
+        action: t(buttonName),
+      }),
+      type: buttonType,
+      params: { transition, target: "STAGE" },
+    });
+  }
+
+  return actionList;
+};
+
+const onClickTaskStatusTransitionActionButton = (
+  action: TaskStatusTransitionButtonAction
+) => {
+  const { transition, target } = action.params;
+  tryStartStageOrTaskStatusTransition(transition, target);
+};
 
 const allowIssueStatusTransition = (
   transition: IssueStatusTransition

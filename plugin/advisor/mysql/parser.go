@@ -3,10 +3,11 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/parser"
 	tidbparser "github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/parser"
 )
 
 // Wrapper for parser.New().

@@ -15,9 +15,10 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/utils"
-	"github.com/pkg/errors"
 )
 
 // Instance is a postgres instance installed by bytebase

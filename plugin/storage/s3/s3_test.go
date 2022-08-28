@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common/log"
 )
 
 const (

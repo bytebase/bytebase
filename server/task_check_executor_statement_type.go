@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	tidbparser "github.com/pingcap/tidb/parser"
+	tidbast "github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
 )
 
 // NewTaskCheckStatementTypeExecutor creates a task check DML executor.

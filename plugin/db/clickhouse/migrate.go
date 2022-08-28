@@ -9,11 +9,12 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"go.uber.org/zap"
 )
 
 var (

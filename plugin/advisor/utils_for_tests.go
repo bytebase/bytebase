@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/plugin/advisor/catalog"
-	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 const (
@@ -37,8 +38,14 @@ var (
 					{
 						Name: MockTableName,
 						ColumnList: []*catalog.Column{
-							{Name: "id"},
-							{Name: "name"},
+							{
+								Name: "id",
+								Type: "int",
+							},
+							{
+								Name: "name",
+								Type: "varchar(255)",
+							},
 						},
 						IndexList: []*catalog.Index{
 							{
