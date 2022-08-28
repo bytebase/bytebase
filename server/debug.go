@@ -3,11 +3,12 @@ package server
 import (
 	"net/http"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 )
 
 func (s *Server) registerDebugRoutes(g *echo.Group) {
@@ -32,26 +33,28 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 
 	g.GET("/debug/log", func(c echo.Context) error {
 		var errorRecordList []*api.DebugLog
-		var incrID int
+		var incrementID int // This ID is used as primary key in jsonapi.
 
-		s.errorRecordRing.Mutex.RLock()
-		defer s.errorRecordRing.Mutex.RUnlock()
+		s.errorRecordRing.RWMutex.RLock()
+		defer s.errorRecordRing.RWMutex.RUnlock()
 
 		s.errorRecordRing.Ring.Do(func(p interface{}) {
 			if p != nil {
-				incrID++
-				log := &api.DebugLog{
-					ID: incrID,
-					Record: api.ErrorRecord{
-						RecordTs:    p.(*api.ErrorRecord).RecordTs,
-						Method:      p.(*api.ErrorRecord).Method,
-						RequestPath: p.(*api.ErrorRecord).RequestPath,
-						Role:        p.(*api.ErrorRecord).Role,
-						Error:       p.(*api.ErrorRecord).Error,
-						StackTrace:  p.(*api.ErrorRecord).StackTrace,
-					},
+				if p, ok := p.(*api.ErrorRecord); ok {
+					log := &api.DebugLog{
+						ID: incrementID,
+						ErrorRecord: api.ErrorRecord{
+							RecordTs:    p.RecordTs,
+							Method:      p.Method,
+							RequestPath: p.RequestPath,
+							Role:        p.Role,
+							Error:       p.Error,
+							StackTrace:  p.StackTrace,
+						},
+					}
+					incrementID++
+					errorRecordList = append(errorRecordList, log)
 				}
-				errorRecordList = append(errorRecordList, log)
 			}
 		})
 

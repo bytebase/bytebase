@@ -33,8 +33,8 @@ func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo)
 			stackTrace = string(debug.Stack())
 		}
 
-		s.errorRecordRing.Mutex.Lock()
-		defer s.errorRecordRing.Mutex.Unlock()
+		s.errorRecordRing.RWMutex.Lock()
+		defer s.errorRecordRing.RWMutex.Unlock()
 
 		s.errorRecordRing.Ring.Value = &api.ErrorRecord{
 			RecordTs:    time.Now().Unix(),
