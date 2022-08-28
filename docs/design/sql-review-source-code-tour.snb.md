@@ -104,4 +104,4 @@ Then you can implement the rule-specific logic in the generated files.
 ## Further Readings
 
 - [Source Code Tour](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
-- [Docs](https://bytebase.com/docs)
+- [SQL Advisor User Doc](https://bytebase.com/docs/sql-review/sql-advisor/overview)
