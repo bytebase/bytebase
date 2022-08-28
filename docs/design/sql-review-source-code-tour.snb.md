@@ -26,7 +26,7 @@ The Type specifies the rule. The Level defines the error level for this rule, Er
 
 ## The SQL Advisor
 
-We implement each rule as a SQL advisor in Bytebase. The SQL advisor is SQL dialect dependent, because we should use different SQL parser for each SQL dialect.
+We implement each rule as a SQL advisor in Bytebase. The SQL advisor is SQL dialect specific and we need to use different SQL parsers for each SQL dialect.
 
 The SQL advisor is a plugin in Bytebase backend. The advisor needs to implement a Check function.
 
