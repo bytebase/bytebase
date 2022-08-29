@@ -349,51 +349,6 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 	return driver.getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
 }
 
-func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, downloader *bbs3.Client) error {
-	if downloader == nil {
-		return nil
-	}
-	metaListLocal, err := driver.getBinlogMetaFileListLocal()
-	if err != nil {
-		return errors.Wrapf(err, "failed to get local binlog metadata file list in directory %q", driver.binlogDir)
-	}
-	metaMapLocal := make(map[string]bool)
-	for _, meta := range metaListLocal {
-		metaMapLocal[meta] = true
-	}
-
-	metaListOnClod, err := driver.getBinlogMetaFileListOnCloud(ctx, downloader)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
-	}
-	var metaListDownload []string
-	for _, meta := range metaListOnClod {
-		if _, ok := metaMapLocal[meta]; !ok {
-			metaListDownload = append(metaListDownload, meta)
-		}
-	}
-	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaListDownload)))
-
-	relativeDir := getBinlogRelativeDir(driver.binlogDir)
-	tempDir := os.TempDir()
-	for _, metaFileName := range metaListDownload {
-		metaFilePathTemp := filepath.Join(tempDir, metaFileName)
-		metaFileTemp, err := os.Create(metaFilePathTemp)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create temporary binlog metadata file %q", metaFileName)
-		}
-		if _, err := downloader.DownloadObject(ctx, path.Join(relativeDir, metaFileName), metaFileTemp); err != nil {
-			return errors.Wrapf(err, "failed to download binlog metadata file %q", metaFileName)
-		}
-		metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
-		if err := os.Rename(metaFilePathTemp, metaFilePath); err != nil {
-			return errors.Wrapf(err, "failed to rename %q to %q", metaFilePathTemp, metaFilePath)
-		}
-	}
-
-	return nil
-}
-
 func (driver *Driver) getBinlogMetaFileListOnCloud(ctx context.Context, downloader *bbs3.Client) ([]string, error) {
 	listOutput, err := downloader.ListObjects(ctx, driver.binlogDir)
 	if err != nil {
@@ -712,6 +667,51 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 
 	if err := driver.downloadBinlogFilesOnServer(ctx, metaList, binlogFilesOnServerSorted, downloadLatestBinlogFile, client); err != nil {
 		return errors.Wrap(err, "failed to download binlog files from the MySQL server")
+	}
+
+	return nil
+}
+
+func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, downloader *bbs3.Client) error {
+	if downloader == nil {
+		return nil
+	}
+	metaListLocal, err := driver.getBinlogMetaFileListLocal()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get local binlog metadata file list in directory %q", driver.binlogDir)
+	}
+	metaMapLocal := make(map[string]bool)
+	for _, meta := range metaListLocal {
+		metaMapLocal[meta] = true
+	}
+
+	metaListOnCloud, err := driver.getBinlogMetaFileListOnCloud(ctx, downloader)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
+	}
+	var metaListDownload []string
+	for _, meta := range metaListOnCloud {
+		if _, ok := metaMapLocal[meta]; !ok {
+			metaListDownload = append(metaListDownload, meta)
+		}
+	}
+	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaListDownload)))
+
+	relativeDir := getBinlogRelativeDir(driver.binlogDir)
+	tempDir := os.TempDir()
+	for _, metaFileName := range metaListDownload {
+		metaFilePathTemp := filepath.Join(tempDir, metaFileName)
+		metaFileTemp, err := os.Create(metaFilePathTemp)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create temporary binlog metadata file %q", metaFileName)
+		}
+		if _, err := downloader.DownloadObject(ctx, path.Join(relativeDir, metaFileName), metaFileTemp); err != nil {
+			return errors.Wrapf(err, "failed to download binlog metadata file %q", metaFileName)
+		}
+		metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
+		if err := os.Rename(metaFilePathTemp, metaFilePath); err != nil {
+			return errors.Wrapf(err, "failed to rename %q to %q", metaFilePathTemp, metaFilePath)
+		}
 	}
 
 	return nil
