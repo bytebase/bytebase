@@ -58,6 +58,7 @@ func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt)
 // This is a temporary function. Because we do not convert tidb AST to our AST. So we have to implement this.
 // TODO(rebelice): remove it.
 func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
+	// exclude CREATE TABLE ... AS and CREATE TABLE ... LIKE statement.
 	if len(node.Cols) == 0 {
 		return nil
 	}
