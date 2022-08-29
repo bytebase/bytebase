@@ -10,7 +10,6 @@ jobs:
       checks: write
       contents: read
       id-token: read
-      issues: write
       pull-requests: write
       statuses: write
     runs-on: ubuntu-latest
