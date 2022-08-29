@@ -354,20 +354,18 @@ const nodeProps = (info: { option: TreeOption }) => {
 </script>
 
 <style>
-.n-tree
-  .n-tree-node.n-tree-node--highlight
-  .n-tree-node-content
-  .n-tree-node-content__text {
-  border-bottom: none;
-  border-bottom-color: transparent;
+.n-tree-node-content__prefix {
+  @apply shrink-0;
+}
+.n-tree-node-content__text {
+  @apply truncate mr-1;
+}
+.n-tree-node-content__suffix {
+  display: none !important;
 }
 
-.n-tree .n-tree-node .n-tree-node-content__suffix {
-  @apply w-5 h-full items-center justify-center absolute right-0 bg-white ml-1 hidden;
-}
-
-.n-tree .n-tree-node:hover .n-tree-node-content__suffix {
-  @apply flex;
+.n-tree-node:hover .n-tree-node-content__suffix {
+  display: block !important;
 }
 </style>
 
