@@ -510,14 +510,17 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
+// IsSingleAsteriskInTemplateValid checks whether the single in file path template is valid.
 func IsSingleAsteriskInTemplateValid(pathTemplate string) error {
 	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 1)
 }
 
+// IsDoubleAsteriskInTemplateValid checks whether the consecutive double asterisks in file path template is valid.
 func IsDoubleAsteriskInTemplateValid(pathTemplate string) error {
 	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 2)
 }
 
+// IsMaxConsecutiveAsteriskValid returns true if the pathTemplate contains `n` consecutive asterisk at most.
 func IsMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
 	re := regexp.MustCompile(strings.Repeat(`\*`, n+1))
 	if re.MatchString(pathTemplate) {
@@ -526,6 +529,13 @@ func IsMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
 	return nil
 }
 
+// isMultipleTimesAsteriskInTemplateValid checks whether the consecutive multiple asterisks in file path template is valid.
+// The rules are（）:
+// 1. consecutive multiple asterisks cannot be placed at the beginning or end.
+// 2. Both ends of consecutive multiple asterisks just can be * or /.
+// Take asteriskTimes = 2 as an example:
+// "**/test" and "test/**" will break the rule1.
+// "abc**" and "?**/" will break the rule2.
 func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes int) error {
 	base := strings.Repeat(`\*`, asteriskTimes)
 	str := fmt.Sprintf(`([^\/\*]+%s)|(%s[^\/\*]+)|(^(%s))|((%s)$)`, base, base, base, base)
