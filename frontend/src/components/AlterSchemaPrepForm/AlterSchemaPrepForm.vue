@@ -36,7 +36,7 @@
                   v-if="state.alterType === 'SINGLE_DB'"
                   class="m-px"
                   :placeholder="$t('database.search-database-name')"
-                  @change-text="(text) => (state.searchText = text)"
+                  @change-text="(text: string) => (state.searchText = text)"
                 />
               </template>
             </NTabs>
@@ -55,7 +55,7 @@
                   <BBTableSearch
                     class="m-px"
                     :placeholder="$t('database.search-database-name')"
-                    @change-text="(text) => (state.searchText = text)"
+                    @change-text="(text: string) => (state.searchText = text)"
                   />
                 </div>
               </template>
@@ -67,7 +67,7 @@
             <BBTableSearch
               class="m-px"
               :placeholder="$t('database.search-database-name')"
-              @change-text="(text) => (state.searchText = text)"
+              @change-text="(text: string) => (state.searchText = text)"
             />
           </aside>
           <!-- a simple table -->
@@ -83,31 +83,48 @@
     </div>
 
     <!-- Create button group -->
-    <div class="pt-4 border-t border-block-border flex justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="cancel"
-      >
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        v-if="showGenerateMultiDb"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        :disabled="!allowGenerateMultiDb"
-        @click.prevent="generateMultiDb"
-      >
-        {{ $t("common.next") }}
-      </button>
+    <div
+      class="pt-4 border-t border-block-border flex items-center justify-between"
+    >
+      <div>
+        <div
+          v-if="flattenSelectedDatabaseIdList.length > 0"
+          class="textinfolabel"
+        >
+          {{
+            $t("database.selected-n-databases", {
+              n: flattenSelectedDatabaseIdList.length,
+            })
+          }}
+        </div>
+      </div>
 
-      <button
-        v-if="showGenerateTenant"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        :disabled="!allowGenerateTenant"
-        @click.prevent="generateTenant"
-      >
-        {{ $t("common.next") }}
-      </button>
+      <div class="flex items-center justify-end">
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="cancel"
+        >
+          {{ $t("common.cancel") }}
+        </button>
+        <button
+          v-if="showGenerateMultiDb"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="!allowGenerateMultiDb"
+          @click.prevent="generateMultiDb"
+        >
+          {{ $t("common.next") }}
+        </button>
+
+        <button
+          v-if="showGenerateTenant"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          :disabled="!allowGenerateTenant"
+          @click.prevent="generateTenant"
+        >
+          {{ $t("common.next") }}
+        </button>
+      </div>
     </div>
   </div>
 
@@ -455,6 +472,7 @@ export default defineComponent({
       databaseList,
       showGenerateMultiDb,
       allowGenerateMultiDb,
+      flattenSelectedDatabaseIdList,
       generateMultiDb,
       showGenerateTenant,
       allowGenerateTenant,
