@@ -10,8 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // Type is the type of a database.
@@ -254,18 +255,27 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 		"DESCRIPTION",
 	}
 
+	const maxAsteriskNum = 2
+
 	// Escape "." characters to match literals instead of using it as a wildcard.
 	filePathRegex := strings.ReplaceAll(filePathTemplate, `.`, `\.`)
-	if err := IsDoubleAsteriskInTemplateValid(filePathRegex); err != nil {
+
+	if err := IsMaxConsecutiveAsteriskValid(filePathRegex, maxAsteriskNum); err != nil {
 		return nil, err
 	}
-	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 	if err := IsSingleAsteriskInTemplateValid(filePathRegex); err != nil {
 		return nil, err
 	}
 	filePathRegex = strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]*/`)
+
+	if err := IsDoubleAsteriskInTemplateValid(filePathRegex); err != nil {
+		return nil, err
+	}
+	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
+
 	for _, placeholder := range placeholderList {
-		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=_#?!$. ]+)", placeholder))
+		// We use `[a-zA-Z0-9+-.0-=_#?!$. ]` instead of `[a-zA-Z0-9+-=_#?!$. ]` to match the placeholder because we only want place holder not match '/'.
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, `[^\\/?%*:|"<>\.]+`))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
@@ -508,12 +518,20 @@ func IsDoubleAsteriskInTemplateValid(pathTemplate string) error {
 	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 2)
 }
 
+func IsMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
+	re := regexp.MustCompile(strings.Repeat(`\*`, n+1))
+	if re.MatchString(pathTemplate) {
+		return errors.Errorf("path template %s contains more than %d asterisk", pathTemplate, n)
+	}
+	return nil
+}
+
 func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes int) error {
 	base := strings.Repeat(`\*`, asteriskTimes)
-	str := fmt.Sprintf(`([^\/]+%s)|(%s[^\/]+)|(^(%s))|((%s)$)`, base, base, base, base)
+	str := fmt.Sprintf(`([^\/\*]+%s)|(%s[^\/\*]+)|(^(%s))|((%s)$)`, base, base, base, base)
 	re := regexp.MustCompile(str)
 	if re.MatchString(pathTemplate) {
-		return errors.Errorf("path template %s contains invalid double asterisk", pathTemplate)
+		return errors.Errorf("path template %s contains invalid %d asterisks", pathTemplate, asteriskTimes)
 	}
 	return nil
 }
