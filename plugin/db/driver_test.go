@@ -33,16 +33,16 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
-			filePath:         "db foo_+-=/_#?!$.__1.2.3",
+			filePath:         "db foo_+-=_#!$.__1.2.3",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
 			want: MigrationInfo{
 				Version:     "1.2.3",
-				Namespace:   "db foo_+-=/_#?!$.",
-				Database:    "db foo_+-=/_#?!$.",
+				Namespace:   "db foo_+-=_#!$.",
+				Database:    "db foo_+-=_#!$.",
 				Environment: "",
 				Source:      VCS,
 				Type:        Migrate,
-				Description: "Create db foo_+-=/_#?!$. schema migration",
+				Description: "Create db foo_+-=_#!$. schema migration",
 				Creator:     "",
 			},
 			wantErr: "",
@@ -242,7 +242,7 @@ func TestIsDoubleTimesAsteriskInTemplateValid(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		outputErr := IsDoubleAsteriskInTemplateValid(test.template)
+		outputErr := isDoubleAsteriskInTemplateValid(test.template)
 		if test.err {
 			assert.Error(t, outputErr)
 		} else {

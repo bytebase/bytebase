@@ -268,7 +268,8 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 
 	for _, placeholder := range placeholderList {
 		// https://stackoverflow.com/a/6222235/19075342
-		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, `[^\\/?%*:|"<>\.]+`))
+		// But we support '.' for now.
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, `[^\\/?%*:|"<>]+`))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
