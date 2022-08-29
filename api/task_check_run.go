@@ -237,3 +237,13 @@ func IsSQLReviewSupported(dbType db.Type, _ common.ReleaseMode) bool {
 
 	return false
 }
+
+// IsStatementTypeCheckSupported checks the engine type if statement type check supports it.
+func IsStatementTypeCheckSupported(dbType db.Type) bool {
+	switch dbType {
+	case db.Postgres, db.TiDB, db.MySQL:
+		return true
+	default:
+		return false
+	}
+}

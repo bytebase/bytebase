@@ -424,6 +424,32 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 				}
 			}
+
+			if api.IsStatementTypeCheckSupported(task.Instance.Engine) {
+				payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+					Statement: *taskPatch.Statement,
+					DbType:    task.Instance.Engine,
+					Charset:   task.Database.CharacterSet,
+					Collation: task.Database.Collation,
+				})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
+				}
+				if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+					CreatorID:               api.SystemBotID,
+					TaskID:                  task.ID,
+					Type:                    api.TaskCheckDatabaseStatementType,
+					Payload:                 string(payload),
+					SkipIfAlreadyTerminated: false,
+				}); err != nil {
+					// It's OK if we failed to trigger a check, just emit an error log
+					log.Error("Failed to trigger statement type check after changing the task statement",
+						zap.Int("task_id", task.ID),
+						zap.String("task_name", task.Name),
+						zap.Error(err),
+					)
+				}
+			}
 		}
 	}
 
