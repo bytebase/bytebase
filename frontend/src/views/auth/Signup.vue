@@ -51,16 +51,32 @@
               {{ $t("common.password") }}
               <span class="text-red-600">*</span>
             </label>
-            <div class="mt-1 rounded-md shadow-sm">
+            <div
+              class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
+            >
               <input
                 id="password"
                 v-model="state.password"
-                type="password"
+                :type="state.showPassword ? 'text' : 'password'"
                 autocomplete="off"
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="refreshPasswordValidation"
               />
+              <div
+                class="hover:cursor-pointer absolute right-3"
+                @click="
+                  () => {
+                    state.showPassword = !state.showPassword;
+                  }
+                "
+              >
+                <heroicons-outline:eye
+                  v-if="state.showPassword"
+                  class="w-4 h-4"
+                />
+                <heroicons-outline:eye-slash v-else class="w-4 h-4" />
+              </div>
             </div>
           </div>
 
@@ -79,17 +95,33 @@
                 }}</span
               >
             </label>
-            <div class="mt-1 rounded-md shadow-sm">
+            <div
+              class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
+            >
               <input
                 id="password-confirm"
                 v-model="state.passwordConfirm"
-                type="password"
+                :type="state.showPassword ? 'text' : 'password'"
                 autocomplete="off"
                 :placeholder="$t('auth.sign-up.confirm-password-placeholder')"
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                 @input="refreshPasswordValidation"
               />
+              <div
+                class="hover:cursor-pointer absolute right-3"
+                @click="
+                  () => {
+                    state.showPassword = !state.showPassword;
+                  }
+                "
+              >
+                <heroicons-outline:eye
+                  v-if="state.showPassword"
+                  class="w-4 h-4"
+                />
+                <heroicons-outline:eye-slash v-else class="w-4 h-4" />
+              </div>
             </div>
           </div>
 
@@ -205,6 +237,7 @@ interface LocalState {
   name: string;
   nameManuallyEdited: boolean;
   acceptTermsAndPolicy: boolean;
+  showPassword: boolean;
 }
 
 export default defineComponent({
@@ -222,6 +255,7 @@ export default defineComponent({
       name: "",
       nameManuallyEdited: false,
       acceptTermsAndPolicy: true,
+      showPassword: false,
     });
 
     onUnmounted(() => {
