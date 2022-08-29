@@ -90,7 +90,7 @@ const fetchData = (refresh = false) => {
         state.issueList.push(...issueList);
       }
 
-      if (issueList.length === 0 || issueList.length < limit.value) {
+      if (issueList.length === 0) {
         state.hasMore = false;
       }
 
