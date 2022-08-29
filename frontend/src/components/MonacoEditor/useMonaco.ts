@@ -61,9 +61,8 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
             tableList.value
           );
 
+          // The auto-completion trigger is "."
           if (lastToken.endsWith(".") && lastToken !== ".") {
-            // The auto-completion trigger is "."
-
             const tokenListBeforeDot = lastToken
               .slice(0, -1)
               .split(".")
