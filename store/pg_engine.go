@@ -647,7 +647,7 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 	// Return wrapper Tx that includes the transaction start time.
 	return &Tx{
-		PTx: ptx,
+		Tx:  ptx,
 		db:  db,
 		now: db.Now().UTC().Truncate(time.Second),
 	}, nil
@@ -655,7 +655,7 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 // Tx wraps the SQL Tx object to provide a timestamp at the start of the transaction.
 type Tx struct {
-	PTx *sql.Tx
+	*sql.Tx
 	db  *DB
 	now time.Time
 }

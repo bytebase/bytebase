@@ -130,13 +130,13 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 	if err != nil {
 		return 0, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
 	where, args := findInstanceQuery(find)
 
 	query := `SELECT COUNT(*) FROM instance WHERE ` + where
 	var count int
-	if err := tx.PTx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -152,9 +152,9 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT engine, environment_id, row_status, COUNT(*)
 		FROM instance
 		WHERE (id <= 101 AND updater_id != 1) OR id > 101
@@ -344,9 +344,9 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	instance, err := createInstanceImpl(ctx, tx.PTx, create)
+	instance, err := createInstanceImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		CharacterSet:  api.DefaultCharacterSetName,
 		Collation:     api.DefaultCollationName,
 	}
-	allDatabase, err := s.createDatabaseRawTx(ctx, tx.PTx, databaseCreate)
+	allDatabase, err := s.createDatabaseRawTx(ctx, tx, databaseCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -379,11 +379,11 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		SslCert:    create.SslCert,
 		SslCa:      create.SslCa,
 	}
-	if err := s.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+	if err := s.createDataSourceRawTx(ctx, tx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -400,9 +400,9 @@ func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findInstanceImpl(ctx, tx.PTx, find)
+	list, err := findInstanceImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -428,9 +428,9 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findInstanceImpl(ctx, tx.PTx, find)
+	list, err := findInstanceImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -455,14 +455,14 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) 
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	instance, err := patchInstanceImpl(ctx, tx.PTx, patch)
+	instance, err := patchInstanceImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -474,7 +474,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) 
 }
 
 // createInstanceImpl creates a new instance.
-func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*instanceRaw, error) {
+func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*instanceRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO instance (
@@ -523,7 +523,7 @@ func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCre
 	return &instanceRaw, nil
 }
 
-func findInstanceImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
+func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
 	where, args := findInstanceQuery(find)
 
 	rows, err := tx.QueryContext(ctx, `
@@ -581,7 +581,7 @@ func findInstanceImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 }
 
 // patchInstanceImpl updates a instance by ID. Returns the new state of the instance after update.
-func patchInstanceImpl(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*instanceRaw, error) {
+func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*instanceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

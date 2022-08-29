@@ -135,9 +135,9 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT role, status, row_status, COUNT(*)
 		FROM member
 		GROUP BY role, status, row_status`,
@@ -171,14 +171,14 @@ func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	member, err := createMemberImpl(ctx, tx.PTx, create)
+	member, err := createMemberImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -195,9 +195,9 @@ func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) ([]*mem
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	memberRawList, err := findMemberImpl(ctx, tx.PTx, find)
+	memberRawList, err := findMemberImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -229,9 +229,9 @@ func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*member
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findMemberImpl(ctx, tx.PTx, find)
+	list, err := findMemberImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -254,14 +254,14 @@ func (s *Store) patchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*me
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	member, err := patchMemberImpl(ctx, tx.PTx, patch)
+	member, err := patchMemberImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -298,7 +298,7 @@ func (s *Store) composeMember(ctx context.Context, raw *memberRaw) (*api.Member,
 }
 
 // createMemberImpl creates a new member.
-func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*memberRaw, error) {
+func createMemberImpl(ctx context.Context, tx *Tx, create *api.MemberCreate) (*memberRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO member (
@@ -337,7 +337,7 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 	return &memberRaw, nil
 }
 
-func findMemberImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
+func findMemberImpl(ctx context.Context, tx *Tx, find *api.MemberFind) ([]*memberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -398,7 +398,7 @@ func findMemberImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*m
 }
 
 // patchMemberImpl updates a member by ID. Returns the new state of the member after update.
-func patchMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*memberRaw, error) {
+func patchMemberImpl(ctx context.Context, tx *Tx, patch *api.MemberPatch) (*memberRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

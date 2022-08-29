@@ -126,9 +126,9 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT tenant_mode, workflow_type, row_status, COUNT(*)
 		FROM project
 		GROUP BY tenant_mode, workflow_type, row_status`,
@@ -187,14 +187,14 @@ func (s *Store) createProjectRaw(ctx context.Context, create *api.ProjectCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	projectRaw, err := createProjectImpl(ctx, tx.PTx, create, s.db.mode)
+	projectRaw, err := createProjectImpl(ctx, tx, create, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -211,9 +211,9 @@ func (s *Store) findProjectRaw(ctx context.Context, find *api.ProjectFind) ([]*p
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findProjectImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err := findProjectImpl(ctx, tx, find, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -247,9 +247,9 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findProjectImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err := findProjectImpl(ctx, tx, find, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -272,14 +272,14 @@ func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	project, err := patchProjectImpl(ctx, tx.PTx, patch, s.db.mode)
+	project, err := patchProjectImpl(ctx, tx, patch, s.db.mode)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -292,7 +292,7 @@ func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*
 
 // patchProjectRawTx updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *Store) patchProjectRawTx(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) (*projectRaw, error) {
+func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*projectRaw, error) {
 	project, err := patchProjectImpl(ctx, tx, patch, s.db.mode)
 
 	if err != nil {
@@ -307,7 +307,7 @@ func (s *Store) patchProjectRawTx(ctx context.Context, tx *sql.Tx, patch *api.Pr
 }
 
 // createProjectImpl creates a new project.
-func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreate, mode common.ReleaseMode) (*projectRaw, error) {
+func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate, mode common.ReleaseMode) (*projectRaw, error) {
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
@@ -413,7 +413,7 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 	return &project, nil
 }
 
-func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind, mode common.ReleaseMode) ([]*projectRaw, error) {
+func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind, mode common.ReleaseMode) ([]*projectRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -540,7 +540,7 @@ func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind, mod
 }
 
 // patchProjectImpl updates a project by ID. Returns the new state of the project after update.
-func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
+func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

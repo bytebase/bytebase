@@ -128,14 +128,14 @@ func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.Sett
 		if err != nil {
 			return nil, FormatError(err)
 		}
-		defer tx.PTx.Rollback()
+		defer tx.Rollback()
 
-		setting, err := createSettingImpl(ctx, tx.PTx, create)
+		setting, err := createSettingImpl(ctx, tx, create)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := tx.PTx.Commit(); err != nil {
+		if err := tx.Commit(); err != nil {
 			return nil, FormatError(err)
 		}
 
@@ -151,9 +151,9 @@ func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*s
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findSettingImpl(ctx, tx.PTx, find)
+	list, err := findSettingImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -167,9 +167,9 @@ func (s *Store) getSettingRaw(ctx context.Context, find *api.SettingFind) (*sett
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findSettingImpl(ctx, tx.PTx, find)
+	list, err := findSettingImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -189,14 +189,14 @@ func (s *Store) patchSettingRaw(ctx context.Context, patch *api.SettingPatch) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	setting, err := patchSettingImpl(ctx, tx.PTx, patch)
+	setting, err := patchSettingImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -204,7 +204,7 @@ func (s *Store) patchSettingRaw(ctx context.Context, patch *api.SettingPatch) (*
 }
 
 // createSettingImpl creates a new setting.
-func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*settingRaw, error) {
+func createSettingImpl(ctx context.Context, tx *Tx, create *api.SettingCreate) (*settingRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO setting (
@@ -238,7 +238,7 @@ func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreat
 	return &settingRaw, nil
 }
 
-func findSettingImpl(ctx context.Context, tx *sql.Tx, find *api.SettingFind) ([]*settingRaw, error) {
+func findSettingImpl(ctx context.Context, tx *Tx, find *api.SettingFind) ([]*settingRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.Name; v != nil {
@@ -289,7 +289,7 @@ func findSettingImpl(ctx context.Context, tx *sql.Tx, find *api.SettingFind) ([]
 }
 
 // patchSettingImpl updates a setting by name. Returns the new state of the setting after update.
-func patchSettingImpl(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) (*settingRaw, error) {
+func patchSettingImpl(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*settingRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "value = $2"), append(args, patch.Value)

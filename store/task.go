@@ -168,9 +168,9 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT type, status, COUNT(*)
 		FROM task
 		WHERE (id <= 102 AND updater_id != 1) OR id > 102
@@ -278,14 +278,14 @@ func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*tas
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	task, err := s.createTaskImpl(ctx, tx.PTx, create)
+	task, err := s.createTaskImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -298,9 +298,9 @@ func (s *Store) findTaskRaw(ctx context.Context, find *api.TaskFind) ([]*taskRaw
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findTaskImpl(ctx, tx.PTx, find)
+	list, err := s.findTaskImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -315,12 +315,12 @@ func (s *Store) getTaskRaw(ctx context.Context, find *api.TaskFind) (*taskRaw, e
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	return s.getTaskRawTx(ctx, tx.PTx, find)
+	return s.getTaskRawTx(ctx, tx, find)
 }
 
-func (s *Store) getTaskRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskFind) (*taskRaw, error) {
+func (s *Store) getTaskRawTx(ctx context.Context, tx *Tx, find *api.TaskFind) (*taskRaw, error) {
 	list, err := s.findTaskImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
@@ -341,14 +341,14 @@ func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRa
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	task, err := s.patchTaskImpl(ctx, tx.PTx, patch)
+	task, err := s.patchTaskImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -365,14 +365,14 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	task, err := s.patchTaskStatusImpl(ctx, tx.PTx, patch)
+	task, err := s.patchTaskStatusImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -380,7 +380,7 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 }
 
 // createTaskImpl creates a new task.
-func (*Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
+func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate) (*taskRaw, error) {
 	var row *sql.Row
 
 	if create.Payload == "" {
@@ -478,7 +478,7 @@ func (*Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCr
 	return &taskRaw, nil
 }
 
-func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind) ([]*taskRaw, error) {
+func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([]*taskRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -575,7 +575,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 }
 
 // patchTaskImpl updates a task by ID. Returns the new state of the task after update.
-func (*Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatch) (*taskRaw, error) {
+func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (*taskRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.DatabaseID; v != nil {
@@ -627,7 +627,7 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatc
 }
 
 // patchTaskStatusImpl updates a task status by ID. Returns the new state of the task after update.
-func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskStatusPatch) (*taskRaw, error) {
+func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.TaskStatusPatch) (*taskRaw, error) {
 	// Updates the corresponding task run if applicable.
 	// We update the task run first because updating task below returns row and it's a bit complicated to
 	// arrange code to prevent that opening row interfering with the task run update.
