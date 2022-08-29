@@ -39,7 +39,7 @@
         principalId: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
         projectId: selectedProjectId,
       }"
-      :page-size="2"
+      :page-size="10"
     >
       <template #table="{ issueList, loading }">
         <IssueTable
