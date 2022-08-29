@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -211,6 +213,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		if strings.Contains(repositoryCreate.BranchFilter, "*") {
 			return echo.NewHTTPError(http.StatusBadRequest, "Wildcard isn't supported for branch setting")
+		}
+
+		// We need to check the FilePathTemplate in create repository request.
+		// This avoids to a certain extent that the creation succeeds but does not work.
+		if err := db.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 
 		project, err := s.store.GetProjectByID(ctx, projectID)

@@ -260,17 +260,10 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	// Escape "." characters to match literals instead of using it as a wildcard.
 	filePathRegex := strings.ReplaceAll(filePathTemplate, `.`, `\.`)
 
-	if err := IsMaxConsecutiveAsteriskValid(filePathRegex, maxAsteriskNum); err != nil {
-		return nil, err
-	}
-	if err := IsSingleAsteriskInTemplateValid(filePathRegex); err != nil {
+	if err := IsAsterisksInTemplateValid(filePathRegex); err != nil {
 		return nil, err
 	}
 	filePathRegex = strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]*/`)
-
-	if err := IsDoubleAsteriskInTemplateValid(filePathRegex); err != nil {
-		return nil, err
-	}
 	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 
 	for _, placeholder := range placeholderList {
@@ -510,18 +503,33 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
-// IsSingleAsteriskInTemplateValid checks whether the single in file path template is valid.
-func IsSingleAsteriskInTemplateValid(pathTemplate string) error {
+// IsAsterisksInTemplateValid checks if the pathTemplate is valid about asterisk.
+func IsAsterisksInTemplateValid(pathTemplate string) error {
+	const maxAsteriskNum = 2
+	if err := isMaxConsecutiveAsteriskValid(pathTemplate, maxAsteriskNum); err != nil {
+		return err
+	}
+	if err := isSingleAsteriskInTemplateValid(pathTemplate); err != nil {
+		return err
+	}
+	if err := isDoubleAsteriskInTemplateValid(pathTemplate); err != nil {
+		return err
+	}
+	return nil
+}
+
+// isSingleAsteriskInTemplateValid checks whether the single in file path template is valid.
+func isSingleAsteriskInTemplateValid(pathTemplate string) error {
 	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 1)
 }
 
-// IsDoubleAsteriskInTemplateValid checks whether the consecutive double asterisks in file path template is valid.
-func IsDoubleAsteriskInTemplateValid(pathTemplate string) error {
+// isDoubleAsteriskInTemplateValid checks whether the consecutive double asterisks in file path template is valid.
+func isDoubleAsteriskInTemplateValid(pathTemplate string) error {
 	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 2)
 }
 
-// IsMaxConsecutiveAsteriskValid returns true if the pathTemplate contains `n` consecutive asterisk at most.
-func IsMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
+// isMaxConsecutiveAsteriskValid returns true if the pathTemplate contains `n` consecutive asterisk at most.
+func isMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
 	re := regexp.MustCompile(strings.Repeat(`\*`, n+1))
 	if re.MatchString(pathTemplate) {
 		return errors.Errorf("path template %s contains more than %d asterisk", pathTemplate, n)
