@@ -699,14 +699,10 @@ func (driver *Driver) getBinlogMetaFileSetOnCloud(ctx context.Context, client *b
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", driver.binlogDir)
 	}
-	var pathList []string
-	for _, item := range listOutput.Contents {
-		pathList = append(pathList, *item.Key)
-	}
 	metaSet := make(map[string]bool)
-	for _, path := range pathList {
-		if strings.HasSuffix(path, binlogMetaSuffix) {
-			metaSet[filepath.Base(path)] = true
+	for _, item := range listOutput.Contents {
+		if strings.HasSuffix(*item.Key, binlogMetaSuffix) {
+			metaSet[filepath.Base(*item.Key)] = true
 		}
 	}
 	return metaSet, nil
