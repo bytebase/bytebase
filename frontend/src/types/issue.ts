@@ -122,6 +122,21 @@ export type IssueCreate = {
   payload: IssuePayload;
 };
 
+export type IssueFind = {
+  projectId?: ProjectId;
+  principalId?: PrincipalId;
+  creatorId?: PrincipalId;
+  assigneeId?: PrincipalId;
+  subscriberId?: PrincipalId;
+  statusList?: IssueStatus[];
+  limit?: number;
+
+  // defined in Go but not used yet
+  // id?: IssueId;
+  // pipelineId?: PipelineId;
+  // maxId?: IssueId;
+};
+
 export type IssuePatch = {
   // Domain specific fields
   name?: string;
