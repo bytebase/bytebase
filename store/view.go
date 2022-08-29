@@ -78,9 +78,9 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	oldViewRawList, err := s.findViewImpl(ctx, tx.PTx, &api.ViewFind{
+	oldViewRawList, err := s.findViewImpl(ctx, tx, &api.ViewFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -89,17 +89,17 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 
 	deletes, creates := generateViewActions(oldViewRawList, schema.ViewList, databaseID)
 	for _, d := range deletes {
-		if err := s.deleteViewImpl(ctx, tx.PTx, d); err != nil {
+		if err := s.deleteViewImpl(ctx, tx, d); err != nil {
 			return err
 		}
 	}
 	for _, c := range creates {
-		if _, err := s.createViewImpl(ctx, tx.PTx, c); err != nil {
+		if _, err := s.createViewImpl(ctx, tx, c); err != nil {
 			return err
 		}
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -180,9 +180,9 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findViewImpl(ctx, tx.PTx, find)
+	list, err := s.findViewImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 }
 
 // createViewImpl creates a new view.
-func (*Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*viewRaw, error) {
+func (*Store) createViewImpl(ctx context.Context, tx *Tx, create *api.ViewCreate) (*viewRaw, error) {
 	// Insert row into view.
 	query := `
 		INSERT INTO vw (
@@ -236,7 +236,7 @@ func (*Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCr
 	return &viewRaw, nil
 }
 
-func (*Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*viewRaw, error) {
+func (*Store) findViewImpl(ctx context.Context, tx *Tx, find *api.ViewFind) ([]*viewRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -298,7 +298,7 @@ func (*Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) 
 }
 
 // deleteViewImpl permanently deletes views from a database.
-func (*Store) deleteViewImpl(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
+func (*Store) deleteViewImpl(ctx context.Context, tx *Tx, delete *api.ViewDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

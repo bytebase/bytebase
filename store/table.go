@@ -109,9 +109,9 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	oldTableRawList, err := s.findTableImpl(ctx, tx.PTx, &api.TableFind{
+	oldTableRawList, err := s.findTableImpl(ctx, tx, &api.TableFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -119,22 +119,22 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 	}
 	creates, patches, deletes := generateTableActions(oldTableRawList, schema.TableList, databaseID)
 	for _, d := range deletes {
-		if err := s.deleteTableImpl(ctx, tx.PTx, d); err != nil {
+		if err := s.deleteTableImpl(ctx, tx, d); err != nil {
 			return err
 		}
 	}
 	for _, p := range patches {
-		if _, err := s.patchTableImpl(ctx, tx.PTx, p); err != nil {
+		if _, err := s.patchTableImpl(ctx, tx, p); err != nil {
 			return err
 		}
 	}
 	for _, c := range creates {
-		if _, err := s.createTableImpl(ctx, tx.PTx, c); err != nil {
+		if _, err := s.createTableImpl(ctx, tx, c); err != nil {
 			return err
 		}
 	}
 
-	tableRawList, err := s.findTableImpl(ctx, tx.PTx, &api.TableFind{
+	tableRawList, err := s.findTableImpl(ctx, tx, &api.TableFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 			log.Error(fmt.Sprintf("table ID cannot be found for database %v table %s", databaseID, table.Name))
 		}
 
-		columnList, err := s.findColumnImpl(ctx, tx.PTx, &api.ColumnFind{
+		columnList, err := s.findColumnImpl(ctx, tx, &api.ColumnFind{
 			TableID: &tableID,
 		})
 		if err != nil {
@@ -159,17 +159,17 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 		}
 		deletes, creates := generateColumnActions(columnList, table.ColumnList, databaseID, tableID)
 		for _, d := range deletes {
-			if err := s.deleteColumnImpl(ctx, tx.PTx, d); err != nil {
+			if err := s.deleteColumnImpl(ctx, tx, d); err != nil {
 				return err
 			}
 		}
 		for _, c := range creates {
-			if _, err := s.createColumnImpl(ctx, tx.PTx, c); err != nil {
+			if _, err := s.createColumnImpl(ctx, tx, c); err != nil {
 				return err
 			}
 		}
 
-		indexList, err := s.findIndexImpl(ctx, tx.PTx, &api.IndexFind{
+		indexList, err := s.findIndexImpl(ctx, tx, &api.IndexFind{
 			TableID: &tableID,
 		})
 		if err != nil {
@@ -177,18 +177,18 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 		}
 		idxDeletes, idxCreates := generateIndexActions(indexList, table.IndexList, databaseID, tableID)
 		for _, d := range idxDeletes {
-			if err := s.deleteIndexImpl(ctx, tx.PTx, d); err != nil {
+			if err := s.deleteIndexImpl(ctx, tx, d); err != nil {
 				return err
 			}
 		}
 		for _, c := range idxCreates {
-			if _, err := s.createIndexImpl(ctx, tx.PTx, c); err != nil {
+			if _, err := s.createIndexImpl(ctx, tx, c); err != nil {
 				return err
 			}
 		}
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -298,9 +298,9 @@ func (s *Store) findTableRaw(ctx context.Context, find *api.TableFind) ([]*table
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findTableImpl(ctx, tx.PTx, find)
+	list, err := s.findTableImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -315,9 +315,9 @@ func (s *Store) getTableRaw(ctx context.Context, find *api.TableFind) (*tableRaw
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findTableImpl(ctx, tx.PTx, find)
+	list, err := s.findTableImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +331,7 @@ func (s *Store) getTableRaw(ctx context.Context, find *api.TableFind) (*tableRaw
 }
 
 // createTableImpl creates a new table.
-func (*Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*tableRaw, error) {
+func (*Store) createTableImpl(ctx context.Context, tx *Tx, create *api.TableCreate) (*tableRaw, error) {
 	// Insert row into table.
 	query := `
 		INSERT INTO tbl (
@@ -398,7 +398,7 @@ func (*Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Table
 }
 
 // patchTableImpl patches a table.
-func (*Store) patchTableImpl(ctx context.Context, tx *sql.Tx, patch *api.TablePatch) (*tableRaw, error) {
+func (*Store) patchTableImpl(ctx context.Context, tx *Tx, patch *api.TablePatch) (*tableRaw, error) {
 	var tableRaw tableRaw
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, `
@@ -442,7 +442,7 @@ func (*Store) patchTableImpl(ctx context.Context, tx *sql.Tx, patch *api.TablePa
 	return &tableRaw, nil
 }
 
-func (*Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*tableRaw, error) {
+func (*Store) findTableImpl(ctx context.Context, tx *Tx, find *api.TableFind) ([]*tableRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -517,7 +517,7 @@ func (*Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFind
 }
 
 // deleteTableImpl permanently deletes tables from a database.
-func (*Store) deleteTableImpl(ctx context.Context, tx *sql.Tx, delete *api.TableDelete) error {
+func (*Store) deleteTableImpl(ctx context.Context, tx *Tx, delete *api.TableDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
