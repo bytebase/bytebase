@@ -228,7 +228,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	driver, err := r.server.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
-			log.Warn("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
+			log.Debug("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
 			return
 		}
 		log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
