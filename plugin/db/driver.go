@@ -274,7 +274,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 
 	for _, placeholder := range placeholderList {
-		// We use `[a-zA-Z0-9+-.0-=_#?!$. ]` instead of `[a-zA-Z0-9+-=_#?!$. ]` to match the placeholder because we only want place holder not match '/'.
+		// https://stackoverflow.com/a/6222235/19075342
 		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, `[^\\/?%*:|"<>\.]+`))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
