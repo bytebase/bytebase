@@ -5,6 +5,12 @@ on:
 
 jobs:
   codenotify:
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+      pull-requests: write
+      statuses: write
     runs-on: ubuntu-latest
     name: Codenotify
     steps:
