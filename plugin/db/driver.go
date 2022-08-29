@@ -255,8 +255,6 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 		"DESCRIPTION",
 	}
 
-	const maxAsteriskNum = 2
-
 	// Escape "." characters to match literals instead of using it as a wildcard.
 	filePathRegex := strings.ReplaceAll(filePathTemplate, `.`, `\.`)
 
