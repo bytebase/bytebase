@@ -5,6 +5,7 @@ on:
 
 jobs:
   codenotify:
+    permissions: write-all
     runs-on: ubuntu-latest
     name: Codenotify
     steps:
