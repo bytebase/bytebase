@@ -100,11 +100,11 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
 	query := `SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = $1 AND status = 'UNREAD')`
 	var inboxSummary api.InboxSummary
-	if err := tx.PTx.QueryRowContext(ctx, query, principalID).Scan(&inboxSummary.HasUnread); err != nil {
+	if err := tx.QueryRowContext(ctx, query, principalID).Scan(&inboxSummary.HasUnread); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -113,7 +113,7 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 
 	if inboxSummary.HasUnread {
 		query2 := `SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = $1 AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')`
-		if err := tx.PTx.QueryRowContext(ctx, query2, principalID).Scan(&inboxSummary.HasUnreadError); err != nil {
+		if err := tx.QueryRowContext(ctx, query2, principalID).Scan(&inboxSummary.HasUnreadError); err != nil {
 			if err == sql.ErrNoRows {
 				return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 			}
@@ -149,14 +149,14 @@ func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*i
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	inbox, err := s.createInboxImpl(ctx, tx.PTx, create)
+	inbox, err := s.createInboxImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -169,9 +169,9 @@ func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inbox
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findInboxImpl(ctx, tx.PTx, find)
+	list, err := findInboxImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -186,9 +186,9 @@ func (s *Store) getInboxRawByID(ctx context.Context, find *api.InboxFind) (*inbo
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findInboxImpl(ctx, tx.PTx, find)
+	list, err := findInboxImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -208,14 +208,14 @@ func (s *Store) patchInboxRaw(ctx context.Context, patch *api.InboxPatch) (*inbo
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	inbox, err := s.patchInboxImpl(ctx, tx.PTx, patch)
+	inbox, err := s.patchInboxImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -223,7 +223,7 @@ func (s *Store) patchInboxRaw(ctx context.Context, patch *api.InboxPatch) (*inbo
 }
 
 // createInboxImpl creates a new inbox.
-func (s *Store) createInboxImpl(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*inboxRaw, error) {
+func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCreate) (*inboxRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO inbox (
@@ -258,7 +258,7 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *sql.Tx, create *api.Inb
 	return &inboxRaw, nil
 }
 
-func findInboxImpl(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*inboxRaw, error) {
+func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where = append(where, "inbox.activity_id = activity.id")
@@ -329,7 +329,7 @@ func findInboxImpl(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*inb
 }
 
 // patchInboxImpl updates a inbox by ID. Returns the new state of the inbox after update.
-func (s *Store) patchInboxImpl(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*inboxRaw, error) {
+func (s *Store) patchInboxImpl(ctx context.Context, tx *Tx, patch *api.InboxPatch) (*inboxRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"status = $1"}, []interface{}{patch.Status}
 	args = append(args, patch.ID)

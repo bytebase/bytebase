@@ -40,14 +40,14 @@ func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrgan
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	sheetOrganizerRaw, err := upsertSheetOrganizerImpl(ctx, tx.PTx, upsert)
+	sheetOrganizerRaw, err := upsertSheetOrganizerImpl(ctx, tx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -62,9 +62,9 @@ func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizer
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	sheetOrganizerRawlist, err := findSheetOrganizerListImpl(ctx, tx.PTx, find)
+	sheetOrganizerRawlist, err := findSheetOrganizerListImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizer
 	return sheetOrganizer, nil
 }
 
-func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.SheetOrganizerUpsert) (*sheetOrganizerRaw, error) {
+func upsertSheetOrganizerImpl(ctx context.Context, tx *Tx, upsert *api.SheetOrganizerUpsert) (*sheetOrganizerRaw, error) {
 	query := `
 	  INSERT INTO sheet_organizer (
 			sheet_id,
@@ -115,7 +115,7 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.Sheet
 	return &sheetOrganizerRaw, nil
 }
 
-func findSheetOrganizerListImpl(ctx context.Context, tx *sql.Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {
+func findSheetOrganizerListImpl(ctx context.Context, tx *Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("sheet_id = $%d", len(args)+1)), append(args, find.SheetID)
 	where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, find.PrincipalID)

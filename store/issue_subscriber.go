@@ -64,13 +64,13 @@ func (s *Store) DeleteIssueSubscriber(ctx context.Context, delete *api.IssueSubs
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	if err := s.deleteIssueSubscriberImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteIssueSubscriberImpl(ctx, tx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -99,14 +99,14 @@ func (s *Store) createIssueSubscriberRaw(ctx context.Context, create *api.IssueS
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	issueSubscriber, err := createIssueSubscriberImpl(ctx, tx.PTx, create)
+	issueSubscriber, err := createIssueSubscriberImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -119,9 +119,9 @@ func (s *Store) findIssueSubscriberRaw(ctx context.Context, find *api.IssueSubsc
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findIssueSubscriberImpl(ctx, tx.PTx, find)
+	list, err := findIssueSubscriberImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (s *Store) findIssueSubscriberRaw(ctx context.Context, find *api.IssueSubsc
 }
 
 // createIssueSubscriberImpl creates a new issueSubscriber.
-func createIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, create *api.IssueSubscriberCreate) (*issueSubscriberRaw, error) {
+func createIssueSubscriberImpl(ctx context.Context, tx *Tx, create *api.IssueSubscriberCreate) (*issueSubscriberRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO issue_subscriber (
@@ -156,7 +156,7 @@ func createIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, create *api.Issu
 	return &issueSubscriberRaw, nil
 }
 
-func findIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {
+func findIssueSubscriberImpl(ctx context.Context, tx *Tx, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.IssueID; v != nil {
@@ -200,7 +200,7 @@ func findIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, find *api.IssueSub
 }
 
 // deleteIssueSubscriberImpl permanently deletes a issueSubscriber by ID.
-func (*Store) deleteIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, delete *api.IssueSubscriberDelete) error {
+func (*Store) deleteIssueSubscriberImpl(ctx context.Context, tx *Tx, delete *api.IssueSubscriberDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_subscriber WHERE issue_id = $1 AND subscriber_id = $2`, delete.IssueID, delete.SubscriberID); err != nil {
 		return FormatError(err)

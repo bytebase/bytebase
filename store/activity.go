@@ -124,14 +124,14 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	activity, err := createActivityImpl(ctx, tx.PTx, create)
+	activity, err := createActivityImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -144,9 +144,9 @@ func (s *Store) findActivityRaw(ctx context.Context, find *api.ActivityFind) ([]
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findActivityImpl(ctx, tx.PTx, find)
+	list, err := findActivityImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -162,9 +162,9 @@ func (s *Store) getActivityRawByID(ctx context.Context, id int) (*activityRaw, e
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findActivityImpl(ctx, tx.PTx, find)
+	list, err := findActivityImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -184,14 +184,14 @@ func (s *Store) patchActivityRaw(ctx context.Context, patch *api.ActivityPatch) 
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	activity, err := patchActivityImpl(ctx, tx.PTx, patch)
+	activity, err := patchActivityImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -217,7 +217,7 @@ func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Act
 }
 
 // createActivityImpl creates a new activity.
-func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCreate) (*activityRaw, error) {
+func createActivityImpl(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*activityRaw, error) {
 	// Insert row into activity.
 	if create.Payload == "" {
 		create.Payload = "{}"
@@ -264,7 +264,7 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 	return &activityRaw, nil
 }
 
-func findActivityImpl(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) ([]*activityRaw, error) {
+func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*activityRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -339,7 +339,7 @@ func findActivityImpl(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 }
 
 // patchActivityImpl updates a activity by ID. Returns the new state of the activity after update.
-func patchActivityImpl(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch) (*activityRaw, error) {
+func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*activityRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Comment; v != nil {

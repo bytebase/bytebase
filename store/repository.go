@@ -144,13 +144,13 @@ func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDele
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	if err := s.deleteRepositoryImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteRepositoryImpl(ctx, tx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -201,14 +201,14 @@ func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryC
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	repository, err := s.createRepositoryImpl(ctx, tx.PTx, create)
+	repository, err := s.createRepositoryImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -221,9 +221,9 @@ func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findRepositoryImpl(ctx, tx.PTx, find)
+	list, err := findRepositoryImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -238,9 +238,9 @@ func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) 
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findRepositoryImpl(ctx, tx.PTx, find)
+	list, err := findRepositoryImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -260,14 +260,14 @@ func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	repository, err := patchRepositoryImpl(ctx, tx.PTx, patch)
+	repository, err := patchRepositoryImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -275,7 +275,7 @@ func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPat
 }
 
 // createRepositoryImpl creates a new repository.
-func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *api.RepositoryCreate) (*repositoryRaw, error) {
+func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.RepositoryCreate) (*repositoryRaw, error) {
 	// Updates the project workflow_type to "VCS"
 	workflowType := string(api.VCSWorkflow)
 	projectPatch := api.ProjectPatch{
@@ -446,7 +446,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *ap
 	return &repository, nil
 }
 
-func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
+func findRepositoryImpl(ctx context.Context, tx *Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -538,7 +538,7 @@ func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 }
 
 // patchRepositoryImpl updates a repository by ID. Returns the new state of the repository after update.
-func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch) (*repositoryRaw, error) {
+func patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch) (*repositoryRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.BranchFilter; v != nil {
@@ -611,7 +611,7 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 }
 
 // deleteRepositoryImpl permanently deletes a repository by ID.
-func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *sql.Tx, delete *api.RepositoryDelete) error {
+func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *Tx, delete *api.RepositoryDelete) error {
 	// Updates the project workflow_type to "UI"
 	workflowType := string(api.UIWorkflow)
 	projectPatch := api.ProjectPatch{
