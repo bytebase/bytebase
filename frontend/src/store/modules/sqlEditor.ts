@@ -181,6 +181,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     }: Pick<SQLEditorState["connectionContext"], "instanceId" | "databaseId">) {
       const instance = await useInstanceStore().fetchInstanceById(instanceId);
       const database = await useDatabaseStore().fetchDatabaseById(databaseId);
+      await useTableStore().fetchTableListByDatabaseId(database.id);
 
       this.setConnectionContext({
         hasSlug: true,
