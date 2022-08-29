@@ -104,6 +104,16 @@ func TestPGCreateTableSetLine(t *testing.T) {
 func TestMySQLCreateTableSetLine(t *testing.T) {
 	tests := []setLineTestData{
 		{
+			statement:          "CREATE TABLE t as select * from t1",
+			columnLineList:     []int{},
+			constraintLineList: []int{},
+		},
+		{
+			statement:          "CREATE TABLE t like t1",
+			columnLineList:     []int{},
+			constraintLineList: []int{},
+		},
+		{
 			statement: `-- this is the first line.
 			CREATE TABLE t(
 				a int, B int,
