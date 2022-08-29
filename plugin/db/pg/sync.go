@@ -270,7 +270,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	for rows.Next() {
 		var role string
 		var super, inherit, createRole, createDB, canLogin, replication, bypassRLS bool
-		var rolValidUtil sql.NullString
+		var rolValidUntil sql.NullString
 		if err := rows.Scan(
 			&role,
 			&super,
@@ -279,7 +279,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 			&createDB,
 			&canLogin,
 			&replication,
-			&rolValidUtil,
+			&rolValidUntil,
 			&bypassRLS,
 		); err != nil {
 			return nil, err
@@ -304,8 +304,8 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 		if replication {
 			attributes = append(attributes, "Replication")
 		}
-		if rolValidUtil.Valid {
-			attributes = append(attributes, fmt.Sprintf("Password valid until %s", rolValidUtil.String))
+		if rolValidUntil.Valid {
+			attributes = append(attributes, fmt.Sprintf("Password valid until %s", rolValidUntil.String))
 		}
 		if bypassRLS {
 			attributes = append(attributes, "Bypass RLS+")
