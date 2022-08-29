@@ -120,6 +120,9 @@ func getTestPort(testName string) int {
 		"TestSchemaAndDataUpdate",
 		"TestVCS/GitLab",
 		"TestVCS/GitHub",
+		"TestWildcardInVCSFilePathTemplate/singleAsterisk",
+		"TestWildcardInVCSFilePathTemplate/doubleAsterisks",
+		"TestWildcardInVCSFilePathTemplate/mixAsterisks",
 		"TestTenant",
 		"TestTenantVCS/GitLab",
 		"TestTenantVCS/GitHub",
@@ -513,6 +516,24 @@ func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
 	}
 
 	return nil
+}
+
+func (ctl *controller) createEnvrionment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &environmentCreate); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal environment create")
+	}
+
+	body, err := ctl.post("/environment", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	environment := new(api.Environment)
+	if err = jsonapi.UnmarshalPayload(body, environment); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal post project response")
+	}
+	return environment, nil
 }
 
 // getProjects gets the environments.
