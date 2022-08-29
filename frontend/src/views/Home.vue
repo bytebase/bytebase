@@ -3,7 +3,7 @@
     <div class="px-5 py-2 flex justify-between items-center">
       <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
-        :selectedId="state.selectedEnvironment?.id"
+        :selectedId="selectedEnvironment?.id"
         @select-environment="selectEnvironment"
       />
       <BBTableSearch
@@ -12,32 +12,103 @@
         @change-text="(text) => changeSearchText(text)"
       />
     </div>
-    <IssueTable
-      :left-bordered="false"
-      :right-bordered="false"
-      :top-bordered="true"
-      :bottom-bordered="true"
-      :issue-section-list="[
-        {
-          title: $t('common.assigned'),
-          list: filteredList(state.assignedList).sort(openIssueSorter),
-        },
-        {
-          title: $t('common.created'),
-          list: filteredList(state.createdList).sort(openIssueSorter),
-        },
-        {
-          title: $t('common.subscribed'),
-          list: filteredList(state.subscribeList).sort(openIssueSorter),
-        },
-        {
-          title: $t('project.overview.recently-closed'),
-          list: filteredList(state.closedList).sort((a, b) => {
-            return b.updatedTs - a.updatedTs;
-          }),
-        },
-      ]"
-    />
+
+    <!-- show OPEN Assigned issues with pageSize=10 -->
+    <PagedIssueTable
+      :issue-find="{
+        statusList: ['OPEN'],
+        assigneeId: currentUser.id,
+      }"
+      :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
+    >
+      <template #table="{ issueList, loading }">
+        <IssueTable
+          :left-bordered="false"
+          :right-bordered="false"
+          :show-placeholder="!loading"
+          :issue-section-list="[
+            {
+              title: $t('common.assigned'),
+              list: issueList.filter(keywordAndEnvironmentFilter),
+            },
+          ]"
+        />
+      </template>
+    </PagedIssueTable>
+
+    <!-- show OPEN Created issues with pageSize=10 -->
+    <PagedIssueTable
+      :issue-find="{
+        statusList: ['OPEN'],
+        creatorId: currentUser.id,
+      }"
+      :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
+    >
+      <template #table="{ issueList, loading }">
+        <IssueTable
+          class="-mt-px"
+          :left-bordered="false"
+          :right-bordered="false"
+          :show-placeholder="!loading"
+          :issue-section-list="[
+            {
+              title: $t('common.created'),
+              list: issueList.filter(keywordAndEnvironmentFilter),
+            },
+          ]"
+        />
+      </template>
+    </PagedIssueTable>
+
+    <!-- show OPEN Subscribed issues with pageSize=10 -->
+    <PagedIssueTable
+      :issue-find="{
+        statusList: ['OPEN'],
+        subscriberId: currentUser.id,
+      }"
+      :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
+    >
+      <template #table="{ issueList, loading }">
+        <IssueTable
+          class="-mt-px"
+          :left-bordered="false"
+          :right-bordered="false"
+          :show-placeholder="!loading"
+          :issue-section-list="[
+            {
+              title: $t('common.subscribed'),
+              list: issueList.filter(keywordAndEnvironmentFilter),
+            },
+          ]"
+        />
+      </template>
+    </PagedIssueTable>
+
+    <!-- show the first 5 DONE or CANCELED issues -->
+    <!-- But won't show "Load more", since we have a "View all closed" link below -->
+    <PagedIssueTable
+      :issue-find="{
+        statusList: ['DONE', 'CANCELED'],
+        principalId: currentUser.id,
+      }"
+      :page-size="MAX_CLOSED_ISSUE"
+      :hide-load-more="true"
+    >
+      <template #table="{ issueList, loading }">
+        <IssueTable
+          class="-mt-px"
+          :left-bordered="false"
+          :right-bordered="false"
+          :show-placeholder="!loading"
+          :issue-section-list="[
+            {
+              title: $t('project.overview.recently-closed'),
+              list: issueList.filter(keywordAndEnvironmentFilter),
+            },
+          ]"
+        />
+      </template>
+    </PagedIssueTable>
   </div>
   <router-link
     to="/issue?status=closed"
@@ -47,178 +118,82 @@
   </router-link>
 </template>
 
-<script lang="ts">
-import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
-import { useRouter } from "vue-router";
+<script lang="ts" setup>
+import { onMounted, reactive, ref, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
-import { activeEnvironment, activeTask } from "../utils";
-import { Environment, Issue, TaskStatus, UNKNOWN_ID } from "../types";
-import { useCurrentUser, useEnvironmentStore, useIssueStore } from "@/store";
-
-// Show at most 10 recently closed issues
-const MAX_CLOSED_ISSUE_COUNT = 10;
+import { activeEnvironment } from "../utils";
+import { Environment, Issue } from "../types";
+import { useCurrentUser, useEnvironmentStore } from "@/store";
+import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
 interface LocalState {
-  createdList: Issue[];
-  assignedList: Issue[];
-  subscribeList: Issue[];
-  closedList: Issue[];
   searchText: string;
-  selectedEnvironment?: Environment;
 }
 
-export default defineComponent({
-  name: "HomePage",
-  components: {
-    EnvironmentTabFilter,
-    IssueTable,
-  },
-  setup() {
-    const searchField = ref();
+const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
+const MAX_CLOSED_ISSUE = 5;
 
-    const issueStore = useIssueStore();
-    const router = useRouter();
+const searchField = ref();
 
-    const state = reactive<LocalState>({
-      createdList: [],
-      assignedList: [],
-      subscribeList: [],
-      closedList: [],
-      searchText: "",
-      selectedEnvironment: router.currentRoute.value.query.environment
-        ? useEnvironmentStore().getEnvironmentById(
-            parseInt(router.currentRoute.value.query.environment as string, 10)
-          )
-        : undefined,
+const environmentStore = useEnvironmentStore();
+const router = useRouter();
+const route = useRoute();
+
+const state = reactive<LocalState>({
+  searchText: "",
+});
+
+const currentUser = useCurrentUser();
+
+const selectedEnvironment = computed(() => {
+  const { environment } = route.query;
+  return environment
+    ? environmentStore.getEnvironmentById(parseInt(environment as string, 10))
+    : undefined;
+});
+
+const keywordAndEnvironmentFilter = (issue: Issue) => {
+  if (selectedEnvironment.value) {
+    if (activeEnvironment(issue.pipeline).id !== selectedEnvironment.value.id) {
+      return false;
+    }
+  }
+  const keyword = state.searchText.trim();
+  if (keyword) {
+    if (!issue.name.toLowerCase().includes(keyword)) {
+      return false;
+    }
+  }
+  return true;
+};
+const selectEnvironment = (environment: Environment) => {
+  if (environment) {
+    router.replace({
+      name: "workspace.home",
+      query: {
+        ...route.query,
+        environment: environment.id,
+      },
     });
-
-    const currentUser = useCurrentUser();
-
-    onMounted(() => {
-      // Focus on the internal search field when mounted
-      searchField.value.$el.querySelector("#search").focus();
+  } else {
+    router.replace({
+      name: "workspace.home",
+      query: {
+        ...route.query,
+        environment: undefined,
+      },
     });
+  }
+};
 
-    const prepareIssueList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        issueStore
-          .fetchIssueList({
-            issueStatusList: ["OPEN"],
-            userId: currentUser.value.id,
-          })
-          .then((issueList: Issue[]) => {
-            state.assignedList = [];
-            state.createdList = [];
-            state.subscribeList = [];
-            for (const issue of issueList) {
-              if (issue.assignee?.id === currentUser.value.id) {
-                state.assignedList.push(issue);
-              } else if (issue.creator.id === currentUser.value.id) {
-                state.createdList.push(issue);
-              } else if (
-                issue.subscriberList &&
-                issue.subscriberList
-                  .map((subscriber) => subscriber.id)
-                  .includes(currentUser.value.id)
-              ) {
-                state.subscribeList.push(issue);
-              }
-            }
-          });
+const changeSearchText = (searchText: string) => {
+  state.searchText = searchText;
+};
 
-        issueStore
-          .fetchIssueList({
-            issueStatusList: ["DONE", "CANCELED"],
-            userId: currentUser.value.id,
-            limit: MAX_CLOSED_ISSUE_COUNT,
-          })
-          .then((issueList: Issue[]) => {
-            state.closedList = [];
-            for (const issue of issueList) {
-              if (
-                issue.creator.id === currentUser.value.id ||
-                issue.assignee?.id === currentUser.value.id ||
-                (issue.subscriberList &&
-                  issue.subscriberList
-                    .map((subscriber) => subscriber.id)
-                    .includes(currentUser.value.id))
-              ) {
-                state.closedList.push(issue);
-              }
-            }
-          });
-      }
-    };
-
-    watchEffect(prepareIssueList);
-
-    const selectEnvironment = (environment: Environment) => {
-      state.selectedEnvironment = environment;
-      if (environment) {
-        router.replace({
-          name: "workspace.home",
-          query: { environment: environment.id },
-        });
-      } else {
-        router.replace({ name: "workspace.home" });
-      }
-    };
-
-    const changeSearchText = (searchText: string) => {
-      state.searchText = searchText;
-    };
-
-    const filteredList = (list: Issue[]) => {
-      if (!state.selectedEnvironment && !state.searchText) {
-        // Select "All"
-        return list;
-      }
-      return list.filter((issue) => {
-        return (
-          (!state.selectedEnvironment ||
-            activeEnvironment(issue.pipeline).id ===
-              state.selectedEnvironment.id) &&
-          (!state.searchText ||
-            issue.name.toLowerCase().includes(state.searchText.toLowerCase()))
-        );
-      });
-    };
-
-    const openIssueSorter = (a: Issue, b: Issue) => {
-      const statusOrder = (status: TaskStatus) => {
-        switch (status) {
-          case "FAILED":
-            return 0;
-          case "PENDING_APPROVAL":
-            return 1;
-          case "PENDING":
-            return 2;
-          case "RUNNING":
-            return 3;
-          case "DONE":
-            return 4;
-          case "CANCELED":
-            return 5;
-        }
-      };
-      const aStatusOrder = statusOrder(activeTask(a.pipeline).status);
-      const bStatusOrder = statusOrder(activeTask(b.pipeline).status);
-      if (aStatusOrder == bStatusOrder) {
-        return b.updatedTs - a.updatedTs;
-      }
-      return aStatusOrder - bStatusOrder;
-    };
-
-    return {
-      searchField,
-      state,
-      filteredList,
-      selectEnvironment,
-      changeSearchText,
-      openIssueSorter,
-    };
-  },
+onMounted(() => {
+  // Focus on the internal search field when mounted
+  searchField.value.$el.querySelector("#search").focus();
 });
 </script>
