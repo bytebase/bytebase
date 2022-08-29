@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // NewTaskCheckScheduler creates a task check scheduler.
@@ -300,10 +299,7 @@ func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	}
 }
 func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
-	switch database.Instance.Engine {
-	case db.Postgres:
-	case db.MySQL, db.TiDB:
-	default:
+	if !api.IsStatementTypeCheckSupported(database.Instance.Engine) {
 		return nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
