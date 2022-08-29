@@ -149,14 +149,14 @@ func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRa
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	vcs, err := createVCSImpl(ctx, tx.PTx, create)
+	vcs, err := createVCSImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -169,9 +169,9 @@ func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, e
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findVCSImpl(ctx, tx.PTx, find)
+	list, err := findVCSImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -186,12 +186,12 @@ func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
 	find := &api.VCSFind{
 		ID: &id,
 	}
-	list, err := findVCSImpl(ctx, tx.PTx, find)
+	list, err := findVCSImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -211,14 +211,14 @@ func (s *Store) patchVCSRaw(ctx context.Context, patch *api.VCSPatch) (*vcsRaw, 
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	vcs, err := patchVCSImpl(ctx, tx.PTx, patch)
+	vcs, err := patchVCSImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -231,13 +231,13 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	if err := s.deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteVCSImpl(ctx, tx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -249,7 +249,7 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 //
 
 // createVCSImpl creates a new vcs.
-func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcsRaw, error) {
+func createVCSImpl(ctx context.Context, tx *Tx, create *api.VCSCreate) (*vcsRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO vcs (
@@ -296,7 +296,7 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 	return &vcs, nil
 }
 
-func findVCSImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*vcsRaw, error) {
+func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -355,7 +355,7 @@ func findVCSImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*vcsRaw,
 }
 
 // patchVCSImpl updates a vcs by ID. Returns the new state of the vcs after update.
-func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw, error) {
+func patchVCSImpl(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*vcsRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
@@ -400,7 +400,7 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 }
 
 // deleteVCSImpl permanently deletes a vcs by ID.
-func (*Store) deleteVCSImpl(ctx context.Context, tx *sql.Tx, delete *api.VCSDelete) error {
+func (*Store) deleteVCSImpl(ctx context.Context, tx *Tx, delete *api.VCSDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

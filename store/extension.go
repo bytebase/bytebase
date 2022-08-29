@@ -85,9 +85,9 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	oldDBExtensionRawList, err := s.findDBExtensionImpl(ctx, tx.PTx, &api.DBExtensionFind{
+	oldDBExtensionRawList, err := s.findDBExtensionImpl(ctx, tx, &api.DBExtensionFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -96,17 +96,17 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 
 	deletes, creates := generateDBExtensionActions(oldDBExtensionRawList, schema.ExtensionList, databaseID)
 	for _, d := range deletes {
-		if err := s.deleteDBExtensionImpl(ctx, tx.PTx, d); err != nil {
+		if err := s.deleteDBExtensionImpl(ctx, tx, d); err != nil {
 			return err
 		}
 	}
 	for _, c := range creates {
-		if _, err := s.createDBExtensionImpl(ctx, tx.PTx, c); err != nil {
+		if _, err := s.createDBExtensionImpl(ctx, tx, c); err != nil {
 			return err
 		}
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -186,9 +186,9 @@ func (s *Store) findDBExtensionRaw(ctx context.Context, find *api.DBExtensionFin
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findDBExtensionImpl(ctx, tx.PTx, find)
+	list, err := s.findDBExtensionImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (s *Store) findDBExtensionRaw(ctx context.Context, find *api.DBExtensionFin
 }
 
 // createDBExtensionImpl creates a new DBExtension.
-func (*Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
+func (*Store) createDBExtensionImpl(ctx context.Context, tx *Tx, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
 	// Insert row into db_extension.
 	query := `
 		INSERT INTO db_extension (
@@ -245,7 +245,7 @@ func (*Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *api
 	return &dbExtensionRaw, nil
 }
 
-func (*Store) findDBExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {
+func (*Store) findDBExtensionImpl(ctx context.Context, tx *Tx, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -306,7 +306,7 @@ func (*Store) findDBExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.DBE
 }
 
 // deleteDBExtensionImpl permanently deletes DBExtensions from a database.
-func (*Store) deleteDBExtensionImpl(ctx context.Context, tx *sql.Tx, delete *api.DBExtensionDelete) error {
+func (*Store) deleteDBExtensionImpl(ctx context.Context, tx *Tx, delete *api.DBExtensionDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM db_extension WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

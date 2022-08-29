@@ -121,14 +121,14 @@ func (s *Store) createBookmarkRaw(ctx context.Context, create *api.BookmarkCreat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	bookmark, err := createBookmarkImpl(ctx, tx.PTx, create)
+	bookmark, err := createBookmarkImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -141,9 +141,9 @@ func (s *Store) findBookmarkRaw(ctx context.Context, find *api.BookmarkFind) ([]
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findBookmarkImpl(ctx, tx.PTx, find)
+	list, err := findBookmarkImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +158,9 @@ func (s *Store) getBookmarkRaw(ctx context.Context, find *api.BookmarkFind) (*bo
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	bookmarkRawList, err := findBookmarkImpl(ctx, tx.PTx, find)
+	bookmarkRawList, err := findBookmarkImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -180,13 +180,13 @@ func (s *Store) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) 
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	if err := s.deleteBookmarkImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteBookmarkImpl(ctx, tx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -194,7 +194,7 @@ func (s *Store) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) 
 }
 
 // createBookmarkImpl creates a new bookmark.
-func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*bookmarkRaw, error) {
+func createBookmarkImpl(ctx context.Context, tx *Tx, create *api.BookmarkCreate) (*bookmarkRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO bookmark (
@@ -229,7 +229,7 @@ func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCre
 	return &bookmarkRaw, nil
 }
 
-func findBookmarkImpl(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
+func findBookmarkImpl(ctx context.Context, tx *Tx, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -283,7 +283,7 @@ func findBookmarkImpl(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 }
 
 // deleteBookmarkImpl permanently deletes a bookmark by ID.
-func (*Store) deleteBookmarkImpl(ctx context.Context, tx *sql.Tx, delete *api.BookmarkDelete) error {
+func (*Store) deleteBookmarkImpl(ctx context.Context, tx *Tx, delete *api.BookmarkDelete) error {
 	// Remove row from database.
 	result, err := tx.ExecContext(ctx, `DELETE FROM bookmark WHERE id = $1`, delete.ID)
 	if err != nil {
