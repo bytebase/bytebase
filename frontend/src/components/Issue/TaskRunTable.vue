@@ -10,6 +10,7 @@
     <template
       #body="{ rowData: { task, taskRun } }: { rowData: MergedTaskRunItem }"
     >
+      <!-- Status icon -->
       <BBTableCell :left-padding="4" class="table-cell w-4">
         <div class="flex flex-row space-x-2">
           <div
@@ -39,6 +40,7 @@
           </div>
         </div>
       </BBTableCell>
+      <!-- Comment message -->
       <BBTableCell class="table-cell w-36 whitespace-pre-wrap break-words">
         {{ comment(taskRun) }}
         <template v-if="commentLink(task, taskRun).link">
@@ -49,21 +51,11 @@
           >
         </template>
       </BBTableCell>
-      <BBTableCell class="table-cell w-12">
-        <div class="flex flex-row items-center space-x-2">
-          <PrincipalAvatar :principal="taskRun.creator" :size="'SMALL'" />
-          <div class="flex flex-col">
-            <div class="flex flex-row items-center space-x-2">
-              <router-link :to="`/u/${taskRun.creator.id}`">{{
-                taskRun.creator.name
-              }}</router-link>
-            </div>
-          </div>
-        </div>
-      </BBTableCell>
+      <!-- Started -->
       <BBTableCell class="table-cell w-12">{{
         humanizeTs(taskRun.createdTs)
       }}</BBTableCell>
+      <!-- Ended -->
       <BBTableCell class="table-cell w-12">{{
         humanizeTs(taskRun.updatedTs)
       }}</BBTableCell>
@@ -104,9 +96,6 @@ const columnList = computed((): BBTableColumn[] => [
   },
   {
     title: t("task.comment"),
-  },
-  {
-    title: t("task.invoker"),
   },
   {
     title: t("task.started"),
