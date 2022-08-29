@@ -556,6 +556,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
 		vcsType             vcs.Type
+		baseDirectory       string
 		envName             string
 		filePathTemplate    string
 		commitFileNames     []string
@@ -567,6 +568,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			name:               "singleAsterisk",
 			vcsProviderCreator: fake.NewGitLab,
 			vcsType:            vcs.GitLabSelfHost,
+			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
@@ -607,6 +609,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			name:               "doubleAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
 			vcsType:            vcs.GitLabSelfHost,
+			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
@@ -648,9 +651,52 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			},
 		},
 		{
+			name:               "emptyBaseAndMixAsterisks",
+			vcsProviderCreator: fake.NewGitLab,
+			envName:            "wildcard",
+			baseDirectory:      "",
+			vcsType:            vcs.GitLabSelfHost,
+			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			commitFileNames: []string{
+				// ** matches foo, foo matches foo, * matches bar
+				fmt.Sprintf("%s/foo/foo/bar/%s__ver1__migrate__create_table_t1.sql", "wildcard", dbName),
+				// ** matches foo/bar/foo, foo matches foo, * matches bar
+				fmt.Sprintf("%s/foo/bar/foo/foo/bar/%s__ver2__migrate__create_table_t2.sql", "wildcard", dbName),
+				// cannot match
+				fmt.Sprintf("%s/%s__ver3__migrate__create_table_t3.sql", "wildcard", dbName),
+			},
+			commitContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"CREATE TABLE t2 (id INT);",
+				"CREATE TABLE t3 (id INT);",
+			},
+			expect: []bool{
+				true,
+				true,
+				false,
+			},
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		// We test the combination of ** and *, and the place holder is not fully represented by the ascii character set.
+		{
 			name:               "mixAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "生产",
+			baseDirectory:      "bbtest",
 			vcsType:            vcs.GitLabSelfHost,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
