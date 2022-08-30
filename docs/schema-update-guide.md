@@ -36,3 +36,5 @@ Releaser should take the following steps for schema update release, at most once
 1. Move DDLs to be released from `dev` to `release/1.6`. Rename DDL SQL file prefixes in sure the prefixes are in consecutively increasing order starting from `0000`.
 2. Update `prod/LATEST.sql` and `prod/LATEST_DATA.sql` w.r.t. DDLs to be released. (TODO: auto-generate the latest schema)
 3. Copy over Dev Demo data to Prod Demo directory for the changes to be released.
+
+For DML file release, we don't need to bump up the minor version because the database schema does not change. We can move the file to the current schema release directory and rename it by following the format above. See [this example](https://github.com/bytebase/bytebase/pull/2439).
