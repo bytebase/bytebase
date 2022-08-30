@@ -544,10 +544,32 @@ func isMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
 // "abc**" and "?**/" will break the rule2.
 func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes int) error {
 	base := strings.Repeat(`\*`, asteriskTimes)
-	str := fmt.Sprintf(`([^\/\*]+%s)|(%s[^\/\*]+)|(^(%s))|((%s)$)`, base, base, base, base)
-	re := regexp.MustCompile(str)
-	if re.MatchString(pathTemplate) {
-		return errors.Errorf("path template %s contains invalid %d asterisks", pathTemplate, asteriskTimes)
+	rs := []struct {
+		regex  string
+		errmsg string
+	}{
+		{
+			regex:  fmt.Sprintf(`([^\/\*]+%s)`, base),
+			errmsg: `In path template, * can only follow / or *`,
+		},
+		{
+			regex:  fmt.Sprintf(`(%s[^\/\*]+)`, base),
+			errmsg: `In path template, only / or * can be followed by *`,
+		},
+		{
+			regex:  fmt.Sprintf(`(^(%s))`, base),
+			errmsg: fmt.Sprintf(`path template %s contains consecutive asterisks at the beginning`, pathTemplate),
+		},
+		{
+			regex:  fmt.Sprintf(`((%s)$)`, base),
+			errmsg: fmt.Sprintf(`path template %s contains consecutive asterisks at the end`, pathTemplate),
+		},
+	}
+	for _, rs := range rs {
+		re := regexp.MustCompile(rs.regex)
+		if re.MatchString(pathTemplate) {
+			return errors.New(rs.errmsg)
+		}
 	}
 	return nil
 }
