@@ -2,9 +2,12 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  bin = "./.air/bytebase --port 8080 --frontend-port 3000 --data ."
+  bin = "./.air/bytebase --port 8080 --frontend-port 3000 --data . --debug"
+  ## Use --tags "store.db" to enable SQL query logging against our metadata db.
   cmd = """
-  go build -gcflags=all=\"-N -l\" \
+  go build \
+  --tags "" \
+  -gcflags=all=\"-N -l\" \
   -ldflags " \
   -X 'github.com/bytebase/bytebase/bin/server/cmd.version=development' \
   -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=$(go version)' \
