@@ -47,6 +47,7 @@ const (
 	ColumnCanNotNull             Code = 402
 	ChangeColumnType             Code = 403
 	NotNullColumnWithNullDefault Code = 404
+	ColumnNotExists              Code = 405
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
