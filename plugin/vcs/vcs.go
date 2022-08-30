@@ -2,8 +2,13 @@ package vcs
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/common"
 )
@@ -254,4 +259,78 @@ func Get(vcsType Type, providerConfig ProviderConfig) Provider {
 	}
 
 	return f(providerConfig)
+}
+
+// IsAsterisksInTemplateValid checks if the pathTemplate is valid about asterisk.
+// Fow now, our rules are:
+// 1. Support two asterisks at most.
+// 2. Both ends of consecutive asterisks just can be '/'.
+// 3. Consecutive asterisks cannot be placed at the beginning or end.
+func IsAsterisksInTemplateValid(pathTemplate string) error {
+	const maxAsteriskNum = 2
+	if err := isMaxConsecutiveAsteriskValid(pathTemplate, maxAsteriskNum); err != nil {
+		return err
+	}
+	if err := isSingleAsteriskInTemplateValid(pathTemplate); err != nil {
+		return err
+	}
+	return isDoubleAsteriskInTemplateValid(pathTemplate)
+}
+
+// isSingleAsteriskInTemplateValid checks whether the single in file path template is valid.
+func isSingleAsteriskInTemplateValid(pathTemplate string) error {
+	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 1)
+}
+
+// isDoubleAsteriskInTemplateValid checks whether the consecutive double asterisks in file path template is valid.
+func isDoubleAsteriskInTemplateValid(pathTemplate string) error {
+	return isMultipleTimesAsteriskInTemplateValid(pathTemplate, 2)
+}
+
+// isMaxConsecutiveAsteriskValid returns true if the pathTemplate contains `n` consecutive asterisk at most.
+func isMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
+	re := regexp.MustCompile(strings.Repeat(`\*`, n+1))
+	if re.MatchString(pathTemplate) {
+		return errors.Errorf("path template %s contains more than %d asterisk", pathTemplate, n)
+	}
+	return nil
+}
+
+// isMultipleTimesAsteriskInTemplateValid checks whether the consecutive asterisks in file path template is valid.
+// The rules are（）:
+// 1. Consecutive asterisks cannot be placed at the beginning or end.
+// 2. Both ends of consecutive asterisks just can be * or /.
+// Take asteriskTimes = 2 as an example:
+// "**/test" and "test/**" will break the rule1.
+// "abc**" and "?**/" will break the rule2.
+func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes int) error {
+	base := strings.Repeat(`\*`, asteriskTimes)
+	rs := []struct {
+		regex  string
+		errmsg string
+	}{
+		{
+			regex:  fmt.Sprintf(`([^\/\*]+%s)`, base),
+			errmsg: `In path template, * can only be preceded by another / or *`,
+		},
+		{
+			regex:  fmt.Sprintf(`(%s[^\/\*]+)`, base),
+			errmsg: `In path template, only / or * can be followed by *`,
+		},
+		{
+			regex:  fmt.Sprintf(`(^(%s))`, base),
+			errmsg: fmt.Sprintf(`path template %s contains consecutive asterisks at the beginning`, pathTemplate),
+		},
+		{
+			regex:  fmt.Sprintf(`((%s)$)`, base),
+			errmsg: fmt.Sprintf(`path template %s contains consecutive asterisks at the end`, pathTemplate),
+		},
+	}
+	for _, rs := range rs {
+		re := regexp.MustCompile(rs.regex)
+		if re.MatchString(pathTemplate) {
+			return errors.New(rs.errmsg)
+		}
+	}
+	return nil
 }
