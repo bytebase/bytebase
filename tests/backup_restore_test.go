@@ -391,7 +391,7 @@ func TestPITR(t *testing.T) {
 		log.Debug("Second PITR done.")
 	})
 
-	t.Run("Restore To New Database In Another Instance", func(t *testing.T) {
+	t.Run("New Database", func(t *testing.T) {
 		port := getTestPort(t.Name())
 		sourceMySQLDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
 		defer cleanFn()
@@ -427,7 +427,7 @@ func TestPITR(t *testing.T) {
 		labels, err := marshalLabels(nil, dstInstance.Environment.Name)
 		a.NoError(err)
 
-		targetDatabaseName := "new_database"
+		targetDatabaseName := "New_database"
 		pitrIssueCtx, err := json.Marshal(&api.PITRContext{
 			DatabaseID:    database.ID,
 			PointInTimeTs: &targetTs,
