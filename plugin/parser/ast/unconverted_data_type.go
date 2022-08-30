@@ -5,4 +5,6 @@ package ast
 // We define this because we can not convert all data types now.
 type UnconvertedDataType struct {
 	dataType
+
+	Name []string
 }

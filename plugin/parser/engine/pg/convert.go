@@ -784,8 +784,7 @@ func stripPgCatalogPrefix(tp *pgquery.TypeName) *pgquery.TypeName {
 
 func convertDataType(tp *pgquery.TypeName) (ast.DataType, []*ast.ConstraintDef) {
 	tp = stripPgCatalogPrefix(tp)
-	switch len(tp.Names) {
-	case 1:
+	if len(tp.Names) == 1 {
 		name, ok := tp.Names[0].Node.(*pgquery.Node_String_)
 		if !ok {
 			return &ast.UnconvertedDataType{}, nil
@@ -795,13 +794,13 @@ func convertDataType(tp *pgquery.TypeName) (ast.DataType, []*ast.ConstraintDef) 
 		case strings.HasPrefix(s, "int"):
 			size, err := strconv.Atoi(s[3:])
 			if err != nil {
-				return &ast.UnconvertedDataType{}, nil
+				return convertToUnconvertedDataType(tp), nil
 			}
 			return &ast.Integer{Size: size}, nil
 		case strings.HasPrefix(s, "float"):
 			size, err := strconv.Atoi(s[5:])
 			if err != nil {
-				return &ast.UnconvertedDataType{}, nil
+				return convertToUnconvertedDataType(tp), nil
 			}
 			return &ast.Float{Size: size}, nil
 		case s == "serial":
@@ -813,16 +812,26 @@ func convertDataType(tp *pgquery.TypeName) (ast.DataType, []*ast.ConstraintDef) 
 		case strings.HasPrefix(s, "serial"):
 			size, err := strconv.Atoi(s[6:])
 			if err != nil {
-				return &ast.UnconvertedDataType{}, nil
+				return convertToUnconvertedDataType(tp), nil
 			}
 			return &ast.Integer{Size: size}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
 		case s == "numeric":
 			return convertToDecimal(tp.Typmods), nil
 		}
-	default:
-		return &ast.UnconvertedDataType{}, nil
 	}
-	return &ast.UnconvertedDataType{}, nil
+	return convertToUnconvertedDataType(tp), nil
+}
+
+func convertToUnconvertedDataType(tp *pgquery.TypeName) ast.DataType {
+	res := &ast.UnconvertedDataType{}
+	for _, name := range tp.Names {
+		s, ok := name.Node.(*pgquery.Node_String_)
+		if !ok {
+			return &ast.UnconvertedDataType{}
+		}
+		res.Name = append(res.Name, s.String_.Str)
+	}
+	return res
 }
 
 func convertToDecimal(typmods []*pgquery.Node) ast.DataType {
