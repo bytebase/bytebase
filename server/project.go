@@ -414,16 +414,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
-		expectBaseDirectory := repo.BaseDirectory
-		expectFilePathTemplate := repo.FilePathTemplate
+		newBaseDirectory, newFilePathTemplate := repo.BaseDirectory, repo.FilePathTemplate
 		if repoPatch.BaseDirectory != nil {
-			expectBaseDirectory = *repoPatch.BaseDirectory
+			newBaseDirectory = *repoPatch.BaseDirectory
 		}
 		if repoPatch.FilePathTemplate != nil {
-			expectFilePathTemplate = *repoPatch.FilePathTemplate
+			newFilePathTemplate = *repoPatch.FilePathTemplate
 		}
 
-		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(expectBaseDirectory, expectFilePathTemplate)); err != nil {
+		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
 		}
 
