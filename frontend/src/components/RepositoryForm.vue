@@ -211,7 +211,7 @@ const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
 const FILE_OPTIONAL_FOLDER_WILDCARD = "*, **";
 const SINGLE_ASTERISK_REGEX = /\/\*\//g;
-const DOUBLE_ASTERISK_REGEX = /\/\*\*\//g;
+const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -292,10 +292,8 @@ export default defineComponent({
       let result = `${baseDirectory}/${filePathTemplate}`;
 
       // To replace the wildcard.
-      const replaceSingleAsterisk = new RegExp("\\/\\*\\/", "g");
-      result = result.replace(replaceSingleAsterisk, "/foo/");
-      const replaceDoubleAsterisks = new RegExp("\\/\\*\\*\\/", "g");
-      result = result.replace(replaceDoubleAsterisks, "/foo/bar/");
+      result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
+      result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
 
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
