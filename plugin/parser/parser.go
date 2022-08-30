@@ -66,8 +66,8 @@ func Parse(engineType EngineType, ctx ParseContext, statement string) ([]ast.Nod
 	return p.Parse(ctx, statement)
 }
 
-// Restore restores the statement from node(AST).
-func Restore(engineType EngineType, ctx DeparseContext, node ast.Node) (string, error) {
+// Deparse deparses the statement from node(AST).
+func Deparse(engineType EngineType, ctx DeparseContext, node ast.Node) (string, error) {
 	parserMu.RLock()
 	p, ok := parsers[engineType]
 	parserMu.RUnlock()
