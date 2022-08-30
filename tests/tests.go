@@ -532,7 +532,7 @@ func (ctl *controller) createEnvrionment(environmentCreate api.EnvironmentCreate
 
 	environment := new(api.Environment)
 	if err = jsonapi.UnmarshalPayload(body, environment); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal post project response")
+		return nil, errors.Wrap(err, "failed to unmarshal post project response")
 	}
 	return environment, nil
 }
