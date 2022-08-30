@@ -243,6 +243,10 @@ type MigrationInfo struct {
 	Force bool
 }
 
+// PlaceHolderRegexp is the regexp for placeholder.
+// Refer to https://stackoverflow.com/a/6222235/19075342, but we support '.' for now.
+const PlaceHolderRegexp = `[^\\/?%*:|"<>]+`
+
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
 // Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
@@ -265,9 +269,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 
 	for _, placeholder := range placeholderList {
-		// https://stackoverflow.com/a/6222235/19075342
-		// But we support '.' for now.
-		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, `[^\\/?%*:|"<>]+`))
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, PlaceHolderRegexp))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
@@ -546,6 +548,15 @@ func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes i
 	re := regexp.MustCompile(str)
 	if re.MatchString(pathTemplate) {
 		return errors.Errorf("path template %s contains invalid %d asterisks", pathTemplate, asteriskTimes)
+	}
+	return nil
+}
+
+// IsPlaceHolderValid checks if the placeHolder is valid.
+func IsPlaceHolderValid(placeHolder string) error {
+	re := regexp.MustCompile(PlaceHolderRegexp)
+	if !re.MatchString(placeHolder) {
+		return errors.Errorf("placeholder %s is invalid", placeHolder)
 	}
 	return nil
 }

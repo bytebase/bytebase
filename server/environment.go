@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
@@ -23,6 +24,10 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		envCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+
+		if err := db.IsPlaceHolderValid(envCreate.Name); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
+		}
 
 		env, err := s.store.CreateEnvironment(ctx, envCreate)
 		if err != nil {
@@ -71,6 +76,12 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, envPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch environment request").SetInternal(err)
+		}
+
+		if v := envPatch.Name; v != nil {
+			if err := db.IsPlaceHolderValid(*v); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
+			}
 		}
 
 		// Ensure the environment has no instance before it's archived.
