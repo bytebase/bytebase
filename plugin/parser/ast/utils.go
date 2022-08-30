@@ -41,6 +41,9 @@ func Walk(v Visitor, node Node) {
 			Walk(v, n.Column)
 		}
 	case *ColumnDef:
+		if n.Type != nil {
+			Walk(v, n.Type)
+		}
 		for _, cons := range n.ConstraintList {
 			Walk(v, cons)
 		}

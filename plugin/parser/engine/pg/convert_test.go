@@ -51,6 +51,179 @@ func runTests(t *testing.T, tests []testData) {
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: `CREATE TABLE tech_book(
+				a smallint,
+				b integer,
+				c bigint,
+				d decimal(10, 2),
+				e numeric(4),
+				f real,
+				g double precision,
+				h smallserial,
+				i serial,
+				j bigserial,
+				k int8,
+				l serial8,
+				m float8,
+				n int,
+				o int4,
+				p float4,
+				q int2,
+				r serial2,
+				s serial4,
+				t decimal)`,
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					IfNotExists: false,
+					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							Type:       &ast.Integer{Size: 2},
+						},
+						{
+							ColumnName: "b",
+							Type:       &ast.Integer{Size: 4},
+						},
+						{
+							ColumnName: "c",
+							Type:       &ast.Integer{Size: 8},
+						},
+						{
+							ColumnName: "d",
+							Type:       &ast.Decimal{Precision: 10, Scale: 2},
+						},
+						{
+							ColumnName: "e",
+							Type:       &ast.Decimal{Precision: 4, Scale: 0},
+						},
+						{
+							ColumnName: "f",
+							Type:       &ast.Float{Size: 4},
+						},
+						{
+							ColumnName: "g",
+							Type:       &ast.Float{Size: 8},
+						},
+						{
+							ColumnName: "h",
+							Type:       &ast.Integer{Size: 2},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type: ast.ConstraintTypeNotNull,
+								},
+							},
+						},
+						{
+							ColumnName: "i",
+							Type:       &ast.Integer{Size: 4},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type: ast.ConstraintTypeNotNull,
+								},
+							},
+						},
+						{
+							ColumnName: "j",
+							Type:       &ast.Integer{Size: 8},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type: ast.ConstraintTypeNotNull,
+								},
+							},
+						},
+						{
+							ColumnName: "k",
+							Type:       &ast.Integer{Size: 8},
+						},
+						{
+							ColumnName: "l",
+							Type:       &ast.Integer{Size: 8},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type: ast.ConstraintTypeNotNull,
+								},
+							},
+						},
+						{
+							ColumnName: "m",
+							Type:       &ast.Float{Size: 8},
+						},
+						{
+							ColumnName: "n",
+							Type:       &ast.Integer{Size: 4},
+						},
+						{
+							ColumnName: "o",
+							Type:       &ast.Integer{Size: 4},
+						},
+						{
+							ColumnName: "p",
+							Type:       &ast.Float{Size: 4},
+						},
+						{
+							ColumnName: "q",
+							Type:       &ast.Integer{Size: 2},
+						},
+						{
+							ColumnName: "r",
+							Type:       &ast.Integer{Size: 2},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type: ast.ConstraintTypeNotNull,
+								},
+							},
+						},
+						{
+							ColumnName: "s",
+							Type:       &ast.Integer{Size: 4},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type: ast.ConstraintTypeNotNull,
+								},
+							},
+						},
+						{
+							ColumnName: "t",
+							Type:       &ast.Decimal{Precision: 0, Scale: 0},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE TABLE tech_book(
+				a smallint,
+				b integer,
+				c bigint,
+				d decimal(10, 2),
+				e numeric(4),
+				f real,
+				g double precision,
+				h smallserial,
+				i serial,
+				j bigserial,
+				k int8,
+				l serial8,
+				m float8,
+				n int,
+				o int4,
+				p float4,
+				q int2,
+				r serial2,
+				s serial4,
+				t decimal)`,
+					Line: 1,
+				},
+			},
+			columnLine: [][]int{
+				{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21},
+			},
+		},
+		{
 			stmt: "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
 			want: []ast.Node{
 				&ast.CreateTableStmt{
@@ -62,6 +235,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					ColumnList: []*ast.ColumnDef{
 						{
 							ColumnName: "a",
+							Type:       &ast.Integer{Size: 4},
 							ConstraintList: []*ast.ConstraintDef{
 								{
 									Type:    ast.ConstraintTypeNotNull,
@@ -71,6 +245,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "b",
+							Type:       &ast.Integer{Size: 4},
 							ConstraintList: []*ast.ConstraintDef{
 								{
 									Type:    ast.ConstraintTypeNotNull,
@@ -102,8 +277,14 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						Name: "techbook",
 					},
 					ColumnList: []*ast.ColumnDef{
-						{ColumnName: "A"},
-						{ColumnName: "b"},
+						{
+							ColumnName: "A",
+							Type:       &ast.Integer{Size: 4},
+						},
+						{
+							ColumnName: "b",
+							Type:       &ast.Integer{Size: 4},
+						},
 					},
 				},
 			},
@@ -128,6 +309,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					ColumnList: []*ast.ColumnDef{
 						{
 							ColumnName: "a",
+							Type:       &ast.Integer{Size: 4},
 							ConstraintList: []*ast.ConstraintDef{
 								{
 									Name:    "t_pk_a",
@@ -160,9 +342,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					ColumnList: []*ast.ColumnDef{
 						{
 							ColumnName: "a",
+							Type:       &ast.Integer{Size: 4},
 						},
 						{
 							ColumnName: "b",
+							Type:       &ast.Integer{Size: 4},
 							ConstraintList: []*ast.ConstraintDef{
 								{
 									Name:    "uk_b",
@@ -205,6 +389,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					ColumnList: []*ast.ColumnDef{
 						{
 							ColumnName: "a",
+							Type:       &ast.Integer{Size: 4},
 							ConstraintList: []*ast.ConstraintDef{
 								{
 									Name:    "fk_a",
@@ -272,7 +457,10 @@ func TestPGAddColumnStmt(t *testing.T) {
 								Name: "techbook",
 							},
 							ColumnList: []*ast.ColumnDef{
-								{ColumnName: "a"},
+								{
+									ColumnName: "a",
+									Type:       &ast.Integer{Size: 4},
+								},
 							},
 						},
 					},
@@ -302,6 +490,7 @@ func TestPGAddColumnStmt(t *testing.T) {
 							ColumnList: []*ast.ColumnDef{
 								{
 									ColumnName: "a",
+									Type:       &ast.Integer{Size: 4},
 									ConstraintList: []*ast.ConstraintDef{
 										{
 											Type:    ast.ConstraintTypeUnique,
