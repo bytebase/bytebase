@@ -575,7 +575,7 @@ func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes i
 }
 
 // IsPlaceholderValid checks if the placeHolder is valid.
-func IsPlaceholderValid(placeHolder string) error {
+func IsPlaceholderValid(placeholder string) error {
 	re := regexp.MustCompile(PlaceholderRegexp)
 	if !re.MatchString(placeHolder) {
 		return errors.Errorf("placeholder %s is invalid", placeHolder)
