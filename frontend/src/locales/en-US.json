@@ -124,6 +124,7 @@
     "config-guide": "config guide",
     "required-placeholder": "required placeholder",
     "optional-placeholder": "optional placeholder",
+    "optional-directory-wildcard": "optional directory wildcard",
     "sensitive-placeholder": "sensitive - write only",
     "enabled": "enabled",
     "default": "default",
