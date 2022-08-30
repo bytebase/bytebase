@@ -610,12 +610,12 @@ func (driver *Driver) GetBinlogDir() string {
 }
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
-func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool, uploader *bbs3.Client) error {
+func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool, client *bbs3.Client) error {
 	if err := os.MkdirAll(driver.binlogDir, os.ModePerm); err != nil {
 		return errors.Wrapf(err, "failed to create binlog directory %q", driver.binlogDir)
 	}
 	// Read binlog files list on server.
-	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
+	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesOnServer(ctx)
 	if err != nil {
 		return err
 	}
@@ -625,13 +625,75 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 	}
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
-	// Read the local binlog metadata files.
+	if err := driver.syncBinlogMetaFileFromCloud(ctx, client); err != nil {
+		return errors.Wrap(err, "failed to sync binlog metadata files from the cloud")
+	}
+
 	metaList, err := driver.getSortedLocalBinlogFilesMeta()
 	if err != nil {
 		return errors.Wrap(err, "failed to read local binlog files")
 	}
 
-	return driver.downloadBinlogFilesOnServer(ctx, metaList, binlogFilesOnServerSorted, downloadLatestBinlogFile, uploader)
+	if err := driver.downloadBinlogFilesOnServer(ctx, metaList, binlogFilesOnServerSorted, downloadLatestBinlogFile, client); err != nil {
+		return errors.Wrap(err, "failed to download binlog files from the MySQL server")
+	}
+
+	return nil
+}
+
+func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *bbs3.Client) error {
+	if client == nil {
+		return nil
+	}
+
+	metaListToDownload, err := driver.getBinlogMetaFileListToDownload(ctx, client)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
+	}
+	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaListToDownload)))
+
+	relativeDir := getBinlogRelativeDir(driver.binlogDir)
+	tempDir := os.TempDir()
+	for _, metaFileName := range metaListToDownload {
+		metaFilePathTemp := filepath.Join(tempDir, metaFileName)
+		metaFileTemp, err := os.Create(metaFilePathTemp)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create temporary binlog metadata file %q", metaFileName)
+		}
+		if _, err := client.DownloadObject(ctx, path.Join(relativeDir, metaFileName), metaFileTemp); err != nil {
+			return errors.Wrapf(err, "failed to download binlog metadata file %q", metaFileName)
+		}
+		metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
+		if err := os.Rename(metaFilePathTemp, metaFilePath); err != nil {
+			return errors.Wrapf(err, "failed to rename %q to %q", metaFilePathTemp, metaFilePath)
+		}
+	}
+
+	return nil
+}
+
+func (driver *Driver) getBinlogMetaFileListToDownload(ctx context.Context, client *bbs3.Client) ([]string, error) {
+	listOutput, err := client.ListObjects(ctx, driver.binlogDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", driver.binlogDir)
+	}
+	var downloadList []string
+	for _, item := range listOutput.Contents {
+		binlogPathOnCloud := *item.Key
+		if !strings.HasSuffix(binlogPathOnCloud, binlogMetaSuffix) {
+			continue
+		}
+		binlogName := filepath.Base(binlogPathOnCloud)
+		binlogPathLocal := filepath.Join(driver.binlogDir, binlogName)
+		if _, err := os.Stat(binlogPathLocal); err != nil {
+			if os.IsNotExist(err) {
+				downloadList = append(downloadList, binlogName)
+			} else {
+				log.Error("Failed to get stat of local binlog file", zap.String("path", binlogPathLocal))
+			}
+		}
+	}
+	return downloadList, nil
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
@@ -754,8 +816,8 @@ func (driver *Driver) writeBinlogMetadataFile(ctx context.Context, binlogFileNam
 	return nil
 }
 
-// GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files in ascending order by their numeric extension.
-func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
+// GetSortedBinlogFilesOnServer returns the information of binlog files in ascending order by their numeric extension.
+func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]BinlogFile, error) {
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return nil, err
