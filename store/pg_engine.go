@@ -662,6 +662,7 @@ type Tx struct {
 	now time.Time
 }
 
+<<<<<<< HEAD
 // Replace mutiple whitespace characters including /t/n with a single space.
 var pattern = regexp.MustCompile(`\s+`)
 
@@ -691,6 +692,11 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...interface{
 func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	log.Debug("QueryRowContext", zap.String("query", cleanQuery(query)))
 	return tx.Tx.QueryRowContext(ctx, query, args...)
+=======
+func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	panic("sdfsfd")
+	// return tx.PTx.QueryRowContext(ctx, query, args...)
+>>>>>>> 64fa2c35 (chore: add logging)
 }
 
 // FormatError returns err as a Bytebase error, if possible.
