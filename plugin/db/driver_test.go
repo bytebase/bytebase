@@ -235,7 +235,7 @@ func TestIsDoubleTimesAsteriskInTemplateValid(t *testing.T) {
 			template: "/**/{{ENV_NAME}}/**/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 			err:      false,
 		},
-		// Credit to Linear Issue #1267
+		// Credit to Linear Issue BYT-1267
 		{
 			template: "/configure/configure/{{ENV_NAME}}/**/**/{{DESCRIPTION}}.sql",
 			err:      false,
