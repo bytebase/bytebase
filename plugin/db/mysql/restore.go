@@ -644,25 +644,16 @@ func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *b
 	if client == nil {
 		return nil
 	}
-	metaSetLocal, err := driver.getBinlogMetaFileSetLocal()
-	if err != nil {
-		return errors.Wrapf(err, "failed to get local binlog metadata file set in directory %q", driver.binlogDir)
-	}
 
-	metaSetToDownload, err := driver.getBinlogMetaFileSetOnCloud(ctx, client)
+	metaListToDownload, err := driver.getBinlogMetaFileListToDownload(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
 	}
-	for metaFileName := range metaSetToDownload {
-		if _, ok := metaSetLocal[metaFileName]; ok {
-			delete(metaSetToDownload, metaFileName)
-		}
-	}
-	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaSetToDownload)))
+	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaListToDownload)))
 
 	relativeDir := getBinlogRelativeDir(driver.binlogDir)
 	tempDir := os.TempDir()
-	for metaFileName := range metaSetToDownload {
+	for _, metaFileName := range metaListToDownload {
 		metaFilePathTemp := filepath.Join(tempDir, metaFileName)
 		metaFileTemp, err := os.Create(metaFilePathTemp)
 		if err != nil {
@@ -680,32 +671,28 @@ func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *b
 	return nil
 }
 
-func (driver *Driver) getBinlogMetaFileSetLocal() (map[string]bool, error) {
-	list, err := os.ReadDir(driver.binlogDir)
-	if err != nil {
-		return nil, err
-	}
-	metaSet := make(map[string]bool)
-	for _, entry := range list {
-		if strings.HasSuffix(entry.Name(), binlogMetaSuffix) {
-			metaSet[entry.Name()] = true
-		}
-	}
-	return metaSet, nil
-}
-
-func (driver *Driver) getBinlogMetaFileSetOnCloud(ctx context.Context, client *bbs3.Client) (map[string]bool, error) {
+func (driver *Driver) getBinlogMetaFileListToDownload(ctx context.Context, client *bbs3.Client) ([]string, error) {
 	listOutput, err := client.ListObjects(ctx, driver.binlogDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", driver.binlogDir)
 	}
-	metaSet := make(map[string]bool)
+	var downloadList []string
 	for _, item := range listOutput.Contents {
-		if strings.HasSuffix(*item.Key, binlogMetaSuffix) {
-			metaSet[filepath.Base(*item.Key)] = true
+		binlogPathOnCloud := *item.Key
+		if !strings.HasSuffix(binlogPathOnCloud, binlogMetaSuffix) {
+			continue
+		}
+		binlogName := filepath.Base(binlogPathOnCloud)
+		binlogPathLocal := filepath.Join(driver.binlogDir, binlogName)
+		if _, err := os.Stat(binlogPathLocal); err != nil {
+			if os.IsNotExist(err) {
+				downloadList = append(downloadList, binlogName)
+			} else {
+				log.Error("Failed to get stat of local binlog file", zap.String("path", binlogPathLocal))
+			}
 		}
 	}
-	return metaSet, nil
+	return downloadList, nil
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
