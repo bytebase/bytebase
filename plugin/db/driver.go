@@ -538,7 +538,7 @@ func isMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
 // isMultipleTimesAsteriskInTemplateValid checks whether the consecutive asterisks in file path template is valid.
 // The rules are（）:
 // 1. Consecutive multiple asterisks cannot be placed at the beginning or end.
-// 2. Both ends of consecutive multiple asterisks just can be * or /.
+// 2. Both ends of consecutive asterisks can only be * or /.
 // Take asteriskTimes = 2 as an example:
 // "**/test" and "test/**" will break the rule1.
 // "abc**" and "?**/" will break the rule2.
