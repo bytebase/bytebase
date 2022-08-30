@@ -16,7 +16,7 @@ import (
 )
 
 // Type is the type of a database.
-//nolint
+// nolint
 type Type string
 
 const (
@@ -243,9 +243,9 @@ type MigrationInfo struct {
 	Force bool
 }
 
-// PlaceholderRegexp is the regexp for placeholder.
+// placeholderRegexp is the regexp for placeholder.
 // Refer to https://stackoverflow.com/a/6222235/19075342, but we support '.' for now.
-const PlaceholderRegexp = `[^\\/?%*:|"<>]+`
+const placeholderRegexp = `[^\\/?%*:|"<>]+`
 
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
@@ -269,7 +269,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 
 	for _, placeholder := range placeholderList {
-		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, PlaceholderRegexp))
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, placeholderRegexp))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
@@ -502,13 +502,4 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 		parts = append(parts, param)
 	}
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
-}
-
-// IsPlaceholderValid checks if the placeholder is valid.
-func IsPlaceholderValid(placeholder string) error {
-	re := regexp.MustCompile(PlaceholderRegexp)
-	if !re.MatchString(placeholder) {
-		return errors.Errorf("placeholder %s is invalid", placeholder)
-	}
-	return nil
 }

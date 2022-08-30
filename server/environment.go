@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
@@ -25,7 +24,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		envCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if err := db.IsPlaceholderValid(envCreate.Name); err != nil {
+		if err := api.IsPlaceholderValid(envCreate.Name); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 		}
 
@@ -79,7 +78,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		if v := envPatch.Name; v != nil {
-			if err := db.IsPlaceholderValid(*v); err != nil {
+			if err := api.IsPlaceholderValid(*v); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 			}
 		}

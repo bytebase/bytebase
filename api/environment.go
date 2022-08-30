@@ -2,6 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"regexp"
+
+	"github.com/pkg/errors"
 )
 
 // Environment is the API message for an environment.
@@ -50,6 +53,19 @@ func (find *EnvironmentFind) String() string {
 		return err.Error()
 	}
 	return string(str)
+}
+
+// placeholderRegexp is the regexp for placeholder.
+// Refer to https://stackoverflow.com/a/6222235/19075342, but we support '.' for now.
+const placeholderRegexp = `[^\\/?%*:|"<>]+`
+
+// IsPlaceholderValid checks if the placeholder is valid.
+func IsPlaceholderValid(placeholder string) error {
+	re := regexp.MustCompile(placeholderRegexp)
+	if !re.MatchString(placeholder) {
+		return errors.Errorf("placeholder %s is invalid", placeholder)
+	}
+	return nil
 }
 
 // EnvironmentPatch is the API message for patching an environment.
