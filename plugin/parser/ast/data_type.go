@@ -18,7 +18,7 @@ type dataType struct {
 
 func (*dataType) dataTypeInterface() {}
 
-// NumericType is the interface for numberic type.
+// NumericType is the interface for numeric type.
 type NumericType interface {
 	DataType
 
