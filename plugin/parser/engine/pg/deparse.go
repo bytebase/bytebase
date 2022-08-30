@@ -11,22 +11,22 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
-func restore(context parser.RestoreContext, in ast.Node, buf *strings.Builder) error {
+func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) error {
 	switch node := in.(type) {
 	case ast.DataType:
-		return restoreDataType(context, node, buf)
+		return deparseDataType(context, node, buf)
 	case *ast.CreateTableStmt:
-		return restoreCreateTable(context, node, buf)
+		return deparseCreateTable(context, node, buf)
 	case *ast.TableDef:
-		return restoreTableDef(context, node, buf)
+		return deparseTableDef(context, node, buf)
 	case *ast.ColumnDef:
-		return restoreColumnDef(context, node, buf)
+		return deparseColumnDef(context, node, buf)
 	}
 
-	return errors.Errorf("failed to restore %T", in)
+	return errors.Errorf("failed to deparse %T", in)
 }
 
-func restoreCreateTable(context parser.RestoreContext, in *ast.CreateTableStmt, buf *strings.Builder) error {
+func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, buf *strings.Builder) error {
 	if _, err := buf.WriteString("CREATE TABLE"); err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func restoreCreateTable(context parser.RestoreContext, in *ast.CreateTableStmt, 
 	if _, err := buf.WriteString(" "); err != nil {
 		return err
 	}
-	if err := restoreTableDef(context, in.Name, buf); err != nil {
+	if err := deparseTableDef(context, in.Name, buf); err != nil {
 		return err
 	}
 
@@ -53,7 +53,7 @@ func restoreCreateTable(context parser.RestoreContext, in *ast.CreateTableStmt, 
 				return err
 			}
 		}
-		if err := restoreColumnDef(context, column, buf); err != nil {
+		if err := deparseColumnDef(context, column, buf); err != nil {
 			return err
 		}
 	}
@@ -66,28 +66,28 @@ func restoreCreateTable(context parser.RestoreContext, in *ast.CreateTableStmt, 
 	return nil
 }
 
-func restoreColumnDef(context parser.RestoreContext, in *ast.ColumnDef, buf *strings.Builder) error {
+func deparseColumnDef(context parser.DeparseContext, in *ast.ColumnDef, buf *strings.Builder) error {
 	if err := writeSurrounding(buf, in.ColumnName, "\""); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(" "); err != nil {
 		return err
 	}
-	if err := restoreDataType(context, in.Type, buf); err != nil {
+	if err := deparseDataType(context, in.Type, buf); err != nil {
 		return err
 	}
 	for _, constraint := range in.ConstraintList {
 		if _, err := buf.WriteString(" "); err != nil {
 			return err
 		}
-		if err := restoreColumnConstraint(context, constraint, buf); err != nil {
+		if err := deparseColumnConstraint(context, constraint, buf); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func restoreColumnConstraint(_ parser.RestoreContext, in *ast.ConstraintDef, buf *strings.Builder) error {
+func deparseColumnConstraint(_ parser.DeparseContext, in *ast.ConstraintDef, buf *strings.Builder) error {
 	if in.Name != "" {
 		if _, err := buf.WriteString("CONSTRAINT "); err != nil {
 			return err
@@ -113,12 +113,12 @@ func restoreColumnConstraint(_ parser.RestoreContext, in *ast.ConstraintDef, buf
 			return err
 		}
 	default:
-		return errors.Errorf("failed to restore column constraint: not support %d", in.Type)
+		return errors.Errorf("failed to deparse column constraint: not support %d", in.Type)
 	}
 	return nil
 }
 
-func restoreTableDef(_ parser.RestoreContext, in *ast.TableDef, buf *strings.Builder) error {
+func deparseTableDef(_ parser.DeparseContext, in *ast.TableDef, buf *strings.Builder) error {
 	if in.Schema != "" {
 		if err := writeSurrounding(buf, in.Schema, "\""); err != nil {
 			return err
@@ -130,7 +130,7 @@ func restoreTableDef(_ parser.RestoreContext, in *ast.TableDef, buf *strings.Bui
 	return writeSurrounding(buf, in.Name, "\"")
 }
 
-func restoreDataType(_ parser.RestoreContext, in ast.DataType, buf *strings.Builder) error {
+func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Builder) error {
 	switch node := in.(type) {
 	case *ast.Integer:
 		if _, err := buf.WriteString("INT"); err != nil {
@@ -180,7 +180,7 @@ func restoreDataType(_ parser.RestoreContext, in ast.DataType, buf *strings.Buil
 			return err
 		}
 	default:
-		return errors.Errorf("failed to restore data type %T", in)
+		return errors.Errorf("failed to deparse data type %T", in)
 	}
 	return nil
 }

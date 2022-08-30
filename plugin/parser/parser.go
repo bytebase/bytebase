@@ -25,14 +25,14 @@ const (
 type ParseContext struct {
 }
 
-// RestoreContext is the contxt for restoring.
-type RestoreContext struct {
+// DeparseContext is the contxt for restoring.
+type DeparseContext struct {
 }
 
 // Parser is the interface for parser.
 type Parser interface {
 	Parse(ctx ParseContext, statement string) ([]ast.Node, error)
-	Restore(ctx RestoreContext, node ast.Node) (string, error)
+	Deparse(ctx DeparseContext, node ast.Node) (string, error)
 }
 
 var (
@@ -67,12 +67,12 @@ func Parse(engineType EngineType, ctx ParseContext, statement string) ([]ast.Nod
 }
 
 // Restore restores the statement from node(AST).
-func Restore(engineType EngineType, ctx RestoreContext, node ast.Node) (string, error) {
+func Restore(engineType EngineType, ctx DeparseContext, node ast.Node) (string, error) {
 	parserMu.RLock()
 	p, ok := parsers[engineType]
 	parserMu.RUnlock()
 	if !ok {
 		return "", errors.Errorf("engine: unknown engine type %v", engineType)
 	}
-	return p.Restore(ctx, node)
+	return p.Deparse(ctx, node)
 }

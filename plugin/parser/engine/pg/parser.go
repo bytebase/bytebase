@@ -55,10 +55,10 @@ func (*PostgreSQLParser) Parse(_ parser.ParseContext, statement string) ([]ast.N
 	return nodeList, nil
 }
 
-// Restore implements the parser.Restore interface.
-func (*PostgreSQLParser) Restore(context parser.RestoreContext, node ast.Node) (string, error) {
+// Deparse implements the parser.Deparse interface.
+func (*PostgreSQLParser) Deparse(context parser.DeparseContext, node ast.Node) (string, error) {
 	buf := &strings.Builder{}
-	if err := restore(context, node, buf); err != nil {
+	if err := deparse(context, node, buf); err != nil {
 		return "", err
 	}
 	return buf.String(), nil

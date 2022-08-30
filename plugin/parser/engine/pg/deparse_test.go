@@ -8,26 +8,26 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 )
 
-type testRestoreData struct {
+type testDeparseData struct {
 	stmt string
 	want string
 }
 
-func runRestoreTest(t *testing.T, tests []testRestoreData) {
+func runDeparseTest(t *testing.T, tests []testDeparseData) {
 	p := &PostgreSQLParser{}
 
 	for _, test := range tests {
 		nodeList, err := p.Parse(parser.ParseContext{}, test.stmt)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
-		res, err := p.Restore(parser.RestoreContext{}, nodeList[0])
+		res, err := p.Deparse(parser.DeparseContext{}, nodeList[0])
 		require.NoError(t, err)
 		require.Equal(t, test.want, res, test.stmt)
 	}
 }
 
 func TestCreateTable(t *testing.T) {
-	tests := []testRestoreData{
+	tests := []testDeparseData{
 		{
 			stmt: `CREATE TABLE tech_book(
 				a smallint,
@@ -78,5 +78,5 @@ func TestCreateTable(t *testing.T) {
 		},
 	}
 
-	runRestoreTest(t, tests)
+	runDeparseTest(t, tests)
 }
