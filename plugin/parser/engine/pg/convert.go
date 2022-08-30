@@ -740,8 +740,10 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 func convertColumnDef(in *pgquery.Node_ColumnDef) (*ast.ColumnDef, error) {
 	column := &ast.ColumnDef{
 		ColumnName: in.ColumnDef.Colname,
-		Type:       convertDataType(in.ColumnDef.TypeName),
 	}
+	columnType, constraintList := convertDataType(in.ColumnDef.TypeName)
+	column.Type = columnType
+	column.ConstraintList = append(column.ConstraintList, constraintList...)
 
 	for _, cons := range in.ColumnDef.Constraints {
 		constraint, ok := cons.Node.(*pgquery.Node_Constraint)
@@ -780,47 +782,47 @@ func filterPgCatalogPrefix(tp *pgquery.TypeName) *pgquery.TypeName {
 	return tp
 }
 
-func convertDataType(tp *pgquery.TypeName) ast.DataType {
+func convertDataType(tp *pgquery.TypeName) (ast.DataType, []*ast.ConstraintDef) {
 	tp = filterPgCatalogPrefix(tp)
 	switch len(tp.Names) {
 	case 1:
 		name, ok := tp.Names[0].Node.(*pgquery.Node_String_)
 		if !ok {
-			return &ast.UnconvertedDataType{}
+			return &ast.UnconvertedDataType{}, nil
 		}
 		s := name.String_.Str
 		switch {
 		case strings.HasPrefix(s, "int"):
 			size, err := strconv.Atoi(s[3:])
 			if err != nil {
-				return &ast.UnconvertedDataType{}
+				return &ast.UnconvertedDataType{}, nil
 			}
-			return &ast.Integer{Size: size}
+			return &ast.Integer{Size: size}, nil
 		case strings.HasPrefix(s, "float"):
 			size, err := strconv.Atoi(s[5:])
 			if err != nil {
-				return &ast.UnconvertedDataType{}
+				return &ast.UnconvertedDataType{}, nil
 			}
-			return &ast.Float{Size: size}
+			return &ast.Float{Size: size}, nil
 		case s == "serial":
-			return &ast.Serial{Size: 4}
+			return &ast.Integer{Size: 4}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
 		case s == "smallserial":
-			return &ast.Serial{Size: 2}
+			return &ast.Integer{Size: 2}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
 		case s == "bigserial":
-			return &ast.Serial{Size: 8}
+			return &ast.Integer{Size: 8}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
 		case strings.HasPrefix(s, "serial"):
 			size, err := strconv.Atoi(s[6:])
 			if err != nil {
-				return &ast.UnconvertedDataType{}
+				return &ast.UnconvertedDataType{}, nil
 			}
-			return &ast.Serial{Size: size}
+			return &ast.Integer{Size: size}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
 		case s == "numeric":
-			return convertToDecimal(tp.Typmods)
+			return convertToDecimal(tp.Typmods), nil
 		}
 	default:
-		return &ast.UnconvertedDataType{}
+		return &ast.UnconvertedDataType{}, nil
 	}
-	return &ast.UnconvertedDataType{}
+	return &ast.UnconvertedDataType{}, nil
 }
 
 func convertToDecimal(typmods []*pgquery.Node) ast.DataType {
