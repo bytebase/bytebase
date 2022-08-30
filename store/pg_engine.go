@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
@@ -660,37 +658,6 @@ type Tx struct {
 	*sql.Tx
 	db  *DB
 	now time.Time
-}
-
-// Replace mutiple whitespace characters including /t/n with a single space.
-var pattern = regexp.MustCompile(`\s+`)
-
-func cleanQuery(query string) string {
-	return pattern.ReplaceAllString(query, " ")
-}
-
-// PrepareContext overrides sql.Tx PrepareContext.
-func (tx *Tx) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
-	log.Debug("PrepareContext", zap.String("query", cleanQuery(query)))
-	return tx.Tx.PrepareContext(ctx, query)
-}
-
-// ExecContext overrides sql.Tx ExecContext.
-func (tx *Tx) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	log.Debug("ExecContext", zap.String("query", cleanQuery(query)))
-	return tx.Tx.ExecContext(ctx, query, args...)
-}
-
-// QueryContext overrides sql.Tx QueryContext.
-func (tx *Tx) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-	log.Debug("QueryContext", zap.String("query", cleanQuery(query)))
-	return tx.Tx.QueryContext(ctx, query, args...)
-}
-
-// QueryRowContext overrides sql.Tx QueryRowContext.
-func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	log.Debug("QueryRowContext", zap.String("query", cleanQuery(query)))
-	return tx.Tx.QueryRowContext(ctx, query, args...)
 }
 
 // FormatError returns err as a Bytebase error, if possible.
