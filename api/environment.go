@@ -63,7 +63,7 @@ const placeholderRegexp = `[^\\/?%*:|"<>]+`
 func IsValidEnvironmentName(environmentName string) error {
 	re := regexp.MustCompile(placeholderRegexp)
 	if !re.MatchString(environmentName) {
-		return errors.Errorf("environment name %s is invalid", environmentName)
+		return errors.Errorf("environment name %q cannot contain placeholder characters (\\, /, ?, %%, *, :, |, \", <, >)", environmentName)
 	}
 	return nil
 }
