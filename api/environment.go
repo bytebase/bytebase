@@ -59,8 +59,8 @@ func (find *EnvironmentFind) String() string {
 // Refer to https://stackoverflow.com/a/6222235/19075342, but we support '.' for now.
 const placeholderRegexp = `[^\\/?%*:|"<>]+`
 
-// IsPlaceholderValid checks if the placeholder is valid.
-func IsPlaceholderValid(placeholder string) error {
+// IsValidEnvironmentName checks if the placeholder is valid.
+func IsValidEnvironmentName(placeholder string) error {
 	re := regexp.MustCompile(placeholderRegexp)
 	if !re.MatchString(placeholder) {
 		return errors.Errorf("placeholder %s is invalid", placeholder)
