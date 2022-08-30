@@ -19,7 +19,7 @@ import {
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
 import { Database, SQLDialect, Table } from "@/types";
-import { useMonaco } from "./useMonaco";
+import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
@@ -51,19 +51,19 @@ const emit = defineEmits<{
 const sqlCode = toRef(props, "value");
 const dialect = toRef(props, "dialect");
 const readOnly = toRef(props, "readonly");
-const monacoInstanceRef = ref();
+const monacoInstanceRef = ref<MonacoHelper>();
 const editorContainerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
 
 const isEditorLoaded = ref(false);
 
-const getEditorInstance = () => {
+const initEditorInstance = () => {
   const { monaco, formatContent, setPositionAtEndOfLine } =
-    monacoInstanceRef.value;
+    monacoInstanceRef.value!;
 
   const model = monaco.editor.createModel(sqlCode.value, "sql");
-  const editorInstance = monaco.editor.create(editorContainerRef.value, {
+  const editorInstance = monaco.editor.create(editorContainerRef.value!, {
     model,
     tabSize: 2,
     insertSpaces: true,
@@ -141,32 +141,21 @@ const getEditorInstance = () => {
 };
 
 onMounted(async () => {
-  const {
-    monaco,
-    dispose,
-    formatContent,
-    setContent,
-    setAutoCompletionContext,
-    setDialect,
-    setPositionAtEndOfLine,
-  } = await useMonaco(dialect.value);
+  const monacoHelper = await useMonaco(dialect.value);
 
   if (!editorContainerRef.value) {
     // Give up creating monaco editor if the component has been unmounted
     // very quickly.
+    console.debug(
+      "<MonacoEditor> has been unmounted before useMonaco is ready"
+    );
     return;
   }
 
-  monacoInstanceRef.value = {
-    monaco,
-    dispose,
-    formatContent,
-    setContent,
-    setAutoCompletionContext,
-    setPositionAtEndOfLine,
-  };
+  const { setDialect, setPositionAtEndOfLine } = monacoHelper;
+  monacoInstanceRef.value = monacoHelper;
 
-  const editorInstance = getEditorInstance();
+  const editorInstance = initEditorInstance();
   editorInstanceRef.value = editorInstance;
 
   // set the editor focus when the tab is selected

@@ -5,6 +5,7 @@ import type { editor as Editor } from "monaco-editor";
 import { Database, Table, CompletionItems, SQLDialect } from "@/types";
 import AutoCompletion from "./AutoCompletion";
 import sqlFormatter from "./sqlFormatter";
+import { ExtractPromiseType } from "@/utils";
 
 export const useMonaco = async (defaultDialect: SQLDialect) => {
   const monaco = await import("monaco-editor");
@@ -24,16 +25,6 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
   monaco.editor.setTheme("bb-sql-editor-theme");
   const databaseList = ref<Database[]>([]);
   const tableList = ref<Table[]>([]);
-
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-    ...monaco.languages.typescript.typescriptDefaults.getCompilerOptions(),
-    noUnusedLocals: false,
-    noUnusedParameters: false,
-    allowUnreachableCode: true,
-    allowUnusedLabels: true,
-    strict: false,
-    allowJs: true,
-  });
 
   const completionItemProvider =
     monaco.languages.registerCompletionItemProvider(
@@ -281,3 +272,5 @@ export const useMonaco = async (defaultDialect: SQLDialect) => {
     setPositionAtEndOfLine,
   };
 };
+
+export type MonacoHelper = ExtractPromiseType<ReturnType<typeof useMonaco>>;
