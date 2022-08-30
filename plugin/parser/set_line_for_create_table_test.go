@@ -82,7 +82,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		nodeList, err := parser.Parse(parser.Postgres, parser.Context{}, test.statement)
+		nodeList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, test.statement)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
 		node, ok := nodeList[0].(*ast.CreateTableStmt)
