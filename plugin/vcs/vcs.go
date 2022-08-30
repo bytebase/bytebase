@@ -262,6 +262,10 @@ func Get(vcsType Type, providerConfig ProviderConfig) Provider {
 }
 
 // IsAsterisksInTemplateValid checks if the pathTemplate is valid about asterisk.
+// Fow now, our rules are:
+// 1. Support two asterisks at most.
+// 2. Both ends of consecutive asterisks just can be '/'.
+// 3. Consecutive asterisks cannot be placed at the beginning or end.
 func IsAsterisksInTemplateValid(pathTemplate string) error {
 	const maxAsteriskNum = 2
 	if err := isMaxConsecutiveAsteriskValid(pathTemplate, maxAsteriskNum); err != nil {
