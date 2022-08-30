@@ -262,9 +262,6 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	// Escape "." characters to match literals instead of using it as a wildcard.
 	filePathRegex := strings.ReplaceAll(filePathTemplate, `.`, `\.`)
 
-	if err := vcs.IsAsterisksInTemplateValid(filePathRegex); err != nil {
-		return nil, err
-	}
 	filePathRegex = strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]*/`)
 	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 
