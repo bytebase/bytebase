@@ -511,10 +511,7 @@ func IsAsterisksInTemplateValid(pathTemplate string) error {
 	if err := isSingleAsteriskInTemplateValid(pathTemplate); err != nil {
 		return err
 	}
-	if err := isDoubleAsteriskInTemplateValid(pathTemplate); err != nil {
-		return err
-	}
-	return nil
+	return isDoubleAsteriskInTemplateValid(pathTemplate)
 }
 
 // isSingleAsteriskInTemplateValid checks whether the single in file path template is valid.
