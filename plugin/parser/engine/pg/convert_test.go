@@ -21,7 +21,7 @@ func runTests(t *testing.T, tests []testData) {
 	p := &PostgreSQLParser{}
 
 	for _, test := range tests {
-		res, err := p.Parse(parser.Context{}, test.stmt)
+		res, err := p.Parse(parser.ParseContext{}, test.stmt)
 		require.NoError(t, err)
 		for i := range test.want {
 			test.want[i].SetText(test.statementList[i].Text)
@@ -71,7 +71,8 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				q int2,
 				r serial2,
 				s serial4,
-				t decimal)`,
+				t decimal,
+				u "user defined data type")`,
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					IfNotExists: false,
@@ -190,6 +191,10 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 							ColumnName: "t",
 							Type:       &ast.Decimal{Precision: 0, Scale: 0},
 						},
+						{
+							ColumnName: "u",
+							Type:       &ast.UnconvertedDataType{Name: []string{"user defined data type"}},
+						},
 					},
 				},
 			},
@@ -215,12 +220,13 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				q int2,
 				r serial2,
 				s serial4,
-				t decimal)`,
+				t decimal,
+				u "user defined data type")`,
 					Line: 1,
 				},
 			},
 			columnLine: [][]int{
-				{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21},
+				{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22},
 			},
 		},
 		{
