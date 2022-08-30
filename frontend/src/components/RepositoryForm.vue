@@ -288,7 +288,18 @@ export default defineComponent({
       ];
 
       let result = `${baseDirectory}/${filePathTemplate}`;
+
+      // To replace the wildcard.
+      const replaceSingleAsterisk = new RegExp("\\/\\*\\/", "g");
+      result = result.replace(replaceSingleAsterisk, "/foo/");
+      const replaceDoubleAsterisks = new RegExp("\\/\\*\\*\\/", "g");
+      result = result.replace(replaceDoubleAsterisks, "/foo/bar/");
+
       for (const item of placeholderList) {
+        const replaceSingleAsterisk = new RegExp("\\/\\*\\/", "g");
+        result = result.replace(replaceSingleAsterisk, item.sampleText);
+        const replaceDoubleAsterisks = new RegExp("\\/\\*\\*\\/", "g");
+        result = result.replace(replaceDoubleAsterisks, item.sampleText);
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);
       }
