@@ -100,8 +100,10 @@
         {{ FILE_REQUIRED_PLACEHOLDER }};
         <template v-if="fileOptionalPlaceholder.length > 0">
           {{ $t("common.optional-placeholder") }}:
-          {{ fileOptionalPlaceholder.join(", ") }}
+          {{ fileOptionalPlaceholder.join(", ") }};
         </template>
+        {{ $t("common.optional-folder-wildcard") }}:
+        {{ FILE_OPTIONAL_FOLDER_WILDCARD }}
       </div>
       <div class="mt-2 textinfolabel">
         • {{ $t("repository.file-path-example-schema-migration") }}:
@@ -207,6 +209,7 @@ import {
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
+const FILE_OPTIONAL_FOLDER_WILDCARD = "*, **";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -334,6 +337,7 @@ export default defineComponent({
     return {
       FILE_REQUIRED_PLACEHOLDER,
       fileOptionalPlaceholder,
+      FILE_OPTIONAL_FOLDER_WILDCARD,
       SCHEMA_REQUIRED_PLACEHOLDER,
       schemaOptionalTagPlaceholder,
       state,
