@@ -1,6 +1,9 @@
 package pg
 
 import (
+	"strconv"
+	"strings"
+
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 	"github.com/pkg/errors"
 
@@ -738,6 +741,9 @@ func convertColumnDef(in *pgquery.Node_ColumnDef) (*ast.ColumnDef, error) {
 	column := &ast.ColumnDef{
 		ColumnName: in.ColumnDef.Colname,
 	}
+	columnType, constraintList := convertDataType(in.ColumnDef.TypeName)
+	column.Type = columnType
+	column.ConstraintList = append(column.ConstraintList, constraintList...)
 
 	for _, cons := range in.ColumnDef.Constraints {
 		constraint, ok := cons.Node.(*pgquery.Node_Constraint)
@@ -764,4 +770,93 @@ func convertToTableType(relationType pgquery.ObjectType) (ast.TableType, error) 
 	default:
 		return ast.TableTypeUnknown, parser.NewConvertErrorf("expected TABLE or VIEW but found %s", relationType)
 	}
+}
+
+func stripPgCatalogPrefix(tp *pgquery.TypeName) *pgquery.TypeName {
+	// The built-in data type may have the "pg_catalog" prefix.
+	if len(tp.Names) > 0 {
+		if first, ok := tp.Names[0].Node.(*pgquery.Node_String_); ok && first.String_.Str == "pg_catalog" {
+			tp.Names = tp.Names[1:]
+		}
+	}
+	return tp
+}
+
+func convertDataType(tp *pgquery.TypeName) (ast.DataType, []*ast.ConstraintDef) {
+	tp = stripPgCatalogPrefix(tp)
+	switch len(tp.Names) {
+	case 1:
+		name, ok := tp.Names[0].Node.(*pgquery.Node_String_)
+		if !ok {
+			return &ast.UnconvertedDataType{}, nil
+		}
+		s := name.String_.Str
+		switch {
+		case strings.HasPrefix(s, "int"):
+			size, err := strconv.Atoi(s[3:])
+			if err != nil {
+				return &ast.UnconvertedDataType{}, nil
+			}
+			return &ast.Integer{Size: size}, nil
+		case strings.HasPrefix(s, "float"):
+			size, err := strconv.Atoi(s[5:])
+			if err != nil {
+				return &ast.UnconvertedDataType{}, nil
+			}
+			return &ast.Float{Size: size}, nil
+		case s == "serial":
+			return &ast.Integer{Size: 4}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
+		case s == "smallserial":
+			return &ast.Integer{Size: 2}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
+		case s == "bigserial":
+			return &ast.Integer{Size: 8}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
+		case strings.HasPrefix(s, "serial"):
+			size, err := strconv.Atoi(s[6:])
+			if err != nil {
+				return &ast.UnconvertedDataType{}, nil
+			}
+			return &ast.Integer{Size: size}, []*ast.ConstraintDef{{Type: ast.ConstraintTypeNotNull}}
+		case s == "numeric":
+			return convertToDecimal(tp.Typmods), nil
+		}
+	default:
+		return &ast.UnconvertedDataType{}, nil
+	}
+	return &ast.UnconvertedDataType{}, nil
+}
+
+func convertToDecimal(typmods []*pgquery.Node) ast.DataType {
+	ok := false
+	decimal := &ast.Decimal{}
+	switch len(typmods) {
+	case 0:
+		return decimal
+	case 1:
+		if decimal.Precision, ok = convertToInteger(typmods[0]); !ok {
+			return &ast.UnconvertedDataType{}
+		}
+		return decimal
+	case 2:
+		if decimal.Precision, ok = convertToInteger(typmods[0]); !ok {
+			return &ast.UnconvertedDataType{}
+		}
+		if decimal.Scale, ok = convertToInteger(typmods[1]); !ok {
+			return &ast.UnconvertedDataType{}
+		}
+		return decimal
+	default:
+		return &ast.UnconvertedDataType{}
+	}
+}
+
+func convertToInteger(in *pgquery.Node) (int, bool) {
+	aConst, ok := in.Node.(*pgquery.Node_AConst)
+	if !ok {
+		return 0, false
+	}
+	integer, ok := aConst.AConst.Val.Node.(*pgquery.Node_Integer)
+	if !ok {
+		return 0, false
+	}
+	return int(integer.Integer.Ival), true
 }
