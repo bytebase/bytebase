@@ -819,8 +819,8 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			err = ctl.createDatabase(project, instance, dbName, "", nil /* labelMap */)
 			a.NoError(err)
 
-			a.Equal(len(test.commitFileNames), len(test.expect))
-			a.Equal(len(test.commitFileNames), len(test.commitContents))
+			a.Equal(len(test.expect), len(test.commitFileNames))
+			a.Equal(len(test.expect), len(test.commitContents))
 			for idx, commitFileName := range test.commitFileNames {
 				// Simulate Git commits for schema update.
 				err = ctl.vcsProvider.AddFiles(externalID, map[string]string{commitFileName: test.commitContents[idx]})
