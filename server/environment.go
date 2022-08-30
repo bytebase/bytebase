@@ -25,7 +25,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		envCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if err := db.IsPlaceHolderValid(envCreate.Name); err != nil {
+		if err := db.IsPlaceholderValid(envCreate.Name); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 		}
 
@@ -79,7 +79,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		}
 
 		if v := envPatch.Name; v != nil {
-			if err := db.IsPlaceHolderValid(*v); err != nil {
+			if err := db.IsPlaceholderValid(*v); err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 			}
 		}

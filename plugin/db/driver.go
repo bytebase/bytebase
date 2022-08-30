@@ -269,7 +269,7 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
 
 	for _, placeholder := range placeholderList {
-		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, PlaceHolderRegexp))
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, PlaceholderRegexp))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
@@ -554,7 +554,7 @@ func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes i
 
 // IsPlaceholderValid checks if the placeHolder is valid.
 func IsPlaceholderValid(placeHolder string) error {
-	re := regexp.MustCompile(PlaceHolderRegexp)
+	re := regexp.MustCompile(PlaceholderRegexp)
 	if !re.MatchString(placeHolder) {
 		return errors.Errorf("placeholder %s is invalid", placeHolder)
 	}
