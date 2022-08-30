@@ -413,20 +413,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repo := repoList[0]
 		repoPatch.ID = repo.ID
 
-		if repoPatch.FilePathTemplate != nil && repoPatch.BaseDirectory != nil {
-			// We need to check the FilePathTemplate in create repository request.
-			// This avoids to a certain extent that the creation succeeds but does not work.
-			if err := db.IsAsterisksInTemplateValid(path.Join(*repoPatch.BaseDirectory, *repoPatch.FilePathTemplate)); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
-			}
-		} else if repoPatch.BaseDirectory != nil {
-			if err := db.IsAsterisksInTemplateValid(path.Join(*repoPatch.BaseDirectory, repo.FilePathTemplate)); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
-			}
-		} else if repoPatch.FilePathTemplate != nil {
-			if err := db.IsAsterisksInTemplateValid(path.Join(repo.BaseDirectory, *repoPatch.FilePathTemplate)); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
-			}
+		// We need to check the FilePathTemplate in create repository request.
+		// This avoids to a certain extent that the creation succeeds but does not work.
+		expectBaseDirectory := repo.BaseDirectory
+		expectFilePathTemplate := repo.FilePathTemplate
+		if repoPatch.BaseDirectory != nil {
+			expectBaseDirectory = *repoPatch.BaseDirectory
+		}
+		if repoPatch.FilePathTemplate != nil {
+			expectFilePathTemplate = *repoPatch.FilePathTemplate
+		}
+
+		if err := db.IsAsterisksInTemplateValid(path.Join(expectBaseDirectory, expectFilePathTemplate)); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
 		}
 
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
