@@ -796,10 +796,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			)
 			a.NoError(err)
 
-			// environments, err := ctl.getEnvironments()
-			// a.NoError(err)
-			// prodEnvironment, err := findEnvironment(environments, "Prod")
-			// a.NoError(err)
 			environment, err := ctl.createEnvrionment(api.EnvironmentCreate{
 				Name: test.envName,
 			})
