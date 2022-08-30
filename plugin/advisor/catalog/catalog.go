@@ -199,3 +199,24 @@ func (d *Database) FindColumn(find *ColumnFind) *Column {
 	}
 	return nil
 }
+
+// TableFind is for find table.
+type TableFind struct {
+	SchemaName string
+	TableName  string
+}
+
+// FindTable finds the table.
+func (d *Database) FindTable(find *TableFind) *Table {
+	for _, schema := range d.SchemaList {
+		if schema.Name != find.SchemaName {
+			continue
+		}
+		for _, table := range schema.TableList {
+			if table.Name == find.TableName {
+				return table
+			}
+		}
+	}
+	return nil
+}

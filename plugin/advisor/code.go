@@ -55,6 +55,7 @@ const (
 	TableNoPK                         Code = 601
 	TableHasFK                        Code = 602
 	TableDropNamingConventionMismatch Code = 603
+	TableNotExists                    Code = 604
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701

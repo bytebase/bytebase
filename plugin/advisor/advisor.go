@@ -103,6 +103,9 @@ const (
 	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
 	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
 
+	// MySQLTableExists is an advisor type for MySQL table existence.
+	MySQLTableExists Type = "bb.plugin.advisor.mysql.table.exists"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
