@@ -772,7 +772,7 @@ func convertToTableType(relationType pgquery.ObjectType) (ast.TableType, error) 
 	}
 }
 
-func filterPgCatalogPrefix(tp *pgquery.TypeName) *pgquery.TypeName {
+func stripPgCatalogPrefix(tp *pgquery.TypeName) *pgquery.TypeName {
 	// The built-in data type may have the "pg_catalog" prefix.
 	if len(tp.Names) > 0 {
 		if first, ok := tp.Names[0].Node.(*pgquery.Node_String_); ok && first.String_.Str == "pg_catalog" {
@@ -783,7 +783,7 @@ func filterPgCatalogPrefix(tp *pgquery.TypeName) *pgquery.TypeName {
 }
 
 func convertDataType(tp *pgquery.TypeName) (ast.DataType, []*ast.ConstraintDef) {
-	tp = filterPgCatalogPrefix(tp)
+	tp = stripPgCatalogPrefix(tp)
 	switch len(tp.Names) {
 	case 1:
 		name, ok := tp.Names[0].Node.(*pgquery.Node_String_)
