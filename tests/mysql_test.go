@@ -174,7 +174,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	}
 	t.Logf("startTsList: %v\n", startTsList)
 
-	binlogFilesOnServerSorted, err := mysqlDriver.GetSortedBinlogFilesMetaOnServer(ctx)
+	binlogFilesOnServerSorted, err := mysqlDriver.GetSortedBinlogFilesOnServer(ctx)
 	a.NoError(err)
 
 	t.Log("Download binlog files in empty dir")
