@@ -243,9 +243,9 @@ type MigrationInfo struct {
 	Force bool
 }
 
-// PlaceHolderRegexp is the regexp for placeholder.
+// PlaceholderRegexp is the regexp for placeholder.
 // Refer to https://stackoverflow.com/a/6222235/19075342, but we support '.' for now.
-const PlaceHolderRegexp = `[^\\/?%*:|"<>]+`
+const PlaceholderRegexp = `[^\\/?%*:|"<>]+`
 
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
@@ -535,9 +535,9 @@ func isMaxConsecutiveAsteriskValid(pathTemplate string, n int) error {
 	return nil
 }
 
-// isMultipleTimesAsteriskInTemplateValid checks whether the consecutive multiple asterisks in file path template is valid.
+// isMultipleTimesAsteriskInTemplateValid checks whether the consecutive asterisks in file path template is valid.
 // The rules are（）:
-// 1. consecutive multiple asterisks cannot be placed at the beginning or end.
+// 1. Consecutive multiple asterisks cannot be placed at the beginning or end.
 // 2. Both ends of consecutive multiple asterisks just can be * or /.
 // Take asteriskTimes = 2 as an example:
 // "**/test" and "test/**" will break the rule1.
@@ -552,8 +552,8 @@ func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes i
 	return nil
 }
 
-// IsPlaceHolderValid checks if the placeHolder is valid.
-func IsPlaceHolderValid(placeHolder string) error {
+// IsPlaceholderValid checks if the placeHolder is valid.
+func IsPlaceholderValid(placeHolder string) error {
 	re := regexp.MustCompile(PlaceHolderRegexp)
 	if !re.MatchString(placeHolder) {
 		return errors.Errorf("placeholder %s is invalid", placeHolder)
