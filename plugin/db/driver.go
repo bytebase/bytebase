@@ -550,7 +550,7 @@ func isMultipleTimesAsteriskInTemplateValid(pathTemplate string, asteriskTimes i
 	}{
 		{
 			regex:  fmt.Sprintf(`([^\/\*]+%s)`, base),
-			errmsg: `In path template, * can only follow / or *`,
+			errmsg: `In path template, * can only be preceded by another / or *`,
 		},
 		{
 			regex:  fmt.Sprintf(`(%s[^\/\*]+)`, base),
