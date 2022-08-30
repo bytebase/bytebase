@@ -102,8 +102,8 @@
           {{ $t("common.optional-placeholder") }}:
           {{ fileOptionalPlaceholder.join(", ") }};
         </template>
-        {{ $t("common.optional-folder-wildcard") }}:
-        {{ FILE_OPTIONAL_FOLDER_WILDCARD }}
+        {{ $t("common.optional-directory-wildcard") }}:
+        {{ FILE_OPTIONAL_DIRECTORY_WILDCARD }}
       </div>
       <div class="mt-2 textinfolabel">
         • {{ $t("repository.file-path-example-schema-migration") }}:
@@ -344,7 +344,7 @@ export default defineComponent({
     return {
       FILE_REQUIRED_PLACEHOLDER,
       fileOptionalPlaceholder,
-      FILE_OPTIONAL_FOLDER_WILDCARD,
+      FILE_OPTIONAL_DIRECTORY_WILDCARD,
       SCHEMA_REQUIRED_PLACEHOLDER,
       schemaOptionalTagPlaceholder,
       state,
