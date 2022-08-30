@@ -210,6 +210,8 @@ import {
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
 const FILE_OPTIONAL_FOLDER_WILDCARD = "*, **";
+const SINGLE_ASTERISK_REGEX = /\/\*\//g;
+const DOUBLE_ASTERISK_REGEX = /\/\*\*\//g;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
