@@ -18,7 +18,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -217,7 +217,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
-		if err := db.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
+		if err := vcs.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, errors.Wrap(err, "Invalid base directory and filepath template combination").Error()))
 		}
 
@@ -424,7 +424,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			expectFilePathTemplate = *repoPatch.FilePathTemplate
 		}
 
-		if err := db.IsAsterisksInTemplateValid(path.Join(expectBaseDirectory, expectFilePathTemplate)); err != nil {
+		if err := vcs.IsAsterisksInTemplateValid(path.Join(expectBaseDirectory, expectFilePathTemplate)); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
 		}
 
