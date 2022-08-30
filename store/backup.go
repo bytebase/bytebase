@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/pkg/errors"
 )
 
 // backupRaw is the store model for an Backup.
@@ -289,14 +290,14 @@ func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	backupRaw, err := s.createBackupImpl(ctx, tx.PTx, create)
+	backupRaw, err := s.createBackupImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -311,9 +312,9 @@ func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -332,9 +333,9 @@ func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*bac
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -349,14 +350,14 @@ func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*ba
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	backupRaw, err := s.patchBackupImpl(ctx, tx.PTx, patch)
+	backupRaw, err := s.patchBackupImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -390,14 +391,14 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	backupRaw, err := s.upsertBackupSettingImpl(ctx, tx.PTx, upsert)
+	backupRaw, err := s.upsertBackupSettingImpl(ctx, tx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -405,7 +406,7 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 }
 
 // createBackupImpl creates a new backup.
-func (*Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
+func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCreate) (*backupRaw, error) {
 	// Insert row into backup.
 	query := `
 		INSERT INTO backup (
@@ -456,7 +457,7 @@ func (*Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Back
 	return &backupRaw, nil
 }
 
-func (*Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
+func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) ([]*backupRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -533,7 +534,7 @@ func (*Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFi
 }
 
 // patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
-func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
+func (*Store) patchBackupImpl(ctx context.Context, tx *Tx, patch *api.BackupPatch) (*backupRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -598,9 +599,9 @@ func (s *Store) getBackupSettingRaw(ctx context.Context, find *api.BackupSetting
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findBackupSettingImpl(ctx, tx.PTx, find)
+	list, err := s.findBackupSettingImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -618,7 +619,7 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -627,7 +628,7 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 		where, args = append(where, fmt.Sprintf("db.instance_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			bs.id,
 			bs.creator_id,
@@ -677,7 +678,7 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 	return backupSettingRawList, nil
 }
 
-func (*Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*backupSettingRaw, error) {
+func (*Store) findBackupSettingImpl(ctx context.Context, tx *Tx, find *api.BackupSettingFind) ([]*backupSettingRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -738,7 +739,7 @@ func (*Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api.B
 }
 
 // upsertBackupSettingImpl updates an existing backup setting.
-func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
+func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
 	// Upsert row into backup_setting.
 	query := `
 		INSERT INTO backup_setting (
@@ -797,9 +798,9 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,

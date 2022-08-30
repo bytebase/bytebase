@@ -213,15 +213,17 @@ export default defineComponent({
       environment: Environment,
       databaseList: Database[]
     ): { checked: boolean; indeterminate: boolean } => {
-      const allCount = databaseList.length;
-      const selectedIds =
-        props.state.selectedDatabaseIdListForEnvironment.get(environment.id) ||
-        [];
-      const selectedCount = selectedIds.length;
+      const set = new Set(
+        props.state.selectedDatabaseIdListForEnvironment.get(environment.id) ??
+          []
+      );
+      const checked = databaseList.every((db) => set.has(db.id));
+      const indeterminate =
+        !checked && databaseList.some((db) => set.has(db.id));
 
       return {
-        checked: selectedCount === allCount,
-        indeterminate: selectedCount > 0 && selectedCount !== allCount,
+        checked,
+        indeterminate,
       };
     };
 
@@ -230,14 +232,9 @@ export default defineComponent({
       databaseList: Database[],
       on: boolean
     ) => {
-      if (on) {
-        props.state.selectedDatabaseIdListForEnvironment.set(
-          environment.id,
-          databaseList.map((db) => db.id)
-        );
-      } else {
-        props.state.selectedDatabaseIdListForEnvironment.delete(environment.id);
-      }
+      databaseList.forEach((db) =>
+        toggleDatabaseIdForEnvironment(db.id, environment.id, on)
+      );
     };
 
     const selectDatabase = (db: Database) => {

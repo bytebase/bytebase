@@ -18,9 +18,9 @@ func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind) ([]*api.Inde
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findIndexImpl(ctx, tx.PTx, find)
+	list, err := s.findIndexImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func generateIndexActions(oldIndexList []*api.Index, indexList []db.Index, datab
 }
 
 // createIndexImpl creates a new index.
-func (*Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
+func (*Store) createIndexImpl(ctx context.Context, tx *Tx, create *api.IndexCreate) (*api.Index, error) {
 	// Insert row into index.
 	query := `
 		INSERT INTO idx (
@@ -150,7 +150,7 @@ func (*Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.Index
 	return &index, nil
 }
 
-func (*Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFind) ([]*api.Index, error) {
+func (*Store) findIndexImpl(ctx context.Context, tx *Tx, find *api.IndexFind) ([]*api.Index, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -230,7 +230,7 @@ func (*Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFind
 }
 
 // deleteIndexImpl deletes an index.
-func (*Store) deleteIndexImpl(ctx context.Context, tx *sql.Tx, delete *api.IndexDelete) error {
+func (*Store) deleteIndexImpl(ctx context.Context, tx *Tx, delete *api.IndexDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM idx WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}

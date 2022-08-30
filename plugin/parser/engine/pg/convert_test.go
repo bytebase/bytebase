@@ -3,9 +3,10 @@ package pg
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
-	"github.com/stretchr/testify/require"
 )
 
 type testData struct {

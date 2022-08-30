@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/pkg/errors"
 )
 
 // UpsertInstanceUser would update the existing user if name matches.
@@ -17,14 +18,14 @@ func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUser
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	instanceUser, err := upsertInstanceUserImpl(ctx, tx.PTx, upsert)
+	instanceUser, err := upsertInstanceUserImpl(ctx, tx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -37,9 +38,9 @@ func (s *Store) GetInstanceUser(ctx context.Context, find *api.InstanceUserFind)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findInstanceUserImpl(ctx, tx.PTx, find)
+	list, err := findInstanceUserImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +63,9 @@ func (s *Store) FindInstanceUserByInstanceID(ctx context.Context, id int) ([]*ap
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findInstanceUserImpl(ctx, tx.PTx, find)
+	list, err := findInstanceUserImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -78,13 +79,13 @@ func (s *Store) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUser
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	if err := deleteInstanceUser(ctx, tx.PTx, delete); err != nil {
+	if err := deleteInstanceUser(ctx, tx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -92,7 +93,7 @@ func (s *Store) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUser
 }
 
 // upsertInstanceUserImpl upserts a new instanceUser.
-func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
+func upsertInstanceUserImpl(ctx context.Context, tx *Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
 	// Upsert row into database.
 	query := `
 		INSERT INTO instance_user (
@@ -129,7 +130,7 @@ func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.Instanc
 	return &instanceUser, nil
 }
 
-func findInstanceUserImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
+func findInstanceUserImpl(ctx context.Context, tx *Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 
@@ -180,7 +181,7 @@ func findInstanceUserImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceUse
 }
 
 // deleteInstanceUser permanently deletes a instance user by ID.
-func deleteInstanceUser(ctx context.Context, tx *sql.Tx, delete *api.InstanceUserDelete) error {
+func deleteInstanceUser(ctx context.Context, tx *Tx, delete *api.InstanceUserDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

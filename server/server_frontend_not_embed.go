@@ -6,8 +6,9 @@ package server
 import (
 	"net/http"
 
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/common/log"
 )
 
 func embedFrontend(e *echo.Echo) {

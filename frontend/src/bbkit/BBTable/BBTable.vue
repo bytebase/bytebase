@@ -62,12 +62,12 @@
             </tr>
           </template>
           <template v-else>
-            <tr>
+            <tr v-if="showPlaceholder">
               <td
                 :colspan="columnList.length"
                 class="text-center text-gray-400"
               >
-                -
+                <slot name="placeholder">-</slot>
               </td>
             </tr>
           </template>
@@ -119,6 +119,7 @@ const props = withDefaults(
     rightBordered?: boolean;
     topBordered?: boolean;
     bottomBordered?: boolean;
+    showPlaceholder?: boolean;
   }>(),
   {
     columnList: () => [],
@@ -133,6 +134,7 @@ const props = withDefaults(
     rightBordered: true,
     topBordered: true,
     bottomBordered: true,
+    showPlaceholder: true,
   }
 );
 

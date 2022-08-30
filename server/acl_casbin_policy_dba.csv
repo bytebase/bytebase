@@ -105,3 +105,4 @@ p, DBA, /sheet/{id}/organizer, PATCH
 p, DBA, /sheet/project/{projectID}/sync, POST
 p, DBA, /debug, GET
 p, DBA, /debug, PATCH
+p, DBA, /debug/log, GET

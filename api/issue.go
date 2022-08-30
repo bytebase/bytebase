@@ -89,6 +89,12 @@ type Issue struct {
 	Payload        string       `jsonapi:"attr,payload"`
 }
 
+// IssueResponse is the API message for an issue response.
+type IssueResponse struct {
+	Issues    []*Issue `jsonapi:"relation,issues"`
+	NextToken string   `jsonapi:"attr,nextToken"`
+}
+
 // IssueCreate is the API message for creating an issue.
 type IssueCreate struct {
 	// Standard fields
@@ -213,7 +219,15 @@ type IssueFind struct {
 	PipelineID *int
 	// Find issue where principalID is either creator, assignee or subscriber
 	PrincipalID *int
-	StatusList  []IssueStatus
+	// To support pagination, we add into creator, assignee and subscriber.
+	// Only principleID or one of the following three fields can be set.
+	CreatorID    *int
+	AssigneeID   *int
+	SubscriberID *int
+
+	StatusList []IssueStatus
+	// If specified, only find issues whose ID is smaller that SinceID.
+	SinceID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
 }

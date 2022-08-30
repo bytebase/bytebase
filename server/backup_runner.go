@@ -11,13 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // NewBackupRunner creates a new backup runner.
@@ -112,7 +113,6 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 
 	for _, instance := range instanceList {
 		if instance.Engine != db.MySQL {
-			log.Debug("Instance is not a MySQL instance. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		maxRetentionPeriodTs, err := r.getMaxRetentionPeriodTsForMySQLInstance(ctx, instance)
@@ -121,7 +121,6 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			continue
 		}
 		if maxRetentionPeriodTs == math.MaxInt {
-			log.Debug("All the databases in the MySQL instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue
 		}
 		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
@@ -229,7 +228,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	driver, err := r.server.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
-			log.Warn("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
+			log.Debug("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
 			return
 		}
 		log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
@@ -242,7 +241,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, r.server.s3Client); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}

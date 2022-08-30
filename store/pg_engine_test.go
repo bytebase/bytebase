@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -218,5 +219,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.3.3"), releaseVersion)
+	require.Equal(t, semver.MustParse("1.3.4"), releaseVersion)
 }

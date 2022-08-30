@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 // principalRaw is the store model for a Principal.
@@ -141,14 +142,14 @@ func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCre
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	principal, err := createPrincipalImpl(ctx, tx.PTx, create)
+	principal, err := createPrincipalImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -165,9 +166,9 @@ func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, erro
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findPrincipalRawListImpl(ctx, tx.PTx, &api.PrincipalFind{})
+	list, err := findPrincipalRawListImpl(ctx, tx, &api.PrincipalFind{})
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +200,9 @@ func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findPrincipalRawListImpl(ctx, tx.PTx, find)
+	list, err := findPrincipalRawListImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -225,14 +226,14 @@ func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	principal, err := patchPrincipalImpl(ctx, tx.PTx, patch)
+	principal, err := patchPrincipalImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -269,7 +270,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 }
 
 // createPrincipalImpl creates a new principal.
-func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*principalRaw, error) {
+func createPrincipalImpl(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (*principalRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO principal (
@@ -310,7 +311,7 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 	return &principalRaw, nil
 }
 
-func findPrincipalRawListImpl(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
+func findPrincipalRawListImpl(ctx context.Context, tx *Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -368,7 +369,7 @@ func findPrincipalRawListImpl(ctx context.Context, tx *sql.Tx, find *api.Princip
 }
 
 // patchPrincipalImpl updates a principal by ID. Returns the new state of the principal after update.
-func patchPrincipalImpl(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPatch) (*principalRaw, error) {
+func patchPrincipalImpl(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*principalRaw, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)

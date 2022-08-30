@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/pkg/errors"
 )
 
 // deploymentConfigRaw is the store model for an DeploymentConfig.
@@ -119,14 +120,14 @@ func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.Deplo
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	cfg, err := s.upsertDeploymentConfigImpl(ctx, tx.PTx, upsert)
+	cfg, err := s.upsertDeploymentConfigImpl(ctx, tx, upsert)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -139,7 +140,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -150,7 +151,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -202,7 +203,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	}
 }
 
-func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
+func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}

@@ -3,9 +3,10 @@ package parser
 import (
 	"io"
 
-	"github.com/bytebase/bytebase/plugin/parser/ast"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 // SingleSQL is a separate SQL split from multi-SQL.
@@ -57,5 +58,9 @@ func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt)
 // This is a temporary function. Because we do not convert tidb AST to our AST. So we have to implement this.
 // TODO(rebelice): remove it.
 func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
+	// exclude CREATE TABLE ... AS and CREATE TABLE ... LIKE statement.
+	if len(node.Cols) == 0 {
+		return nil
+	}
 	return newTokenizer(node.Text()).setLineForMySQLCreateTableStmt(node)
 }

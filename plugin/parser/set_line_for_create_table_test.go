@@ -3,11 +3,12 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/ast"
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 
 	// Register postgres parser driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
@@ -33,6 +34,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 				UNIQUE (b, c),
 				PRIMARY KEY (d),CHECK (a > 0),
 
+				-- it's a comment.
 				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
 			)
 			`,
@@ -102,6 +104,16 @@ func TestPGCreateTableSetLine(t *testing.T) {
 func TestMySQLCreateTableSetLine(t *testing.T) {
 	tests := []setLineTestData{
 		{
+			statement:          "CREATE TABLE t as select * from t1",
+			columnLineList:     []int{},
+			constraintLineList: []int{},
+		},
+		{
+			statement:          "CREATE TABLE t like t1",
+			columnLineList:     []int{},
+			constraintLineList: []int{},
+		},
+		{
 			statement: `-- this is the first line.
 			CREATE TABLE t(
 				a int, B int,
@@ -113,6 +125,7 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 				UNIQUE (b, c),
 				PRIMARY KEY (d),CHECK (a > 0),
 
+				-- it's a comment.
 				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
 			)
 			`,

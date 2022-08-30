@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/pkg/errors"
 )
 
 type taskDAGRaw struct {
@@ -73,13 +74,13 @@ func (s *Store) createTaskDAGRaw(ctx context.Context, create *api.TaskDAGCreate)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	taskDAG, err := createTaskDAGImpl(ctx, tx.PTx, create)
+	taskDAG, err := createTaskDAGImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 	return taskDAG, nil
@@ -90,16 +91,16 @@ func (s *Store) findTaskDAGRawList(ctx context.Context, find *api.TaskDAGFind) (
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findTaskDAGRawListImpl(ctx, tx.PTx, find)
+	list, err := findTaskDAGRawListImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 	return list, nil
 }
 
-func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
+func createTaskDAGImpl(ctx context.Context, tx *Tx, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
 	query := `
 		INSERT INTO task_dag (
 			from_task_id,
@@ -130,7 +131,7 @@ func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreat
 	return &taskDAGRaw, nil
 }
 
-func findTaskDAGRawListImpl(ctx context.Context, tx *sql.Tx, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
+func findTaskDAGRawListImpl(ctx context.Context, tx *Tx, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,

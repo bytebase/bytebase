@@ -10,62 +10,66 @@
     @click-row="clickIssue"
   >
     <template #header>
+      <!-- Status -->
       <BBTableHeaderCell
         :left-padding="4"
         class="w-4 table-cell"
         :title="$t(columnList[0].title)"
       />
       <template v-if="mode == 'ALL'">
+        <!-- Project -->
         <BBTableHeaderCell
           class="w-12 table-cell"
           :title="$t(columnList[1].title)"
         />
+        <!-- Name -->
         <BBTableHeaderCell
-          class="w-48 table-cell"
+          class="table-cell"
           :title="$t(columnList[2].title)"
         />
+        <!-- Environment -->
         <BBTableHeaderCell
-          class="w-12 table-cell"
+          class="w-36 table-cell"
           :title="$t(columnList[3].title)"
         />
+        <!-- Progress -->
         <BBTableHeaderCell
-          class="w-12 table-cell"
-          :title="$t(columnList[4].title)"
-        />
-        <BBTableHeaderCell
-          class="w-24 hidden sm:table-cell"
+          class="w-36 hidden sm:table-cell"
           :title="$t(columnList[5].title)"
         />
+        <!-- Updated -->
         <BBTableHeaderCell
-          class="w-24 hidden md:table-cell"
+          class="w-36 hidden md:table-cell"
           :title="$t(columnList[6].title)"
         />
+        <!-- Assignee -->
         <BBTableHeaderCell
           class="w-36 hidden sm:table-cell"
           :title="$t(columnList[7].title)"
         />
       </template>
       <template v-else-if="mode == 'PROJECT'">
+        <!-- Name -->
         <BBTableHeaderCell
-          class="w-48 table-cell"
+          class="table-cell"
           :title="$t(columnList[1].title)"
         />
+        <!-- Environment -->
         <BBTableHeaderCell
-          class="w-12 table-cell"
+          class="w-36 table-cell"
           :title="$t(columnList[2].title)"
         />
+        <!-- Progress -->
         <BBTableHeaderCell
-          class="w-12 table-cell"
-          :title="$t(columnList[3].title)"
-        />
-        <BBTableHeaderCell
-          class="w-24 hidden sm:table-cell"
+          class="w-36 hidden sm:table-cell"
           :title="$t(columnList[4].title)"
         />
+        <!-- Updated -->
         <BBTableHeaderCell
-          class="w-24 hidden md:table-cell"
+          class="w-36 hidden md:table-cell"
           :title="$t(columnList[5].title)"
         />
+        <!-- Assignee -->
         <BBTableHeaderCell
           class="w-36 hidden sm:table-cell"
           :title="$t(columnList[6].title)"
@@ -80,11 +84,13 @@
         />
       </BBTableCell>
       <BBTableCell v-if="mode == 'ALL'" class="table-cell text-gray-500">
-        <span class="">{{ issue.project.key }}</span>
+        <span>{{ issue.project.key }}</span>
       </BBTableCell>
-      <BBTableCell class="truncate">
-        <span class="mr-2 text-control">#{{ issue.id }}</span>
-        <span>{{ issue.name }}</span>
+      <BBTableCell class="table-cell">
+        <div class="flex items-center">
+          <div class="mr-2 text-control">#{{ issue.id }}</div>
+          <div class="whitespace-pre-wrap">{{ issue.name }}</div>
+        </div>
       </BBTableCell>
       <BBTableCell class="table-cell">
         <div class="flex items-center">
@@ -94,9 +100,6 @@
             :environment="activeEnvironment(issue.pipeline)"
           />
         </div>
-      </BBTableCell>
-      <BBTableCell class="table-cell">
-        {{ activeDatabaseName(issue) }}
       </BBTableCell>
       <BBTableCell class="hidden sm:table-cell">
         <BBStepBar

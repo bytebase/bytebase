@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/resources/mysql"
 
 	// embed expected output.
 	_ "embed"

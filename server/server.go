@@ -57,13 +57,14 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile    Profile
-	e          *echo.Echo
-	pgInstance *postgres.Instance
-	metaDB     *store.MetadataDB
-	store      *store.Store
-	startedTs  int64
-	secret     string
+	profile         Profile
+	e               *echo.Echo
+	pgInstance      *postgres.Instance
+	metaDB          *store.MetadataDB
+	store           *store.Store
+	startedTs       int64
+	secret          string
+	errorRecordRing api.ErrorRecordRing
 
 	s3Client *s3bb.Client
 
@@ -105,8 +106,9 @@ var casbinDeveloperPolicy string
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
-		profile:   prof,
-		startedTs: time.Now().Unix(),
+		profile:         prof,
+		startedTs:       time.Now().Unix(),
+		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
 	// Display config
@@ -284,6 +286,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		errorRecorderMiddleware(err, s, c, e)
+	}
+
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {

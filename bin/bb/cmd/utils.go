@@ -4,16 +4,18 @@ import (
 	"context"
 	"os"
 
+	"github.com/pkg/errors"
+	"github.com/xo/dburl"
+
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/pkg/errors"
 
 	// install mysql driver.
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
-	// install pg driver.
+	// register pg driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
-	"github.com/xo/dburl"
+	// install pg driver.
 )
 
 func getDatabase(u *dburl.URL) string {
