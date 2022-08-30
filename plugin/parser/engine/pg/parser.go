@@ -2,6 +2,8 @@
 package pg
 
 import (
+	"strings"
+
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 	"github.com/pkg/errors"
 
@@ -27,7 +29,7 @@ type PostgreSQLParser struct {
 }
 
 // Parse implements the parser.Parser interface.
-func (*PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, error) {
+func (*PostgreSQLParser) Parse(_ parser.ParseContext, statement string) ([]ast.Node, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -51,4 +53,13 @@ func (*PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, 
 		nodeList = append(nodeList, node)
 	}
 	return nodeList, nil
+}
+
+// Deparse implements the parser.Deparse interface.
+func (*PostgreSQLParser) Deparse(context parser.DeparseContext, node ast.Node) (string, error) {
+	buf := &strings.Builder{}
+	if err := deparse(context, node, buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

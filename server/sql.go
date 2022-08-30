@@ -258,7 +258,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}()
 
 		if instance.Engine == db.Postgres {
-			stmts, err := parser.Parse(parser.Postgres, parser.Context{}, exec.Statement)
+			stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse: %s", exec.Statement)).SetInternal(err)
 			}
