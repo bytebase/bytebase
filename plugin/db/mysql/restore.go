@@ -134,6 +134,7 @@ func (driver *Driver) replayBinlogReadFromDir(ctx context.Context, originalDatab
 	if err != nil {
 		return err
 	}
+	log.Debug(fmt.Sprintf("lower_case_table_names=%s", identifierCaseSensitive))
 
 	identifierCaseSensitiveValue, err := strconv.Atoi(identifierCaseSensitive)
 	if err != nil {
