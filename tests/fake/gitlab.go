@@ -111,14 +111,11 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	}
 	pd.webhooks = append(pd.webhooks, webhookCreate)
 
-	if err := json.NewEncoder(c.Response().Writer).Encode(&gitlab.WebhookInfo{
-		ID: gl.nextWebhookID,
-	}); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal WebhookInfo response").SetInternal(err)
-	}
 	gl.nextWebhookID++
 
-	return nil
+	return c.JSON(http.StatusCreated, &gitlab.WebhookInfo{
+		ID: gl.nextWebhookID,
+	})
 }
 
 // readProjectTree reads a project file nodes.

@@ -124,6 +124,7 @@
     "config-guide": "配置指南",
     "required-placeholder": "必需的占位符",
     "optional-placeholder": "可选的占位符",
+    "optional-directory-wildcard": "可选的目录通配符",
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "enabled": "开启",
     "default": "默认",
