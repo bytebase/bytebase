@@ -214,7 +214,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 
 	targetTs := *payload.PointInTimeTs
 	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
-	backup, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
+	backup, targetBinlogInfo, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
 	if err != nil {
 		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
@@ -242,7 +242,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	startBinlogInfo := backup.Payload.BinlogInfo
 	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
 
-	if err := exec.updateProgress(ctx, mysqlTargetDriver, backupFile, startBinlogInfo, binlogDir); err != nil {
+	if err := exec.updateProgress(ctx, mysqlTargetDriver, backupFile, startBinlogInfo, *targetBinlogInfo, binlogDir); err != nil {
 		return nil, errors.Wrap(err, "failed to setup progress update process")
 	}
 
@@ -254,7 +254,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to restore full backup in the new database")
 		}
-		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, targetTs, mysqlSourceDriver.GetBinlogDir()); err != nil {
+		if err := mysqlTargetDriver.ReplayBinlogToDatabase(ctx, task.Database.Name, *payload.DatabaseName, startBinlogInfo, *targetBinlogInfo, targetTs, mysqlSourceDriver.GetBinlogDir()); err != nil {
 			log.Error("failed to perform a PITR restore in the new database",
 				zap.Int("issueID", issue.ID),
 				zap.String("databaseName", *payload.DatabaseName),
@@ -269,7 +269,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 				zap.Error(err))
 			return nil, errors.Wrap(err, "failed to perform a backup restore in the PITR database")
 		}
-		if err := mysqlTargetDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, issue.CreatedTs, targetTs); err != nil {
+		if err := mysqlTargetDriver.ReplayBinlogToPITRDatabase(ctx, task.Database.Name, startBinlogInfo, *targetBinlogInfo, issue.CreatedTs, targetTs); err != nil {
 			log.Error("failed to perform a PITR restore in the PITR database",
 				zap.Int("issueID", issue.ID),
 				zap.String("databaseName", task.Database.Name),
@@ -349,15 +349,15 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo api.BinlogInfo, binlogDir string) error {
+func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) error {
 	backupFileInfo, err := backupFile.Stat()
 	if err != nil {
 		return errors.Wrapf(err, "failed to get stat of backup file %q", backupFile.Name())
 	}
 	backupFileBytes := backupFileInfo.Size()
-	replayBinlogPaths, err := mysql.GetBinlogReplayList(startBinlogInfo, binlogDir)
+	replayBinlogPaths, err := mysql.GetBinlogReplayList(startBinlogInfo, targetBinlogInfo, binlogDir)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get binlog replay list with startBinlogInfo %+v in binlog directory %q", startBinlogInfo, binlogDir)
+		return errors.Wrapf(err, "failed to get binlog replay list from %s to %s in binlog directory %q", startBinlogInfo.FileName, targetBinlogInfo.FileName, binlogDir)
 	}
 	totalBinlogBytes, err := common.GetFileSizeSum(replayBinlogPaths)
 	if err != nil {
