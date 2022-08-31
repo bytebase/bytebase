@@ -49,6 +49,7 @@ const (
 	NotNullColumnWithNullDefault Code = 404
 	ColumnNotExists              Code = 405
 	UseChangeColumnStatement     Code = 406
+	ChangeColumnOrder            Code = 407
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
