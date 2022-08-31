@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -229,7 +230,11 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		for _, binlogFileName := range test.binlogFileNames {
-			f, err := os.Create(filepath.Join(tmpDir, binlogFileName))
+			f, err := os.Create(filepath.Join(tmpDir, binlogFileName+binlogMetaSuffix))
+			a.NoError(err)
+			content, err := json.Marshal(binlogFileMeta{})
+			a.NoError(err)
+			_, err = f.Write(content)
 			a.NoError(err)
 			err = f.Close()
 			a.NoError(err)
@@ -239,6 +244,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		if test.err {
 			a.Error(err)
 		} else {
+			a.NoError(err)
 			a.EqualValues(len(test.expect), len(result))
 			for idx := range test.expect {
 				a.EqualValues(filepath.Join(tmpDir, test.expect[idx]), result[idx])

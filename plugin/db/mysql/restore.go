@@ -298,7 +298,7 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	}
 
 	var binlogReplayList []string
-	for _, meta := range metaList {
+	for _, meta := range metaToReplay {
 		binlogReplayList = append(binlogReplayList, filepath.Join(binlogDir, meta.binlogName))
 	}
 
