@@ -882,11 +882,11 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 			if isLastBinlogFile {
 				return nil, errors.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, targetMeta.binlogName)
 			}
-			return &binlogCoordinate{Seq: targetMeta.seq, Pos: math.MaxInt64}, nil
+			return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: math.MaxInt64}, nil
 		}
 		return nil, errors.Wrapf(err, "failed to find the binlog event after targetTs %d", targetTs)
 	}
-	return &binlogCoordinate{Seq: targetMeta.seq, Pos: eventPos}, nil
+	return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: eventPos}, nil
 }
 
 func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error) {
