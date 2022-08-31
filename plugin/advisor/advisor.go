@@ -97,6 +97,9 @@ const (
 	// MySQLColumnExists is an advisor type for MySQL column existence.
 	MySQLColumnExists Type = "bb.plugin.advisor.mysql.column.exists"
 
+	// MySQLColumnDisallowChangingOrder is an advisor type for MySQL disallow changing column order.
+	MySQLColumnDisallowChangingOrder Type = "bb.plugin.advisor.mysql.column.disallow-changing-order"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
