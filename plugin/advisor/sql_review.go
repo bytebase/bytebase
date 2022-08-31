@@ -89,6 +89,9 @@ const (
 	// SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
 	SchemaRuleDropEmptyDatabase SQLReviewRuleType = "database.drop-empty-database"
 
+	// SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
+	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
+
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list.
@@ -482,6 +485,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLDatabaseAllowDropIfEmpty, nil
+		}
+	case SchemaRuleIndexNoDuplicateColumn:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexNoDuplicateColumn, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
