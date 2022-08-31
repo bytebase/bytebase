@@ -43,7 +43,7 @@ var (
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
 				line := scanner.Text()
-				if !strings.Contains(line, flags.rule) {
+				if !strings.Contains(line, flags.rule+" ") {
 					continue
 				}
 				wordList := strings.Fields(line)

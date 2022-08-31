@@ -18,11 +18,11 @@ func init() {
 	advisor.Register(db.TiDB, advisor.%AdvisorType, &%AdvisorName{})
 }
 
-// %AdvisorName is the advisor checking for %AdvisorComment.
+// %AdvisorName is the advisor checking for %AdvisorComment
 type %AdvisorName struct {
 }
 
-// Check checks for %AdvisorComment.
+// Check checks for %AdvisorComment
 func (*%AdvisorName) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
