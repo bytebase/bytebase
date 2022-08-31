@@ -84,8 +84,9 @@ func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 }
 
 type binlogCoordinate struct {
-	Seq int64
-	Pos int64
+	Name string
+	Seq  int64
+	Pos  int64
 }
 
 func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
@@ -93,7 +94,7 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 	if err != nil {
 		return binlogCoordinate{}, err
 	}
-	return binlogCoordinate{Seq: seq, Pos: pos}, nil
+	return binlogCoordinate{Name: binlogFileName, Seq: seq, Pos: pos}, nil
 }
 
 type binlogFileMeta struct {
@@ -125,9 +126,9 @@ func readBinlogMetaFile(binlogDir, fileName string) (binlogFileMeta, error) {
 }
 
 // replayBinlogFromDir replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`, read binlog from `binlogDir`.
-func (driver *Driver) replayBinlogFromDir(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64, binlogDir string) error {
+func (driver *Driver) replayBinlogFromDir(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo, targetBinlogInfo api.BinlogInfo, targetTs int64, binlogDir string) error {
 	// TODO(dragonly): find the last binlog file need to replay.
-	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, binlogDir)
+	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, targetBinlogInfo, binlogDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get binlog replay list in directory %s", binlogDir)
 	}
@@ -229,15 +230,15 @@ func (driver *Driver) GetReplayedBinlogBytes() int64 {
 }
 
 // ReplayBinlogToDatabase replays the binlog of originDatabaseName to the targetDatabaseName.
-func (driver *Driver) ReplayBinlogToDatabase(ctx context.Context, originDatabaseName, targetDatabaseName string, startBinlogInfo api.BinlogInfo, targetTs int64, binlogDir string) error {
-	return driver.replayBinlogFromDir(ctx, originDatabaseName, targetDatabaseName, startBinlogInfo, targetTs, binlogDir)
+func (driver *Driver) ReplayBinlogToDatabase(ctx context.Context, originDatabaseName, targetDatabaseName string, startBinlogInfo, targetBinlogInfo api.BinlogInfo, targetTs int64, binlogDir string) error {
+	return driver.replayBinlogFromDir(ctx, originDatabaseName, targetDatabaseName, startBinlogInfo, targetBinlogInfo, targetTs, binlogDir)
 }
 
 // ReplayBinlogToPITRDatabase replays binlog to the PITR database.
 // It's the second step of the PITR process.
-func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseName string, startBinlogInfo api.BinlogInfo, suffixTs, targetTs int64) error {
+func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseName string, startBinlogInfo, targetBinlogInfo api.BinlogInfo, suffixTs, targetTs int64) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
-	return driver.replayBinlogFromDir(ctx, databaseName, pitrDatabaseName, startBinlogInfo, targetTs, driver.binlogDir)
+	return driver.replayBinlogFromDir(ctx, databaseName, pitrDatabaseName, startBinlogInfo, targetBinlogInfo, targetTs, driver.binlogDir)
 }
 
 // RestoreBackupToDatabase create the database named `databaseName` and restores a full backup to the given database.
@@ -263,10 +264,14 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 }
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
-func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+func GetBinlogReplayList(startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
 	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse the start binlog file name %q", startBinlogInfo.FileName)
+	}
+	targetBinlogSeq, err := GetBinlogNameSeq(targetBinlogInfo.FileName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot parse the target binlog file name %q", targetBinlogInfo.FileName)
 	}
 
 	metaList, err := getSortedLocalBinlogFilesMeta(binlogDir)
@@ -274,26 +279,13 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		return nil, errors.Wrapf(err, "failed to read local binlog metadata files from directory %s", binlogDir)
 	}
 
-	startIndex := -1
-	for i, meta := range metaList {
-		if meta.seq >= startBinlogSeq {
-			startIndex = i
-			break
-		}
-	}
-	if startIndex == -1 {
-		log.Error("No binlog files found locally after given start binlog info", zap.Any("startBinlogInfo", startBinlogInfo))
-		return nil, errors.Errorf("no binlog files found locally after given start binlog info: %v", startBinlogInfo)
-	}
-
-	metaToReplay := metaList[startIndex:]
-	if metaToReplay[0].seq != startBinlogSeq {
-		log.Error("The starting binlog file does not exist locally", zap.String("filename", startBinlogInfo.FileName))
-		return nil, errors.Errorf("the starting binlog file %q does not exist locally", startBinlogInfo.FileName)
+	metaToReplay, err := getMetaReplayList(metaList, startBinlogSeq, targetBinlogSeq)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get slice of binlog metadata file between seq %d and %d in directory %s", startBinlogSeq, targetBinlogSeq, binlogDir)
 	}
 
 	if !binlogMetaAreContinuous(metaToReplay) {
-		return nil, errors.Errorf("discontinuous binlog file extensions detected, skip ")
+		return nil, errors.Errorf("discontinuous binlog file extensions detected between seq %d and %d in directory %s", startBinlogSeq, targetBinlogSeq, binlogDir)
 	}
 
 	var binlogReplayList []string
@@ -302,6 +294,30 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	}
 
 	return binlogReplayList, nil
+}
+
+func getMetaReplayList(metaList []binlogFileMeta, startSeq, targetSeq int64) ([]binlogFileMeta, error) {
+	startIndex, err := findBinlogSeqIndex(metaList, startSeq)
+	if err != nil {
+		return nil, errors.Errorf("failed to find the starting local binlog metadata file with seq %d", startSeq)
+	}
+	targetIndex, err := findBinlogSeqIndex(metaList, targetSeq)
+	if err != nil {
+		return nil, errors.Errorf("failed to find the target local binlog metadata file with seq %d", targetSeq)
+	}
+	if startIndex > targetIndex {
+		return nil, errors.Errorf("start index %d must be less than target index %d", startIndex, targetIndex)
+	}
+	return metaList[startIndex : targetIndex+1], nil
+}
+
+func findBinlogSeqIndex(metaList []binlogFileMeta, seq int64) (int, error) {
+	for i, meta := range metaList {
+		if meta.seq == seq {
+			return i, nil
+		}
+	}
+	return 0, errors.Errorf("failed to find index with seq %d in binlog metadata list", seq)
 }
 
 // sortBinlogFiles will sort binlog files in ascending order by their numeric extension.
@@ -318,15 +334,15 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
-func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
+func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, *api.BinlogInfo, error) {
 	if len(backupList) == 0 {
-		return nil, errors.Errorf("no valid backup")
+		return nil, nil, errors.Errorf("no valid backup")
 	}
 
 	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs)
 	if err != nil {
 		log.Error("Failed to get binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Error(err))
-		return nil, errors.Wrapf(err, "failed to get binlog coordinate by targetTs %d", targetTs)
+		return nil, nil, errors.Wrapf(err, "failed to get binlog coordinate by targetTs %d", targetTs)
 	}
 	log.Debug("Got binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Any("binlogCoordinate", *targetBinlogCoordinate))
 
@@ -341,10 +357,14 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 
 	backup, err := getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get the latest backup before or equal to binlog coordinate %+v", *targetBinlogCoordinate)
+		return nil, nil, errors.Wrapf(err, "failed to get the latest backup before or equal to binlog coordinate %+v", *targetBinlogCoordinate)
+	}
+	targetBinlogInfo := &api.BinlogInfo{
+		FileName: targetBinlogCoordinate.Name,
+		Position: targetBinlogCoordinate.Pos,
 	}
 
-	return backup, nil
+	return backup, targetBinlogInfo, nil
 }
 
 func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate) (*api.Backup, error) {
@@ -872,11 +892,11 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 			if isLastBinlogFile {
 				return nil, errors.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, targetMeta.binlogName)
 			}
-			return &binlogCoordinate{Seq: targetMeta.seq, Pos: math.MaxInt64}, nil
+			return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: math.MaxInt64}, nil
 		}
 		return nil, errors.Wrapf(err, "failed to find the binlog event after targetTs %d", targetTs)
 	}
-	return &binlogCoordinate{Seq: targetMeta.seq, Pos: eventPos}, nil
+	return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: eventPos}, nil
 }
 
 func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error) {
