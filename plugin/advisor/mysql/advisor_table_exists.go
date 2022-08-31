@@ -74,12 +74,8 @@ func (checker *tableExistsChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var tableList []string
 	switch node := in.(type) {
 	case *ast.InsertStmt:
-		source, isTableSource := node.Table.TableRefs.Left.(*ast.TableSource)
-		nilRight := node.Table.TableRefs.Right == nil
-		if isTableSource && nilRight {
-			if tableName, ok := source.Source.(*ast.TableName); ok {
-				tableList = append(tableList, tableName.Name.O)
-			}
+		if name, ok := getInsertTableName(node.Table); ok {
+			tableList = append(tableList, name)
 		}
 	case *ast.AlterTableStmt:
 		tableList = append(tableList, node.Table.Name.O)
@@ -114,4 +110,15 @@ func sameDatabase(a string, b string) bool {
 		return true
 	}
 	return a == b
+}
+
+func getInsertTableName(table *ast.TableRefsClause) (string, bool) {
+	source, isTableSource := table.TableRefs.Left.(*ast.TableSource)
+	nilRight := table.TableRefs.Right == nil
+	if isTableSource && nilRight {
+		if tableName, ok := source.Source.(*ast.TableName); ok {
+			return tableName.Name.O, true
+		}
+	}
+	return "", false
 }
