@@ -68,6 +68,9 @@ const (
 
 	// 801 miss index error code.
 	NotUseIndex Code = 801
+
+	// 901 ~ 999 index error code.
+	DuplicateColumnInIndex Code = 901
 )
 
 // Int returns the int type of code.
