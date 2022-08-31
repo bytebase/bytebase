@@ -120,7 +120,6 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 		InstanceID: &targetInstanceID,
 		Name:       payload.DatabaseName,
 	}
-
 	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, task.Instance.Name)
@@ -137,7 +136,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup); err != nil {
 		return nil, err
 	}
 	// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
@@ -417,26 +416,31 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 }
 
 // restoreDatabase will restore the database to the instance from the backup.
-func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
+func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) error {
 	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
 	}
 	defer driver.Close(ctx)
 
-	backupPath := backup.Path
-	if !filepath.IsAbs(backupPath) {
-		backupPath = filepath.Join(dataDir, backupPath)
+	backupAbsPathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+
+	if backup.StorageBackend == api.BackupStorageBackendS3 {
+		if err := downloadBackupFileFromCloud(ctx, server, backup.Path, backupAbsPathLocal); err != nil {
+			return errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
+		}
+		defer os.Remove(backupAbsPathLocal)
 	}
 
-	f, err := os.Open(backupPath)
+	backupFileLocal, err := os.Open(backupAbsPathLocal)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open backup file at %s", backupPath)
+		return errors.Wrapf(err, "failed to open backup file at %s", backupAbsPathLocal)
 	}
-	defer f.Close()
+	defer backupFileLocal.Close()
 
-	if err := driver.Restore(ctx, f); err != nil {
+	if err := driver.Restore(ctx, backupFileLocal); err != nil {
 		return errors.Wrap(err, "failed to restore backup")
 	}
+
 	return nil
 }
