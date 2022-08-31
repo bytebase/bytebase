@@ -105,9 +105,14 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 
+	// To avoid concurrent map writes, we copy the map before modifying it.
+	copyExcludedDatabaseList := make(map[string]bool, len(excludedDatabaseList))
+	for k, v := range excludedDatabaseList {
+		copyExcludedDatabaseList[k] = v
+	}
 	// Skip all system databases
 	for k := range systemDatabases {
-		excludedDatabaseList[k] = true
+		copyExcludedDatabaseList[k] = true
 	}
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
@@ -117,7 +122,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	var databaseList []db.DatabaseMeta
 	for _, database := range databases {
 		dbName := database.name
-		if _, ok := excludedDatabaseList[dbName]; ok {
+		if _, ok := copyExcludedDatabaseList[dbName]; ok {
 			continue
 		}
 
