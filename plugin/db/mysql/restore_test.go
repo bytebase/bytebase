@@ -279,31 +279,30 @@ func TestSortBinlogFiles(t *testing.T) {
 	}
 }
 
-func TestBinlogFilesAreContinuous(t *testing.T) {
+func TestBinlogMetaAreContinuous(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		binlogFiles []BinlogFile
-		expect      bool
+		metaList []binlogFileMeta
+		expect   bool
 	}{
 		{
-			binlogFiles: []BinlogFile{},
-			expect:      true,
+			metaList: []binlogFileMeta{},
+			expect:   true},
+		{
+			metaList: []binlogFileMeta{{seq: 1}},
+			expect:   true,
 		},
 		{
-			binlogFiles: []BinlogFile{{Seq: 1}},
-			expect:      true,
+			metaList: []binlogFileMeta{{seq: 1}, {seq: 2}},
+			expect:   true,
 		},
 		{
-			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 2}},
-			expect:      true,
-		},
-		{
-			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 3}},
-			expect:      false,
+			metaList: []binlogFileMeta{{seq: 1}, {seq: 3}},
+			expect:   false,
 		},
 	}
 	for _, test := range tests {
-		result := binlogFilesAreContinuous(test.binlogFiles)
+		result := binlogMetaAreContinuous(test.metaList)
 		a.Equal(test.expect, result)
 	}
 }
