@@ -430,6 +430,16 @@ const routes: Array<RouteRecordRaw> = [
                   import("../views/SettingWorkspaceSQLReviewDetail.vue"),
                 props: true,
               },
+              {
+                path: "debug-log",
+                name: "setting.workspace.debug-log",
+                meta: {
+                  title: () => t("settings.sidebar.debug-logs"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceDebugLogs.vue"),
+                props: true,
+              },
             ],
           },
           {
