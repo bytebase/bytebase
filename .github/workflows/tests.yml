@@ -31,6 +31,24 @@ jobs:
           args: -v
           skip-cache: true
 
+  eslint-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.1.0
+        with:
+          version: 6.10.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "14"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm lint
+        run: pnpm lint
+        working-directory: frontend
+
   # Copied from build-artifacts-and-draft-release.yml, should be consistent if updating build-artifacts-and-draft-release.yml.
   release-dry-run-linux:
     runs-on: ubuntu-latest
