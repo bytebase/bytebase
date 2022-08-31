@@ -47,6 +47,7 @@ const (
 	ColumnCanNotNull             Code = 402
 	ChangeColumnType             Code = 403
 	NotNullColumnWithNullDefault Code = 404
+	ColumnNotExists              Code = 405
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -55,6 +56,7 @@ const (
 	TableNoPK                         Code = 601
 	TableHasFK                        Code = 602
 	TableDropNamingConventionMismatch Code = 603
+	TableNotExists                    Code = 604
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701

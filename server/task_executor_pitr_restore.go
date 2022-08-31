@@ -221,7 +221,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 
 	targetTs := *payload.PointInTimeTs
 	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
-	backup, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, server.profile.Mode)
+	backup, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
 	if err != nil {
 		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",

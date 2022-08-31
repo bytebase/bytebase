@@ -61,6 +61,8 @@ const (
 	SchemaRuleTableNoFK SQLReviewRuleType = "table.no-foreign-key"
 	// SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
 	SchemaRuleTableDropNamingConvention SQLReviewRuleType = "table.drop-naming-convention"
+	// SchemaRuleTableExists require the table existence.
+	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -70,6 +72,8 @@ const (
 	SchemaRuleColumnDisallowChangeType SQLReviewRuleType = "column.disallow-change-type"
 	// SchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
 	SchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "column.set-default-for-not-null"
+	// SchemaRuleColumnExists require the column existence.
+	SchemaRuleColumnExists SQLReviewRuleType = "column.exists"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -413,6 +417,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLColumnSetDefaultForNotNull, nil
 		}
+	case SchemaRuleColumnExists:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnExists, nil
+		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -431,6 +440,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDropNamingConvention, nil
+		}
+	case SchemaRuleTableExists:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableExists, nil
 		}
 	case SchemaRuleMySQLEngine:
 		if engine == db.MySQL {

@@ -126,8 +126,10 @@
         {{ FILE_REQUIRED_PLACEHOLDER }};
         <template v-if="fileOptionalPlaceholder.length > 0">
           {{ $t("common.optional-placeholder") }}:
-          {{ fileOptionalPlaceholder.join(", ") }}
+          {{ fileOptionalPlaceholder.join(", ") }};
         </template>
+        {{ $t("common.optional-directory-wildcard") }}:
+        {{ FILE_OPTIONAL_DIRECTORY_WILDCARD }}
       </div>
       <div class="mt-2 textinfolabel">
         • {{ $t("repository.file-path-example-schema-migration") }}:
@@ -239,6 +241,9 @@ import {
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
+const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
+const SINGLE_ASTERISK_REGEX = /\/\*\//g;
+const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -321,6 +326,11 @@ export default defineComponent({
       ];
 
       let result = `${baseDirectory}/${filePathTemplate}`;
+
+      // To replace the wildcard.
+      result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
+      result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
+
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);

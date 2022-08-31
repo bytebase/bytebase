@@ -134,7 +134,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 }
 
 func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (result []api.TaskCheckResult, err error) {
-	stmts, err := parser.Parse(parser.Postgres, parser.Context{}, statement)
+	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
 		//nolint:nilerr
 		return []api.TaskCheckResult{

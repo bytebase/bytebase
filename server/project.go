@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 
@@ -213,6 +214,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Wildcard isn't supported for branch setting")
 		}
 
+		// We need to check the FilePathTemplate in create repository request.
+		// This avoids to a certain extent that the creation succeeds but does not work.
+		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, errors.Wrap(err, "Invalid base directory and filepath template combination").Error()))
+		}
+
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
@@ -404,6 +411,21 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repo := repoList[0]
 		repoPatch.ID = repo.ID
+
+		// We need to check the FilePathTemplate in create repository request.
+		// This avoids to a certain extent that the creation succeeds but does not work.
+		newBaseDirectory, newFilePathTemplate := repo.BaseDirectory, repo.FilePathTemplate
+		if repoPatch.BaseDirectory != nil {
+			newBaseDirectory = *repoPatch.BaseDirectory
+		}
+		if repoPatch.FilePathTemplate != nil {
+			newFilePathTemplate = *repoPatch.FilePathTemplate
+		}
+
+		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
+		}
+
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
