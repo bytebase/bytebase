@@ -94,6 +94,9 @@ const (
 	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
 	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-changing"
 
+	// MySQLColumnExists is an advisor type for MySQL column existence.
+	MySQLColumnExists Type = "bb.plugin.advisor.mysql.column.exists"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
