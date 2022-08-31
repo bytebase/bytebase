@@ -91,6 +91,9 @@ const (
 	// MySQLColumnSetDefaultForNotNull is an advisor type for MySQL set default value for not null column.
 	MySQLColumnSetDefaultForNotNull Type = "bb.plugin.advisor.mysql.column.set-default-for-not-null"
 
+	// MySQLColumnExists is an advisor type for MySQL column existence.
+	MySQLColumnExists Type = "bb.plugin.advisor.mysql.column.exists"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
