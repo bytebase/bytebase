@@ -55,6 +55,8 @@
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
+    :schema-migration-type="state.schemaMigrationType"
+    @change-schema-migration-type="(type) => (state.schemaMigrationType = type)"
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
@@ -90,12 +92,16 @@ import {
   ExternalRepositoryInfo,
   RepositoryConfig,
   Project,
+  ProjectPatch,
+  SchemaMigrationType,
 } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useRepositoryStore } from "@/store";
+import { pushNotification, useProjectStore, useRepositoryStore } from "@/store";
+import { isDev } from "@/utils";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
+  schemaMigrationType: SchemaMigrationType;
 }
 
 export default defineComponent({
@@ -127,6 +133,7 @@ export default defineComponent({
         schemaPathTemplate: props.repository.schemaPathTemplate,
         sheetPathTemplate: props.repository.sheetPathTemplate,
       },
+      schemaMigrationType: props.project.schemaMigrationType,
     });
 
     watch(
@@ -155,15 +162,17 @@ export default defineComponent({
       return (
         !isEmpty(state.repositoryConfig.branchFilter) &&
         !isEmpty(state.repositoryConfig.filePathTemplate) &&
-        (props.repository.branchFilter != state.repositoryConfig.branchFilter ||
-          props.repository.baseDirectory !=
+        (props.repository.branchFilter !==
+          state.repositoryConfig.branchFilter ||
+          props.repository.baseDirectory !==
             state.repositoryConfig.baseDirectory ||
-          props.repository.filePathTemplate !=
+          props.repository.filePathTemplate !==
             state.repositoryConfig.filePathTemplate ||
-          props.repository.schemaPathTemplate !=
+          props.repository.schemaPathTemplate !==
             state.repositoryConfig.schemaPathTemplate ||
-          props.repository.sheetPathTemplate !=
-            state.repositoryConfig.sheetPathTemplate)
+          props.repository.sheetPathTemplate !==
+            state.repositoryConfig.sheetPathTemplate ||
+          props.project.schemaMigrationType !== state.schemaMigrationType)
       );
     });
 
@@ -177,7 +186,7 @@ export default defineComponent({
       });
     };
 
-    const doUpdate = () => {
+    const doUpdate = async () => {
       const repositoryPatch: RepositoryPatch = {};
       if (
         props.repository.branchFilter != state.repositoryConfig.branchFilter
@@ -211,18 +220,29 @@ export default defineComponent({
           state.repositoryConfig.sheetPathTemplate;
       }
 
-      repositoryStore
-        .updateRepositoryByProjectId({
+      // Update project schemaMigrationType field firstly.
+      if (
+        isDev() &&
+        state.schemaMigrationType !== props.project.schemaMigrationType
+      ) {
+        const projectPatch: ProjectPatch = {
+          schemaMigrationType: state.schemaMigrationType,
+        };
+        await useProjectStore().patchProject({
           projectId: props.project.id,
-          repositoryPatch,
-        })
-        .then(() => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("repository.update-version-control-config-success"),
-          });
+          projectPatch,
         });
+      }
+
+      await repositoryStore.updateRepositoryByProjectId({
+        projectId: props.project.id,
+        repositoryPatch,
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("repository.update-version-control-config-success"),
+      });
     };
 
     return {
