@@ -294,7 +294,8 @@
   },
   "intro": {
     "doc": "doc",
-    "issue": "issue"
+    "issue": "issue",
+    "quickstart": "quickstart"
   },
   "bbkit": {
     "common": {
