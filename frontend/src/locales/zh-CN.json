@@ -207,6 +207,7 @@
     "go-now": "立即前往",
     "sync-now": "现在同步",
     "show-help": "查看帮助",
+    "success": "成功",
     "load-more": "加载更多"
   },
   "error-page": {
@@ -632,7 +633,7 @@
           "sql-driven-workflow": "SQL 工作流",
           "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。"
         },
-        "postgres": {
+        "postgresql": {
           "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。",
           "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
         }
@@ -642,6 +643,8 @@
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
+    "create-an-onboarding-postgresql-instance": "创建一个临时的 PostgreSQL 数据库实例",
+    "successfully-created-postgresql-instance": "成功创建临时的 PostgreSQL 数据库实例，并已经自动填充至表单。",
     "connection-info-seems-to-be-incorrect": "连接信息似乎错误",
     "new-instance": "新实例",
     "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{0}",
@@ -881,7 +884,8 @@
     "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}",
     "view-unassigned-databases": "查看未分配的数据库",
     "unassigned-databases": "未分配的数据库",
-    "restore-database": "恢复数据库"
+    "restore-database": "恢复数据库",
+    "selected-n-databases": "已选择 {n} 个数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1263,7 +1267,9 @@
     "format": "格式化",
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
-    "open-connection": "打开连接"
+    "open-connection": "打开连接",
+    "visualize-explain": "可视化 Explain",
+    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。"
   },
   "label": {
     "empty-label-value": "<空值>",
