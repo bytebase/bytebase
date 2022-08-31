@@ -50,6 +50,7 @@ const (
 	ColumnNotExists              Code = 405
 	UseChangeColumnStatement     Code = 406
 	ChangeColumnOrder            Code = 407
+	NoColumnComment              Code = 408
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
