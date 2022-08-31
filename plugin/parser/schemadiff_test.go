@@ -28,9 +28,8 @@ CREATE TABLE repositories (
 `)
 	require.NoError(t, err)
 
-	diff, err := parser.ComputeDiff(oldSchema, newSchema)
+	got, err := parser.SchemaDiff(oldSchema, newSchema)
 	require.NoError(t, err)
-	got := diff.String()
 
 	// The DDLs for the diff should be in the exact same order as the DDLs in the new schema.
 	want := `CREATE TABLE users (
