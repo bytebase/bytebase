@@ -207,6 +207,7 @@
     "go-now": "Go now",
     "sync-now": "Sync Now",
     "show-help": "Show help",
+    "success": "Succeed",
     "load-more": "Load more"
   },
   "error-page": {
@@ -293,7 +294,8 @@
   },
   "intro": {
     "doc": "doc",
-    "issue": "issue"
+    "issue": "issue",
+    "quickstart": "quickstart"
   },
   "bbkit": {
     "common": {
@@ -631,7 +633,7 @@
           "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. First you need to enable ClickHouse SQL-driven workflow {link} and then run the following query to create the user.",
           "sql-driven-workflow": "SQL-driven workflow"
         },
-        "postgres": {
+        "postgresql": {
           "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges.",
           "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER."
         }
@@ -641,6 +643,8 @@
     "password-write-only": "YOUR_DB_PWD - write only",
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
+    "create-an-onboarding-postgresql-instance": "Create an onboarding PostgreSQL instance",
+    "successfully-created-postgresql-instance": "Successfully created onboarding PostgreSQL instance and automatically filled into the form.",
     "connection-info-seems-to-be-incorrect": "Connection info seems to be incorrect",
     "new-instance": "New Instance",
     "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {0}",
@@ -880,7 +884,8 @@
     "not-found-last-successful-sync-was": "Not found, last successful sync was {time}",
     "view-unassigned-databases": "View unassigned databases",
     "unassigned-databases": "Unassigned databases",
-    "restore-database": "Restore database"
+    "restore-database": "Restore database",
+    "selected-n-databases": "{n} database selected | {n} databases selected"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1262,7 +1267,9 @@
     "format": "Format",
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
-    "open-connection": "Open connection"
+    "open-connection": "Open connection",
+    "visualize-explain": "Visualize Explain",
+    "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment."
   },
   "label": {
     "empty-label-value": "<Empty Value>",
