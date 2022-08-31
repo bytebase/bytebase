@@ -270,6 +270,56 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 	}
 }
 
+func TestGetBinlogMetaSlice(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		metaList  []binlogFileMeta
+		startSeq  int64
+		targetSeq int64
+		expect    []binlogFileMeta
+		err       bool
+	}{
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  1,
+			targetSeq: 3,
+			expect:    []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			err:       false,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 3}},
+			startSeq:  1,
+			targetSeq: 3,
+			expect:    []binlogFileMeta{{seq: 1}, {seq: 3}},
+			err:       false,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  1,
+			targetSeq: 4,
+			expect:    nil,
+			err:       true,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  0,
+			targetSeq: 3,
+			expect:    nil,
+			err:       true,
+		},
+	}
+
+	for _, test := range tests {
+		result, err := getBinlogMetaSlice(test.metaList, test.startSeq, test.targetSeq)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+			a.Equal(test.expect, result)
+		}
+	}
+}
+
 func TestSortBinlogFiles(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {

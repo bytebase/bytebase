@@ -279,16 +279,11 @@ func GetBinlogReplayList(startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlo
 		return nil, errors.Wrapf(err, "failed to read local binlog metadata files from directory %s", binlogDir)
 	}
 
-	startIndex, err := findBinlogSeqIndex(metaList, startBinlogSeq)
+	metaToReplay, err := getBinlogMetaSlice(metaList, startBinlogSeq, targetBinlogSeq)
 	if err != nil {
-		return nil, errors.Errorf("failed to find the starting local binlog metadata file %s", startBinlogInfo.FileName)
-	}
-	targetIndex, err := findBinlogSeqIndex(metaList, targetBinlogSeq)
-	if err != nil {
-		return nil, errors.Errorf("failed to find the target local binlog metadata file %s", targetBinlogInfo.FileName)
+		return nil, errors.Wrapf(err, "failed to get slice of binlog metadata file between seq %d and %d in directory %s", startBinlogSeq, targetBinlogSeq, binlogDir)
 	}
 
-	metaToReplay := metaList[startIndex : targetIndex+1]
 	if !binlogMetaAreContinuous(metaToReplay) {
 		return nil, errors.Errorf("discontinuous binlog file extensions detected between seq %d and %d in directory %s", startBinlogSeq, targetBinlogSeq, binlogDir)
 	}
@@ -299,6 +294,18 @@ func GetBinlogReplayList(startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlo
 	}
 
 	return binlogReplayList, nil
+}
+
+func getBinlogMetaSlice(metaList []binlogFileMeta, startSeq, targetSeq int64) ([]binlogFileMeta, error) {
+	startIndex, err := findBinlogSeqIndex(metaList, startSeq)
+	if err != nil {
+		return nil, errors.Errorf("failed to find the starting local binlog metadata file with seq %d", startSeq)
+	}
+	targetIndex, err := findBinlogSeqIndex(metaList, targetSeq)
+	if err != nil {
+		return nil, errors.Errorf("failed to find the target local binlog metadata file with seq %d", targetSeq)
+	}
+	return metaList[startIndex : targetIndex+1], nil
 }
 
 func findBinlogSeqIndex(metaList []binlogFileMeta, seq int64) (int, error) {
