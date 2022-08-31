@@ -380,6 +380,7 @@ export default defineComponent({
     return {
       FILE_REQUIRED_PLACEHOLDER,
       SCHEMA_REQUIRED_PLACEHOLDER,
+      FILE_OPTIONAL_DIRECTORY_WILDCARD,
       fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
       state,

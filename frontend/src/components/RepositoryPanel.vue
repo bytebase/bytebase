@@ -97,6 +97,7 @@ import {
 } from "../types";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useProjectStore, useRepositoryStore } from "@/store";
+import { isDev } from "@/utils";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -220,7 +221,10 @@ export default defineComponent({
       }
 
       // Update project schemaMigrationType field firstly.
-      if (state.schemaMigrationType !== props.project.schemaMigrationType) {
+      if (
+        isDev() &&
+        state.schemaMigrationType !== props.project.schemaMigrationType
+      ) {
         const projectPatch: ProjectPatch = {
           schemaMigrationType: state.schemaMigrationType,
         };

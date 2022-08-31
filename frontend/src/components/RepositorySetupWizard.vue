@@ -67,7 +67,7 @@ import {
   unknown,
   VCS,
 } from "../types";
-import { projectSlug } from "../utils";
+import { isDev, projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useProjectStore, useRepositoryStore } from "@/store";
 
@@ -189,7 +189,9 @@ export default defineComponent({
           externalId = state.config.repositoryInfo.fullPath;
         }
 
+        // Update project schemaMigrationType field firstly.
         if (
+          isDev() &&
           state.config.schemaMigrationType !== props.project.schemaMigrationType
         ) {
           const projectPatch: ProjectPatch = {
