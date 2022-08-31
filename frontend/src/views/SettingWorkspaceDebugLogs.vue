@@ -40,7 +40,9 @@
             >
               <NGrid x-gap="20" :cols="20">
                 <NGi span="3">
-                  <span class="textlabel">{{ logKeyMap[key] }}</span
+                  <span class="textlabel whitespace-nowrap">{{
+                    logKeyMap[key]
+                  }}</span
                   ><span class="mr-1">:</span>
                 </NGi>
                 <NGi span="17">
