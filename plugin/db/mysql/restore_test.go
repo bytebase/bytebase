@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -229,7 +230,11 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		for _, binlogFileName := range test.binlogFileNames {
-			f, err := os.Create(filepath.Join(tmpDir, binlogFileName))
+			f, err := os.Create(filepath.Join(tmpDir, binlogFileName+binlogMetaSuffix))
+			a.NoError(err)
+			content, err := json.Marshal(binlogFileMeta{})
+			a.NoError(err)
+			_, err = f.Write(content)
 			a.NoError(err)
 			err = f.Close()
 			a.NoError(err)
@@ -239,6 +244,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		if test.err {
 			a.Error(err)
 		} else {
+			a.NoError(err)
 			a.EqualValues(len(test.expect), len(result))
 			for idx := range test.expect {
 				a.EqualValues(filepath.Join(tmpDir, test.expect[idx]), result[idx])
@@ -279,31 +285,30 @@ func TestSortBinlogFiles(t *testing.T) {
 	}
 }
 
-func TestBinlogFilesAreContinuous(t *testing.T) {
+func TestBinlogMetaAreContinuous(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		binlogFiles []BinlogFile
-		expect      bool
+		metaList []binlogFileMeta
+		expect   bool
 	}{
 		{
-			binlogFiles: []BinlogFile{},
-			expect:      true,
+			metaList: []binlogFileMeta{},
+			expect:   true},
+		{
+			metaList: []binlogFileMeta{{seq: 1}},
+			expect:   true,
 		},
 		{
-			binlogFiles: []BinlogFile{{Seq: 1}},
-			expect:      true,
+			metaList: []binlogFileMeta{{seq: 1}, {seq: 2}},
+			expect:   true,
 		},
 		{
-			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 2}},
-			expect:      true,
-		},
-		{
-			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 3}},
-			expect:      false,
+			metaList: []binlogFileMeta{{seq: 1}, {seq: 3}},
+			expect:   false,
 		},
 	}
 	for _, test := range tests {
-		result := binlogFilesAreContinuous(test.binlogFiles)
+		result := binlogMetaAreContinuous(test.metaList)
 		a.Equal(test.expect, result)
 	}
 }
