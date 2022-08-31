@@ -296,6 +296,13 @@ func TestGetBinlogMetaSlice(t *testing.T) {
 		{
 			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
 			startSeq:  1,
+			targetSeq: 1,
+			expect:    []binlogFileMeta{{seq: 1}},
+			err:       false,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  1,
 			targetSeq: 4,
 			expect:    nil,
 			err:       true,
@@ -310,7 +317,7 @@ func TestGetBinlogMetaSlice(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result, err := getBinlogMetaSlice(test.metaList, test.startSeq, test.targetSeq)
+		result, err := getMetaReplayList(test.metaList, test.startSeq, test.targetSeq)
 		if test.err {
 			a.Error(err)
 		} else {
