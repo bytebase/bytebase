@@ -9,7 +9,6 @@ package mysql
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -321,7 +320,7 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
-func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, mode common.ReleaseMode) (*api.Backup, error) {
+func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
 	if len(backupList) == 0 {
 		return nil, errors.Errorf("no valid backup")
 	}
@@ -342,10 +341,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 		validBackupList = append(validBackupList, b)
 	}
 
-	return driver.getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
+	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate)
 }
 
-func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
+func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate) (*api.Backup, error) {
 	type backupBinlogCoordinate struct {
 		binlogCoordinate
 		backup *api.Backup
@@ -382,20 +381,6 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 	}
 
 	if backup == nil {
-		if mode == common.ReleaseModeDev {
-			args := []string{
-				"-v",
-				"--base64-output=DECODE-ROWS",
-				filepath.Join(driver.binlogDir, fmt.Sprintf("binlog.%06d", targetBinlogCoordinate.Seq)),
-			}
-			cmd := exec.Command(mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
-			var out bytes.Buffer
-			cmd.Stdout = &out
-			if err := cmd.Run(); err != nil {
-				return nil, err
-			}
-			log.Debug(out.String())
-		}
 		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
 		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
 			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
