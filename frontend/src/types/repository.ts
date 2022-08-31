@@ -1,5 +1,5 @@
 import isEmpty from "lodash-es/isEmpty";
-import { ProjectId, RepositoryId, VCSId } from "./id";
+import { RepositoryId, VCSId } from "./id";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { VCS } from "./vcs";

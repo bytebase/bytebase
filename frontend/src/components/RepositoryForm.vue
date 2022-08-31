@@ -71,7 +71,33 @@
         :disabled="!allowEdit"
       />
     </div>
-    <div>
+    <!-- Project schemaMigrationType selector -->
+    <div v-if="isDev">
+      <div class="textlabel">
+        {{ $t("project.settings.schema-migration-type") }}
+        <span class="text-red-600">*</span>
+      </div>
+      <BBSelect
+        id="schemamigrationtype"
+        :selected-item="schemaMigrationType"
+        :item-list="['DDL', 'SDL']"
+        class="mt-1"
+        @select-item="
+          (type) => {
+            $emit('change-schema-migration-type', type);
+          }
+        "
+      >
+        <template #menuItem="{ item }">
+          {{
+            $t(
+              `project.settings.select-schema-migration-type-${item.toLowerCase()}`
+            )
+          }}
+        </template>
+      </BBSelect>
+    </div>
+    <div v-if="schemaMigrationType === 'DDL'">
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
@@ -138,10 +164,15 @@
         >
       </div>
       <div class="mt-1 textinfolabel">
-        {{ $t("repository.schema-writeback-description") }}
-        <span class="font-medium text-main">{{
-          $t("repository.schema-writeback-protected-branch")
-        }}</span>
+        <template v-if="schemaMigrationType === 'DDL'">
+          {{ $t("repository.schema-writeback-description") }}
+          <span class="font-medium text-main">{{
+            $t("repository.schema-writeback-protected-branch")
+          }}</span>
+        </template>
+        <template v-else>
+          {{ $t("project.settings.schema-path-template-sdl-description") }}
+        </template>
       </div>
       <input
         id="schemapathtemplate"
@@ -173,7 +204,7 @@
         }}
       </div>
     </div>
-    <div>
+    <div v-if="schemaMigrationType === 'DDL'">
       <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}
@@ -204,6 +235,7 @@ import {
   ExternalRepositoryInfo,
   Project,
   RepositoryConfig,
+  SchemaMigrationType,
   VCSType,
 } from "@/types";
 
@@ -247,8 +279,12 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Project>,
     },
+    schemaMigrationType: {
+      required: true,
+      type: String as PropType<SchemaMigrationType>,
+    },
   },
-  emits: ["change-repository"],
+  emits: ["change-repository", "change-schema-migration-type"],
   setup(props) {
     const state = reactive<LocalState>({});
 
@@ -343,9 +379,9 @@ export default defineComponent({
 
     return {
       FILE_REQUIRED_PLACEHOLDER,
-      fileOptionalPlaceholder,
-      FILE_OPTIONAL_DIRECTORY_WILDCARD,
       SCHEMA_REQUIRED_PLACEHOLDER,
+      FILE_OPTIONAL_DIRECTORY_WILDCARD,
+      fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
       state,
       sampleFilePath,

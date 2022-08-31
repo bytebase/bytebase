@@ -5,17 +5,18 @@
     :vcs-name="config.vcs.name"
     :repository-info="config.repositoryInfo"
     :repository-config="config.repositoryConfig"
+    :schema-migration-type="config.schemaMigrationType"
     :project="project"
+    @change-schema-migration-type="
+      (type) => $emit('change-schema-migration-type', type)
+    "
   />
 </template>
 
 <script lang="ts">
-import { reactive, PropType, defineComponent } from "vue";
+import { PropType, defineComponent } from "vue";
 import RepositoryForm from "./RepositoryForm.vue";
 import { Project, ProjectRepositoryConfig } from "../types";
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
 
 export default defineComponent({
   name: "RepositoryConfigPanel",
@@ -30,13 +31,6 @@ export default defineComponent({
       type: Object as PropType<Project>,
     },
   },
-  emits: ["next"],
-  setup() {
-    const state = reactive<LocalState>({});
-
-    return {
-      state,
-    };
-  },
+  emits: ["change-schema-migration-type"],
 });
 </script>

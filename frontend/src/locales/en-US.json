@@ -1060,7 +1060,11 @@
       "sync-from-vcs": "Sync from VCS",
       "success-member-sync-prompt": "Sync member from VCS Succeeded",
       "view-vcs-member": "View members in VCS",
-      "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync."
+      "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync.",
+      "schema-migration-type": "Schema migration type",
+      "select-schema-migration-type-ddl": "Data Definition Language (DDL)",
+      "select-schema-migration-type-sdl": "Schema Definition Language (SDL)",
+      "schema-path-template-sdl-description": "The schema file that contains the desired state of the database schema. Bytebase creates new migrations for any discrepancy found between the desired state and the actual database schema."
     },
     "mode": {
       "standard": "Standard",
