@@ -270,7 +270,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 	}
 }
 
-func TestGetBinlogMetaSlice(t *testing.T) {
+func TestGetMetaReplayList(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
 		metaList  []binlogFileMeta
