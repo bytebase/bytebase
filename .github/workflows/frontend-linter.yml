@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - "release/*.*.*"
+    paths:
+      - frontend/**
   pull_request:
 
 jobs:
@@ -22,6 +24,6 @@ jobs:
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - name: Run lint
+      - name: Run pnpm lint
         run: pnpm lint
         working-directory: frontend
