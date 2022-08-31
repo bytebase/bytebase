@@ -78,6 +78,8 @@ const (
 	SchemaRuleColumnExists SQLReviewRuleType = "column.exists"
 	// SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 	SchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "column.disallow-changing-order"
+	// SchemaRuleColumnCommentRequirement require the column comments.
+	SchemaRuleColumnCommentRequirement SQLReviewRuleType = "column.comment-require"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -435,6 +437,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnDisallowChangingOrder, nil
+		}
+	case SchemaRuleColumnCommentRequirement:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnCommentRequirement, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
