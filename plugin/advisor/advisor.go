@@ -118,6 +118,9 @@ const (
 	// MySQLTableExists is an advisor type for MySQL table existence.
 	MySQLTableExists Type = "bb.plugin.advisor.mysql.table.exists"
 
+	// MySQLTableCommentRequirement is an advisor for MySQL table comment requirement.
+	MySQLTableCommentRequirement Type = "bb.plugin.advisor.mysql.table.comment-require"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
