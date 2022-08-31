@@ -92,7 +92,7 @@ const (
 	MySQLColumnSetDefaultForNotNull Type = "bb.plugin.advisor.mysql.column.set-default-for-not-null"
 
 	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
-	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-changing"
+	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-change"
 
 	// MySQLColumnExists is an advisor type for MySQL column existence.
 	MySQLColumnExists Type = "bb.plugin.advisor.mysql.column.exists"
