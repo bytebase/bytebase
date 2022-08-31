@@ -272,7 +272,7 @@ func GetBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 
 	metaList, err := getSortedLocalBinlogFilesMeta(binlogDir)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read local binlog metadata files")
+		return nil, errors.Wrapf(err, "failed to read local binlog metadata files from directory %s", binlogDir)
 	}
 
 	startIndex := -1
