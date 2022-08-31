@@ -63,6 +63,8 @@ const (
 	SchemaRuleTableDropNamingConvention SQLReviewRuleType = "table.drop-naming-convention"
 	// SchemaRuleTableExists require the table existence.
 	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
+	// SchemaRuleTableCommentRequirement requaire the table comment.
+	SchemaRuleTableCommentRequirement SQLReviewRuleType = "table.comment-require"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -466,6 +468,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableExists, nil
+		}
+	case SchemaRuleTableCommentRequirement:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableCommentRequirement, nil
 		}
 	case SchemaRuleMySQLEngine:
 		if engine == db.MySQL {
