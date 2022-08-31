@@ -1,3 +1,1 @@
-<template>
-  <!-- It's a placeholder and will be update in next PR. -->
-</template>
+<template>// eslint-disable-next-line vue/valid-template-root</template>
