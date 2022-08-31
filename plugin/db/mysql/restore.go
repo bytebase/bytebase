@@ -305,6 +305,9 @@ func getMetaReplayList(metaList []binlogFileMeta, startSeq, targetSeq int64) ([]
 	if err != nil {
 		return nil, errors.Errorf("failed to find the target local binlog metadata file with seq %d", targetSeq)
 	}
+	if startIndex > targetIndex {
+		return nil, errors.Errorf("start index %d must be less than target index %d", startIndex, targetIndex)
+	}
 	return metaList[startIndex : targetIndex+1], nil
 }
 
