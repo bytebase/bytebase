@@ -164,10 +164,12 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 		}
 		tableNames = append(tableNames, fmt.Sprintf("`%s`", table.Name))
 	}
-	flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
 
-	if _, err := txn.ExecContext(ctxWithTimeout, flushTableStmt); err != nil {
-		return err
+	if len(tableNames) != 0 {
+		flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
+		if _, err := txn.ExecContext(ctxWithTimeout, flushTableStmt); err != nil {
+			return err
+		}
 	}
 
 	return txn.Commit()
