@@ -72,6 +72,8 @@ const (
 	SchemaRuleColumnDisallowChangeType SQLReviewRuleType = "column.disallow-change-type"
 	// SchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
 	SchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "column.set-default-for-not-null"
+	// SchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
+	SchemaRuleColumnDisallowChange SQLReviewRuleType = "column.disallow-change"
 	// SchemaRuleColumnExists require the column existence.
 	SchemaRuleColumnExists SQLReviewRuleType = "column.exists"
 
@@ -416,6 +418,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnSetDefaultForNotNull, nil
+		}
+	case SchemaRuleColumnDisallowChange:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnDisallowChanging, nil
 		}
 	case SchemaRuleColumnExists:
 		switch engine {
