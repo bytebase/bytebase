@@ -19,10 +19,21 @@ import (
 )
 
 var (
-	systemDatabases = map[string]bool{
+	excludedDatabaseList = map[string]bool{
+		// Skip our internal "bytebase" database
+		"bytebase": true,
+		// Skip internal databases from cloud service providers
+		// see https://github.com/bytebase/bytebase/issues/30
+		// aws
+		"rdsadmin": true,
+		// gcp
+		"cloudsql":      true,
+		"cloudsqladmin": true,
+		// system templates.
 		"template0": true,
 		"template1": true,
 	}
+
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
 	// driverName is the driver name that our driver dependence register, now is "pgx".
