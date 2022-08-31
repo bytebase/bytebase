@@ -41,7 +41,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		dumpableDbNames = []string{database}
 	} else {
 		for _, n := range databases {
-			if systemDatabases[n.name] {
+			if excludedDatabaseList[n.name] {
 				continue
 			}
 			dumpableDbNames = append(dumpableDbNames, n.name)

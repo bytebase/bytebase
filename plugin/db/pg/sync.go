@@ -15,20 +15,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
-var (
-	excludedDatabaseList = map[string]bool{
-		// Skip our internal "bytebase" database
-		"bytebase": true,
-		// Skip internal databases from cloud service providers
-		// see https://github.com/bytebase/bytebase/issues/30
-		// aws
-		"rdsadmin": true,
-		// gcp
-		"cloudsql":      true,
-		"cloudsqladmin": true,
-	}
-)
-
 // pgDatabaseSchema describes a pg database schema.
 type pgDatabaseSchema struct {
 	name     string
@@ -105,10 +91,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 
-	// Skip all system databases
-	for k := range systemDatabases {
-		excludedDatabaseList[k] = true
-	}
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
@@ -117,6 +99,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	var databaseList []db.DatabaseMeta
 	for _, database := range databases {
 		dbName := database.name
+		// Skip all system databases
 		if _, ok := excludedDatabaseList[dbName]; ok {
 			continue
 		}
