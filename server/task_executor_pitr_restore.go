@@ -110,17 +110,10 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	}
 
 	targetInstanceID := *payload.TargetInstanceID
-	if payload.TargetInstanceID != nil {
-		// For now, we just support restore full backup to the same instance with the origin database.
-		// But for generality, we will use TargetInstanceID in payload to find the target instance.
-		targetInstanceID = *payload.TargetInstanceID
-	}
-
 	targetDatabaseFind := &api.DatabaseFind{
 		InstanceID: &targetInstanceID,
 		Name:       payload.DatabaseName,
 	}
-
 	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, task.Instance.Name)
