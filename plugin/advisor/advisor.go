@@ -100,6 +100,9 @@ const (
 	// MySQLColumnDisallowChangingOrder is an advisor type for MySQL disallow changing column order.
 	MySQLColumnDisallowChangingOrder Type = "bb.plugin.advisor.mysql.column.disallow-changing-order"
 
+	// MySQLColumnCommentRequirement is an advisor type for MySQL column comment requirement.
+	MySQLColumnCommentRequirement Type = "bb.plugin.advisor.mysql.column.comment-require"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
