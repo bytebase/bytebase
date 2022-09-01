@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div class="textlabel">
     {{ $t("version-control.setting.add-git-provider.choose") }}
@@ -174,6 +175,7 @@ export default defineComponent({
     });
 
     const changeUrl = (value: string) => {
+      // eslint-disable-next-line vue/no-mutating-props
       props.config.instanceUrl = value;
 
       if (state.urlValidationTimer) {
@@ -201,12 +203,16 @@ export default defineComponent({
     // FIXME: Unexpected mutation of "config" prop. Do we care?
     const changeType = () => {
       if (props.config.type == "GITLAB_SELF_HOST") {
+        // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "";
+        // eslint-disable-next-line vue/no-mutating-props
         props.config.name = t(
           "version-control.setting.add-git-provider.gitlab-self-host"
         );
       } else if (props.config.type == "GITHUB_COM") {
+        // eslint-disable-next-line vue/no-mutating-props
         props.config.instanceUrl = "https://github.com";
+        // eslint-disable-next-line vue/no-mutating-props
         props.config.name = "GitHub.com";
       }
     };

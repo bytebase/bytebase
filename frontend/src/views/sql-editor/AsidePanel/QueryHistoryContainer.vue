@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-v-html -->
 <template>
   <div
     class="relative p-2 space-y-2 w-full h-full flex flex-col justify-start items-start"
