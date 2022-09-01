@@ -8,6 +8,7 @@ export * from "./column";
 export * from "./common";
 export * from "./database";
 export * from "./dataSource";
+export * from "./debug";
 export * from "./environment";
 export * from "./error";
 export * from "./errorList";

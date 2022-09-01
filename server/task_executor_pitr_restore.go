@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sync/atomic"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/pg"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -214,7 +216,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 
 	targetTs := *payload.PointInTimeTs
 	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
-	backup, targetBinlogInfo, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
+	backup, targetBinlogInfo, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, server.s3Client)
 	if err != nil {
 		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
@@ -223,30 +225,47 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 			zap.Error(err))
 		return nil, errors.Wrapf(err, "failed to get latest backup before or equal to %s", targetTsHuman)
 	}
+	startBinlogInfo := backup.Payload.BinlogInfo
+	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
-	backupFileName := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
-	backupFile, err := os.Open(backupFileName)
+
+	backupAbsPathLocal := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
+	if backup.StorageBackend == api.BackupStorageBackendS3 {
+		if err := downloadBackupFileFromCloud(ctx, server, backup.Path, backupAbsPathLocal); err != nil {
+			return nil, errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
+		}
+		defer os.Remove(backupAbsPathLocal)
+		replayBinlogPathList, err := downloadBinlogFilesFromCloud(ctx, server.s3Client, startBinlogInfo, *targetBinlogInfo, binlogDir)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to download binlog files from %s to %s from S3", startBinlogInfo.FileName, targetBinlogInfo.FileName)
+		}
+		defer func() {
+			for _, binlogPath := range replayBinlogPathList {
+				if err := os.Remove(binlogPath); err != nil {
+					log.Warn("Failed to remove downloaded local binlog file after PITR", zap.String("path", binlogPath))
+				}
+			}
+		}()
+	}
+
+	backupFile, err := os.Open(backupAbsPathLocal)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open backup file %q", backupFileName)
+		return nil, errors.Wrapf(err, "failed to open backup file %q", backupAbsPathLocal)
 	}
 	defer backupFile.Close()
-	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
+	log.Debug("Successfully opened backup file", zap.String("filename", backupAbsPathLocal))
 
 	log.Debug("Start creating and restoring PITR database",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", task.Database.Name),
 	)
-	// RestorePITR will create the pitr database.
-	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
-	// database's migration history, and append a new BRANCH migration.
-	startBinlogInfo := backup.Payload.BinlogInfo
-	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
 
 	if err := exec.updateProgress(ctx, mysqlTargetDriver, backupFile, startBinlogInfo, *targetBinlogInfo, binlogDir); err != nil {
 		return nil, errors.Wrap(err, "failed to setup progress update process")
 	}
 
 	if payload.DatabaseName != nil {
+		// case 1: PITR to a new database.
 		if err := mysqlTargetDriver.RestoreBackupToDatabase(ctx, backupFile, *payload.DatabaseName); err != nil {
 			log.Error("failed to restore full backup in the new database",
 				zap.Int("issueID", issue.ID),
@@ -262,6 +281,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 			return nil, errors.Wrap(err, "failed to perform a PITR restore in the new database")
 		}
 	} else {
+		// case 2: in-place PITR.
 		if err := mysqlTargetDriver.RestoreBackupToPITRDatabase(ctx, backupFile, task.Database.Name, issue.CreatedTs); err != nil {
 			log.Error("failed to restore full backup in the PITR database",
 				zap.Int("issueID", issue.ID),
@@ -286,6 +306,21 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	return &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("PITR restore success for target database %q", targetDatabaseName),
 	}, nil
+}
+
+func downloadBinlogFilesFromCloud(ctx context.Context, client *bbs3.Client, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+	replayBinlogPathList, err := mysql.GetBinlogReplayList(startBinlogInfo, targetBinlogInfo, binlogDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get binlog replay list in directory %s", binlogDir)
+	}
+	for _, binlogFilePath := range replayBinlogPathList {
+		// Use path.Join to compose a path on cloud which always uses / as the separator.
+		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(binlogDir), filepath.Base(binlogFilePath))
+		if err := client.DownloadFileFromCloud(ctx, binlogFilePath, filePathOnCloud); err != nil {
+			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", binlogFilePath)
+		}
+	}
+	return replayBinlogPathList, nil
 }
 
 func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {

@@ -132,6 +132,8 @@ const (
 
 	// MySQLTablePKType is an advisor type for MySQL correct type of PK.
 	MySQLTablePKType Type = "bb.plugin.advisor.mysql.table.pk-type"
+	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
+	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 
 	// PostgreSQL Advisor.
 

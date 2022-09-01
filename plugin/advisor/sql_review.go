@@ -95,6 +95,8 @@ const (
 
 	// SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
 	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
+	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
+	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -188,6 +190,10 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
+	case SchemaRuleIndexKeyNumberLimit:
+		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -207,6 +213,11 @@ type RequiredColumnRulePayload struct {
 type CommentConventionRulePayload struct {
 	Required  bool `json:"required"`
 	MaxLength int  `json:"maxLength"`
+}
+
+// NumberLimitRulePayload is the payload for number limit rule.
+type NumberLimitRulePayload struct {
+	Number int `json:"number"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -297,6 +308,15 @@ func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRu
 		return nil, errors.Wrapf(err, "failed to unmarshal comment convention rule payload %q", payload)
 	}
 	return &ccr, nil
+}
+
+// UnmarshalNumberLimitRulePayload will unmarshal payload to NumberLimitRulePayload.
+func UnmarshalNumberLimitRulePayload(payload string) (*NumberLimitRulePayload, error) {
+	var nlr NumberLimitRulePayload
+	if err := json.Unmarshal([]byte(payload), &nlr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal number limit rule payload %q", payload)
+	}
+	return &nlr, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -513,6 +533,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexNoDuplicateColumn, nil
+		}
+	case SchemaRuleIndexKeyNumberLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexKeyNumberLimit, nil
 		}
 	case SchemaRuleStatementNoCreateTableAs:
 		switch engine {
