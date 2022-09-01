@@ -98,9 +98,6 @@ type pkData struct {
 
 // Enter implements the ast.Visitor interface.
 func (v *tablePkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
-	// TODO: implement it
-	// switch node := in.(type) {
-	// }
 	var pkDataList []pkData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
