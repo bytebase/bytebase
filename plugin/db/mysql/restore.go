@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/pkg/errors"
 
@@ -70,17 +69,6 @@ func newBinlogFile(name string, size int64) (BinlogFile, error) {
 		return BinlogFile{}, err
 	}
 	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
-}
-
-// ZapBinlogFiles is a helper to format zap.Array.
-type ZapBinlogFiles []BinlogFile
-
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
-func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for _, file := range files {
-		arr.AppendString(fmt.Sprintf("%s[%d]", file.Name, file.Size))
-	}
-	return nil
 }
 
 type binlogCoordinate struct {
@@ -570,7 +558,6 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList 
 	for _, meta := range metaList {
 		metaMap[meta.seq] = true
 	}
-	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
 	for _, fileOnServer := range binlogFilesOnServerSorted {
 		isLatest := fileOnServer.Name == latestBinlogFileOnServer.Name
 		if isLatest && !downloadLatestBinlogFile {
@@ -579,6 +566,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList 
 		_, exist := metaMap[fileOnServer.Seq]
 		if !exist || isLatest {
 			binlogFilePath := filepath.Join(driver.binlogDir, fileOnServer.Name)
+			log.Debug("Downloading binlog file from MySQL server.", zap.String("path", binlogFilePath), zap.Bool("isLatest", isLatest))
 			if err := driver.downloadBinlogFile(ctx, fileOnServer, isLatest); err != nil {
 				log.Error("Failed to download binlog file", zap.String("path", binlogFilePath), zap.Error(err))
 				return errors.Wrapf(err, "failed to download binlog file %q", binlogFilePath)
@@ -638,6 +626,9 @@ func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *b
 	metaListToDownload, err := driver.getBinlogMetaFileListToDownload(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
+	}
+	if len(metaListToDownload) == 0 {
+		return nil
 	}
 	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaListToDownload)))
 
