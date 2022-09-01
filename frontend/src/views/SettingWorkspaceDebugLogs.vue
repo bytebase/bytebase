@@ -33,7 +33,7 @@
         data-label="bb-migration-mode-dialog"
         @before-positive-click="handleCopy"
       >
-        <div class="w-192">
+        <div class="w-192 font-mono">
           <dl>
             <dd
               v-for="(value, key) in state.modalContent"
