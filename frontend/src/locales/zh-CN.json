@@ -319,7 +319,8 @@
       "members": "成员",
       "version-control": "版本控制",
       "subscription": "订阅",
-      "labels": "标签"
+      "labels": "标签",
+      "debug-log": "Debug 日志"
     },
     "profile": {
       "email": "邮箱",
@@ -1538,6 +1539,29 @@
       "preview": {
         "name": "预览"
       }
+    }
+  },
+  "debug-log": {
+    "title": "Debug 日志",
+    "no-logs": "暂无 Debug 日志",
+    "count-of-logs": "从服务端获取的最新 {count} 条日志。",
+    "debug-log-detail": "日志详情",
+    "table": {
+      "record-ts": "时间",
+      "method": "方法",
+      "request-path": "请求路径",
+      "role": "角色",
+      "error": "错误消息",
+      "stack-trace": "调用栈",
+      "empty": "<无>",
+      "operation": {
+        "operation": "操作",
+        "view-details": "查看详情",
+        "copy": "拷贝",
+        "copy-all": "拷贝全部",
+        "copied": "已拷贝",
+        "export": "导出"
+      } 
     }
   }
 }
