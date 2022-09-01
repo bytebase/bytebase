@@ -695,19 +695,17 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...interface{
 func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	log.Debug("QueryRowContext", zap.String("query", cleanQuery(query)))
 	return tx.Tx.QueryRowContext(ctx, query, args...)
-=======
-func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	panic("sdfsfd")
-	// return tx.PTx.QueryRowContext(ctx, query, args...)
->>>>>>> 64fa2c35 (chore: add logging)
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> d7a18830 (chore: add logging)
 =======
 =======
 >>>>>>> 2b30b825 (chore: use embed)
 >>>>>>> f4c2d7a3 (chore: use embed)
+=======
+>>>>>>> 094285a1 (chore: rollback log)
 // FormatError returns err as a Bytebase error, if possible.
 // Otherwise returns the original error.
 func FormatError(err error) error {
