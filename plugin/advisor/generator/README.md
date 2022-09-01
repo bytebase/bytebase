@@ -21,4 +21,4 @@ This is a SQL review rule generator. It's used for implementing a specific SQL r
    ```shell
    go run main.go --rule MySQLColumnDisallowChangingType
    ```
-4. Implement the rule-specific logic in the generated files.
+3. Implement the rule-specific logic in the generated files.
