@@ -58,8 +58,6 @@ const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
 
-// console.log(useProjectWebhookStore());
-
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/auth",
