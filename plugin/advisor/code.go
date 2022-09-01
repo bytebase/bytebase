@@ -52,6 +52,7 @@ const (
 	UseChangeColumnStatement     Code = 406
 	ChangeColumnOrder            Code = 407
 	NoColumnComment              Code = 408
+	ColumnCommentTooLong         Code = 409
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -62,6 +63,7 @@ const (
 	TableDropNamingConventionMismatch Code = 603
 	TableNotExists                    Code = 604
 	NoTableComment                    Code = 605
+	TableCommentTooLong               Code = 606
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
