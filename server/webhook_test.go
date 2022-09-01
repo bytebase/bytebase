@@ -63,6 +63,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						},
 					},
 					fileName: "v1.sql",
+					itemType: fileItemTypeAdded,
 				},
 			},
 		},
@@ -102,6 +103,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						},
 					},
 					fileName: "v1.sql",
+					itemType: fileItemTypeAdded,
 				},
 				{
 					createdTime: time1,
@@ -120,6 +122,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						},
 					},
 					fileName: "v2.sql",
+					itemType: fileItemTypeAdded,
 				},
 			},
 		},
@@ -170,6 +173,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						},
 					},
 					fileName: "v1.sql",
+					itemType: fileItemTypeAdded,
 				},
 			},
 		},
@@ -240,6 +244,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v1.sql",
+					itemType: fileItemTypeAdded,
 				},
 				{
 					createdTime: time3,
@@ -260,6 +265,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v2.sql",
+					itemType: fileItemTypeAdded,
 				},
 				{
 					createdTime: time3,
@@ -280,6 +286,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v3.sql",
+					itemType: fileItemTypeAdded,
 				},
 			},
 		},
@@ -351,6 +358,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v1.sql",
+					itemType: fileItemTypeAdded,
 				},
 				{
 					createdTime: time3,
@@ -371,6 +379,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v2.sql",
+					itemType: fileItemTypeAdded,
 				},
 				{
 					createdTime: time3,
@@ -391,6 +400,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v3.sql",
+					itemType: fileItemTypeAdded,
 				},
 				{
 					createdTime: time3,
@@ -411,6 +421,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v4.sql",
+					itemType: fileItemTypeModified,
 				},
 			},
 		},
