@@ -106,7 +106,7 @@
 
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
-import { useSQLReviewStore, useEnvironmentList } from "@/store";
+import { useEnvironmentList } from "@/store";
 import { Environment, SQLReviewPolicyTemplate } from "@/types";
 import { environmentName } from "@/utils";
 
@@ -152,8 +152,6 @@ const emit = defineEmits(["name-change", "env-change", "select-template"]);
 const state = reactive<LocalState>({
   openTemplate: false,
 });
-
-const store = useSQLReviewStore();
 
 const environmentList = computed((): LocalEnvironment[] => {
   const environmentList = useEnvironmentList(["NORMAL"]);

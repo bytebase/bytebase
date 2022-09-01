@@ -35,7 +35,7 @@
 import { PropType } from "vue";
 import { SQLReviewPolicyTemplate } from "@/types/sqlReview";
 
-const props = defineProps({
+defineProps({
   templateList: {
     required: true,
     type: Object as PropType<SQLReviewPolicyTemplate[]>,
@@ -56,7 +56,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["select"]);
+defineEmits(["select"]);
 
 const getTemplateImage = (id: string) =>
   new URL(`../../../assets/${id}.png`, import.meta.url).href;

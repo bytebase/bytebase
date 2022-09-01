@@ -126,15 +126,6 @@ const pushEvent = computed((): VCSPushEvent | undefined => {
   return undefined;
 });
 
-const vcsType = computed((): string => {
-  if (pushEvent.value) {
-    if (pushEvent.value.vcsType.startsWith("GITLAB")) {
-      return "GitLab";
-    }
-  }
-  return "";
-});
-
 const vcsBranch = computed((): string => {
   if (pushEvent.value) {
     return pushEvent.value.ref.replace(/^refs\/heads\//g, "");

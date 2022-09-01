@@ -72,19 +72,14 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { useRouter } from "vue-router";
 import { SQLReviewPolicy } from "@/types/sqlReview";
-import { useEnvironmentStore } from "@/store";
 import { environmentName } from "@/utils";
 
-const props = defineProps({
+defineProps({
   reviewPolicy: {
     required: true,
     type: Object as PropType<SQLReviewPolicy>,
   },
 });
 const emit = defineEmits(["click"]);
-
-const router = useRouter();
-const envStore = useEnvironmentStore();
 </script>

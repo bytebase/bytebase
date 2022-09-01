@@ -38,7 +38,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["select"]);
+defineEmits(["select"]);
 
 const { t } = useI18n();
 

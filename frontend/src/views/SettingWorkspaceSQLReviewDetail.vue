@@ -198,7 +198,6 @@ import { useRouter } from "vue-router";
 import { idFromSlug, environmentName, isDBAOrOwner } from "@/utils";
 import {
   unknown,
-  RuleType,
   LEVEL_LIST,
   RuleLevel,
   RuleTemplate,

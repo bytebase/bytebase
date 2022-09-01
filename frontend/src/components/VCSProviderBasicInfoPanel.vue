@@ -108,7 +108,7 @@ import {
 } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
-import { isUrl, isDev } from "../utils";
+import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
