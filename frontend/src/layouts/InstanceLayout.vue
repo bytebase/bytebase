@@ -31,9 +31,11 @@ export default {
     },
     databaseSlug: {
       type: String,
+      default: "",
     },
     dataSourceSlug: {
       type: String,
+      default: "",
     },
   },
 };

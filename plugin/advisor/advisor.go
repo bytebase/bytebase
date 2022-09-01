@@ -121,6 +121,9 @@ const (
 	// MySQLTableCommentConvention is an advisor for MySQL table comment convention.
 	MySQLTableCommentConvention Type = "bb.plugin.advisor.mysql.table.comment"
 
+	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
+	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
