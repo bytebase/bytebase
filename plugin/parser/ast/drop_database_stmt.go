@@ -2,7 +2,7 @@ package ast
 
 // DropDatabaseStmt is the struct for drop database statement.
 type DropDatabaseStmt struct {
-	node
+	ddl
 
 	DatabaseName string
 	IfExists     bool
