@@ -75,7 +75,7 @@ func (v *tableDisallowCreateTableAsChecker) Enter(in ast.Node) (ast.Node, bool) 
 				Status:  v.level,
 				Code:    advisor.StatementCreateTableAs,
 				Title:   v.title,
-				Content: fmt.Sprintf("cannot creat table `%s` by using CREATE TABLE ... [AS] SELECT ...", node.Table.Name.String()),
+				Content: fmt.Sprintf("cannot create table `%s` by using CREATE TABLE ... [AS] SELECT ...", node.Table.Name.String()),
 				Line:    node.OriginTextPosition(),
 			})
 		}
