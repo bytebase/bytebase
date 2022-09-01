@@ -54,13 +54,9 @@ export default defineComponent({
     },
   },
   emits: ["cancel"],
-  setup(props, { emit }) {
+  setup(props) {
     const { t } = useI18n();
     const router = useRouter();
-
-    const cancel = () => {
-      emit("cancel");
-    };
 
     const ok = () => {
       router.push({ name: "setting.workspace.subscription" });

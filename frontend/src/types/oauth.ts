@@ -1,6 +1,5 @@
-import { useWindowScroll } from "@vueuse/core";
 import { VCSType } from ".";
-import { randomString, vcsSlug } from "../utils";
+import { randomString } from "../utils";
 
 export type OAuthConfig = {
   endpoint: string;

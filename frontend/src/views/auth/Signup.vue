@@ -7,8 +7,12 @@
         alt="Bytebase"
       />
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
-        <template v-if="needAdminSetup" class="text-accent font-semnibold">
-          <i18n-t keypath="auth.sign-up.admin-title" tag="p">
+        <template v-if="needAdminSetup">
+          <i18n-t
+            keypath="auth.sign-up.admin-title"
+            tag="p"
+            class="text-accent font-semnibold"
+          >
             <template #account>
               <span class="text-accent font-semnibold">{{
                 $t("auth.sign-up.admin-account")
