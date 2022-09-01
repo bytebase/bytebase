@@ -13,6 +13,7 @@ specifiers:
   '@tailwindcss/typography': ^0.5.2
   '@types/canvas-confetti': ^1.4.3
   '@types/dompurify': ^2.3.3
+  '@types/downloadjs': ^1.4.3
   '@types/js-yaml': ^4.0.5
   '@types/lodash-es': ^4.17.4
   '@types/node': ^16.11.9
@@ -36,6 +37,7 @@ specifiers:
   canvas-confetti: ^1.5.1
   dayjs: ^1.10.7
   dompurify: ^2.3.9
+  downloadjs: ^1.4.7
   escape-string-regexp: ^5.0.0
   eslint: ^8.3.0
   eslint-config-prettier: ^8.3.0
@@ -85,6 +87,7 @@ dependencies:
   canvas-confetti: 1.5.1
   dayjs: 1.10.8
   dompurify: 2.3.9
+  downloadjs: 1.4.7
   escape-string-regexp: 5.0.0
   highlight.js: 11.5.0
   inter-ui: 3.19.3
@@ -119,6 +122,7 @@ devDependencies:
   '@tailwindcss/typography': 0.5.2_tailwindcss@3.0.23
   '@types/canvas-confetti': 1.4.3
   '@types/dompurify': 2.3.3
+  '@types/downloadjs': 1.4.3
   '@types/js-yaml': 4.0.5
   '@types/lodash-es': 4.17.6
   '@types/node': 16.11.26
@@ -369,8 +373,8 @@ packages:
       vue-i18n:
         optional: true
     dependencies:
-      '@intlify/message-compiler': 9.3.0-beta.1
-      '@intlify/shared': 9.3.0-beta.1
+      '@intlify/message-compiler': 9.3.0-beta.3
+      '@intlify/shared': 9.3.0-beta.3
       jsonc-eslint-parser: 1.4.1
       source-map: 0.6.1
       vue-i18n: 9.2.0-beta.32_vue@3.2.31
@@ -399,11 +403,11 @@ packages:
       '@intlify/shared': 9.2.0-beta.32
       source-map: 0.6.1
 
-  /@intlify/message-compiler/9.3.0-beta.1:
-    resolution: {integrity: sha512-XHjwJB7qJciYA3T19ehBFpcmC1z+R4sMS43fEp30CLOOFLsrB0xuk0V2XeOFsHovaQ2LsK5x0qk+5+Dy6Hs7fw==}
+  /@intlify/message-compiler/9.3.0-beta.3:
+    resolution: {integrity: sha512-j8OwToBQgs01RBMX4GCDNQfcnmw3AiDG3moKIONTrfXcf+1yt/rWznLTYH/DXbKcFMAFijFpCzMYjUmH1jVFYA==}
     engines: {node: '>= 14'}
     dependencies:
-      '@intlify/shared': 9.3.0-beta.1
+      '@intlify/shared': 9.3.0-beta.3
       source-map: 0.6.1
     dev: true
 
@@ -411,8 +415,8 @@ packages:
     resolution: {integrity: sha512-lVaHnKFNg16eWlfDLzDFLapurrf0WK7xLWEkz8DMYNIXJshRQOZCkH7sQaqtONPoOT0LqjyPo1+sV0Wq85/HRQ==}
     engines: {node: '>= 12'}
 
-  /@intlify/shared/9.3.0-beta.1:
-    resolution: {integrity: sha512-clf9EF4lY0sANjHlEndwfsR2hvYuq0TElq+gO/1xqH3FMGJwv+6lxJPOtoF4r2IE5RV3qX6YyZejZgdfbq2Yfg==}
+  /@intlify/shared/9.3.0-beta.3:
+    resolution: {integrity: sha512-Z/0TU4GhFKRxKh+0RbwJExik9zz57gXYgxSYaPn7YQdkQ/pabSioCY/SXnYxQHL6HzULF5tmqarFm6glbGqKhw==}
     engines: {node: '>= 14'}
     dev: true
 
@@ -430,7 +434,7 @@ packages:
         optional: true
     dependencies:
       '@intlify/bundle-utils': 3.1.0_vue-i18n@9.2.0-beta.32
-      '@intlify/shared': 9.3.0-beta.1
+      '@intlify/shared': 9.3.0-beta.3
       '@rollup/pluginutils': 4.2.0
       debug: 4.3.3
       fast-glob: 3.2.11
@@ -744,6 +748,10 @@ packages:
     resolution: {integrity: sha512-nnVQSgRVuZ/843oAfhA25eRSNzUFcBPk/LOiw5gm8mD9/X7CNcbRkQu/OsjCewO8+VIYfPxUnXvPEVGenw14+w==}
     dependencies:
       '@types/trusted-types': 2.0.2
+    dev: true
+
+  /@types/downloadjs/1.4.3:
+    resolution: {integrity: sha512-MjJepFle/tLtT2/jmDNth6ZnwWzEhm40L+olE5HKR70ISUCfgT55eqreeHldAzFLY2HDUGsn8zgyto8KygN0CA==}
     dev: true
 
   /@types/estree/0.0.39:
@@ -1893,6 +1901,10 @@ packages:
 
   /dompurify/2.3.9:
     resolution: {integrity: sha512-3zOnuTwup4lPV/GfGS6UzG4ub9nhSYagR/5tB3AvDEwqyy5dtyCM2dVjwGDCnrPerXifBKTYh/UWCGKK7ydhhw==}
+    dev: false
+
+  /downloadjs/1.4.7:
+    resolution: {integrity: sha512-LN1gO7+u9xjU5oEScGFKvXhYf7Y/empUIIEAGBs1LzUq/rg5duiDrkuH5A2lQGd5jfMOb9X9usDa2oVXwJ0U/Q==}
     dev: false
 
   /electron-to-chromium/1.4.89:
