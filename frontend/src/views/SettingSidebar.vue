@@ -87,7 +87,7 @@
             v-if="showOwnerOrDBAItem"
             to="/setting/debug-log"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.debug-logs") }}</router-link
+            >{{ $t("settings.sidebar.debug-log") }}</router-link
           >
           <!-- <router-link
             to="/setting/billing"

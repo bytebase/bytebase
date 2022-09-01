@@ -20,7 +20,7 @@
       </BBTableCell>
       <BBTableCell class="table-cell w-20">
         <span v-if="!debugLog.Role" class="italic text-gray-500">{{
-          $t("debug-logs.table.empty")
+          $t("debug-log.table.empty")
         }}</span>
         <div v-else>{{ debugLog.Role }}</div>
       </BBTableCell>
@@ -30,7 +30,7 @@
       <BBTableCell class="table-cell w-28">
         <div class="tooltip-wrapper">
           <div class="tooltip whitespace-nowrap">
-            {{ $t("debug-logs.table.operation.view-details") }}
+            {{ $t("debug-log.table.operation.view-details") }}
           </div>
           <button
             type="button"
@@ -71,22 +71,22 @@ const { t } = useI18n();
 
 const columnList = computed(() => [
   {
-    title: t("debug-logs.table.record-ts"),
+    title: t("debug-log.table.record-ts"),
   },
   {
-    title: t("debug-logs.table.method"),
+    title: t("debug-log.table.method"),
   },
   {
-    title: t("debug-logs.table.request-path"),
+    title: t("debug-log.table.request-path"),
   },
   {
-    title: t("debug-logs.table.role"),
+    title: t("debug-log.table.role"),
   },
   {
-    title: t("debug-logs.table.error"),
+    title: t("debug-log.table.error"),
   },
   {
-    title: t("debug-logs.table.operation.operation"),
+    title: t("debug-log.table.operation.operation"),
   },
 ]);
 </script>

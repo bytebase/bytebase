@@ -3,7 +3,7 @@
     <div v-if="debugLogList.length > 0">
       <div class="flex flex-row justify-between items-center textinfolabel">
         {{
-          $t("debug-logs.count-of-logs", {
+          $t("debug-log.count-of-logs", {
             count: debugLogList.length,
           })
         }}
@@ -12,13 +12,13 @@
           @click="handleExport"
         >
           <heroicons-outline:document-arrow-down class="h-4 w-4 mr-1" />
-          {{ $t("debug-logs.table.operation.export") }}
+          {{ $t("debug-log.table.operation.export") }}
         </button>
       </div>
-      <DebugLogsTable
+      <DebugLogTable
         :debug-log-list="debugLogList"
         @view-detail="
-          (log) => {
+          (log: DebugLog) => {
             state.modalContent = log
             state.showModal = true;
             dialog!.open();
@@ -27,9 +27,9 @@
       />
       <BBDialog
         ref="dialog"
-        :title="$t('debug-logs.debug-logs-detail')"
+        :title="$t('debug-log.debug-log-detail')"
         :negative-text="$t('common.close')"
-        :positive-text="$t('debug-logs.table.operation.copy')"
+        :positive-text="$t('debug-log.table.operation.copy')"
         data-label="bb-migration-mode-dialog"
         @before-positive-click="handleCopy"
       >
@@ -56,7 +56,7 @@
                     }}
                   </span>
                   <span v-else class="italic text-gray-500">
-                    {{ $t("debug-logs.table.empty") }}
+                    {{ $t("debug-log.table.empty") }}
                   </span>
                 </NGi>
               </NGrid>
@@ -78,6 +78,7 @@ import dayjs from "dayjs";
 import { useClipboard } from "@vueuse/core";
 import { BBDialog } from "@/bbkit";
 import { useDebugLogList, useNotificationStore } from "@/store";
+import type { DebugLog } from "@/types";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 const state = reactive({
@@ -96,12 +97,12 @@ const notificationStore = useNotificationStore();
 const debugLogList = useDebugLogList();
 
 const logKeyMap = {
-  RecordTs: t("debug-logs.table.record-ts"),
-  Method: t("debug-logs.table.method"),
-  RequestPath: t("debug-logs.table.request-path"),
-  Role: t("debug-logs.table.role"),
-  Error: t("debug-logs.table.error"),
-  StackTrace: t("debug-logs.table.stack-trace"),
+  RecordTs: t("debug-log.table.record-ts"),
+  Method: t("debug-log.table.method"),
+  RequestPath: t("debug-log.table.request-path"),
+  Role: t("debug-log.table.role"),
+  Error: t("debug-log.table.error"),
+  StackTrace: t("debug-log.table.stack-trace"),
 };
 
 const handleExport = () => {
@@ -117,7 +118,7 @@ const handleCopy = () => {
   notificationStore.pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("debug-logs.table.operation.copied"),
+    title: t("debug-log.table.operation.copied"),
   });
   return true;
 };

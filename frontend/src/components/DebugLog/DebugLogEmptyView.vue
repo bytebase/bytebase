@@ -6,7 +6,7 @@
       <div class="text-center flex flex-col justify-center items-center">
         <img src="../../assets/illustration/no-data.webp" class="w-52" />
         <h3 class="mt-2 font-medium text-gray-900">
-          {{ $t("debug-logs.no-logs") }}
+          {{ $t("debug-log.no-logs") }}
         </h3>
       </div>
     </div>

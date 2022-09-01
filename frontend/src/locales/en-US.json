@@ -320,7 +320,7 @@
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",
-      "debug-logs": "Debug Logs"
+      "debug-log": "Debug Log"
     },
     "profile": {
       "email": "Email",
@@ -1545,11 +1545,11 @@
       }
     }
   },
-  "debug-logs": {
-    "title": "Debug Logs",
+  "debug-log": {
+    "title": "Debug Log",
     "no-logs": "No debug logs",
     "count-of-logs": "Fetched latest {count} log(s) from server.",
-    "debug-logs-detail": "Debug Log Details",
+    "debug-log-detail": "Debug Log Details",
     "table": {
       "record-ts": "Time",
       "method": "Method",

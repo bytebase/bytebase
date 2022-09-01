@@ -434,10 +434,10 @@ const routes: Array<RouteRecordRaw> = [
                 path: "debug-log",
                 name: "setting.workspace.debug-log",
                 meta: {
-                  title: () => t("settings.sidebar.debug-logs"),
+                  title: () => t("settings.sidebar.debug-log"),
                 },
                 component: () =>
-                  import("../views/SettingWorkspaceDebugLogs.vue"),
+                  import("../views/SettingWorkspaceDebugLog.vue"),
                 props: true,
               },
             ],
