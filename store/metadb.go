@@ -92,7 +92,10 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 
 	log.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
-	if u.Scheme != "postgresql" {
+	// Though the official libpq adopts postgresql:// (https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
+	// Several popular services such as render.com, supabase use postgres://.
+	// So we allow both schemes. The underlying pgx driver also supports both format.
+	if u.Scheme != "postgresql" && u.Scheme != "postgres" {
 		return nil, errors.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
