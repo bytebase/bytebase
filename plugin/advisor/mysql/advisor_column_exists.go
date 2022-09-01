@@ -72,7 +72,6 @@ type columnExistsChecker struct {
 type columnData struct {
 	table  string
 	column string
-	line   int
 }
 
 // Enter implements the ast.Visitor interface.
