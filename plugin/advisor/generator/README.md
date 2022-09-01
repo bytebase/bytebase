@@ -12,18 +12,13 @@ This is a SQL review rule generator. It's used for implementing a specific SQL r
    )
    ```
    You need write both code and the comment.
-2. build the generator.
+2. run generator to generate the framework code.
    ```shell
-   go build
-   ```
-   in `/plugin/advisor/generator`
-3. run generator to generate the framework code.
-   ```shell
-   ./generator --flag {AdvisorType}
+   go run main.go --rule {AdvisorType}
    ```
    in `/plugin/advisor/generator`
    e.g.
    ```shell
-   ./generator --flag MySQLColumnDisallowChangingType
+   go run main.go --rule MySQLColumnDisallowChangingType
    ```
-4. Implement the rule-specific logic in the generated files.
+3. Implement the rule-specific logic in the generated files.
