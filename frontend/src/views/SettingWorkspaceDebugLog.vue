@@ -18,7 +18,7 @@
       <DebugLogTable
         :debug-log-list="debugLogList"
         @view-detail="
-          (log: DebugLog) => {
+          (log: any) => {
             state.modalContent = log
             state.showModal = true;
             dialog!.open();
@@ -78,7 +78,6 @@ import dayjs from "dayjs";
 import { useClipboard } from "@vueuse/core";
 import { BBDialog } from "@/bbkit";
 import { useDebugLogList, useNotificationStore } from "@/store";
-import type { DebugLog } from "@/types";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 const state = reactive({
