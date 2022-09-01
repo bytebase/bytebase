@@ -1,7 +1,7 @@
 import { watchEffect } from "vue";
 import { defineStore, storeToRefs } from "pinia";
 import axios from "axios";
-import type { DebugState, ResourceObject } from "@/types";
+import type { DebugState, DebugLogState, ResourceObject } from "@/types";
 import type { Debug, DebugPatch, DebugLog } from "@/types/debug";
 
 function convertDebugState(debug: ResourceObject): Debug {
@@ -45,7 +45,7 @@ export const useDebugStore = defineStore("debug", {
 });
 
 export const useDebugLogStore = defineStore("debugLog", {
-  state: (): { debugLogList: DebugLog[] } => ({
+  state: (): DebugLogState => ({
     debugLogList: [],
   }),
   actions: {
