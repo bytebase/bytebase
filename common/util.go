@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -106,4 +107,11 @@ func GetFileSizeSum(fileNameList []string) (int64, error) {
 		sum += stat.Size()
 	}
 	return sum, nil
+}
+
+// GetBinlogRelativeDir composes the relative directory for binlog.
+// It's useful to convert a local absolute binlog directory path to the cloud path.
+func GetBinlogRelativeDir(binlogDir string) string {
+	instanceID := filepath.Base(binlogDir)
+	return filepath.Join("backup", "instance", instanceID)
 }
