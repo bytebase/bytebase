@@ -9,10 +9,13 @@ import (
 
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
-	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/log/zapadapter"
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
@@ -97,7 +100,14 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		driver.strictDatabase = config.Database
 	}
 
-	db, err := sql.Open(driverName, dsn)
+	connConfig, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+	connConfig.Logger = zapadapter.NewLogger(log.Logger())
+	connConfig.LogLevel = pgx.LogLevelTrace
+	connStr := stdlib.RegisterConnConfig(connConfig)
+	db, err := sql.Open(driverName, connStr)
 	if err != nil {
 		return nil, err
 	}
