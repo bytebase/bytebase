@@ -12,7 +12,6 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import { FeatureType } from "../types";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
 export default defineComponent({
@@ -33,7 +32,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const { t } = useI18n();
     const router = useRouter();
 
     const redirect = () => {

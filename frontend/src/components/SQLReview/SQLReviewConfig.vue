@@ -65,7 +65,7 @@ interface LocalState {
   openTemplate: boolean;
 }
 
-const props = defineProps({
+defineProps({
   selectedRuleList: {
     required: true,
     type: Object as PropType<RuleTemplate[]>,
@@ -111,7 +111,6 @@ const onPayloadChange = (
   const newRule: RuleTemplate = {
     ...rule,
     componentList: rule.componentList.reduce((list, component, index) => {
-      let val = data[index];
       switch (component.payload.type) {
         case "STRING_ARRAY":
           list.push({
