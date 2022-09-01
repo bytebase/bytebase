@@ -316,7 +316,7 @@ func downloadBinlogFilesFromCloud(ctx context.Context, client *bbs3.Client, star
 	for _, binlogFilePath := range replayBinlogPathList {
 		// Use path.Join to compose a path on cloud which always uses / as the separator.
 		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(binlogDir), filepath.Base(binlogFilePath))
-		if err := bbs3.DownloadFileFromCloud(ctx, client, binlogFilePath, filePathOnCloud); err != nil {
+		if err := client.DownloadFileFromCloud(ctx, binlogFilePath, filePathOnCloud); err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", binlogFilePath)
 		}
 	}

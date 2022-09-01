@@ -646,7 +646,7 @@ func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *b
 		filePathLocal := filepath.Join(driver.binlogDir, metaFileName)
 		// Use path.Join to compose a path on cloud which always uses / as the separator.
 		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), metaFileName)
-		if err := bbs3.DownloadFileFromCloud(ctx, client, filePathLocal, filePathOnCloud); err != nil {
+		if err := client.DownloadFileFromCloud(ctx, filePathLocal, filePathOnCloud); err != nil {
 			return errors.Wrapf(err, "failed to download binlog metadata file %s from the cloud storage", metaFileName)
 		}
 	}
@@ -872,7 +872,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		filePathLocal := filepath.Join(driver.binlogDir, targetMeta.binlogName)
 		// Use path.Join to compose a path on cloud which always uses / as the separator.
 		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), targetMeta.binlogName)
-		if err := bbs3.DownloadFileFromCloud(ctx, client, filePathLocal, filePathOnCloud); err != nil {
+		if err := client.DownloadFileFromCloud(ctx, filePathLocal, filePathOnCloud); err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", targetMeta.binlogName)
 		}
 	}

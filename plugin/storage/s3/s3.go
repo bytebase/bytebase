@@ -98,7 +98,7 @@ func (c *Client) GetBucket() string {
 // DownloadFileFromCloud downloads a binlog or metadata file from the cloud storage.
 // In case of network errors which will get partially downloaded files, we first download to a temporary file.
 // After that, we then rename it to the target file path.
-func DownloadFileFromCloud(ctx context.Context, client *Client, filePathLocal, filePathOnCloud string) error {
+func (c *Client) DownloadFileFromCloud(ctx context.Context, filePathLocal, filePathOnCloud string) error {
 	tempDir := os.TempDir()
 	baseName := filepath.Base(filePathLocal)
 	filePathTemp := filepath.Join(tempDir, baseName)
@@ -106,7 +106,7 @@ func DownloadFileFromCloud(ctx context.Context, client *Client, filePathLocal, f
 	if err != nil {
 		return errors.Wrapf(err, "failed to create the local temporary file %s", filePathTemp)
 	}
-	if _, err := client.DownloadObject(ctx, filePathOnCloud, fileTemp); err != nil {
+	if _, err := c.DownloadObject(ctx, filePathOnCloud, fileTemp); err != nil {
 		return errors.Wrapf(err, "failed to download file %q from the cloud storage", filePathOnCloud)
 	}
 	if err := os.Rename(filePathTemp, filePathLocal); err != nil {
