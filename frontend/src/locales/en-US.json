@@ -1547,7 +1547,7 @@
   },
   "debug-logs": {
     "title": "Debug Logs",
-    "no-logs": "No debug logs available",
+    "no-logs": "No debug logs",
     "count-of-logs": "Fetched latest {count} log(s) from server.",
     "debug-logs-detail": "Debug Log Details",
     "table": {
