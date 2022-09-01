@@ -70,7 +70,8 @@ const (
 	NotCurrentDatabase Code = 702
 
 	// 801 miss index error code.
-	NotUseIndex Code = 801
+	NotUseIndex                Code = 801
+	IndexKeyNumberExceedsLimit Code = 802
 
 	// 901 ~ 999 index error code.
 	DuplicateColumnInIndex Code = 901
