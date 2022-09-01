@@ -272,7 +272,7 @@ func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRa
 		where, args = append(where, fmt.Sprintf("(status != 'READ' OR created_ts >= $%d)", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, ` 
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			inbox.id,
 			receiver_id,
