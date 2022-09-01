@@ -308,6 +308,7 @@ func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRu
 	return &ccr, nil
 }
 
+// UnmarshalNumberLimitRulePayload will unmarshal payload to NumberLimitRulePayload.
 func UnmarshalNumberLimitRulePayload(payload string) (*NumberLimitRulePayload, error) {
 	var nlr NumberLimitRulePayload
 	if err := json.Unmarshal([]byte(payload), &nlr); err != nil {
