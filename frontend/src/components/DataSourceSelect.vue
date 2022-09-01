@@ -45,9 +45,11 @@ export default defineComponent({
   props: {
     selectedId: {
       type: Number,
+      default: undefined,
     },
     database: {
       type: Object as PropType<Database>,
+      default: undefined,
     },
     disabled: {
       default: false,

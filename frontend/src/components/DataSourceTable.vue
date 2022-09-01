@@ -120,6 +120,7 @@ export default defineComponent({
     // If database is specified, then we just list the data source for that database.
     database: {
       type: Object as PropType<Database>,
+      default: undefined,
     },
   },
   setup(props) {
