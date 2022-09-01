@@ -36,6 +36,12 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 		// incrementID is used as primary key in jsonapi.
 		var incrementID int
 
+		// Only Owner and DBA can see debug logs.
+		role := c.Get(getRoleContextKey()).(api.Role)
+		if role != api.Owner && role != api.DBA {
+			return echo.NewHTTPError(http.StatusForbidden, "Not allowed to fetch debug logs")
+		}
+
 		s.errorRecordRing.RWMutex.RLock()
 		defer s.errorRecordRing.RWMutex.RUnlock()
 

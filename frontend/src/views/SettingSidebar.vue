@@ -83,6 +83,12 @@
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.subscription") }}</router-link
           >
+          <router-link
+            v-if="showOwnerOrDBAItem"
+            to="/setting/debug-log"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.debug-log") }}</router-link
+          >
           <!-- <router-link
             to="/setting/billing"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
