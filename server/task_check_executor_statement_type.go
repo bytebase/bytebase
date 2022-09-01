@@ -103,6 +103,8 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 			_, isDDL := node.(tidbast.DDLNode)
 			_, isQuery := node.(*tidbast.SelectStmt)
 			_, isExplain := node.(*tidbast.ExplainStmt)
+			// We only want to disallow DDL, QUERY and EXPLAIN statements in CHANGE DATA.
+			// We need to run some common statements, e.g. COMMIT.
 			if isDDL || isQuery || isExplain {
 				result = append(result, api.TaskCheckResult{
 					Status:    api.TaskCheckStatusError,
@@ -155,6 +157,8 @@ func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (resu
 			_, isDDL := node.(ast.DDLNode)
 			_, isSelect := node.(*ast.SelectStmt)
 			_, isExplain := node.(*ast.ExplainStmt)
+			// We only want to disallow DDL, QUERY and EXPLAIN statements in CHANGE DATA.
+			// We need to run some common statements, e.g. COMMIT.
 			if isDDL || isSelect || isExplain {
 				result = append(result, api.TaskCheckResult{
 					Status:    api.TaskCheckStatusError,
