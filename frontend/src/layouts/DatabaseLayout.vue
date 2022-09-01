@@ -17,6 +17,7 @@ export default {
     },
     dataSourceSlug: {
       type: String,
+      default: "",
     },
   },
 };

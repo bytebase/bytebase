@@ -65,7 +65,6 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-import PrincipalAvatar from "../PrincipalAvatar.vue";
 import { BBTableColumn } from "../../bbkit/types";
 import { MigrationErrorCode, Task, TaskRun, TaskRunStatus } from "../../types";
 import { databaseSlug, instanceSlug, migrationHistorySlug } from "../../utils";

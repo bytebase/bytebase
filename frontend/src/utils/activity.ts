@@ -18,10 +18,6 @@ export function issueActivityActionSentence(
       const principalStore = usePrincipalStore();
       const update = activity.payload as ActivityIssueFieldUpdatePayload;
 
-      const name = "Unknown Field";
-      const oldValue = undefined;
-      const newValue = undefined;
-
       switch (update.fieldId) {
         case IssueBuiltinFieldId.ASSIGNEE: {
           if (update.oldValue && update.newValue) {
