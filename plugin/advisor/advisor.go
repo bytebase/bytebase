@@ -130,6 +130,9 @@ const (
 	// MySQLIndexNoDuplicateColumn is an advisor type for MySQL no duplicate columns in index.
 	MySQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.mysql.index.no-duplicate-column"
 
+	// MySQLTablePKType is an advisor type for MySQL correct type of PK.
+	MySQLTablePKType Type = "bb.plugin.advisor.mysql.table.pk-type"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.

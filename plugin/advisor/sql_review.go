@@ -67,6 +67,8 @@ const (
 	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
 	// SchemaRuleTableCommentConvention enforce the table comment convention.
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
+	// SchemaRuleTableUnexpectedPKType require expected type of primary key.
+	SchemaRuleTableUnexpectedPKType SQLReviewRuleType = "table.unexpected-pk-type"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -516,6 +518,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
+		}
+	case SchemaRuleTableUnexpectedPKType:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTablePKType, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
