@@ -430,6 +430,16 @@ const routes: Array<RouteRecordRaw> = [
                   import("../views/SettingWorkspaceSQLReviewDetail.vue"),
                 props: true,
               },
+              {
+                path: "debug-log",
+                name: "setting.workspace.debug-log",
+                meta: {
+                  title: () => t("settings.sidebar.debug-log"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceDebugLog.vue"),
+                props: true,
+              },
             ],
           },
           {
@@ -998,6 +1008,17 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name?.toString().startsWith("setting.workspace.project")) {
+    // Returns 403 immediately if not DBA or Owner.
+    if (!isDBAOrOwner(currentUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
+  if (to.name?.toString().startsWith("setting.workspace.debug-log")) {
     // Returns 403 immediately if not DBA or Owner.
     if (!isDBAOrOwner(currentUser.role)) {
       next({

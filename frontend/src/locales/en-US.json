@@ -319,7 +319,8 @@
       "members": "Members",
       "version-control": "Version Control",
       "subscription": "Subscription",
-      "labels": "Labels"
+      "labels": "Labels",
+      "debug-log": "Debug Log"
     },
     "profile": {
       "email": "Email",
@@ -1538,6 +1539,29 @@
       "preview": {
         "name": "Preview"
       }
+    }
+  },
+  "debug-log": {
+    "title": "Debug Log",
+    "no-logs": "No debug logs",
+    "count-of-logs": "Fetched latest {count} log(s) from server.",
+    "debug-log-detail": "Debug Log Details",
+    "table": {
+      "record-ts": "Time",
+      "method": "Method",
+      "request-path": "Request path",
+      "role": "Role",
+      "error": "Error",
+      "stack-trace": "Stack trace",
+      "empty": "<Empty>",
+      "operation": {
+        "operation": "Operation",
+        "view-details": "View Details",
+        "copy": "Copy",
+        "copy-all": "Copy All",
+        "copied": "Copied!",
+        "export": "Export"
+      } 
     }
   }
 }
