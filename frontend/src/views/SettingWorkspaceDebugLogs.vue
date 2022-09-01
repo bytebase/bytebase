@@ -2,9 +2,11 @@
   <div class="space-y-4">
     <div v-if="debugLogList.length > 0">
       <div class="flex flex-row justify-between items-center textinfolabel">
-        <i18n-t keypath="debug-logs.count-of-logs">
-          <template #count> {{ debugLogList.length }} </template>
-        </i18n-t>
+        {{
+          $t("debug-logs.count-of-logs", {
+            count: debugLogList.length,
+          })
+        }}
         <button
           class="group btn-normal items-center !border-0 !bg-accent !text-white hover:!bg-indigo-500"
           @click="handleExport"
