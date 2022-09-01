@@ -102,6 +102,9 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, err
 	}
 
+	// RestorePITR will create the pitr database.
+	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
+	// database's migration history, and append a new BRANCH migration.
 	log.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
