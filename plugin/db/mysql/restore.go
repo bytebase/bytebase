@@ -634,31 +634,6 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 	return nil
 }
 
-// DownloadBinlogOrMetaFileFromCloud downloads a binlog or metadata file from the cloud storage.
-// In case of network errors which will get partially downloaded files, we first download to a temporary file.
-// After that, we then rename it to the target file path.
-func (driver *Driver) DownloadBinlogOrMetaFileFromCloud(ctx context.Context, client *bbs3.Client, fileName string) error {
-	tempDir := os.TempDir()
-	// Use filepath.Join to compose an OS-specific local file system path.
-	filePathTemp := filepath.Join(tempDir, fileName)
-	filePathLocal := filepath.Join(driver.binlogDir, fileName)
-	fileTemp, err := os.Create(filePathTemp)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the local temporary file %s", filePathTemp)
-	}
-
-	relativeDir := common.GetBinlogRelativeDir(driver.binlogDir)
-	// Use path.Join to compose a path on cloud which always uses / as the separator.
-	filePathOnCloud := path.Join(relativeDir, fileName)
-	if _, err := client.DownloadObject(ctx, filePathOnCloud, fileTemp); err != nil {
-		return errors.Wrapf(err, "failed to download file %q from the cloud storage", filePathOnCloud)
-	}
-	if err := os.Rename(filePathTemp, filePathLocal); err != nil {
-		return errors.Wrapf(err, "failed to rename %q to %q", filePathTemp, filePathLocal)
-	}
-	return nil
-}
-
 func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *bbs3.Client) error {
 	metaListToDownload, err := driver.getBinlogMetaFileListToDownload(ctx, client)
 	if err != nil {
@@ -667,7 +642,11 @@ func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *b
 	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaListToDownload)))
 
 	for _, metaFileName := range metaListToDownload {
-		if err := driver.DownloadBinlogOrMetaFileFromCloud(ctx, client, metaFileName); err != nil {
+		// Use filepath.Join to compose an OS-specific local file system path.
+		filePathLocal := filepath.Join(driver.binlogDir, metaFileName)
+		// Use path.Join to compose a path on cloud which always uses / as the separator.
+		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), metaFileName)
+		if err := bbs3.DownloadFileFromCloud(ctx, client, filePathLocal, filePathOnCloud); err != nil {
 			return errors.Wrapf(err, "failed to download binlog metadata file %s from the cloud storage", metaFileName)
 		}
 	}
@@ -889,7 +868,11 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 	log.Debug("Found potential binlog file containing targetTs", zap.String("binlogFile", targetMeta.binlogName), zap.Int64("targetTs", targetTs), zap.Bool("isLastBinlogFile", isLastBinlogFile))
 
 	if client != nil {
-		if err := driver.DownloadBinlogOrMetaFileFromCloud(ctx, client, targetMeta.binlogName); err != nil {
+		// Use filepath.Join to compose an OS-specific local file system path.
+		filePathLocal := filepath.Join(driver.binlogDir, targetMeta.binlogName)
+		// Use path.Join to compose a path on cloud which always uses / as the separator.
+		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), targetMeta.binlogName)
+		if err := bbs3.DownloadFileFromCloud(ctx, client, filePathLocal, filePathOnCloud); err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", targetMeta.binlogName)
 		}
 	}

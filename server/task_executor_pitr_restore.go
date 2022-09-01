@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sync/atomic"
 	"time"
@@ -234,7 +235,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 			return nil, errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
 		}
 		defer os.Remove(backupAbsPathLocal)
-		replayBinlogPathList, err := downloadBinlogFilesFromCloud(ctx, mysqlSourceDriver, server.s3Client, startBinlogInfo, *targetBinlogInfo, binlogDir)
+		replayBinlogPathList, err := downloadBinlogFilesFromCloud(ctx, server.s3Client, startBinlogInfo, *targetBinlogInfo, binlogDir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog files from %s to %s from S3", startBinlogInfo.FileName, targetBinlogInfo.FileName)
 		}
@@ -307,14 +308,15 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	}, nil
 }
 
-func downloadBinlogFilesFromCloud(ctx context.Context, driver *mysql.Driver, client *bbs3.Client, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+func downloadBinlogFilesFromCloud(ctx context.Context, client *bbs3.Client, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
 	replayBinlogPathList, err := mysql.GetBinlogReplayList(startBinlogInfo, targetBinlogInfo, binlogDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get binlog replay list in directory %s", binlogDir)
 	}
 	for _, binlogFilePath := range replayBinlogPathList {
-		binlogFileName := filepath.Base(binlogFilePath)
-		if err := driver.DownloadBinlogOrMetaFileFromCloud(ctx, client, binlogFileName); err != nil {
+		// Use path.Join to compose a path on cloud which always uses / as the separator.
+		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(binlogDir), filepath.Base(binlogFilePath))
+		if err := bbs3.DownloadFileFromCloud(ctx, client, binlogFilePath, filePathOnCloud); err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", binlogFilePath)
 		}
 	}
