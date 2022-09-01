@@ -8,11 +8,12 @@ DSN format:
 
 Drivers:
   mysql
-  postgresql
+  postgres or postgresql
 
 Examples:
   mysql://root@localhost:3306/
   mysql://user:pass@localhost:3306/dbname
+  postgres://$(whoami)@localhost:5432/postgres
   postgresql://$(whoami)@localhost:5432/postgres
   postgresql://user:pass@localhost:5432/dbname?ssl-key=a&ssl-ca=b&ssl-cert=c
 `
