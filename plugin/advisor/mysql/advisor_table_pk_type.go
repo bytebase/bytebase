@@ -45,7 +45,7 @@ func (*TablePkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advis
 		title:            string(ctx.Rule.Type),
 		line:             make(map[string]int),
 		database:         ctx.Database,
-		tablesNewColumns: make(map[string]map[string]*ast.ColumnDef),
+		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 
 	for _, stmt := range stmtList {
@@ -63,7 +63,8 @@ func (*TablePkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advis
 	return checker.adviceList, nil
 }
 
-type tableNewColumn map[string]map[string]*ast.ColumnDef
+type columnNameToColumnDef map[string]*ast.ColumnDef
+type tableNewColumn map[string]columnNameToColumnDef
 
 func (t tableNewColumn) set(tableName string, columnName string, colDef *ast.ColumnDef) {
 	if _, ok := t[tableName]; !ok {
