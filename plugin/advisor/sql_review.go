@@ -54,6 +54,8 @@ const (
 	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
+	// SchemaRuleStatementNoCreateTableAs disallow 'CREATE TABLE ... [AS] SELECT.
+	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -490,6 +492,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexNoDuplicateColumn, nil
+		}
+	case SchemaRuleStatementNoCreateTableAs:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableDisallowCreateTableAs, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
