@@ -100,9 +100,10 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
 		for _, node := range stmts {
-			_, isDML := node.(tidbast.DMLNode)
+			_, isDDL := node.(tidbast.DDLNode)
 			_, isQuery := node.(*tidbast.SelectStmt)
-			if !isDML || isQuery {
+			_, isExplain := node.(*tidbast.ExplainStmt)
+			if isDDL || isQuery || isExplain {
 				result = append(result, api.TaskCheckResult{
 					Status:    api.TaskCheckStatusError,
 					Namespace: api.BBNamespace,
@@ -151,7 +152,10 @@ func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (resu
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
 		for _, node := range stmts {
-			if _, ok := node.(ast.DMLNode); !ok {
+			_, isDDL := node.(ast.DDLNode)
+			_, isSelect := node.(*ast.SelectStmt)
+			_, isExplain := node.(*ast.ExplainStmt)
+			if isDDL || isSelect || isExplain {
 				result = append(result, api.TaskCheckResult{
 					Status:    api.TaskCheckStatusError,
 					Namespace: api.BBNamespace,
