@@ -72,6 +72,7 @@ import { reactive, ref, computed } from "vue";
 import { NGrid, NGi } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import download from "downloadjs";
+import dayjs from "dayjs";
 import { useClipboard } from "@vueuse/core";
 import { BBDialog } from "@/bbkit";
 import { useDebugLogList, useNotificationStore } from "@/store";
@@ -104,7 +105,7 @@ const logKeyMap = {
 const handleExport = () => {
   download(
     JSON.stringify(debugLogList.value, null, 2),
-    "debug-logs.json",
+    `debuglog_${dayjs().format("YYYYMMDD")}.json`,
     "text/plain"
   );
 };
