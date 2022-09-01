@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-v-html -->
 <template>
   <div
     class="relative p-2 space-y-2 w-full h-full flex flex-col justify-start items-start"
@@ -14,23 +15,23 @@
     </div>
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
       <div
-        v-for="query in data"
-        :key="query.id"
+        v-for="sheet in sheetList"
+        :key="sheet.id"
         class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer"
         :class="`${
-          tabStore.currentTab.sheetId === query.id
+          tabStore.currentTab.sheetId === sheet.id
             ? 'bg-gray-100 rounded border-b-0'
             : ''
         }`"
-        @click="handleSheetClick(query)"
+        @click="handleSheetClick(sheet)"
       >
         <div class="pb-1 w-full flex flex-row justify-between items-center">
           <div
             class="w-full mr-2"
-            @dblclick="handleEditSheet(query.id, query.name)"
+            @dblclick="handleEditSheet(sheet.id, sheet.name)"
           >
             <input
-              v-if="state.editingSheetId === query.id"
+              v-if="state.editingSheetId === sheet.id"
               ref="queryNameInputerRef"
               v-model="state.currentSheetName"
               type="text"
@@ -39,12 +40,12 @@
               @keyup.enter="handleSheetNameChanged"
               @keyup.esc="handleCancelEdit"
             />
-            <span v-else class="text-sm" v-html="query.formatedName"></span>
+            <span v-else class="text-sm" v-html="sheet.formatedName"></span>
           </div>
           <NDropdown
             trigger="click"
             :options="actionDropdownOptions"
-            @select="(key: string) => handleActionBtnClick(key, query)"
+            @select="(key: string) => handleActionBtnClick(key, sheet)"
             @clickoutside="handleActionBtnOutsideClick"
           >
             <NButton text @click.stop>
@@ -59,7 +60,7 @@
         <p
           class="max-w-full text-gray-400 break-words font-mono truncate"
           style="font-size: 10px"
-          v-html="query.formatedStatement"
+          v-html="sheet.formatedStatement"
         ></p>
       </div>
     </div>
@@ -116,7 +117,7 @@ const state = reactive<State>({
 
 const queryNameInputerRef = ref<HTMLInputElement>();
 
-const data = computed(() => {
+const sheetList = computed(() => {
   const filterSheetList =
     sqlEditorStore.sharedSheet.id !== UNKNOWN_ID
       ? [...sheetStore.sheetList, sqlEditorStore.sharedSheet]
@@ -202,7 +203,7 @@ const handleSheetNameChanged = () => {
 
 const handleDeleteSheet = () => {
   if (state.currentActionSheet) {
-    sheetStore.deleteSheet(state.currentActionSheet.id);
+    sheetStore.deleteSheetById(state.currentActionSheet.id);
 
     if (tabStore.currentTab.sheetId === state.currentActionSheet.id) {
       tabStore.updateCurrentTab({

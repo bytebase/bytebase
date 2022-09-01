@@ -54,6 +54,7 @@ export default defineComponent({
     // Specify taskStatus if we want to show the task specific status when issueStatus is OPEN.
     taskStatus: {
       type: String as PropType<TaskStatus>,
+      default: undefined,
     },
     size: {
       type: String as PropType<SizeType>,

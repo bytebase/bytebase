@@ -151,6 +151,7 @@ export default defineComponent({
     // If database is specified, then we just show that database instead of the database select
     database: {
       type: Object as PropType<Database>,
+      default: undefined,
     },
   },
   emits: ["create", "cancel"],

@@ -34,7 +34,7 @@ module.exports = {
       { varsIgnorePattern: "^_", args: "none" },
     ],
     "vue/no-mutating-props": "warn",
-    "vue/multi-word-component-names": "warn",
+    "vue/multi-word-component-names": "off",
     "vue/no-unused-components": "warn",
     "vue/no-useless-template-attributes": "warn",
   },
