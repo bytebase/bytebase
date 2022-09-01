@@ -206,6 +206,7 @@ func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 		return
 	}
 
+	log.Debug(fmt.Sprintf("Downloading binlog files for %d MySQL instances.", len(instanceList)))
 	r.downloadBinlogMu.Lock()
 	defer r.downloadBinlogMu.Unlock()
 	for _, instance := range instanceList {
