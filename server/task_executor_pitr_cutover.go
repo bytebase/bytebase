@@ -98,7 +98,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doCutover(ctx, driver, server, task, issue); err != nil {
+	if err := exec.doCutover(ctx, driver, task, issue); err != nil {
 		return true, nil, err
 	}
 
@@ -122,6 +122,12 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
 
+	// TODO(dragonly): Only needed for in-place PITR.
+	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
+	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
+		return true, nil, errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
+	}
+
 	// Sync database schema after restore is completed.
 	if err := server.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
 		log.Error("failed to sync database schema",
@@ -135,7 +141,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}, nil
 }
 
-func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
+func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
 	switch task.Instance.Engine {
 	case db.Postgres:
 		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
@@ -160,7 +166,7 @@ func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Dr
 			}
 		}
 	case db.MySQL:
-		if err := exec.pitrCutoverMySQL(ctx, driver, server, task, issue); err != nil {
+		if err := exec.pitrCutoverMySQL(ctx, driver, task, issue); err != nil {
 			return errors.Wrap(err, "failed to do cutover for MySQL")
 		}
 		return nil
@@ -169,7 +175,7 @@ func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Dr
 	}
 }
 
-func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, server *Server, task *api.Task, issue *api.Issue) error {
+func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
 	driverDB, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
@@ -186,11 +192,6 @@ func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.
 		return errors.Wrap(err, "failed to swap the original and PITR database")
 	}
 	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
-	// TODO(dragonly): Only needed for in-place PITR.
-	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
-		return errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
-	}
 	return nil
 }
 
