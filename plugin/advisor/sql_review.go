@@ -65,8 +65,8 @@ const (
 	SchemaRuleTableDropNamingConvention SQLReviewRuleType = "table.drop-naming-convention"
 	// SchemaRuleTableExists require the table existence.
 	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
-	// SchemaRuleTableCommentRequirement requaire the table comment.
-	SchemaRuleTableCommentRequirement SQLReviewRuleType = "table.comment-require"
+	// SchemaRuleTableCommentConvention enforce the table comment convention.
+	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -82,8 +82,8 @@ const (
 	SchemaRuleColumnExists SQLReviewRuleType = "column.exists"
 	// SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 	SchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "column.disallow-changing-order"
-	// SchemaRuleColumnCommentRequirement require the column comments.
-	SchemaRuleColumnCommentRequirement SQLReviewRuleType = "column.comment-require"
+	// SchemaRuleColumnCommentConvention enforce the column comment convention.
+	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -182,6 +182,10 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalRequiredColumnRulePayload(rule.Payload); err != nil {
 			return err
 		}
+	case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
+		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -195,6 +199,12 @@ type NamingRulePayload struct {
 // RequiredColumnRulePayload is the payload for required column rule.
 type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
+}
+
+// CommentConventionRulePayload is the payload for comment convention rule.
+type CommentConventionRulePayload struct {
+	Required  bool `json:"required"`
+	MaxLength int  `json:"maxLength"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -276,6 +286,15 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 		return nil, errors.Errorf("invalid required column rule payload, column list cannot be empty")
 	}
 	return &rcr, nil
+}
+
+// UnmarshalCommentConventionRulePayload will unmarshal payload to CommentConventionRulePayload.
+func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRulePayload, error) {
+	var ccr CommentConventionRulePayload
+	if err := json.Unmarshal([]byte(payload), &ccr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal comment convention rule payload %q", payload)
+	}
+	return &ccr, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -445,10 +464,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLColumnDisallowChangingOrder, nil
 		}
-	case SchemaRuleColumnCommentRequirement:
+	case SchemaRuleColumnCommentConvention:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLColumnCommentRequirement, nil
+			return MySQLColumnCommentConvention, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
@@ -474,10 +493,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLTableExists, nil
 		}
-	case SchemaRuleTableCommentRequirement:
+	case SchemaRuleTableCommentConvention:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLTableCommentRequirement, nil
+			return MySQLTableCommentConvention, nil
 		}
 	case SchemaRuleMySQLEngine:
 		if engine == db.MySQL {

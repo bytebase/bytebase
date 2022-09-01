@@ -100,8 +100,8 @@ const (
 	// MySQLColumnDisallowChangingOrder is an advisor type for MySQL disallow changing column order.
 	MySQLColumnDisallowChangingOrder Type = "bb.plugin.advisor.mysql.column.disallow-changing-order"
 
-	// MySQLColumnCommentRequirement is an advisor type for MySQL column comment requirement.
-	MySQLColumnCommentRequirement Type = "bb.plugin.advisor.mysql.column.comment-require"
+	// MySQLColumnCommentConvention is an advisor type for MySQL column comment convention.
+	MySQLColumnCommentConvention Type = "bb.plugin.advisor.mysql.column.comment"
 
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
@@ -118,11 +118,11 @@ const (
 	// MySQLTableExists is an advisor type for MySQL table existence.
 	MySQLTableExists Type = "bb.plugin.advisor.mysql.table.exists"
 
+	// MySQLTableCommentConvention is an advisor for MySQL table comment convention.
+	MySQLTableCommentConvention Type = "bb.plugin.advisor.mysql.table.comment"
+
 	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
 	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
-
-	// MySQLTableCommentRequirement is an advisor for MySQL table comment requirement.
-	MySQLTableCommentRequirement Type = "bb.plugin.advisor.mysql.table.comment-require"
 
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
