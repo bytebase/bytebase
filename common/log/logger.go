@@ -26,6 +26,11 @@ func init() {
 	))
 }
 
+// Logger returns the global logger
+func Logger() *zap.Logger {
+	return gl
+}
+
 // SetLevel wraps the zap Level's SetLevel method.
 func SetLevel(level zapcore.Level) {
 	gLevel.SetLevel(level)
