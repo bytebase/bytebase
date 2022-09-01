@@ -661,7 +661,10 @@ type Tx struct {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> f4c2d7a3 (chore: use embed)
 <<<<<<< HEAD
 // Replace mutiple whitespace characters including /t/n with a single space.
 var pattern = regexp.MustCompile(`\s+`)
@@ -699,7 +702,12 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interfa
 >>>>>>> 64fa2c35 (chore: add logging)
 }
 
+<<<<<<< HEAD
 >>>>>>> d7a18830 (chore: add logging)
+=======
+=======
+>>>>>>> 2b30b825 (chore: use embed)
+>>>>>>> f4c2d7a3 (chore: use embed)
 // FormatError returns err as a Bytebase error, if possible.
 // Otherwise returns the original error.
 func FormatError(err error) error {
