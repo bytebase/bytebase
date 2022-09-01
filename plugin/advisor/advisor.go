@@ -118,6 +118,9 @@ const (
 	// MySQLTableExists is an advisor type for MySQL table existence.
 	MySQLTableExists Type = "bb.plugin.advisor.mysql.table.exists"
 
+	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
+	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
+
 	// MySQLTableCommentRequirement is an advisor for MySQL table comment requirement.
 	MySQLTableCommentRequirement Type = "bb.plugin.advisor.mysql.table.comment-require"
 
