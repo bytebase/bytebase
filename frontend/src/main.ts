@@ -130,11 +130,7 @@ app
   // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
   // to re-render the page and remove the event listener required for
   .directive("data-source-type", dataSourceType)
-  .use(highlight)
-  .use(pinia)
-  .use(router)
-  .use(i18n)
-  .use(NaiveUI);
+  .use(pinia);
 
 // We need to restore the basic info in order to perform route authentication.
 // Even using the <suspense>, it's still too late, thus we do the fetch here.
@@ -152,6 +148,8 @@ const restoreUser = () => {
   return authStore.restoreUser();
 };
 Promise.all([initActuator(), initSubscription(), restoreUser()]).finally(() => {
+  // Install router after the necessary data fetching is complete.
+  app.use(router).use(highlight).use(i18n).use(NaiveUI);
   app.mount("#app");
 
   // Try to mount demo vue app instance
