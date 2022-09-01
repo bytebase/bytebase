@@ -127,7 +127,6 @@ func readBinlogMetaFile(binlogDir, fileName string) (binlogFileMeta, error) {
 
 // replayBinlogFromDir replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`, read binlog from `binlogDir`.
 func (driver *Driver) replayBinlogFromDir(ctx context.Context, originalDatabase, targetDatabase string, startBinlogInfo, targetBinlogInfo api.BinlogInfo, targetTs int64, binlogDir string) error {
-	// TODO(dragonly): find the last binlog file need to replay.
 	replayBinlogPaths, err := GetBinlogReplayList(startBinlogInfo, targetBinlogInfo, binlogDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get binlog replay list in directory %s", binlogDir)
@@ -334,12 +333,12 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
-func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, *api.BinlogInfo, error) {
+func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, client *bbs3.Client) (*api.Backup, *api.BinlogInfo, error) {
 	if len(backupList) == 0 {
 		return nil, nil, errors.Errorf("no valid backup")
 	}
 
-	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs)
+	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs, client)
 	if err != nil {
 		log.Error("Failed to get binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Error(err))
 		return nil, nil, errors.Wrapf(err, "failed to get binlog coordinate by targetTs %d", targetTs)
@@ -560,11 +559,6 @@ func binlogMetaAreContinuous(files []binlogFileMeta) bool {
 	return true
 }
 
-func getBinlogRelativeDir(binlogDir string) string {
-	instanceID := filepath.Base(binlogDir)
-	return filepath.Join("backup", "instance", instanceID)
-}
-
 // Download binlog files on server.
 func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, metaList []binlogFileMeta, binlogFilesOnServerSorted []BinlogFile, downloadLatestBinlogFile bool, uploader *bbs3.Client) error {
 	if len(binlogFilesOnServerSorted) == 0 {
@@ -621,10 +615,11 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 		log.Debug("No binlog file found on server to download")
 		return nil
 	}
-	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
-	if err := driver.syncBinlogMetaFileFromCloud(ctx, client); err != nil {
-		return errors.Wrap(err, "failed to sync binlog metadata files from the cloud")
+	if client != nil {
+		if err := driver.syncBinlogMetaFileFromCloud(ctx, client); err != nil {
+			return errors.Wrap(err, "failed to sync binlog metadata files from the cloud")
+		}
 	}
 
 	metaList, err := getSortedLocalBinlogFilesMeta(driver.binlogDir)
@@ -640,30 +635,19 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 }
 
 func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *bbs3.Client) error {
-	if client == nil {
-		return nil
-	}
-
 	metaListToDownload, err := driver.getBinlogMetaFileListToDownload(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
 	}
 	log.Debug(fmt.Sprintf("Downloading %d binlog metadata file from cloud storage", len(metaListToDownload)))
 
-	relativeDir := getBinlogRelativeDir(driver.binlogDir)
-	tempDir := os.TempDir()
 	for _, metaFileName := range metaListToDownload {
-		metaFilePathTemp := filepath.Join(tempDir, metaFileName)
-		metaFileTemp, err := os.Create(metaFilePathTemp)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create temporary binlog metadata file %q", metaFileName)
-		}
-		if _, err := client.DownloadObject(ctx, path.Join(relativeDir, metaFileName), metaFileTemp); err != nil {
-			return errors.Wrapf(err, "failed to download binlog metadata file %q", metaFileName)
-		}
-		metaFilePath := filepath.Join(driver.binlogDir, metaFileName)
-		if err := os.Rename(metaFilePathTemp, metaFilePath); err != nil {
-			return errors.Wrapf(err, "failed to rename %q to %q", metaFilePathTemp, metaFilePath)
+		// Use filepath.Join to compose an OS-specific local file system path.
+		filePathLocal := filepath.Join(driver.binlogDir, metaFileName)
+		// Use path.Join to compose a path on cloud which always uses / as the separator.
+		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), metaFileName)
+		if err := client.DownloadFileFromCloud(ctx, filePathLocal, filePathOnCloud); err != nil {
+			return errors.Wrapf(err, "failed to download binlog metadata file %s from the cloud storage", metaFileName)
 		}
 	}
 
@@ -768,7 +752,7 @@ func (driver *Driver) uploadBinlogFileToCloud(ctx context.Context, uploader *bbs
 	}
 	defer binlogFile.Close()
 	defer os.Remove(binlogFilePath)
-	relativeDir := getBinlogRelativeDir(driver.binlogDir)
+	relativeDir := common.GetBinlogRelativeDir(driver.binlogDir)
 	if _, err := uploader.UploadObject(ctx, path.Join(relativeDir, binlogFileName), binlogFile); err != nil {
 		// Remove the local metadata file so that it can be re-uploaded later.
 		if err := os.Remove(metaFilePath); err != nil {
@@ -850,7 +834,7 @@ func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]Binlo
 }
 
 // getBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
-func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*binlogCoordinate, error) {
+func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int64, client *bbs3.Client) (*binlogCoordinate, error) {
 	metaList, err := getSortedLocalBinlogFilesMeta(driver.binlogDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read local binlog metadata files")
@@ -883,6 +867,15 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 	}
 	log.Debug("Found potential binlog file containing targetTs", zap.String("binlogFile", targetMeta.binlogName), zap.Int64("targetTs", targetTs), zap.Bool("isLastBinlogFile", isLastBinlogFile))
 
+	if client != nil {
+		// Use filepath.Join to compose an OS-specific local file system path.
+		filePathLocal := filepath.Join(driver.binlogDir, targetMeta.binlogName)
+		// Use path.Join to compose a path on cloud which always uses / as the separator.
+		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), targetMeta.binlogName)
+		if err := client.DownloadFileFromCloud(ctx, filePathLocal, filePathOnCloud); err != nil {
+			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", targetMeta.binlogName)
+		}
+	}
 	eventPos, err := driver.getBinlogEventPositionAtOrAfterTs(ctx, targetMeta.binlogName, targetTs)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
@@ -1028,6 +1021,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 	}
 
 	if pos == 0 {
+		// TODO(dragonly): Check for mysqlbinlog process exit error to give more specific error messages, e.g., file not exist.
 		return 0, common.Errorf(common.NotFound, "failed to find event position at or after targetTs %d", targetTs)
 	}
 
