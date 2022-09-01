@@ -1018,6 +1018,17 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  if (to.name?.toString().startsWith("setting.workspace.debug-log")) {
+    // Returns 403 immediately if not DBA or Owner.
+    if (!isDBAOrOwner(currentUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
   if (to.name === "workspace.instance") {
     if (
       !hasFeature("bb.feature.dba-workflow") ||
