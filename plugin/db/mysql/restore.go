@@ -616,8 +616,10 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 		return nil
 	}
 
-	if err := driver.syncBinlogMetaFileFromCloud(ctx, client); err != nil {
-		return errors.Wrap(err, "failed to sync binlog metadata files from the cloud")
+	if client != nil {
+		if err := driver.syncBinlogMetaFileFromCloud(ctx, client); err != nil {
+			return errors.Wrap(err, "failed to sync binlog metadata files from the cloud")
+		}
 	}
 
 	metaList, err := getSortedLocalBinlogFilesMeta(driver.binlogDir)
@@ -634,12 +636,8 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBin
 
 // DownloadBinlogOrMetaFileFromCloud downloads a binlog or metadata file from the cloud storage.
 // In case of network errors which will get partially downloaded files, we first download to a temporary file.
-// After successfully downloading the temporary file, we then rename it to the target file path.
+// After that, we then rename it to the target file path.
 func (driver *Driver) DownloadBinlogOrMetaFileFromCloud(ctx context.Context, client *bbs3.Client, fileName string) error {
-	if client == nil {
-		return nil
-	}
-
 	tempDir := os.TempDir()
 	// Use filepath.Join to compose an OS-specific local file system path.
 	filePathTemp := filepath.Join(tempDir, fileName)
@@ -662,10 +660,6 @@ func (driver *Driver) DownloadBinlogOrMetaFileFromCloud(ctx context.Context, cli
 }
 
 func (driver *Driver) syncBinlogMetaFileFromCloud(ctx context.Context, client *bbs3.Client) error {
-	if client == nil {
-		return nil
-	}
-
 	metaListToDownload, err := driver.getBinlogMetaFileListToDownload(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get binlog metadata file list on cloud in directory %q", driver.binlogDir)
@@ -894,7 +888,6 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 	}
 	log.Debug("Found potential binlog file containing targetTs", zap.String("binlogFile", targetMeta.binlogName), zap.Int64("targetTs", targetTs), zap.Bool("isLastBinlogFile", isLastBinlogFile))
 
-	// TODO(dragonly): refactor the download to temp and rename process to a function.
 	if client != nil {
 		if err := driver.DownloadBinlogOrMetaFileFromCloud(ctx, client, targetMeta.binlogName); err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", targetMeta.binlogName)
