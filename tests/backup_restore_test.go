@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -157,7 +158,10 @@ func TestPITR(t *testing.T) {
 	})
 	a.NoError(err)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	t.Run("Buggy Application", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		port := getTestPort(t.Name())
 		mysqlDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
@@ -187,9 +191,13 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, mysqlDB, database.Name, numRowsTime1)
 		validateTbl1(t, mysqlDB, database.Name, numRowsTime1)
 		validateTableUpdateRow(t, mysqlDB, database.Name)
+
+		wg.Done()
 	})
 
+	wg.Add(1)
 	t.Run("Schema Migration Failure", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		port := getTestPort(t.Name())
 		mysqlDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
@@ -225,9 +233,13 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, mysqlDB, database.Name, numRowsTime1)
 		validateTbl1(t, mysqlDB, database.Name, numRowsTime1)
 		validateTableUpdateRow(t, mysqlDB, database.Name)
+
+		wg.Done()
 	})
 
+	wg.Add(1)
 	t.Run("Drop Database", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		port := getTestPort(t.Name())
 		mysqlDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
@@ -272,9 +284,13 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, mysqlDB, database.Name, numRowsTime1)
 		validateTbl1(t, mysqlDB, database.Name, numRowsTime1)
 		validateTableUpdateRow(t, mysqlDB, database.Name)
+
+		wg.Done()
 	})
 
+	wg.Add(1)
 	t.Run("PITR Twice", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		port := getTestPort(t.Name())
 		mysqlDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
@@ -342,9 +358,13 @@ func TestPITR(t *testing.T) {
 		validateTbl1(t, mysqlDB, database.Name, numRowsTime1)
 		validateTableUpdateRow(t, mysqlDB, database.Name)
 		log.Debug("Second PITR done.")
+
+		wg.Done()
 	})
 
+	wg.Add(1)
 	t.Run("Restore To New Database In Another Instance", func(t *testing.T) {
+		t.Parallel()
 		port := getTestPort(t.Name())
 		sourceMySQLDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
 		defer cleanFn()
@@ -421,9 +441,13 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, targetDB, targetDatabaseName, numRowsTime1)
 		validateTbl1(t, targetDB, targetDatabaseName, numRowsTime1)
 		validateTableUpdateRow(t, targetDB, targetDatabaseName)
+
+		wg.Done()
 	})
 
+	wg.Add(1)
 	t.Run("Invalid Time Point", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		port := getTestPort(t.Name())
 		targetTs := time.Now().Unix()
@@ -436,7 +460,11 @@ func TestPITR(t *testing.T) {
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.Error(err)
 		a.Equal(api.TaskFailed, status)
+
+		wg.Done()
 	})
+
+	wg.Wait()
 }
 
 func createPITRIssue(ctl *controller, project *api.Project, database *api.Database, targetTs int64) (*api.Issue, error) {
