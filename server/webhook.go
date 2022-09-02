@@ -490,7 +490,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 			ContainerID: repo.ProjectID,
 			Type:        api.ActivityProjectRepositoryPush,
 			Level:       api.ActivityWarn,
-			Comment:     fmt.Sprintf("Ignored committed file %q, %s.", fileEscaped, err.Error()),
+			Comment:     fmt.Sprintf("Ignored committed file, %s.", err.Error()),
 			Payload:     string(bytes),
 		}
 		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
