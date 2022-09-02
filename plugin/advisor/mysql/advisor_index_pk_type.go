@@ -4,11 +4,11 @@ package mysql
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pingcap/tidb/parser/types"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
@@ -142,14 +142,15 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 	for _, pd := range pkDataList {
-		tableColumn, columnType := v.prettyPrintColumn(pd.table, pd.column, pd.columnType)
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  v.level,
-			Code:    advisor.IndexPKHasUnexpectedType,
-			Title:   v.title,
-			Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but %s is %s", tableColumn, columnType),
-			Line:    pd.line,
-		})
+		for idx, columnName := range pd.column {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    advisor.IndexPKHasUnexpectedType,
+				Title:   v.title,
+				Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", pd.table, columnName, pd.columnType[idx]),
+				Line:    pd.line,
+			})
+		}
 	}
 	return in, false
 }
@@ -209,7 +210,7 @@ func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 				columnName := key.Column.Name.String()
 				columnType, err := v.getPKColumnType(tableName, columnName)
 				if err != nil {
-					return nil
+					continue
 				}
 				if columnType != "INT" && columnType != "BIGINT" {
 					columnNames = append(columnNames, key.Column.Name.String())
@@ -256,7 +257,7 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 	if column != nil {
 		return column.Type, nil
 	}
-	return "", fmt.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
+	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }
 
 // getIntOrBigIntStr returns the type string of tp.
@@ -272,16 +273,4 @@ func (*indexPkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
 		return "BIGINT"
 	}
 	return tp.String()
-}
-
-func (*indexPkTypeChecker) prettyPrintColumn(tableName string, columnNames, columnTypes []string) (string, string) {
-	var tableColumnSpec []string
-	for _, columnName := range columnNames {
-		tableColumnSpec = append(tableColumnSpec, fmt.Sprintf("`%s`.`%s`", tableName, columnName))
-	}
-	sep := `, `
-	if len(columnNames) < 2 {
-		return strings.Join(tableColumnSpec, sep), strings.Join(columnTypes, sep)
-	}
-	return `(` + strings.Join(tableColumnSpec, sep) + `)`, `(` + strings.Join(columnTypes, sep) + `)`
 }
