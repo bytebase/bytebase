@@ -124,6 +124,7 @@ func getTestPort(testName string) int {
 		"TestWildcardInVCSFilePathTemplate/singleAsterisk",
 		"TestWildcardInVCSFilePathTemplate/doubleAsterisks",
 		"TestWildcardInVCSFilePathTemplate/mixAsterisks",
+		"TestWildcardInVCSFilePathTemplate/placeholderAsFolder",
 		"TestTenant",
 		"TestTenantVCS/GitLab",
 		"TestTenantVCS/GitHub",
