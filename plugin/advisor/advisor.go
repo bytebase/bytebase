@@ -106,6 +106,9 @@ const (
 	// MySQLAutoIncrementColumnMustInteger is an advisor type for auto-increment column.
 	MySQLAutoIncrementColumnMustInteger Type = "bb.plugin.advisor.mysql.column.auto-increment-must-integer"
 
+	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
+	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
