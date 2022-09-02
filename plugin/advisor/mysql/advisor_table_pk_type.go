@@ -16,21 +16,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*TablePkTypeAdvisor)(nil)
-	_ ast.Visitor     = (*tablePkTypeChecker)(nil)
+	_ advisor.Advisor = (*IndexPkTypeAdvisor)(nil)
+	_ ast.Visitor     = (*indexPkTypeChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLTablePKType, &TablePkTypeAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLTablePKType, &TablePkTypeAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
 }
 
-// TablePkTypeAdvisor is the advisor checking for correct type of PK.
-type TablePkTypeAdvisor struct {
+// IndexPkTypeAdvisor is the advisor checking for correct type of PK.
+type IndexPkTypeAdvisor struct {
 }
 
 // Check checks for correct type of PK.
-func (*TablePkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*IndexPkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -40,7 +40,7 @@ func (*TablePkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advis
 	if err != nil {
 		return nil, err
 	}
-	checker := &tablePkTypeChecker{
+	checker := &indexPkTypeChecker{
 		level:            level,
 		title:            string(ctx.Rule.Type),
 		line:             make(map[string]int),
@@ -81,7 +81,7 @@ func (t tableNewColumn) get(tableName string, columnName string) (colDef *ast.Co
 	return col, ok
 }
 
-type tablePkTypeChecker struct {
+type indexPkTypeChecker struct {
 	adviceList       []advisor.Advice
 	level            advisor.Status
 	title            string
@@ -98,7 +98,7 @@ type pkData struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (v *tablePkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var pkDataList []pkData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
@@ -134,11 +134,11 @@ func (v *tablePkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*tablePkTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*indexPkTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (v *tablePkTypeChecker) addNewColumns(tableName string, line int, colDefs []*ast.ColumnDef) []pkData {
+func (v *indexPkTypeChecker) addNewColumns(tableName string, line int, colDefs []*ast.ColumnDef) []pkData {
 	var pkDataList []pkData
 	for _, colDef := range colDefs {
 		for _, option := range colDef.Options {
@@ -159,7 +159,7 @@ func (v *tablePkTypeChecker) addNewColumns(tableName string, line int, colDefs [
 	return pkDataList
 }
 
-func (v *tablePkTypeChecker) addConstraints(tableName string, line int, constraints []*ast.Constraint) []pkData {
+func (v *indexPkTypeChecker) addConstraints(tableName string, line int, constraints []*ast.Constraint) []pkData {
 	var pkDataList []pkData
 	for _, constraint := range constraints {
 		if constraint.Tp == ast.ConstraintPrimaryKey {
@@ -195,7 +195,7 @@ func (v *tablePkTypeChecker) addConstraints(tableName string, line int, constrai
 }
 
 // getPKColumnType gets the column type string from v.tablesNewColumns or catalog, returns empty string if cannot find the column in given table.
-func (v *tablePkTypeChecker) getPKColumnType(tableName string, columnName string) string {
+func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string) string {
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getIntOrBigIntStr(colDef.Tp)
 	}
@@ -210,7 +210,7 @@ func (v *tablePkTypeChecker) getPKColumnType(tableName string, columnName string
 }
 
 // getIntOrBigIntStr returns the type string of tp.
-func (*tablePkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
+func (*indexPkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
 	switch tp.Tp {
 	// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLong
 	case mysql.TypeLong:
@@ -224,7 +224,7 @@ func (*tablePkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
 	return tp.String()
 }
 
-func (*tablePkTypeChecker) prettyPrintColumn(tableName string, columnNames, columnTypes []string) (string, string) {
+func (*indexPkTypeChecker) prettyPrintColumn(tableName string, columnNames, columnTypes []string) (string, string) {
 	var tableColumnSpec []string
 	for _, columnName := range columnNames {
 		tableColumnSpec = append(tableColumnSpec, fmt.Sprintf("`%s`.`%s`", tableName, columnName))

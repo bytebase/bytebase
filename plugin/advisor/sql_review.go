@@ -67,8 +67,6 @@ const (
 	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
 	// SchemaRuleTableCommentConvention enforce the table comment convention.
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
-	// SchemaRuleTableUnexpectedPKType require expected type of primary key.
-	SchemaRuleTableUnexpectedPKType SQLReviewRuleType = "table.unexpected-pk-type"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -97,6 +95,8 @@ const (
 	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
 	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
+	// SchemaRuleIndexUnexpectedPKType require expected type of primary key.
+	SchemaRuleIndexUnexpectedPKType SQLReviewRuleType = "index.unexpected-pk-type"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -544,10 +544,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
 		}
-	case SchemaRuleTableUnexpectedPKType:
+	case SchemaRuleIndexUnexpectedPKType:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLTablePKType, nil
+			return MySQLIndexPKType, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
