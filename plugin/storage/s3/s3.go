@@ -53,6 +53,7 @@ func NewClient(ctx context.Context, region, bucket string, credentials aws.Crede
 }
 
 // ListObjects lists objects with prefix in their names.
+// TODO(dragonly): support pagination.
 func (c *Client) ListObjects(ctx context.Context, prefix string) (*s3.ListObjectsV2Output, error) {
 	return c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: &c.bucket,
@@ -82,11 +83,16 @@ func (c *Client) UploadObject(ctx context.Context, path string, body io.Reader) 
 	})
 }
 
-// DeleteObject deletes the object with path.
-func (c *Client) DeleteObject(ctx context.Context, path string) (*s3.DeleteObjectOutput, error) {
-	return c.c.DeleteObject(ctx, &s3.DeleteObjectInput{
+// DeleteObjects deletes the objects with path.
+func (c *Client) DeleteObjects(ctx context.Context, pathList []string) (*s3.DeleteObjectsOutput, error) {
+	var oidList []types.ObjectIdentifier
+	for _, path := range pathList {
+		path := path // create a new 'path'.
+		oidList = append(oidList, types.ObjectIdentifier{Key: &path})
+	}
+	return c.c.DeleteObjects(ctx, &s3.DeleteObjectsInput{
 		Bucket: &c.bucket,
-		Key:    &path,
+		Delete: &types.Delete{Objects: oidList},
 	})
 }
 
