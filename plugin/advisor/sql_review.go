@@ -544,7 +544,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
 		}
-	case SchemaRuleIndexUnexpectedPKType:
+	case SchemaRuleIndexPKType:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexPKType, nil

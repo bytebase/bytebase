@@ -16,8 +16,8 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -40,8 +40,8 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -52,15 +52,15 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    1,
 				},
@@ -94,8 +94,8 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -118,8 +118,8 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -130,15 +130,15 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    1,
 				},
@@ -174,8 +174,8 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    2,
 				},
@@ -188,15 +188,15 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    2,
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    2,
 				},
@@ -234,8 +234,8 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -258,8 +258,8 @@ func TestIndexPkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.IndexPKHasUnexpectedType,
-					Title:   "index.unexpected-pk-type",
+					Code:    advisor.IndexPKType,
+					Title:   "index.pk-type",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    1,
 				},
@@ -279,7 +279,7 @@ func TestIndexPkType(t *testing.T) {
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &IndexPkTypeAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleIndexUnexpectedPKType,
+		Type:    advisor.SchemaRuleIndexPKType,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, advisor.MockMySQLDatabase)

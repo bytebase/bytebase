@@ -144,7 +144,7 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, pd := range pkDataList {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
-			Code:    advisor.IndexPKHasUnexpectedType,
+			Code:    advisor.IndexPKType,
 			Title:   v.title,
 			Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", pd.table, pd.column, pd.columnType),
 			Line:    pd.line,
