@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
-func TestCharsetWhitelist(t *testing.T) {
+func TestCharsetAllowlist(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
 			Statement: `CREATE TABLE t(a int) CHARSET utf8mb4`,
@@ -41,7 +41,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"CREATE TABLE t(a int) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -53,7 +53,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"ALTER TABLE t CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -65,7 +65,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"CREATE DATABASE d CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -77,7 +77,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"ALTER DATABASE d CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -89,7 +89,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"CREATE TABLE t(a varchar(255) CHARSET ascii)\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -101,7 +101,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -113,7 +113,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -125,7 +125,7 @@ func TestCharsetWhitelist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.whitelist",
+					Title:   "charset.allowlist",
 					Content: "\"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -133,12 +133,12 @@ func TestCharsetWhitelist(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(advisor.CharsetWhitelistRulePayload{
-		CharsetWhitelist: []string{"utf8mb4"},
+	payload, err := json.Marshal(advisor.CharsetAllowlistRulePayload{
+		CharsetAllowlist: []string{"utf8mb4"},
 	})
 	require.NoError(t, err)
-	advisor.RunSQLReviewRuleTests(t, tests, &CharsetWhitelistAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleCharsetWhitelist,
+	advisor.RunSQLReviewRuleTests(t, tests, &CharsetAllowlistAdvisor{}, &advisor.SQLReviewRule{
+		Type:    advisor.SchemaRuleCharsetAllowlist,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, advisor.MockMySQLDatabase)

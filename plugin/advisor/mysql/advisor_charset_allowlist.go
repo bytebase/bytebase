@@ -13,21 +13,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*CharsetWhitelistAdvisor)(nil)
-	_ ast.Visitor     = (*charsetWhitelistChecker)(nil)
+	_ advisor.Advisor = (*CharsetAllowlistAdvisor)(nil)
+	_ ast.Visitor     = (*charsetAllowlistChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLCharsetWhitelist, &CharsetWhitelistAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLCharsetWhitelist, &CharsetWhitelistAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
 }
 
-// CharsetWhitelistAdvisor is the advisor checking for charset whitelist.
-type CharsetWhitelistAdvisor struct {
+// CharsetAllowlistAdvisor is the advisor checking for charset allowlist.
+type CharsetAllowlistAdvisor struct {
 }
 
-// Check checks for charset whitelist.
-func (*CharsetWhitelistAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+// Check checks for charset allowlist.
+func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -37,17 +37,17 @@ func (*CharsetWhitelistAdvisor) Check(ctx advisor.Context, statement string) ([]
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCharsetWhitelistRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalCharsetAllowlistRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
-	checker := &charsetWhitelistChecker{
+	checker := &charsetAllowlistChecker{
 		level:     level,
 		title:     string(ctx.Rule.Type),
-		whitelist: make(map[string]bool),
+		allowlist: make(map[string]bool),
 	}
-	for _, charset := range payload.CharsetWhitelist {
-		checker.whitelist[strings.ToLower(charset)] = true
+	for _, charset := range payload.CharsetAllowlist {
+		checker.allowlist[strings.ToLower(charset)] = true
 	}
 
 	for _, stmt := range stmtList {
@@ -67,35 +67,35 @@ func (*CharsetWhitelistAdvisor) Check(ctx advisor.Context, statement string) ([]
 	return checker.adviceList, nil
 }
 
-type charsetWhitelistChecker struct {
+type charsetAllowlistChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
 	line       int
-	whitelist  map[string]bool
+	allowlist  map[string]bool
 }
 
 // Enter implements the ast.Visitor interface.
-func (checker *charsetWhitelistChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	var disabledCharset string
 	switch node := in.(type) {
 	case *ast.CreateDatabaseStmt:
 		charset := getDatabaseCharset(node.Options)
-		if _, exist := checker.whitelist[charset]; charset != "" && !exist {
+		if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 			code = advisor.DisabledCharset
 			disabledCharset = charset
 		}
 	case *ast.CreateTableStmt:
 		charset := getTableCharset(node.Options)
-		if _, exist := checker.whitelist[charset]; charset != "" && !exist {
+		if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 			code = advisor.DisabledCharset
 			disabledCharset = charset
 		}
 		for _, column := range node.Cols {
 			charset := getColumnCharset(column)
-			if _, exist := checker.whitelist[charset]; charset != "" && !exist {
+			if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 				code = advisor.DisabledCharset
 				disabledCharset = charset
 				break
@@ -103,7 +103,7 @@ func (checker *charsetWhitelistChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	case *ast.AlterDatabaseStmt:
 		charset := getDatabaseCharset(node.Options)
-		if _, exist := checker.whitelist[charset]; charset != "" && !exist {
+		if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 			code = advisor.DisabledCharset
 			disabledCharset = charset
 		}
@@ -112,14 +112,14 @@ func (checker *charsetWhitelistChecker) Enter(in ast.Node) (ast.Node, bool) {
 			switch spec.Tp {
 			case ast.AlterTableOption:
 				charset := getTableCharset(spec.Options)
-				if _, exist := checker.whitelist[charset]; charset != "" && !exist {
+				if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 					code = advisor.DisabledCharset
 					disabledCharset = charset
 				}
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
 					charset := getColumnCharset(column)
-					if _, exist := checker.whitelist[charset]; charset != "" && !exist {
+					if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 						code = advisor.DisabledCharset
 						disabledCharset = charset
 						break
@@ -127,7 +127,7 @@ func (checker *charsetWhitelistChecker) Enter(in ast.Node) (ast.Node, bool) {
 				}
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
 				charset := getColumnCharset(spec.NewColumns[0])
-				if _, exist := checker.whitelist[charset]; charset != "" && !exist {
+				if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 					code = advisor.DisabledCharset
 					disabledCharset = charset
 					break
@@ -150,7 +150,7 @@ func (checker *charsetWhitelistChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*charsetWhitelistChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*charsetAllowlistChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
