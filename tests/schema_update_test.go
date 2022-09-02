@@ -733,6 +733,45 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				}
 			},
 		},
+		// No asterisk
+		{
+			name:               "placeholderAsFolder",
+			vcsProviderCreator: fake.NewGitLab,
+			envName:            "ZO",
+			baseDirectory:      "bbtest",
+			vcsType:            vcs.GitLabSelfHost,
+			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			commitFileNames: []string{
+				fmt.Sprintf("%s/%s/%s/sql/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/%s__ver2__migrate__create_table_t2.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/sql/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "ZO", dbName, dbName),
+			},
+			commitContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"CREATE TABLE t2 (id INT);",
+				"CREATE TABLE t3 (id INT);",
+			},
+			expect: []bool{
+				true,
+				false,
+				true,
+			},
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
