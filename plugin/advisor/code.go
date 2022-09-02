@@ -54,6 +54,7 @@ const (
 	NoColumnComment               Code = 408
 	ColumnCommentTooLong          Code = 409
 	AutoIncrementColumnNotInteger Code = 410
+	DisabledColumnType            Code = 411
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
