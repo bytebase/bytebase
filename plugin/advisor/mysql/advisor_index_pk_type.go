@@ -99,8 +99,8 @@ type indexPkTypeChecker struct {
 
 type pkData struct {
 	table      string
-	column     []string
-	columnType []string
+	column     string
+	columnType string
 	line       int
 }
 
