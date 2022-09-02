@@ -74,7 +74,7 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, column := range node.Cols {
-			if autoIncrementColumnIsNotInteger(column) {
+			if !autoIncrementColumnIsInteger(column) {
 				columnList = append(columnList, columnData{
 					table:  node.Table.Name.O,
 					column: column.Name.Name.O,
@@ -87,7 +87,7 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 			switch spec.Tp {
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
-					if autoIncrementColumnIsNotInteger(column) {
+					if !autoIncrementColumnIsInteger(column) {
 						columnList = append(columnList, columnData{
 							table:  node.Table.Name.O,
 							column: column.Name.Name.O,
@@ -96,7 +96,7 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 					}
 				}
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				if autoIncrementColumnIsNotInteger(spec.NewColumns[0]) {
+				if !autoIncrementColumnIsInteger(spec.NewColumns[0]) {
 					columnList = append(columnList, columnData{
 						table:  node.Table.Name.O,
 						column: spec.NewColumns[0].Name.Name.O,
@@ -125,20 +125,20 @@ func (*columnAutoIncrementMustIntegerChecker) Leave(in ast.Node) (ast.Node, bool
 	return in, true
 }
 
-func autoIncrementColumnIsNotInteger(column *ast.ColumnDef) bool {
+func autoIncrementColumnIsInteger(column *ast.ColumnDef) bool {
 	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionAutoIncrement && notInteger(column.Tp) {
-			return true
+		if option.Tp == ast.ColumnOptionAutoIncrement && !isInteger(column.Tp) {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
-func notInteger(tp *types.FieldType) bool {
+func isInteger(tp *types.FieldType) bool {
 	switch tp.Tp {
 	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
-		return false
-	default:
 		return true
+	default:
+		return false
 	}
 }
