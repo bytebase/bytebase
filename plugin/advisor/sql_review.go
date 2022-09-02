@@ -95,8 +95,8 @@ const (
 	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
 	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
-	// SchemaRuleIndexUnexpectedPKType require expected type of primary key.
-	SchemaRuleIndexUnexpectedPKType SQLReviewRuleType = "index.unexpected-pk-type"
+	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
+	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
