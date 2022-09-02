@@ -48,20 +48,20 @@ func TestTablePkType(t *testing.T) {
 			},
 		},
 		{
-			Statement: `CREATE TABLE t(id VARCHAR(5), id2 VARCHAR(5), PRIMARY KEY(id, id2))`,
+			Statement: `CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3))`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    1,
 				},
 			},
@@ -126,20 +126,20 @@ func TestTablePkType(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD COLUMN id2 VARCHAR(5), ADD PRIMARY KEY (id, id2)`,
+			Statement: `ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    1,
 				},
 			},
@@ -182,22 +182,22 @@ func TestTablePkType(t *testing.T) {
 			},
 		},
 		{
-			Statement: `CREATE TABLE t(id VARCHAR(5), id2 VARCHAR(5));
-				ALTER TABLE t ADD PRIMARY KEY(id, id2);
+			Statement: `CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
+				ALTER TABLE t ADD PRIMARY KEY(id, id2, id3);
 			`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    2,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    2,
 				},
 			},
