@@ -64,7 +64,6 @@ const (
 	TableNotExists                    Code = 604
 	NoTableComment                    Code = 605
 	TableCommentTooLong               Code = 606
-	TableHasUnexpectedPKType          Code = 607
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
@@ -73,6 +72,7 @@ const (
 	// 801 miss index error code.
 	NotUseIndex                Code = 801
 	IndexKeyNumberExceedsLimit Code = 802
+	IndexPKHasUnexpectedType   Code = 803
 
 	// 901 ~ 999 index error code.
 	DuplicateColumnInIndex Code = 901

@@ -137,7 +137,7 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 		tableColumn, columnType := v.prettyPrintColumn(pd.table, pd.column, pd.columnType)
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
-			Code:    advisor.TableHasUnexpectedPKType,
+			Code:    advisor.IndexPKHasUnexpectedType,
 			Title:   v.title,
 			Content: fmt.Sprintf("Primary key on column %s has unexpected type %s", tableColumn, columnType),
 			Line:    pd.line,

@@ -16,7 +16,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
 					Line:    1,
@@ -40,7 +40,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
 					Line:    1,
@@ -52,7 +52,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column (`t`.`id`, `t`.`id2`) has unexpected type (INT, BIGINT)",
 					Line:    1,
@@ -76,7 +76,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
 					Line:    1,
@@ -100,7 +100,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
 					Line:    1,
@@ -112,7 +112,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column (`t`.`id`, `t`.`id2`) has unexpected type (INT, varchar(5))",
 					Line:    1,
@@ -138,7 +138,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
 					Line:    2,
@@ -152,7 +152,7 @@ func TestTablePkType(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.TableHasUnexpectedPKType,
+					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
 					Content: "Primary key on column (`t`.`id`, `t`.`id2`) has unexpected type (varchar(5), BIGINT)",
 					Line:    2,
