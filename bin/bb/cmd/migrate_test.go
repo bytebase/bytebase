@@ -1,5 +1,5 @@
-//go:build mysql
-// +build mysql
+//go:build bbtest
+// +build bbtest
 
 package cmd
 
