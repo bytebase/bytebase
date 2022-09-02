@@ -10,6 +10,54 @@ import (
 
 func TestTablePkType(t *testing.T) {
 	tests := []advisor.TestCase{
+		// ALTER TABLE MODIFY COLUMN
+		{
+			Statement: `ALTER TABLE t MODIFY COLUMN id VARCHAR(5) PRIMARY KEY;`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.IndexPKHasUnexpectedType,
+					Title:   "index.unexpected-pk-type",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
+					Line:    1,
+				},
+			},
+		},
+		{
+			Statement: `ALTER TABLE t MODIFY COLUMN id INT(5) PRIMARY KEY;`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		// ALTER TABLE CHANGE COLUMN
+		{
+			Statement: `ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.IndexPKHasUnexpectedType,
+					Title:   "index.unexpected-pk-type",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
+					Line:    1,
+				},
+			},
+		},
+		{
+			Statement: `ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
 		// CREATE TABLE COLUMN OPTION PRIMARY KEY
 		{
 			Statement: `CREATE TABLE t(id VARCHAR(5) PRIMARY KEY)`,
@@ -18,7 +66,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
 			},
@@ -42,7 +90,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
 			},
@@ -54,7 +102,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column (`t`.`id`, `t`.`id2`) has unexpected type (INT, BIGINT)",
+					Content: "Columns in primary key must be INT/BIGINT but (`t`.`id`, `t`.`id2`) is (INT, BIGINT)",
 					Line:    1,
 				},
 			},
@@ -78,7 +126,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
 			},
@@ -102,7 +150,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
 			},
@@ -114,7 +162,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column (`t`.`id`, `t`.`id2`) has unexpected type (INT, varchar(5))",
+					Content: "Columns in primary key must be INT/BIGINT but (`t`.`id`, `t`.`id2`) is (INT, varchar(5))",
 					Line:    1,
 				},
 			},
@@ -140,7 +188,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column `t`.`id` has unexpected type varchar(5)",
+					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    2,
 				},
 			},
@@ -154,7 +202,7 @@ func TestTablePkType(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKHasUnexpectedType,
 					Title:   "index.unexpected-pk-type",
-					Content: "Primary key on column (`t`.`id`, `t`.`id2`) has unexpected type (varchar(5), BIGINT)",
+					Content: "Columns in primary key must be INT/BIGINT but (`t`.`id`, `t`.`id2`) is (varchar(5), BIGINT)",
 					Line:    2,
 				},
 			},

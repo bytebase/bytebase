@@ -81,6 +81,13 @@ func (t tableNewColumn) get(tableName string, columnName string) (colDef *ast.Co
 	return col, ok
 }
 
+func (t tableNewColumn) delete(tableName string, columnName string) {
+	if _, ok := t[tableName]; !ok {
+		return
+	}
+	delete(t[tableName], columnName)
+}
+
 type indexPkTypeChecker struct {
 	adviceList       []advisor.Advice
 	level            advisor.Status
@@ -123,6 +130,14 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 			case ast.AlterTableAddConstraint:
 				pds := v.addConstraint(tableName, node.OriginTextPosition(), spec.Constraint)
 				pkDataList = append(pkDataList, pds...)
+			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
+				newColumnDef := spec.NewColumns[0]
+				oldColumnName := newColumnDef.Name.Name.String()
+				if spec.OldColumnName != nil {
+					oldColumnName = spec.OldColumnName.Name.String()
+				}
+				pds := v.changeColumn(tableName, oldColumnName, node.OriginTextPosition(), newColumnDef)
+				pkDataList = append(pkDataList, pds...)
 			}
 		}
 	}
@@ -132,7 +147,7 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  v.level,
 			Code:    advisor.IndexPKHasUnexpectedType,
 			Title:   v.title,
-			Content: fmt.Sprintf("Primary key on column %s has unexpected type %s", tableColumn, columnType),
+			Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but %s is %s", tableColumn, columnType),
 			Line:    pd.line,
 		})
 	}
@@ -160,6 +175,26 @@ func (v *indexPkTypeChecker) addNewColumn(tableName string, line int, colDef *as
 		}
 	}
 	v.tablesNewColumns.set(tableName, colDef.Name.String(), colDef)
+	return pkDataList
+}
+
+func (v *indexPkTypeChecker) changeColumn(tableName, oldColumnName string, line int, newColumnDef *ast.ColumnDef) []pkData {
+	var pkDataList []pkData
+	v.tablesNewColumns.delete(tableName, oldColumnName)
+	for _, option := range newColumnDef.Options {
+		if option.Tp == ast.ColumnOptionPrimaryKey {
+			tp := v.getIntOrBigIntStr(newColumnDef.Tp)
+			if tp != "INT" && tp != "BIGINT" {
+				pkDataList = append(pkDataList, pkData{
+					table:      tableName,
+					column:     []string{newColumnDef.Name.String()},
+					columnType: []string{tp},
+					line:       line,
+				})
+			}
+		}
+	}
+	v.tablesNewColumns.set(tableName, newColumnDef.Name.String(), newColumnDef)
 	return pkDataList
 }
 
