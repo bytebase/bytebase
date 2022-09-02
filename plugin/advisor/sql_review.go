@@ -86,6 +86,8 @@ const (
 	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
 	// SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
 	SchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "column.auto-increment-must-integer"
+	// SchemaRuleColumnTypeRestriction enforce the column type restriction.
+	SchemaRuleColumnTypeRestriction SQLReviewRuleType = "column.type-restriction"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -194,6 +196,10 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
 			return err
 		}
+	case SchemaRuleColumnTypeRestriction:
+		if _, err := UnmarshalTypeRestrictionRulePayload(rule.Payload); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -218,6 +224,11 @@ type CommentConventionRulePayload struct {
 // NumberLimitRulePayload is the payload for number limit rule.
 type NumberLimitRulePayload struct {
 	Number int `json:"number"`
+}
+
+// TypeRestrictionRulePayload is the payload for type restriction rule.
+type TypeRestrictionRulePayload struct {
+	TypeList []string `json:"typeList"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -317,6 +328,15 @@ func UnmarshalNumberLimitRulePayload(payload string) (*NumberLimitRulePayload, e
 		return nil, errors.Wrapf(err, "failed to unmarshal number limit rule payload %q", payload)
 	}
 	return &nlr, nil
+}
+
+// UnmarshalTypeRestrictionRulePayload will unmarshal payload to TypeRestrictionRulePayload.
+func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePayload, error) {
+	var trr TypeRestrictionRulePayload
+	if err := json.Unmarshal([]byte(payload), &trr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal type restriction rule payload %q", payload)
+	}
+	return &trr, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -490,6 +510,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnCommentConvention, nil
+		}
+	case SchemaRuleColumnAutoIncrementMustInteger:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLAutoIncrementColumnMustInteger, nil
+		}
+	case SchemaRuleColumnTypeRestriction:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnTypeRestriction, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
