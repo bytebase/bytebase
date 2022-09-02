@@ -274,53 +274,6 @@ func TestPITR(t *testing.T) {
 		validateTableUpdateRow(t, mysqlDB, database.Name)
 	})
 
-	t.Run("Case Sensitive", func(t *testing.T) {
-		a := require.New(t)
-		port := getTestPort(t.Name())
-		mysqlDB, database, cleanFn := setUpForPITRTest(t, ctl, port, prodEnvironment.ID, project)
-		defer cleanFn()
-
-		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
-
-		time.Sleep(1 * time.Second)
-		targetTs := time.Now().Unix()
-
-		dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, database.Name)
-		_, err = mysqlDB.ExecContext(ctx, dropStmt)
-		a.NoError(err)
-
-		dbRows, err := mysqlDB.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, database.Name))
-		a.NoError(err)
-		defer dbRows.Close()
-		for dbRows.Next() {
-			var s string
-			err := dbRows.Scan(&s)
-			a.NoError(err)
-			a.FailNow("Database still exists after dropped")
-		}
-		a.NoError(dbRows.Err())
-
-		issue, err := createPITRIssue(ctl, project, database, targetTs)
-		a.NoError(err)
-
-		// Restore stage.
-		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
-		a.NoError(err)
-		a.Equal(api.TaskDone, status)
-
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
-
-		// Cutover stage.
-		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
-		a.NoError(err)
-		a.Equal(api.TaskDone, status)
-
-		validateTbl0(t, mysqlDB, database.Name, numRowsTime1)
-		validateTbl1(t, mysqlDB, database.Name, numRowsTime1)
-		validateTableUpdateRow(t, mysqlDB, database.Name)
-	})
-
 	t.Run("PITR Twice", func(t *testing.T) {
 		a := require.New(t)
 		port := getTestPort(t.Name())
@@ -507,13 +460,13 @@ func setUpForPITRTest(t *testing.T, ctl *controller, port, envID int, project *a
 	a := require.New(t)
 
 	baseName := strings.ReplaceAll(t.Name(), "/", "_")
-	databaseName := baseName + "Database"
+	databaseName := baseName + "_Database"
 
 	_, stopInstance := resourcemysql.SetupTestInstance(t, port)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: envID,
-		Name:          baseName + "Instance",
+		Name:          baseName + "_Instance",
 		Engine:        db.MySQL,
 		Host:          connCfg.Host,
 		Port:          connCfg.Port,
