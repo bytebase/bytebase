@@ -324,7 +324,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	project, sourceMySQLDB, database, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
 	defer cleanFn()
 
-	dstPort := port + 1
+	dstPort := port + 2
 	_, dstStopFn := resourcemysql.SetupTestInstance(t, dstPort)
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
