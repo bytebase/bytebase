@@ -95,7 +95,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			backupTime := time.Unix(backup.UpdatedTs, 0)
 			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs) * time.Second)
 			if time.Now().After(expireTime) {
-				log.Debug("Deleting expired backup", zap.Int("databaseID", backup.DatabaseID), zap.String("backup", backup.Name), zap.String("storageBackend", string(backup.StorageBackend)))
+				log.Debug("Purging expired backup", zap.Int("databaseID", backup.DatabaseID), zap.String("backup", backup.Name), zap.String("storageBackend", string(backup.StorageBackend)))
 				if err := r.purgeBackup(ctx, backup); err != nil {
 					log.Error("Failed to purge backup", zap.String("backup", backup.Name), zap.Error(err))
 				}
@@ -183,9 +183,6 @@ func (*BackupRunner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs i
 		return errors.Wrapf(err, "failed to read backup directory %q", binlogDir)
 	}
 	for _, binlogFileInfo := range binlogFileInfoList {
-		if _, err := mysql.GetBinlogNameSeq(binlogFileInfo.Name()); err != nil {
-			continue // next binlog file
-		}
 		// We use modification time of local binlog files which is later than the modification time of that on the MySQL server,
 		// which in turn is later than the last event timestamp of the binlog file.
 		// This is not accurate and gives about 10 minutes (backup runner interval) more retention time to the binlog files, which is acceptable.

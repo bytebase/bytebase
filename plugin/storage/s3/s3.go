@@ -53,7 +53,6 @@ func NewClient(ctx context.Context, region, bucket string, credentials aws.Crede
 }
 
 // ListObjects lists objects with prefix in their names.
-// TODO(dragonly): support pagination.
 func (c *Client) ListObjects(ctx context.Context, prefix string) (*s3.ListObjectsV2Output, error) {
 	return c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: &c.bucket,
