@@ -9,13 +9,10 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pingcap/tidb/parser/types"
-	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/bytebase/bytebase/plugin/parser"
 )
 
 var (
@@ -105,10 +102,6 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var pkDataList []pkData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
-		if err := parser.SetLineForMySQLCreateTableStmt(node); err != nil {
-			log.Debug("failed to set line for MySQL create table statement", zap.Error(err))
-			break
-		}
 		tableName := node.Table.Name.String()
 		for _, column := range node.Cols {
 			pds := v.addNewColumn(tableName, column.OriginTextPosition(), column)
