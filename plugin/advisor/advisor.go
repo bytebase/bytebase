@@ -139,6 +139,9 @@ const (
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 
+	// MySQLCharsetWhitelist is an advisor type for MySQL charset whitelist.
+	MySQLCharsetWhitelist Type = "bb.plugin.advisor.mysql.charset.whitelist"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.

@@ -100,6 +100,9 @@ const (
 	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
 
+	// SchemaRuleCharsetWhitelist enforce the charset whitelist.
+	SchemaRuleCharsetWhitelist SQLReviewRuleType = "charset.whitelist"
+
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list.
@@ -231,6 +234,11 @@ type TypeRestrictionRulePayload struct {
 	TypeList []string `json:"typeList"`
 }
 
+// CharsetWhitelistRulePayload is the payload for charset whitelist rule.
+type CharsetWhitelistRulePayload struct {
+	CharsetWhitelist []string `json:"charsetWhitelist"`
+}
+
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
 func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
@@ -337,6 +345,15 @@ func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePa
 		return nil, errors.Wrapf(err, "failed to unmarshal type restriction rule payload %q", payload)
 	}
 	return &trr, nil
+}
+
+// UnmarshalCharsetWhitelistRulePayload will unmarshal payload to CharsetWhitelistRulePayload.
+func UnmarshalCharsetWhitelistRulePayload(payload string) (*CharsetWhitelistRulePayload, error) {
+	var cwr CharsetWhitelistRulePayload
+	if err := json.Unmarshal([]byte(payload), &cwr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal charset whitelist rule payload %q", payload)
+	}
+	return &cwr, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -573,6 +590,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
+		}
+	case SchemaRuleCharsetWhitelist:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLCharsetWhitelist, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
