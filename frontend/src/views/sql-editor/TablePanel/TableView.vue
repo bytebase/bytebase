@@ -1,8 +1,5 @@
 <template>
-  <div
-    ref="tableViewRef"
-    class="relative flex flex-col justify-start items-start h-full p-2"
-  >
+  <div class="relative flex flex-col justify-start items-start h-full p-2">
     <div
       v-show="queryResult !== null"
       class="w-full flex flex-row justify-between items-center mb-2"
@@ -45,40 +42,35 @@
         </NDropdown>
       </div>
     </div>
-    <NDataTable
-      v-show="data.length > 0"
-      size="small"
-      :bordered="false"
-      :columns="columns"
-      :data="data"
-      flex-height
-      :style="{ height: `${tableMaxHeight}px` }"
-    >
-      <template #empty>
-        <span>
-          <!-- hide n-data-table default empty content -->
-        </span>
-      </template>
-    </NDataTable>
+
+    <DataTable v-show="!showPlaceholder" :columns="columns" :data="data" />
+
     <div
-      v-show="notifyMessage"
-      class="absolute top-0 left-0 z-10 w-full h-full flex justify-center items-center transition-all bg-transparent"
-      :class="notifyMessage ? 'bg-white bg-opacity-90' : ''"
+      v-if="showPlaceholder"
+      class="absolute inset-0 flex flex-col justify-center items-center z-10"
+      :class="sqlEditorStore.isExecuting && 'bg-white/80'"
     >
-      {{ notifyMessage }}
+      <template v-if="sqlEditorStore.isExecuting">
+        <BBSpin />
+        {{ $t("sql-editor.loading-data") }}
+      </template>
+      <template v-else-if="!queryResult">
+        {{ $t("sql-editor.table-empty-placeholder") }}
+      </template>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useResizeObserver } from "@vueuse/core";
+import { debouncedRef } from "@vueuse/core";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
 import { useTabStore, useSQLEditorStore } from "@/store";
 import { createExplainToken } from "@/utils";
+import DataTable from "./DataTable.vue";
 
 interface State {
   search: string;
@@ -94,8 +86,11 @@ const state = reactive<State>({
   search: "",
 });
 
-const tableViewRef = ref<HTMLDivElement>();
-const tableMaxHeight = ref(0);
+// use a debounced value to improve performance when typing rapidly
+const keyword = debouncedRef(
+  computed(() => state.search),
+  200
+);
 
 const columns = computed(() => {
   if (!queryResult.value) {
@@ -110,45 +105,27 @@ const columns = computed(() => {
     };
   });
 });
+
 const data = computed(() => {
   if (!queryResult.value) {
     return [];
   }
 
   const data = queryResult.value[2];
-  const temp = data
-    .filter((d) => {
-      let t = false;
-      for (const k of d) {
-        if (String(k).includes(state.search)) {
-          t = true;
-          break;
-        }
-      }
-      return t;
-    })
-    .map((d) => {
-      let t: any = {};
-      for (let i = 0; i < d.length; i++) {
-        t[columns.value[i].key] = d[i];
-      }
-      return t;
+  const search = keyword.value;
+  let temp = data;
+  if (search) {
+    temp = data.filter((item) => {
+      return item.some((col) => String(col).includes(search));
     });
+  }
   return temp;
 });
-const notifyMessage = computed(() => {
-  if (!queryResult.value) {
-    return t("sql-editor.table-empty-placeholder");
-  }
-  if (sqlEditorStore.isExecuting) {
-    return t("sql-editor.loading-data");
-  }
-  const data = queryResult.value[2];
-  if (data.length === 0) {
-    return t("sql-editor.no-rows-found");
-  }
 
-  return "";
+const showPlaceholder = computed(() => {
+  if (!queryResult.value) return true;
+  if (sqlEditorStore.isExecuting) return true;
+  return false;
 });
 
 const exportDropdownOptions = computed(() => [
@@ -195,13 +172,6 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   link.href = encodedUri;
   link.click();
 };
-
-// make sure the table view is always full of the pane
-useResizeObserver(tableViewRef, (entries) => {
-  const entry = entries[0];
-  const { height } = entry.contentRect;
-  tableMaxHeight.value = height;
-});
 
 const showVisualizeButton = computed((): boolean => {
   const { databaseType } = sqlEditorStore.connectionContext;
