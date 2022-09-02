@@ -413,12 +413,9 @@ func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver 
 			select {
 			case <-ticker.C:
 				progressPrev := exec.progress.Load().(api.Progress)
-				// TODO(dragonly): Calculate restored backup bytes when using mysqldump.
-				restoredBackupFileBytes := backupFileBytes
-				replayedBinlogBytes := driver.GetReplayedBinlogBytes()
 				exec.progress.Store(api.Progress{
 					TotalUnit:     progressPrev.TotalUnit,
-					CompletedUnit: restoredBackupFileBytes + replayedBinlogBytes,
+					CompletedUnit: driver.GetRestoredBackupBytes() + driver.GetReplayedBinlogBytes(),
 					CreatedTs:     progressPrev.CreatedTs,
 					UpdatedTs:     time.Now().Unix(),
 				})
