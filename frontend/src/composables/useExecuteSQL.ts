@@ -1,4 +1,4 @@
-import { reactive } from "vue";
+import { markRaw, reactive } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
@@ -125,7 +125,8 @@ const useExecuteSQL = () => {
         );
       }
       tabStore.updateCurrentTab({
-        queryResult: sqlResultSet.data as any,
+        // use `markRaw` to prevent vue from monitoring the object change deeply
+        queryResult: markRaw(sqlResultSet.data) as any,
         adviceList: sqlResultSet.adviceList,
         executeParams: {
           query,
