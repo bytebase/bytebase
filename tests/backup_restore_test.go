@@ -315,7 +315,7 @@ func TestPITRTwice(t *testing.T) {
 	log.Debug("Second PITR done.")
 }
 
-func TestPITRNewDatabaseInAnotherInstance(t *testing.T) {
+func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
