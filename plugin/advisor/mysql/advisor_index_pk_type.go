@@ -99,8 +99,8 @@ type indexPkTypeChecker struct {
 
 type pkData struct {
 	table      string
-	column     []string
-	columnType []string
+	column     string
+	columnType string
 	line       int
 }
 
@@ -142,15 +142,13 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 	for _, pd := range pkDataList {
-		for idx, columnName := range pd.column {
-			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
-				Code:    advisor.IndexPKHasUnexpectedType,
-				Title:   v.title,
-				Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", pd.table, columnName, pd.columnType[idx]),
-				Line:    pd.line,
-			})
-		}
+		v.adviceList = append(v.adviceList, advisor.Advice{
+			Status:  v.level,
+			Code:    advisor.IndexPKHasUnexpectedType,
+			Title:   v.title,
+			Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", pd.table, pd.column, pd.columnType),
+			Line:    pd.line,
+		})
 	}
 	return in, false
 }
@@ -168,8 +166,8 @@ func (v *indexPkTypeChecker) addNewColumn(tableName string, line int, colDef *as
 			if tp != "INT" && tp != "BIGINT" {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
-					column:     []string{colDef.Name.String()},
-					columnType: []string{tp},
+					column:     colDef.Name.String(),
+					columnType: tp,
 					line:       line,
 				})
 			}
@@ -188,8 +186,8 @@ func (v *indexPkTypeChecker) changeColumn(tableName, oldColumnName string, line 
 			if tp != "INT" && tp != "BIGINT" {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
-					column:     []string{newColumnDef.Name.String()},
-					columnType: []string{tp},
+					column:     newColumnDef.Name.String(),
+					columnType: tp,
 					line:       line,
 				})
 			}
@@ -203,9 +201,6 @@ func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 	var pkDataList []pkData
 	if constraint.Tp == ast.ConstraintPrimaryKey {
 		if len(constraint.Keys) >= 2 {
-			var columnNames []string
-			var columnTypes []string
-			var inValidTypes bool
 			for _, key := range constraint.Keys {
 				columnName := key.Column.Name.String()
 				columnType, err := v.getPKColumnType(tableName, columnName)
@@ -213,18 +208,13 @@ func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 					continue
 				}
 				if columnType != "INT" && columnType != "BIGINT" {
-					columnNames = append(columnNames, key.Column.Name.String())
-					columnTypes = append(columnTypes, columnType)
-					inValidTypes = true
+					pkDataList = append(pkDataList, pkData{
+						table:      tableName,
+						column:     columnName,
+						columnType: columnType,
+						line:       line,
+					})
 				}
-			}
-			if inValidTypes {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     columnNames,
-					columnType: columnTypes,
-					line:       line,
-				})
 			}
 			return pkDataList
 		}
@@ -236,8 +226,8 @@ func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 		if columnType != "INT" && columnType != "BIGINT" {
 			pkDataList = append(pkDataList, pkData{
 				table:      tableName,
-				column:     []string{columnName},
-				columnType: []string{columnType},
+				column:     columnName,
+				columnType: columnType,
 				line:       line,
 			})
 		}

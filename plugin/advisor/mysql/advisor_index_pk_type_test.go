@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
-func TestTablePkType(t *testing.T) {
+func TestIndexPkType(t *testing.T) {
 	tests := []advisor.TestCase{
 		// CREATE TABLE COLUMN OPTION PRIMARY KEY
 		{
