@@ -103,6 +103,9 @@ const (
 	// MySQLColumnCommentConvention is an advisor type for MySQL column comment convention.
 	MySQLColumnCommentConvention Type = "bb.plugin.advisor.mysql.column.comment"
 
+	// MySQLAutoIncrementColumnMustInteger is an advisor type for auto-increment column.
+	MySQLAutoIncrementColumnMustInteger Type = "bb.plugin.advisor.mysql.column.auto-increment-must-integer"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
