@@ -213,10 +213,10 @@ func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 					return nil
 				}
 				if columnType != "INT" && columnType != "BIGINT" {
+					columnNames = append(columnNames, key.Column.Name.String())
+					columnTypes = append(columnTypes, columnType)
 					inValidTypes = true
 				}
-				columnNames = append(columnNames, key.Column.Name.String())
-				columnTypes = append(columnTypes, columnType)
 			}
 			if inValidTypes {
 				pkDataList = append(pkDataList, pkData{
