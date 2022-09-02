@@ -9,10 +9,13 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pingcap/tidb/parser/types"
+	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/bytebase/bytebase/plugin/parser"
 )
 
 var (
@@ -102,21 +105,31 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var pkDataList []pkData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
+		if err := parser.SetLineForMySQLCreateTableStmt(node); err != nil {
+			log.Debug("failed to set line for MySQL create table statement", zap.Error(err))
+			break
+		}
 		tableName := node.Table.Name.String()
-		pds := v.addNewColumns(tableName, node.OriginTextPosition(), node.Cols)
-		pkDataList = append(pkDataList, pds...)
-		pds = v.addConstraints(tableName, node.OriginTextPosition(), node.Constraints)
-		pkDataList = append(pkDataList, pds...)
+		for _, column := range node.Cols {
+			pds := v.addNewColumn(tableName, column.OriginTextPosition(), column)
+			pkDataList = append(pkDataList, pds...)
+		}
+		for _, constraint := range node.Constraints {
+			pds := v.addConstraint(tableName, constraint.OriginTextPosition(), constraint)
+			pkDataList = append(pkDataList, pds...)
+		}
 	case *ast.AlterTableStmt:
 		tableName := node.Table.Name.String()
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableAddColumns:
-				pkds := v.addNewColumns(tableName, node.OriginTextPosition(), spec.NewColumns)
-				pkDataList = append(pkDataList, pkds...)
+				for _, column := range spec.NewColumns {
+					pds := v.addNewColumn(tableName, node.OriginTextPosition(), column)
+					pkDataList = append(pkDataList, pds...)
+				}
 			case ast.AlterTableAddConstraint:
-				pkds := v.addConstraints(tableName, node.OriginTextPosition(), []*ast.Constraint{spec.Constraint})
-				pkDataList = append(pkDataList, pkds...)
+				pds := v.addConstraint(tableName, node.OriginTextPosition(), spec.Constraint)
+				pkDataList = append(pkDataList, pds...)
 			}
 		}
 	}
@@ -138,57 +151,53 @@ func (*indexPkTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (v *indexPkTypeChecker) addNewColumns(tableName string, line int, colDefs []*ast.ColumnDef) []pkData {
+func (v *indexPkTypeChecker) addNewColumn(tableName string, line int, colDef *ast.ColumnDef) []pkData {
 	var pkDataList []pkData
-	for _, colDef := range colDefs {
-		for _, option := range colDef.Options {
-			if option.Tp == ast.ColumnOptionPrimaryKey {
-				tp := v.getIntOrBigIntStr(colDef.Tp)
-				if tp != "INT" && tp != "BIGINT" {
-					pkDataList = append(pkDataList, pkData{
-						table:      tableName,
-						column:     []string{colDef.Name.String()},
-						columnType: []string{tp},
-						line:       line,
-					})
-				}
+	for _, option := range colDef.Options {
+		if option.Tp == ast.ColumnOptionPrimaryKey {
+			tp := v.getIntOrBigIntStr(colDef.Tp)
+			if tp != "INT" && tp != "BIGINT" {
+				pkDataList = append(pkDataList, pkData{
+					table:      tableName,
+					column:     []string{colDef.Name.String()},
+					columnType: []string{tp},
+					line:       line,
+				})
 			}
 		}
-		v.tablesNewColumns.set(tableName, colDef.Name.String(), colDef)
 	}
+	v.tablesNewColumns.set(tableName, colDef.Name.String(), colDef)
 	return pkDataList
 }
 
-func (v *indexPkTypeChecker) addConstraints(tableName string, line int, constraints []*ast.Constraint) []pkData {
+func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constraint *ast.Constraint) []pkData {
 	var pkDataList []pkData
-	for _, constraint := range constraints {
-		if constraint.Tp == ast.ConstraintPrimaryKey {
-			if len(constraint.Keys) >= 2 {
-				var columnNames []string
-				var columnTypes []string
-				for _, key := range constraint.Keys {
-					columnName := key.Column.Name.String()
-					columnNames = append(columnNames, key.Column.Name.String())
-					columnTypes = append(columnTypes, v.getPKColumnType(tableName, columnName))
-				}
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     columnNames,
-					columnType: columnTypes,
-					line:       line,
-				})
-				continue
+	if constraint.Tp == ast.ConstraintPrimaryKey {
+		if len(constraint.Keys) >= 2 {
+			var columnNames []string
+			var columnTypes []string
+			for _, key := range constraint.Keys {
+				columnName := key.Column.Name.String()
+				columnNames = append(columnNames, key.Column.Name.String())
+				columnTypes = append(columnTypes, v.getPKColumnType(tableName, columnName))
 			}
-			columnName := constraint.Keys[0].Column.Name.String()
-			columnType := v.getPKColumnType(tableName, columnName)
-			if columnType != "INT" && columnType != "BIGINT" {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     []string{columnName},
-					columnType: []string{columnType},
-					line:       line,
-				})
-			}
+			pkDataList = append(pkDataList, pkData{
+				table:      tableName,
+				column:     columnNames,
+				columnType: columnTypes,
+				line:       line,
+			})
+			return pkDataList
+		}
+		columnName := constraint.Keys[0].Column.Name.String()
+		columnType := v.getPKColumnType(tableName, columnName)
+		if columnType != "INT" && columnType != "BIGINT" {
+			pkDataList = append(pkDataList, pkData{
+				table:      tableName,
+				column:     []string{columnName},
+				columnType: []string{columnType},
+				line:       line,
+			})
 		}
 	}
 	return pkDataList
