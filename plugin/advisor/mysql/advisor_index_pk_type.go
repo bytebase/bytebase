@@ -200,36 +200,20 @@ func (v *indexPkTypeChecker) changeColumn(tableName, oldColumnName string, line 
 func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constraint *ast.Constraint) []pkData {
 	var pkDataList []pkData
 	if constraint.Tp == ast.ConstraintPrimaryKey {
-		if len(constraint.Keys) >= 2 {
-			for _, key := range constraint.Keys {
-				columnName := key.Column.Name.String()
-				columnType, err := v.getPKColumnType(tableName, columnName)
-				if err != nil {
-					continue
-				}
-				if columnType != "INT" && columnType != "BIGINT" {
-					pkDataList = append(pkDataList, pkData{
-						table:      tableName,
-						column:     columnName,
-						columnType: columnType,
-						line:       line,
-					})
-				}
+		for _, key := range constraint.Keys {
+			columnName := key.Column.Name.String()
+			columnType, err := v.getPKColumnType(tableName, columnName)
+			if err != nil {
+				continue
 			}
-			return pkDataList
-		}
-		columnName := constraint.Keys[0].Column.Name.String()
-		columnType, err := v.getPKColumnType(tableName, columnName)
-		if err != nil {
-			return nil
-		}
-		if columnType != "INT" && columnType != "BIGINT" {
-			pkDataList = append(pkDataList, pkData{
-				table:      tableName,
-				column:     columnName,
-				columnType: columnType,
-				line:       line,
-			})
+			if columnType != "INT" && columnType != "BIGINT" {
+				pkDataList = append(pkDataList, pkData{
+					table:      tableName,
+					column:     columnName,
+					columnType: columnType,
+					line:       line,
+				})
+			}
 		}
 	}
 	return pkDataList
