@@ -577,7 +577,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
 	}
 	if database.ProjectID != issueCreate.ProjectID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID must be %d which is the same as the source database, but got %d", database.ProjectID, issueCreate.ProjectID))
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The issue project %d must be the same as the database project %d.", issueCreate.ProjectID, database.ProjectID))
 	}
 
 	taskCreateList, taskIndexDAGList, err := s.createPITRTaskList(ctx, database, issueCreate.ProjectID, c)
