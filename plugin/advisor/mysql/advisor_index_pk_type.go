@@ -204,17 +204,24 @@ func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 		if len(constraint.Keys) >= 2 {
 			var columnNames []string
 			var columnTypes []string
+			var inValidTypes bool
 			for _, key := range constraint.Keys {
 				columnName := key.Column.Name.String()
+				columnType := v.getPKColumnType(tableName, columnName)
+				if columnType != "INT" && columnType != "BIGINT" {
+					inValidTypes = true
+				}
 				columnNames = append(columnNames, key.Column.Name.String())
-				columnTypes = append(columnTypes, v.getPKColumnType(tableName, columnName))
+				columnTypes = append(columnTypes, columnType)
 			}
-			pkDataList = append(pkDataList, pkData{
-				table:      tableName,
-				column:     columnNames,
-				columnType: columnTypes,
-				line:       line,
-			})
+			if inValidTypes {
+				pkDataList = append(pkDataList, pkData{
+					table:      tableName,
+					column:     columnNames,
+					columnType: columnTypes,
+					line:       line,
+				})
+			}
 			return pkDataList
 		}
 		columnName := constraint.Keys[0].Column.Name.String()
