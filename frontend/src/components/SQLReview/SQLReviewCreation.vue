@@ -238,22 +238,32 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   };
 
   if (props.policyId) {
-    store.updateReviewPolicy({
-      id: props.policyId,
-      ...upsert,
-    });
+    store
+      .updateReviewPolicy({
+        id: props.policyId,
+        ...upsert,
+      })
+      .then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("sql-review.policy-updated"),
+        });
+      });
   } else {
-    store.addReviewPolicy({
-      ...upsert,
-      environmentId: state.selectedEnvironment?.id,
-    });
+    store
+      .addReviewPolicy({
+        ...upsert,
+        environmentId: state.selectedEnvironment?.id,
+      })
+      .then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("sql-review.policy-created"),
+        });
+      });
   }
-
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t(`sql-review.policy-${props.policyId ? "updated" : "created"}`),
-  });
 
   allowChangeCallback();
   onCancel();
