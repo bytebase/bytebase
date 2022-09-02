@@ -460,13 +460,13 @@ func setUpForPITRTest(t *testing.T, ctl *controller, port, envID int, project *a
 	a := require.New(t)
 
 	baseName := strings.ReplaceAll(t.Name(), "/", "_")
-	databaseName := baseName + "Database"
+	databaseName := baseName + "_Database"
 
 	_, stopInstance := resourcemysql.SetupTestInstance(t, port)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: envID,
-		Name:          baseName + "Instance",
+		Name:          baseName + "_Instance",
 		Engine:        db.MySQL,
 		Host:          connCfg.Host,
 		Port:          connCfg.Port,
