@@ -99,6 +99,8 @@ const (
 	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
 	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
+	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
+	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
@@ -595,6 +597,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLCharsetAllowlist, nil
+	case SchemaRuleIndexPKType:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexPKType, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
