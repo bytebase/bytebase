@@ -131,7 +131,7 @@ const (
 	MySQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.mysql.index.no-duplicate-column"
 
 	// MySQLTablePKType is an advisor type for MySQL correct type of PK.
-	MySQLTablePKType Type = "bb.plugin.advisor.mysql.table.pk-type"
+	MySQLIndexPKType Type = "bb.plugin.advisor.mysql.index.pk-type"
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 
