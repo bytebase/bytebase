@@ -78,6 +78,9 @@ const (
 
 	// 901 ~ 999 index error code.
 	DuplicateColumnInIndex Code = 901
+
+	// 1001 ~ 1099 charset error code.
+	DisabledCharset Code = 1001
 )
 
 // Int returns the int type of code.

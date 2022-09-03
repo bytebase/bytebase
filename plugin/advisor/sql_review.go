@@ -102,6 +102,9 @@ const (
 	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
 	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
 
+	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
+	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
+
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list.
@@ -233,6 +236,11 @@ type TypeRestrictionRulePayload struct {
 	TypeList []string `json:"typeList"`
 }
 
+// CharsetAllowlistRulePayload is the payload for charset allowlist rule.
+type CharsetAllowlistRulePayload struct {
+	CharsetAllowlist []string `json:"charsetAllowlist"`
+}
+
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
 func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
@@ -339,6 +347,15 @@ func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePa
 		return nil, errors.Wrapf(err, "failed to unmarshal type restriction rule payload %q", payload)
 	}
 	return &trr, nil
+}
+
+// UnmarshalCharsetAllowlistRulePayload will unmarshal payload to CharsetAllowlistRulePayload.
+func UnmarshalCharsetAllowlistRulePayload(payload string) (*CharsetAllowlistRulePayload, error) {
+	var cwr CharsetAllowlistRulePayload
+	if err := json.Unmarshal([]byte(payload), &cwr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal charset allowlist rule payload %q", payload)
+	}
+	return &cwr, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -575,6 +592,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
+		}
+	case SchemaRuleCharsetAllowlist:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLCharsetAllowlist, nil
 		}
 	case SchemaRuleIndexPKType:
 		switch engine {
