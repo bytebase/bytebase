@@ -40,7 +40,7 @@ func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 }
 
 // Type is the type of advisor.
-//nolint
+// nolint
 type Type string
 
 const (
@@ -141,6 +141,9 @@ const (
 
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
+
+	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
+	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 
 	// PostgreSQL Advisor.
 
