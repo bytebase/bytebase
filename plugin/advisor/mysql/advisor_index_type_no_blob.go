@@ -214,10 +214,8 @@ func (*indexTypeNoBlobChecker) getBlobStr(tp *types.FieldType) string {
 	case mysql.TypeBlob:
 		return "blob"
 	case mysql.TypeMediumBlob:
-		// tp.String() return bigint(20)
 		return "mediumblob"
 	case mysql.TypeLongBlob:
-		// tp.String() return bigint(20)
 		return "longblob"
 	}
 	return tp.String()
