@@ -43,11 +43,11 @@
     "splitpanes": "^3.0.6",
     "sql-formatter": "^4.0.2",
     "uuid": "^8.3.2",
-    "v-code-diff": "^0.3.8",
+    "v-code-diff": "^0.3.12",
     "vue": "^3.2.33",
-    "vue-i18n": "^9.2.0-beta.20",
+    "vue-i18n": "^9.2.2",
     "vue-router": "^4.1.5",
-    "vueuc": "^0.4.27"
+    "vueuc": "^0.4.48"
   },
   "devDependencies": {
     "@iconify/json": "^2.1.102",
@@ -91,7 +91,7 @@
     "unplugin-vue-components": "^0.17.21",
     "vite": "^2.6.14",
     "vitest": "^0.0.139",
-    "vue-tsc": "^0.34.15"
+    "vue-tsc": "^0.34.17"
   },
   "peerDependencies": {
     "@popperjs/core": "^2.11.6",
