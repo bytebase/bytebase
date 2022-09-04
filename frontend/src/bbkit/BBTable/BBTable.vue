@@ -58,7 +58,7 @@
                 }
               "
             >
-              <slot name="body" :rowData="item" />
+              <slot name="body" :row-data="item" />
             </tr>
           </template>
           <template v-else>
@@ -88,7 +88,7 @@
             }
           "
         >
-          <slot name="body" :rowData="item" />
+          <slot name="body" :row-data="item" />
         </tr></tbody
     ></template>
     <slot name="footer" />
