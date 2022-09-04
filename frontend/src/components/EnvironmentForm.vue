@@ -11,7 +11,9 @@
           :disabled="!allowEdit"
           :required="true"
           :value="state.environment.name"
-          @input="state.environment.name = ($event.target as HTMLInputElement).value"
+          @input="
+            state.environment.name = ($event.target as HTMLInputElement).value
+          "
         />
       </div>
 

@@ -56,7 +56,7 @@
                 :item="item"
                 :index="index"
                 :selected="isSelected(item)"
-                :toggleSelection="() => toggleSelection(item)"
+                :toggle-selection="() => toggleSelection(item)"
               >
                 <li
                   role="option"
