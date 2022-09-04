@@ -145,6 +145,9 @@ const (
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 
+	// MySQLIndexTypeNoBlob is an advisor type for MySQL index type no blob.
+	MySQLIndexTypeNoBlob Type = "bb.plugin.advisor.mysql.index.type-no-blob"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.

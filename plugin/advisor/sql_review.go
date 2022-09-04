@@ -101,6 +101,8 @@ const (
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
 	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
 	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
+	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
+	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
@@ -602,6 +604,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexPKType, nil
+		}
+	case SchemaRuleIndexTypeNoBlob:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexTypeNoBlob, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
