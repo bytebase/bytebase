@@ -8,14 +8,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-// These are special onboarding tasks for demo purpose when bootstrapping the workspace.
-
-// OnboardingTaskID1 is the ID for onboarding task1.
-const OnboardingTaskID1 = 101
-
-// OnboardingTaskID2 is the ID for onboarding task2.
-const OnboardingTaskID2 = 102
-
 // TaskStatus is the status of a task.
 type TaskStatus string
 

@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 )
 
-// OnboardingPipelineID is the ID for onboarding pipelines.
-const OnboardingPipelineID = 101
-
 // PipelineStatus is the status for pipelines.
 type PipelineStatus string
 

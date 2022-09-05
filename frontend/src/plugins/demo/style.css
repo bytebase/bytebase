@@ -7,7 +7,6 @@
 .bb-guide-target-element,
 .bb-hint-target-element {
   z-index: 1;
-  background-color: white;
 }
 
 .bb-guide-highlight-wrapper {

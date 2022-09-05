@@ -31,7 +31,8 @@ const checkShouldShowCreateDatabaseGuide = async () => {
 
     if (
       instanceList.length === 0 &&
-      projectList.length === 0 &&
+      // We have a default project so the length should be 1 not 0.
+      projectList.length === 1 &&
       databaseList.length === 0
     ) {
       return true;
@@ -51,6 +52,18 @@ watch(
       if (shouldShowCreateDatabaseGuide.value) {
         guideStore.setGuideName("create-database");
       }
+    }
+  },
+  {
+    immediate: true,
+  }
+);
+
+watch(
+  guideStore,
+  async () => {
+    if (!guideStore.guideName) {
+      shouldShowCreateDatabaseGuide.value = false;
     }
   },
   {

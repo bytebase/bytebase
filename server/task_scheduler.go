@@ -86,10 +86,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 				for _, pipeline := range pipelineList {
-					if pipeline.ID == api.OnboardingPipelineID {
-						continue
-					}
-
 					if err := s.server.ScheduleActiveStage(ctx, pipeline); err != nil {
 						log.Error("Failed to schedule tasks in the active stage",
 							zap.Int("pipeline_id", pipeline.ID),
@@ -112,10 +108,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				for _, task := range taskList {
-					if task.ID == api.OnboardingTaskID1 || task.ID == api.OnboardingTaskID2 {
-						continue
-					}
-
 					// Skip task belongs to archived instances
 					if i := task.Instance; i == nil || i.RowStatus == api.Archived {
 						continue

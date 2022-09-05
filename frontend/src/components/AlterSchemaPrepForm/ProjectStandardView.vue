@@ -25,7 +25,13 @@
                 databaseListInEnvironment
               )
             "
-            @input="toggleAllDatabasesSelectionForEnvironment(environment, databaseListInEnvironment, ($event.target as HTMLInputElement).checked)"
+            @input="
+              toggleAllDatabasesSelectionForEnvironment(
+                environment,
+                databaseListInEnvironment,
+                ($event.target as HTMLInputElement).checked
+              )
+            "
           />
           <div>{{ environment.name }}</div>
           <ProtectedEnvironmentIcon
