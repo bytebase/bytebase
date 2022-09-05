@@ -1,6 +1,6 @@
 <template>
   <button
-    class="select-none inline-flex items-center border rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-medium overflow-hidden focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+    class="select-none inline-flex items-center border border-accent rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-medium overflow-hidden focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
     :data-button-type="state.currentAction.type"
     :class="actionButtonClass.wrapper"
     :disabled="disabled"

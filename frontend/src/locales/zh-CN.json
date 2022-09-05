@@ -644,7 +644,7 @@
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
-    "create-an-onboarding-postgresql-instance": "创建一个临时的 PostgreSQL 数据库实例",
+    "add-a-postgresql-sample-instance": "创建一个 PostgreSQL 样式实例",
     "successfully-created-postgresql-instance": "成功创建临时的 PostgreSQL 数据库实例，并已经自动填充至表单。",
     "connection-info-seems-to-be-incorrect": "连接信息似乎错误",
     "new-instance": "新实例",
@@ -1565,7 +1565,26 @@
         "copy-all": "拷贝全部",
         "copied": "已拷贝",
         "export": "导出"
-      } 
+      }
+    }
+  },
+  "onboarding-guide": {
+    "create-database-guide": {
+      "let-add-a-instance": "让我们先添加一个实例吧",
+      "go-to-project-list-page": "前往项目页面",
+      "click-new-project": "点击\"创建项目\"按钮",
+      "click-new-database": "点击\"创建数据库\"按钮",
+      "click-approve": "点击\"批准\"按钮来执行这个工单",
+      "wait-issue-finished": "等待工单完成中",
+      "back-to-home": "回到主页",
+      "finished-dialog": {
+        "you-have-done": "你已经完成了:",
+        "add-an-instance": "添加了一个实例",
+        "create-a-project": "创建了一个项目",
+        "create-an-issue": "创建了一个工单",
+        "create-a-new-database": "创建了一个数据库",
+        "keep-going-with-bytebase": "继续使用 Bytebase！"
+      }
     }
   }
 }

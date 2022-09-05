@@ -340,7 +340,7 @@ const isInOnboaringCreateDatabaseGuide = computed(() => {
 
 const warningModalOkText = computed(() => {
   if (isInOnboaringCreateDatabaseGuide.value) {
-    return t("instance.create-an-onboarding-postgresql-instance");
+    return t("instance.add-a-postgresql-sample-instance");
   } else {
     return t("instance.ignore-and-create");
   }
