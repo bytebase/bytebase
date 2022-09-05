@@ -35,9 +35,6 @@ export const DEFAULT_PROJECT_ID = 1;
 
 export const ALL_DATABASE_NAME = "*";
 
-// For onboarding
-export const ONBOARDING_ISSUE_ID = 101;
-
 // For text input, we do validation if there is no further keystroke after 1s
 export const TEXT_VALIDATION_DELAY = 1000;
 
