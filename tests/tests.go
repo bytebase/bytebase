@@ -139,7 +139,7 @@ func getTestPort(testName string) int {
 		"TestPrepare",
 
 		// PITR related cases
-		"TestRestoreDatabase",
+		"TestRestoreToNewDatabase",
 		"TestPITRGeneral",
 		"TestPITRDropDatabase",
 		"TestPITRCaseSensitive",
