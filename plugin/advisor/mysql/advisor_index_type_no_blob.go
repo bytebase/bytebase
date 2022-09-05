@@ -111,6 +111,12 @@ func (v *indexTypeNoBlobChecker) Enter(in ast.Node) (ast.Node, bool) {
 				pkDataList = append(pkDataList, pds...)
 			}
 		}
+	case *ast.CreateIndexStmt:
+		tableName := node.Table.Name.String()
+		for _, indexSpec := range node.IndexPartSpecifications {
+			pds := v.addIndex(tableName, node.OriginTextPosition(), indexSpec)
+			pkDataList = append(pkDataList, pds...)
+		}
 	}
 	for _, pd := range pkDataList {
 		v.adviceList = append(v.adviceList, advisor.Advice{
@@ -145,6 +151,24 @@ func (v *indexTypeNoBlobChecker) addNewColumn(tableName string, line int, colDef
 		}
 	}
 	v.tablesNewColumns.set(tableName, colDef.Name.String(), colDef)
+	return pkDataList
+}
+
+func (v *indexTypeNoBlobChecker) addIndex(tableName string, line int, indexSpec *ast.IndexPartSpecification) []pkData {
+	var pkDataList []pkData
+	columnName := indexSpec.Column.Name.String()
+	columnType, err := v.getColumnType(tableName, columnName)
+	if err != nil {
+		return nil
+	}
+	if v.isBlob(columnType) {
+		pkDataList = append(pkDataList, pkData{
+			table:      tableName,
+			column:     columnName,
+			columnType: columnType,
+			line:       line,
+		})
+	}
 	return pkDataList
 }
 
