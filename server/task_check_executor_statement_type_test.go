@@ -27,7 +27,7 @@ func TestStatementTypeCheck(t *testing.T) {
 			taskType: api.TaskDatabaseDataUpdate,
 			want: []api.TaskCheckResult{
 				{
-					Status:    api.TaskCheckStatusError,
+					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
 					Code:      common.TaskTypeNotDML.Int(),
 					Title:     "Data change can only run DML",
@@ -40,7 +40,7 @@ func TestStatementTypeCheck(t *testing.T) {
 			taskType: api.TaskDatabaseDataUpdate,
 			want: []api.TaskCheckResult{
 				{
-					Status:    api.TaskCheckStatusError,
+					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
 					Code:      common.TaskTypeNotDML.Int(),
 					Title:     "Data change can only run DML",
@@ -59,6 +59,11 @@ func TestStatementTypeCheck(t *testing.T) {
 			want:     []api.TaskCheckResult(nil),
 		},
 		{
+			stmt:     "SELECT max(x);",
+			taskType: api.TaskDatabaseDataUpdate,
+			want:     []api.TaskCheckResult(nil),
+		},
+		{
 			stmt:     "CREATE TABLE t(a int, b int)",
 			taskType: api.TaskDatabaseSchemaUpdate,
 			want:     []api.TaskCheckResult(nil),
@@ -73,7 +78,7 @@ func TestStatementTypeCheck(t *testing.T) {
 			taskType: api.TaskDatabaseSchemaUpdate,
 			want: []api.TaskCheckResult{
 				{
-					Status:    api.TaskCheckStatusError,
+					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
 					Code:      common.TaskTypeNotDDL.Int(),
 					Title:     "Alter schema can only run DDL",

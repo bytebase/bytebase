@@ -10,7 +10,6 @@ import {
   ResourceObject,
   Database,
   Project,
-  ProjectMember,
   unknown,
   UNKNOWN_ID,
   SheetFind,
@@ -23,7 +22,6 @@ import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
-import { useSQLEditorStore } from "./sqlEditor";
 import { useTabStore } from "./tab";
 
 function convertSheet(
@@ -79,7 +77,7 @@ export const useSheetStore = defineStore("sheet", {
 
       const sheetId = currentTab.sheetId || UNKNOWN_ID;
 
-      return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
+      return state.sheetById.get(sheetId) || unknown("SHEET");
     },
     isCreator() {
       const { currentUser } = useAuthStore();
@@ -98,43 +96,41 @@ export const useSheetStore = defineStore("sheet", {
      *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
      */
     isReadOnly() {
-      const sqlEdtiorStore = useSQLEditorStore();
       const { currentUser } = useAuthStore();
-      const sharedSheet = sqlEdtiorStore.sharedSheet;
       const currentSheet = this.currentSheet as Sheet;
-      const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
 
-      if (!currentSheet) return true;
-      // normal sheet can be edit by anyone
-      if (!isSharedByOthers) return false;
+      // We don't have a selected sheet, we've got nothing to edit.
+      if (!currentSheet) {
+        return true;
+      }
 
-      // if the sheet is shared by others, will be checked the visibility of the sheet.
-      // creator always can edit
-      if (this.isCreator) return false;
-      const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
-      const isProject = currentSheet?.visibility === "PROJECT" ?? false;
-      const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
-
-      const isCurrentUserProjectOwner = () => {
-        const projectMemberList = currentSheet?.project.memberList;
-
-        if (projectMemberList && projectMemberList.length > 0) {
-          const currentMemberByProjectMember = projectMemberList?.find(
-            (member: ProjectMember) => {
-              return member.principal.id === currentUser.id;
-            }
-          ) as ProjectMember;
-
-          return currentMemberByProjectMember.role !== "OWNER";
-        }
-
+      // The sheet is not saved yet, it is editable.
+      if (currentSheet.id === UNKNOWN_ID) {
         return false;
-      };
+      }
 
-      // if current user is not creator, check the link access level by project relationship
-      return (
-        isPrivate || isPublic || (isProject && isCurrentUserProjectOwner())
-      );
+      // Always editable if current user is the creator of the sheet.
+      if (currentSheet.creator.id === currentUser.id) {
+        return false;
+      }
+
+      // Check the role of the current user in the sheet's project.
+      if (currentSheet.visibility === "PROJECT") {
+        const isCurrentUserProjectOwner = () => {
+          const projectMemberList = currentSheet.project.memberList || [];
+          const memberInProject = projectMemberList.find((member) => {
+            return member.principal.id === currentUser.id;
+          });
+
+          return memberInProject && memberInProject.role === "OWNER";
+        };
+
+        return !isCurrentUserProjectOwner();
+      }
+
+      // visibility === "PRIVATE" | "PUBLIC"
+      // Readonly if the sheet is private or public.
+      return true;
     },
   },
 

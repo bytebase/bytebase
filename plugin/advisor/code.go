@@ -44,15 +44,17 @@ const (
 	NamingPKConventionMismatch Code = 306
 
 	// 401 ~ 499 column error code.
-	NoRequiredColumn             Code = 401
-	ColumnCanNotNull             Code = 402
-	ChangeColumnType             Code = 403
-	NotNullColumnWithNullDefault Code = 404
-	ColumnNotExists              Code = 405
-	UseChangeColumnStatement     Code = 406
-	ChangeColumnOrder            Code = 407
-	NoColumnComment              Code = 408
-	ColumnCommentTooLong         Code = 409
+	NoRequiredColumn              Code = 401
+	ColumnCanNotNull              Code = 402
+	ChangeColumnType              Code = 403
+	NotNullColumnWithNullDefault  Code = 404
+	ColumnNotExists               Code = 405
+	UseChangeColumnStatement      Code = 406
+	ChangeColumnOrder             Code = 407
+	NoColumnComment               Code = 408
+	ColumnCommentTooLong          Code = 409
+	AutoIncrementColumnNotInteger Code = 410
+	DisabledColumnType            Code = 411
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -72,9 +74,13 @@ const (
 	// 801 miss index error code.
 	NotUseIndex                Code = 801
 	IndexKeyNumberExceedsLimit Code = 802
+	IndexPKType                Code = 803
 
 	// 901 ~ 999 index error code.
 	DuplicateColumnInIndex Code = 901
+
+	// 1001 ~ 1099 charset error code.
+	DisabledCharset Code = 1001
 )
 
 // Int returns the int type of code.

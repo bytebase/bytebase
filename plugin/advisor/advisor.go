@@ -40,7 +40,7 @@ func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 }
 
 // Type is the type of advisor.
-//nolint
+// nolint
 type Type string
 
 const (
@@ -103,6 +103,12 @@ const (
 	// MySQLColumnCommentConvention is an advisor type for MySQL column comment convention.
 	MySQLColumnCommentConvention Type = "bb.plugin.advisor.mysql.column.comment"
 
+	// MySQLAutoIncrementColumnMustInteger is an advisor type for auto-increment column.
+	MySQLAutoIncrementColumnMustInteger Type = "bb.plugin.advisor.mysql.column.auto-increment-must-integer"
+
+	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
+	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
@@ -130,8 +136,14 @@ const (
 	// MySQLIndexNoDuplicateColumn is an advisor type for MySQL no duplicate columns in index.
 	MySQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.mysql.index.no-duplicate-column"
 
+	// MySQLIndexPKType is an advisor type for MySQL correct type of PK.
+	MySQLIndexPKType Type = "bb.plugin.advisor.mysql.index.pk-type"
+
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
+
+	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
+	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 
 	// PostgreSQL Advisor.
 

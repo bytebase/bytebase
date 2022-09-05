@@ -192,7 +192,7 @@ func (driver *Driver) replayBinlogFromDir(ctx context.Context, originalDatabase,
 	mysqlCmd.Stderr = os.Stderr
 	mysqlCmd.Stdout = os.Stderr
 	mysqlCmd.Stdin = countingReader
-	driver.replayBinlogCounter = countingReader
+	driver.replayedBinlogBytes = countingReader
 
 	if err := mysqlbinlogCmd.Start(); err != nil {
 		return errors.Wrap(err, "cannot start mysqlbinlog command")
@@ -208,12 +208,20 @@ func (driver *Driver) replayBinlogFromDir(ctx context.Context, originalDatabase,
 	return nil
 }
 
-// GetReplayedBinlogBytes gets the replayed binlog bytes.
-func (driver *Driver) GetReplayedBinlogBytes() int64 {
-	if driver.replayBinlogCounter == nil {
+// GetRestoredBackupBytes gets the restored backup bytes.
+func (driver *Driver) GetRestoredBackupBytes() int64 {
+	if driver.restoredBackupBytes == nil {
 		return 0
 	}
-	return driver.replayBinlogCounter.Count()
+	return driver.restoredBackupBytes.Count()
+}
+
+// GetReplayedBinlogBytes gets the replayed binlog bytes.
+func (driver *Driver) GetReplayedBinlogBytes() int64 {
+	if driver.replayedBinlogBytes == nil {
+		return 0
+	}
+	return driver.replayedBinlogBytes.Count()
 }
 
 // ReplayBinlogToDatabase replays the binlog of originDatabaseName to the targetDatabaseName.
@@ -230,24 +238,30 @@ func (driver *Driver) ReplayBinlogToPITRDatabase(ctx context.Context, databaseNa
 
 // RestoreBackupToDatabase create the database named `databaseName` and restores a full backup to the given database.
 func (driver *Driver) RestoreBackupToDatabase(ctx context.Context, backup io.Reader, databaseName string) error {
-	// Create the pitr database.
-	return driver.restoreImpl(ctx, backup, databaseName)
+	if err := driver.restoreImpl(ctx, backup, databaseName); err != nil {
+		return errors.Wrapf(err, "failed to restore backup to the database %s", databaseName)
+	}
+	return nil
 }
 
 // RestoreBackupToPITRDatabase restores a full backup to the PITR database.
 // It's the first step of the PITR process.
 func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io.Reader, databaseName string, suffixTs int64) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
-	stmt := fmt.Sprintf("CREATE DATABASE `%s`;", pitrDatabaseName)
+	// If there's already a PITR database, it means there's a failed trial before this task execution.
+	// We need to clean up the dirty state and start clean for idempotent task execution.
+	stmt := fmt.Sprintf("DROP DATABASE IF EXISTS %s; CREATE DATABASE `%s`;", pitrDatabaseName, pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get connection to restore backup")
 	}
 	if _, err := db.ExecContext(ctx, stmt); err != nil {
-		return err
+		return errors.Wrapf(err, "failed to create the PITR database %s", pitrDatabaseName)
 	}
-	// Create the pitr database.
-	return driver.RestoreBackupToDatabase(ctx, backup, pitrDatabaseName)
+	if err := driver.restoreImpl(ctx, backup, pitrDatabaseName); err != nil {
+		return errors.Wrapf(err, "failed to restore backup to the PITR database %s", pitrDatabaseName)
+	}
+	return nil
 }
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
