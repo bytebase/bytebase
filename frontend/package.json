@@ -50,7 +50,7 @@
     "vueuc": "^0.4.27"
   },
   "devDependencies": {
-    "@iconify/json": "^2.1.98",
+    "@iconify/json": "^2.1.103",
     "@intlify/vite-plugin-vue-i18n": "^3.2.1",
     "@popperjs/core": "^2.11.6",
     "@rollup/plugin-yaml": "^3.1.0",
@@ -73,7 +73,7 @@
     "@typescript-eslint/eslint-plugin": "^5.4.0",
     "@typescript-eslint/parser": "^5.4.0",
     "@vicons/ionicons5": "^0.12.0",
-    "@vitejs/plugin-vue": "^1.1.4",
+    "@vitejs/plugin-vue": "^1.10.2",
     "@vue/compiler-sfc": "^3.2.4",
     "@vue/eslint-config-typescript": "^9.1.0",
     "autoprefixer": "^10.4.4",
@@ -87,9 +87,9 @@
     "prettier": "^2.4.1",
     "tailwindcss": "^3.0.23",
     "typescript": "^4.5.2",
-    "unplugin-icons": "^0.14.8",
-    "unplugin-vue-components": "^0.17.14",
-    "vite": "^2.6.14",
+    "unplugin-icons": "^0.14.9",
+    "unplugin-vue-components": "^0.17.21",
+    "vite": "^3.0.9",
     "vitest": "^0.0.139",
     "vue-tsc": "^0.34.15"
   },
