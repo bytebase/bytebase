@@ -2,20 +2,37 @@
   <div
     class="bb-data-table relative w-full h-full overflow-hidden flex flex-col"
   >
-    <div ref="wrapperRef" class="w-full flex-1 overflow-hidden">
+    <div class="w-full flex-1 overflow-hidden">
       <div
-        class="inner-wrapper max-h-full overflow-auto border-y border-block-border"
-        :class="data.length === 0 && 'border-b-0'"
+        ref="scrollerRef"
+        class="inner-wrapper max-h-full w-full overflow-auto border-y border-r border-block-border"
+        :class="data.length === 0 && 'border-b-0 border-r-0'"
       >
-        <table class="border-collapse min-w-full">
+        <div
+          class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50"
+        />
+
+        <table
+          ref="tableRef"
+          class="relative border-collapse table-fixed z-[1]"
+          v-bind="tableResize.getTableProps()"
+        >
           <thead class="sticky top-0 z-[1] shadow">
             <tr>
               <th
                 v-for="header of table.getFlatHeaders()"
                 :key="header.index"
-                class="relative px-2 py-2 min-w-[2rem] truncate text-left bg-gray-50 text-xs font-medium text-gray-500 tracking-wider border border-t-0 border-block-border border-b-0"
+                class="relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 text-xs font-medium text-gray-500 tracking-wider border border-t-0 border-block-border border-b-0"
+                v-bind="tableResize.getColumnProps(header.index)"
               >
                 {{ header.column.columnDef.header }}
+
+                <!-- The drag-to-resize handler -->
+                <div
+                  class="absolute w-[8px] right-0 top-0 bottom-0 cursor-col-resize"
+                  @dblclick="tableResize.autoAdjustColumnWidth([header.index])"
+                  @pointerdown="tableResize.startResizing(header.index)"
+                />
               </th>
             </tr>
           </thead>
@@ -23,11 +40,12 @@
             <tr
               v-for="(row, rowIndex) of table.getRowModel().rows"
               :key="rowIndex"
+              class="group"
             >
               <td
                 v-for="(cell, cellIndex) of row.getVisibleCells()"
                 :key="cellIndex"
-                class="px-2 py-2 text-sm leading-5 whitespace-pre-wrap border border-block-border"
+                class="px-2 py-1 text-sm leading-5 whitespace-pre-wrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50"
               >
                 {{ cell.getValue() }}
               </td>
@@ -67,6 +85,7 @@ import {
   ColumnDef,
 } from "@tanstack/vue-table";
 import { NPagination } from "naive-ui";
+import useTableColumnWidthLogic from "./useTableResize";
 
 export type DataTableColumn = {
   key: string;
@@ -87,7 +106,15 @@ const props = defineProps({
   },
 });
 
-const wrapperRef = ref<HTMLDivElement>();
+const scrollerRef = ref<HTMLDivElement>();
+const tableRef = ref<HTMLTableElement>();
+
+const tableResize = useTableColumnWidthLogic({
+  tableRef,
+  scrollerRef,
+  minWidth: 64, // 4rem
+  maxWidth: 640, // 40rem
+});
 
 const data = computed(() => props.data);
 const columns = computed(() =>
@@ -114,21 +141,18 @@ const showPagination = computed(() => props.data.length > PAGE_SIZES[0]);
 
 const handleChangePage = (page: number) => {
   table.setPageIndex(page - 1);
-  wrapperRef.value?.scrollTo(0, 0);
+  scrollerRef.value?.scrollTo(0, 0);
 };
 
-watch(data, () => {
-  nextTick(() => {
-    wrapperRef.value?.scrollTo(0, 0);
-  });
-});
+watch(
+  () => props.columns.map((col) => col.title).join("|"),
+  () => {
+    nextTick(() => {
+      // Re-calculate the column widths once the column definition changed.
+      scrollerRef.value?.scrollTo(0, 0);
+      tableResize.reset();
+    });
+  },
+  { immediate: true }
+);
 </script>
-
-<style>
-.bb-data-table tbody tr:first-child td {
-  @apply border-t-0;
-}
-.bb-data-table tbody tr:last-child td {
-  @apply border-b-0;
-}
-</style>
