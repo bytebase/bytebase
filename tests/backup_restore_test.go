@@ -116,42 +116,10 @@ const (
 	numRowsTime2 = 30
 )
 
-func TestPITRBuggyApplication(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx := context.Background()
-	port := getTestPort(t.Name())
-	ctl := &controller{}
-	project, mysqlDB, database, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
-	defer cleanFn()
-
-	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
-
-	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-	targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
-	issue, err := createPITRIssue(ctl, project, database, targetTs)
-	a.NoError(err)
-
-	// Restore stage.
-	status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-
-	cancelUpdateRow()
-	// We mimics the situation where the user waits for the target database idle before doing the cutover.
-	time.Sleep(time.Second)
-
-	// Cutover stage.
-	status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
-	a.NoError(err)
-	a.Equal(api.TaskDone, status)
-
-	validateTbl0(t, mysqlDB, database.Name, numRowsTime1)
-	validateTbl1(t, mysqlDB, database.Name, numRowsTime1)
-	validateTableUpdateRow(t, mysqlDB, database.Name)
-}
-
-func TestPITRSchemaMigrationFailure(t *testing.T) {
+// TestPITRGeneral tests for the general PITR cases:
+// 1. buggy application.
+// 2. bad schema migration.
+func TestPITRGeneral(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
