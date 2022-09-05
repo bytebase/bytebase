@@ -188,6 +188,51 @@ func TestIndexTypeNoBlob(t *testing.T) {
 				},
 			},
 		},
+		// CREATE INDEX STATEMENT
+		{
+			Statement: `CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
+				CREATE INDEX idx_b ON t(b(5));
+				CREATE INDEX idx_mb ON t(mb(5));
+				CREATE INDEX idx_lb ON t(lb(5));
+				CREATE INDEX idx_id ON t(id);
+			`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.IndexTypeNoBlob,
+					Title:   "index.type-no-blob",
+					Content: "Columns in index must not be BLOB but `t`.`b` is blob",
+					Line:    2,
+				},
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.IndexTypeNoBlob,
+					Title:   "index.type-no-blob",
+					Content: "Columns in index must not be BLOB but `t`.`mb` is mediumblob",
+					Line:    3,
+				},
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.IndexTypeNoBlob,
+					Title:   "index.type-no-blob",
+					Content: "Columns in index must not be BLOB but `t`.`lb` is longblob",
+					Line:    4,
+				},
+			},
+		},
+		{
+			Statement: `CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
+				CREATE INDEX idx_id ON t(id);
+			`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &IndexTypeNoBlobAdvisor{}, &advisor.SQLReviewRule{
