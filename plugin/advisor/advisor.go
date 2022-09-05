@@ -145,6 +145,9 @@ const (
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 
+	// MySQLIndexNotExists is an advisor type for MySQL index name conflict check.
+	MySQLIndexNotExists Type = "bb.plugin.advisor.mysql.index.not-exists"
+
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 

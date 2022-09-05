@@ -77,6 +77,7 @@ const (
 	IndexKeyNumberExceedsLimit Code = 802
 	IndexPKType                Code = 803
 	IndexTypeNoBlob            Code = 804
+	IndexExists                Code = 805
 
 	// 901 ~ 999 index error code.
 	DuplicateColumnInIndex Code = 901
