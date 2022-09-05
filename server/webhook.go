@@ -131,7 +131,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				continue
 			}
 
-			schemaInfo, err := parseSchemaFileInfo(repo, fileEscaped)
+			schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, fileEscaped)
 			if err != nil {
 				log.Debug("Failed to parse schema file info",
 					zap.String("file", fileEscaped),
@@ -238,8 +238,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					"{{ENV_NAME}}", envName,
 					"{{DB_NAME}}", dbName,
 					"{{VERSION}}", migrationInfo.Version,
-					"{{TYPE}}", string(migrationInfo.Type),
-					"{{DESCRIPTION}}", migrationInfo.Description,
+					"{{TYPE}}", strings.ToLower(string(migrationInfo.Type)),
+					"{{DESCRIPTION}}", strings.ReplaceAll(migrationInfo.Description, " ", "_"),
 				).Replace(repo.FilePathTemplate)
 				// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 				pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
@@ -1050,13 +1050,13 @@ func isSkipGeneratedSchemaFile(repository *api.Repository, added string) bool {
 // file path.
 //
 // The possible keys for the returned map are: "ENV_NAME", "DB_NAME".
-func parseSchemaFileInfo(repo *api.Repository, file string) (map[string]string, error) {
-	if repo.SchemaPathTemplate == "" {
+func parseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (map[string]string, error) {
+	if schemaPathTemplate == "" {
 		return nil, nil
 	}
 
 	// Escape "." characters to match literals instead of using it as a wildcard.
-	schemaFilePathRegex := strings.ReplaceAll(repo.SchemaPathTemplate, ".", `\.`)
+	schemaFilePathRegex := strings.ReplaceAll(schemaPathTemplate, ".", `\.`)
 
 	placeholders := []string{
 		"ENV_NAME",
@@ -1067,7 +1067,7 @@ func parseSchemaFileInfo(repo *api.Repository, file string) (map[string]string, 
 	}
 
 	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-	re, err := regexp.Compile(path.Join(repo.BaseDirectory, schemaFilePathRegex))
+	re, err := regexp.Compile(path.Join(baseDirectory, schemaFilePathRegex))
 	if err != nil {
 		return nil, errors.Wrap(err, "compile schema file path regex")
 	}
@@ -1080,7 +1080,7 @@ func parseSchemaFileInfo(repo *api.Repository, file string) (map[string]string, 
 	// Skip the first item because it is always the empty string, see docstring of
 	// the SubexpNames() method.
 	for i, name := range re.SubexpNames()[1:] {
-		info[name] = match[i]
+		info[name] = match[i+1]
 	}
 	return info, nil
 }

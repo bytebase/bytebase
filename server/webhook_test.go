@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -530,6 +531,68 @@ func TestIsSkipGeneratedSchemaFile(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.added, func(t *testing.T) {
 			assert.Equal(t, test.want, isSkipGeneratedSchemaFile(test.repository, test.added))
+		})
+	}
+}
+
+func TestParseSchemaFileInfo(t *testing.T) {
+	tests := []struct {
+		name               string
+		baseDirectory      string
+		schemaPathTemplate string
+		file               string
+		schemaInfo         map[string]string
+	}{
+		{
+			name:               "no schemaPathTemplate",
+			baseDirectory:      "",
+			schemaPathTemplate: "",
+			file:               "Test/testdb__LATEST.sql",
+			schemaInfo:         nil,
+		},
+		{
+			name:               "only has DB_NAME",
+			baseDirectory:      "",
+			schemaPathTemplate: "{{DB_NAME}}__LATEST.sql",
+			file:               "testdb__LATEST.sql",
+			schemaInfo: map[string]string{
+				"DB_NAME": "testdb",
+			},
+		},
+		{
+			name:               "has both ENV_NAME and DB_NAME",
+			baseDirectory:      "",
+			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}__LATEST.sql",
+			file:               "Test/testdb__LATEST.sql",
+			schemaInfo: map[string]string{
+				"ENV_NAME": "Test",
+				"DB_NAME":  "testdb",
+			},
+		},
+
+		{
+			name:               "baseDirectory does not match",
+			baseDirectory:      "bytebase",
+			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}__LATEST.sql",
+			file:               "Test/testdb__LATEST.sql",
+			schemaInfo:         nil,
+		},
+		{
+			name:               "baseDirectory with both ENV_NAME and DB_NAME",
+			baseDirectory:      "bytebase",
+			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}__LATEST.sql",
+			file:               "bytebase/Test/testdb__LATEST.sql",
+			schemaInfo: map[string]string{
+				"ENV_NAME": "Test",
+				"DB_NAME":  "testdb",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseSchemaFileInfo(test.baseDirectory, test.schemaPathTemplate, test.file)
+			require.NoError(t, err)
+			assert.Equal(t, test.schemaInfo, got)
 		})
 	}
 }
