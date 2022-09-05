@@ -7,7 +7,7 @@ import IconsResolver from "unplugin-icons/resolver";
 import Components from "unplugin-vue-components/vite";
 import yaml from "@rollup/plugin-yaml";
 
-const SERVER_PORT = parseInt(process.env.PORT ?? "", 10) ?? 3000;
+const SERVER_PORT = parseInt(process.env.PORT ?? "3000", 10) ?? 3000;
 const HTTPS_PORT = 443;
 
 export default defineConfig(() => {
