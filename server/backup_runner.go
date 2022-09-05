@@ -169,7 +169,7 @@ func (r *BackupRunner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir st
 	}
 	if len(purgeBinlogPathList) > 0 {
 		log.Debug(fmt.Sprintf("Deleting %d expired binlog files from the cloud storage.", len(purgeBinlogPathList)))
-		if _, err := r.server.s3Client.DeleteObjects(ctx, purgeBinlogPathList); err != nil {
+		if _, err := r.server.s3Client.DeleteObjects(ctx, purgeBinlogPathList...); err != nil {
 			return errors.Wrapf(err, "failed to delete %d expired binlog files from the cloud storage", len(purgeBinlogPathList))
 		}
 	}
@@ -225,7 +225,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 		log.Info(fmt.Sprintf("Deleted expired local backup file %s", backupFilePath))
 	case api.BackupStorageBackendS3:
 		backupFilePath := getBackupRelativeFilePath(backup.DatabaseID, backup.Name)
-		if _, err := r.server.s3Client.DeleteObjects(ctx, []string{backupFilePath}); err != nil {
+		if _, err := r.server.s3Client.DeleteObjects(ctx, backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete backup file %s in the cloud storage", backupFilePath)
 		}
 		log.Info(fmt.Sprintf("Deleted expired backup file %s in the cloud storage", backupFilePath))

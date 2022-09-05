@@ -83,7 +83,7 @@ func (c *Client) UploadObject(ctx context.Context, path string, body io.Reader) 
 }
 
 // DeleteObjects deletes the objects with path.
-func (c *Client) DeleteObjects(ctx context.Context, pathList []string) (*s3.DeleteObjectsOutput, error) {
+func (c *Client) DeleteObjects(ctx context.Context, pathList ...string) (*s3.DeleteObjectsOutput, error) {
 	var oidList []types.ObjectIdentifier
 	for _, path := range pathList {
 		path := path // create a new 'path'.
