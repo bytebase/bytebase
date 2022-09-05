@@ -225,7 +225,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				migrationInfo = &db.MigrationInfo{
-					Version:     strconv.FormatInt(pushEvent.FileCommit.CreatedTs, 10),
+					Version:     common.DefaultMigrationVersion(),
 					Namespace:   dbName,
 					Database:    dbName,
 					Environment: envName,
@@ -594,8 +594,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	// In case there are databases with identical name in a project for the same environment.
 	marked := make(map[int]struct{})
 	for _, database := range filteredDatabases {
-		_, ok := marked[database.Instance.EnvironmentID]
-		if ok {
+		if _, ok := marked[database.Instance.EnvironmentID]; ok {
 			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, envName)
 		}
 		marked[database.Instance.EnvironmentID] = struct{}{}
@@ -727,8 +726,7 @@ func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, p
 		Comment:     fmt.Sprintf("Ignored file %q, %v.", file, err),
 		Payload:     string(payload),
 	}
-	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-	if err != nil {
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
 		log.Warn("Failed to create project activity for the ignored repository file",
 			zap.Error(err),
 		)
