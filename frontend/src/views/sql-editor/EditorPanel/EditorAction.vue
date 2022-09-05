@@ -47,21 +47,20 @@
       <NPopover trigger="hover" placement="bottom-center" :show-arrow="false">
         <template #trigger>
           <label class="flex items-center text-sm space-x-1">
-            <div class="flex items-center">
-              <InstanceEngineIcon
-                v-if="connectionContext.instanceId !== UNKNOWN_ID"
-                :instance="selectedInstance"
-                show-status
-              />
-              <span class="ml-2">{{ connectionContext.instanceName }}</span>
+            <div
+              v-if="selectedInstance.id !== UNKNOWN_ID"
+              class="flex items-center"
+            >
+              <InstanceEngineIcon :instance="selectedInstance" show-status />
+              <span class="ml-2">{{ selectedInstance.name }}</span>
             </div>
             <div
-              v-if="connectionContext.databaseName"
+              v-if="selectedDatabase.id !== UNKNOWN_ID"
               class="flex items-center"
             >
               &nbsp; / &nbsp;
               <heroicons-outline:database />
-              <span class="ml-2">{{ connectionContext.databaseName }}</span>
+              <span class="ml-2">{{ selectedDatabase.name }}</span>
             </div>
             <div v-if="connectionContext.tableName" class="flex items-center">
               &nbsp; / &nbsp;
@@ -72,13 +71,19 @@
         </template>
         <section>
           <div class="space-y-2">
-            <div v-if="connectionContext.instanceName" class="flex flex-col">
+            <div
+              v-if="selectedInstance.id !== UNKNOWN_ID"
+              class="flex flex-col"
+            >
               <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
-              <span>{{ connectionContext.instanceName }}</span>
+              <span>{{ selectedInstance.name }}</span>
             </div>
-            <div v-if="connectionContext.databaseName" class="flex flex-col">
+            <div
+              v-if="selectedDatabase.id !== UNKNOWN_ID"
+              class="flex flex-col"
+            >
               <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
-              <span>{{ connectionContext.databaseName }}</span>
+              <span>{{ selectedDatabase.name }}</span>
             </div>
             <div v-if="connectionContext.tableName" class="flex flex-col">
               <h1 class="text-gray-400">{{ $t("common.table") }}:</h1>
@@ -120,8 +125,14 @@
 import { computed, defineEmits } from "vue";
 import { useRouter } from "vue-router";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { useInstanceStore, useTabStore, useSQLEditorStore } from "@/store";
-import { UNKNOWN_ID, Instance } from "@/types";
+import {
+  useInstanceStore,
+  useTabStore,
+  useSQLEditorStore,
+  useDatabaseById,
+  useInstanceById,
+} from "@/store";
+import { UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils/slug";
 import SharePopover from "./SharePopover.vue";
 
@@ -139,13 +150,15 @@ const connectionContext = computed(() => sqlEditorStore.connectionContext);
 const isEmptyStatement = computed(
   () => !tabStore.currentTab || tabStore.currentTab.statement === ""
 );
-const selectedInstance = computed<Instance>(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  return instanceStore.getInstanceById(ctx.instanceId);
-});
+const selectedInstance = useInstanceById(
+  computed(() => sqlEditorStore.connectionContext.instanceId)
+);
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
+const selectedDatabase = useDatabaseById(
+  computed(() => sqlEditorStore.connectionContext.databaseId)
+);
 
 const hasReadonlyDataSource = computed(() => {
   for (const ds of selectedInstance.value.dataSourceList) {

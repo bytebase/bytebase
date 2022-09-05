@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { computed, Ref, watch } from "vue";
 import axios from "axios";
 import {
   Anomaly,
@@ -21,6 +22,7 @@ import {
   ResourceIdentifier,
   ResourceObject,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useAnomalyStore } from "./anomaly";
@@ -468,3 +470,20 @@ export const useDatabaseStore = defineStore("database", {
     },
   },
 });
+
+export const useDatabaseById = (databaseId: Ref<DatabaseId>) => {
+  const store = useDatabaseStore();
+  watch(
+    databaseId,
+    (id) => {
+      if (id !== UNKNOWN_ID) {
+        if (store.getDatabaseById(id).id === UNKNOWN_ID) {
+          store.fetchDatabaseById(id);
+        }
+      }
+    },
+    { immediate: true }
+  );
+
+  return computed(() => store.getDatabaseById(databaseId.value));
+};
