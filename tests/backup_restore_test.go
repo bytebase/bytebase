@@ -116,7 +116,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.Equal(numRecords, i)
 }
 
-func TestRestoreDatabase(t *testing.T) {
+func TestRestoreToNewDatabase(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
