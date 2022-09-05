@@ -232,7 +232,7 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 
 // getIntOrBigIntStr returns the type string of tp.
 func (*indexTypeNoBlobChecker) getBlobStr(tp *types.FieldType) string {
-	switch tp.Tp {
+	switch tp.GetType() {
 	case mysql.TypeTinyBlob:
 		return "tinyblob"
 	case mysql.TypeBlob:
