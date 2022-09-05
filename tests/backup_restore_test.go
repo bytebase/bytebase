@@ -116,6 +116,9 @@ const (
 	numRowsTime2 = 30
 )
 
+// TestPITRGeneral tests for the general PITR cases:
+// 1. buggy application.
+// 2. bad schema migration.
 func TestPITRGeneral(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
