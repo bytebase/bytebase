@@ -67,6 +67,8 @@ const (
 	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
 	// SchemaRuleTableCommentConvention enforce the table comment convention.
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
+	// SchemaRuleTableNotExists check the table name conflict.
+	SchemaRuleTableNotExists SQLReviewRuleType = "table.not-exists"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
