@@ -44,11 +44,11 @@
             </div>
             <span v-else class="flex items-center space-x-2">
               <heroicons-outline:user-group
-                v-if="sheet.visibility === 'PROJECT'"
+                v-if="sheetOfTab(tab)?.visibility === 'PROJECT'"
                 class="w-4 h-4"
               />
               <heroicons-outline:globe
-                v-if="sheet.visibility === 'PUBLIC'"
+                v-if="sheetOfTab(tab)?.visibility === 'PUBLIC'"
                 class="w-4 h-4"
               />
               <span>{{ tab.name }}</span>
@@ -128,8 +128,6 @@ import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
 
-const sheet = computed(() => sheetStore.currentSheet);
-
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
@@ -159,6 +157,12 @@ const scrollState = reactive({
   scrollWidth: 0,
   offsetWidth: 0,
 });
+
+const sheetOfTab = (tab: TabInfo) => {
+  const { sheetId } = tab;
+  if (!sheetId) return undefined;
+  return sheetStore.sheetById.get(sheetId);
+};
 
 const scrollingDistance = computed(() => {
   return scrollState.scrollWidth - scrollState.offsetWidth;
