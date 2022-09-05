@@ -142,7 +142,6 @@ func getTestPort(testName string) int {
 		"TestRestoreToNewDatabase",
 		"TestPITRGeneral",
 		"TestPITRDropDatabase",
-		"TestPITRCaseSensitive",
 		"TestPITRInvalidTimePoint",
 		"TestPITRTwice",
 		"TestPITRToNewDatabaseInAnotherInstance",
