@@ -51,7 +51,9 @@
                   <span v-if="value !== ''">
                     {{
                       key === "RecordTs"
-                        ? dayjs.unix(value as number).format("YYYY-MM-DD HH:mm:ss Z")
+                        ? dayjs
+                            .unix(value as number)
+                            .format("YYYY-MM-DD HH:mm:ss Z")
                         : value
                     }}
                   </span>
