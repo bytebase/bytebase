@@ -110,7 +110,7 @@ export const useSheetStore = defineStore("sheet", {
       }
 
       // Always editable if current user is the creator of the sheet.
-      if (currentSheet.creator.id === currentSheet.id) {
+      if (currentSheet.creator.id === currentUser.id) {
         return false;
       }
 
