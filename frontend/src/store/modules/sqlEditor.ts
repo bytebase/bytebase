@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import dayjs from "dayjs";
-import { isEmpty } from "lodash-es";
+import { cloneDeep, isEmpty } from "lodash-es";
 import {
   SQLEditorState,
   ConnectionAtom,
@@ -21,6 +21,7 @@ import { useInstanceStore } from "./instance";
 import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
 import { useProjectStore } from "./project";
+import { useTabStore } from "./tab";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
@@ -34,7 +35,7 @@ export const getDefaultConnectionContext = () => ({
   tableId: UNKNOWN_ID,
   tableName: "",
   isLoadingTree: false,
-  option: {},
+  option: {} as any,
 });
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
@@ -148,6 +149,11 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     setConnectionContext(payload: Partial<ConnectionContext>) {
       Object.assign(this.connectionContext, payload);
+
+      // When the connection context changed, save a copy of it to current tab.
+      useTabStore().updateCurrentTab({
+        connectionContext: cloneDeep(this.connectionContext),
+      });
     },
     setShouldSetContent(payload: boolean) {
       this.shouldSetContent = payload;

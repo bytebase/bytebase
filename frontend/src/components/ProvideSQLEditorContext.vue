@@ -84,18 +84,47 @@ const prepareSQLEditorContext = async () => {
 const prepareSheetFromQuery = async () => {
   const sheetId = Number(route.query.sheetId);
   if (!Number.isNaN(sheetId)) {
+    sqlEditorStore.isFetchingSheet = true;
     const sheet = await sheetStore.fetchSheetById(sheetId);
-    tabStore.updateCurrentTab({
-      sheetId: sheet.id,
-      name: sheet.name,
-      statement: sheet.statement,
-      isSaved: true,
-    });
-    setConnectionContextFromCurrentTab();
-    useSQLEditorStore().setSQLEditorState({
-      sharedSheet: sheet,
-      shouldSetContent: true,
-    });
+    sqlEditorStore.isFetchingSheet = false;
+
+    // Opening a stored tab.
+    if (sheet.id !== UNKNOWN_ID) {
+      // Check if the tab is already open.
+      const openSheetTab = tabStore.tabList.find(
+        (tab) => tab.sheetId === sheet.id
+      );
+      if (openSheetTab) {
+        // The sheet is already open in a tab. Switch to it.
+        tabStore.setCurrentTabId(openSheetTab.id);
+      } else {
+        // Find a replaceable, and 'replaceable' means
+        // It's not related to any sheets (sheetId === undefined)
+        // and it's newly open (isSaved === true && statement === "")
+        const replaceableTab = tabStore.tabList.find(
+          (tab) => !tab.sheetId && tab.isSaved && !tab.statement
+        );
+        if (replaceableTab) {
+          // Open the sheet in the replaceable tab if we found one.
+          tabStore.setCurrentTabId(replaceableTab.id);
+        } else {
+          // Open the sheet in a new tab otherwise.
+          tabStore.addTab();
+        }
+      }
+
+      tabStore.updateCurrentTab({
+        sheetId: sheet.id,
+        name: sheet.name,
+        statement: sheet.statement,
+        isSaved: true,
+      });
+      setConnectionContextFromCurrentTab(sheet);
+      useSQLEditorStore().setSQLEditorState({
+        sharedSheet: sheet,
+        shouldSetContent: true,
+      });
+    }
   }
 };
 

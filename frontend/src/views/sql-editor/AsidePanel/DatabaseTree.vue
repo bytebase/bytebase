@@ -32,7 +32,7 @@
         :y="dropdownPosition.y"
         :options="dropdownOptions"
         :show="showDropdown"
-        :on-clickoutside="handleClickoutside"
+        :on-clickoutside="handleClickOutside"
         @select="handleSelect"
       />
     </div>
@@ -44,7 +44,6 @@
 
 <script lang="ts" setup>
 import { cloneDeep, omit, escape } from "lodash-es";
-import { TreeOption, DropdownOption } from "naive-ui";
 import { ref, computed, h, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -88,7 +87,7 @@ const dropdownPosition = ref<Position>({
   y: 0,
 });
 const selectedKeys = ref<string[] | number[]>([]);
-const sheetContext = ref<DropdownOption>();
+const sheetContext = ref<ConnectionAtom>();
 
 onMounted(() => {
   const ctx = sqlEditorStore.connectionContext;
@@ -171,7 +170,7 @@ const getFlattenConnectionTree = () => {
   };
 };
 
-const setSheetContext = (option: any) => {
+const setSheetContext = (option: ConnectionAtom) => {
   if (option) {
     let ctx = cloneDeep(sqlEditorStore.connectionContext) as ConnectionContext;
     const { instanceList, databaseList } = getFlattenConnectionTree();
@@ -238,7 +237,7 @@ const setSheetContext = (option: any) => {
 };
 
 // dynamic render the highlight keywords
-const renderLabel = ({ option }: { option: TreeOption }) => {
+const renderLabel = ({ option }: { option: ConnectionAtom }) => {
   const renderLabelHTML = searchPattern.value
     ? h("span", {
         innerHTML: getHighlightHTMLByKeyWords(
@@ -253,7 +252,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 };
 
 // render the suffix icon
-const renderSuffix = ({ option }: { option: TreeOption }) => {
+const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
   const renderSuffixHTML = h(OpenConnectionIcon, {
     id: "tree-node-suffix",
     class: "n-tree-node-content__suffix-icon",
@@ -275,7 +274,7 @@ const loadSubTree = async (item: ConnectionAtom) => {
   }
 };
 
-const gotoAlterSchema = (option: any) => {
+const gotoAlterSchema = (option: ConnectionAtom) => {
   const databaseId = option.parentId;
   const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
   const databaseList =
@@ -304,9 +303,10 @@ const gotoAlterSchema = (option: any) => {
 };
 
 const handleSelect = (key: string) => {
-  const option = dropdownOptions.value.find(
-    (item) => item.key === key
-  ) as DropdownOption;
+  const option = dropdownOptions.value.find((item) => item.key === key);
+  if (!option) {
+    return;
+  }
 
   if (key === "alter-table") {
     gotoAlterSchema(option.item);
@@ -317,11 +317,11 @@ const handleSelect = (key: string) => {
   showDropdown.value = false;
 };
 
-const handleClickoutside = () => {
+const handleClickOutside = () => {
   showDropdown.value = false;
 };
 
-const nodeProps = (info: { option: TreeOption }) => {
+const nodeProps = (info: { option: ConnectionAtom }) => {
   const { option } = info;
 
   return {

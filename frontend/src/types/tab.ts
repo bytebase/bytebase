@@ -1,4 +1,4 @@
-import { Advice, SheetId } from "../types";
+import { Advice, ConnectionContext, SheetId } from "../types";
 
 export type ExecuteConfig = {
   databaseType: string;
@@ -20,10 +20,9 @@ export interface TabInfo {
     config: ExecuteConfig;
     option?: Partial<ExecuteOption>;
   };
+  connectionContext?: ConnectionContext;
   // [columnNames: string[], types: string[], data: any[][]]
   queryResult?: [string[], string[], any[][]];
   sheetId?: SheetId;
   adviceList?: Advice[];
 }
-
-export type AnyTabInfo = Partial<TabInfo>;

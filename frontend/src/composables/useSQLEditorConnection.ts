@@ -2,57 +2,62 @@ import { useRouter } from "vue-router";
 
 import { DEFAULT_PROJECT_ID, Sheet, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
-import { getDefaultConnectionContext } from "@/store";
 import {
   useDatabaseStore,
   useTabStore,
   useSQLEditorStore,
-  useSheetStore,
+  getDefaultConnectionContext,
 } from "@/store";
 
 const useSQLEditorConnection = () => {
   const router = useRouter();
   const tabStore = useTabStore();
   const sqlEditorStore = useSQLEditorStore();
-  const sheetStore = useSheetStore();
 
   /**
    * Set the connection by tab info
    */
-  const setConnectionContextFromCurrentTab = () => {
+  const setConnectionContextFromCurrentTab = (sheet?: Sheet) => {
     const currentTab = tabStore.currentTab;
-    const sheetById = sheetStore.sheetById;
 
-    if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
-      const sheet = sheetById.get(currentTab.sheetId) as Sheet;
-
+    if (sheet) {
+      // If we are opening a sheet.
+      // This only happens when we are landing on the page with `sheetId` in the URL.
       sqlEditorStore.setConnectionContext({
         hasSlug: true,
         projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
         instanceId: sheet.database?.instanceId || UNKNOWN_ID,
         databaseId: sheet.databaseId || UNKNOWN_ID,
       });
-
-      if (sheet.databaseId) {
-        const database = useDatabaseStore().getDatabaseById(sheet.databaseId);
-
-        router.replace({
-          name: "sql-editor.detail",
-          params: {
-            connectionSlug: connectionSlug(database),
-          },
-          query: {
-            sheetId: sheet.id,
-          },
+    } else {
+      const { connectionContext } = currentTab;
+      if (connectionContext) {
+        sqlEditorStore.setConnectionContext({
+          ...getDefaultConnectionContext(),
+          ...connectionContext,
         });
       }
-    } else {
-      sqlEditorStore.setConnectionContext(getDefaultConnectionContext());
-
-      router.push({
-        path: "/sql-editor",
-      });
     }
+
+    const routeArgs: any = {
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+    };
+
+    const database = useDatabaseStore().getDatabaseById(
+      sqlEditorStore.connectionContext.databaseId
+    );
+    if (database && database.id !== UNKNOWN_ID) {
+      routeArgs.name = "sql-editor.detail";
+      routeArgs.params.connectionSlug = connectionSlug(database);
+    }
+
+    if (sheet) {
+      routeArgs.query.sheetId = sheet.id;
+    }
+
+    router.replace(routeArgs);
   };
 
   return {
