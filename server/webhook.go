@@ -393,7 +393,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				messages := strings.SplitN(commit.Message, "\n\n", 2)
 				messageTitle := messages[0]
 
-				createdMessage, created, httpErr := s.createIssueFromPushEventTODO(
+				createdMessage, created, httpErr := s.createIssueFromPushEventLegacy(
 					ctx,
 					repo,
 					vcs.PushEvent{
@@ -547,7 +547,9 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit, includ
 	return distinctFileList
 }
 
-// todo.
+// findProjectDatabases finds the list of databases with given name in the
+// project. If the `envName` is not empty, it will be used as a filter condition
+// for the result list.
 func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*api.Database, error) {
 	// Retrieve the current schema from the database
 	foundDatabases, err := s.store.FindDatabase(ctx,
@@ -698,7 +700,7 @@ func createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEv
 	return string(createContext), nil
 }
 
-// todo Create a WARNING project activity if committed file is ignored.
+// createIgnoredFileActivity creates a warning project activity for the ignored file with given error.
 func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, pushEvent vcs.PushEvent, file string, err error) {
 	log.Warn("Ignored file",
 		zap.String("file", file),
@@ -733,7 +735,7 @@ func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, p
 	}
 }
 
-// todo createIssueFromPushEvent attempts to create a new issue for the given file of
+// createIssueFromPushEvent attempts to create a new issue for the given file of
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
@@ -833,11 +835,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, nil
 }
 
-// createIssueFromPushEventTODO attempts to create a new issue for the given file of
-// the push event. It returns "created=true" when a new issue has been created,
-// along with the creation message to be presented in the UI. An *echo.HTTPError
-// is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEventTODO(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
+// Deprecated: Use createIssueFromPushEvent instead.
+//
+// TODO(jc): Delete this method once refactored webhook handler logic for GitHub.
+func (s *Server) createIssueFromPushEventLegacy(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
 	fileEscaped := common.EscapeForLogging(file)
 	log.Debug("Processing added file...",
 		zap.String("file", fileEscaped),
@@ -1014,8 +1015,10 @@ func (s *Server) createIssueFromPushEventTODO(ctx context.Context, repo *api.Rep
 	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, fileEscaped), true, nil
 }
 
-// todo We may write back the latest schema file to the repository after migration and we need to ignore
+// We may write back the latest schema file to the repository after migration and we need to ignore
 // this file from the webhook push event.
+//
+// Deprecated: Use parseSchemaFileInfo instead.
 func isSkipGeneratedSchemaFile(repository *api.Repository, added string) bool {
 	if repository.SchemaPathTemplate != "" {
 		placeholderList := []string{
@@ -1042,8 +1045,11 @@ func isSkipGeneratedSchemaFile(repository *api.Repository, added string) bool {
 	return false
 }
 
-// todo We may write back the latest schema file to the repository after migration and we need to ignore
-// this file from the webhook push event.
+// parseSchemaFileInfo attempts to parse the given schema file path to extract
+// the schema file info. It returns (nil, nil) if it doesn't looks like a schema
+// file path.
+//
+// The possible keys for the returned map are: "ENV_NAME", "DB_NAME".
 func parseSchemaFileInfo(repo *api.Repository, file string) (map[string]string, error) {
 	if repo.SchemaPathTemplate == "" {
 		return nil, nil
@@ -1079,6 +1085,9 @@ func parseSchemaFileInfo(repo *api.Repository, file string) (map[string]string, 
 	return info, nil
 }
 
+// computeDatabaseSchemaDiff computes the diff between current database schema
+// and the given schema. It returns an empty string if there is no applicable
+// diff.
 func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Database, newSchemaStr string) (string, error) {
 	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
