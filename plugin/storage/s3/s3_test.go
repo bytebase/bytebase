@@ -59,7 +59,7 @@ func TestS3Operations(t *testing.T) {
 	})
 
 	t.Run("DeleteObjects", func(t *testing.T) {
-		resp, err := client.DeleteObject(ctx, "backup/test/blob")
+		resp, err := client.DeleteObjects(ctx, "backup/test/blob")
 		a.NoError(err)
 		log.Info("Deleted", zap.Any("meta", resp.ResultMetadata))
 	})
