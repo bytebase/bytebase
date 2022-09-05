@@ -135,7 +135,7 @@ func autoIncrementColumnIsInteger(column *ast.ColumnDef) bool {
 }
 
 func isInteger(tp *types.FieldType) bool {
-	switch tp.Tp {
+	switch tp.GetType() {
 	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
 		return true
 	default:
