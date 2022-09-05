@@ -21,6 +21,7 @@
       >
         <BBContextMenuButton
           preference-key="task-status-transition"
+          data-label="bb-issue-status-transition-button"
           :action-list="getButtonActionList(transition)"
           @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
         />
