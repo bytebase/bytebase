@@ -644,7 +644,7 @@
     "password-write-only": "YOUR_DB_PWD - write only",
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
-    "create-an-onboarding-postgresql-instance": "Create an onboarding PostgreSQL instance",
+    "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance",
     "successfully-created-postgresql-instance": "Successfully created onboarding PostgreSQL instance and automatically filled into the form.",
     "connection-info-seems-to-be-incorrect": "Connection info seems to be incorrect",
     "new-instance": "New Instance",
@@ -1565,7 +1565,26 @@
         "copy-all": "Copy All",
         "copied": "Copied!",
         "export": "Export"
-      } 
+      }
+    }
+  },
+  "onboarding-guide": {
+    "create-database-guide": {
+      "let-add-a-instance": "Let's add an instance",
+      "go-to-project-list-page": "Go to project list page",
+      "click-new-project": "Click \"New Project\" to create a project",
+      "click-new-database": "Click \"New Database\" to create a database",
+      "click-approve": "Click \"Approve\" to perform the issue",
+      "wait-issue-finished": "Wait the issue finished",
+      "back-to-home": "Back to home",
+      "finished-dialog": {
+        "you-have-done": "You have done:",
+        "add-an-instance": "Add an instance",
+        "create-a-project": "Create a project",
+        "create-an-issue": "Create an issue",
+        "create-a-new-database": "Create a new database",
+        "keep-going-with-bytebase": "Keep going with Bytebase"
+      }
     }
   }
 }

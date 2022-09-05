@@ -9,5 +9,8 @@ export const useOnboardingGuideStore = defineStore("onboarding_guide", {
     setGuideName(guideName: OnboardingGuideType) {
       this.guideName = guideName;
     },
+    removeGuide() {
+      this.guideName = undefined;
+    },
   },
 });

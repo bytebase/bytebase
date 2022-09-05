@@ -17,9 +17,14 @@
       </span>
     </button>
 
-    <router-link to="/" class="outline-item group flex items-center px-2 py-2">
-      <heroicons-outline:home class="w-5 h-5 mr-2" />
-      {{ $t("common.home") }}
+    <router-link to="/" class="outline-item group flex items-center">
+      <div
+        class="outline-item group flex items-center px-2 py-2"
+        data-label="bb-dashboard-sidebar-home-button"
+      >
+        <heroicons-outline:home class="w-5 h-5 mr-2" />
+        {{ $t("common.home") }}
+      </div>
     </router-link>
     <router-link
       to="/sql-editor"
