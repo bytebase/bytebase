@@ -300,7 +300,6 @@ import type {
   DatabaseLabel,
   Principal,
 } from "@/types";
-import { ONBOARDING_ISSUE_ID } from "@/types";
 import {
   allTaskList,
   databaseSlug,
@@ -453,9 +452,6 @@ const allowEditAssignee = computed(() => {
     return true;
   }
   const issueEntity = issue.value as Issue;
-  if (issueEntity.id === ONBOARDING_ISSUE_ID) {
-    return false;
-  }
   if (issueEntity.status !== "OPEN") {
     return false;
   }
@@ -484,7 +480,6 @@ const allowEditEarliestAllowedTime = computed(() => {
   const issueEntity = issue.value as Issue;
   const task = selectedTask.value as Task;
   return (
-    issueEntity.id != ONBOARDING_ISSUE_ID &&
     issueEntity.status == "OPEN" &&
     (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
     currentUser.value.id == issueEntity.assignee.id
