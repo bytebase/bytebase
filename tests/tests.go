@@ -130,7 +130,6 @@ func getTestPort(testName string) int {
 		"TestTenantVCS/GitHub",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
-		"TestBackupRestoreBasic",
 		"TestTenantVCSDatabaseNameTemplate/GitLab",
 		"TestTenantVCSDatabaseNameTemplate/GitHub",
 		"TestBootWithExternalPg",
