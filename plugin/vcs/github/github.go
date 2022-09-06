@@ -191,6 +191,7 @@ type WebhookCommit struct {
 	URL       string              `json:"url"`
 	Author    WebhookCommitAuthor `json:"author"`
 	Added     []string            `json:"added"`
+	Modified  []string            `json:"modified"`
 }
 
 // WebhookPushEvent is the API message for webhook push event.
