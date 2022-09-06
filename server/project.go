@@ -644,7 +644,6 @@ func validateProjectKey(key string) *echo.HTTPError {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project key can only be numbers and uppercase letters")
 		}
 	}
-
 	return nil
 }
 
