@@ -71,7 +71,7 @@ jobs:
           check-latest: true
           cache: true
       - name: Release dry-run
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           args: release --skip-publish --config .goreleaser-for-linux.yaml
         env:
@@ -99,7 +99,7 @@ jobs:
           check-latest: true
           cache: true
       - name: Release dry-run
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           args: release --skip-publish --config .goreleaser-for-darwin.yaml
         env:
