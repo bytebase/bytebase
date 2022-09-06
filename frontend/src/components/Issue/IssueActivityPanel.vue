@@ -431,7 +431,7 @@ const activityList = computed((): Activity[] => {
   const list = activityStore.getActivityListByIssue(issue.value.id);
   return list.filter((activity: Activity) => {
     if (activity.type == "bb.issue.field.update") {
-      let containUserVisibleChange =
+      const containUserVisibleChange =
         (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
         IssueBuiltinFieldId.SUBSCRIBER_LIST;
       return containUserVisibleChange;
@@ -594,7 +594,7 @@ const actionSubject = (activity: Activity): ActionSubject => {
       if (issue.value.pipeline.id != EMPTY_ID) {
         const payload = activity.payload as ActivityTaskStatusUpdatePayload;
         const task = findTaskById(issue.value.pipeline, payload.taskId);
-        var link = "";
+        let link = "";
         if (task.id != UNKNOWN_ID) {
           link = `/issue/${issueSlug(
             issue.value.name,

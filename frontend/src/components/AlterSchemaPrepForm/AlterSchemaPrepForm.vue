@@ -250,7 +250,7 @@ export default defineComponent({
 
     const databaseList = computed(() => {
       const databaseStore = useDatabaseStore();
-      var list;
+      let list;
       if (props.projectId) {
         list = databaseStore.getDatabaseListByProjectId(props.projectId);
       } else {
