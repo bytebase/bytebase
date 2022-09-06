@@ -15,10 +15,10 @@
     </div>
     <div class="databases-tree--tree overflow-y-scroll">
       <n-tree
+        v-model:expanded-keys="expandedTreeKeys"
         block-line
         :data="treeData"
         :pattern="searchPattern"
-        :default-expanded-keys="defaultExpandedKeys"
         :selected-keys="selectedKeys"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
@@ -63,6 +63,7 @@ import {
 } from "@/utils";
 import OpenConnectionIcon from "@/components/SQLEditor/OpenConnectionIcon.vue";
 import { generateInstanceNode, generateTableItem } from "./utils";
+import { storeToRefs } from "pinia";
 
 type Position = {
   x: number;
@@ -80,8 +81,8 @@ const instanceStore = useInstanceStore();
 const sqlEditorStore = useSQLEditorStore();
 const tabStore = useTabStore();
 
-const defaultExpandedKeys = ref<string[]>([]);
-const searchPattern = ref();
+const { expandedTreeKeys } = storeToRefs(sqlEditorStore);
+const searchPattern = ref("");
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
   x: 0,
@@ -99,10 +100,8 @@ onMounted(() => {
     databaseId &&
     databaseId !== UNKNOWN_ID
   ) {
-    defaultExpandedKeys.value = [
-      `instance-${instanceId}`,
-      `database-${databaseId}`,
-    ];
+    const keys = [`instance-${instanceId}`, `database-${databaseId}`];
+    sqlEditorStore.addExpandedTreeKeys(keys);
   }
 });
 
@@ -262,7 +261,9 @@ const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
 const loadSubTree = async (item: ConnectionAtom) => {
   const mapper = mapConnectionAtom("table", item.id);
   if (item.type === "database") {
-    const tableList = await useTableStore().fetchTableListByDatabaseId(item.id);
+    const tableList = await useTableStore().getOrFetchTableListByDatabaseId(
+      item.id
+    );
 
     item.children = tableList.map((table) => generateTableItem(mapper(table)));
     return;

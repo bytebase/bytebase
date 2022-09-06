@@ -35,6 +35,7 @@ export const getDefaultConnectionContext = (): ConnectionContext => ({
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
     connectionTree: [],
+    expandedTreeKeys: [],
     connectionContext: getDefaultConnectionContext(),
     isExecuting: false,
     isShowExecutingHint: false,
@@ -151,6 +152,12 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       useTabStore().updateCurrentTab({
         connectionContext: cloneDeep(this.connectionContext),
       });
+
+      const { instanceId, databaseId } = this.connectionContext;
+      const keys: string[] = [];
+      if (instanceId !== UNKNOWN_ID) keys.push(`instance-${instanceId}`);
+      if (databaseId !== UNKNOWN_ID) keys.push(`database-${databaseId}`);
+      this.addExpandedTreeKeys(keys);
     },
     setShouldSetContent(payload: boolean) {
       this.shouldSetContent = payload;
@@ -237,6 +244,14 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       this.setQueryHistoryList(
         this.queryHistoryList.filter((t: QueryHistory) => t.id !== id)
       );
+    },
+    addExpandedTreeKeys(keys: string[]) {
+      const set = new Set(this.expandedTreeKeys);
+      keys.forEach((key) => {
+        if (!set.has(key)) {
+          this.expandedTreeKeys.push(key);
+        }
+      });
     },
   },
 });

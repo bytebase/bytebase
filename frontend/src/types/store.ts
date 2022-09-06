@@ -193,6 +193,7 @@ export interface LabelState {
 
 export interface SQLEditorState {
   connectionTree: ConnectionAtom[];
+  expandedTreeKeys: string[];
   connectionContext: ConnectionContext;
   shouldSetContent: boolean;
   shouldFormatContent: boolean;
