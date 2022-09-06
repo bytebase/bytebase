@@ -5,7 +5,7 @@
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
 import { reactive, onMounted, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 import {
   useCurrentUser,
@@ -17,7 +17,7 @@ import {
   useInstanceStore,
 } from "@/store";
 import { Instance, Database, ConnectionAtom, UNKNOWN_ID } from "@/types";
-import { isReplaceableTab, mapConnectionAtom } from "@/utils";
+import { connectionSlug, isReplaceableTab, mapConnectionAtom } from "@/utils";
 
 type LocalState = {
   instanceList: Instance[];
@@ -25,6 +25,7 @@ type LocalState = {
 };
 
 const route = useRoute();
+const router = useRouter();
 
 const state = reactive<LocalState>({
   instanceList: [],
@@ -144,4 +145,28 @@ watch(currentUser, (user) => {
     sheetStore.$reset();
   }
 });
+
+// Keep the URL synced with current connection context.
+watch(
+  [
+    () => sheetStore.currentSheet,
+    () => sqlEditorStore.connectionContext.instanceId,
+    () => sqlEditorStore.connectionContext.databaseId,
+  ],
+  ([sheet, instanceId, databaseId]) => {
+    const routeArgs: any = {
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+    };
+    const database = useDatabaseStore().getDatabaseById(databaseId);
+    if (sheet.id !== UNKNOWN_ID) {
+      routeArgs.query.sheetId = sheet.id;
+    } else if (database.id !== UNKNOWN_ID) {
+      routeArgs.name = "sql-editor.detail";
+      routeArgs.params.connectionSlug = connectionSlug(database);
+    }
+    router.replace(routeArgs);
+  }
+);
 </script>

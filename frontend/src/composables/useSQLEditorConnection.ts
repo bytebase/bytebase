@@ -1,9 +1,5 @@
-import { useRouter } from "vue-router";
-
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
-import { connectionSlug } from "../utils";
 import {
-  useDatabaseStore,
   useTabStore,
   useSQLEditorStore,
   getDefaultConnectionContext,
@@ -11,7 +7,6 @@ import {
 } from "@/store";
 
 const useSQLEditorConnection = () => {
-  const router = useRouter();
   const tabStore = useTabStore();
   const sqlEditorStore = useSQLEditorStore();
   const sheetStore = useSheetStore();
@@ -50,26 +45,6 @@ const useSQLEditorConnection = () => {
         });
       }
     }
-
-    const routeArgs: any = {
-      name: "sql-editor.home",
-      params: {},
-      query: {},
-    };
-
-    const database = useDatabaseStore().getDatabaseById(
-      sqlEditorStore.connectionContext.databaseId
-    );
-    if (database && database.id !== UNKNOWN_ID) {
-      routeArgs.name = "sql-editor.detail";
-      routeArgs.params.connectionSlug = connectionSlug(database);
-    }
-
-    if (sheet) {
-      routeArgs.query.sheetId = sheet.id;
-    }
-
-    router.replace(routeArgs);
   };
 
   return {
