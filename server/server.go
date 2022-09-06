@@ -233,8 +233,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
-
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)

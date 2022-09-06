@@ -241,7 +241,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
@@ -308,6 +308,9 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
+// For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
+const hasCreatingEmbeddedPostgresInstance = ref(false);
+
 const allowCreate = computed(() => {
   return state.instance.name && state.instance.host;
 });
@@ -339,7 +342,10 @@ const isInOnboaringCreateDatabaseGuide = computed(() => {
 });
 
 const warningModalOkText = computed(() => {
-  if (isInOnboaringCreateDatabaseGuide.value) {
+  if (
+    isInOnboaringCreateDatabaseGuide.value &&
+    !hasCreatingEmbeddedPostgresInstance.value
+  ) {
     return t("instance.add-a-postgresql-sample-instance");
   } else {
     return t("instance.ignore-and-create");
@@ -430,7 +436,10 @@ const updateInstance = (field: string, value: string) => {
 const handleWarningModalOkClick = async () => {
   // When user get the warning of incorrect instance info in creating database onboarding guide,
   // we'd like to display the `create an embedded PostgreSQL database` button instead of `ignore and create`.
-  if (isInOnboaringCreateDatabaseGuide.value) {
+  if (
+    isInOnboaringCreateDatabaseGuide.value &&
+    !hasCreatingEmbeddedPostgresInstance.value
+  ) {
     const connectionInfo =
       await useInstanceStore().createEmbeddedPostgresInstance();
     state.instance = {
@@ -447,6 +456,7 @@ const handleWarningModalOkClick = async () => {
       title: t("common.success"),
       description: t("instance.successfully-created-postgresql-instance"),
     });
+    hasCreatingEmbeddedPostgresInstance.value = true;
     state.showCreateInstanceWarningModal = false;
   } else {
     state.showCreateInstanceWarningModal = false;

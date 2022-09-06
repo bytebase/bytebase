@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
@@ -542,6 +544,299 @@ func TestVCS(t *testing.T) {
 			}
 			a.Equal(histories[0].Version, "ver2")
 			a.Equal(histories[1].Version, "ver1")
+		})
+	}
+}
+
+func TestVCS_SDL(t *testing.T) {
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(gitFile string) interface{}
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a PostgreSQL instance.
+			port := getTestPort(t.Name()) + 3
+			_, stopInstance := postgres.SetupTestInstance(t, port)
+			defer stopInstance()
+
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=127.0.0.1 port=%d user=root database=postgres", port))
+			a.NoError(err)
+			defer func() {
+				_ = pgDB.Close()
+			}()
+
+			err = pgDB.Ping()
+			a.NoError(err)
+
+			const databaseName = "testVCSSchemaUpdate"
+			_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+			a.NoError(err)
+			_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
+			a.NoError(err)
+			_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
+			a.NoError(err)
+
+			// Create a table in the database
+			schemaFileContent := `CREATE TABLE projects (id serial PRIMARY KEY);`
+			_, err = pgDB.Exec(schemaFileContent)
+			a.NoError(err)
+
+			// Create a VCS
+			vcs, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name:                "Test VCS Project",
+					Key:                 "TestVCSSchemaUpdate",
+					SchemaMigrationType: api.ProjectSchemaMigrationTypeSDL,
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcs.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
+
+			environments, err := ctl.getEnvironments()
+			a.NoError(err)
+			prodEnvironment, err := findEnvironment(environments, "Prod")
+			a.NoError(err)
+
+			// Add an instance
+			instance, err := ctl.addInstance(
+				api.InstanceCreate{
+					EnvironmentID: prodEnvironment.ID,
+					Name:          "pgInstance",
+					Engine:        db.Postgres,
+					Host:          "127.0.0.1",
+					Port:          strconv.Itoa(port),
+					Username:      "bytebase",
+					Password:      "bytebase",
+				},
+			)
+			a.NoError(err)
+
+			// Create an issue that creates a database
+			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil /* labelMap */)
+			a.NoError(err)
+
+			// Simulate Git commits for schema update to create a new table "book".
+			const gitFile = "bbtest/Prod/.testVCSSchemaUpdate__LATEST.sql"
+			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				gitFile: schemaFileContent,
+			})
+			a.NoError(err)
+
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get schema update issue
+			openStatus := []api.IssueStatus{api.IssueOpen}
+			issues, err := ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: openStatus,
+				},
+			)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue := issues[0]
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Query list of tables
+			result, err := ctl.query(instance, databaseName, `
+SELECT table_name 
+    FROM information_schema.tables 
+WHERE table_type = 'BASE TABLE' 
+    AND table_schema NOT IN 
+        ('pg_catalog', 'information_schema');
+`)
+			a.NoError(err)
+			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]]]`, result)
+
+			// Get migration history
+			const initialSchema = `SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+`
+			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
+			a.NoError(err)
+			wantHistories := []api.MigrationHistory{
+				{
+					Database: databaseName,
+					Source:   db.VCS,
+					Type:     db.Migrate,
+					Status:   db.Done,
+					Schema: `SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.projects (
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE public.projects_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
+
+CREATE TABLE public.users (
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE public.users_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+`,
+					SchemaPrev: initialSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.UI,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     initialSchema,
+					SchemaPrev: "",
+				},
+			}
+			a.Equal(len(wantHistories), len(histories))
+
+			for i, history := range histories {
+				got := api.MigrationHistory{
+					Database:   history.Database,
+					Source:     history.Source,
+					Type:       history.Type,
+					Status:     history.Status,
+					Schema:     history.Schema,
+					SchemaPrev: history.SchemaPrev,
+				}
+				a.Equal(wantHistories[i], got, i)
+				a.NotEmpty(history.Version)
+			}
 		})
 	}
 }

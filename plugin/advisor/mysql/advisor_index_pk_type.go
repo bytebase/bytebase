@@ -236,7 +236,7 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 
 // getIntOrBigIntStr returns the type string of tp.
 func (*indexPkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
-	switch tp.Tp {
+	switch tp.GetType() {
 	// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLong
 	case mysql.TypeLong:
 		// tp.String() return int(11)

@@ -120,6 +120,7 @@ func getTestPort(testName string) int {
 		"TestSchemaAndDataUpdate",
 		"TestVCS/GitLab",
 		"TestVCS/GitHub",
+		"TestVCS_SDL/GitLab",
 		"TestWildcardInVCSFilePathTemplate/emptyBaseAndMixAsterisks",
 		"TestWildcardInVCSFilePathTemplate/singleAsterisk",
 		"TestWildcardInVCSFilePathTemplate/doubleAsterisks",
@@ -130,7 +131,6 @@ func getTestPort(testName string) int {
 		"TestTenantVCS/GitHub",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
-		"TestBackupRestoreBasic",
 		"TestTenantVCSDatabaseNameTemplate/GitLab",
 		"TestTenantVCSDatabaseNameTemplate/GitHub",
 		"TestBootWithExternalPg",
@@ -139,9 +139,9 @@ func getTestPort(testName string) int {
 		"TestPrepare",
 
 		// PITR related cases
+		"TestRestoreToNewDatabase",
 		"TestPITRGeneral",
 		"TestPITRDropDatabase",
-		"TestPITRCaseSensitive",
 		"TestPITRInvalidTimePoint",
 		"TestPITRTwice",
 		"TestPITRToNewDatabaseInAnotherInstance",

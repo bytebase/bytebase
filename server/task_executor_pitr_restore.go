@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -469,4 +470,63 @@ func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Ser
 	}
 
 	return nil
+}
+
+func downloadBackupFileFromCloud(ctx context.Context, server *Server, backupPath, backupAbsPathLocal string) error {
+	log.Debug("Downloading backup file from s3 bucket.", zap.String("path", backupPath))
+	backupFileDownload, err := os.Create(backupAbsPathLocal)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create local backup file %q for downloading from s3 bucket", backupAbsPathLocal)
+	}
+	defer backupFileDownload.Close()
+	if _, err := server.s3Client.DownloadObject(ctx, backupPath, backupFileDownload); err != nil {
+		return errors.Wrapf(err, "failed to download backup file %q from s3 bucket", backupPath)
+	}
+	log.Debug("Successfully downloaded backup file from s3 bucket.")
+	return nil
+}
+
+// createBranchMigrationHistory creates a migration history with "BRANCH" type. We choose NOT to copy over
+// all migration history from source database because that might be expensive (e.g. we may use restore to
+// create many ephemeral databases from backup for testing purpose)
+// Returns migration history id and the version on success.
+func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
+	targetDriver, err := server.getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name)
+	if err != nil {
+		return -1, "", err
+	}
+	defer targetDriver.Close(ctx)
+
+	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	if err != nil {
+		return -1, "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
+	}
+
+	// Add a branch migration history record.
+	issueID := ""
+	if issue != nil {
+		issueID = strconv.Itoa(issue.ID)
+	}
+	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.Name)
+	if sourceDatabase.InstanceID != targetDatabase.InstanceID {
+		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
+	}
+	// TODO(d): support semantic versioning.
+	m := &db.MigrationInfo{
+		ReleaseVersion: server.profile.Version,
+		Version:        common.DefaultMigrationVersion(),
+		Namespace:      targetDatabase.Name,
+		Database:       targetDatabase.Name,
+		Environment:    targetDatabase.Instance.Environment.Name,
+		Source:         db.MigrationSource(targetDatabase.Project.WorkflowType),
+		Type:           db.Branch,
+		Description:    description,
+		Creator:        task.Creator.Name,
+		IssueID:        issueID,
+	}
+	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
+	if err != nil {
+		return -1, "", errors.Wrap(err, "failed to create migration history")
+	}
+	return migrationID, m.Version, nil
 }

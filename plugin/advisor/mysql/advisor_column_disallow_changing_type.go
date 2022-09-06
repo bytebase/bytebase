@@ -108,7 +108,7 @@ func (*columnDisallowChangingTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func getTypeString(tp *types.FieldType) string {
-	switch tp.Tp {
+	switch tp.GetType() {
 	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
 		// Referring this issue tidb#6688, the integer max display length is deprecated in MySQL 8.0.
 		// Since the length doesn't take any effect in TiDB storage or showing result, we remove it here.
