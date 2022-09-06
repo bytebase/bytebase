@@ -90,7 +90,7 @@
     "unplugin-icons": "0.14.9",
     "unplugin-vue-components": "0.22.4",
     "vite": "3.1.0",
-    "vitest": "0.0.139",
+    "vitest": "0.23.1",
     "vue-tsc": "0.34.17"
   },
   "peerDependencies": {
