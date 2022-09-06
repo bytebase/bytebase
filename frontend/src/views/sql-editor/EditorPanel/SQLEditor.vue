@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
-import { computed, defineEmits, ref, watch } from "vue";
+import { computed, defineEmits, nextTick, ref, watch } from "vue";
 
 import {
   useInstanceStore,
@@ -48,7 +48,7 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const { execute } = useExecuteSQL();
 
-const sqlCode = computed(() => tabStore.currentTab.statement);
+const sqlCode = computed(() => tabStore.currentTab.statement || "");
 const selectedInstance = useInstanceById(
   computed(() => sqlEditorStore.connectionContext.instanceId)
 );
@@ -63,6 +63,18 @@ const selectedDialect = computed((): SQLDialect => {
   return "mysql";
 });
 const readonly = computed(() => sheetStore.isReadOnly);
+const currentTabId = computed(() => tabStore.currentTabId);
+const isSwitchingTab = ref(false);
+watch(
+  currentTabId,
+  () => {
+    isSwitchingTab.value = true;
+    nextTick(() => {
+      isSwitchingTab.value = false;
+    });
+  },
+  { immediate: true }
+);
 
 watch(
   () => sqlEditorStore.shouldSetContent,
@@ -84,12 +96,18 @@ watch(
   }
 );
 
-const handleChange = debounce((value: string) => {
+const handleChange = (value: string) => {
+  // When we are switching between tabs, the MonacoEditor emits a 'change'
+  // event, but we shouldn't update the current tab;
+  if (isSwitchingTab.value) {
+    return;
+  }
+
   tabStore.updateCurrentTab({
     statement: value,
     isModified: true,
   });
-}, 300);
+};
 
 const handleChangeSelection = debounce((value: string) => {
   tabStore.updateCurrentTab({
