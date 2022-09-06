@@ -38,7 +38,7 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advi
 	checker := &columnNoNullChecker{
 		level:           level,
 		title:           string(ctx.Rule.Type),
-		database:        ctx.Database,
+		catalog:         ctx.Catalog,
 		nullableColumns: make(columnMap),
 	}
 
@@ -53,7 +53,7 @@ type columnNoNullChecker struct {
 	adviceList      []advisor.Advice
 	level           advisor.Status
 	title           string
-	database        *catalog.Database
+	catalog         *catalog.Finder
 	nullableColumns columnMap
 }
 
@@ -147,7 +147,7 @@ func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.Tabl
 				checker.removeColumn(table, column)
 			}
 		case ast.ConstraintTypePrimaryUsingIndex:
-			_, index := checker.database.FindIndex(&catalog.IndexFind{
+			_, index := checker.catalog.FindIndex(&catalog.IndexFind{
 				SchemaName: normalizeSchemaName(table.Schema),
 				TableName:  table.Name,
 				IndexName:  constraint.IndexName,

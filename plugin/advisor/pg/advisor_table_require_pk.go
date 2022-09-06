@@ -35,9 +35,9 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 	}
 
 	checker := &tableRequirePKChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmt := range stmts {
@@ -60,7 +60,7 @@ type tableRequirePKChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	database   *catalog.Database
+	catalog    *catalog.Finder
 	text       string
 }
 
@@ -84,7 +84,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 		}
 	// DROP CONSTRAINT
 	case *ast.DropConstraintStmt:
-		_, index := checker.database.FindIndex(&catalog.IndexFind{
+		_, index := checker.catalog.FindIndex(&catalog.IndexFind{
 			SchemaName: normalizeSchemaName(n.Table.Schema),
 			TableName:  n.Table.Name,
 			IndexName:  n.ConstraintName,
@@ -94,7 +94,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 		}
 	// DROP COLUMN
 	case *ast.DropColumnStmt:
-		pk := checker.database.FindPrimaryKey(&catalog.PrimaryKeyFind{
+		pk := checker.catalog.FindPrimaryKey(&catalog.PrimaryKeyFind{
 			SchemaName: normalizeSchemaName(n.Table.Schema),
 			TableName:  n.Table.Name,
 		})
