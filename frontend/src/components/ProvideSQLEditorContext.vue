@@ -4,7 +4,7 @@
 
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
-import { reactive, onMounted } from "vue";
+import { reactive, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 import {
@@ -134,5 +134,14 @@ onMounted(async () => {
   await prepareSheetFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
+});
+
+watch(currentUser, (user) => {
+  if (user.id === UNKNOWN_ID) {
+    // Clear SQL editor state when signed out.
+    sqlEditorStore.$reset();
+    tabStore.$reset();
+    sheetStore.$reset();
+  }
 });
 </script>
