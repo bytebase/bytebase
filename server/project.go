@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -635,14 +636,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
+var reValidProjectKey = regexp.MustCompile("^[a-zA-Z0-9]+$")
+
 func validateProjectKey(key string) *echo.HTTPError {
 	if key == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
 	}
-	for _, l := range key {
-		if (l < '0' || l > '9') && (l < 'A' || l > 'Z') && (l < 'a' || l > 'z') {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key can only be numbers and uppercase letters")
-		}
+	if !reValidProjectKey.MatchString(key) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Project key can only be numbers and uppercase letters")
 	}
 	return nil
 }
