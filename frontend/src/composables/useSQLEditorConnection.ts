@@ -21,12 +21,20 @@ const useSQLEditorConnection = () => {
     const currentTab = tabStore.currentTab;
 
     if (sheet) {
+      const { project, database, payload } = sheet;
       // If we are opening a sheet.
       // This only happens when we are landing on the page with `sheetId` in the URL.
+      const projectId =
+        project.id !== UNKNOWN_ID ? project.id : DEFAULT_PROJECT_ID;
+      const instanceId =
+        database?.id !== UNKNOWN_ID
+          ? database?.instance.id
+          : payload?.instanceId || UNKNOWN_ID;
+      const databaseId = database?.id || UNKNOWN_ID;
       sqlEditorStore.setConnectionContext({
-        projectId: sheet.database?.project.id || DEFAULT_PROJECT_ID,
-        instanceId: sheet.database?.instance.id || UNKNOWN_ID,
-        databaseId: sheet.database?.id || UNKNOWN_ID,
+        projectId,
+        instanceId,
+        databaseId,
       });
     } else {
       const { connectionContext } = currentTab;

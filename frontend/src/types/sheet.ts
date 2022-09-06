@@ -40,6 +40,7 @@ export interface Sheet {
   type: SheetType;
   starred: boolean;
   pinned: boolean;
+  payload: Record<string, any>; // JSON
 }
 
 export interface SheetUpsert {
@@ -49,6 +50,7 @@ export interface SheetUpsert {
   name: string;
   statement: string;
   visibility?: SheetVisibility;
+  payload?: object;
 }
 
 export interface SheetCreate {
@@ -57,6 +59,7 @@ export interface SheetCreate {
   name: string;
   statement: string;
   visibility: SheetVisibility;
+  payload?: object;
 }
 
 export interface SheetPatch {

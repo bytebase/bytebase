@@ -85,6 +85,12 @@ const handleSaveSheet = async (sheetName?: string) => {
     databaseId: ctx.databaseId,
     name: sheetName,
     statement: statement,
+    // It's awkward that a sheet entity has no 'instanceId' field.
+    // So we need to store the instanceId in the payload if we don't want to
+    // change our schema.
+    payload: {
+      instanceId: ctx.instanceId,
+    },
   };
 
   const sheet = await sheetStore.upsertSheet(sheetUpsert);

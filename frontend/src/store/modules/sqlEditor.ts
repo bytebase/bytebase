@@ -128,13 +128,16 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
      * @returns boolean
      */
     isDisconnected(state) {
-      const ctx = state.connectionContext;
-      return (
-        ctx.instanceId === UNKNOWN_ID ||
-        (ctx.databaseId === UNKNOWN_ID &&
-          ctx.databaseType !== "MYSQL" &&
-          ctx.databaseType !== "TIDB")
-      );
+      const { instanceId, databaseId } = state.connectionContext;
+      if (instanceId === UNKNOWN_ID) {
+        return true;
+      }
+      const instance = useInstanceStore().getInstanceById(instanceId);
+      if (instance.engine === "MYSQL" || instance.engine === "TIDB") {
+        // Connecting to instance directly.
+        return false;
+      }
+      return databaseId === UNKNOWN_ID;
     },
   },
 
@@ -169,10 +172,16 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       this.isFetchingQueryHistory = payload;
     },
     async executeQuery({ statement }: Pick<QueryInfo, "statement">) {
+      const { instanceId, databaseId } = this.connectionContext;
+      const databaseName =
+        databaseId === UNKNOWN_ID
+          ? undefined
+          : useDatabaseStore().getDatabaseById(databaseId).name;
+
       const queryResult = await useSQLStore().query({
-        instanceId: this.connectionContext.instanceId,
-        databaseName: this.connectionContext.databaseName,
-        statement: statement,
+        instanceId,
+        databaseName,
+        statement,
         // set the limit to 10000 temporarily to avoid the query timeout and page crash
         limit: 10000,
       });
@@ -185,9 +194,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     }: Pick<SQLEditorState["connectionContext"], "instanceId" | "databaseId">) {
       // Don't re-fetch instance/database/tableList every time.
       // Use cached data if possible.
-      const instance = await useInstanceStore().getOrFetchInstanceById(
-        instanceId
-      );
+      await useInstanceStore().getOrFetchInstanceById(instanceId);
       const database = await useDatabaseStore().getOrFetchDatabaseById(
         databaseId
       );
@@ -195,10 +202,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
 
       this.setConnectionContext({
         instanceId,
-        instanceName: instance.name,
         databaseId: database.syncStatus === "OK" ? database.id : undefined,
-        databaseName: database.syncStatus === "OK" ? database.name : undefined,
-        databaseType: instance.engine,
       });
     },
     async fetchQueryHistoryList() {

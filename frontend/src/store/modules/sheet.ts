@@ -44,8 +44,7 @@ function convertSheet(
       database = databaseStore.convert(item, includedList);
     }
   }
-
-  return {
+  const result = {
     ...(sheet.attributes as Omit<Sheet, "id" | "creator" | "updater">),
     id: parseInt(sheet.id),
     creator: getPrincipalFromIncludedList(
@@ -59,6 +58,14 @@ function convertSheet(
     project,
     database,
   };
+
+  try {
+    result.payload = JSON.parse((sheet.attributes.payload as string) || "{}");
+  } catch {
+    result.payload = {};
+  }
+
+  return result;
 }
 
 export const useSheetStore = defineStore("sheet", {
@@ -160,15 +167,19 @@ export const useSheetStore = defineStore("sheet", {
       });
     },
     async createSheet(sheetCreate: SheetCreate): Promise<Sheet> {
-      if (sheetCreate.databaseId === UNKNOWN_ID) {
-        sheetCreate.databaseId = undefined;
+      const attributes: any = { ...sheetCreate };
+      if (attributes.databaseId === UNKNOWN_ID) {
+        attributes.databaseId = undefined;
+      }
+      if (attributes.payload) {
+        attributes.payload = JSON.stringify(attributes.payload);
       }
 
       const resData = (
         await axios.post(`/api/sheet`, {
           data: {
             type: "createSheet",
-            attributes: sheetCreate,
+            attributes,
           },
         })
       ).data;
