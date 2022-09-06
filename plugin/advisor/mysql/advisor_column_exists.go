@@ -38,9 +38,9 @@ func (*ColumnExistsAdvisor) Check(ctx advisor.Context, statement string) ([]advi
 		return nil, err
 	}
 	checker := &columnExistsChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -66,7 +66,7 @@ type columnExistsChecker struct {
 	title      string
 	text       string
 	line       int
-	database   *catalog.Database
+	catalog    *catalog.Finder
 }
 
 type columnData struct {
@@ -112,7 +112,7 @@ func (checker *columnExistsChecker) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	for _, column := range columnList {
-		table := checker.database.FindTable(&catalog.TableFind{TableName: column.table})
+		table := checker.catalog.FindTable(&catalog.TableFind{TableName: column.table})
 		if table == nil {
 			continue
 		}

@@ -37,9 +37,9 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, statement str
 	}
 
 	checker := &allowDropEmptyDBChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -60,21 +60,21 @@ type allowDropEmptyDBChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	database   *catalog.Database
+	catalog    *catalog.Finder
 }
 
 // Enter implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
-		if v.database.Name != node.Name {
+		if v.catalog.DatabaseName() != node.Name {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.NotCurrentDatabase,
 				Title:   v.title,
-				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.database.Name),
+				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.catalog.DatabaseName()),
 				Line:    node.OriginTextPosition(),
 			})
-		} else if !v.database.HasNoTable() {
+		} else if !v.catalog.HasNoTable() {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.DatabaseNotEmpty,

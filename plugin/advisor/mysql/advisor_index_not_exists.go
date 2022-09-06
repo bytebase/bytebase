@@ -38,9 +38,9 @@ func (*IndexNotExistsAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 		return nil, err
 	}
 	checker := &indexNotExistsChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -66,7 +66,7 @@ type indexNotExistsChecker struct {
 	title      string
 	text       string
 	line       int
-	database   *catalog.Database
+	catalog    *catalog.Finder
 }
 
 // Enter implements the ast.Visitor interface.
@@ -124,6 +124,6 @@ func (*indexNotExistsChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (checker *indexNotExistsChecker) indexExists(table string, index string) bool {
-	_, idx := checker.database.FindIndex(&catalog.IndexFind{TableName: table, IndexName: index})
+	_, idx := checker.catalog.FindIndex(&catalog.IndexFind{TableName: table, IndexName: index})
 	return idx != nil
 }

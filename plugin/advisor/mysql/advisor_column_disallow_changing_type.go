@@ -41,9 +41,9 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, statement s
 		return nil, err
 	}
 	checker := &columnDisallowChangingTypeChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -69,7 +69,7 @@ type columnDisallowChangingTypeChecker struct {
 	title      string
 	text       string
 	line       int
-	database   *catalog.Database
+	catalog    *catalog.Finder
 }
 
 // Enter implements the ast.Visitor interface.
@@ -123,7 +123,7 @@ func getTypeString(tp *types.FieldType) string {
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := checker.database.FindColumn(&catalog.ColumnFind{
+	column := checker.catalog.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
 		ColumnName: columName,
 	})
