@@ -13,12 +13,12 @@
         <div
           v-for="tab in tabStore.tabList"
           :key="tab.id"
-          class="tab-list-tab"
+          class="tab-list-tab group"
           :class="{ active: tab.id === tabStore.currentTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
-          @mouseover="enterTabId = tab.id"
-          @mouseleave="enterTabId = ''"
+          @mouseover="hoverTabId = tab.id"
+          @mouseleave="hoverTabId = ''"
         >
           <div
             class="label max-w-5xl w-48 truncate"
@@ -56,7 +56,7 @@
               </span>
             </span>
           </div>
-          <template v-if="enterTabId === tab.id && tabStore.tabList.length > 1">
+          <template v-if="hoverTabId === tab.id && tabStore.tabList.length > 1">
             <span
               class="suffix close hover:bg-gray-200 rounded-sm"
               @click.prevent.stop="handleRemoveTab(tab)"
@@ -65,7 +65,7 @@
             </span>
           </template>
           <template v-else>
-            <template v-if="!tab.isModified">
+            <template v-if="tab.isModified">
               <span class="suffix editing text-gray-400">
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
@@ -135,7 +135,7 @@ const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
 
-const enterTabId = ref("");
+const hoverTabId = ref("");
 const selectedTab = computed(() => tabStore.currentTabId);
 // edit label state
 const labelState = reactive({
