@@ -67,7 +67,7 @@ jobs:
         working-directory: frontend
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
           check-latest: true
           cache: true
       - name: Release dry-run
@@ -95,7 +95,7 @@ jobs:
         working-directory: frontend
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
           check-latest: true
           cache: true
       - name: Release dry-run
@@ -120,7 +120,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
           check-latest: true
           cache: true
       - name: Cache MySQL
