@@ -198,14 +198,24 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				continue
 			}
 
-			for _, added := range commit.Added {
-				// Per Git convention, the message title and body are separated by two new line characters.
-				messages := strings.SplitN(commit.Message, "\n\n", 2)
-				messageTitle := messages[0]
+			// Per Git convention, the message title and body are separated by two new line characters.
+			messages := strings.SplitN(commit.Message, "\n\n", 2)
+			messageTitle := messages[0]
 
-				createdMessage, created, httpErr := s.createIssueFromPushEventLegacy(
+			files := make(map[string]fileItemType)
+			for _, added := range commit.Added {
+				files[added] = fileItemTypeAdded
+			}
+
+			if repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
+				for _, modified := range commit.Modified {
+					files[modified] = fileItemTypeModified
+				}
+			}
+
+			for file, fileType := range files {
+				createdMessage, created, httpErr := s.createIssueFromPushEvent(
 					ctx,
-					repo,
 					vcs.PushEvent{
 						VCSType:            repo.VCS.Type,
 						BaseDirectory:      repo.BaseDirectory,
@@ -222,11 +232,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							URL:         commit.URL,
 							AuthorName:  commit.Author.Name,
 							AuthorEmail: commit.Author.Email,
-							Added:       common.EscapeForLogging(added),
+							Added:       common.EscapeForLogging(file),
 						},
 					},
-					added,
+					repo,
 					webhookEndpointID,
+					file,
+					fileType,
 				)
 				if httpErr != nil {
 					return httpErr
