@@ -501,7 +501,7 @@ export default defineComponent({
         return;
       }
 
-      var newIssue: IssueCreate;
+      let newIssue: IssueCreate;
 
       const databaseName = isDbNameTemplateMode.value
         ? generatedDatabaseName.value

@@ -285,7 +285,7 @@ export default defineComponent({
               break;
           }
         }
-        let summary = envMap.get(database.instance.environment.id);
+        const summary = envMap.get(database.instance.environment.id);
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
@@ -330,7 +330,7 @@ export default defineComponent({
               break;
           }
         }
-        let summary = envMap.get(instance.environment.id);
+        const summary = envMap.get(instance.environment.id);
         if (summary) {
           summary.criticalCount += criticalCount;
           summary.highCount += highCount;
