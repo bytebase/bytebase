@@ -4,12 +4,12 @@ import "github.com/bytebase/bytebase/plugin/advisor/db"
 
 // Finder is the service for finding in database.
 type Finder struct {
-	database *interDatabase
+	database *databaseState
 }
 
 // NewFinder creates a new finder.
 func NewFinder(database *Database) *Finder {
-	return &Finder{database: newInterDatabase(database)}
+	return &Finder{database: newDatabaseState(database)}
 }
 
 // HasNoTable returns true if the current database has no table.

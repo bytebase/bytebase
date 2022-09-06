@@ -4,63 +4,63 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-func newInterDatabase(d *Database) *interDatabase {
-	database := &interDatabase{
+func newDatabaseState(d *Database) *databaseState {
+	database := &databaseState{
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
 		dbType:       d.DbType,
-		schemaSet:    make(interSchemaMap),
+		schemaSet:    make(schemaStateMap),
 	}
 
 	for _, schema := range d.SchemaList {
-		database.schemaSet[schema.Name] = newInterSchema(schema)
+		database.schemaSet[schema.Name] = newSchemaState(schema)
 	}
 
 	return database
 }
 
-func newInterSchema(s *Schema) *interSchema {
-	schema := &interSchema{
+func newSchemaState(s *Schema) *schemaState {
+	schema := &schemaState{
 		name:         s.Name,
-		tableSet:     make(interTableMap),
-		viewSet:      make(interViewMap),
-		extensionSet: make(interExtensionMap),
+		tableSet:     make(tableStateMap),
+		viewSet:      make(viewStateMap),
+		extensionSet: make(extensionStateMap),
 	}
 
 	for _, table := range s.TableList {
-		schema.tableSet[table.Name] = newInterTable(table)
+		schema.tableSet[table.Name] = newTableState(table)
 	}
 
 	for _, view := range s.ViewList {
-		schema.viewSet[view.Name] = newInterView(view)
+		schema.viewSet[view.Name] = newViewState(view)
 	}
 
 	for _, extension := range s.ExtensionList {
-		schema.extensionSet[extension.Name] = newInterExtension(extension)
+		schema.extensionSet[extension.Name] = newExtensionState(extension)
 	}
 
 	return schema
 }
 
-func newInterView(v *View) *interView {
-	return &interView{
+func newViewState(v *View) *viewState {
+	return &viewState{
 		name:       v.Name,
 		definition: v.Definition,
 		comment:    v.Comment,
 	}
 }
 
-func newInterExtension(e *Extension) *interExtension {
-	return &interExtension{
+func newExtensionState(e *Extension) *extensionState {
+	return &extensionState{
 		name:        e.Name,
 		version:     e.Version,
 		description: e.Description,
 	}
 }
 
-func newInterTable(t *Table) *interTable {
-	table := &interTable{
+func newTableState(t *Table) *tableState {
+	table := &tableState{
 		name:          t.Name,
 		tableType:     t.Type,
 		engine:        t.Engine,
@@ -71,23 +71,23 @@ func newInterTable(t *Table) *interTable {
 		dataFree:      t.DataFree,
 		createOptions: t.CreateOptions,
 		comment:       t.Comment,
-		columnSet:     make(interColumnMap),
-		indexSet:      make(interIndexMap),
+		columnSet:     make(columnStateMap),
+		indexSet:      make(indexStateMap),
 	}
 
 	for _, column := range t.ColumnList {
-		table.columnSet[column.Name] = newInterColumn(column)
+		table.columnSet[column.Name] = newColumnState(column)
 	}
 
 	for _, index := range t.IndexList {
-		table.indexSet[index.Name] = newInterIndex(index)
+		table.indexSet[index.Name] = newIndexState(index)
 	}
 
 	return table
 }
 
-func newInterColumn(c *Column) *interColumn {
-	return &interColumn{
+func newColumnState(c *Column) *columnState {
+	return &columnState{
 		name:         c.Name,
 		position:     c.Position,
 		defaultValue: c.Default,
@@ -99,8 +99,8 @@ func newInterColumn(c *Column) *interColumn {
 	}
 }
 
-func newInterIndex(i *Index) *interIndex {
-	index := &interIndex{
+func newIndexState(i *Index) *indexState {
+	index := &indexState{
 		name:      i.Name,
 		indextype: i.Type,
 		unique:    i.Unique,
@@ -112,22 +112,22 @@ func newInterIndex(i *Index) *interIndex {
 	return index
 }
 
-type interDatabase struct {
+type databaseState struct {
 	name         string
 	characterSet string
 	collation    string
 	dbType       db.Type
-	schemaSet    interSchemaMap
+	schemaSet    schemaStateMap
 }
-type interSchema struct {
+type schemaState struct {
 	name         string
-	tableSet     interTableMap
-	viewSet      interViewMap
-	extensionSet interExtensionMap
+	tableSet     tableStateMap
+	viewSet      viewStateMap
+	extensionSet extensionStateMap
 }
-type interSchemaMap map[string]*interSchema
+type schemaStateMap map[string]*schemaState
 
-type interTable struct {
+type tableState struct {
 	name      string
 	tableType string
 	// engine isn't supported for Postgres, Snowflake, SQLite.
@@ -145,13 +145,13 @@ type interTable struct {
 	createOptions string
 	// comment isn't supported for SQLite.
 	comment   string
-	columnSet interColumnMap
+	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
-	indexSet interIndexMap
+	indexSet indexStateMap
 }
-type interTableMap map[string]*interTable
+type tableStateMap map[string]*tableState
 
-func (table *interTable) convertToCatalog() *Table {
+func (table *tableState) convertToCatalog() *Table {
 	return &Table{
 		Name:          table.name,
 		Type:          table.tableType,
@@ -168,7 +168,7 @@ func (table *interTable) convertToCatalog() *Table {
 	}
 }
 
-type interIndex struct {
+type indexState struct {
 	name string
 	// This could refer to a column or an expression.
 	expressionList []string
@@ -181,9 +181,9 @@ type interIndex struct {
 	// Comment isn't supported for SQLite.
 	comment string
 }
-type interIndexMap map[string]*interIndex
+type indexStateMap map[string]*indexState
 
-func (m interIndexMap) convertToCatalog() []*Index {
+func (m indexStateMap) convertToCatalog() []*Index {
 	var res []*Index
 	for _, index := range m {
 		res = append(res, index.convertToCatalog())
@@ -191,7 +191,7 @@ func (m interIndexMap) convertToCatalog() []*Index {
 	return res
 }
 
-func (index *interIndex) convertToCatalog() *Index {
+func (index *indexState) convertToCatalog() *Index {
 	return &Index{
 		Name:           index.name,
 		ExpressionList: index.expressionList,
@@ -203,7 +203,7 @@ func (index *interIndex) convertToCatalog() *Index {
 	}
 }
 
-type interColumn struct {
+type columnState struct {
 	name         string
 	position     int
 	defaultValue *string
@@ -217,9 +217,9 @@ type interColumn struct {
 	// comment isn't supported for SQLite.
 	comment string
 }
-type interColumnMap map[string]*interColumn
+type columnStateMap map[string]*columnState
 
-func (m interColumnMap) convertToCatalog() []*Column {
+func (m columnStateMap) convertToCatalog() []*Column {
 	var res []*Column
 	for _, column := range m {
 		res = append(res, column.convertToCatalog())
@@ -227,7 +227,7 @@ func (m interColumnMap) convertToCatalog() []*Column {
 	return res
 }
 
-func (column *interColumn) convertToCatalog() *Column {
+func (column *columnState) convertToCatalog() *Column {
 	return &Column{
 		Name:         column.name,
 		Position:     column.position,
@@ -240,16 +240,16 @@ func (column *interColumn) convertToCatalog() *Column {
 	}
 }
 
-type interView struct {
+type viewState struct {
 	name       string
 	definition string
 	comment    string
 }
-type interViewMap map[string]*interView
+type viewStateMap map[string]*viewState
 
-type interExtension struct {
+type extensionState struct {
 	name        string
 	version     string
 	description string
 }
-type interExtensionMap map[string]*interExtension
+type extensionStateMap map[string]*extensionState
