@@ -50,7 +50,7 @@ specifiers:
   jquery: 3.6.1
   js-yaml: 4.1.0
   lodash-es: 4.17.21
-  monaco-editor: 0.33.0
+  monaco-editor: 0.34.0
   naive-ui: 2.33.2
   node-sql-parser: 4.4.0
   papaparse: 5.3.2
@@ -97,7 +97,7 @@ dependencies:
   inter-ui: 3.19.3
   js-yaml: 4.1.0
   lodash-es: 4.17.21
-  monaco-editor: 0.33.0
+  monaco-editor: 0.34.0
   naive-ui: 2.33.2_vue@3.2.38
   node-sql-parser: 4.4.0
   papaparse: 5.3.2
@@ -2767,8 +2767,8 @@ packages:
     deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
     dev: false
 
-  /monaco-editor/0.33.0:
-    resolution: {integrity: sha512-VcRWPSLIUEgQJQIE0pVT8FcGBIgFoxz7jtqctE+IiCxWugD0DwgyQBcZBhdSrdMC84eumoqMZsGl2GTreOzwqw==}
+  /monaco-editor/0.34.0:
+    resolution: {integrity: sha512-VF+S5zG8wxfinLKLrWcl4WUizMx+LeJrG4PM/M78OhcwocpV0jiyhX/pG6Q9jIOhrb/ckYi6nHnaR5OojlOZCQ==}
     dev: false
 
   /ms/2.1.2:
