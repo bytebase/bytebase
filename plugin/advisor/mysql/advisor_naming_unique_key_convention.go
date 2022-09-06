@@ -47,7 +47,7 @@ func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) (
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		database:     ctx.Database,
+		catalog:      ctx.Catalog,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -71,7 +71,7 @@ type namingUKConventionChecker struct {
 	format       string
 	maxLength    int
 	templateList []string
-	database     *catalog.Database
+	catalog      *catalog.Finder
 }
 
 // Enter implements the ast.Visitor interface.
@@ -146,7 +146,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				_, index := checker.database.FindIndex(&catalog.IndexFind{
+				_, index := checker.catalog.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})
