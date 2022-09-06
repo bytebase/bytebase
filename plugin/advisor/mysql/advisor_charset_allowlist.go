@@ -178,5 +178,5 @@ func getTableCharset(optionList []*ast.TableOption) string {
 }
 
 func getColumnCharset(column *ast.ColumnDef) string {
-	return column.Tp.Charset
+	return column.Tp.GetCharset()
 }

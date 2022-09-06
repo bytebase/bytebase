@@ -130,6 +130,9 @@ const (
 	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
 	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
 
+	// MySQLTableNotExists is an advisor for MySQL table name conflict check.
+	MySQLTableNotExists Type = "bb.plugin.advisor.mysql.table.not-exists"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
@@ -142,8 +145,14 @@ const (
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 
+	// MySQLIndexNotExists is an advisor type for MySQL index name conflict check.
+	MySQLIndexNotExists Type = "bb.plugin.advisor.mysql.index.not-exists"
+
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
+
+	// MySQLIndexTypeNoBlob is an advisor type for MySQL index type no blob.
+	MySQLIndexTypeNoBlob Type = "bb.plugin.advisor.mysql.index.type-no-blob"
 
 	// PostgreSQL Advisor.
 

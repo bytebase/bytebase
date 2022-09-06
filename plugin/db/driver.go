@@ -250,7 +250,7 @@ const placeholderRegexp = `[^\\/?%*:|"<>]+`
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
 // Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
-func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInfo, error) {
+func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, error) {
 	placeholderList := []string{
 		"ENV_NAME",
 		"VERSION",

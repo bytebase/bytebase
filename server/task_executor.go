@@ -8,9 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -180,8 +179,10 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 			return true, nil, err
 		}
 	}
-	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
+
+	// We write back the latest schema after migration for VCS-based projects if the
+	// schema path template is specified and the schema migration type is not SDL.
+	writeBack := (vcsPushEvent != nil) && (repo.Project.SchemaMigrationType != api.ProjectSchemaMigrationTypeSDL) && (repo.SchemaPathTemplate != "")
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
 		return true, nil, err
