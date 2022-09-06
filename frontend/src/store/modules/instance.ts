@@ -325,6 +325,13 @@ export const useInstanceStore = defineStore("instance", {
       });
       return instance;
     },
+    async getOrFetchInstanceById(instanceId: InstanceId) {
+      const instance = this.getInstanceById(instanceId);
+      if (instance.id !== UNKNOWN_ID) {
+        return instance;
+      }
+      return this.fetchInstanceById(instanceId);
+    },
     async createInstance(newInstance: InstanceCreate) {
       const data = (
         await axios.post(

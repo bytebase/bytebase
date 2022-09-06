@@ -183,12 +183,17 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       instanceId,
       databaseId,
     }: Pick<SQLEditorState["connectionContext"], "instanceId" | "databaseId">) {
-      const instance = await useInstanceStore().fetchInstanceById(instanceId);
-      const database = await useDatabaseStore().fetchDatabaseById(databaseId);
-      await useTableStore().fetchTableListByDatabaseId(database.id);
+      // Don't re-fetch instance/database/tableList every time.
+      // Use cached data if possible.
+      const instance = await useInstanceStore().getOrFetchInstanceById(
+        instanceId
+      );
+      const database = await useDatabaseStore().getOrFetchDatabaseById(
+        databaseId
+      );
+      await useTableStore().getOrFetchTableListByDatabaseId(database.id);
 
       this.setConnectionContext({
-        hasSlug: true,
         instanceId,
         instanceName: instance.name,
         databaseId: database.syncStatus === "OK" ? database.id : undefined,

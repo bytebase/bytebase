@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
-import { computed, defineEmits, ref, watch, watchEffect } from "vue";
+import { computed, defineEmits, ref, watch } from "vue";
 
 import {
   useInstanceStore,
@@ -27,10 +27,11 @@ import {
   useDatabaseStore,
   useTableStore,
   useSheetStore,
+  useInstanceById,
 } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import { SQLDialect } from "@/types";
+import { Database, SQLDialect, Table, UNKNOWN_ID } from "@/types";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -48,10 +49,9 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { execute } = useExecuteSQL();
 
 const sqlCode = computed(() => tabStore.currentTab.statement);
-const selectedInstance = computed(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  return instanceStore.getInstanceById(ctx.instanceId);
-});
+const selectedInstance = useInstanceById(
+  computed(() => sqlEditorStore.connectionContext.instanceId)
+);
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
@@ -143,17 +143,53 @@ const handleEditorReady = async () => {
     },
   });
 
-  watchEffect(() => {
-    if (selectedInstance.value) {
-      const databaseList = databaseStore.getDatabaseListByInstanceId(
-        selectedInstance.value.id
-      );
-      const tableList = databaseList
-        .map((item) => tableStore.getTableListByDatabaseId(item.id))
-        .flat();
+  // Prepare auto-completion context when selected instance changed.
+  watch(
+    [
+      () => sqlEditorStore.connectionContext.instanceId,
+      () => sqlEditorStore.connectionContext.databaseId,
+      selectedDialect,
+    ],
+    async ([instanceId, databaseId, dialect]) => {
+      let databaseList: Database[] = [];
+      let tableList: Table[] = [];
 
-      editorRef.value?.setEditorAutoCompletionContext(databaseList, tableList);
-    }
-  });
+      const finish = () => {
+        editorRef.value?.setEditorAutoCompletionContext(
+          databaseList,
+          tableList
+        );
+      };
+
+      if (instanceId === UNKNOWN_ID) {
+        // Don't go further if we are not connected to an instance.
+        return finish();
+      }
+
+      if (dialect === "mysql") {
+        // Prepare all databases and all tables for mysql
+        databaseList = databaseStore.getDatabaseListByInstanceId(instanceId);
+        const requests = Promise.all(
+          databaseList.map((db) =>
+            tableStore.getOrFetchTableListByDatabaseId(db.id)
+          )
+        );
+        tableList = (await requests).flat();
+      } else {
+        // A PostgreSQL connection context must be database-scoped.
+        if (databaseId === UNKNOWN_ID) {
+          return finish();
+        }
+        // Prepare the selected database and tables for PostgreSQL
+        databaseList = [databaseStore.getDatabaseById(databaseId)];
+        tableList = await tableStore.getOrFetchTableListByDatabaseId(
+          databaseId
+        );
+      }
+
+      finish();
+    },
+    { immediate: true }
+  );
 };
 </script>

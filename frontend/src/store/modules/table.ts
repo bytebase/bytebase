@@ -132,5 +132,13 @@ export const useTableStore = defineStore("table", {
       this.setTableListByDatabaseId({ databaseId, tableList });
       return tableList;
     },
+
+    async getOrFetchTableListByDatabaseId(databaseId: DatabaseId) {
+      const map = this.tableListByDatabaseId;
+      if (map.has(databaseId)) {
+        return this.getTableListByDatabaseId(databaseId);
+      }
+      return this.fetchTableListByDatabaseId(databaseId);
+    },
   },
 });
