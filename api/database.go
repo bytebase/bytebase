@@ -45,7 +45,7 @@ type Database struct {
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
 	SourceBackupID int
 	SourceBackup   *Backup `jsonapi:"relation,sourceBackup"`
-	// Anomalies are stored in a separate table, but just return here for convenience
+	// TODO(d): remove anomaly from database.
 	AnomalyList []*Anomaly `jsonapi:"relation,anomaly"`
 
 	// Domain specific fields
