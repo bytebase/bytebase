@@ -67,6 +67,8 @@ const (
 	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
 	// SchemaRuleTableCommentConvention enforce the table comment convention.
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
+	// SchemaRuleTableNotExists check the table name conflict.
+	SchemaRuleTableNotExists SQLReviewRuleType = "table.not-exists"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -101,6 +103,10 @@ const (
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
 	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
 	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
+	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
+	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
+	// SchemaRuleIndexNotExists check the index name conflict.
+	SchemaRuleIndexNotExists SQLReviewRuleType = "index.not-exists"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
@@ -602,6 +608,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexPKType, nil
+		}
+	case SchemaRuleIndexTypeNoBlob:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexTypeNoBlob, nil
+		}
+	case SchemaRuleIndexNotExists:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexNotExists, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

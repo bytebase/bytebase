@@ -4,6 +4,7 @@ package mysql
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"
@@ -16,21 +17,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*IndexPkTypeAdvisor)(nil)
-	_ ast.Visitor     = (*indexPkTypeChecker)(nil)
+	_ advisor.Advisor = (*IndexTypeNoBlobAdvisor)(nil)
+	_ ast.Visitor     = (*indexTypeNoBlobChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 }
 
-// IndexPkTypeAdvisor is the advisor checking for correct type of PK.
-type IndexPkTypeAdvisor struct {
+// IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.
+type IndexTypeNoBlobAdvisor struct {
 }
 
-// Check checks for correct type of PK.
-func (*IndexPkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+// Check checks for index type no blob.
+func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -40,15 +41,16 @@ func (*IndexPkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advis
 	if err != nil {
 		return nil, err
 	}
-	checker := &indexPkTypeChecker{
+	checker := &indexTypeNoBlobChecker{
 		level:            level,
 		title:            string(ctx.Rule.Type),
-		line:             make(map[string]int),
 		database:         ctx.Database,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 
 	for _, stmt := range stmtList {
+		checker.text = stmt.Text()
+		checker.line = stmt.OriginTextPosition()
 		(stmt).Accept(checker)
 	}
 
@@ -63,49 +65,18 @@ func (*IndexPkTypeAdvisor) Check(ctx advisor.Context, statement string) ([]advis
 	return checker.adviceList, nil
 }
 
-type columnNameToColumnDef map[string]*ast.ColumnDef
-type tableNewColumn map[string]columnNameToColumnDef
-
-func (t tableNewColumn) set(tableName string, columnName string, colDef *ast.ColumnDef) {
-	if _, ok := t[tableName]; !ok {
-		t[tableName] = make(map[string]*ast.ColumnDef)
-	}
-	t[tableName][columnName] = colDef
-}
-
-func (t tableNewColumn) get(tableName string, columnName string) (colDef *ast.ColumnDef, ok bool) {
-	if _, ok := t[tableName]; !ok {
-		return nil, false
-	}
-	col, ok := t[tableName][columnName]
-	return col, ok
-}
-
-func (t tableNewColumn) delete(tableName string, columnName string) {
-	if _, ok := t[tableName]; !ok {
-		return
-	}
-	delete(t[tableName], columnName)
-}
-
-type indexPkTypeChecker struct {
+type indexTypeNoBlobChecker struct {
 	adviceList       []advisor.Advice
 	level            advisor.Status
 	title            string
-	line             map[string]int
+	text             string
+	line             int
 	database         *catalog.Database
 	tablesNewColumns tableNewColumn
 }
 
-type pkData struct {
-	table      string
-	column     string
-	columnType string
-	line       int
-}
-
 // Enter implements the ast.Visitor interface.
-func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (v *indexTypeNoBlobChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var pkDataList []pkData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
@@ -140,13 +111,19 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 				pkDataList = append(pkDataList, pds...)
 			}
 		}
+	case *ast.CreateIndexStmt:
+		tableName := node.Table.Name.String()
+		for _, indexSpec := range node.IndexPartSpecifications {
+			pds := v.addIndex(tableName, node.OriginTextPosition(), indexSpec)
+			pkDataList = append(pkDataList, pds...)
+		}
 	}
 	for _, pd := range pkDataList {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
-			Code:    advisor.IndexPKType,
+			Code:    advisor.IndexTypeNoBlob,
 			Title:   v.title,
-			Content: fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", pd.table, pd.column, pd.columnType),
+			Content: fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", pd.table, pd.column, pd.columnType),
 			Line:    pd.line,
 		})
 	}
@@ -154,16 +131,16 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*indexPkTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*indexTypeNoBlobChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (v *indexPkTypeChecker) addNewColumn(tableName string, line int, colDef *ast.ColumnDef) []pkData {
+func (v *indexTypeNoBlobChecker) addNewColumn(tableName string, line int, colDef *ast.ColumnDef) []pkData {
 	var pkDataList []pkData
 	for _, option := range colDef.Options {
-		if option.Tp == ast.ColumnOptionPrimaryKey {
-			tp := v.getIntOrBigIntStr(colDef.Tp)
-			if tp != "INT" && tp != "BIGINT" {
+		if option.Tp == ast.ColumnOptionUniqKey {
+			tp := v.getBlobStr(colDef.Tp)
+			if v.isBlob(tp) {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
 					column:     colDef.Name.String(),
@@ -177,13 +154,31 @@ func (v *indexPkTypeChecker) addNewColumn(tableName string, line int, colDef *as
 	return pkDataList
 }
 
-func (v *indexPkTypeChecker) changeColumn(tableName, oldColumnName string, line int, newColumnDef *ast.ColumnDef) []pkData {
+func (v *indexTypeNoBlobChecker) addIndex(tableName string, line int, indexSpec *ast.IndexPartSpecification) []pkData {
+	var pkDataList []pkData
+	columnName := indexSpec.Column.Name.String()
+	columnType, err := v.getColumnType(tableName, columnName)
+	if err != nil {
+		return nil
+	}
+	if v.isBlob(columnType) {
+		pkDataList = append(pkDataList, pkData{
+			table:      tableName,
+			column:     columnName,
+			columnType: columnType,
+			line:       line,
+		})
+	}
+	return pkDataList
+}
+
+func (v *indexTypeNoBlobChecker) changeColumn(tableName, oldColumnName string, line int, newColumnDef *ast.ColumnDef) []pkData {
 	var pkDataList []pkData
 	v.tablesNewColumns.delete(tableName, oldColumnName)
 	for _, option := range newColumnDef.Options {
-		if option.Tp == ast.ColumnOptionPrimaryKey {
-			tp := v.getIntOrBigIntStr(newColumnDef.Tp)
-			if tp != "INT" && tp != "BIGINT" {
+		if option.Tp == ast.ColumnOptionPrimaryKey || option.Tp == ast.ColumnOptionUniqKey {
+			tp := v.getBlobStr(newColumnDef.Tp)
+			if v.isBlob(tp) {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
 					column:     newColumnDef.Name.String(),
@@ -197,16 +192,17 @@ func (v *indexPkTypeChecker) changeColumn(tableName, oldColumnName string, line 
 	return pkDataList
 }
 
-func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constraint *ast.Constraint) []pkData {
+func (v *indexTypeNoBlobChecker) addConstraint(tableName string, line int, constraint *ast.Constraint) []pkData {
 	var pkDataList []pkData
-	if constraint.Tp == ast.ConstraintPrimaryKey {
+	if constraint.Tp == ast.ConstraintPrimaryKey || constraint.Tp == ast.ConstraintUniqKey || constraint.Tp == ast.ConstraintKey ||
+		constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintUniq {
 		for _, key := range constraint.Keys {
 			columnName := key.Column.Name.String()
-			columnType, err := v.getPKColumnType(tableName, columnName)
+			columnType, err := v.getColumnType(tableName, columnName)
 			if err != nil {
 				continue
 			}
-			if columnType != "INT" && columnType != "BIGINT" {
+			if v.isBlob(columnType) {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
 					column:     columnName,
@@ -220,9 +216,9 @@ func (v *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 }
 
 // getPKColumnType gets the column type string from v.tablesNewColumns or catalog, returns empty string and non-nil error if cannot find the column in given table.
-func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string) (string, error) {
+func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName string) (string, error) {
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
-		return v.getIntOrBigIntStr(colDef.Tp), nil
+		return v.getBlobStr(colDef.Tp), nil
 	}
 	column := v.database.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
@@ -235,16 +231,21 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 }
 
 // getIntOrBigIntStr returns the type string of tp.
-func (*indexPkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
+func (*indexTypeNoBlobChecker) getBlobStr(tp *types.FieldType) string {
 	switch tp.GetType() {
-	// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLong
-	case mysql.TypeLong:
-		// tp.String() return int(11)
-		return "INT"
-		// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLonglong
-	case mysql.TypeLonglong:
-		// tp.String() return bigint(20)
-		return "BIGINT"
+	case mysql.TypeTinyBlob:
+		return "tinyblob"
+	case mysql.TypeBlob:
+		return "blob"
+	case mysql.TypeMediumBlob:
+		return "mediumblob"
+	case mysql.TypeLongBlob:
+		return "longblob"
 	}
 	return tp.String()
+}
+
+func (*indexTypeNoBlobChecker) isBlob(tp string) bool {
+	up := strings.ToUpper(tp)
+	return up == "TINYBLOB" || up == "BLOB" || up == "MEDIUMBLOB" || up == "LONGBLOB"
 }
