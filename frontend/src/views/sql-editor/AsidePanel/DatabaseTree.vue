@@ -173,7 +173,9 @@ const getFlattenConnectionTree = () => {
 
 const setSheetContext = (option: any) => {
   if (option) {
-    let ctx = cloneDeep(sqlEditorStore.connectionContext) as ConnectionContext;
+    const ctx = cloneDeep(
+      sqlEditorStore.connectionContext
+    ) as ConnectionContext;
     const { instanceList, databaseList } = getFlattenConnectionTree();
 
     const getInstanceNameByInstanceId = (id: number) => {
@@ -328,7 +330,7 @@ const nodeProps = (info: { option: TreeOption }) => {
     onClick(e: MouseEvent) {
       const targetEl = e.target as HTMLElement;
       if (option && targetEl.className === "n-tree-node-content__text") {
-        let ctx = cloneDeep(
+        const ctx = cloneDeep(
           sqlEditorStore.connectionContext
         ) as ConnectionContext;
         ctx.option = option;

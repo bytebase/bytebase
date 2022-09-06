@@ -439,7 +439,7 @@ const showMiscColumn = computed(() => {
 });
 
 const columnList = computed(() => {
-  var list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
+  const list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
   if (props.showSelectionColumn) {
     list.unshift({ title: "" });
   }
