@@ -73,20 +73,14 @@
         secondary
         strong
         type="primary"
-        :disabled="isEmptyStatement || !tabStore.currentTab.isModified"
+        :disabled="!allowSave"
         @click="() => emit('save-sheet')"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
       <NPopover trigger="click" placement="bottom-end" :show-arrow="false">
         <template #trigger>
-          <NButton
-            :disabled="
-              isEmptyStatement ||
-              sqlEditorStore.isDisconnected ||
-              tabStore.currentTab.isModified
-            "
-          >
+          <NButton :disabled="!allowShare">
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
           </NButton>
         </template>
@@ -144,6 +138,19 @@ const hasReadonlyDataSource = computed(() => {
     }
   }
   return false;
+});
+
+const allowSave = computed(() => {
+  return !isEmptyStatement.value && tabStore.currentTab.isModified;
+});
+
+const allowShare = computed(() => {
+  return (
+    typeof tabStore.currentTab.sheetId === "number" &&
+    !isEmptyStatement.value &&
+    !tabStore.currentTab.isModified &&
+    !sqlEditorStore.isDisconnected
+  );
 });
 
 const { execute, state: executeState } = useExecuteSQL();
