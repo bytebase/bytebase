@@ -67,7 +67,7 @@
     "@types/prettier": "2.7.0",
     "@types/qs": "6.9.7",
     "@types/semver": "7.3.12",
-    "@types/slug": "0.9.1",
+    "@types/slug": "5.0.3",
     "@types/splitpanes": "2.2.1",
     "@types/uuid": "8.3.4",
     "@typescript-eslint/eslint-plugin": "5.36.2",
