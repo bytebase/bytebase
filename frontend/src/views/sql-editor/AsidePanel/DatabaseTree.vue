@@ -21,7 +21,6 @@
         :pattern="searchPattern"
         :selected-keys="selectedKeys"
         :render-label="renderLabel"
-        :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :on-load="loadSubTree"
         expand-on-click
@@ -62,9 +61,9 @@ import {
   getHighlightHTMLByKeyWords,
   mapConnectionAtom,
 } from "@/utils";
-import OpenConnectionIcon from "@/components/SQLEditor/OpenConnectionIcon.vue";
 import { generateInstanceNode, generateTableItem } from "./utils";
 import { storeToRefs } from "pinia";
+import { refThrottled } from "@vueuse/core";
 
 type Position = {
   x: number;
@@ -84,6 +83,7 @@ const tabStore = useTabStore();
 
 const { expandedTreeKeys } = storeToRefs(sqlEditorStore);
 const searchPattern = ref("");
+const throttledSearchPattern = refThrottled(searchPattern, 200, true, true);
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
   x: 0,
@@ -109,7 +109,10 @@ onMounted(() => {
 const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   if (!dropdownContext.value) {
     return [];
-  } else if (dropdownContext.value.type === "table") {
+  }
+
+  // When right-clicking on a table node, show "Alter table" shortcut.
+  if (dropdownContext.value.type === "table") {
     return [
       {
         key: "alter-table",
@@ -117,15 +120,9 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
         item: dropdownContext.value,
       },
     ];
-  } else {
-    return [
-      {
-        key: "open-connection",
-        label: t("sql-editor.open-connection"),
-        item: dropdownContext.value,
-      },
-    ];
   }
+
+  return [];
 });
 
 const generateTreeData = () => {
@@ -233,30 +230,17 @@ const setConnectionContext = (option: ConnectionAtom) => {
 
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: ConnectionAtom }) => {
-  const renderLabelHTML = searchPattern.value
+  const renderLabelHTML = throttledSearchPattern.value
     ? h("span", {
         innerHTML: getHighlightHTMLByKeyWords(
           escape(option.label),
-          escape(searchPattern.value)
+          escape(throttledSearchPattern.value)
         ),
         class: "truncate",
       })
     : escape(option.label);
 
   return renderLabelHTML;
-};
-
-// render the suffix icon
-const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
-  const renderSuffixHTML = h(OpenConnectionIcon, {
-    id: "tree-node-suffix",
-    class: "n-tree-node-content__suffix-icon",
-    onClick: function () {
-      setConnectionContext(option);
-    },
-  });
-
-  return renderSuffixHTML;
 };
 
 const loadSubTree = async (item: ConnectionAtom) => {
@@ -348,13 +332,6 @@ const nodeProps = (info: { option: ConnectionAtom }) => {
 }
 .n-tree-node-content__text {
   @apply truncate mr-1;
-}
-.n-tree-node-content__suffix {
-  display: none !important;
-}
-
-.n-tree-node:hover .n-tree-node-content__suffix {
-  display: block !important;
 }
 </style>
 
