@@ -2,7 +2,7 @@ package catalog
 
 import "github.com/bytebase/bytebase/plugin/advisor/db"
 
-// Finder is the service for finding in database.
+// Finder is the service for finding schema information in database.
 type Finder struct {
 	database *databaseState
 }
