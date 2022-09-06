@@ -38,9 +38,9 @@ func (*TableNotExistsAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 		return nil, err
 	}
 	checker := &tableNotExistsChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -66,7 +66,7 @@ type tableNotExistsChecker struct {
 	title      string
 	text       string
 	line       int
-	database   *catalog.Database
+	catalog    *catalog.Finder
 }
 
 // Enter implements the ast.Visitor interface.
@@ -92,5 +92,5 @@ func (*tableNotExistsChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (checker *tableNotExistsChecker) tableExists(table string) bool {
-	return checker.database.FindTable(&catalog.TableFind{TableName: table}) != nil
+	return checker.catalog.FindTable(&catalog.TableFind{TableName: table}) != nil
 }

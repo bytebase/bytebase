@@ -44,7 +44,7 @@ func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, statement string) ([]a
 	checker := &indexTypeNoBlobChecker{
 		level:            level,
 		title:            string(ctx.Rule.Type),
-		database:         ctx.Database,
+		catalog:          ctx.Catalog,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),
 	}
 
@@ -71,7 +71,7 @@ type indexTypeNoBlobChecker struct {
 	title            string
 	text             string
 	line             int
-	database         *catalog.Database
+	catalog          *catalog.Finder
 	tablesNewColumns tableNewColumn
 }
 
@@ -220,7 +220,7 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getBlobStr(colDef.Tp), nil
 	}
-	column := v.database.FindColumn(&catalog.ColumnFind{
+	column := v.catalog.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
 		ColumnName: columnName,
 	})
