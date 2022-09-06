@@ -30,8 +30,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project request").SetInternal(err)
 		}
-		if projectCreate.Key == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+		if err := validateProjectKey(projectCreate.Key); err != nil {
+			return err
 		}
 		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -633,6 +633,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func validateProjectKey(key string) *echo.HTTPError {
+	if key == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+	}
+	for _, l := range key {
+		if (l < '0' || l > '9') && (l < 'A' || l > 'Z') {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key can only be numbers and uppercase letters")
+		}
+	}
+
+	return nil
 }
 
 // refreshToken is a token refresher that stores the latest access token configuration to repository.
