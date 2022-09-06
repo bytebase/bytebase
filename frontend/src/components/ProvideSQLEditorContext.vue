@@ -85,53 +85,52 @@ const prepareSheetFromQuery = async () => {
   const sheetId = Number(route.query.sheetId);
   if (!Number.isNaN(sheetId)) {
     sqlEditorStore.isFetchingSheet = true;
-    const sheet = await sheetStore.fetchSheetById(sheetId);
+    const sheet = await sheetStore.getOrFetchSheetById(sheetId);
     sqlEditorStore.isFetchingSheet = false;
 
-    // Opening a stored tab.
-    if (sheet.id !== UNKNOWN_ID) {
-      // Check if the tab is already open.
-      const openSheetTab = tabStore.tabList.find(
-        (tab) => tab.sheetId === sheet.id
-      );
-      if (openSheetTab) {
-        // The sheet is already open in a tab. Switch to it.
-        tabStore.setCurrentTabId(openSheetTab.id);
+    // Check if the tab is already open.
+    const openSheetTab = tabStore.tabList.find(
+      (tab) => tab.sheetId === sheet.id
+    );
+    if (openSheetTab) {
+      // The sheet is already open in a tab. Switch to it.
+      tabStore.setCurrentTabId(openSheetTab.id);
+    } else {
+      // Find a replaceable, and 'replaceable' means
+      // It's not related to any sheets (sheetId === undefined)
+      // and it's newly open (isModified === false && statement === "")
+      const replaceableTab = tabStore.tabList.find(isReplaceableTab);
+      if (replaceableTab) {
+        // Open the sheet in the replaceable tab if we found one.
+        tabStore.setCurrentTabId(replaceableTab.id);
       } else {
-        // Find a replaceable, and 'replaceable' means
-        // It's not related to any sheets (sheetId === undefined)
-        // and it's newly open (isModified === false && statement === "")
-        const replaceableTab = tabStore.tabList.find(isReplaceableTab);
-        if (replaceableTab) {
-          // Open the sheet in the replaceable tab if we found one.
-          tabStore.setCurrentTabId(replaceableTab.id);
-        } else {
-          // Open the sheet in a new tab otherwise.
-          tabStore.addTab();
-        }
+        // Open the sheet in a new tab otherwise.
+        tabStore.addTab();
       }
-
-      tabStore.updateCurrentTab({
-        sheetId: sheet.id,
-        name: sheet.name,
-        statement: sheet.statement,
-        isModified: false,
-      });
-      setConnectionContextFromCurrentTab(sheet);
-      useSQLEditorStore().setSQLEditorState({
-        sharedSheet: sheet,
-        shouldSetContent: true,
-      });
     }
+
+    tabStore.updateCurrentTab({
+      sheetId: sheet.id,
+      name: sheet.name,
+      statement: sheet.statement,
+      isModified: !!openSheetTab,
+    });
+    setConnectionContextFromCurrentTab();
+    useSQLEditorStore().setSQLEditorState({
+      sharedSheet: sheet,
+      shouldSetContent: true,
+    });
   }
 };
 
 onMounted(async () => {
-  sqlEditorStore.setConnectionContext({ isLoadingTree: true });
-  await prepareAccessibleConnectionByProject();
-  await prepareSQLEditorContext();
-  sqlEditorStore.setConnectionContext({ isLoadingTree: false });
-
+  if (sqlEditorStore.connectionTree.length === 0) {
+    // Won't rebuild the tree if already done.
+    sqlEditorStore.setConnectionContext({ isLoadingTree: true });
+    await prepareAccessibleConnectionByProject();
+    await prepareSQLEditorContext();
+    sqlEditorStore.setConnectionContext({ isLoadingTree: false });
+  }
   await prepareSheetFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
