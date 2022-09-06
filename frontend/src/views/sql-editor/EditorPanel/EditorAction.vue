@@ -22,76 +22,53 @@
       </NButton>
     </div>
     <div class="action-right space-x-2 flex justify-end items-center">
-      <NPopover
-        v-if="
-          connectionContext.instanceId !== UNKNOWN_ID && !hasReadonlyDataSource
-        "
-        trigger="hover"
-      >
-        <template #trigger>
-          <heroicons-outline:exclamation
-            class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-2"
-          />
-        </template>
-        <p class="py-1">
-          {{ $t("instance.no-read-only-data-source-warn") }}
-          <NButton
-            class="text-base underline text-accent"
-            text
-            @click="gotoInstanceDetailPage"
-          >
-            {{ $t("sql-editor.create-read-only-data-source") }}
-          </NButton>
-        </p>
-      </NPopover>
-      <NPopover trigger="hover" placement="bottom-center" :show-arrow="false">
-        <template #trigger>
-          <label class="flex items-center text-sm space-x-1">
-            <div
-              v-if="selectedInstance.id !== UNKNOWN_ID"
-              class="flex items-center"
+      <div class="flex items-center text-sm space-x-1">
+        <NPopover
+          v-if="
+            connectionContext.instanceId !== UNKNOWN_ID &&
+            !hasReadonlyDataSource
+          "
+          trigger="hover"
+        >
+          <template #trigger>
+            <heroicons-outline:exclamation
+              class="h-6 w-6 text-yellow-400 mr-2 mt-0.5"
+            />
+          </template>
+          <p class="py-1">
+            {{ $t("instance.no-read-only-data-source-warn") }}
+            <NButton
+              class="text-base underline text-accent"
+              text
+              @click="gotoInstanceDetailPage"
             >
-              <InstanceEngineIcon :instance="selectedInstance" show-status />
-              <span class="ml-2">{{ selectedInstance.name }}</span>
-            </div>
-            <div
-              v-if="selectedDatabase.id !== UNKNOWN_ID"
-              class="flex items-center"
-            >
-              &nbsp; / &nbsp;
-              <heroicons-outline:database />
-              <span class="ml-2">{{ selectedDatabase.name }}</span>
-            </div>
-            <div v-if="connectionContext.tableName" class="flex items-center">
-              &nbsp; / &nbsp;
-              <heroicons-outline:table />
-              <span class="ml-2">{{ connectionContext.tableName }}</span>
-            </div>
-          </label>
-        </template>
-        <section>
-          <div class="space-y-2">
-            <div
-              v-if="selectedInstance.id !== UNKNOWN_ID"
-              class="flex flex-col"
-            >
-              <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
-              <span>{{ selectedInstance.name }}</span>
-            </div>
-            <div
-              v-if="selectedDatabase.id !== UNKNOWN_ID"
-              class="flex flex-col"
-            >
-              <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
-              <span>{{ selectedDatabase.name }}</span>
-            </div>
-            <div v-if="connectionContext.tableName" class="flex flex-col">
-              <h1 class="text-gray-400">{{ $t("common.table") }}:</h1>
-              <span>{{ connectionContext.tableName }}</span>
-            </div>
-          </div>
-        </section>
-      </NPopover>
+              {{ $t("sql-editor.create-read-only-data-source") }}
+            </NButton>
+          </p>
+        </NPopover>
+
+        <div
+          v-if="selectedInstance.id !== UNKNOWN_ID"
+          class="flex items-center"
+        >
+          <InstanceEngineIcon :instance="selectedInstance" show-status />
+          <span class="ml-2">{{ selectedInstance.name }}</span>
+        </div>
+        <div
+          v-if="selectedDatabase.id !== UNKNOWN_ID"
+          class="flex items-center"
+        >
+          <span class="mx-2">/</span>
+          <heroicons-outline:database />
+          <span class="ml-2">{{ selectedDatabase.name }}</span>
+        </div>
+        <div v-if="connectionContext.tableName" class="flex items-center">
+          <span class="mx-2">/</span>
+          <heroicons-outline:table />
+          <span class="ml-2">{{ connectionContext.tableName }}</span>
+        </div>
+      </div>
+
       <NButton
         secondary
         strong
