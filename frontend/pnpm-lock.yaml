@@ -23,7 +23,7 @@ specifiers:
   '@types/prettier': 2.7.0
   '@types/qs': 6.9.7
   '@types/semver': 7.3.12
-  '@types/slug': 0.9.1
+  '@types/slug': 5.0.3
   '@types/splitpanes': 2.2.1
   '@types/uuid': 8.3.4
   '@typescript-eslint/eslint-plugin': 5.36.2
@@ -134,7 +134,7 @@ devDependencies:
   '@types/prettier': 2.7.0
   '@types/qs': 6.9.7
   '@types/semver': 7.3.12
-  '@types/slug': 0.9.1
+  '@types/slug': 5.0.3
   '@types/splitpanes': 2.2.1
   '@types/uuid': 8.3.4
   '@typescript-eslint/eslint-plugin': 5.36.2_iurrlxgqcgk5svigzxakafpeuu
@@ -818,8 +818,8 @@ packages:
     resolution: {integrity: sha512-WwA1MW0++RfXmCr12xeYOOC5baSC9mSb0ZqCquFzKhcoF4TvHu5MKOuXsncgZcpVFhB1pXd5hZmM0ryAoCp12A==}
     dev: true
 
-  /@types/slug/0.9.1:
-    resolution: {integrity: sha512-zR/u8WFQ4/6uCIikjI00a5uB084XjgEGNRAvM4a1BL39Bw9yEiDQFiPS2DgJ8lPDkR2Qd/vZ26dCR9XqlKbDqQ==}
+  /@types/slug/5.0.3:
+    resolution: {integrity: sha512-yPX0bb1SvrpaGlHuSiz6EicgRI4VBE+LO7IANlZagQwtaoKjLLcZc8y6s13vKp41mYvMCSzjtObxvU7/0JRPaA==}
     dev: true
 
   /@types/splitpanes/2.2.1:
