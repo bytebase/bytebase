@@ -16,6 +16,7 @@ export default defineConfig(() => {
   const IS_RUNNING_GITPOD =
     process.env["GITPOD_WORKSPACE_ID"] !== null &&
     process.env["GITPOD_WORKSPACE_ID"] !== undefined;
+
   return {
     plugins: [
       vue(),
@@ -49,7 +50,7 @@ export default defineConfig(() => {
         "/api": {
           target: "http://localhost:8080/api",
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ""),
+          rewrite: (path: string) => path.replace(/^\/api/, ""),
         },
       },
       hmr: {

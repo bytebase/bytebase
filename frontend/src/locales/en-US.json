@@ -1575,7 +1575,7 @@
       "click-new-project": "Click \"New Project\" to create a project",
       "click-new-database": "Click \"New Database\" to create a database",
       "click-approve": "Click \"Approve\" to perform the issue",
-      "wait-issue-finished": "Wait the issue finished",
+      "wait-issue-finished": "...waiting for the issue finished",
       "back-to-home": "Back to home",
       "finished-dialog": {
         "you-have-done": "You have done:",
