@@ -25,12 +25,8 @@ import { useTabStore } from "./tab";
 
 export const getDefaultConnectionContext = (): ConnectionContext => ({
   projectId: DEFAULT_PROJECT_ID,
-  projectName: "",
   instanceId: UNKNOWN_ID,
-  instanceName: "",
   databaseId: UNKNOWN_ID,
-  databaseName: "",
-  databaseType: "",
   tableId: UNKNOWN_ID,
   tableName: "",
   isLoadingTree: false,

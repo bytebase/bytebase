@@ -35,7 +35,7 @@
     </NAlert>
 
     <div class="execute-hint-content mt-4 flex justify-end space-x-2">
-      <NButton @click="handleColse">{{ $t("common.close") }}</NButton>
+      <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
       <NButton type="primary" @click="gotoAlterSchema">
         {{
           isDDLSQLStatement
@@ -52,7 +52,12 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
-import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import {
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  useDatabaseStore,
+} from "@/store";
 import { UNKNOWN_ID } from "@/types";
 
 import {
@@ -91,12 +96,13 @@ const ctx = computed(() => sqlEditorStore.connectionContext);
 const docLink =
   "https://bytebase.com/docs/concepts/schema-change-workflow#ui-workflow?source=console";
 
-const handleColse = () => {
+const handleClose = () => {
   emit("close");
 };
 
 const gotoAlterSchema = () => {
-  if (ctx.value.databaseId === UNKNOWN_ID) {
+  const { databaseId } = ctx.value;
+  if (databaseId === UNKNOWN_ID) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -107,11 +113,10 @@ const gotoAlterSchema = () => {
 
   emit("close");
 
-  const projectId = sqlEditorStore.findProjectIdByDatabaseId(
-    ctx.value.databaseId as number
-  );
   const DDLIssueTemplate = "bb.issue.database.schema.update";
   const DMLIssueTemplate = "bb.issue.database.data.update";
+
+  const database = useDatabaseStore().getDatabaseById(databaseId);
 
   router.push({
     name: "workspace.issue.detail",
@@ -120,11 +125,11 @@ const gotoAlterSchema = () => {
     },
     query: {
       template: isDDLSQLStatement.value ? DDLIssueTemplate : DMLIssueTemplate,
-      name: `[${ctx.value.databaseName}] ${
+      name: `[${database.name}] ${
         isDDLSQLStatement.value ? "Alter schema" : "Change Data"
       }`,
-      project: projectId,
-      databaseList: ctx.value.databaseId,
+      project: database.project.id,
+      databaseList: databaseId,
       sql: getParsedStatement(),
     },
   });

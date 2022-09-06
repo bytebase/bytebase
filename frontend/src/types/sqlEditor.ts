@@ -38,12 +38,8 @@ export enum SortText {
 // because it has some extra not required fields: instanceName, databaseName...
 export type ConnectionContext = {
   projectId: ProjectId;
-  projectName: string;
   instanceId: InstanceId;
-  instanceName: string;
   databaseId: DatabaseId;
-  databaseName: string;
-  databaseType: string;
   tableId?: TableId;
   tableName?: string;
   isLoadingTree: boolean;

@@ -68,7 +68,7 @@ import { debouncedRef } from "@vueuse/core";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
-import { useTabStore, useSQLEditorStore } from "@/store";
+import { useTabStore, useSQLEditorStore, useInstanceById } from "@/store";
 import { createExplainToken } from "@/utils";
 import DataTable from "./DataTable.vue";
 
@@ -173,8 +173,12 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   link.click();
 };
 
+const instance = useInstanceById(
+  computed(() => sqlEditorStore.connectionContext.instanceId)
+);
+
 const showVisualizeButton = computed((): boolean => {
-  const { databaseType } = sqlEditorStore.connectionContext;
+  const databaseType = instance.value.engine;
   const { executeParams } = tabStore.currentTab;
   return databaseType === "POSTGRES" && !!executeParams?.option?.explain;
 });

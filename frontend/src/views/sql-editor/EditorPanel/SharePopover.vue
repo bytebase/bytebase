@@ -93,8 +93,10 @@ import {
   useTabStore,
   useSQLEditorStore,
   useSheetStore,
+  useInstanceById,
+  useDatabaseById,
 } from "@/store";
-import { AccessOption } from "@/types";
+import { AccessOption, UNKNOWN_ID } from "@/types";
 
 const { t } = useI18n();
 const tabStore = useTabStore();
@@ -121,16 +123,25 @@ const accessOptions = computed<AccessOption[]>(() => {
   ];
 });
 
-const ctx = computed(() => sqlEditorStore.connectionContext);
 const sheet = computed(() => sheetStore.currentSheet);
 const creator = computed(() => sheetStore.isCreator);
 
-const connectionSlug = [
-  slug(ctx.value.instanceName as string),
-  ctx.value.instanceId,
-  slug(ctx.value.databaseName as string),
-  ctx.value.databaseId,
-].join("_");
+const instance = useInstanceById(
+  computed(() => sqlEditorStore.connectionContext.instanceId)
+);
+const database = useDatabaseById(
+  computed(() => sqlEditorStore.connectionContext.databaseId)
+);
+
+const connectionSlug = computed(() => {
+  const inst = instance.value;
+  const db = database.value;
+  if (inst.id === UNKNOWN_ID || db.id === UNKNOWN_ID) {
+    return "";
+  }
+
+  return [inst.name, inst.id, db.name, db.id].join("_");
+});
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
@@ -162,12 +173,19 @@ const handleChangeAccess = (option: AccessOption) => {
   isShowAccessPopover.value = false;
 };
 
-const sheetSlug = `${slug(tabStore.currentTab.name)}_${
-  tabStore.currentTab.sheetId
-}`;
-const sharedTabLink = ref(
-  `${window.location.origin}/sql-editor/${connectionSlug}/${sheetSlug}`
-);
+const sheetSlug = computed(() => {
+  return `${slug(tabStore.currentTab.name)}_${tabStore.currentTab.sheetId}`;
+});
+
+const sharedTabLink = computed(() => {
+  const base = `${window.location.origin}/sql-editor`;
+
+  if (connectionSlug.value) {
+    return [base, connectionSlug.value, sheetSlug].join("/");
+  }
+
+  return `${base}?sheetId=${sheet.value.id}`;
+});
 
 const { copy, copied } = useClipboard({
   source: sharedTabLink.value,

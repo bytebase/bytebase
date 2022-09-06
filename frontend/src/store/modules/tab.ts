@@ -25,7 +25,7 @@ export const useTabStore = defineStore("tab", {
       const defaultTab = getDefaultTab();
 
       // Clone current connection context to the newly created tab temporarily.
-      const newTab = {
+      const newTab: TabInfo = {
         ...defaultTab,
         connectionContext: cloneDeep(useSQLEditorStore().connectionContext),
         ...payload,

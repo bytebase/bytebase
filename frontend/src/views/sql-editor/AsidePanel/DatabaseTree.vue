@@ -180,54 +180,37 @@ const getFlattenConnectionTree = () => {
 const setConnectionContext = (option: ConnectionAtom) => {
   if (!option) return;
 
-  if (tabStore.currentTab.isModified) {
-    // If any changes happen to the current tab, we won't mutate it in-place.
-    // We will open a new tab.
+  if (tabStore.currentTab.sheetId || tabStore.currentTab.isModified) {
+    // When
+    // 1. The current tab is a saved sheet, its connection can't be changed.
+    // 2. The current tab is an unsaved but modified tab.
+    // we won't mutate it in-place, we will open a new tab instead.
     tabStore.addTab();
   }
 
   const ctx = cloneDeep(sqlEditorStore.connectionContext);
-  const { instanceList, databaseList } = getFlattenConnectionTree();
-
-  const getInstanceNameByInstanceId = (id: number) => {
-    const instance = instanceList?.find((item) => item.id === id);
-    return instance ? instance.label : "";
-  };
-  const getInstanceEngineByInstanceId = (id: number) => {
-    const selectedInstance = instanceStore.getInstanceById(id);
-    return selectedInstance ? selectedInstance.engine : "MYSQL";
-  };
+  const { databaseList } = getFlattenConnectionTree();
 
   // If selected item is instance node
   if (option.type === "instance") {
     ctx.instanceId = option.id;
-    ctx.instanceName = option.label;
     ctx.databaseId = UNKNOWN_ID;
-    ctx.databaseName = "";
-    ctx.databaseType = getInstanceEngineByInstanceId(option.id);
     ctx.tableId = UNKNOWN_ID;
     ctx.tableName = "";
   } else if (option.type === "database") {
     // If selected item is database node
     const instanceId = option.parentId;
     ctx.instanceId = instanceId;
-    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
     ctx.databaseId = option.id;
-    ctx.databaseName = option.label;
-    ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
     ctx.tableId = UNKNOWN_ID;
     ctx.tableName = "";
   } else if (option.type === "table") {
     // If selected item is table node
     const databaseId = option.parentId;
     const databaseInfo = databaseList?.find((item) => item.id === databaseId);
-    const databaseName = databaseInfo?.label || "";
     const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
     ctx.instanceId = instanceId;
-    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
     ctx.databaseId = databaseId;
-    ctx.databaseName = databaseName;
-    ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
     ctx.tableId = option.id;
     ctx.tableName = option.label;
   }
@@ -298,7 +281,6 @@ const gotoAlterSchema = (option: ConnectionAtom) => {
     return;
   }
 
-  const databaseName = database.name;
   router.push({
     name: "workspace.issue.detail",
     params: {
@@ -306,7 +288,7 @@ const gotoAlterSchema = (option: ConnectionAtom) => {
     },
     query: {
       template: "bb.issue.database.schema.update",
-      name: `[${databaseName}] Alter schema`,
+      name: `[${database.name}] Alter schema`,
       project: projectId,
       databaseList: databaseId,
       sql: `ALTER TABLE ${option.label}`,
