@@ -279,6 +279,13 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
+    async getOrFetchSheetById(sheetId: SheetId) {
+      const sheet = this.sheetById.get(sheetId);
+      if (sheet && sheet.id !== UNKNOWN_ID) {
+        return sheet;
+      }
+      return this.fetchSheetById(sheetId);
+    },
     async patchSheetById(sheetPatch: SheetPatch): Promise<Sheet> {
       const resData = (
         await axios.patch(`/api/sheet/${sheetPatch.id}`, {

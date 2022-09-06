@@ -1,29 +1,33 @@
 import { useRouter } from "vue-router";
 
-import { DEFAULT_PROJECT_ID, Sheet, UNKNOWN_ID } from "../types";
+import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
 import {
   useDatabaseStore,
   useTabStore,
   useSQLEditorStore,
   getDefaultConnectionContext,
+  useSheetStore,
 } from "@/store";
 
 const useSQLEditorConnection = () => {
   const router = useRouter();
   const tabStore = useTabStore();
   const sqlEditorStore = useSQLEditorStore();
+  const sheetStore = useSheetStore();
 
   /**
    * Set the connection by tab info
    */
-  const setConnectionContextFromCurrentTab = (sheet?: Sheet) => {
+  const setConnectionContextFromCurrentTab = () => {
     const currentTab = tabStore.currentTab;
+    const sheet = currentTab.sheetId
+      ? sheetStore.sheetById.get(currentTab.sheetId)
+      : undefined;
 
     if (sheet) {
+      // Connect to the sheet connection if sheet exists.
       const { project, database, payload } = sheet;
-      // If we are opening a sheet.
-      // This only happens when we are landing on the page with `sheetId` in the URL.
       const projectId =
         project.id !== UNKNOWN_ID ? project.id : DEFAULT_PROJECT_ID;
       const instanceId =
@@ -37,6 +41,7 @@ const useSQLEditorConnection = () => {
         databaseId,
       });
     } else {
+      // Connect to the tab connection otherwise.
       const { connectionContext } = currentTab;
       if (connectionContext) {
         sqlEditorStore.setConnectionContext({

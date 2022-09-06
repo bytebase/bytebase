@@ -1340,7 +1340,7 @@ router.beforeEach((to, from, next) => {
               tabStore.addTab({
                 name: sheet.name,
                 statement: sheet.statement,
-                isModified: true,
+                isModified: false,
               });
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
