@@ -91,7 +91,7 @@ const handleSaveSheet = async (sheetName?: string) => {
 
   tabStore.updateCurrentTab({
     sheetId: sheet.id,
-    isSaved: true,
+    isModified: false,
     name: sheetName,
   });
 };

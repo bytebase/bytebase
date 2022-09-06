@@ -51,7 +51,9 @@
                 v-if="sheetOfTab(tab)?.visibility === 'PUBLIC'"
                 class="w-4 h-4"
               />
-              <span>{{ tab.name }}</span>
+              <span :class="isReplaceableTab(tab) && 'italic'">
+                {{ tab.name }}
+              </span>
             </span>
           </div>
           <template v-if="enterTabId === tab.id && tabStore.tabList.length > 1">
@@ -63,7 +65,7 @@
             </span>
           </template>
           <template v-else>
-            <template v-if="!tab.isSaved">
+            <template v-if="!tab.isModified">
               <span class="suffix editing text-gray-400">
                 <carbon:dot-mark class="h-4 w-4" />
               </span>
@@ -124,6 +126,7 @@ import { useDialog } from "naive-ui";
 import { pushNotification, useTabStore, useSheetStore } from "@/store";
 import { TabInfo } from "@/types";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
+import { isReplaceableTab } from "@/utils";
 
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
@@ -139,7 +142,7 @@ const labelState = reactive({
   currentLabelName: "",
   editingTabId: "",
 });
-const labelInputRef = ref<HTMLInputElement>();
+const labelInputRef = ref<HTMLInputElement | HTMLInputElement[]>();
 
 const localTabList = computed(() => {
   return tabStore.tabList.map((tab: TabInfo) => {
@@ -187,7 +190,9 @@ const handleEditLabel = (tab: TabInfo) => {
   labelState.editingTabId = tab.id;
   labelState.currentLabelName = tab.name;
   nextTick(() => {
-    labelInputRef.value?.focus();
+    const { value } = labelInputRef;
+    const inputElem = Array.isArray(value) ? value[0] : value;
+    inputElem?.focus();
   });
 };
 
@@ -196,6 +201,7 @@ const handleTryChangeLabel = () => {
     if (labelState.currentLabelName !== "") {
       tabStore.updateCurrentTab({
         name: labelState.currentLabelName,
+        isModified: true,
       });
 
       updateSheetName();
@@ -231,7 +237,7 @@ const handleAddTab = () => {
 };
 
 const handleRemoveTab = async (tab: TabInfo) => {
-  if (!tab.isSaved) {
+  if (tab.isModified) {
     const $dialog = dialog.create({
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-tab"),
       type: "info",

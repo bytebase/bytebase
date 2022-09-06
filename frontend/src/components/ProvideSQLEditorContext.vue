@@ -100,7 +100,7 @@ const prepareSheetFromQuery = async () => {
       } else {
         // Find a replaceable, and 'replaceable' means
         // It's not related to any sheets (sheetId === undefined)
-        // and it's newly open (isSaved === true && statement === "")
+        // and it's newly open (isModified === false && statement === "")
         const replaceableTab = tabStore.tabList.find(isReplaceableTab);
         if (replaceableTab) {
           // Open the sheet in the replaceable tab if we found one.
@@ -115,7 +115,7 @@ const prepareSheetFromQuery = async () => {
         sheetId: sheet.id,
         name: sheet.name,
         statement: sheet.statement,
-        isSaved: true,
+        isModified: false,
       });
       setConnectionContextFromCurrentTab(sheet);
       useSQLEditorStore().setSQLEditorState({

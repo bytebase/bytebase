@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { computed } from "vue";
 import { v1 as uuidv1 } from "uuid";
 import { t } from "../plugins/i18n";
@@ -10,13 +9,15 @@ export const getDefaultTab = (): TabInfo => {
   return {
     id: uuidv1(),
     name: defaultTabName.value,
-    isSaved: true,
-    savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+    isModified: false,
     statement: "",
     selectedStatement: "",
   };
 };
 
 export const isReplaceableTab = (tab: TabInfo): boolean => {
-  return !tab.sheetId && tab.isSaved && !tab.statement;
+  if (tab.sheetId) return false;
+  if (tab.isModified) return false;
+  if (tab.statement) return false;
+  return true;
 };

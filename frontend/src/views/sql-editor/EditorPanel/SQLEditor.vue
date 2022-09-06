@@ -87,7 +87,7 @@ watch(
 const handleChange = debounce((value: string) => {
   tabStore.updateCurrentTab({
     statement: value,
-    isSaved: false,
+    isModified: true,
   });
 }, 300);
 

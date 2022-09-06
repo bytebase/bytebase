@@ -11,8 +11,7 @@ export type ExecuteOption = {
 export interface TabInfo {
   id: string;
   name: string;
-  isSaved: boolean;
-  savedAt: string;
+  isModified: boolean;
   statement: string;
   selectedStatement: string;
   executeParams?: {

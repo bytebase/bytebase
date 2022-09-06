@@ -96,7 +96,7 @@
         secondary
         strong
         type="primary"
-        :disabled="isEmptyStatement || tabStore.currentTab.isSaved"
+        :disabled="isEmptyStatement || !tabStore.currentTab.isModified"
         @click="() => emit('save-sheet')"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
@@ -107,7 +107,7 @@
             :disabled="
               isEmptyStatement ||
               sqlEditorStore.isDisconnected ||
-              !tabStore.currentTab.isSaved
+              tabStore.currentTab.isModified
             "
           >
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
