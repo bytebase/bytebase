@@ -19,7 +19,7 @@
     "@tanstack/table-core": "8.5.13",
     "@tanstack/vue-table": "8.5.13",
     "@vueuse/core": "8.9.4",
-    "axios": "0.26.1",
+    "axios": "0.27.2",
     "bootstrap": "5.2.0",
     "canvas-confetti": "1.5.1",
     "dayjs": "1.11.5",
