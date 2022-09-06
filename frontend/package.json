@@ -35,7 +35,7 @@
     "node-sql-parser": "4.4.0",
     "papaparse": "5.3.2",
     "pev2": "1.4.0",
-    "pinia": "2.0.21",
+    "pinia": "2.0.22",
     "qs": "6.11.0",
     "rollup": "2.79.0",
     "semver": "7.3.7",
