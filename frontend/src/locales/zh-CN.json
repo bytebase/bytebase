@@ -1575,7 +1575,7 @@
       "click-new-project": "点击\"创建项目\"按钮",
       "click-new-database": "点击\"创建数据库\"按钮",
       "click-approve": "点击\"批准\"按钮来执行这个工单",
-      "wait-issue-finished": "等待工单完成中",
+      "wait-issue-finished": "...等待工单执行完成",
       "back-to-home": "回到主页",
       "finished-dialog": {
         "you-have-done": "你已经完成了:",
