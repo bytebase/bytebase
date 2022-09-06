@@ -622,7 +622,7 @@ const doUpdate = () => {
   const patchedInstance: InstancePatch = { syncSchema: state.syncSchema };
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
-  let reloadDatabaseAndUser = connectionInfoChanged.value;
+  const reloadDatabaseAndUser = connectionInfoChanged.value;
 
   if (state.instance.name != state.originalInstance.name) {
     patchedInstance.name = state.instance.name;

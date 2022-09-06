@@ -37,7 +37,7 @@ export default defineComponent({
   },
   setup(props) {
     const iconClass = () => {
-      let iconClass = "w-5 h-5";
+      const iconClass = "w-5 h-5";
       switch (props.status) {
         case "PENDING":
           return iconClass + " bg-white border-2 border-info text-info";
