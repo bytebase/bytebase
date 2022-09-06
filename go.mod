@@ -25,7 +25,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.15
 	github.com/pganalyze/pg_query_go/v2 v2.1.2
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
-	github.com/pingcap/tidb/parser v0.0.0-20220825063022-5263a0abda61
+	github.com/pingcap/tidb/parser v0.0.0-20220906123855-c75969310de2
 	github.com/pkg/errors v0.9.1
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
@@ -69,6 +69,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
@@ -123,6 +124,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/segmentio/backo-go v1.0.1 // indirect
