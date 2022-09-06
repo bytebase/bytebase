@@ -202,18 +202,28 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			messages := strings.SplitN(commit.Message, "\n\n", 2)
 			messageTitle := messages[0]
 
-			files := make(map[string]fileItemType)
+			var files []fileItem
 			for _, added := range commit.Added {
-				files[added] = fileItemTypeAdded
+				files = append(files,
+					fileItem{
+						name:     added,
+						itemType: fileItemTypeAdded,
+					},
+				)
 			}
 
 			if repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
 				for _, modified := range commit.Modified {
-					files[modified] = fileItemTypeModified
+					files = append(files,
+						fileItem{
+							name:     modified,
+							itemType: fileItemTypeModified,
+						},
+					)
 				}
 			}
 
-			for file, fileType := range files {
+			for _, file := range files {
 				createdMessage, created, httpErr := s.createIssueFromPushEvent(
 					ctx,
 					vcs.PushEvent{
@@ -232,13 +242,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							URL:         commit.URL,
 							AuthorName:  commit.Author.Name,
 							AuthorEmail: commit.Author.Email,
-							Added:       common.EscapeForLogging(file),
+							Added:       common.EscapeForLogging(file.name),
 						},
 					},
 					repo,
 					webhookEndpointID,
-					file,
-					fileType,
+					file.name,
+					file.itemType,
 				)
 				if httpErr != nil {
 					return httpErr
@@ -295,6 +305,12 @@ const (
 	fileItemTypeAdded    fileItemType = "added"
 	fileItemTypeModified fileItemType = "modified"
 )
+
+// fileItem is a file with its item type.
+type fileItem struct {
+	name     string
+	itemType fileItemType
+}
 
 // We are observing the push webhook event so that we will receive the event either when:
 // 1. A commit is directly pushed to a branch.
