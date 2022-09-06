@@ -14,6 +14,7 @@ export * from "./util";
 export * from "./label";
 export * from "./deployment";
 export * from "./task";
+export * from "./tab";
 export * from "./principal";
 export * from "./sql-editor";
 export * from "./pev2";

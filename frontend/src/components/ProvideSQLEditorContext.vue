@@ -17,7 +17,7 @@ import {
   useInstanceStore,
 } from "@/store";
 import { Instance, Database, ConnectionAtom, UNKNOWN_ID } from "@/types";
-import { mapConnectionAtom } from "@/utils";
+import { isReplaceableTab, mapConnectionAtom } from "@/utils";
 
 type LocalState = {
   instanceList: Instance[];
@@ -101,9 +101,7 @@ const prepareSheetFromQuery = async () => {
         // Find a replaceable, and 'replaceable' means
         // It's not related to any sheets (sheetId === undefined)
         // and it's newly open (isSaved === true && statement === "")
-        const replaceableTab = tabStore.tabList.find(
-          (tab) => !tab.sheetId && tab.isSaved && !tab.statement
-        );
+        const replaceableTab = tabStore.tabList.find(isReplaceableTab);
         if (replaceableTab) {
           // Open the sheet in the replaceable tab if we found one.
           tabStore.setCurrentTabId(replaceableTab.id);

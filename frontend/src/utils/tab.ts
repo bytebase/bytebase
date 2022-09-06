@@ -16,3 +16,7 @@ export const getDefaultTab = (): TabInfo => {
     selectedStatement: "",
   };
 };
+
+export const isReplaceableTab = (tab: TabInfo): boolean => {
+  return !tab.sheetId && tab.isSaved && !tab.statement;
+};
