@@ -372,7 +372,7 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit, includ
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the `envName` is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*api.Database, error) {
+func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenantMode api.ProjectTenantMode, dbName, envName string) ([]*api.Database, error) {
 	// Retrieve the current schema from the database
 	foundDatabases, err := s.store.FindDatabase(ctx,
 		&api.DatabaseFind{
@@ -384,6 +384,15 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 		return nil, errors.Wrap(err, "find database")
 	} else if len(foundDatabases) == 0 {
 		return nil, errors.Errorf("project %d does not have database %q", projectID, dbName)
+	}
+
+	// Tenant mode does not allow filtering databases by environment and expect
+	// multiple databases with the same name.
+	if tenantMode == api.TenantModeTenant {
+		if envName != "" {
+			return nil, errors.Errorf("non-empty environment is not allowed for tenant mode project")
+		}
+		return foundDatabases, nil
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -496,6 +505,12 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, w
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
 func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (message string, created bool, err error) {
+	if repo.Project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return "", false, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+	}
+
 	fileEscaped := common.EscapeForLogging(file)
 	log.Debug("Processing file",
 		zap.String("file", fileEscaped),
@@ -537,19 +552,6 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 			return "", false, nil
 		}
 
-		envName := schemaInfo["ENV_NAME"]
-		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, envName)
-		if err != nil {
-			s.createIgnoredFileActivity(
-				ctx,
-				repo.ProjectID,
-				pushEvent,
-				fileEscaped,
-				errors.Wrap(err, "Failed to find project databases"),
-			)
-			return "", false, nil
-		}
-
 		content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, fileEscaped)
 		if err != nil {
 			s.createIgnoredFileActivity(
@@ -562,25 +564,47 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 			return "", false, nil
 		}
 
-		for _, database := range databases {
-			diff, err := s.computeDatabaseSchemaDiff(ctx, database, content)
+		envName := schemaInfo["ENV_NAME"]
+		if repo.Project.TenantMode == api.TenantModeTenant {
+			updateSchemaDetails = append(updateSchemaDetails,
+				&api.UpdateSchemaDetail{
+					DatabaseName: migrationInfo.Database,
+					Statement:    content,
+				},
+			)
+		} else {
+			databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
 			if err != nil {
 				s.createIgnoredFileActivity(
 					ctx,
 					repo.ProjectID,
 					pushEvent,
 					fileEscaped,
-					errors.Wrap(err, "Failed to compute database schema diff"),
+					errors.Wrap(err, "Failed to find project databases"),
 				)
-				continue
+				return "", false, nil
 			}
 
-			updateSchemaDetails = append(updateSchemaDetails,
-				&api.UpdateSchemaDetail{
-					DatabaseID: database.ID,
-					Statement:  diff,
-				},
-			)
+			for _, database := range databases {
+				diff, err := s.computeDatabaseSchemaDiff(ctx, database, content)
+				if err != nil {
+					s.createIgnoredFileActivity(
+						ctx,
+						repo.ProjectID,
+						pushEvent,
+						fileEscaped,
+						errors.Wrap(err, "Failed to compute database schema diff"),
+					)
+					continue
+				}
+
+				updateSchemaDetails = append(updateSchemaDetails,
+					&api.UpdateSchemaDetail{
+						DatabaseID: database.ID,
+						Statement:  diff,
+					},
+				)
+			}
 		}
 
 		migrationInfo = &db.MigrationInfo{
@@ -624,18 +648,6 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 			return "", false, nil
 		}
 
-		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, migrationInfo.Database, migrationInfo.Environment)
-		if err != nil {
-			s.createIgnoredFileActivity(
-				ctx,
-				repo.ProjectID,
-				pushEvent,
-				fileEscaped,
-				errors.Wrap(err, "Failed to find project databases"),
-			)
-			return "", false, nil
-		}
-
 		content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, fileEscaped)
 		if err != nil {
 			s.createIgnoredFileActivity(
@@ -648,13 +660,34 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 			return "", false, nil
 		}
 
-		for _, database := range databases {
+		if repo.Project.TenantMode == api.TenantModeTenant {
 			updateSchemaDetails = append(updateSchemaDetails,
 				&api.UpdateSchemaDetail{
-					DatabaseID: database.ID,
-					Statement:  content,
+					DatabaseName: migrationInfo.Database,
+					Statement:    content,
 				},
 			)
+		} else {
+			databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+			if err != nil {
+				s.createIgnoredFileActivity(
+					ctx,
+					repo.ProjectID,
+					pushEvent,
+					fileEscaped,
+					errors.Wrap(err, "Failed to find project databases"),
+				)
+				return "", false, nil
+			}
+
+			for _, database := range databases {
+				updateSchemaDetails = append(updateSchemaDetails,
+					&api.UpdateSchemaDetail{
+						DatabaseID: database.ID,
+						Statement:  content,
+					},
+				)
+			}
 		}
 	}
 
@@ -678,19 +711,6 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 			)
 		} else {
 			creatorID = committerPrincipal.ID
-		}
-	}
-
-	if repo.Project.TenantMode == api.TenantModeTenant {
-		if !s.feature(api.FeatureMultiTenancy) {
-			return "", false, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-
-		// We don't take environment for tenant mode project because the databases
-		// needing schema update are determined by database name and deployment
-		// configuration.
-		if migrationInfo.Environment != "" {
-			return "", false, echo.NewHTTPError(http.StatusInternalServerError, "Environment isn't accepted in schema update for tenant mode project")
 		}
 	}
 
