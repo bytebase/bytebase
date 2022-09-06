@@ -636,7 +636,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-var reValidProjectKey = regexp.MustCompile("^[a-zA-Z0-9]+$")
+var reValidProjectKey = regexp.MustCompile("^[a-z0-9-]+$")
 
 func validateProjectKey(key string) *echo.HTTPError {
 	if key == "" {
