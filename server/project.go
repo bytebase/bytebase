@@ -640,7 +640,7 @@ func validateProjectKey(key string) *echo.HTTPError {
 		return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
 	}
 	for _, l := range key {
-		if (l < '0' || l > '9') && (l < 'A' || l > 'Z') {
+		if (l < '0' || l > '9') && (l < 'A' || l > 'Z') && (l < 'a' || l > 'z') {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project key can only be numbers and uppercase letters")
 		}
 	}
