@@ -1,5 +1,9 @@
 package catalog
 
+// This file defines the database state during walk-through. The only two cases will use database state:
+//   1. during walk-through
+//   2. the underlying implementation of Finder
+
 import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
