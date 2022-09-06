@@ -511,9 +511,12 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		if backup == nil {
 			return nil, errors.Errorf("backup not found with ID %d", c.BackupID)
 		}
-		restorePayload := api.TaskDatabaseRestorePayload{}
-		restorePayload.DatabaseName = c.DatabaseName
-		restorePayload.BackupID = c.BackupID
+		restorePayload := api.TaskDatabasePITRRestorePayload{
+			ProjectID:        issueCreate.ProjectID,
+			TargetInstanceID: &c.InstanceID,
+			DatabaseName:     &c.DatabaseName,
+			BackupID:         &c.BackupID,
+		}
 		restoreBytes, err := json.Marshal(restorePayload)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create restore database task, unable to marshal payload")
@@ -522,8 +525,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			InstanceID:   c.InstanceID,
 			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
-			Status:       api.TaskPending,
-			Type:         api.TaskDatabaseRestore,
+			Status:       api.TaskPendingApproval,
+			Type:         api.TaskDatabaseRestorePITRRestore,
 			DatabaseName: c.DatabaseName,
 			BackupID:     &c.BackupID,
 			Payload:      string(restoreBytes),
