@@ -31,6 +31,7 @@ import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import TableSchema from "./TableSchema.vue";
 import { Splitpanes, Pane } from "splitpanes";
+import { UNKNOWN_ID } from "@/types";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
@@ -49,10 +50,12 @@ const handleCloseTableSchemaPane = () => {
 };
 
 watch(
-  () => sqlEditorStore.connectionContext.option,
-  (option) => {
-    if (option && option.type === "table") {
+  () => sqlEditorStore.connectionContext.tableId,
+  (tableId) => {
+    if (tableId && tableId !== UNKNOWN_ID) {
       databasePaneSize.value = DATABASE_PANE_SIZE;
+    } else {
+      databasePaneSize.value = FULL_HEIGHT;
     }
   }
 );

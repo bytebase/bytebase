@@ -67,7 +67,7 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
-import { Database, DatabaseId, UNKNOWN_ID } from "@/types";
+import { Table, UNKNOWN_ID } from "@/types";
 import { useSQLEditorStore, useTableStore } from "@/store";
 
 const emit = defineEmits<{
@@ -77,23 +77,15 @@ const emit = defineEmits<{
 const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
 
-const tableInfo = ref();
-const ctx = sqlEditorStore.connectionContext;
+const tableInfo = ref<Table>();
 const router = useRouter();
 
 const gotoAlterSchema = () => {
-  let databaseId = ctx.databaseId as DatabaseId;
-  if (databaseId === UNKNOWN_ID) {
-    const option = ctx.option;
-    databaseId = option.parentId as number;
-  }
+  const table = tableInfo.value;
+  if (!table) return;
 
-  const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
-  const databaseList =
-    sqlEditorStore.connectionInfo.databaseListByProjectId.get(projectId) as any;
-  const databaseName = databaseList.find(
-    (database: Database) => database.id === databaseId
-  ).name;
+  const { database } = table;
+
   router.push({
     name: "workspace.issue.detail",
     params: {
@@ -101,10 +93,10 @@ const gotoAlterSchema = () => {
     },
     query: {
       template: "bb.issue.database.schema.update",
-      name: `[${databaseName}] Alter schema`,
-      project: projectId,
-      databaseList: databaseId,
-      sql: `ALTER TABLE ${ctx.tableName}`,
+      name: `[${database.name}] Alter schema`,
+      project: database.project.id,
+      databaseList: database.id,
+      sql: `ALTER TABLE ${table.name}`,
     },
   });
 };
@@ -114,20 +106,28 @@ const handleClosePane = () => {
 };
 
 watch(
-  () => sqlEditorStore.connectionContext.option,
-  async (option) => {
-    if (option && option.type === "table") {
+  [
+    () => sqlEditorStore.connectionContext.databaseId,
+    () => sqlEditorStore.connectionContext.tableId,
+    () => sqlEditorStore.connectionContext.tableName,
+  ],
+  async ([databaseId, tableId, tableName]) => {
+    if (
+      databaseId &&
+      databaseId !== UNKNOWN_ID &&
+      tableId &&
+      tableId !== UNKNOWN_ID &&
+      tableName
+    ) {
       const res = await tableStore.fetchTableByDatabaseIdAndTableName({
-        databaseId: option.parentId as number,
-        tableName: option.label as string,
+        databaseId,
+        tableName,
       });
-
       tableInfo.value = res;
     } else {
-      tableInfo.value = null;
+      tableInfo.value = undefined;
     }
-  },
-  { deep: true }
+  }
 );
 </script>
 

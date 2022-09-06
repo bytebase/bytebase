@@ -23,8 +23,7 @@ import { useSQLStore } from "./sql";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
 
-export const getDefaultConnectionContext = () => ({
-  hasSlug: false,
+export const getDefaultConnectionContext = (): ConnectionContext => ({
   projectId: DEFAULT_PROJECT_ID,
   projectName: "",
   instanceId: UNKNOWN_ID,
@@ -35,7 +34,6 @@ export const getDefaultConnectionContext = () => ({
   tableId: UNKNOWN_ID,
   tableName: "",
   isLoadingTree: false,
-  option: {} as any,
 });
 
 export const useSQLEditorStore = defineStore("sqlEditor", {

@@ -24,10 +24,9 @@ const useSQLEditorConnection = () => {
       // If we are opening a sheet.
       // This only happens when we are landing on the page with `sheetId` in the URL.
       sqlEditorStore.setConnectionContext({
-        hasSlug: true,
-        projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
-        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
-        databaseId: sheet.databaseId || UNKNOWN_ID,
+        projectId: sheet.database?.project.id || DEFAULT_PROJECT_ID,
+        instanceId: sheet.database?.instance.id || UNKNOWN_ID,
+        databaseId: sheet.database?.id || UNKNOWN_ID,
       });
     } else {
       const { connectionContext } = currentTab;

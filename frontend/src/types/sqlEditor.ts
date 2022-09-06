@@ -37,7 +37,6 @@ export enum SortText {
 // TODO(Steven): ConnectionContext should be refactored later,
 // because it has some extra not required fields: instanceName, databaseName...
 export type ConnectionContext = {
-  hasSlug: boolean;
   projectId: ProjectId;
   projectName: string;
   instanceId: InstanceId;
@@ -48,7 +47,6 @@ export type ConnectionContext = {
   tableId?: TableId;
   tableName?: string;
   isLoadingTree: boolean;
-  option: ConnectionAtom;
 };
 
 export interface QueryHistory {

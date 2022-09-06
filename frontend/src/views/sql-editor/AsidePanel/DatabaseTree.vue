@@ -33,7 +33,7 @@
         :options="dropdownOptions"
         :show="showDropdown"
         :on-clickoutside="handleClickOutside"
-        @select="handleSelect"
+        @select="handleSelectDropdownItem"
       />
     </div>
   </div>
@@ -47,18 +47,14 @@ import { cloneDeep, omit, escape } from "lodash-es";
 import { ref, computed, h, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-
-import {
-  ConnectionAtom,
-  ConnectionContext,
-  Database,
-  UNKNOWN_ID,
-} from "@/types";
+import type { DropdownOption } from "naive-ui";
+import { ConnectionAtom, Database, UNKNOWN_ID } from "@/types";
 import {
   useDatabaseStore,
   useInstanceStore,
   useSQLEditorStore,
   useTableStore,
+  useTabStore,
 } from "@/store";
 import {
   connectionSlug,
@@ -73,11 +69,16 @@ type Position = {
   y: number;
 };
 
+type DropdownOptionWithConnectionAtom = DropdownOption & {
+  item: ConnectionAtom;
+};
+
 const { t } = useI18n();
 
 const router = useRouter();
 const instanceStore = useInstanceStore();
 const sqlEditorStore = useSQLEditorStore();
+const tabStore = useTabStore();
 
 const defaultExpandedKeys = ref<string[]>([]);
 const searchPattern = ref();
@@ -87,27 +88,33 @@ const dropdownPosition = ref<Position>({
   y: 0,
 });
 const selectedKeys = ref<string[] | number[]>([]);
-const sheetContext = ref<ConnectionAtom>();
+const dropdownContext = ref<ConnectionAtom>();
 
 onMounted(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  if (ctx.hasSlug) {
+  const { instanceId, databaseId } = sqlEditorStore.connectionContext;
+
+  if (
+    instanceId &&
+    instanceId !== UNKNOWN_ID &&
+    databaseId &&
+    databaseId !== UNKNOWN_ID
+  ) {
     defaultExpandedKeys.value = [
-      `instance-${ctx.instanceId}`,
-      `database-${ctx.databaseId}`,
+      `instance-${instanceId}`,
+      `database-${databaseId}`,
     ];
   }
 });
 
-const dropdownOptions = computed(() => {
-  if (!sheetContext.value) {
+const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
+  if (!dropdownContext.value) {
     return [];
-  } else if (sheetContext.value.type === "table") {
+  } else if (dropdownContext.value.type === "table") {
     return [
       {
         key: "alter-table",
         label: t("sql-editor.alter-table"),
-        item: sheetContext.value,
+        item: dropdownContext.value,
       },
     ];
   } else {
@@ -115,7 +122,7 @@ const dropdownOptions = computed(() => {
       {
         key: "open-connection",
         label: t("sql-editor.open-connection"),
-        item: sheetContext.value,
+        item: dropdownContext.value,
       },
     ];
   }
@@ -170,69 +177,74 @@ const getFlattenConnectionTree = () => {
   };
 };
 
-const setSheetContext = (option: ConnectionAtom) => {
-  if (option) {
-    let ctx = cloneDeep(sqlEditorStore.connectionContext) as ConnectionContext;
-    const { instanceList, databaseList } = getFlattenConnectionTree();
+const setConnectionContext = (option: ConnectionAtom) => {
+  if (!option) return;
 
-    const getInstanceNameByInstanceId = (id: number) => {
-      const instance = instanceList?.find((item) => item.id === id);
-      return instance ? instance.label : "";
-    };
-    const getInstanceEngineByInstanceId = (id: number) => {
-      const selectedInstance = instanceStore.getInstanceById(id);
-      return selectedInstance ? selectedInstance.engine : "MYSQL";
-    };
+  if (tabStore.currentTab.isModified) {
+    // If any changes happen to the current tab, we won't mutate it in-place.
+    // We will open a new tab.
+    tabStore.addTab();
+  }
 
-    // If selected item is instance node
-    if (option.type === "instance") {
-      ctx.instanceId = option.id;
-      ctx.instanceName = option.label;
-      ctx.databaseId = UNKNOWN_ID;
-      ctx.databaseName = "";
-      ctx.databaseType = getInstanceEngineByInstanceId(option.id);
-      ctx.tableId = UNKNOWN_ID;
-      ctx.tableName = "";
-    } else if (option.type === "database") {
-      // If selected item is database node
-      const instanceId = option.parentId;
-      ctx.instanceId = instanceId;
-      ctx.instanceName = getInstanceNameByInstanceId(instanceId);
-      ctx.databaseId = option.id;
-      ctx.databaseName = option.label;
-      ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
-      ctx.tableId = UNKNOWN_ID;
-      ctx.tableName = "";
-    } else if (option.type === "table") {
-      // If selected item is table node
-      const databaseId = option.parentId;
-      const databaseInfo = databaseList?.find((item) => item.id === databaseId);
-      const databaseName = databaseInfo?.label || "";
-      const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
-      ctx.instanceId = instanceId;
-      ctx.instanceName = getInstanceNameByInstanceId(instanceId);
-      ctx.databaseId = databaseId;
-      ctx.databaseName = databaseName;
-      ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
-      ctx.tableId = option.id;
-      ctx.tableName = option.label;
-    }
+  const ctx = cloneDeep(sqlEditorStore.connectionContext);
+  const { instanceList, databaseList } = getFlattenConnectionTree();
 
-    ctx.hasSlug = true;
-    sqlEditorStore.setConnectionContext(ctx);
+  const getInstanceNameByInstanceId = (id: number) => {
+    const instance = instanceList?.find((item) => item.id === id);
+    return instance ? instance.label : "";
+  };
+  const getInstanceEngineByInstanceId = (id: number) => {
+    const selectedInstance = instanceStore.getInstanceById(id);
+    return selectedInstance ? selectedInstance.engine : "MYSQL";
+  };
 
-    if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
-      const database = useDatabaseStore().getDatabaseById(
-        ctx.databaseId,
-        ctx.instanceId
-      );
-      router.replace({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database),
-        },
-      });
-    }
+  // If selected item is instance node
+  if (option.type === "instance") {
+    ctx.instanceId = option.id;
+    ctx.instanceName = option.label;
+    ctx.databaseId = UNKNOWN_ID;
+    ctx.databaseName = "";
+    ctx.databaseType = getInstanceEngineByInstanceId(option.id);
+    ctx.tableId = UNKNOWN_ID;
+    ctx.tableName = "";
+  } else if (option.type === "database") {
+    // If selected item is database node
+    const instanceId = option.parentId;
+    ctx.instanceId = instanceId;
+    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
+    ctx.databaseId = option.id;
+    ctx.databaseName = option.label;
+    ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
+    ctx.tableId = UNKNOWN_ID;
+    ctx.tableName = "";
+  } else if (option.type === "table") {
+    // If selected item is table node
+    const databaseId = option.parentId;
+    const databaseInfo = databaseList?.find((item) => item.id === databaseId);
+    const databaseName = databaseInfo?.label || "";
+    const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
+    ctx.instanceId = instanceId;
+    ctx.instanceName = getInstanceNameByInstanceId(instanceId);
+    ctx.databaseId = databaseId;
+    ctx.databaseName = databaseName;
+    ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
+    ctx.tableId = option.id;
+    ctx.tableName = option.label;
+  }
+
+  sqlEditorStore.setConnectionContext(ctx);
+
+  if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
+    const database = useDatabaseStore().getDatabaseById(
+      ctx.databaseId,
+      ctx.instanceId
+    );
+    router.replace({
+      name: "sql-editor.detail",
+      params: {
+        connectionSlug: connectionSlug(database),
+      },
+    });
   }
 };
 
@@ -257,7 +269,7 @@ const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
     id: "tree-node-suffix",
     class: "n-tree-node-content__suffix-icon",
     onClick: function () {
-      setSheetContext(option);
+      setConnectionContext(option);
     },
   });
 
@@ -302,7 +314,7 @@ const gotoAlterSchema = (option: ConnectionAtom) => {
   });
 };
 
-const handleSelect = (key: string) => {
+const handleSelectDropdownItem = (key: string) => {
   const option = dropdownOptions.value.find((item) => item.key === key);
   if (!option) {
     return;
@@ -311,7 +323,7 @@ const handleSelect = (key: string) => {
   if (key === "alter-table") {
     gotoAlterSchema(option.item);
   } else if (key === "open-connection") {
-    setSheetContext(option.item);
+    setConnectionContext(option.item);
   }
 
   showDropdown.value = false;
@@ -325,21 +337,14 @@ const nodeProps = (info: { option: ConnectionAtom }) => {
   const { option } = info;
 
   return {
-    onClick(e: MouseEvent) {
-      const targetEl = e.target as HTMLElement;
-      if (option && targetEl.className === "n-tree-node-content__text") {
-        let ctx = cloneDeep(
-          sqlEditorStore.connectionContext
-        ) as ConnectionContext;
-        ctx.option = option;
-        sqlEditorStore.setConnectionContext(ctx);
-      }
+    onClick() {
+      setConnectionContext(option);
     },
     onContextmenu(e: MouseEvent) {
       e.preventDefault();
       showDropdown.value = false;
       if (option && option.key) {
-        sheetContext.value = option;
+        dropdownContext.value = option;
         selectedKeys.value = [option.key as string];
       }
 
