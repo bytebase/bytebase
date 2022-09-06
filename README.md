@@ -146,7 +146,7 @@ working on the code:
 
 ### Prerequisites
 
-- [Go](https://golang.org/doc/install) (1.18 or later)
+- [Go](https://golang.org/doc/install) (1.19 or later)
 - [pnpm](https://pnpm.io/installation)
 - [Air](https://github.com/cosmtrek/air#installation) (**must use 1.30.0**). This is for backend live reload.
 

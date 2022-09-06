@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.17
+go 1.19
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0
