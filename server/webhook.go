@@ -37,38 +37,6 @@ var (
 )
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
-	readFileContent := func(ctx context.Context, pushEvent vcs.PushEvent, webhookEndpointID, file string) (string, error) {
-		// Retrieve the latest AccessToken and RefreshToken as the previous
-		// ReadFileContent call may have updated the stored token pair. ReadFileContent
-		// will fetch and store the new token pair if the existing token pair has
-		// expired.
-		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
-		if err != nil {
-			return "", errors.Wrapf(err, "get repository by webhook endpoint %q", webhookEndpointID)
-		} else if repo == nil {
-			return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", webhookEndpointID)
-		}
-
-		content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
-			ctx,
-			common.OauthContext{
-				ClientID:     repo.VCS.ApplicationID,
-				ClientSecret: repo.VCS.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.ID),
-			},
-			repo.VCS.InstanceURL,
-			repo.ExternalID,
-			file,
-			pushEvent.FileCommit.ID,
-		)
-		if err != nil {
-			return "", errors.Wrap(err, "read content")
-		}
-		return content, nil
-	}
-
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		body, err := io.ReadAll(c.Request().Body)
@@ -573,6 +541,39 @@ func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, p
 			zap.Error(err),
 		)
 	}
+}
+
+// readFileContent reads the content of the given file from the given repository.
+func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, webhookEndpointID string, file string) (string, error) {
+	// Retrieve the latest AccessToken and RefreshToken as the previous
+	// ReadFileContent call may have updated the stored token pair. ReadFileContent
+	// will fetch and store the new token pair if the existing token pair has
+	// expired.
+	repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+	if err != nil {
+		return "", errors.Wrapf(err, "get repository by webhook endpoint %q", webhookEndpointID)
+	} else if repo == nil {
+		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", webhookEndpointID)
+	}
+
+	content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+		ctx,
+		common.OauthContext{
+			ClientID:     repo.VCS.ApplicationID,
+			ClientSecret: repo.VCS.Secret,
+			AccessToken:  repo.AccessToken,
+			RefreshToken: repo.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repo.ID),
+		},
+		repo.VCS.InstanceURL,
+		repo.ExternalID,
+		file,
+		pushEvent.FileCommit.ID,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "read content")
+	}
+	return content, nil
 }
 
 // createIssueFromPushEvent attempts to create a new issue for the given file of
