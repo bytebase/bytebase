@@ -24,6 +24,7 @@
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :on-load="loadSubTree"
+        expand-on-click
       />
       <n-dropdown
         placement="bottom-start"
@@ -259,8 +260,8 @@ const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
 };
 
 const loadSubTree = async (item: ConnectionAtom) => {
-  const mapper = mapConnectionAtom("table", item.id);
   if (item.type === "database") {
+    const mapper = mapConnectionAtom("table", item.id);
     const tableList = await useTableStore().getOrFetchTableListByDatabaseId(
       item.id
     );
