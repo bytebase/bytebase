@@ -195,7 +195,6 @@ export interface SQLEditorState {
   connectionTree: ConnectionAtom[];
   expandedTreeKeys: string[];
   connectionContext: ConnectionContext;
-  shouldSetContent: boolean;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
@@ -203,7 +202,6 @@ export interface SQLEditorState {
   isFetchingSheet: boolean;
   isFetchingTree: boolean;
   isShowExecutingHint: boolean;
-  sharedSheet: Sheet;
 }
 
 export interface TabState {

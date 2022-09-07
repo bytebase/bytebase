@@ -11,9 +11,7 @@ import {
   ProjectId,
   QueryHistory,
   UNKNOWN_ID,
-  Sheet,
   DEFAULT_PROJECT_ID,
-  unknown,
 } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -38,14 +36,12 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     connectionContext: getDefaultConnectionContext(),
     isExecuting: false,
     isShowExecutingHint: false,
-    shouldSetContent: false,
     shouldFormatContent: false,
     // Related data and status
     queryHistoryList: [],
     isFetchingQueryHistory: false,
     isFetchingSheet: false,
     isFetchingTree: false,
-    sharedSheet: unknown("SHEET") as Sheet,
   }),
 
   getters: {
@@ -158,9 +154,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       if (instanceId !== UNKNOWN_ID) keys.push(`instance-${instanceId}`);
       if (databaseId !== UNKNOWN_ID) keys.push(`database-${databaseId}`);
       this.addExpandedTreeKeys(keys);
-    },
-    setShouldSetContent(payload: boolean) {
-      this.shouldSetContent = payload;
     },
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;
