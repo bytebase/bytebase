@@ -1041,7 +1041,7 @@
       }
     },
     "settings": {
-      "success-updated-prompt": "Successfully updated {subject}.",
+      "success-updated": "Project settings updated successfully.",
       "success-member-added-prompt": "Successfully added {name} to the project.",
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
