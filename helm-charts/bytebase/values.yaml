@@ -3,4 +3,10 @@
 # Declare variables to be passed into your templates.
 
 bytebase:
-  storage: 256Mi
+  option:
+    host: http://localhost
+    port: 8080
+    pg: postgresql://user:secret@host:port/dbname
+    data: /var/opt/bytebase
+  version: 1.3.2
+  storage: 2Gi
