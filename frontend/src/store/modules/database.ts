@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import {
-  Anomaly,
   Backup,
   Database,
   DatabaseCreate,
@@ -23,7 +22,6 @@ import {
   unknown,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { useAnomalyStore } from "./anomaly";
 import { useBackupStore } from "./backup";
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
@@ -60,15 +58,6 @@ function convert(
     ? (database.relationships!.sourceBackup.data as ResourceIdentifier).id
     : undefined;
   let sourceBackup: Backup | undefined = undefined;
-
-  const anomalyIdList = database.relationships!.anomaly
-    .data as ResourceIdentifier[];
-  const anomalyList: Anomaly[] = [];
-  for (const item of anomalyIdList) {
-    const anomaly = unknown("ANOMALY") as Anomaly;
-    anomaly.id = parseInt(item.id);
-    anomalyList.push(anomaly);
-  }
 
   const instanceStore = useInstanceStore();
   const projectStore = useProjectStore();
@@ -113,7 +102,6 @@ function convert(
       | "project"
       | "dataSourceList"
       | "sourceBackup"
-      | "anomalyList"
       | "labels"
       | "creator"
       | "updater"
@@ -132,7 +120,6 @@ function convert(
     labels,
     dataSourceList: [],
     sourceBackup,
-    anomalyList: [],
   };
 
   for (const item of includedList || []) {
@@ -149,23 +136,11 @@ function convert(
         dataSourceList[i].databaseId = databaseWPartial.id;
       }
     }
-
-    if (item.type == "anomaly" && item.attributes.databaseId == database.id) {
-      const i = anomalyList.findIndex(
-        (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
-      );
-      if (i != -1) {
-        anomalyList[i] = useAnomalyStore().convert(item);
-        anomalyList[i].instance = instance;
-        anomalyList[i].database = databaseWPartial;
-      }
-    }
   }
 
   return {
-    ...(databaseWPartial as Omit<Database, "dataSourceList" | "anomalyList">),
+    ...(databaseWPartial as Omit<Database, "dataSourceList">),
     dataSourceList,
-    anomalyList,
   };
 }
 
