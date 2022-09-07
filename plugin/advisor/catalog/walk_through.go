@@ -22,8 +22,8 @@ const (
 	// FullTextName is the string for FULLTEXT.
 	FullTextName string = "FULLTEXT"
 
-	// ErrorTypeEngineTypeError is the error for unsupported engine type.
-	ErrorTypeEngineTypeError WalkThroughErrorType = 1
+	// ErrorTypeUnsupported is the error for unsupported cases.
+	ErrorTypeUnsupported WalkThroughErrorType = 1
 
 	// 101 parse error type.
 
@@ -82,7 +82,7 @@ func (e *WalkThroughError) Error() string {
 func (d *databaseState) WalkThrough(stmts string) error {
 	if d.dbType != db.MySQL {
 		return &WalkThroughError{
-			Type:    ErrorTypeEngineTypeError,
+			Type:    ErrorTypeUnsupported,
 			Content: fmt.Sprintf("Engine type %s is not supported", d.dbType),
 		}
 	}
