@@ -129,7 +129,7 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 		}
 		return &WalkThroughError{
 			Type:    ErrorTypeTableExists,
-			Content: fmt.Sprintf("Table `%s` exists", node.Table.Name.O),
+			Content: fmt.Sprintf("Table `%s` already exists", node.Table.Name.O),
 		}
 	}
 
