@@ -1,10 +1,12 @@
 apiVersion: v2
 name: bytebase
-description: Web-based, zero-config, dependency-free database schema change and version control tool for teams.
-type: application
 version: 0.0.1
-appVersion: "0.9.0"
+description: Safe database schema change and version control for DevOps teams.
+type: application
 home: https://bytebase.com/
-icon: https://bytebase.com/_nuxt/img/logo-icon.ca8220c.svg
 sources:
   - https://github.com/bytebase/bytebase
+icon: https://www.bytebase.com/_nuxt/img/logo-full.79b60e4.svg
+maintainers:
+  - name: Bytebase
+    email: support@bytebase.com
