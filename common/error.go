@@ -33,6 +33,8 @@ const (
 	// MigrationBaselineMissing Code = 204.
 	MigrationPending Code = 205
 	MigrationFailed  Code = 206
+	// MigrationConflict indicates that the migration version already exists with a different issue ID.
+	MigrationConflict Code = 207
 
 	// 301 task error.
 	TaskTimingNotAllowed Code = 301
