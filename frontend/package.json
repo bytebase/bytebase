@@ -20,7 +20,7 @@
     "@tanstack/vue-table": "8.5.13",
     "@vueuse/core": "9.2.0",
     "axios": "0.27.2",
-    "bootstrap": "5.2.0",
+    "bootstrap": "5.2.1",
     "canvas-confetti": "1.5.1",
     "dayjs": "1.11.5",
     "dompurify": "2.4.0",
