@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { computed, onBeforeMount } from "vue";
 import {
-  Anomaly,
   DataSource,
   empty,
   EMPTY_ID,
@@ -27,7 +26,6 @@ import {
 import { InstanceUser } from "@/types/InstanceUser";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
-import { useAnomalyStore } from "./anomaly";
 import { useDataSourceStore } from "./dataSource";
 import { useSQLStore } from "./sql";
 
@@ -41,15 +39,6 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
-  const anomalyIdList = instance.relationships!.anomalyList
-    .data as ResourceIdentifier[];
-  const anomalyList: Anomaly[] = [];
-  for (const item of anomalyIdList) {
-    const anomaly = unknown("ANOMALY") as Anomaly;
-    anomaly.id = parseInt(item.id);
-    anomalyList.push(anomaly);
-  }
-
   const dataSourceIdList = instance.relationships!.dataSourceList
     .data as ResourceIdentifier[];
   const dataSourceList: DataSource[] = [];
@@ -62,12 +51,7 @@ function convert(
   const instancePartial = {
     ...(instance.attributes as Omit<
       Instance,
-      | "id"
-      | "environment"
-      | "anomalyList"
-      | "dataSourceList"
-      | "creator"
-      | "updater"
+      "id" | "environment" | "dataSourceList" | "creator" | "updater"
     >),
     id: parseInt(instance.id),
     creator: getPrincipalFromIncludedList(
@@ -79,12 +63,10 @@ function convert(
       includedList
     ),
     environment,
-    anomalyList: [],
     dataSourceList: [],
   };
 
   const environmentStore = useEnvironmentStore();
-  const anomalyStore = useAnomalyStore();
   const dataSourceStore = useDataSourceStore();
   for (const item of includedList || []) {
     if (
@@ -93,19 +75,6 @@ function convert(
         item.id
     ) {
       environment = environmentStore.convert(item, includedList);
-    }
-
-    if (
-      item.type == "anomaly" &&
-      item.attributes.instanceId == instancePartial.id
-    ) {
-      const i = anomalyList.findIndex(
-        (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
-      );
-      if (i != -1) {
-        anomalyList[i] = anomalyStore.convert(item);
-        anomalyList[i].instance = instancePartial;
-      }
     }
 
     if (
@@ -121,17 +90,9 @@ function convert(
     }
   }
 
-  for (const anomaly of anomalyList) {
-    anomaly.instance.environment = environment;
-  }
-
   return {
-    ...(instancePartial as Omit<
-      Instance,
-      "environment" | "anomalyList" | "dataSourceList"
-    >),
+    ...(instancePartial as Omit<Instance, "environment" | "dataSourceList">),
     environment,
-    anomalyList,
     dataSourceList,
   };
 }
