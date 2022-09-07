@@ -22,6 +22,9 @@ const (
 	// FullTextName is the string for FULLTEXT.
 	FullTextName string = "FULLTEXT"
 
+	// ErrorTypeEngineTypeError is the error for unsupported engine type.
+	ErrorTypeEngineTypeError WalkThroughErrorType = 1
+
 	// 101 parse error type.
 
 	// ErrorTypeParseError is the error in parsing.
@@ -44,7 +47,7 @@ const (
 	// ErrorTypeColumnExists is the error that column exists.
 	ErrorTypeColumnExists = 401
 	// ErrorTypeColumnNotExists is the error that column not exists.
-	ErrorTypeColumnNotExists = 504
+	ErrorTypeColumnNotExists = 402
 
 	// 501 ~ 599 index error type.
 
@@ -78,7 +81,10 @@ func (e *WalkThroughError) Error() string {
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmts.
 func (d *databaseState) WalkThrough(stmts string) error {
 	if d.dbType != db.MySQL {
-		return nil
+		return &WalkThroughError{
+			Type:    ErrorTypeEngineTypeError,
+			Content: fmt.Sprintf("Engine type %s is not supported", d.dbType),
+		}
 	}
 
 	// For MySQL, there is only one schema whose name is empty string.
@@ -114,7 +120,7 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 	if node.Table.Schema.O != "" && d.name != node.Table.Schema.O {
 		return &WalkThroughError{
 			Type:    ErrorTypeAccessOtherDatabase,
-			Content: fmt.Sprintf("Database `%s` is not the current database", node.Table.Schema.O),
+			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
 		}
 	}
 
@@ -158,7 +164,7 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 	switch constraint.Tp {
 	case tidbast.ConstraintPrimaryKey:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, true)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, true /* primary */)
 		if err != nil {
 			return err
 		}
@@ -166,29 +172,29 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 			return err
 		}
 	case tidbast.ConstraintKey, tidbast.ConstraintIndex:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */)
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, false, getIndexType(constraint.Option)); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, false /* unique */, getIndexType(constraint.Option)); err != nil {
 			return err
 		}
 	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */)
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, true, getIndexType(constraint.Option)); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, true /* unique */, getIndexType(constraint.Option)); err != nil {
 			return err
 		}
 	case tidbast.ConstraintForeignKey:
 		// we can not deal with FOREIGN KEY constraints
 	case tidbast.ConstraintFulltext:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */)
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, false, FullTextName); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, false /* unique */, FullTextName); err != nil {
 			return err
 		}
 	case tidbast.ConstraintCheck:
@@ -260,7 +266,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 			}
 			col.defaultValue = &defaultValue
 		case tidbast.ColumnOptionUniqKey:
-			if err := t.createIndex("", []string{col.name}, true, model.IndexTypeBtree.String()); err != nil {
+			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String()); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNull:
