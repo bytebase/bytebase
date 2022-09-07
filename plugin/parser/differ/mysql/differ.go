@@ -8,30 +8,23 @@ import (
 	"github.com/pingcap/tidb/parser/format"
 )
 
-// Differ is the differ plugin for MySQL.
-type Differ struct {
-	oldTables map[string]*ast.CreateTableStmt
-	tableDiff []ast.Node
-}
-
-// NewDiffer returns a new differ.
-func NewDiffer() *Differ {
-	return &Differ{
-		oldTables: make(map[string]*ast.CreateTableStmt),
-	}
-}
-
 // SchemaDiff returns the schema diff.
-func (d *Differ) SchemaDiff(old, new []ast.StmtNode) (string, error) {
+func SchemaDiff(old, new []ast.StmtNode) (string, error) {
+	oldTableList := make([]*ast.CreateTableStmt, 0)
+	oldTableMap := make(map[string]int)
+	tableDiff := make([]ast.Node, 0)
 	for _, node := range old {
 		if stmt, ok := node.(*ast.CreateTableStmt); ok {
-			d.oldTables[stmt.Table.Name.String()] = stmt
+			tableName := stmt.Table.Name.String()
+			oldTableMap[tableName] = len(oldTableList)
+			oldTableList = append(oldTableList, stmt)
 		}
 	}
 	for _, node := range new {
 		if stmt, ok := node.(*ast.CreateTableStmt); ok {
-			if _, ok := d.oldTables[stmt.Table.Name.String()]; !ok {
-				d.tableDiff = append(d.tableDiff, node)
+			if _, ok := oldTableMap[stmt.Table.Name.String()]; !ok {
+				stmt.IfNotExists = true
+				tableDiff = append(tableDiff, node)
 			}
 		}
 	}
@@ -48,5 +41,5 @@ func (d *Differ) SchemaDiff(old, new []ast.StmtNode) (string, error) {
 		}
 		return buf.String(), nil
 	}
-	return deparse(d.tableDiff)
+	return deparse(tableDiff)
 }
