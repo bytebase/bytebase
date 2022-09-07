@@ -296,10 +296,14 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 				switch matchList[index] {
 				case "data":
 					mi.Type = Data
+				case "dml":
+					mi.Type = Data
 				case "migrate":
 					mi.Type = Migrate
+				case "ddl":
+					mi.Type = Migrate
 				default:
-					return nil, errors.Errorf("file path %q contains invalid migration type %q, must be 'migrate' or 'data'", filePath, matchList[index])
+					return nil, errors.Errorf("file path %q contains invalid migration type %q, must be 'migrate'('ddl') or 'data'('dml')", filePath, matchList[index])
 				}
 			case "DESCRIPTION":
 				mi.Description = matchList[index]
