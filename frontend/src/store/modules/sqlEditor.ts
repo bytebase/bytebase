@@ -29,7 +29,6 @@ export const getDefaultConnectionContext = (): ConnectionContext => ({
   databaseId: UNKNOWN_ID,
   tableId: UNKNOWN_ID,
   tableName: "",
-  isLoadingTree: false,
 });
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
@@ -45,6 +44,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     queryHistoryList: [],
     isFetchingQueryHistory: false,
     isFetchingSheet: false,
+    isFetchingTree: false,
     sharedSheet: unknown("SHEET") as Sheet,
   }),
 

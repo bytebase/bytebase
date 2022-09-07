@@ -201,6 +201,7 @@ export interface SQLEditorState {
   isFetchingQueryHistory: boolean;
   isExecuting: boolean;
   isFetchingSheet: boolean;
+  isFetchingTree: boolean;
   isShowExecutingHint: boolean;
   sharedSheet: Sheet;
 }

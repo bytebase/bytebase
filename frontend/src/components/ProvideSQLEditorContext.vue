@@ -127,10 +127,10 @@ const prepareSheetFromQuery = async () => {
 onMounted(async () => {
   if (sqlEditorStore.connectionTree.length === 0) {
     // Won't rebuild the tree if already done.
-    sqlEditorStore.setConnectionContext({ isLoadingTree: true });
+    sqlEditorStore.isFetchingTree = true;
     await prepareAccessibleConnectionByProject();
     await prepareSQLEditorContext();
-    sqlEditorStore.setConnectionContext({ isLoadingTree: false });
+    sqlEditorStore.isFetchingTree = false;
   }
   await prepareSheetFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();

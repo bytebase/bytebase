@@ -42,7 +42,6 @@ export type ConnectionContext = {
   databaseId: DatabaseId;
   tableId?: TableId;
   tableName?: string;
-  isLoadingTree: boolean;
 };
 
 export interface QueryHistory {
