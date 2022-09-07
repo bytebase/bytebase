@@ -6,7 +6,7 @@ import { Connection, DEFAULT_PROJECT_ID, TabInfo, UNKNOWN_ID } from "@/types";
 
 export const defaultTabName = computed(() => t("sql-editor.untitled-sheet"));
 
-export const getDefaultConnection = (): Connection => {
+export const emptyConnection = (): Connection => {
   return {
     projectId: DEFAULT_PROJECT_ID,
     instanceId: UNKNOWN_ID,
@@ -20,7 +20,7 @@ export const getDefaultTab = (): TabInfo => {
   return {
     id: uuidv1(),
     name: defaultTabName.value,
-    connection: getDefaultConnection(),
+    connection: emptyConnection(),
     isSaved: true,
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     statement: "",

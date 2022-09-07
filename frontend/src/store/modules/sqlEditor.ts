@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import dayjs from "dayjs";
-import { isEmpty } from "lodash-es";
 import {
   SQLEditorState,
   ConnectionAtom,
@@ -12,8 +11,8 @@ import {
   QueryHistory,
   UNKNOWN_ID,
   Sheet,
-  DEFAULT_PROJECT_ID,
   unknown,
+  InstanceId,
 } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -22,19 +21,9 @@ import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { getDefaultConnection } from "@/utils";
+import { emptyConnection } from "@/utils";
 
 export const getDefaultConnectionContext = () => ({
-  hasSlug: false,
-  projectId: DEFAULT_PROJECT_ID,
-  projectName: "",
-  instanceId: UNKNOWN_ID,
-  instanceName: "",
-  databaseId: UNKNOWN_ID,
-  databaseName: "",
-  databaseType: "",
-  tableId: UNKNOWN_ID,
-  tableName: "",
   isLoadingTree: false,
   option: {} as any,
 });
@@ -55,14 +44,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
   }),
 
   getters: {
-    connectionTreeByInstanceId(state): Partial<ConnectionAtom> {
-      const idx = state.connectionTree.findIndex((item) => {
-        return item.id === state.connectionContext.instanceId;
-      });
-
-      return idx !== -1 ? state.connectionTree[idx] : {};
-    },
-
+    // TODO: remove this after a refactor to <TableSchema>
     connectionInfo() {
       const projectStore = useProjectStore();
       const instanceStore = useInstanceStore();
@@ -75,30 +57,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         databaseListByInstanceId: databaseStore.databaseListByInstanceId,
         databaseListByProjectId: databaseStore.databaseListByProjectId,
         tableListByDatabaseId: tableStore.tableListByDatabaseId,
-      };
-    },
-    connectionInfoByInstanceId() {
-      let instance = {} as any;
-      let databaseList: Database[] = [];
-      let tableList = [];
-
-      if (!isEmpty(this.connectionTreeByInstanceId)) {
-        instance = this.connectionTreeByInstanceId;
-        databaseList = useDatabaseStore().getDatabaseListByInstanceId(
-          instance.id
-        );
-
-        tableList = instance.children
-          .map((item: ConnectionAtom) =>
-            useTableStore().getTableListByDatabaseId(item.id)
-          )
-          .flat();
-      }
-
-      return {
-        instance,
-        databaseList,
-        tableList,
       };
     },
     findProjectIdByDatabaseId:
@@ -118,11 +76,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         }
         return projectId;
       },
-
-    currentSlug(state) {
-      const connectionContext = state.connectionContext;
-      return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
-    },
   },
 
   actions: {
@@ -151,9 +104,12 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       this.isFetchingQueryHistory = payload;
     },
     async executeQuery({ statement }: Pick<QueryInfo, "statement">) {
+      const { instanceId, databaseId } = useTabStore().currentTab.connection;
+      const database = useDatabaseStore().getDatabaseById(databaseId);
+      const databaseName = database.id === UNKNOWN_ID ? "" : database.name;
       const queryResult = await useSQLStore().query({
-        instanceId: this.connectionContext.instanceId,
-        databaseName: this.connectionContext.databaseName,
+        instanceId,
+        databaseName,
         statement: statement,
         // set the limit to 10000 temporarily to avoid the query timeout and page crash
         limit: 10000,
@@ -164,7 +120,10 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     async fetchConnectionByInstanceIdAndDatabaseId({
       instanceId,
       databaseId,
-    }: Pick<SQLEditorState["connectionContext"], "instanceId" | "databaseId">) {
+    }: {
+      instanceId: InstanceId;
+      databaseId: DatabaseId;
+    }) {
       const [database] = await Promise.all([
         useDatabaseStore().fetchDatabaseById(databaseId),
         useInstanceStore().fetchInstanceById(instanceId),
@@ -173,7 +132,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
 
       useTabStore().updateCurrentTab({
         connection: {
-          ...getDefaultConnection(),
+          ...emptyConnection(),
           projectId: database.project.id,
           instanceId,
           databaseId,

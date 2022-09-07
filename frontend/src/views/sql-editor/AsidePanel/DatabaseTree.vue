@@ -60,7 +60,7 @@ import {
 } from "@/store";
 import {
   connectionSlug,
-  getDefaultConnection,
+  emptyConnection,
   getHighlightHTMLByKeyWords,
   mapConnectionAtom,
 } from "@/utils";
@@ -146,7 +146,7 @@ watch(
 
 const setConnection = (option: ConnectionAtom) => {
   if (option) {
-    const conn = getDefaultConnection();
+    const conn = emptyConnection();
 
     // If selected item is instance node
     if (option.type === "instance") {

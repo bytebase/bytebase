@@ -1,12 +1,5 @@
 import type * as monaco from "monaco-editor";
-import {
-  ProjectId,
-  InstanceId,
-  DatabaseId,
-  TableId,
-  ViewId,
-  ActivityId,
-} from "../types";
+import { InstanceId, DatabaseId, TableId, ViewId, ActivityId } from "../types";
 import { Principal } from "./principal";
 
 export type EditorModel = monaco.editor.ITextModel;
@@ -36,16 +29,6 @@ export enum SortText {
 // TODO(Steven): ConnectionContext should be refactored later,
 // because it has some extra not required fields: instanceName, databaseName...
 export type ConnectionContext = {
-  hasSlug: boolean;
-  projectId: ProjectId;
-  projectName: string;
-  instanceId: InstanceId;
-  instanceName: string;
-  databaseId: DatabaseId;
-  databaseName: string;
-  databaseType: string;
-  tableId?: TableId;
-  tableName?: string;
   isLoadingTree: boolean;
   option: ConnectionAtom;
 };
