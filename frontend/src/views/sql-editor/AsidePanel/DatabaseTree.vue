@@ -184,6 +184,8 @@ const setConnection = (option: ConnectionAtom) => {
       });
     }
 
+    // TODO(Jim): This part is for <TableSchema> only
+    // and should be removed after upcoming refactor.
     sqlEditorStore.setConnectionContext({
       option,
     });
@@ -274,8 +276,8 @@ const nodeProps = (info: { option: ConnectionAtom }) => {
 
   return {
     onClick(e: MouseEvent) {
-      // This part is for <TableSchema> only
-      // and should be removed in next refactor.
+      // TODO(Jim): This part is for <TableSchema> only
+      // and should be removed after upcoming refactor.
       const targetEl = e.target as HTMLElement;
       if (option && targetEl.className === "n-tree-node-content__text") {
         sqlEditorStore.setConnectionContext({
