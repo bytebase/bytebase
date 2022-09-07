@@ -153,7 +153,11 @@ watch(
     () => sqlEditorStore.connectionContext.databaseId,
   ],
   ([sheet, instanceId, databaseId]) => {
-    if (!mounted.value) return;
+    if (!mounted.value) {
+      // Don't touch anything if not mounted yet or unmounted already.
+      return;
+    }
+
     const routeArgs: any = {
       name: "sql-editor.home",
       params: {},
