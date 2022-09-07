@@ -87,20 +87,11 @@
 import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
-import slug from "slug";
-import {
-  pushNotification,
-  useTabStore,
-  useSQLEditorStore,
-  useSheetStore,
-  useInstanceById,
-  useDatabaseById,
-} from "@/store";
-import { AccessOption, UNKNOWN_ID } from "@/types";
+import { pushNotification, useTabStore, useSheetStore } from "@/store";
+import { AccessOption } from "@/types";
 
 const { t } = useI18n();
 const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
@@ -125,23 +116,6 @@ const accessOptions = computed<AccessOption[]>(() => {
 
 const sheet = computed(() => sheetStore.currentSheet);
 const creator = computed(() => sheetStore.isCreator);
-
-const instance = useInstanceById(
-  computed(() => sqlEditorStore.connectionContext.instanceId)
-);
-const database = useDatabaseById(
-  computed(() => sqlEditorStore.connectionContext.databaseId)
-);
-
-const connectionSlug = computed(() => {
-  const inst = instance.value;
-  const db = database.value;
-  if (inst.id === UNKNOWN_ID || db.id === UNKNOWN_ID) {
-    return "";
-  }
-
-  return [inst.name, inst.id, db.name, db.id].join("_");
-});
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
@@ -173,18 +147,8 @@ const handleChangeAccess = (option: AccessOption) => {
   isShowAccessPopover.value = false;
 };
 
-const sheetSlug = computed(() => {
-  return `${slug(tabStore.currentTab.name)}_${tabStore.currentTab.sheetId}`;
-});
-
 const sharedTabLink = computed(() => {
-  const base = `${window.location.origin}/sql-editor`;
-
-  if (connectionSlug.value) {
-    return [base, connectionSlug.value, sheetSlug].join("/");
-  }
-
-  return `${base}?sheetId=${sheet.value.id}`;
+  return `${window.location.origin}/sql-editor?sheetId=${sheet.value.id}`;
 });
 
 const { copy, copied } = useClipboard({
