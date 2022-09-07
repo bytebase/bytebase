@@ -584,7 +584,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 		if repo.Project.TenantMode == api.TenantModeTenant {
 			updateSchemaDetails = append(updateSchemaDetails,
 				&api.UpdateSchemaDetail{
-					DatabaseName: migrationInfo.Database,
+					DatabaseName: dbName,
 					Statement:    content,
 				},
 			)
