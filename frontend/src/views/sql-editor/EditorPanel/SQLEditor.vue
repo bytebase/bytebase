@@ -27,6 +27,7 @@ import {
   useDatabaseStore,
   useTableStore,
   useSheetStore,
+  useInstanceById,
 } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
@@ -48,10 +49,9 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { execute } = useExecuteSQL();
 
 const sqlCode = computed(() => tabStore.currentTab.statement);
-const selectedInstance = computed(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  return instanceStore.getInstanceById(ctx.instanceId);
-});
+const selectedInstance = useInstanceById(
+  computed(() => tabStore.currentTab.connection.instanceId)
+);
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });

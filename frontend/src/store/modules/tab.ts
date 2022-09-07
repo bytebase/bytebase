@@ -1,22 +1,33 @@
 import { defineStore } from "pinia";
-import { TabInfo, AnyTabInfo, TabState, Connection } from "@/types";
-import { getDefaultTab } from "@/utils";
+import { TabInfo, AnyTabInfo, TabState, Connection, UNKNOWN_ID } from "@/types";
+import { getDefaultTab, INITIAL_TAB } from "@/utils";
+import { useInstanceStore } from "./instance";
 
 export const useTabStore = defineStore("tab", {
   state: (): TabState => ({
-    tabList: [],
-    currentTabId: "",
+    tabList: [INITIAL_TAB],
+    currentTabId: INITIAL_TAB.id,
   }),
 
   getters: {
     currentTab(state): TabInfo {
-      const idx = state.tabList.findIndex(
-        (tab: TabInfo) => tab.id === state.currentTabId
-      );
-      return (idx === -1 ? {} : state.tabList[idx]) as TabInfo;
+      const tab = state.tabList.find((tab) => tab.id === state.currentTabId);
+      return tab ?? getDefaultTab();
     },
     hasTabs(state: TabState): boolean {
       return state.tabList.length > 0;
+    },
+    isDisconnected(): boolean {
+      const { instanceId, databaseId } = this.currentTab.connection;
+      if (instanceId === UNKNOWN_ID) {
+        return true;
+      }
+      const instance = useInstanceStore().getInstanceById(instanceId);
+      if (instance.engine === "MYSQL" || instance.engine === "TIDB") {
+        // Connecting to instance directly.
+        return false;
+      }
+      return databaseId === UNKNOWN_ID;
     },
   },
 

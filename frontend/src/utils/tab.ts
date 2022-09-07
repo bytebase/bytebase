@@ -27,3 +27,5 @@ export const getDefaultTab = (): TabInfo => {
     selectedStatement: "",
   };
 };
+
+export const INITIAL_TAB = getDefaultTab();

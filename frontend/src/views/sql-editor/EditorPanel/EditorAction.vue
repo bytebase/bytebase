@@ -44,12 +44,11 @@
       </NPopover>
 
       <div class="flex items-center text-sm space-x-1">
-        <div class="flex items-center">
-          <InstanceEngineIcon
-            v-if="selectedInstance.id !== UNKNOWN_ID"
-            :instance="selectedInstance"
-            show-status
-          />
+        <div
+          v-if="selectedInstance.id !== UNKNOWN_ID"
+          class="flex items-center"
+        >
+          <InstanceEngineIcon :instance="selectedInstance" show-status />
           <span class="ml-2">{{ selectedInstance.name }}</span>
         </div>
         <div

@@ -21,6 +21,8 @@ import { useInstanceStore } from "./instance";
 import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
 import { useProjectStore } from "./project";
+import { useTabStore } from "./tab";
+import { getDefaultConnection } from "@/utils";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
@@ -34,7 +36,7 @@ export const getDefaultConnectionContext = () => ({
   tableId: UNKNOWN_ID,
   tableName: "",
   isLoadingTree: false,
-  option: {},
+  option: {} as any,
 });
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
@@ -121,22 +123,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       const connectionContext = state.connectionContext;
       return `${connectionContext.instanceId}/${connectionContext.databaseId}/${connectionContext.tableId}`;
     },
-    /**
-     * check the connection whether disconnected
-     * 1、If the context is not set the instanceId, return true
-     * 2、If the context is set the instanceId, but not set the databaseId and databaseType is not MYSQL or TIDB, return true
-     * @param state
-     * @returns boolean
-     */
-    isDisconnected(state) {
-      const ctx = state.connectionContext;
-      return (
-        ctx.instanceId === UNKNOWN_ID ||
-        (ctx.databaseId === UNKNOWN_ID &&
-          ctx.databaseType !== "MYSQL" &&
-          ctx.databaseType !== "TIDB")
-      );
-    },
   },
 
   actions: {
@@ -179,17 +165,19 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       instanceId,
       databaseId,
     }: Pick<SQLEditorState["connectionContext"], "instanceId" | "databaseId">) {
-      const instance = await useInstanceStore().fetchInstanceById(instanceId);
-      const database = await useDatabaseStore().fetchDatabaseById(databaseId);
-      await useTableStore().fetchTableListByDatabaseId(database.id);
+      const [database] = await Promise.all([
+        useDatabaseStore().fetchDatabaseById(databaseId),
+        useInstanceStore().fetchInstanceById(instanceId),
+        useTableStore().fetchTableListByDatabaseId(databaseId),
+      ]);
 
-      this.setConnectionContext({
-        hasSlug: true,
-        instanceId,
-        instanceName: instance.name,
-        databaseId: database.syncStatus === "OK" ? database.id : undefined,
-        databaseName: database.syncStatus === "OK" ? database.name : undefined,
-        databaseType: instance.engine,
+      useTabStore().updateCurrentTab({
+        connection: {
+          ...getDefaultConnection(),
+          projectId: database.project.id,
+          instanceId,
+          databaseId,
+        },
       });
     },
     async fetchQueryHistoryList() {
