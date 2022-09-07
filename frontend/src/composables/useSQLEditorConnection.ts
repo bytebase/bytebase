@@ -42,7 +42,6 @@ const useSQLEditorConnection = () => {
         });
       }
     } else {
-      // sqlEditorStore.(getDefaultConnectionContext());
       tabStore.updateCurrentTab({
         connection: getDefaultConnection(),
       });
