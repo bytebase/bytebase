@@ -308,6 +308,7 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 	}
 	instance.Environment = env
 
+	// TODO(d): remove anomaly from database.
 	rowStatus := api.Normal
 	anomalyList, err := s.FindAnomaly(ctx, &api.AnomalyFind{
 		RowStatus:    &rowStatus,
