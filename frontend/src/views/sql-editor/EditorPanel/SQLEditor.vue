@@ -77,16 +77,6 @@ watch(
 );
 
 watch(
-  () => sqlEditorStore.shouldSetContent,
-  () => {
-    if (sqlEditorStore.shouldSetContent) {
-      editorRef.value?.setEditorContent(tabStore.currentTab.statement);
-      sqlEditorStore.setShouldSetContent(false);
-    }
-  }
-);
-
-watch(
   () => sqlEditorStore.shouldFormatContent,
   () => {
     if (sqlEditorStore.shouldFormatContent) {
