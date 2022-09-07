@@ -84,7 +84,7 @@
         :item-list="['DDL', 'SDL']"
         class="mt-1"
         @select-item="
-          (type) => {
+          (type: string) => {
             $emit('change-schema-migration-type', type);
           }
         "
