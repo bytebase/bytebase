@@ -74,7 +74,7 @@
           <NButton
             :disabled="
               isEmptyStatement ||
-              sqlEditorStore.isDisconnected ||
+              tabStore.isDisconnected ||
               !tabStore.currentTab.isSaved
             "
           >

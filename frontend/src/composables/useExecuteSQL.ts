@@ -45,7 +45,7 @@ const useExecuteSQL = () => {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
 
-    const isDisconnected = sqlEditorStore.isDisconnected;
+    const isDisconnected = tabStore.isDisconnected;
     if (isDisconnected) {
       notify("CRITICAL", t("sql-editor.select-connection"));
       return;

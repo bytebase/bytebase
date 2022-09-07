@@ -9,7 +9,7 @@
       {{ $t("sql-editor.sql-execute-in-protected-environment") }}
     </div>
 
-    <template v-if="!sqlEditorStore.isDisconnected">
+    <template v-if="!tabStore.isDisconnected">
       <SQLEditor @save-sheet="handleSaveSheet" />
     </template>
     <template v-else>
