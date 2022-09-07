@@ -96,7 +96,8 @@ const prepareSheetFromQuery = async () => {
       (tab) => tab.sheetId === sheet.id
     );
     if (openSheetTab) {
-      // The sheet is already open in a tab. Switch to it.
+      // The sheet is already open in a tab.
+      // Just switch to it and don't touch anything.
       tabStore.setCurrentTabId(openSheetTab.id);
     } else {
       // Find a replaceable, and 'replaceable' means
@@ -110,14 +111,14 @@ const prepareSheetFromQuery = async () => {
         // Open the sheet in a new tab otherwise.
         tabStore.addTab();
       }
-    }
 
-    tabStore.updateCurrentTab({
-      sheetId: sheet.id,
-      name: sheet.name,
-      statement: sheet.statement,
-      isModified: !!openSheetTab,
-    });
+      tabStore.updateCurrentTab({
+        sheetId: sheet.id,
+        name: sheet.name,
+        statement: sheet.statement,
+        isModified: false,
+      });
+    }
     setConnectionContextFromCurrentTab();
     useSQLEditorStore().setSQLEditorState({
       sharedSheet: sheet,
