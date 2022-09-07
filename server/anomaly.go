@@ -31,7 +31,7 @@ func (s *Server) registerAnomalyRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter database is not a number: %s", databaseIDStr)).SetInternal(err)
 			}
-			anomalyFind.InstanceID = &databaseID
+			anomalyFind.DatabaseID = &databaseID
 		}
 		anomalyList, err := s.store.FindAnomaly(ctx, anomalyFind)
 		if err != nil {
