@@ -87,11 +87,20 @@
 import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useTabStore, useSheetStore } from "@/store";
-import { AccessOption } from "@/types";
+import {
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  useSheetStore,
+  useInstanceById,
+  useDatabaseById,
+} from "@/store";
+import { AccessOption, UNKNOWN_ID } from "@/types";
+import { connectionSlug, sheetSlug } from "@/utils";
 
 const { t } = useI18n();
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
@@ -116,6 +125,13 @@ const accessOptions = computed<AccessOption[]>(() => {
 
 const sheet = computed(() => sheetStore.currentSheet);
 const creator = computed(() => sheetStore.isCreator);
+
+const instance = useInstanceById(
+  computed(() => sqlEditorStore.connectionContext.instanceId)
+);
+const database = useDatabaseById(
+  computed(() => sqlEditorStore.connectionContext.databaseId)
+);
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
@@ -148,7 +164,17 @@ const handleChangeAccess = (option: AccessOption) => {
 };
 
 const sharedTabLink = computed(() => {
-  return `${window.location.origin}/sql-editor?sheetId=${sheet.value.id}`;
+  const base = `${window.location.origin}/sql-editor`;
+
+  if (database.value.id !== UNKNOWN_ID && instance.value.id !== UNKNOWN_ID) {
+    // Use '/sql-editor/{instance_slug}_{database_slug}/{sheet_slug}' if possible.
+    return [base, connectionSlug(database.value), sheetSlug(sheet.value)].join(
+      "/"
+    );
+  }
+
+  // Use '/sql-editor?sheetId={sheet_id}' otherwise.
+  return `${base}?sheetId=${sheet.value.id}`;
 });
 
 const { copy, copied } = useClipboard({

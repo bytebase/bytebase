@@ -10,6 +10,7 @@ import {
   ProjectWebhook,
   VCS,
   SQLReviewPolicy,
+  Sheet,
 } from "../types";
 import { IdType } from "../types/id";
 
@@ -84,10 +85,11 @@ export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
 }
 
 export function connectionSlug(database: Database): string {
-  return [
-    slug(database.instance.name),
-    database.instance.id,
-    slug(database.name),
-    database.id,
-  ].join("_");
+  const instance = database.instance;
+
+  return [instanceSlug(instance), databaseSlug(database)].join("_");
+}
+
+export function sheetSlug(sheet: Sheet): string {
+  return [slug(sheet.name), sheet.id].join("-");
 }

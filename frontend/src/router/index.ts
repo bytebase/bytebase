@@ -1324,18 +1324,20 @@ router.beforeEach((to, from, next) => {
   }
 
   if (connectionSlug) {
-    const [, instanceId, , databaseId] = connectionSlug.split("_");
+    const [instanceSlug, databaseSlug] = connectionSlug.split("_");
+    const instanceId = idFromSlug(instanceSlug);
+    const databaseId = idFromSlug(databaseSlug);
     useSQLEditorStore()
       .fetchConnectionByInstanceIdAndDatabaseId({
-        instanceId: Number(instanceId),
-        databaseId: Number(databaseId),
+        instanceId,
+        databaseId,
       })
       .then(() => {
         // for sharing the sheet to others
         if (sheetSlug) {
-          const [_, sheetId] = sheetSlug.split("_");
+          const sheetId = idFromSlug(sheetSlug);
           useSheetStore()
-            .fetchSheetById(Number(sheetId))
+            .fetchSheetById(sheetId)
             .then((sheet: Sheet) => {
               tabStore.addTab({
                 name: sheet.name,
