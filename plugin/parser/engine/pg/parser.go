@@ -35,6 +35,12 @@ func (*PostgreSQLParser) Parse(_ parser.ParseContext, statement string) ([]ast.N
 		return nil, err
 	}
 
+	// sikp the setting line stage
+	if len(res.Stmts) == 0 {
+		return nil, nil
+	}
+
+	// setting line stage
 	textList, err := parser.SplitMultiSQL(parser.Postgres, statement)
 	if err != nil {
 		return nil, err

@@ -572,8 +572,42 @@ func TestVCS_SDL(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
-							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{gitFile},
+							Timestamp:    "2021-01-13T13:14:00Z",
+							ModifiedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return github.WebhookPushEvent{
+					Ref: "refs/heads/feature/foo",
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Modified: []string{gitFile},
 						},
 					},
 				}

@@ -63,7 +63,7 @@ export default defineComponent({
   },
   setup(props) {
     const issueIconClass = () => {
-      let iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
+      const iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
       switch (props.issueStatus) {
         case "OPEN":
           if (props.taskStatus && props.taskStatus === "FAILED") {

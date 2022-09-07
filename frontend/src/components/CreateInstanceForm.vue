@@ -309,7 +309,7 @@ const state = reactive<LocalState>({
 });
 
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
-const hasCreatingEmbeddedPostgresInstance = ref(false);
+const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
 
 const allowCreate = computed(() => {
   return state.instance.name && state.instance.host;
@@ -341,11 +341,21 @@ const isInOnboaringCreateDatabaseGuide = computed(() => {
   return guideName === "create-database";
 });
 
-const warningModalOkText = computed(() => {
-  if (
+const shouldShowCreateEmbeddedPostgresButton = computed(() => {
+  const tempInstance = embeddedPostgresInstance.value;
+  return (
     isInOnboaringCreateDatabaseGuide.value &&
-    !hasCreatingEmbeddedPostgresInstance.value
-  ) {
+    (!tempInstance ||
+      state.instance.engine !== tempInstance.engine ||
+      state.instance.host !== tempInstance.host ||
+      state.instance.port !== tempInstance.port ||
+      state.instance.username !== tempInstance.username ||
+      state.instance.password !== tempInstance.password)
+  );
+});
+
+const warningModalOkText = computed(() => {
+  if (shouldShowCreateEmbeddedPostgresButton.value) {
     return t("instance.add-a-postgresql-sample-instance");
   } else {
     return t("instance.ignore-and-create");
@@ -436,19 +446,19 @@ const updateInstance = (field: string, value: string) => {
 const handleWarningModalOkClick = async () => {
   // When user get the warning of incorrect instance info in creating database onboarding guide,
   // we'd like to display the `create an embedded PostgreSQL database` button instead of `ignore and create`.
-  if (
-    isInOnboaringCreateDatabaseGuide.value &&
-    !hasCreatingEmbeddedPostgresInstance.value
-  ) {
+  if (shouldShowCreateEmbeddedPostgresButton.value) {
     const connectionInfo =
       await useInstanceStore().createEmbeddedPostgresInstance();
-    state.instance = {
-      ...state.instance,
+    embeddedPostgresInstance.value = {
       engine: "POSTGRES",
       host: connectionInfo.host,
       port: String(connectionInfo.port),
       username: connectionInfo.username,
       password: "",
+    };
+    state.instance = {
+      ...state.instance,
+      ...embeddedPostgresInstance.value,
     };
     pushNotification({
       module: "bytebase",
@@ -456,7 +466,6 @@ const handleWarningModalOkClick = async () => {
       title: t("common.success"),
       description: t("instance.successfully-created-postgresql-instance"),
     });
-    hasCreatingEmbeddedPostgresInstance.value = true;
     state.showCreateInstanceWarningModal = false;
   } else {
     state.showCreateInstanceWarningModal = false;

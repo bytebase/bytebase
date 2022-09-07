@@ -131,6 +131,17 @@ func TestCharsetAllowlist(t *testing.T) {
 				},
 			},
 		},
+		{
+			Statement: "/* this is a comment */",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
 	}
 
 	payload, err := json.Marshal(advisor.CharsetAllowlistRulePayload{

@@ -354,6 +354,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
+	s.registerAnomalyRoutes(apiGroup)
 	s.registerOpenAPIRoutes(openAPIGroup)
 
 	// Register healthz endpoint.

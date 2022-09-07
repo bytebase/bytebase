@@ -124,6 +124,17 @@ func TestColumnNoNULL(t *testing.T) {
 				},
 			},
 		},
+		{
+			Statement: "/* this is a comment */",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &ColumnNoNullAdvisor{}, &advisor.SQLReviewRule{
