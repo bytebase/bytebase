@@ -10,14 +10,12 @@ import (
 
 // SchemaDiff returns the schema diff.
 func SchemaDiff(old, new []ast.StmtNode) (string, error) {
-	oldTableList := make([]*ast.CreateTableStmt, 0)
-	oldTableMap := make(map[string]int)
+	oldTableMap := make(map[string]ast.StmtNode)
 	tableDiff := make([]ast.Node, 0)
 	for _, node := range old {
 		if stmt, ok := node.(*ast.CreateTableStmt); ok {
 			tableName := stmt.Table.Name.String()
-			oldTableMap[tableName] = len(oldTableList)
-			oldTableList = append(oldTableList, stmt)
+			oldTableMap[tableName] = node
 		}
 	}
 	for _, node := range new {
