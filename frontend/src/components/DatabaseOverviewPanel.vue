@@ -230,6 +230,7 @@ import {
   useTableStore,
   useViewStore,
   useDBExtensionStore,
+  useAnomalyList,
 } from "@/store";
 
 interface LocalState {
@@ -283,13 +284,17 @@ export default defineComponent({
 
     watchEffect(prepareDBExtensionList);
 
+    const anomalyList = useAnomalyList(
+      computed(() => ({ databaseId: props.database.id }))
+    );
+
     const anomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
         const list: BBTableSectionDataSource<Anomaly>[] = [];
-        if (props.database.anomalyList.length > 0) {
+        if (anomalyList.value.length > 0) {
           list.push({
             title: props.database.name,
-            list: props.database.anomalyList,
+            list: anomalyList.value,
           });
         }
         return list;

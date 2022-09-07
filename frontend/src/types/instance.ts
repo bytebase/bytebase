@@ -1,4 +1,4 @@
-import { Anomaly, DataSource } from ".";
+import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
@@ -46,7 +46,6 @@ export type Instance = {
 
   // Related fields
   environment: Environment;
-  anomalyList: Anomaly[];
   // An instance must have a admin data source, maybe a read-only data source.
   dataSourceList: DataSource[];
 
