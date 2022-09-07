@@ -43,7 +43,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, omit, escape } from "lodash-es";
+import { cloneDeep, escape } from "lodash-es";
 import { TreeOption, DropdownOption } from "naive-ui";
 import { ref, computed, h, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -60,9 +60,11 @@ import {
   useInstanceStore,
   useSQLEditorStore,
   useTableStore,
+  useTabStore,
 } from "@/store";
 import {
   connectionSlug,
+  getDefaultConnection,
   getHighlightHTMLByKeyWords,
   mapConnectionAtom,
 } from "@/utils";
@@ -78,7 +80,9 @@ const { t } = useI18n();
 
 const router = useRouter();
 const instanceStore = useInstanceStore();
+const databaseStore = useDatabaseStore();
 const sqlEditorStore = useSQLEditorStore();
+const tabStore = useTabStore();
 
 const defaultExpandedKeys = ref<string[]>([]);
 const searchPattern = ref();
@@ -138,96 +142,37 @@ watch(
   { immediate: true }
 );
 
-const getFlattenConnectionTree = () => {
-  const tree = sqlEditorStore.connectionTree;
-  if (!tree) {
-    return {};
-  }
-
-  const instanceList = tree
-    .filter((node) => node.type === "instance")
-    .map((item) => omit(item, "children"));
-
-  const allDatabaseList = tree.flatMap((node) => {
-    if (node.children && node.children.length > 0) {
-      return node.children.filter((node) => node.type === "database");
-    }
-  }) as ConnectionAtom[];
-
-  const databaseList = allDatabaseList.map((item) => omit(item, "children"));
-
-  const tableList = allDatabaseList
-    .filter((item) => item.children && item.children.length > 0)
-    .flatMap((db: ConnectionAtom) => {
-      if (db.children) {
-        return db.children.filter((node) => node.type === "table");
-      }
-    });
-
-  return {
-    instanceList,
-    databaseList,
-    tableList,
-  };
-};
-
 const setSheetContext = (option: any) => {
   if (option) {
-    const ctx = cloneDeep(
-      sqlEditorStore.connectionContext
-    ) as ConnectionContext;
-    const { instanceList, databaseList } = getFlattenConnectionTree();
-
-    const getInstanceNameByInstanceId = (id: number) => {
-      const instance = instanceList?.find((item) => item.id === id);
-      return instance ? instance.label : "";
-    };
-    const getInstanceEngineByInstanceId = (id: number) => {
-      const selectedInstance = instanceStore.getInstanceById(id);
-      return selectedInstance ? selectedInstance.engine : "MYSQL";
-    };
+    const conn = getDefaultConnection();
 
     // If selected item is instance node
     if (option.type === "instance") {
-      ctx.instanceId = option.id;
-      ctx.instanceName = option.label;
-      ctx.databaseId = UNKNOWN_ID;
-      ctx.databaseName = "";
-      ctx.databaseType = getInstanceEngineByInstanceId(option.id);
-      ctx.tableId = UNKNOWN_ID;
-      ctx.tableName = "";
+      conn.instanceId = option.id;
     } else if (option.type === "database") {
       // If selected item is database node
       const instanceId = option.parentId;
-      ctx.instanceId = instanceId;
-      ctx.instanceName = getInstanceNameByInstanceId(instanceId);
-      ctx.databaseId = option.id;
-      ctx.databaseName = option.label;
-      ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
-      ctx.tableId = UNKNOWN_ID;
-      ctx.tableName = "";
+      conn.instanceId = instanceId;
+      conn.databaseId = option.id;
     } else if (option.type === "table") {
       // If selected item is table node
       const databaseId = option.parentId;
-      const databaseInfo = databaseList?.find((item) => item.id === databaseId);
-      const databaseName = databaseInfo?.label || "";
-      const instanceId = databaseInfo?.parentId || UNKNOWN_ID;
-      ctx.instanceId = instanceId;
-      ctx.instanceName = getInstanceNameByInstanceId(instanceId);
-      ctx.databaseId = databaseId;
-      ctx.databaseName = databaseName;
-      ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
-      ctx.tableId = option.id;
-      ctx.tableName = option.label;
+      const databaseInfo = databaseStore.getDatabaseById(databaseId);
+      const instanceId = databaseInfo.instance.id;
+      conn.instanceId = instanceId;
+      conn.databaseId = databaseId;
+      conn.tableId = option.id;
+      conn.tableName = option.label;
     }
 
-    ctx.hasSlug = true;
-    sqlEditorStore.setConnectionContext(ctx);
+    tabStore.updateCurrentTab({
+      connection: conn,
+    });
 
-    if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
+    if (conn.instanceId !== UNKNOWN_ID && conn.databaseId !== UNKNOWN_ID) {
       const database = useDatabaseStore().getDatabaseById(
-        ctx.databaseId,
-        ctx.instanceId
+        conn.databaseId,
+        conn.instanceId
       );
       router.replace({
         name: "sql-editor.detail",
@@ -240,7 +185,7 @@ const setSheetContext = (option: any) => {
 };
 
 // dynamic render the highlight keywords
-const renderLabel = ({ option }: { option: TreeOption }) => {
+const renderLabel = ({ option }: { option: ConnectionAtom }) => {
   const renderLabelHTML = searchPattern.value
     ? h("span", {
         innerHTML: getHighlightHTMLByKeyWords(

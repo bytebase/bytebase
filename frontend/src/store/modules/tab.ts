@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import { TabInfo, AnyTabInfo, TabState } from "@/types";
-import { getDefaultTab } from "@/utils/tab";
+import { TabInfo, AnyTabInfo, TabState, Connection } from "@/types";
+import { getDefaultTab } from "@/utils";
 
 export const useTabStore = defineStore("tab", {
   state: (): TabState => ({
@@ -41,13 +41,10 @@ export const useTabStore = defineStore("tab", {
       this.tabList.splice(this.tabList.indexOf(payload), 1);
     },
     updateCurrentTab(payload: AnyTabInfo) {
-      const idx = this.tabList.findIndex(
-        (tab: TabInfo) => tab.id === this.currentTabId
-      );
-      Object.assign(this.tabList[idx], {
-        ...this.tabList[idx],
-        ...payload,
-      });
+      Object.assign(this.currentTab, payload);
+    },
+    updateCurrentConnection(connection: Partial<Connection>) {
+      Object.assign(this.currentTab.connection, connection);
     },
     setCurrentTabId(payload: string) {
       this.currentTabId = payload;

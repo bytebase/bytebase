@@ -1,19 +1,12 @@
 import { useRouter } from "vue-router";
 
 import { DEFAULT_PROJECT_ID, Sheet, UNKNOWN_ID } from "../types";
-import { connectionSlug } from "../utils";
-import { getDefaultConnectionContext } from "@/store";
-import {
-  useDatabaseStore,
-  useTabStore,
-  useSQLEditorStore,
-  useSheetStore,
-} from "@/store";
+import { connectionSlug, getDefaultConnection } from "../utils";
+import { useDatabaseStore, useTabStore, useSheetStore } from "@/store";
 
 const useSQLEditorConnection = () => {
   const router = useRouter();
   const tabStore = useTabStore();
-  const sqlEditorStore = useSQLEditorStore();
   const sheetStore = useSheetStore();
 
   /**
@@ -26,11 +19,13 @@ const useSQLEditorConnection = () => {
     if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
       const sheet = sheetById.get(currentTab.sheetId) as Sheet;
 
-      sqlEditorStore.setConnectionContext({
-        hasSlug: true,
-        projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
-        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
-        databaseId: sheet.databaseId || UNKNOWN_ID,
+      tabStore.updateCurrentTab({
+        connection: {
+          ...getDefaultConnection(),
+          projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
+          instanceId: sheet.database?.instanceId || UNKNOWN_ID,
+          databaseId: sheet.databaseId || UNKNOWN_ID,
+        },
       });
 
       if (sheet.databaseId) {
@@ -47,7 +42,10 @@ const useSQLEditorConnection = () => {
         });
       }
     } else {
-      sqlEditorStore.setConnectionContext(getDefaultConnectionContext());
+      // sqlEditorStore.(getDefaultConnectionContext());
+      tabStore.updateCurrentTab({
+        connection: getDefaultConnection(),
+      });
 
       router.push({
         path: "/sql-editor",

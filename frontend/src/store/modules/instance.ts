@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-import { computed, onBeforeMount } from "vue";
+import { computed, onBeforeMount, unref, watch } from "vue";
 import {
   DataSource,
   empty,
@@ -15,6 +15,7 @@ import {
   InstanceState,
   InstanceUserId,
   INSTANCE_OPERATION_TIMEOUT,
+  MaybeRef,
   MigrationHistory,
   MigrationHistoryId,
   ResourceIdentifier,
@@ -22,6 +23,7 @@ import {
   RowStatus,
   SQLResultSet,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import { InstanceUser } from "@/types/InstanceUser";
 import { getPrincipalFromIncludedList } from "./principal";
@@ -495,4 +497,21 @@ export const useInstanceList = (rowStatusList?: RowStatus[]) => {
   // So we fetch data when "before mount" - trying to be early but not too early.
   onBeforeMount(() => store.fetchInstanceList(rowStatusList));
   return computed(() => store.getInstanceList(rowStatusList));
+};
+
+export const useInstanceById = (instanceId: MaybeRef<InstanceId>) => {
+  const store = useInstanceStore();
+  watch(
+    () => unref(instanceId),
+    (id) => {
+      if (id !== UNKNOWN_ID) {
+        if (store.getInstanceById(id).id === UNKNOWN_ID) {
+          store.fetchInstanceById(id);
+        }
+      }
+    },
+    { immediate: true }
+  );
+
+  return computed(() => store.getInstanceById(unref(instanceId)));
 };

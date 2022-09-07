@@ -23,9 +23,7 @@
     </div>
     <div class="action-right space-x-2 flex justify-end items-center">
       <NPopover
-        v-if="
-          connectionContext.instanceId !== UNKNOWN_ID && !hasReadonlyDataSource
-        "
+        v-if="selectedInstance.id !== UNKNOWN_ID && !hasReadonlyDataSource"
         trigger="hover"
       >
         <template #trigger>
@@ -44,49 +42,25 @@
           </NButton>
         </p>
       </NPopover>
-      <NPopover trigger="hover" placement="bottom-center" :show-arrow="false">
-        <template #trigger>
-          <label class="flex items-center text-sm space-x-1">
-            <div class="flex items-center">
-              <InstanceEngineIcon
-                v-if="connectionContext.instanceId !== UNKNOWN_ID"
-                :instance="selectedInstance"
-                show-status
-              />
-              <span class="ml-2">{{ connectionContext.instanceName }}</span>
-            </div>
-            <div
-              v-if="connectionContext.databaseName"
-              class="flex items-center"
-            >
-              &nbsp; / &nbsp;
-              <heroicons-outline:database />
-              <span class="ml-2">{{ connectionContext.databaseName }}</span>
-            </div>
-            <div v-if="connectionContext.tableName" class="flex items-center">
-              &nbsp; / &nbsp;
-              <heroicons-outline:table />
-              <span class="ml-2">{{ connectionContext.tableName }}</span>
-            </div>
-          </label>
-        </template>
-        <section>
-          <div class="space-y-2">
-            <div v-if="connectionContext.instanceName" class="flex flex-col">
-              <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
-              <span>{{ connectionContext.instanceName }}</span>
-            </div>
-            <div v-if="connectionContext.databaseName" class="flex flex-col">
-              <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
-              <span>{{ connectionContext.databaseName }}</span>
-            </div>
-            <div v-if="connectionContext.tableName" class="flex flex-col">
-              <h1 class="text-gray-400">{{ $t("common.table") }}:</h1>
-              <span>{{ connectionContext.tableName }}</span>
-            </div>
-          </div>
-        </section>
-      </NPopover>
+
+      <div class="flex items-center text-sm space-x-1">
+        <div class="flex items-center">
+          <InstanceEngineIcon
+            v-if="selectedInstance.id !== UNKNOWN_ID"
+            :instance="selectedInstance"
+            show-status
+          />
+          <span class="ml-2">{{ selectedInstance.name }}</span>
+        </div>
+        <div
+          v-if="selectedDatabase.id !== UNKNOWN_ID"
+          class="flex items-center"
+        >
+          &nbsp; / &nbsp;
+          <heroicons-outline:database />
+          <span class="ml-2">{{ selectedDatabase.name }}</span>
+        </div>
+      </div>
       <NButton
         secondary
         strong
@@ -120,8 +94,14 @@
 import { computed, defineEmits } from "vue";
 import { useRouter } from "vue-router";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { useInstanceStore, useTabStore, useSQLEditorStore } from "@/store";
-import { UNKNOWN_ID, Instance } from "@/types";
+import {
+  useInstanceStore,
+  useTabStore,
+  useSQLEditorStore,
+  useInstanceById,
+  useDatabaseById,
+} from "@/store";
+import { UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils/slug";
 import SharePopover from "./SharePopover.vue";
 
@@ -134,18 +114,20 @@ const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 
-const connectionContext = computed(() => sqlEditorStore.connectionContext);
+const connection = computed(() => tabStore.currentTab.connection);
 
 const isEmptyStatement = computed(
   () => !tabStore.currentTab || tabStore.currentTab.statement === ""
 );
-const selectedInstance = computed<Instance>(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  return instanceStore.getInstanceById(ctx.instanceId);
-});
+const selectedInstance = useInstanceById(
+  computed(() => connection.value.instanceId)
+);
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
+const selectedDatabase = useDatabaseById(
+  computed(() => connection.value.databaseId)
+);
 
 const hasReadonlyDataSource = computed(() => {
   for (const ds of selectedInstance.value.dataSourceList) {
