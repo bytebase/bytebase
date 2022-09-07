@@ -75,7 +75,7 @@ func (e *WalkThroughError) Error() string {
 	return e.Content
 }
 
-// WalkThrough will change the catalog schema by statements.
+// WalkThrough will collect the catalog schema in the databaseState as it walks through the stmts.
 func (d *databaseState) WalkThrough(stmts string) error {
 	if d.dbType != db.MySQL {
 		return nil
