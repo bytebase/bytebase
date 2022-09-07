@@ -135,6 +135,30 @@ onMounted(async () => {
   await prepareSheetFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
+
+  // Keep the URL synced with current connection context.
+  watch(
+    [
+      () => sheetStore.currentSheet,
+      () => sqlEditorStore.connectionContext.instanceId,
+      () => sqlEditorStore.connectionContext.databaseId,
+    ],
+    ([sheet, instanceId, databaseId]) => {
+      const routeArgs: any = {
+        name: "sql-editor.home",
+        params: {},
+        query: {},
+      };
+      const database = useDatabaseStore().getDatabaseById(databaseId);
+      if (sheet.id !== UNKNOWN_ID) {
+        routeArgs.query.sheetId = sheet.id;
+      } else if (database.id !== UNKNOWN_ID) {
+        routeArgs.name = "sql-editor.detail";
+        routeArgs.params.connectionSlug = connectionSlug(database);
+      }
+      router.replace(routeArgs);
+    }
+  );
 });
 
 watch(currentUser, (user) => {
@@ -145,28 +169,4 @@ watch(currentUser, (user) => {
     sheetStore.$reset();
   }
 });
-
-// Keep the URL synced with current connection context.
-watch(
-  [
-    () => sheetStore.currentSheet,
-    () => sqlEditorStore.connectionContext.instanceId,
-    () => sqlEditorStore.connectionContext.databaseId,
-  ],
-  ([sheet, instanceId, databaseId]) => {
-    const routeArgs: any = {
-      name: "sql-editor.home",
-      params: {},
-      query: {},
-    };
-    const database = useDatabaseStore().getDatabaseById(databaseId);
-    if (sheet.id !== UNKNOWN_ID) {
-      routeArgs.query.sheetId = sheet.id;
-    } else if (database.id !== UNKNOWN_ID) {
-      routeArgs.name = "sql-editor.detail";
-      routeArgs.params.connectionSlug = connectionSlug(database);
-    }
-    router.replace(routeArgs);
-  }
-);
 </script>
