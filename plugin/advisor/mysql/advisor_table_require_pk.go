@@ -41,11 +41,11 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]ad
 		return nil, err
 	}
 	checker := &tableRequirePKChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		tables:   make(tablePK),
-		line:     make(map[string]int),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		tables:  make(tablePK),
+		line:    make(map[string]int),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmtNode := range root {
@@ -61,7 +61,7 @@ type tableRequirePKChecker struct {
 	title      string
 	tables     tablePK
 	line       map[string]int
-	database   *catalog.Database
+	catalog    *catalog.Finder
 }
 
 // Enter implements the ast.Visitor interface.
@@ -169,7 +169,7 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := v.database.FindIndex(&catalog.IndexFind{
+		_, pk := v.catalog.FindIndex(&catalog.IndexFind{
 			TableName: table,
 			IndexName: primaryKeyName,
 		})

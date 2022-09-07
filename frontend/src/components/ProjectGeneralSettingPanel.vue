@@ -23,13 +23,13 @@
 
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.key") }} <span class="text-red-600">*</span>
+          {{ $t("common.key") }}
         </dt>
         <dd class="mt-1 text-sm text-main">
           <input
             id="projectKey"
-            v-model="state.key"
-            :disabled="!allowEdit"
+            :value="state.key"
+            disabled
             required
             autocomplete="off"
             type="text"
@@ -97,7 +97,6 @@ export default defineComponent({
     const save = () => {
       const projectPatch: ProjectPatch = {
         name: state.name != props.project.name ? state.name : undefined,
-        key: state.key != props.project.key ? state.key : undefined,
       };
       let subject = "project settings";
       if (state.name != props.project.name && state.key != props.project.key) {

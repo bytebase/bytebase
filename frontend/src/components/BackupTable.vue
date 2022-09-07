@@ -300,7 +300,7 @@ export default defineComponent({
     });
 
     const statusIconClass = (backup: Backup) => {
-      let iconClass = "w-5 h-5";
+      const iconClass = "w-5 h-5";
       switch (backup.status) {
         case "PENDING_CREATE":
           return (

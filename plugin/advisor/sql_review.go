@@ -379,6 +379,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database information from catalog")
 	}
+
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
@@ -397,7 +398,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 				Charset:   checkContext.Charset,
 				Collation: checkContext.Collation,
 				Rule:      rule,
-				Database:  database,
+				Catalog:   catalog.NewFinder(database),
 			},
 			statements,
 		)

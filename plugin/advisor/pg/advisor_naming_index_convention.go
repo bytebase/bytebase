@@ -46,7 +46,7 @@ func (*NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		database:     ctx.Database,
+		catalog:      ctx.Catalog,
 	}
 	for _, stmt := range stmts {
 		ast.Walk(checker, stmt)
@@ -71,7 +71,7 @@ type namingIndexConventionChecker struct {
 	format       string
 	maxLength    int
 	templateList []string
-	database     *catalog.Database
+	catalog      *catalog.Finder
 }
 
 // Visit implements ast.Visitor interface.
@@ -132,7 +132,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 			})
 		}
 	case *ast.RenameIndexStmt:
-		tableName, index := checker.database.FindIndex(&catalog.IndexFind{
+		tableName, index := checker.catalog.FindIndex(&catalog.IndexFind{
 			SchemaName: normalizeSchemaName(node.Table.Schema),
 			TableName:  "",
 			IndexName:  node.IndexName,

@@ -194,7 +194,7 @@ export default defineComponent({
                 ),
               });
             } else {
-              var description = "";
+              let description = "";
               if (state.config.type == "GITLAB_SELF_HOST") {
                 // If application id mismatches, the OAuth workflow will stop early.
                 // So the only possibility to reach here is we have a matching application id, while
