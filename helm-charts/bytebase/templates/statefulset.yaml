@@ -1,8 +1,16 @@
+{{- $host := .Values.bytebase.option.host -}}
+{{- $port := .Values.bytebase.option.port -}}
+{{- $pg := .Values.bytebase.option.pg -}}
+{{- $data := .Values.bytebase.option.data -}}
+{{- $version := .Values.bytebase.version -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: bytebase
   namespace: {{ template "bytebase.namespace" . }}
+  labels:
+    app.kubernetes.io/managed-by: helm
+    app: bytebase
 spec:
   selector:
     matchLabels:
@@ -16,22 +24,43 @@ spec:
     spec:
       containers:
         - name: bytebase
-          image: "bytebase/bytebase:{{ .Chart.AppVersion }}"
+          image: "bytebase/bytebase:{{ $version }}"
+          args:
+            [
+              "--data",
+              {{ $data | quote }},
+              "--host",
+              {{ $host | quote }},
+              "--port",
+              {{ $port | quote }},
+              "--pg",
+              {{ $pg | quote}},
+            ]
           ports:
-            - containerPort: 80
+            - containerPort: {{ $port }}
               name: web
           volumeMounts:
-            - mountPath: /var/opt/bytebase
-              name: sqlite
+            - mountPath: {{ $data }}
+              name: bytebase
           readinessProbe:
             httpGet:
               path: /api/actuator/info
               port: web
             initialDelaySeconds: 2
             periodSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ $port }}
+            initialDelaySeconds: 300
+            periodSeconds: 300
+            timeoutSeconds: 60
+      volumes:
+        - name: data
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
-        name: sqlite
+        name: bytebase
       spec:
         accessModes:
           - ReadWriteOnce

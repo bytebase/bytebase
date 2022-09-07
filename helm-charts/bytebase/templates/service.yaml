@@ -1,14 +1,16 @@
+{{- $port := .Values.bytebase.option.port -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: bytebase
+  name: bytebase-entrypoint
   namespace: {{ template "bytebase.namespace" . }}
   labels:
-    app: bytebase
+    app.kubernetes.io/managed-by: helm
 spec:
-  ports:
-    - port: 80
-      name: web
-  clusterIP: None
+  type: LoadBalancer
   selector:
     app: bytebase
+  ports:
+  - protocol: TCP
+    port: {{ $port }}
+    targetPort: {{ $port }}
