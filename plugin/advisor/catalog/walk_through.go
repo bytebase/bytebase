@@ -87,7 +87,8 @@ func (d *databaseState) WalkThrough(stmts string) error {
 		}
 	}
 
-	// For MySQL, there is only one schema whose name is empty string.
+	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
+	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
 	if _, exists := d.schemaSet[""]; !exists {
 		d.createSchema("")
