@@ -188,7 +188,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 			return err
 		}
 	case tidbast.ConstraintForeignKey:
-		// we can not deal with FOREIGN KEY constraints
+		// we do not deal with FOREIGN KEY constraints
 	case tidbast.ConstraintFulltext:
 		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */)
 		if err != nil {
@@ -198,7 +198,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 			return err
 		}
 	case tidbast.ConstraintCheck:
-		// we can not deal with CHECK constraints
+		// we do not deal with CHECK constraints
 	}
 
 	return nil
@@ -258,7 +258,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 		case tidbast.ColumnOptionNotNull:
 			col.nullable = false
 		case tidbast.ColumnOptionAutoIncrement:
-			// we can not deal with AUTO-INCREMENT
+			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
 			defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 			if err != nil {
@@ -272,7 +272,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 		case tidbast.ColumnOptionNull:
 			col.nullable = true
 		case tidbast.ColumnOptionOnUpdate:
-			// we can not deal with ON UPDATE
+			// we do not deal with ON UPDATE
 		case tidbast.ColumnOptionComment:
 			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 			if err != nil {
@@ -280,20 +280,20 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 			}
 			col.comment = comment
 		case tidbast.ColumnOptionGenerated:
-			// we can not deal with GENERATED ALWAYS AS
+			// we do not deal with GENERATED ALWAYS AS
 		case tidbast.ColumnOptionReference:
 			// MySQL will ignore the inline REFERENCE
 			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 		case tidbast.ColumnOptionCollate:
 			col.collation = option.StrValue
 		case tidbast.ColumnOptionCheck:
-			// we can not deal with CHECK constraint
+			// we do not deal with CHECK constraint
 		case tidbast.ColumnOptionColumnFormat:
-			// we can not deal with COLUMN_FORMAT
+			// we do not deal with COLUMN_FORMAT
 		case tidbast.ColumnOptionStorage:
-			// we can not deal with STORAGE
+			// we do not deal with STORAGE
 		case tidbast.ColumnOptionAutoRandom:
-			// we can not deal with AUTO_RANDOM
+			// we do not deal with AUTO_RANDOM
 		}
 	}
 
