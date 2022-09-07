@@ -1,8 +1,13 @@
+{{- $data := .Values.bytebase.option.data -}}
+{{- $port := .Values.bytebase.option.port -}}
+{{- $version := .Values.bytebase.version}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: bytebase
   namespace: {{ template "bytebase.namespace" . }}
+  labels:
+    app.kubernetes.io/managed-by: helm
 spec:
   selector:
     matchLabels:
@@ -16,13 +21,13 @@ spec:
     spec:
       containers:
         - name: bytebase
-          image: "bytebase/bytebase:{{ .Chart.AppVersion }}"
+          image: "bytebase/bytebase:{{ $version }}"
           ports:
-            - containerPort: 80
+            - containerPort: {{ $port }}
               name: web
           volumeMounts:
-            - mountPath: /var/opt/bytebase
-              name: sqlite
+            - mountPath: {{ $data }}
+              name: bytebase
           readinessProbe:
             httpGet:
               path: /api/actuator/info
@@ -31,7 +36,7 @@ spec:
             periodSeconds: 2
   volumeClaimTemplates:
     - metadata:
-        name: sqlite
+        name: bytebase
       spec:
         accessModes:
           - ReadWriteOnce
