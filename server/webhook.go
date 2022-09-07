@@ -654,12 +654,11 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 		migrationInfo, err = db.ParseMigrationInfo(fileEscaped, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
 		if err != nil {
-			s.createIgnoredFileActivity(
-				ctx,
-				repo.ProjectID,
-				pushEvent,
-				fileEscaped,
-				errors.Wrap(err, "Failed to parse migration info"),
+			log.Debug("Failed to parse migration info",
+				zap.Int("project", repo.ProjectID),
+				zap.Any("pushEvent", pushEvent),
+				zap.String("fileEscaped", fileEscaped),
+				zap.Error(err),
 			)
 			return "", false, nil
 		}
