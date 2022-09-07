@@ -107,6 +107,36 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr: "",
 		},
 		{
+			filePath:         "db1__001foo__ddl",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
+			want: MigrationInfo{
+				Version:     "001foo",
+				Namespace:   "db1",
+				Database:    "db1",
+				Environment: "",
+				Source:      VCS,
+				Type:        Migrate,
+				Description: "Create db1 schema migration",
+				Creator:     "",
+			},
+			wantErr: "",
+		},
+		{
+			filePath:         "db1__001foo__dml",
+			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
+			want: MigrationInfo{
+				Version:     "001foo",
+				Namespace:   "db1",
+				Database:    "db1",
+				Environment: "",
+				Source:      VCS,
+				Type:        Data,
+				Description: "Create db1 data change",
+				Creator:     "",
+			},
+			wantErr: "",
+		},
+		{
 			filePath:         "db_shop1__001foo__data",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
 			want: MigrationInfo{

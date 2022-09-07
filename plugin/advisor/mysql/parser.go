@@ -35,6 +35,13 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 			},
 		}
 	}
+
+	// sikp the setting line stage
+	if len(root) == 0 {
+		return root, nil
+	}
+
+	// setting line stage
 	sqlList, err := parser.SplitMultiSQL(parser.MySQL, statement)
 	if err != nil {
 		return nil, []advisor.Advice{

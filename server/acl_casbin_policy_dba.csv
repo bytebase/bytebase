@@ -106,3 +106,4 @@ p, DBA, /sheet/project/{projectID}/sync, POST
 p, DBA, /debug, GET
 p, DBA, /debug, PATCH
 p, DBA, /debug/log, GET
+p, DBA, /anomaly, GET

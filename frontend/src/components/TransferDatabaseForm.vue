@@ -113,7 +113,7 @@ onBeforeMount(prepareDatabaseListForDefaultProject);
 const environmentList = useEnvironmentList(["NORMAL"]);
 
 const databaseList = computed(() => {
-  var list;
+  let list;
   if (state.transferSource == "DEFAULT") {
     list = cloneDeep(
       databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)

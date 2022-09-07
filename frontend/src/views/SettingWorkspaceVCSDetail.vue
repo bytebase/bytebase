@@ -318,7 +318,7 @@ export default defineComponent({
               // If the application ID mismatches, the OAuth workflow will stop early.
               // So the only possibility to reach here is we have a matching application ID, while
               // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
-              var description = "";
+              let description = "";
               if (vcs.value.type == "GITLAB_SELF_HOST") {
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";

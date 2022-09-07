@@ -22,7 +22,7 @@ type Instance struct {
 	// Related fields
 	EnvironmentID int
 	Environment   *Environment `jsonapi:"relation,environment"`
-	// Anomalies are stored in a separate table, but just return here for convenience
+	// TODO(d): remove anomaly from database.
 	AnomalyList    []*Anomaly    `jsonapi:"relation,anomalyList"`
 	DataSourceList []*DataSource `jsonapi:"relation,dataSourceList"`
 
