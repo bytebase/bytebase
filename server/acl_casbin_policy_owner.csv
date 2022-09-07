@@ -112,3 +112,4 @@ p, OWNER, /sheet/project/{projectID}/sync, POST
 p, OWNER, /debug, GET
 p, OWNER, /debug, PATCH
 p, OWNER, /debug/log, GET
+p, OWNER, /anomaly, GET

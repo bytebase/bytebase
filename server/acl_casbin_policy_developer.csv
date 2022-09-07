@@ -92,3 +92,4 @@ p, DEVELOPER, /sheet/{id}/organizer, PATCH
 p, DEVELOPER, /sheet/project/{projectID}/sync, POST
 p, DEVELOPER, /debug, GET
 p, DEVELOPER, /debug/log, GET
+p, DEVELOPER, /anomaly, GET
