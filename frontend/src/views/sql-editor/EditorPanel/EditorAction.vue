@@ -43,23 +43,60 @@
         </p>
       </NPopover>
 
-      <div class="flex items-center text-sm space-x-1">
-        <div
-          v-if="selectedInstance.id !== UNKNOWN_ID"
-          class="flex items-center"
-        >
-          <InstanceEngineIcon :instance="selectedInstance" show-status />
-          <span class="ml-2">{{ selectedInstance.name }}</span>
-        </div>
-        <div
-          v-if="selectedDatabase.id !== UNKNOWN_ID"
-          class="flex items-center"
-        >
-          &nbsp; / &nbsp;
-          <heroicons-outline:database />
-          <span class="ml-2">{{ selectedDatabase.name }}</span>
-        </div>
-      </div>
+      <NPopover trigger="hover" placement="bottom-center" :show-arrow="false">
+        <template #trigger>
+          <label class="flex items-center text-sm space-x-1">
+            <div
+              v-if="selectedInstance.id !== UNKNOWN_ID"
+              class="flex items-center"
+            >
+              <InstanceEngineIcon :instance="selectedInstance" show-status />
+              <span class="ml-2">{{ selectedInstance.name }}</span>
+            </div>
+            <div
+              v-if="selectedDatabase.id !== UNKNOWN_ID"
+              class="flex items-center"
+            >
+              &nbsp; / &nbsp;
+              <heroicons-outline:database />
+              <span class="ml-2">{{ selectedDatabase.name }}</span>
+            </div>
+            <div
+              v-if="connection.tableId !== UNKNOWN_ID && connection.tableName"
+              class="flex items-center"
+            >
+              &nbsp; / &nbsp;
+              <heroicons-outline:table />
+              <span class="ml-2">{{ connection.tableName }}</span>
+            </div>
+          </label>
+        </template>
+        <section>
+          <div class="space-y-2">
+            <div
+              v-if="selectedInstance.id !== UNKNOWN_ID"
+              class="flex flex-col"
+            >
+              <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
+              <span>{{ selectedInstance.name }}</span>
+            </div>
+            <div
+              v-if="selectedDatabase.id !== UNKNOWN_ID"
+              class="flex flex-col"
+            >
+              <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
+              <span>{{ selectedDatabase.name }}</span>
+            </div>
+            <div
+              v-if="connection.tableId !== UNKNOWN_ID && connection.tableName"
+              class="flex flex-col"
+            >
+              <h1 class="text-gray-400">{{ $t("common.table") }}:</h1>
+              <span>{{ connection.tableName }}</span>
+            </div>
+          </div>
+        </section>
+      </NPopover>
       <NButton
         secondary
         strong
