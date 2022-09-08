@@ -126,7 +126,10 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 					// Skip the task that is already being executed.
-					if _, ok := s.runningExecutors[task.ID]; ok {
+					s.runningExecutorsMutex.Lock()
+					_, ok := s.runningExecutors[task.ID]
+					s.runningExecutorsMutex.Unlock()
+					if ok {
 						continue
 					}
 					// Skip the task that is not the earliest task of the database.
