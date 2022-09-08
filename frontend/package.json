@@ -44,7 +44,7 @@
     "sql-formatter": "10.5.1",
     "uuid": "9.0.0",
     "v-code-diff": "0.3.12",
-    "vue": "3.2.38",
+    "vue": "3.2.39",
     "vue-i18n": "9.2.2",
     "vue-router": "4.1.5",
     "vueuc": "0.4.48"
@@ -74,7 +74,7 @@
     "@typescript-eslint/parser": "5.36.2",
     "@vicons/ionicons5": "0.12.0",
     "@vitejs/plugin-vue": "3.1.0",
-    "@vue/compiler-sfc": "3.2.38",
+    "@vue/compiler-sfc": "3.2.39",
     "@vue/eslint-config-typescript": "11.0.1",
     "autoprefixer": "10.4.8",
     "eslint": "8.23.0",
