@@ -164,7 +164,6 @@ const setConnection = (option: ConnectionAtom) => {
       conn.instanceId = instanceId;
       conn.databaseId = databaseId;
       conn.tableId = option.id;
-      conn.tableName = option.label;
     }
 
     tabStore.updateCurrentTab({

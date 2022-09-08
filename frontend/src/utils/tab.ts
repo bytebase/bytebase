@@ -12,7 +12,6 @@ export const emptyConnection = (): Connection => {
     instanceId: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
     tableId: UNKNOWN_ID,
-    tableName: "",
   };
 };
 

@@ -20,7 +20,6 @@ export type Connection = {
   instanceId: InstanceId;
   databaseId: DatabaseId;
   tableId: TableId;
-  tableName: string;
 };
 
 export interface TabInfo {

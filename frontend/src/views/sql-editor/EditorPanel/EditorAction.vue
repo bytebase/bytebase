@@ -62,12 +62,12 @@
               <span class="ml-2">{{ selectedDatabase.name }}</span>
             </div>
             <div
-              v-if="connection.tableId !== UNKNOWN_ID && connection.tableName"
+              v-if="selectedTable.id !== UNKNOWN_ID"
               class="flex items-center"
             >
               &nbsp; / &nbsp;
               <heroicons-outline:table />
-              <span class="ml-2">{{ connection.tableName }}</span>
+              <span class="ml-2">{{ selectedTable.name }}</span>
             </div>
           </label>
         </template>
@@ -87,12 +87,9 @@
               <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
               <span>{{ selectedDatabase.name }}</span>
             </div>
-            <div
-              v-if="connection.tableId !== UNKNOWN_ID && connection.tableName"
-              class="flex flex-col"
-            >
+            <div v-if="selectedTable.id !== UNKNOWN_ID" class="flex flex-col">
               <h1 class="text-gray-400">{{ $t("common.table") }}:</h1>
-              <span>{{ connection.tableName }}</span>
+              <span>{{ selectedTable.name }}</span>
             </div>
           </div>
         </section>
@@ -136,6 +133,7 @@ import {
   useSQLEditorStore,
   useInstanceById,
   useDatabaseById,
+  useTableStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils/slug";
@@ -149,6 +147,7 @@ const router = useRouter();
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
+const tableStore = useTableStore();
 
 const connection = computed(() => tabStore.currentTab.connection);
 
@@ -164,6 +163,10 @@ const selectedInstanceEngine = computed(() => {
 const selectedDatabase = useDatabaseById(
   computed(() => connection.value.databaseId)
 );
+const selectedTable = computed(() => {
+  const { databaseId, tableId } = connection.value;
+  return tableStore.getTableByDatabaseIdAndTableId(databaseId, tableId);
+});
 
 const hasReadonlyDataSource = computed(() => {
   for (const ds of selectedInstance.value.dataSourceList) {
