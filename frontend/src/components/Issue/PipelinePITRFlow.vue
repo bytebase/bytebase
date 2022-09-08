@@ -36,6 +36,15 @@
               {{ taskNameOfTask(task) }}
             </div>
           </div>
+
+          <TaskProgressPie
+            v-if="
+              !create && task.type === 'bb.task.database.restore.pitr.restore'
+            "
+            :task="(task as Task)"
+          >
+            <template #unit="{ unit }">{{ bytesToString(unit) }}</template>
+          </TaskProgressPie>
         </div>
 
         <div
@@ -58,6 +67,7 @@ import {
   activeTaskInStage,
   extractDatabaseNameFromTask,
   taskSlug,
+  bytesToString,
 } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseStore } from "@/store";
