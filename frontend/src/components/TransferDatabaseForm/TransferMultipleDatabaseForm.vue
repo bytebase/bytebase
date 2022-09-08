@@ -3,7 +3,7 @@
     <slot name="transfer-source-selector" />
 
     <DatabaseTable
-      :mode="'ALL_SHORT'"
+      :mode="transferSource === 'DEFAULT' ? 'PROJECT_SHORT' : 'ALL_SHORT'"
       :bordered="true"
       :custom-click="true"
       :database-list="databaseList"

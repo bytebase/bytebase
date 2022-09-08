@@ -229,6 +229,7 @@ import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import cloneDeep from "lodash-es/cloneDeep";
 import { connectionSlug, databaseSlug, isPITRDatabase } from "../utils";
 import type { Database } from "../types";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
@@ -439,7 +440,7 @@ const showMiscColumn = computed(() => {
 });
 
 const columnList = computed(() => {
-  const list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
+  const list: BBTableColumn[] = cloneDeep(columnListMap.value.get(props.mode)!);
   if (props.showSelectionColumn) {
     list.unshift({ title: "" });
   }
