@@ -143,7 +143,7 @@ func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
 				}
 				return &WalkThroughError{
 					Type:    ErrorTypeTableNotExists,
-					Content: fmt.Sprintf("Table `%s` is not exists", name.Name.O),
+					Content: fmt.Sprintf("Table `%s` not exists", name.Name.O),
 				}
 			}
 
