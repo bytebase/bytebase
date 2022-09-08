@@ -304,6 +304,6 @@ const updateDialogPosition = async () => {
 }
 
 .guide-wrapper.center {
-  @apply w-64 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-16;
+  @apply w-64 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-16 whitespace-nowrap;
 }
 </style>
