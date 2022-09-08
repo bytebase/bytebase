@@ -246,18 +246,7 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
 	db.DataSourceList = []*api.DataSource{}
 
-	// TODO(d): remove anomaly from database.
 	rowStatus := api.Normal
-	anomalyList, err := s.FindAnomaly(ctx, &api.AnomalyFind{
-		RowStatus:  &rowStatus,
-		DatabaseID: &db.ID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	db.AnomalyList = anomalyList
-
-	rowStatus = api.Normal
 	labelList, err := s.FindDatabaseLabel(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &db.ID,
 		RowStatus:  &rowStatus,
