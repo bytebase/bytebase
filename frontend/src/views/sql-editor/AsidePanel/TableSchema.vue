@@ -81,6 +81,8 @@ const tableInfo = ref();
 const router = useRouter();
 
 const gotoAlterSchema = () => {
+  // TODO(Jim): Remove the dependency of `sqlEditorStore.connectionContext.option`
+  // after refactoring <DatabaseTree>
   const { option } = sqlEditorStore.connectionContext;
   if (option.type !== "table") {
     return;
