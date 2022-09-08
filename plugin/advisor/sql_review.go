@@ -375,7 +375,7 @@ type SQLReviewCheckContext struct {
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
-	database, err := checkContext.Catalog.GetDatabase(context.Background())
+	database, catalogContext, err := checkContext.Catalog.GetDatabase(context.Background())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database information from catalog")
 	}
@@ -398,7 +398,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 				Charset:   checkContext.Charset,
 				Collation: checkContext.Collation,
 				Rule:      rule,
-				Catalog:   catalog.NewFinder(database),
+				Catalog:   catalog.NewFinder(database, catalogContext),
 			},
 			statements,
 		)

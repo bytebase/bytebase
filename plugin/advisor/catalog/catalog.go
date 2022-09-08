@@ -9,7 +9,16 @@ import (
 
 // Catalog is the service for catalog.
 type Catalog interface {
-	GetDatabase(ctx context.Context) (*Database, error)
+	GetDatabase(ctx context.Context) (*Database, *Context, error)
+}
+
+// Context is the context for catalog.
+type Context struct {
+	// CheckCatalog defines the policy for presence detection.
+	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
+	// It's hard to distinguish these cases from exactly empty database.
+	// So we need CheckCatalog to distinguish them.
+	CheckCatalog bool
 }
 
 // Database is the database.
@@ -19,12 +28,6 @@ type Database struct {
 	Collation    string
 	DbType       db.Type
 	SchemaList   []*Schema
-
-	// AllowMissing defines the policy for presence detection.
-	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
-	// It's hard to distinguish these cases from exactly empty database.
-	// So we need allowMissing to distinguish them.
-	AllowMissing bool
 }
 
 // Schema is the database schema.

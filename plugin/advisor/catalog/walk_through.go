@@ -138,7 +138,7 @@ func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
 			}
 
 			if _, exists = schema.tableSet[name.Name.O]; !exists {
-				if node.IfExists || schema.allowMissing {
+				if node.IfExists || !schema.context.CheckCatalog {
 					return nil
 				}
 				return &WalkThroughError{
@@ -177,10 +177,10 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 	}
 
 	table := &tableState{
-		name:         node.Table.Name.O,
-		columnSet:    make(columnStateMap),
-		indexSet:     make(indexStateMap),
-		allowMissing: schema.allowMissing,
+		name:      node.Table.Name.O,
+		columnSet: make(columnStateMap),
+		indexSet:  make(indexStateMap),
+		context:   d.context,
 	}
 	schema.tableSet[table.name] = table
 
@@ -403,7 +403,7 @@ func (d *databaseState) createSchema(name string) *schemaState {
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
 		extensionSet: make(extensionStateMap),
-		allowMissing: d.allowMissing,
+		context:      d.context,
 	}
 
 	d.schemaSet[name] = schema

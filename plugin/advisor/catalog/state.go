@@ -8,14 +8,14 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-func newDatabaseState(d *Database) *databaseState {
+func newDatabaseState(d *Database, context *Context) *databaseState {
 	database := &databaseState{
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
 		dbType:       d.DbType,
 		schemaSet:    make(schemaStateMap),
-		allowMissing: d.AllowMissing,
+		context:      context,
 	}
 
 	for _, schema := range d.SchemaList {
@@ -124,11 +124,7 @@ type databaseState struct {
 	dbType       db.Type
 	schemaSet    schemaStateMap
 
-	// allowMissing defines the policy for presence detection.
-	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
-	// It's hard to distinguish these cases from exactly empty database.
-	// So we need allowMissing to distinguish them.
-	allowMissing bool
+	context *Context
 }
 type schemaState struct {
 	name         string
@@ -136,11 +132,7 @@ type schemaState struct {
 	viewSet      viewStateMap
 	extensionSet extensionStateMap
 
-	// allowMissing defines the policy for presence detection.
-	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
-	// It's hard to distinguish these cases from exactly empty database.
-	// So we need allowMissing to distinguish them.
-	allowMissing bool
+	context *Context
 }
 type schemaStateMap map[string]*schemaState
 
@@ -166,11 +158,7 @@ type tableState struct {
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
 
-	// allowMissing defines the policy for presence detection.
-	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
-	// It's hard to distinguish these cases from exactly empty database.
-	// So we need allowMissing to distinguish them.
-	allowMissing bool
+	context *Context
 }
 type tableStateMap map[string]*tableState
 

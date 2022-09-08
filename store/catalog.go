@@ -34,24 +34,24 @@ func NewCatalog(databaseID *int, store *Store, dbType db.Type) *Catalog {
 }
 
 // GetDatabase implements the catalog.Catalog interface.
-func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
+func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, *catalog.Context, error) {
 	if c.databaseID == nil {
-		return &catalog.Database{AllowMissing: true}, nil
+		return &catalog.Database{}, &catalog.Context{CheckCatalog: false}, nil
 	}
 
 	database, err := c.store.GetDatabase(ctx, &api.DatabaseFind{
 		ID: c.databaseID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if database == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	dbType, err := advisorDB.ConvertToAdvisorDBType(string(c.engineType))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	databaseData := catalog.Database{
@@ -59,14 +59,13 @@ func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 		CharacterSet: database.CharacterSet,
 		Collation:    database.Collation,
 		DbType:       dbType,
-		AllowMissing: false,
 	}
 
 	if databaseData.SchemaList, err = c.getSchemaList(ctx); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &databaseData, nil
+	return &databaseData, &catalog.Context{CheckCatalog: true}, nil
 }
 
 type schemaMap map[string]*catalog.Schema

@@ -8,8 +8,8 @@ type Finder struct {
 }
 
 // NewFinder creates a new finder.
-func NewFinder(database *Database) *Finder {
-	return &Finder{database: newDatabaseState(database)}
+func NewFinder(database *Database, context *Context) *Finder {
+	return &Finder{database: newDatabaseState(database, context)}
 }
 
 // HasNoTable returns true if the current database has no table.

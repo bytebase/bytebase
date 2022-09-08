@@ -206,10 +206,10 @@ func TestWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		state := newDatabaseState(test.origin)
+		state := newDatabaseState(test.origin, &Context{CheckCatalog: true})
 		err := state.WalkThrough(test.statement)
 		require.NoError(t, err)
-		want := newDatabaseState(test.want)
+		want := newDatabaseState(test.want, &Context{CheckCatalog: true})
 		require.Equal(t, want, state, test.statement)
 	}
 }

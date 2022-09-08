@@ -26,8 +26,8 @@ type catalogService struct{}
 
 // GetDatabase is the API message in catalog.
 // We will not connect to the user's database in the early version of sql check api.
-func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, error) {
-	return &catalog.Database{AllowMissing: true}, nil
+func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, *catalog.Context, error) {
+	return &catalog.Database{}, &catalog.Context{CheckCatalog: false}, nil
 }
 
 type sqlCheckRequestBody struct {
