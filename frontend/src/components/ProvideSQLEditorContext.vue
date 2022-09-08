@@ -106,7 +106,6 @@ const prepareSheetFromQuery = async () => {
     setConnectionContextFromCurrentTab();
     useSQLEditorStore().setSQLEditorState({
       sharedSheet: sheet,
-      shouldSetContent: true,
     });
   }
 };
