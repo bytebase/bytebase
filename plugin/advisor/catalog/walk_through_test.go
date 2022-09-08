@@ -181,6 +181,28 @@ func TestWalkThrough(t *testing.T) {
 				},
 			},
 		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t1(a int, b int, c int);
+				CREATE TABLE t2(a int);
+				DROP TABLE t1, t2
+			`,
+			want: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+				SchemaList: []*Schema{
+					{
+						TableList:     []*Table{},
+						ViewList:      []*View{},
+						ExtensionList: []*Extension{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

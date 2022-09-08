@@ -36,7 +36,7 @@ func NewCatalog(databaseID *int, store *Store, dbType db.Type) *Catalog {
 // GetDatabase implements the catalog.Catalog interface.
 func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 	if c.databaseID == nil {
-		return &catalog.Database{}, nil
+		return &catalog.Database{AllowMissing: true}, nil
 	}
 
 	database, err := c.store.GetDatabase(ctx, &api.DatabaseFind{
@@ -59,6 +59,7 @@ func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 		CharacterSet: database.CharacterSet,
 		Collation:    database.Collation,
 		DbType:       dbType,
+		AllowMissing: false,
 	}
 
 	if databaseData.SchemaList, err = c.getSchemaList(ctx); err != nil {

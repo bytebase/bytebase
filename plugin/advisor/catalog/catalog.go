@@ -19,6 +19,12 @@ type Database struct {
 	Collation    string
 	DbType       db.Type
 	SchemaList   []*Schema
+
+	// AllowMissing defines the policy for presence detection.
+	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
+	// It's hard to distinguish these cases from exactly empty database.
+	// So we need allowMissing to distinguish them.
+	AllowMissing bool
 }
 
 // Schema is the database schema.
