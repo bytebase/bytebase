@@ -23,7 +23,7 @@
         <label class="textlabel">
           {{
             $t("task.progress.completed-units", {
-              units: $t(`task.progress.units.${unitKey}`),
+              units: unitStr,
             })
           }}
         </label>
@@ -33,7 +33,7 @@
         <label class="textlabel">
           {{
             $t("task.progress.total-units", {
-              units: $t(`task.progress.units.${unitKey}`),
+              units: unitStr,
             })
           }}
         </label>
@@ -63,6 +63,7 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { NPopover } from "naive-ui";
+import { useI18n } from "vue-i18n";
 import type { Task, TaskProgress } from "@/types";
 import { empty } from "@/types";
 import { BBProgressPie } from "@/bbkit";
@@ -79,9 +80,11 @@ const props = defineProps({
   },
   unitKey: {
     type: String,
-    default: "unit",
+    default: undefined,
   },
 });
+
+const { t } = useI18n();
 
 const showProgress = computed((): boolean => {
   const { status } = props.task;
@@ -133,5 +136,14 @@ const progress = computed((): ProgressSummary => {
 
 const showPopover = computed((): boolean => {
   return props.task.status !== "DONE";
+});
+
+const unitStr = computed(() => {
+  const { unitKey } = props;
+  if (!unitKey) {
+    return "";
+  }
+
+  return t(`task.progress.units.${unitKey}`);
 });
 </script>
