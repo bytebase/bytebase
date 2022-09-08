@@ -213,10 +213,10 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case db.Done:
-			if migrationHistory.IssueID == m.IssueID {
-				return int64(migrationHistory.ID), common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
+			if migrationHistory.IssueID != m.IssueID {
+				return int64(migrationHistory.ID), common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
 			}
-			return int64(migrationHistory.ID), common.Errorf(common.MigrationConflict, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
+			return int64(migrationHistory.ID), common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
 			log.Debug(err.Error())
