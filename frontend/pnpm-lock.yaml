@@ -18,7 +18,7 @@ specifiers:
   '@types/downloadjs': 1.4.3
   '@types/js-yaml': 4.0.5
   '@types/lodash-es': 4.17.6
-  '@types/node': 16.11.57
+  '@types/node': 16.11.58
   '@types/papaparse': 5.3.5
   '@types/prettier': 2.7.0
   '@types/qs': 6.9.7
@@ -129,7 +129,7 @@ devDependencies:
   '@types/downloadjs': 1.4.3
   '@types/js-yaml': 4.0.5
   '@types/lodash-es': 4.17.6
-  '@types/node': 16.11.57
+  '@types/node': 16.11.58
   '@types/papaparse': 5.3.5
   '@types/prettier': 2.7.0
   '@types/qs': 6.9.7
@@ -793,8 +793,8 @@ packages:
   /@types/lodash/4.14.184:
     resolution: {integrity: sha512-RoZphVtHbxPZizt4IcILciSWiC6dcn+eZ8oX9IWEYfDMcocdd42f7NPI6fQj+6zI8y4E0L7gu2pcZKLGTRaV9Q==}
 
-  /@types/node/16.11.57:
-    resolution: {integrity: sha512-diBb5AE2V8h9Fs9zEDtBwSeLvIACng/aAkdZ3ujMV+cGuIQ9Nc/V+wQqurk9HJp8ni5roBxQHW21z/ZYbGDivg==}
+  /@types/node/16.11.58:
+    resolution: {integrity: sha512-uMVxJ111wpHzkx/vshZFb6Qni3BOMnlWLq7q9jrwej7Yw/KvjsEbpxCCxw+hLKxexFMc8YmpG8J9tnEe/rKsIg==}
     dev: true
 
   /@types/node/17.0.45:
