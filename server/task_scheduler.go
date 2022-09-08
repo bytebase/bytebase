@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -35,6 +36,7 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executorGetters  map[api.TaskType]func() TaskExecutor
 	runningExecutors map[int]TaskExecutor
+	mu               sync.Mutex
 	taskProgress     sync.Map // map[taskID]api.Progress
 	sharedTaskState  sync.Map // map[taskID]interface{}
 	server           *Server
@@ -62,18 +64,12 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				// Collect completed tasks
-				for i, executor := range s.runningExecutors {
-					if executor.IsCompleted() {
-						delete(s.runningExecutors, i)
-						s.taskProgress.Delete(i)
-					}
-				}
-
 				// Update task progress
+				s.mu.Lock()
 				for i, executor := range s.runningExecutors {
 					s.taskProgress.Store(i, executor.GetProgress())
 				}
+				s.mu.Unlock()
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.PipelineOpen
@@ -107,10 +103,38 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 
+				// Sort the taskList by ID first.
+				// For each database, we will only execute the earliest task and hold up the rest of the running tasks.
+				// databaseRunningTasks is the mapping from database ID to the earliest task of this database.
+				sort.Slice(taskList, func(i, j int) bool {
+					return taskList[i].ID < taskList[j].ID
+				})
+				databaseRunningTasks := make(map[int]int)
+				for _, task := range taskList {
+					if task.DatabaseID == nil {
+						continue
+					}
+					if _, ok := databaseRunningTasks[*task.DatabaseID]; ok {
+						continue
+					}
+					databaseRunningTasks[*task.DatabaseID] = task.ID
+				}
+
 				for _, task := range taskList {
 					// Skip task belongs to archived instances
 					if i := task.Instance; i == nil || i.RowStatus == api.Archived {
 						continue
+					}
+					// Skip the task that is already being executed.
+					if _, ok := s.runningExecutors[task.ID]; ok {
+						continue
+					}
+					// Skip the task that is not the earliest task of the database.
+					// earliestTaskID is the one that should be executed.
+					if task.DatabaseID != nil {
+						if earliestTaskID, ok := databaseRunningTasks[*task.DatabaseID]; ok && earliestTaskID != task.ID {
+							continue
+						}
 					}
 
 					executorGetter, ok := s.executorGetters[task.Type]
@@ -122,13 +146,17 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						)
 						continue
 					}
-
-					if _, ok := s.runningExecutors[task.ID]; ok {
-						continue
-					}
+					s.mu.Lock()
 					s.runningExecutors[task.ID] = executorGetter()
+					s.mu.Unlock()
 
 					go func(task *api.Task, executor TaskExecutor) {
+						defer func() {
+							s.mu.Lock()
+							delete(s.runningExecutors, task.ID)
+							s.taskProgress.Delete(task.ID)
+							s.mu.Unlock()
+						}()
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
 						if !done && err != nil {
 							log.Debug("Encountered transient error running task, will retry",
