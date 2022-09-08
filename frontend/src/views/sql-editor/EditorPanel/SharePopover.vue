@@ -91,14 +91,16 @@ import slug from "slug";
 import {
   pushNotification,
   useTabStore,
-  useSQLEditorStore,
   useSheetStore,
+  useInstanceStore,
+  useDatabaseStore,
 } from "@/store";
 import { AccessOption } from "@/types";
 
 const { t } = useI18n();
 const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
+const instanceStore = useInstanceStore();
+const databaseStore = useDatabaseStore();
 const sheetStore = useSheetStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
@@ -121,16 +123,20 @@ const accessOptions = computed<AccessOption[]>(() => {
   ];
 });
 
-const ctx = computed(() => sqlEditorStore.connectionContext);
 const sheet = computed(() => sheetStore.currentSheet);
 const creator = computed(() => sheetStore.isCreator);
 
-const connectionSlug = [
-  slug(ctx.value.instanceName as string),
-  ctx.value.instanceId,
-  slug(ctx.value.databaseName as string),
-  ctx.value.databaseId,
-].join("_");
+const connectionSlug = computed((): string => {
+  const { instanceId, databaseId } = tabStore.currentTab.connection;
+  const instance = instanceStore.getInstanceById(instanceId);
+  const database = databaseStore.getDatabaseById(databaseId);
+  return [
+    slug(instance.name),
+    instanceId,
+    slug(database.name),
+    databaseId,
+  ].join("_");
+});
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
@@ -166,7 +172,7 @@ const sheetSlug = `${slug(tabStore.currentTab.name)}_${
   tabStore.currentTab.sheetId
 }`;
 const sharedTabLink = ref(
-  `${window.location.origin}/sql-editor/${connectionSlug}/${sheetSlug}`
+  `${window.location.origin}/sql-editor/${connectionSlug.value}/${sheetSlug}`
 );
 
 const { copy, copied } = useClipboard({

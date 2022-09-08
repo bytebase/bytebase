@@ -7,6 +7,7 @@ import {
   ResourceIdentifier,
   ResourceObject,
   Table,
+  TableId,
   TableIndex,
   TableState,
   unknown,
@@ -69,6 +70,15 @@ export const useTableStore = defineStore("table", {
 
     getTableListByDatabaseId(databaseId: DatabaseId): Table[] {
       return this.tableListByDatabaseId.get(databaseId) || [];
+    },
+
+    getTableByDatabaseIdAndTableId(
+      databaseId: DatabaseId,
+      tableId: TableId
+    ): Table {
+      const list = this.getTableListByDatabaseId(databaseId);
+      const table = list.find((t) => t.id === tableId);
+      return table || unknown("TABLE");
     },
 
     setTableByDatabaseIdAndTableName({

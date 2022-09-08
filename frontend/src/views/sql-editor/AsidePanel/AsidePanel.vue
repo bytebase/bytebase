@@ -53,6 +53,8 @@ watch(
   (option) => {
     if (option && option.type === "table") {
       databasePaneSize.value = DATABASE_PANE_SIZE;
+    } else {
+      databasePaneSize.value = FULL_HEIGHT;
     }
   }
 );
