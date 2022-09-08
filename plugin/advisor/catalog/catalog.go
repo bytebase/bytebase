@@ -21,6 +21,13 @@ type Context struct {
 	CheckCatalog bool
 }
 
+// Copy returns the deep copy.
+func (ctx *Context) Copy() *Context {
+	return &Context{
+		CheckCatalog: ctx.CheckCatalog,
+	}
+}
+
 // Database is the database.
 type Database struct {
 	Name         string

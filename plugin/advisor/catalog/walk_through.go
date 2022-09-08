@@ -403,7 +403,7 @@ func (d *databaseState) createSchema(name string) *schemaState {
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
 		extensionSet: make(extensionStateMap),
-		context:      d.context,
+		context:      d.context.Copy(),
 	}
 
 	d.schemaSet[name] = schema

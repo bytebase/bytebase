@@ -15,26 +15,27 @@ func newDatabaseState(d *Database, context *Context) *databaseState {
 		collation:    d.Collation,
 		dbType:       d.DbType,
 		schemaSet:    make(schemaStateMap),
-		context:      context,
+		context:      context.Copy(),
 	}
 
 	for _, schema := range d.SchemaList {
-		database.schemaSet[schema.Name] = newSchemaState(schema)
+		database.schemaSet[schema.Name] = newSchemaState(schema, context)
 	}
 
 	return database
 }
 
-func newSchemaState(s *Schema) *schemaState {
+func newSchemaState(s *Schema, context *Context) *schemaState {
 	schema := &schemaState{
 		name:         s.Name,
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
 		extensionSet: make(extensionStateMap),
+		context:      context.Copy(),
 	}
 
 	for _, table := range s.TableList {
-		schema.tableSet[table.Name] = newTableState(table)
+		schema.tableSet[table.Name] = newTableState(table, context)
 	}
 
 	for _, view := range s.ViewList {
@@ -64,7 +65,7 @@ func newExtensionState(e *Extension) *extensionState {
 	}
 }
 
-func newTableState(t *Table) *tableState {
+func newTableState(t *Table, context *Context) *tableState {
 	table := &tableState{
 		name:          t.Name,
 		tableType:     t.Type,
@@ -78,6 +79,7 @@ func newTableState(t *Table) *tableState {
 		comment:       t.Comment,
 		columnSet:     make(columnStateMap),
 		indexSet:      make(indexStateMap),
+		context:       context.Copy(),
 	}
 
 	for _, column := range t.ColumnList {
