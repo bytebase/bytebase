@@ -34,7 +34,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     connectionContext: getDefaultConnectionContext(),
     isExecuting: false,
     isShowExecutingHint: false,
-    shouldSetContent: false,
     shouldFormatContent: false,
     // Related data and status
     queryHistoryList: [],
@@ -87,9 +86,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     setConnectionContext(payload: Partial<ConnectionContext>) {
       Object.assign(this.connectionContext, payload);
-    },
-    setShouldSetContent(payload: boolean) {
-      this.shouldSetContent = payload;
     },
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;

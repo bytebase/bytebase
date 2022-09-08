@@ -194,7 +194,6 @@ export interface LabelState {
 export interface SQLEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
-  shouldSetContent: boolean;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;

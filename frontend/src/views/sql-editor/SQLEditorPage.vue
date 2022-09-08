@@ -9,10 +9,10 @@
         <template v-if="hasTabs">
           <Splitpanes horizontal class="default-theme">
             <Pane :size="isDisconnected ? 100 : 60">
-              <EditorPanel :key="paneKey" />
+              <EditorPanel />
             </Pane>
             <Pane :size="isDisconnected ? 0 : 40">
-              <TablePanel :key="paneKey" />
+              <TablePanel />
             </Pane>
           </Splitpanes>
         </template>
@@ -38,7 +38,6 @@ import "splitpanes/dist/splitpanes.css";
 const tabStore = useTabStore();
 
 const hasTabs = computed(() => tabStore.hasTabs);
-const paneKey = computed(() => tabStore.currentTab.id);
 const isDisconnected = computed(() => tabStore.isDisconnected);
 </script>
 
