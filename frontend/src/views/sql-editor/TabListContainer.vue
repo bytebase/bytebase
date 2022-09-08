@@ -44,11 +44,11 @@
             </div>
             <span v-else class="flex items-center space-x-2">
               <heroicons-outline:user-group
-                v-if="sheet.visibility === 'PROJECT'"
+                v-if="sheetOfTab(tab).visibility === 'PROJECT'"
                 class="w-4 h-4"
               />
               <heroicons-outline:globe
-                v-if="sheet.visibility === 'PUBLIC'"
+                v-if="sheetOfTab(tab).visibility === 'PUBLIC'"
                 class="w-4 h-4"
               />
               <span>{{ tab.name }}</span>
@@ -122,13 +122,11 @@ import { useI18n } from "vue-i18n";
 import { useDialog } from "naive-ui";
 
 import { pushNotification, useTabStore, useSheetStore } from "@/store";
-import { TabInfo } from "@/types";
+import { TabInfo, unknown } from "@/types";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
-
-const sheet = computed(() => sheetStore.currentSheet);
 
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
@@ -142,6 +140,17 @@ const labelState = reactive({
   editingTabId: "",
 });
 const labelInputRef = ref<HTMLInputElement>();
+
+const sheetOfTab = (tab: TabInfo) => {
+  const { sheetId } = tab;
+  if (sheetId) {
+    const sheet = sheetStore.sheetById.get(sheetId);
+    if (sheet) {
+      return sheet;
+    }
+  }
+  return unknown("SHEET");
+};
 
 const localTabList = computed(() => {
   return tabStore.tabList.map((tab: TabInfo) => {
