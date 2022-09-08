@@ -13,7 +13,7 @@
     "copy-sql-review-file": "sh ./scripts/copy_sql_review_files.sh"
   },
   "dependencies": {
-    "@bytebase/vue-kbar": "0.1.7",
+    "@bytebase/vue-kbar": "0.1.8",
     "@markdoc/markdoc": "0.1.7",
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/table-core": "8.5.13",
