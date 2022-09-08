@@ -94,7 +94,7 @@ const handleColse = () => {
 
 const gotoAlterSchema = () => {
   const { databaseId } = tabStore.currentTab.connection;
-  if (databaseId) {
+  if (databaseId === UNKNOWN_ID) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
