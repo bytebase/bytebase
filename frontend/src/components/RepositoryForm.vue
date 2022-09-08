@@ -205,7 +205,7 @@
         }}
       </div>
     </div>
-    <div v-if="schemaMigrationType === 'DDL'">
+    <div>
       <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}
