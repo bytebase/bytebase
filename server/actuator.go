@@ -18,12 +18,13 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 
 		serverInfo := api.ServerInfo{
-			Version:   s.profile.Version,
-			GitCommit: s.profile.GitCommit,
-			Readonly:  s.profile.Readonly,
-			Demo:      s.profile.Demo,
-			Host:      s.profile.BackendHost,
-			Port:      strconv.Itoa(s.profile.BackendPort),
+			Version:     s.profile.Version,
+			GitCommit:   s.profile.GitCommit,
+			Readonly:    s.profile.Readonly,
+			Demo:        s.profile.Demo,
+			Host:        s.profile.BackendHost,
+			Port:        strconv.Itoa(s.profile.BackendPort),
+			ExternalURL: s.profile.ExternalURL,
 		}
 
 		if s.profile.Demo && strings.HasPrefix(s.profile.DemoDataDir, demoDataPath) {

@@ -28,10 +28,8 @@ type Profile struct {
 	BackendHost string
 	// BackendPort is the binding backend port for server.
 	BackendPort int
-	// FrontendHost is the listening frontend host for server.
-	FrontendHost string
-	// FrontendPort is the listening frontend host for server.
-	FrontendPort int
+	// ExternalURL is the URL user visits Bytebase.
+	ExternalURL string
 	// DatastorePort is the binding port for database instance for storing Bytebase data.
 	DatastorePort int
 	// PgUser is the user we use to connect to bytebase's Postgres database.

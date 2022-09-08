@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -79,11 +80,10 @@ ________________________________________________________________________________
 var (
 	flags struct {
 		// Used for Bytebase command line config
-		host         string
-		port         int
-		frontendHost string
-		frontendPort int
-		dataDir      string
+		host        string
+		port        int
+		externalURL string
+		dataDir     string
 		// When we are running in readonly mode:
 		// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
 		// - Requests other than GET will be rejected
@@ -111,11 +111,12 @@ var (
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
 		Run: func(_ *cobra.Command, _ []string) {
-			if flags.frontendHost == "" {
-				flags.frontendHost = flags.host
-			}
-			if flags.frontendPort == 0 {
-				flags.frontendPort = flags.port
+			if flags.externalURL == "" {
+				hostPort := fmt.Sprintf("%s:%d", flags.host, flags.port)
+				if !common.HasPrefixes(hostPort, "http://", "https://") {
+					hostPort = "http://" + hostPort
+				}
+				flags.externalURL = hostPort
 			}
 
 			start()
@@ -131,10 +132,19 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().StringVar(&flags.frontendHost, "frontend-host", "", "host where Bytebase frontend is accessed from, must start with http:// or https://. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --host")
-	rootCmd.PersistentFlags().IntVar(&flags.frontendPort, "frontend-port", 0, "port where Bytebase frontend is accessed from. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --port")
+	// In the release build, Bytebase runs as a mono server bundling frontend and backend together. Thus --host:--port is also where frontend runs.
+	// During development, Bytebase frontend runs on a separate port.
+	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "localhost", "host where Bytebase backend runs")
+	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend runs")
+	// When running the release build in production, most of the time, users would not expose the --host:--port directly to the public.
+	// Instead they would configure a gateway to forward the traffic to --host:--port. Users need to set --external-url to the address
+	// exposed on the gateway accordingly.
+	//
+	// It's important to set the correct --external-url. This is used for:
+	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
+	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
+	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://. Default to --host:--port")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
@@ -156,6 +166,32 @@ func init() {
 // -----------------------------------Command Line Config END--------------------------------------
 
 // -----------------------------------Main Entry Point---------------------------------------------
+
+func normalizeExternalURL(url string) (string, error) {
+	r := strings.TrimSpace(url)
+	r = strings.TrimSuffix(r, "/")
+	if !common.HasPrefixes(r, "http://", "https://") {
+		return "", errors.Errorf("%s must start with http:// or https://", url)
+	}
+	parts := strings.Split(r, ":")
+	if len(parts) > 3 {
+		return "", errors.Errorf("%s malformed", url)
+	}
+	if len(parts) == 3 {
+		port, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return "", errors.Errorf("%s has non integer port", url)
+		}
+		// The external URL is used as the redirectURL in the get token process of OAuth, and the
+		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
+		// The frontend get it through window.location.origin in the get code
+		// process, so port 80/443 need to be cropped.
+		if port == 80 || port == 443 {
+			r = strings.Join(parts[0:2], ":")
+		}
+	}
+	return r, nil
+}
 
 func checkDataDir() error {
 	// Convert to absolute path if relative path is supplied.
@@ -200,9 +236,10 @@ func start() {
 	}
 	defer log.Sync()
 
-	// check flags
-	if !common.HasPrefixes(flags.host, "http://", "https://") {
-		log.Error(fmt.Sprintf("--host %s must start with http:// or https://", flags.host))
+	var err error
+	flags.externalURL, err = normalizeExternalURL(flags.externalURL)
+	if err != nil {
+		log.Error("invalid --external-url", zap.Error(err))
 		return
 	}
 	if err := checkDataDir(); err != nil {
@@ -233,12 +270,12 @@ func start() {
 		cancel()
 	}()
 
-	s, err := server.NewServer(ctx, profile)
+	s, err = server.NewServer(ctx, profile)
 	if err != nil {
 		log.Error("Cannot new server", zap.Error(err))
 		return
 	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", profile.Version, profile.BackendHost, profile.BackendPort))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d. You can visit Bytebase from %s", profile.Version, profile.BackendHost, profile.BackendPort, profile.ExternalURL))
 	// Execute program.
 	if err := s.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {

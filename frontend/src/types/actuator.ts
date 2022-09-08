@@ -6,6 +6,7 @@ export type ServerInfo = {
   demoName: string;
   host: string;
   port: string;
+  externalUrl: string;
   needAdminSetup: boolean;
   startedTs: number;
 };

@@ -28,8 +28,7 @@ func getBaseProfile() server.Profile {
 	return server.Profile{
 		BackendHost:          flags.host,
 		BackendPort:          flags.port,
-		FrontendHost:         flags.frontendHost,
-		FrontendPort:         flags.frontendPort,
+		ExternalURL:          flags.externalURL,
 		DatastorePort:        datastorePort,
 		Readonly:             flags.readonly,
 		Debug:                flags.debug,
