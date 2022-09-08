@@ -1,4 +1,3 @@
-import { Policy } from ".";
 import { Activity } from "./activity";
 import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
@@ -22,9 +21,10 @@ import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
-import { DefaultApprovalPolicy } from "./policy";
+import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
+import { Table } from "./table";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -135,7 +135,8 @@ export type ResourceType =
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
   | "SHEET"
-  | "SQL_REVIEW";
+  | "SQL_REVIEW"
+  | "TABLE";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
@@ -163,6 +164,7 @@ interface ResourceMaker {
   (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
+  (type: "TABLE"): Table;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -514,6 +516,27 @@ const makeUnknown = (type: ResourceType) => {
     ruleList: [],
   };
 
+  const UNKNOWN_TABLE: Table = {
+    id: UNKNOWN_ID,
+    database: UNKNOWN_DATABASE,
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    name: "<<Unknown table>>",
+    type: "BASE TABLE",
+    engine: "InnoDB",
+    collation: "",
+    rowCount: 0,
+    dataSize: 0,
+    indexList: [],
+    indexSize: 0,
+    dataFree: 0,
+    createOptions: "",
+    comment: "",
+    columnList: [],
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -565,6 +588,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_SHEET;
     case "SQL_REVIEW":
       return UNKNOWN_SQL_REVIEW_POLICY;
+    case "TABLE":
+      return UNKNOWN_TABLE;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -916,6 +941,27 @@ const makeEmpty = (type: ResourceType) => {
     ruleList: [],
   };
 
+  const EMPTY_TABLE: Table = {
+    id: EMPTY_ID,
+    database: EMPTY_DATABASE,
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    name: "",
+    type: "BASE TABLE",
+    engine: "InnoDB",
+    collation: "",
+    rowCount: 0,
+    dataSize: 0,
+    indexList: [],
+    indexSize: 0,
+    dataFree: 0,
+    createOptions: "",
+    comment: "",
+    columnList: [],
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -967,6 +1013,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_SHEET;
     case "SQL_REVIEW":
       return EMPTY_SQL_REVIEW_POLICY;
+    case "TABLE":
+      return EMPTY_TABLE;
   }
 };
 export const empty = makeEmpty as ResourceMaker;

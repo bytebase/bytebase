@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
+import { computed, unref, watch } from "vue";
 import {
   Backup,
   Database,
@@ -14,12 +15,14 @@ import {
   EnvironmentId,
   Instance,
   InstanceId,
+  MaybeRef,
   PrincipalId,
   Project,
   ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useBackupStore } from "./backup";
@@ -443,3 +446,20 @@ export const useDatabaseStore = defineStore("database", {
     },
   },
 });
+
+export const useDatabaseById = (databaseId: MaybeRef<DatabaseId>) => {
+  const store = useDatabaseStore();
+  watch(
+    () => unref(databaseId),
+    (id) => {
+      if (id !== UNKNOWN_ID) {
+        if (store.getDatabaseById(id).id === UNKNOWN_ID) {
+          store.fetchDatabaseById(id);
+        }
+      }
+    },
+    { immediate: true }
+  );
+
+  return computed(() => store.getDatabaseById(unref(databaseId)));
+};

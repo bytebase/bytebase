@@ -1,14 +1,5 @@
 import type * as monaco from "monaco-editor";
-import { DropdownOption } from "naive-ui";
-
-import {
-  ProjectId,
-  InstanceId,
-  DatabaseId,
-  TableId,
-  ViewId,
-  ActivityId,
-} from "../types";
+import { InstanceId, DatabaseId, TableId, ViewId, ActivityId } from "../types";
 import { Principal } from "./principal";
 
 export type EditorModel = monaco.editor.ITextModel;
@@ -35,21 +26,11 @@ export enum SortText {
   KEYWORD = "3",
 }
 
-// TODO(Steven): ConnectionContext should be refactored later,
-// because it has some extra not required fields: instanceName, databaseName...
+// TODO(Jim): Move `isLoadingTree` to the root of sql editor state.
+// refactor <TableSchema> to get rid of this structure totally.
 export type ConnectionContext = {
-  hasSlug: boolean;
-  projectId: ProjectId;
-  projectName: string;
-  instanceId: InstanceId;
-  instanceName: string;
-  databaseId: DatabaseId;
-  databaseName: string;
-  databaseType: string;
-  tableId?: TableId;
-  tableName?: string;
   isLoadingTree: boolean;
-  option: DropdownOption;
+  option: ConnectionAtom;
 };
 
 export interface QueryHistory {

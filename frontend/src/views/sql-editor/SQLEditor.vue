@@ -26,7 +26,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useTabStore, useSQLEditorStore } from "@/store";
+import { useTabStore } from "@/store";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TabListContainer from "./TabListContainer.vue";
@@ -36,11 +36,10 @@ import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
 
 const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
 
 const hasTabs = computed(() => tabStore.hasTabs);
 const paneKey = computed(() => tabStore.currentTab.id);
-const isDisconnected = computed(() => sqlEditorStore.isDisconnected);
+const isDisconnected = computed(() => tabStore.isDisconnected);
 </script>
 
 <style>
