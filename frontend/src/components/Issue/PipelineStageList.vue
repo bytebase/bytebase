@@ -1,5 +1,5 @@
 <template>
-  <div class="lg:flex divide-y lg:divide-y-0">
+  <div class="max-w-full lg:flex divide-y lg:divide-y-0">
     <div
       v-for="(stage, i) in issue.pipeline?.stageList"
       :key="i"
@@ -16,7 +16,7 @@
         <span class="text-sm min-w-32 lg:text-xs lg:min-w-fit">{{
           stage.name
         }}</span>
-        <span class="text-sm flex-1 ml-4 lg:ml-0">
+        <span class="text-sm flex-1 ml-4 lg:ml-0 whitespace-pre-wrap break-all">
           <slot name="task-name-of-stage" :stage="stage" :index="i" />
         </span>
       </div>
@@ -118,7 +118,7 @@ const onClickStage = (stage: Stage | StageCreate, index: number) => {
 };
 </script>
 
-<style scoped lang="postcss">
+<style scoped>
 .stage-item {
   @apply cursor-default flex items-center justify-start w-full px-4 py-2 text-sm font-medium relative;
   @apply lg:w-auto lg:flex-1;

@@ -155,7 +155,7 @@
           {{ $t("common.database") }}
         </h2>
         <div
-          class="col-span-2 text-sm font-medium text-main"
+          class="col-span-2 text-sm font-medium text-main truncate"
           :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
           @click.prevent="
             {
@@ -166,6 +166,7 @@
           "
         >
           {{ databaseName }}
+          <br />
           <span class="text-control-light">{{
             showDatabaseCreationLabel
           }}</span>
