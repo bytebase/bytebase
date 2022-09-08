@@ -27,7 +27,11 @@
             })
           }}
         </label>
-        <span>{{ progress.completedUnit }}</span>
+        <span>
+          <slot name="unit" :unit="progress.completedUnit">
+            {{ progress.completedUnit }}
+          </slot>
+        </span>
       </div>
       <div class="flex flex-col items-start">
         <label class="textlabel">
@@ -37,7 +41,11 @@
             })
           }}
         </label>
-        <span v-if="progress.totalUnit > 0">{{ progress.totalUnit }}</span>
+        <span v-if="progress.totalUnit > 0">
+          <slot name="unit" :unit="progress.totalUnit">
+            {{ progress.totalUnit }}
+          </slot>
+        </span>
         <span v-else class="text-gray-400">
           {{ $t("task.progress.counting") }}
         </span>
