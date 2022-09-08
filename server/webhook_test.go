@@ -19,10 +19,9 @@ func TestDedupMigrationFiles(t *testing.T) {
 	time3, _ := time.Parse(time.RFC3339, timestamp3)
 
 	tests := []struct {
-		name            string
-		commitList      []gitlab.WebhookCommit
-		includeModified bool
-		want            []distinctFileItem
+		name       string
+		commitList []gitlab.WebhookCommit
+		want       []distinctFileItem
 	}{
 		{
 			name:       "Empty",
@@ -221,7 +220,6 @@ func TestDedupMigrationFiles(t *testing.T) {
 						"v2.sql",
 						"v3.sql",
 					},
-					ModifiedList: []string{"v4.sql"},
 				},
 			},
 			want: []distinctFileItem{
@@ -241,7 +239,6 @@ func TestDedupMigrationFiles(t *testing.T) {
 							"v2.sql",
 							"v3.sql",
 						},
-						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v1.sql",
 					itemType: fileItemTypeAdded,
@@ -262,7 +259,6 @@ func TestDedupMigrationFiles(t *testing.T) {
 							"v2.sql",
 							"v3.sql",
 						},
-						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v2.sql",
 					itemType: fileItemTypeAdded,
@@ -283,7 +279,6 @@ func TestDedupMigrationFiles(t *testing.T) {
 							"v2.sql",
 							"v3.sql",
 						},
-						ModifiedList: []string{"v4.sql"},
 					},
 					fileName: "v3.sql",
 					itemType: fileItemTypeAdded,
@@ -322,6 +317,20 @@ func TestDedupMigrationFiles(t *testing.T) {
 				},
 				{
 					ID:        "3",
+					Title:     "Commit 3",
+					Message:   "Update 3",
+					Timestamp: timestamp2,
+					URL:       "example.com",
+					Author: gitlab.WebhookCommitAuthor{
+						Name: "bob",
+					},
+					ModifiedList: []string{
+						"v3.sql",
+						"v4.sql",
+					},
+				},
+				{
+					ID:        "4",
 					Title:     "Merge branch",
 					Message:   "Merge update",
 					Timestamp: timestamp3,
@@ -332,17 +341,18 @@ func TestDedupMigrationFiles(t *testing.T) {
 					AddedList: []string{
 						"v1.sql",
 						"v2.sql",
+						// This file is both added and modified in the commits above.
+						// GitLab will treat this as added in the merge commit.
 						"v3.sql",
 					},
 					ModifiedList: []string{"v4.sql"},
 				},
 			},
-			includeModified: true,
 			want: []distinctFileItem{
 				{
 					createdTime: time3,
 					commit: gitlab.WebhookCommit{
-						ID:        "3",
+						ID:        "4",
 						Title:     "Merge branch",
 						Message:   "Merge update",
 						Timestamp: timestamp3,
@@ -363,7 +373,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 				{
 					createdTime: time3,
 					commit: gitlab.WebhookCommit{
-						ID:        "3",
+						ID:        "4",
 						Title:     "Merge branch",
 						Message:   "Merge update",
 						Timestamp: timestamp3,
@@ -384,7 +394,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 				{
 					createdTime: time3,
 					commit: gitlab.WebhookCommit{
-						ID:        "3",
+						ID:        "4",
 						Title:     "Merge branch",
 						Message:   "Merge update",
 						Timestamp: timestamp3,
@@ -405,7 +415,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 				{
 					createdTime: time3,
 					commit: gitlab.WebhookCommit{
-						ID:        "3",
+						ID:        "4",
 						Title:     "Merge branch",
 						Message:   "Merge update",
 						Timestamp: timestamp3,
@@ -428,7 +438,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := dedupMigrationFilesFromCommitList(tt.commitList, tt.includeModified)
+			got := dedupMigrationFilesFromCommitList(tt.commitList)
 			assert.Equal(t, tt.want, got)
 		})
 	}
