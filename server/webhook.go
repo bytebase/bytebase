@@ -31,7 +31,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
-var (
+const (
 	gitlabWebhookPath = "hook/gitlab"
 	githubWebhookPath = "hook/github"
 )
@@ -512,6 +512,167 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, w
 	return content, nil
 }
 
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo map[string]string, file, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+	if schemaInfo == nil {
+		log.Debug("Ignored non-schema file for SDL",
+			zap.String("file", file),
+		)
+		return nil, nil
+	}
+
+	dbName := schemaInfo["DB_NAME"]
+	if dbName == "" {
+		log.Debug("Ignored schema file without a database name",
+			zap.String("file", file),
+		)
+		return nil, nil
+	}
+
+	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
+	if err != nil {
+		s.createIgnoredFileActivity(
+			ctx,
+			repo.ProjectID,
+			pushEvent,
+			file,
+			errors.Wrap(err, "Failed to read file content"),
+		)
+		return nil, nil
+	}
+
+	envName := schemaInfo["ENV_NAME"]
+	var updateSchemaDetails []*api.UpdateSchemaDetail
+	if repo.Project.TenantMode == api.TenantModeTenant {
+		updateSchemaDetails = append(updateSchemaDetails,
+			&api.UpdateSchemaDetail{
+				DatabaseName: dbName,
+				Statement:    content,
+			},
+		)
+	} else {
+		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+		if err != nil {
+			s.createIgnoredFileActivity(
+				ctx,
+				repo.ProjectID,
+				pushEvent,
+				file,
+				errors.Wrap(err, "Failed to find project databases"),
+			)
+			return nil, nil
+		}
+
+		for _, database := range databases {
+			diff, err := s.computeDatabaseSchemaDiff(ctx, database, content)
+			if err != nil {
+				s.createIgnoredFileActivity(
+					ctx,
+					repo.ProjectID,
+					pushEvent,
+					file,
+					errors.Wrap(err, "Failed to compute database schema diff"),
+				)
+				continue
+			}
+
+			updateSchemaDetails = append(updateSchemaDetails,
+				&api.UpdateSchemaDetail{
+					DatabaseID: database.ID,
+					Statement:  diff,
+				},
+			)
+		}
+	}
+
+	migrationInfo := &db.MigrationInfo{
+		Version:     common.DefaultMigrationVersion(),
+		Namespace:   dbName,
+		Database:    dbName,
+		Environment: envName,
+		Source:      db.VCS,
+		Type:        db.Migrate,
+		Description: "Apply schema diff",
+	}
+
+	added := strings.NewReplacer(
+		"{{ENV_NAME}}", envName,
+		"{{DB_NAME}}", dbName,
+		"{{VERSION}}", migrationInfo.Version,
+		"{{TYPE}}", strings.ToLower(string(migrationInfo.Type)),
+		"{{DESCRIPTION}}", strings.ReplaceAll(migrationInfo.Description, " ", "_"),
+	).Replace(repo.FilePathTemplate)
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
+	return migrationInfo, updateSchemaDetails
+}
+
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+	// TODO(dragonly): handle modified file, try to update issue's SQL statement if the task is pending/failed.
+	if fileType != fileItemTypeAdded || schemaInfo != nil {
+		log.Debug("Ignored non-added or schema file for non-SDL",
+			zap.String("file", file),
+			zap.String("type", string(fileType)),
+		)
+		return nil, nil
+	}
+
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+	if err != nil {
+		log.Debug("Failed to parse migration info",
+			zap.Int("project", repo.ProjectID),
+			zap.Any("pushEvent", pushEvent),
+			zap.String("file", file),
+			zap.Error(err),
+		)
+		return nil, nil
+	}
+
+	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
+	if err != nil {
+		s.createIgnoredFileActivity(
+			ctx,
+			repo.ProjectID,
+			pushEvent,
+			file,
+			errors.Wrap(err, "Failed to read file content"),
+		)
+		return nil, nil
+	}
+
+	var updateSchemaDetails []*api.UpdateSchemaDetail
+	if repo.Project.TenantMode == api.TenantModeTenant {
+		updateSchemaDetails = append(updateSchemaDetails,
+			&api.UpdateSchemaDetail{
+				DatabaseName: migrationInfo.Database,
+				Statement:    content,
+			},
+		)
+	} else {
+		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+		if err != nil {
+			s.createIgnoredFileActivity(
+				ctx,
+				repo.ProjectID,
+				pushEvent,
+				file,
+				errors.Wrap(err, "Failed to find project databases"),
+			)
+			return nil, nil
+		}
+
+		for _, database := range databases {
+			updateSchemaDetails = append(updateSchemaDetails,
+				&api.UpdateSchemaDetail{
+					DatabaseID: database.ID,
+					Statement:  content,
+				},
+			)
+		}
+	}
+	return migrationInfo, updateSchemaDetails
+}
+
 // createIssueFromPushEvent attempts to create a new issue for the given file of
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
@@ -549,161 +710,12 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 	var migrationInfo *db.MigrationInfo
 	var updateSchemaDetails []*api.UpdateSchemaDetail
 	if repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
-		if schemaInfo == nil {
-			log.Debug("Ignored non-schema file for SDL",
-				zap.String("file", fileEscaped),
-			)
-			return "", false, nil
-		}
-
-		dbName := schemaInfo["DB_NAME"]
-		if dbName == "" {
-			log.Debug("Ignored schema file without a database name",
-				zap.String("file", fileEscaped),
-			)
-			return "", false, nil
-		}
-
-		content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, fileEscaped)
-		if err != nil {
-			s.createIgnoredFileActivity(
-				ctx,
-				repo.ProjectID,
-				pushEvent,
-				fileEscaped,
-				errors.Wrap(err, "Failed to read file content"),
-			)
-			return "", false, nil
-		}
-
-		envName := schemaInfo["ENV_NAME"]
-		if repo.Project.TenantMode == api.TenantModeTenant {
-			updateSchemaDetails = append(updateSchemaDetails,
-				&api.UpdateSchemaDetail{
-					DatabaseName: dbName,
-					Statement:    content,
-				},
-			)
-		} else {
-			databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
-			if err != nil {
-				s.createIgnoredFileActivity(
-					ctx,
-					repo.ProjectID,
-					pushEvent,
-					fileEscaped,
-					errors.Wrap(err, "Failed to find project databases"),
-				)
-				return "", false, nil
-			}
-
-			for _, database := range databases {
-				diff, err := s.computeDatabaseSchemaDiff(ctx, database, content)
-				if err != nil {
-					s.createIgnoredFileActivity(
-						ctx,
-						repo.ProjectID,
-						pushEvent,
-						fileEscaped,
-						errors.Wrap(err, "Failed to compute database schema diff"),
-					)
-					continue
-				}
-
-				updateSchemaDetails = append(updateSchemaDetails,
-					&api.UpdateSchemaDetail{
-						DatabaseID: database.ID,
-						Statement:  diff,
-					},
-				)
-			}
-		}
-
-		migrationInfo = &db.MigrationInfo{
-			Version:     common.DefaultMigrationVersion(),
-			Namespace:   dbName,
-			Database:    dbName,
-			Environment: envName,
-			Source:      db.VCS,
-			Type:        db.Migrate,
-			Description: "Apply schema diff",
-		}
-
-		added := strings.NewReplacer(
-			"{{ENV_NAME}}", envName,
-			"{{DB_NAME}}", dbName,
-			"{{VERSION}}", migrationInfo.Version,
-			"{{TYPE}}", strings.ToLower(string(migrationInfo.Type)),
-			"{{DESCRIPTION}}", strings.ReplaceAll(migrationInfo.Description, " ", "_"),
-		).Replace(repo.FilePathTemplate)
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
+		migrationInfo, updateSchemaDetails = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, webhookEndpointID)
 	} else {
-		// TODO(dragonly): handle modified file, try to update issue's SQL statement if the task is pending/failed.
-		if fileType != fileItemTypeAdded || schemaInfo != nil {
-			log.Debug("Ignored non-added or schema file for non-SDL",
-				zap.String("file", fileEscaped),
-				zap.String("type", string(fileType)),
-			)
-			return "", false, nil
-		}
-
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		migrationInfo, err = db.ParseMigrationInfo(fileEscaped, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-		if err != nil {
-			log.Debug("Failed to parse migration info",
-				zap.Int("project", repo.ProjectID),
-				zap.Any("pushEvent", pushEvent),
-				zap.String("fileEscaped", fileEscaped),
-				zap.Error(err),
-			)
-			return "", false, nil
-		}
-
-		content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, fileEscaped)
-		if err != nil {
-			s.createIgnoredFileActivity(
-				ctx,
-				repo.ProjectID,
-				pushEvent,
-				fileEscaped,
-				errors.Wrap(err, "Failed to read file content"),
-			)
-			return "", false, nil
-		}
-
-		if repo.Project.TenantMode == api.TenantModeTenant {
-			updateSchemaDetails = append(updateSchemaDetails,
-				&api.UpdateSchemaDetail{
-					DatabaseName: migrationInfo.Database,
-					Statement:    content,
-				},
-			)
-		} else {
-			databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
-			if err != nil {
-				s.createIgnoredFileActivity(
-					ctx,
-					repo.ProjectID,
-					pushEvent,
-					fileEscaped,
-					errors.Wrap(err, "Failed to find project databases"),
-				)
-				return "", false, nil
-			}
-
-			for _, database := range databases {
-				updateSchemaDetails = append(updateSchemaDetails,
-					&api.UpdateSchemaDetail{
-						DatabaseID: database.ID,
-						Statement:  content,
-					},
-				)
-			}
-		}
+		migrationInfo, updateSchemaDetails = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
 	}
 
-	if len(updateSchemaDetails) == 0 {
+	if migrationInfo == nil || len(updateSchemaDetails) == 0 {
 		return "", false, nil
 	}
 
