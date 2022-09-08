@@ -20,10 +20,8 @@ type Instance struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	EnvironmentID int
-	Environment   *Environment `jsonapi:"relation,environment"`
-	// TODO(d): remove anomaly from database.
-	AnomalyList    []*Anomaly    `jsonapi:"relation,anomalyList"`
+	EnvironmentID  int
+	Environment    *Environment  `jsonapi:"relation,environment"`
 	DataSourceList []*DataSource `jsonapi:"relation,dataSourceList"`
 
 	// Domain specific fields
