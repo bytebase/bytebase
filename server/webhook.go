@@ -81,8 +81,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		)
 
 		var createdMessageList []string
-		includeModified := repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL
-		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList, includeModified)
+		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList)
 		for _, item := range distinctFileList {
 			createdMessage, created, httpErr := s.createIssueFromPushEvent(
 				ctx,
@@ -339,7 +338,7 @@ type distinctFileItem struct {
 	itemType    fileItemType
 }
 
-func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit, includeModified bool) []distinctFileItem {
+func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
 	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []distinctFileItem
 	for _, commit := range commitList {
@@ -375,11 +374,8 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit, includ
 		for _, added := range commit.AddedList {
 			addDistinctFile(added, fileItemTypeAdded)
 		}
-
-		if includeModified {
-			for _, modified := range commit.ModifiedList {
-				addDistinctFile(modified, fileItemTypeModified)
-			}
+		for _, modified := range commit.ModifiedList {
+			addDistinctFile(modified, fileItemTypeModified)
 		}
 	}
 	return distinctFileList
@@ -643,6 +639,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 		pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
 	} else {
+		// TODO(dragonly): handle modified file, try to update issue's SQL statement if the task is pending/failed.
 		if fileType != fileItemTypeAdded || schemaInfo != nil {
 			log.Debug("Ignored non-added or schema file for non-SDL",
 				zap.String("file", fileEscaped),
