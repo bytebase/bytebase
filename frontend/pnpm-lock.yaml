@@ -2,7 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@bytebase/vue-kbar': 0.1.7
-  '@iconify/json': 2.1.103
+  '@iconify/json': 2.1.104
   '@intlify/vite-plugin-vue-i18n': 6.0.1
   '@markdoc/markdoc': 0.1.7
   '@popperjs/core': 2.11.6
@@ -117,7 +117,7 @@ dependencies:
   vueuc: 0.4.48_vue@3.2.38
 
 devDependencies:
-  '@iconify/json': 2.1.103
+  '@iconify/json': 2.1.104
   '@intlify/vite-plugin-vue-i18n': 6.0.1_vite@3.1.0+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 3.1.0_rollup@2.79.0
@@ -334,8 +334,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json/2.1.103:
-    resolution: {integrity: sha512-061iYPRJuydSf38DXoHIqE5Tf80J8kT5Q3RegEY7Dq3sDw78BIqGPbB8W637QlczLeE1ZgfZ18Ve14ujtvw0BA==}
+  /@iconify/json/2.1.104:
+    resolution: {integrity: sha512-wPD/EzHNbGKjPumkyXSVF0EMb6dEBmR50yButPl35aW1/AO9TcJiVpCbvVk9iwpfje+yx/pfaFdY6L78sOUuMw==}
     dependencies:
       '@iconify/types': 1.1.0
       pathe: 0.3.7
