@@ -246,7 +246,6 @@ const handleSheetClick = async (sheet: Sheet) => {
       if (tab.sheetId === sheet.id) {
         tabStore.setCurrentTabId(tab.id);
         setConnectionContextFromCurrentTab();
-        sqlEditorStore.setShouldSetContent(true);
         return;
       }
     }
@@ -259,7 +258,6 @@ const handleSheetClick = async (sheet: Sheet) => {
       sheetId: sheet.id,
     });
     setConnectionContextFromCurrentTab();
-    sqlEditorStore.setShouldSetContent(true);
   }
 };
 </script>
