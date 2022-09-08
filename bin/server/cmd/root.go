@@ -140,7 +140,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo-name", "", "name of the demo to use when running in demo mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
+	// Support environment variable for deploying to render.com using its blueprint file.
+	// Render blueprint allows to specify a postgres database along with a service.
+	// It allows to pass the postgres connection string as an ENV to the service.
+	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 
 	// Cloud backup related flags.
