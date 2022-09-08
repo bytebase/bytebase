@@ -108,7 +108,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 			if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 				return insertedID, prevSchemaBuf.String(), nil
 			}
-			return -1, "", err
+			return -1, "", errors.Wrapf(err, "failed to begin migration for issue %s", mi.IssueID)
 		}
 		startedNs := time.Now().UnixNano()
 
