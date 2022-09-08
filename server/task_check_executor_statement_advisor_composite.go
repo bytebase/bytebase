@@ -45,9 +45,9 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return []api.TaskCheckResult{
 				{
-					Status:    api.TaskCheckStatusWarn,
+					Status:    api.TaskCheckStatusSuccess,
 					Namespace: api.AdvisorNamespace,
-					Code:      advisor.NotFound.Int(),
+					Code:      common.Ok.Int(),
 					Title:     "Empty SQL review policy or disabled",
 					Content:   "",
 				},
