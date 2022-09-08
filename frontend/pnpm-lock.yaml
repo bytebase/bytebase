@@ -64,7 +64,7 @@ specifiers:
   semver: 7.3.7
   slug: 8.0.0
   splitpanes: 3.1.1
-  sql-formatter: 10.5.1
+  sql-formatter: 10.6.0
   tailwindcss: 3.1.8
   typescript: 4.8.2
   unplugin-icons: 0.14.9
@@ -108,7 +108,7 @@ dependencies:
   semver: 7.3.7
   slug: 8.0.0
   splitpanes: 3.1.1
-  sql-formatter: 10.5.1
+  sql-formatter: 10.6.0
   uuid: 9.0.0
   v-code-diff: 0.3.12_vue@3.2.39
   vue: 3.2.39
@@ -3361,8 +3361,8 @@ packages:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
     dev: true
 
-  /sql-formatter/10.5.1:
-    resolution: {integrity: sha512-ts3moly5EECAaPHV80KD4oDkupwR2lpNZ6M/8AedmFyEZGieex3+iMXHEGywFq3NRuKuPvetmYWnxswhUBpmwA==}
+  /sql-formatter/10.6.0:
+    resolution: {integrity: sha512-JJ8Hzz0DvucqOq+OGjJIUm8wqkh5BDBOfqG5hMiTUtoA9dlAHaG+E1nG1zNPPXkdltN3UnwXkWvQ3mTpWVISUg==}
     hasBin: true
     dependencies:
       argparse: 2.0.1
