@@ -30,9 +30,9 @@ var (
 	sqlReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSQLReviewPolicy.AccessErrorMessage())
 	noSQLReviewPolicy  = []api.TaskCheckResult{
 		{
-			Status:    api.TaskCheckStatusWarn,
+			Status:    api.TaskCheckStatusSuccess,
 			Namespace: api.AdvisorNamespace,
-			Code:      advisor.NotFound.Int(),
+			Code:      common.Ok.Int(),
 			Title:     "Empty SQL review policy or disabled",
 			Content:   "",
 		},
