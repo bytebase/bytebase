@@ -85,7 +85,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		for _, item := range distinctFileList {
 			createdMessage, created, httpErr := s.createIssueFromPushEvent(
 				ctx,
-				vcs.PushEvent{
+				&vcs.PushEvent{
 					VCSType:            repo.VCS.Type,
 					BaseDirectory:      repo.BaseDirectory,
 					Ref:                pushEvent.Ref,
@@ -225,7 +225,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			for _, file := range files {
 				createdMessage, created, httpErr := s.createIssueFromPushEvent(
 					ctx,
-					vcs.PushEvent{
+					&vcs.PushEvent{
 						VCSType:            repo.VCS.Type,
 						BaseDirectory:      repo.BaseDirectory,
 						Ref:                pushEvent.Ref,
@@ -446,7 +446,7 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 }
 
 // createIgnoredFileActivity creates a warning project activity for the ignored file with given error.
-func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, pushEvent vcs.PushEvent, file string, err error) {
+func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, pushEvent *vcs.PushEvent, file string, err error) {
 	log.Warn("Ignored file",
 		zap.String("file", file),
 		zap.Error(err),
@@ -454,7 +454,7 @@ func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, p
 
 	payload, marshalErr := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
-			VCSPushEvent: pushEvent,
+			VCSPushEvent: *pushEvent,
 		},
 	)
 	if marshalErr != nil {
@@ -480,7 +480,7 @@ func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, p
 }
 
 // readFileContent reads the content of the given file from the given repository.
-func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, webhookEndpointID string, file string) (string, error) {
+func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, webhookEndpointID string, file string) (string, error) {
 	// Retrieve the latest AccessToken and RefreshToken as the previous
 	// ReadFileContent call may have updated the stored token pair. ReadFileContent
 	// will fetch and store the new token pair if the existing token pair has
@@ -512,7 +512,9 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, w
 	return content, nil
 }
 
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo map[string]string, file, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+// prepareIssueFromPushEventSDL returns the migration info and a list of update
+// schema details derived from the given push event for SDL.
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
 	if schemaInfo == nil {
 		log.Debug("Ignored non-schema file for SDL",
 			zap.String("file", file),
@@ -606,7 +608,9 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	return migrationInfo, updateSchemaDetails
 }
 
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+// prepareIssueFromPushEventDDL returns the migration info and a list of update
+// schema details derived from the given push event for DDL.
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
 	// TODO(dragonly): handle modified file, try to update issue's SQL statement if the task is pending/failed.
 	if fileType != fileItemTypeAdded || schemaInfo != nil {
 		log.Debug("Ignored non-added or schema file for non-SDL",
@@ -677,7 +681,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (message string, created bool, err error) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (message string, created bool, err error) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -741,7 +745,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 	createContext, err := json.Marshal(
 		&api.UpdateSchemaContext{
 			MigrationType: db.Migrate,
-			VCSPushEvent:  &pushEvent,
+			VCSPushEvent:  pushEvent,
 			DetailList:    updateSchemaDetails,
 		},
 	)
@@ -773,7 +777,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent vcs.Pus
 	// Create a project activity after successfully creating the issue as the result of the push event
 	payload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
-			VCSPushEvent: pushEvent,
+			VCSPushEvent: *pushEvent,
 			IssueID:      issue.ID,
 			IssueName:    issue.Name,
 		},
