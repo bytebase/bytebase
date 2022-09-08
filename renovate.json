@@ -2,5 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base"
+  ],
+  "ignoreDeps": [
+    "github.com/pingcap/tidb/parser"
   ]
 }
