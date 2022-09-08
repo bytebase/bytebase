@@ -57,6 +57,7 @@ import {
   transformSQL,
   isDDLStatement,
 } from "@/components/MonacoEditor/sqlParser";
+import { UNKNOWN_ID } from "@/types";
 
 const emit = defineEmits<{
   (e: "close"): void;
