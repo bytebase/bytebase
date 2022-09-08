@@ -235,6 +235,9 @@
     :ok-text="warningModalOkText"
     :title="$t('instance.connection-info-seems-to-be-incorrect')"
     :description="state.createInstanceWarning"
+    :in-progress="
+      shouldShowCreateEmbeddedPostgresButton && isCreatingEmbeddedInstance
+    "
     @ok="handleWarningModalOkClick"
     @cancel="state.showCreateInstanceWarningModal = false"
   ></BBAlert>
@@ -308,6 +311,7 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
+const isCreatingEmbeddedInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
 const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
 
@@ -447,6 +451,7 @@ const handleWarningModalOkClick = async () => {
   // When user get the warning of incorrect instance info in creating database onboarding guide,
   // we'd like to display the `create an embedded PostgreSQL database` button instead of `ignore and create`.
   if (shouldShowCreateEmbeddedPostgresButton.value) {
+    isCreatingEmbeddedInstance.value = true;
     const connectionInfo =
       await useInstanceStore().createEmbeddedPostgresInstance();
     embeddedPostgresInstance.value = {
@@ -460,6 +465,7 @@ const handleWarningModalOkClick = async () => {
       ...state.instance,
       ...embeddedPostgresInstance.value,
     };
+    isCreatingEmbeddedInstance.value = false;
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
