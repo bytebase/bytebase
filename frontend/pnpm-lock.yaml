@@ -35,7 +35,7 @@ specifiers:
   '@vueuse/core': 9.2.0
   autoprefixer: 10.4.8
   axios: 0.27.2
-  bootstrap: 5.2.0
+  bootstrap: 5.2.1
   canvas-confetti: 1.5.1
   dayjs: 1.11.5
   dompurify: 2.4.0
@@ -87,7 +87,7 @@ dependencies:
   '@tanstack/vue-table': 8.5.13_vue@3.2.38
   '@vueuse/core': 9.2.0_vue@3.2.38
   axios: 0.27.2
-  bootstrap: 5.2.0_@popperjs+core@2.11.6
+  bootstrap: 5.2.1_@popperjs+core@2.11.6
   canvas-confetti: 1.5.1
   dayjs: 1.11.5
   dompurify: 2.4.0
@@ -1341,10 +1341,10 @@ packages:
       popper.js: 1.16.1
     dev: false
 
-  /bootstrap/5.2.0_@popperjs+core@2.11.6:
-    resolution: {integrity: sha512-qlnS9GL6YZE6Wnef46GxGv1UpGGzAwO0aPL1yOjzDIJpeApeMvqV24iL+pjr2kU4dduoBA9fINKWKgMToobx9A==}
+  /bootstrap/5.2.1_@popperjs+core@2.11.6:
+    resolution: {integrity: sha512-UQi3v2NpVPEi1n35dmRRzBJFlgvWHYwyem6yHhuT6afYF+sziEt46McRbT//kVXZ7b1YUYEVGdXEH74Nx3xzGA==}
     peerDependencies:
-      '@popperjs/core': ^2.11.5
+      '@popperjs/core': ^2.11.6
     dependencies:
       '@popperjs/core': 2.11.6
     dev: false
