@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.31
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.9
 	github.com/blang/semver/v4 v4.0.0
-	github.com/casbin/casbin/v2 v2.53.2
+	github.com/casbin/casbin/v2 v2.54.0
 	github.com/github/gh-ost v1.1.5
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.4.2
