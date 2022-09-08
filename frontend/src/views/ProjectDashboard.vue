@@ -1,18 +1,6 @@
 <template>
   <div class="flex flex-col">
     <div class="px-2 py-2 flex justify-between items-center">
-      <BBTooltipButton
-        type="normal"
-        tooltip-mode="ALWAYS"
-        @click="goDefaultProject"
-      >
-        {{ $t("common.visit-default-project") }}
-        <template #tooltip>
-          <div class="whitespace-pre-wrap">
-            {{ $t("quick-action.default-db-hint") }}
-          </div>
-        </template>
-      </BBTooltipButton>
       <BBTableSearch
         ref="searchField"
         :placeholder="$t('project.dashboard.search-bar-placeholder')"
@@ -25,10 +13,9 @@
 
 <script lang="ts">
 import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
-import { useRouter } from "vue-router";
 import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
-import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
+import { Project, UNKNOWN_ID } from "../types";
 
 interface LocalState {
   projectList: Project[];
@@ -41,7 +28,6 @@ export default defineComponent({
     ProjectTable,
   },
   setup() {
-    const router = useRouter();
     const searchField = ref();
 
     const uiStateStore = useUIStateStore();
@@ -85,15 +71,6 @@ export default defineComponent({
       state.searchText = searchText;
     };
 
-    const goDefaultProject = () => {
-      router.push({
-        name: "workspace.project.detail",
-        params: {
-          projectSlug: DEFAULT_PROJECT_ID,
-        },
-      });
-    };
-
     const filteredList = (list: Project[]) => {
       if (!state.searchText) {
         // Select "All"
@@ -112,7 +89,6 @@ export default defineComponent({
       state,
       filteredList,
       changeSearchText,
-      goDefaultProject,
     };
   },
 });
