@@ -34,12 +34,12 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	executorGetters  map[api.TaskType]func() TaskExecutor
-	runningExecutors map[int]TaskExecutor
-	mu               sync.Mutex
-	taskProgress     sync.Map // map[taskID]api.Progress
-	sharedTaskState  sync.Map // map[taskID]interface{}
-	server           *Server
+	executorGetters       map[api.TaskType]func() TaskExecutor
+	runningExecutors      map[int]TaskExecutor
+	runningExecutorsMutex sync.Mutex
+	taskProgress          sync.Map // map[taskID]api.Progress
+	sharedTaskState       sync.Map // map[taskID]interface{}
+	server                *Server
 }
 
 // Run will run the task scheduler.
@@ -65,11 +65,11 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				ctx := context.Background()
 
 				// Update task progress
-				s.mu.Lock()
+				s.runningExecutorsMutex.Lock()
 				for i, executor := range s.runningExecutors {
 					s.taskProgress.Store(i, executor.GetProgress())
 				}
-				s.mu.Unlock()
+				s.runningExecutorsMutex.Unlock()
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.PipelineOpen
@@ -103,8 +103,8 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 
+				// For each database, we will only execute the earliest running task (minimal task ID) and hold up the rest of the running tasks.
 				// Sort the taskList by ID first.
-				// For each database, we will only execute the earliest task and hold up the rest of the running tasks.
 				// databaseRunningTasks is the mapping from database ID to the earliest task of this database.
 				sort.Slice(taskList, func(i, j int) bool {
 					return taskList[i].ID < taskList[j].ID
@@ -146,16 +146,16 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						)
 						continue
 					}
-					s.mu.Lock()
+					s.runningExecutorsMutex.Lock()
 					s.runningExecutors[task.ID] = executorGetter()
-					s.mu.Unlock()
+					s.runningExecutorsMutex.Unlock()
 
 					go func(task *api.Task, executor TaskExecutor) {
 						defer func() {
-							s.mu.Lock()
+							s.runningExecutorsMutex.Lock()
 							delete(s.runningExecutors, task.ID)
+							s.runningExecutorsMutex.Unlock()
 							s.taskProgress.Delete(task.ID)
-							s.mu.Unlock()
 						}()
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
 						if !done && err != nil {
