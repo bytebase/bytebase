@@ -16,8 +16,14 @@ import {
   useDebugStore,
   useInstanceStore,
 } from "@/store";
-import { Instance, Database, ConnectionAtom, UNKNOWN_ID } from "@/types";
-import { mapConnectionAtom } from "@/utils";
+import {
+  Instance,
+  Database,
+  ConnectionAtom,
+  UNKNOWN_ID,
+  DEFAULT_PROJECT_ID,
+} from "@/types";
+import { emptyConnection, mapConnectionAtom } from "@/utils";
 
 type LocalState = {
   instanceList: Instance[];
@@ -90,6 +96,12 @@ const prepareSheetFromQuery = async () => {
       name: sheet.name,
       statement: sheet.statement,
       isSaved: true,
+      connection: {
+        ...emptyConnection(),
+        projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
+        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
+        databaseId: sheet.databaseId || UNKNOWN_ID,
+      },
     });
     setConnectionContextFromCurrentTab();
     useSQLEditorStore().setSQLEditorState({

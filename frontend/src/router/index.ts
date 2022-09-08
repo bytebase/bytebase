@@ -1337,12 +1337,10 @@ router.beforeEach((to, from, next) => {
           useSheetStore()
             .fetchSheetById(Number(sheetId))
             .then((sheet: Sheet) => {
-              tabStore.addTab({
+              tabStore.updateCurrentTab({
                 name: sheet.name,
                 statement: sheet.statement,
                 isSaved: true,
-              });
-              tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
               useSQLEditorStore().setSQLEditorState({

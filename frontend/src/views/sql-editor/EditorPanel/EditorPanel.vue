@@ -9,7 +9,7 @@
       {{ $t("sql-editor.sql-execute-in-protected-environment") }}
     </div>
 
-    <template v-if="!sqlEditorStore.isDisconnected">
+    <template v-if="!tabStore.isDisconnected">
       <SQLEditor @save-sheet="handleSaveSheet" />
     </template>
     <template v-else>
@@ -57,7 +57,7 @@ const instanceStore = useInstanceStore();
 const isShowSaveSheetModal = ref(false);
 
 const isProtectedEnvironment = computed(() => {
-  const { instanceId } = sqlEditorStore.connectionContext;
+  const { instanceId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceById(instanceId);
   return instance.environment.tier === "PROTECTED";
 });
@@ -78,11 +78,11 @@ const handleSaveSheet = async (sheetName?: string) => {
   const { name, statement, sheetId } = tabStore.currentTab;
   sheetName = sheetName ? sheetName : name;
 
-  const ctx = sqlEditorStore.connectionContext;
+  const conn = tabStore.currentTab.connection;
   const sheetUpsert = {
     id: sheetId,
-    projectId: ctx.projectId,
-    databaseId: ctx.databaseId,
+    projectId: conn.projectId,
+    databaseId: conn.databaseId,
     name: sheetName,
     statement: statement,
   };
