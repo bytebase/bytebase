@@ -175,6 +175,7 @@ const setConnection = (option: ConnectionAtom) => {
       connection: conn,
     });
 
+    // TODO(Jim): move the URL sync logic to <ProvideSQLEditorContext>
     if (conn.instanceId !== UNKNOWN_ID && conn.databaseId !== UNKNOWN_ID) {
       const database = useDatabaseStore().getDatabaseById(
         conn.databaseId,
