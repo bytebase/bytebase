@@ -155,7 +155,7 @@
           {{ $t("common.database") }}
         </h2>
         <div
-          class="col-span-2 text-sm font-medium text-main"
+          class="col-span-2 text-sm font-medium text-main truncate"
           :class="isDatabaseCreated ? 'cursor-pointer hover:underline' : ''"
           @click.prevent="
             {
@@ -166,6 +166,7 @@
           "
         >
           {{ databaseName }}
+          <br />
           <span class="text-control-light">{{
             showDatabaseCreationLabel
           }}</span>
@@ -300,7 +301,6 @@ import type {
   DatabaseLabel,
   Principal,
 } from "@/types";
-import { ONBOARDING_ISSUE_ID } from "@/types";
 import {
   allTaskList,
   databaseSlug,
@@ -453,9 +453,6 @@ const allowEditAssignee = computed(() => {
     return true;
   }
   const issueEntity = issue.value as Issue;
-  if (issueEntity.id === ONBOARDING_ISSUE_ID) {
-    return false;
-  }
   if (issueEntity.status !== "OPEN") {
     return false;
   }
@@ -484,7 +481,6 @@ const allowEditEarliestAllowedTime = computed(() => {
   const issueEntity = issue.value as Issue;
   const task = selectedTask.value as Task;
   return (
-    issueEntity.id != ONBOARDING_ISSUE_ID &&
     issueEntity.status == "OPEN" &&
     (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
     currentUser.value.id == issueEntity.assignee.id

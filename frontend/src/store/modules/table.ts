@@ -7,6 +7,7 @@ import {
   ResourceIdentifier,
   ResourceObject,
   Table,
+  TableId,
   TableIndex,
   TableState,
   unknown,
@@ -71,6 +72,15 @@ export const useTableStore = defineStore("table", {
       return this.tableListByDatabaseId.get(databaseId) || [];
     },
 
+    getTableByDatabaseIdAndTableId(
+      databaseId: DatabaseId,
+      tableId: TableId
+    ): Table {
+      const list = this.getTableListByDatabaseId(databaseId);
+      const table = list.find((t) => t.id === tableId);
+      return table || unknown("TABLE");
+    },
+
     setTableByDatabaseIdAndTableName({
       databaseId,
       tableName,
@@ -131,6 +141,14 @@ export const useTableStore = defineStore("table", {
 
       this.setTableListByDatabaseId({ databaseId, tableList });
       return tableList;
+    },
+
+    async getOrFetchTableListByDatabaseId(databaseId: DatabaseId) {
+      const storedList = this.tableListByDatabaseId.get(databaseId);
+      if (storedList) {
+        return storedList;
+      }
+      return this.fetchTableListByDatabaseId(databaseId);
     },
   },
 });

@@ -17,8 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { debounce } from "lodash-es";
-import { computed, defineEmits, ref, watch, watchEffect } from "vue";
+import { computed, defineEmits, nextTick, ref, watch, watchEffect } from "vue";
 
 import {
   useInstanceStore,
@@ -27,6 +26,7 @@ import {
   useDatabaseStore,
   useTableStore,
   useSheetStore,
+  useInstanceById,
 } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
@@ -48,10 +48,9 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { execute } = useExecuteSQL();
 
 const sqlCode = computed(() => tabStore.currentTab.statement);
-const selectedInstance = computed(() => {
-  const ctx = sqlEditorStore.connectionContext;
-  return instanceStore.getInstanceById(ctx.instanceId);
-});
+const selectedInstance = useInstanceById(
+  computed(() => tabStore.currentTab.connection.instanceId)
+);
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
@@ -63,16 +62,15 @@ const selectedDialect = computed((): SQLDialect => {
   return "mysql";
 });
 const readonly = computed(() => sheetStore.isReadOnly);
+const currentTabId = computed(() => tabStore.currentTabId);
+const isSwitchingTab = ref(false);
 
-watch(
-  () => sqlEditorStore.shouldSetContent,
-  () => {
-    if (sqlEditorStore.shouldSetContent) {
-      editorRef.value?.setEditorContent(tabStore.currentTab.statement);
-      sqlEditorStore.setShouldSetContent(false);
-    }
-  }
-);
+watch(currentTabId, () => {
+  isSwitchingTab.value = true;
+  nextTick(() => {
+    isSwitchingTab.value = false;
+  });
+});
 
 watch(
   () => sqlEditorStore.shouldFormatContent,
@@ -84,18 +82,23 @@ watch(
   }
 );
 
-const handleChange = debounce((value: string) => {
+const handleChange = (value: string) => {
+  // When we are switching between tabs, the MonacoEditor emits a 'change'
+  // event, but we shouldn't update the current tab;
+  if (isSwitchingTab.value) {
+    return;
+  }
   tabStore.updateCurrentTab({
     statement: value,
     isSaved: false,
   });
-}, 300);
+};
 
-const handleChangeSelection = debounce((value: string) => {
+const handleChangeSelection = (value: string) => {
   tabStore.updateCurrentTab({
     selectedStatement: value,
   });
-}, 300);
+};
 
 const handleSaveSheet = () => {
   emit("save-sheet");

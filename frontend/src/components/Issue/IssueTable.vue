@@ -89,7 +89,7 @@
       <BBTableCell class="table-cell">
         <div class="flex items-center">
           <div class="mr-2 text-control">#{{ issue.id }}</div>
-          <div class="whitespace-pre-wrap">{{ issue.name }}</div>
+          <div class="truncate">{{ issue.name }}</div>
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell">

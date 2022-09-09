@@ -7,7 +7,7 @@ import IconsResolver from "unplugin-icons/resolver";
 import Components from "unplugin-vue-components/vite";
 import yaml from "@rollup/plugin-yaml";
 
-const SERVER_PORT = parseInt(process.env.PORT ?? "", 10) ?? 3000;
+const SERVER_PORT = parseInt(process.env.PORT ?? "3000", 10) ?? 3000;
 const HTTPS_PORT = 443;
 
 export default defineConfig(() => {
@@ -16,6 +16,7 @@ export default defineConfig(() => {
   const IS_RUNNING_GITPOD =
     process.env["GITPOD_WORKSPACE_ID"] !== null &&
     process.env["GITPOD_WORKSPACE_ID"] !== undefined;
+
   return {
     plugins: [
       vue(),
@@ -45,11 +46,12 @@ export default defineConfig(() => {
     },
     server: {
       port: SERVER_PORT,
+      host: "0.0.0.0",
       proxy: {
         "/api": {
           target: "http://localhost:8080/api",
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ""),
+          rewrite: (path: string) => path.replace(/^\/api/, ""),
         },
       },
       hmr: {

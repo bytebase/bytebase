@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2.1.0
+      - uses: pnpm/action-setup@v2.2.2
         with:
           version: 6.10.0
       - uses: actions/setup-node@v3
@@ -24,11 +24,11 @@ jobs:
         working-directory: frontend
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
           check-latest: true
           cache: true
       - name: Build
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           args: release --skip-publish --config .goreleaser-for-linux.yaml
         env:
@@ -42,7 +42,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2.1.0
+      - uses: pnpm/action-setup@v2.2.2
         with:
           version: 6.10.0
       - uses: actions/setup-node@v3
@@ -56,11 +56,11 @@ jobs:
         working-directory: frontend
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
           check-latest: true
           cache: true
       - name: Build
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           args: release --skip-publish --config .goreleaser-for-darwin.yaml
         env:
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2.1.0
+      - uses: pnpm/action-setup@v2.2.2
         with:
           version: 6.10.0
       - uses: actions/setup-node@v3
@@ -89,7 +89,7 @@ jobs:
         working-directory: frontend
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
           check-latest: true
           cache: true
       - name: Make directories
@@ -114,7 +114,7 @@ jobs:
           rm ./darwin/bytebase*checksums.txt
           rm ./linux/bytebase*checksums.txt
       - name: Release
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           args: release --config .goreleaser-release.yaml
         env:

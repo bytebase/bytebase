@@ -5,7 +5,7 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM node:14 as frontend
+FROM node:16 as frontend
 
 ARG RELEASE="release"
 
@@ -24,10 +24,10 @@ COPY ./plugin/advisor/config/ ./src/types
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.18.4 as backend
+FROM golang:1.19 as backend
 
 ARG VERSION="development"
-ARG GO_VERSION="1.18.4"
+ARG GO_VERSION="1.19"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -70,7 +70,7 @@ LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
-RUN apt-get update && apt-get install -y locales curl psmisc
+RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client procps
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen

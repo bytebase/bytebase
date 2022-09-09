@@ -124,7 +124,7 @@ const toggleCollapse = () => {
 };
 
 const dynamicItemClass = () => {
-  let list = [];
+  const list = [];
   if (props.level == 0) {
     list.push("toplevel");
   }

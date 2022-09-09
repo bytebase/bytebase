@@ -67,6 +67,8 @@ const (
 	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
 	// SchemaRuleTableCommentConvention enforce the table comment convention.
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
+	// SchemaRuleTableNotExists check the table name conflict.
+	SchemaRuleTableNotExists SQLReviewRuleType = "table.not-exists"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -99,6 +101,15 @@ const (
 	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
 	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
+	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
+	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
+	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
+	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
+	// SchemaRuleIndexNotExists check the index name conflict.
+	SchemaRuleIndexNotExists SQLReviewRuleType = "index.not-exists"
+
+	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
+	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -231,6 +242,11 @@ type TypeRestrictionRulePayload struct {
 	TypeList []string `json:"typeList"`
 }
 
+// CharsetAllowlistRulePayload is the payload for charset allowlist rule.
+type CharsetAllowlistRulePayload struct {
+	CharsetAllowlist []string `json:"charsetAllowlist"`
+}
+
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
 func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
@@ -339,6 +355,15 @@ func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePa
 	return &trr, nil
 }
 
+// UnmarshalCharsetAllowlistRulePayload will unmarshal payload to CharsetAllowlistRulePayload.
+func UnmarshalCharsetAllowlistRulePayload(payload string) (*CharsetAllowlistRulePayload, error) {
+	var cwr CharsetAllowlistRulePayload
+	if err := json.Unmarshal([]byte(payload), &cwr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal charset allowlist rule payload %q", payload)
+	}
+	return &cwr, nil
+}
+
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
 	Charset   string
@@ -354,6 +379,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database information from catalog")
 	}
+
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
@@ -372,7 +398,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 				Charset:   checkContext.Charset,
 				Collation: checkContext.Collation,
 				Rule:      rule,
-				Database:  database,
+				Catalog:   catalog.NewFinder(database),
 			},
 			statements,
 		)
@@ -573,6 +599,26 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
+		}
+	case SchemaRuleCharsetAllowlist:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLCharsetAllowlist, nil
+		}
+	case SchemaRuleIndexPKType:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexPKType, nil
+		}
+	case SchemaRuleIndexTypeNoBlob:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexTypeNoBlob, nil
+		}
+	case SchemaRuleIndexNotExists:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexNotExists, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

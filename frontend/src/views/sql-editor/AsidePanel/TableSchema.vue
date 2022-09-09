@@ -67,7 +67,7 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
-import { Database, DatabaseId, UNKNOWN_ID } from "@/types";
+import { Database } from "@/types";
 import { useSQLEditorStore, useTableStore } from "@/store";
 
 const emit = defineEmits<{
@@ -78,15 +78,17 @@ const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
 
 const tableInfo = ref();
-const ctx = sqlEditorStore.connectionContext;
 const router = useRouter();
 
 const gotoAlterSchema = () => {
-  let databaseId = ctx.databaseId as DatabaseId;
-  if (databaseId === UNKNOWN_ID) {
-    const option = ctx.option;
-    databaseId = option.parentId as number;
+  // TODO(Jim): Remove the dependency of `sqlEditorStore.connectionContext.option`
+  // after refactoring <DatabaseTree>
+  const { option } = sqlEditorStore.connectionContext;
+  if (option.type !== "table") {
+    return;
   }
+  const tableName = option.label;
+  const databaseId = option.parentId;
 
   const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
   const databaseList =
@@ -104,7 +106,7 @@ const gotoAlterSchema = () => {
       name: `[${databaseName}] Alter schema`,
       project: projectId,
       databaseList: databaseId,
-      sql: `ALTER TABLE ${ctx.tableName}`,
+      sql: `ALTER TABLE ${tableName}`,
     },
   });
 };

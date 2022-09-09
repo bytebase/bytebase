@@ -46,7 +46,7 @@ func (*NamingPKConventionAdvisor) Check(ctx advisor.Context, statement string) (
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		database:     ctx.Database,
+		catalog:      ctx.Catalog,
 	}
 
 	for _, stmtNode := range stmts {
@@ -72,7 +72,7 @@ type namingPKConventionChecker struct {
 	format       string
 	maxLength    int
 	templateList []string
-	database     *catalog.Database
+	catalog      *catalog.Finder
 }
 
 // Visit implements ast.Visitor interface.
@@ -210,7 +210,7 @@ func (checker *namingPKConventionChecker) getPrimaryKeyMetadata(schemaName strin
 
 // findIndex returns index found in catalogs, nil if not found.
 func (checker *namingPKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.Index) {
-	return checker.database.FindIndex(&catalog.IndexFind{
+	return checker.catalog.FindIndex(&catalog.IndexFind{
 		SchemaName: normalizeSchemaName(schemaName),
 		TableName:  tableName,
 		IndexName:  indexName,

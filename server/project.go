@@ -30,6 +30,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project request").SetInternal(err)
 		}
+		if projectCreate.Key == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+		}
 		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}

@@ -1,6 +1,6 @@
 # This script is for PR preview and demo.bytebase.com on Render ONLY.
 
-FROM node:14 as frontend
+FROM node:16 as frontend
 
 ARG RELEASE="dev"
 
@@ -19,7 +19,7 @@ COPY ./plugin/advisor/config/ ./src/types
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.18.4 as backend
+FROM golang:1.19 as backend
 
 ARG GO_VERSION="unknown"
 # RENDER_GIT_COMMIT is a render.com provided env var during build.

@@ -41,9 +41,9 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, statement s
 		return nil, err
 	}
 	checker := &columnDisallowChangingTypeChecker{
-		level:    level,
-		title:    string(ctx.Rule.Type),
-		database: ctx.Database,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 	}
 
 	for _, stmt := range stmtList {
@@ -69,7 +69,7 @@ type columnDisallowChangingTypeChecker struct {
 	title      string
 	text       string
 	line       int
-	database   *catalog.Database
+	catalog    *catalog.Finder
 }
 
 // Enter implements the ast.Visitor interface.
@@ -108,7 +108,7 @@ func (*columnDisallowChangingTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func getTypeString(tp *types.FieldType) string {
-	switch tp.Tp {
+	switch tp.GetType() {
 	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
 		// Referring this issue tidb#6688, the integer max display length is deprecated in MySQL 8.0.
 		// Since the length doesn't take any effect in TiDB storage or showing result, we remove it here.
@@ -123,7 +123,7 @@ func getTypeString(tp *types.FieldType) string {
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := checker.database.FindColumn(&catalog.ColumnFind{
+	column := checker.catalog.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
 		ColumnName: columName,
 	})

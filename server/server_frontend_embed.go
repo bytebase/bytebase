@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+//go:embed dist/assets/*
 //go:embed dist
 var embeddedFiles embed.FS
 

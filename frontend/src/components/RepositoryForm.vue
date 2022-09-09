@@ -84,7 +84,7 @@
         :item-list="['DDL', 'SDL']"
         class="mt-1"
         @select-item="
-          (type) => {
+          (type: string) => {
             $emit('change-schema-migration-type', type);
           }
         "
@@ -98,7 +98,7 @@
         </template>
       </BBSelect>
     </div>
-    <div v-if="schemaMigrationType === 'DDL'">
+    <div v-if="isProjectSchemaMigrationTypeDDL">
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
@@ -165,7 +165,7 @@
         >
       </div>
       <div class="mt-1 textinfolabel">
-        <template v-if="schemaMigrationType === 'DDL'">
+        <template v-if="isProjectSchemaMigrationTypeDDL">
           {{ $t("repository.schema-writeback-description") }}
           <span class="font-medium text-main">{{
             $t("repository.schema-writeback-protected-branch")
@@ -205,7 +205,7 @@
         }}
       </div>
     </div>
-    <div v-if="schemaMigrationType === 'DDL'">
+    <div>
       <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.sheet-path-template-description") }}
@@ -291,6 +291,10 @@ export default defineComponent({
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
+    });
+
+    const isProjectSchemaMigrationTypeDDL = computed(() => {
+      return (props.project.schemaMigrationType || "DDL") === "DDL";
     });
 
     const sampleFilePath = (
@@ -385,6 +389,7 @@ export default defineComponent({
       fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
       state,
+      isProjectSchemaMigrationTypeDDL,
       sampleFilePath,
       sampleSchemaPath,
     };

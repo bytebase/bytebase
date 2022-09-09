@@ -297,7 +297,7 @@ export default defineComponent({
     });
 
     const autoBackupWeekdayText = computed(() => {
-      var { dayOfWeek } = localFromUTC(
+      const { dayOfWeek } = localFromUTC(
         state.autoBackupHour,
         state.autoBackupDayOfWeek
       );
@@ -329,7 +329,7 @@ export default defineComponent({
     });
 
     const autoBackupHourText = computed(() => {
-      var { hour } = localFromUTC(
+      const { hour } = localFromUTC(
         state.autoBackupHour,
         state.autoBackupDayOfWeek
       );
@@ -391,8 +391,8 @@ export default defineComponent({
         backupStore
           .fetchBackupListByDatabaseId(props.database.id)
           .then((backups: Backup[]) => {
-            var pending = false;
-            for (let idx in backups) {
+            let pending = false;
+            for (const idx in backups) {
               if (backups[idx].status.includes("PENDING")) {
                 pending = true;
                 continue;

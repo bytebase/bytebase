@@ -66,6 +66,7 @@ const (
 	TableNotExists                    Code = 604
 	NoTableComment                    Code = 605
 	TableCommentTooLong               Code = 606
+	TableExists                       Code = 607
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
@@ -74,9 +75,15 @@ const (
 	// 801 miss index error code.
 	NotUseIndex                Code = 801
 	IndexKeyNumberExceedsLimit Code = 802
+	IndexPKType                Code = 803
+	IndexTypeNoBlob            Code = 804
+	IndexExists                Code = 805
 
 	// 901 ~ 999 index error code.
 	DuplicateColumnInIndex Code = 901
+
+	// 1001 ~ 1099 charset error code.
+	DisabledCharset Code = 1001
 )
 
 // Int returns the int type of code.

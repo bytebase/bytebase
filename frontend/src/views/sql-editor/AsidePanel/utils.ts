@@ -2,8 +2,8 @@ import { h } from "vue";
 import { ConnectionAtom } from "@/types";
 import type { useInstanceStore } from "@/store";
 import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
-import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
-import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
+import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database";
+import HeroiconsOutlineTable from "~icons/heroicons-outline/table";
 
 export const generateInstanceNode = (
   item: ConnectionAtom,

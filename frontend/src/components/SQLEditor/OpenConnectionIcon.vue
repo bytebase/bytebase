@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import HeroiconsOutlineLightningBolt from "~icons/heroicons-outline/lightning-bolt.vue";
+import HeroiconsOutlineLightningBolt from "~icons/heroicons-outline/lightning-bolt";
 
 const emit = defineEmits(["click"]);
 

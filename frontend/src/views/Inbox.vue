@@ -93,7 +93,7 @@ export default {
     watchEffect(prepareInboxList);
 
     const markAllAsRead = () => {
-      var count = state.unreadList.length;
+      let count = state.unreadList.length;
       const inboxList = state.unreadList.map((item) => item);
 
       inboxList.forEach((item: Inbox) => {

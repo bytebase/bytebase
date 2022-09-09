@@ -23,19 +23,47 @@
 
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.key") }} <span class="text-red-600">*</span>
+          {{ $t("common.key") }}
         </dt>
         <dd class="mt-1 text-sm text-main">
           <input
             id="projectKey"
-            v-model="state.key"
-            :disabled="!allowEdit"
+            :value="project.key"
+            disabled
             required
             autocomplete="off"
             type="text"
             class="textfield uppercase"
           />
         </dd>
+      </dl>
+    </div>
+
+    <div v-if="isDev">
+      <dl class="">
+        <div class="textlabel">
+          {{ $t("project.settings.schema-migration-type") }}
+          <span class="text-red-600">*</span>
+        </div>
+        <BBSelect
+          id="schemamigrationtype"
+          :selected-item="state.schemaMigrationType"
+          :item-list="['DDL', 'SDL']"
+          class="mt-1"
+          @select-item="
+            (type: SchemaMigrationType) => {
+              state.schemaMigrationType = type;
+            }
+          "
+        >
+          <template #menuItem="{ item }">
+            {{
+              $t(
+                `project.settings.select-schema-migration-type-${item.toLowerCase()}`
+              )
+            }}
+          </template>
+        </BBSelect>
       </dl>
     </div>
 
@@ -53,15 +81,20 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
-import { DEFAULT_PROJECT_ID, Project, ProjectPatch } from "../types";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import {
+  DEFAULT_PROJECT_ID,
+  Project,
+  ProjectPatch,
+  SchemaMigrationType,
+} from "../types";
 import { pushNotification, useProjectStore } from "@/store";
 
 interface LocalState {
   name: string;
-  key: string;
+  schemaMigrationType: SchemaMigrationType;
 }
 
 export default defineComponent({
@@ -82,31 +115,28 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       name: props.project.name,
-      key: props.project.key,
+      schemaMigrationType: props.project.schemaMigrationType,
     });
 
     const allowSave = computed((): boolean => {
       return (
         props.project.id != DEFAULT_PROJECT_ID &&
         !isEmpty(state.name) &&
-        !isEmpty(state.key) &&
-        (state.name != props.project.name || state.key != props.project.key)
+        (state.name !== props.project.name ||
+          state.schemaMigrationType != props.project.schemaMigrationType)
       );
     });
 
     const save = () => {
-      const projectPatch: ProjectPatch = {
-        name: state.name != props.project.name ? state.name : undefined,
-        key: state.key != props.project.key ? state.key : undefined,
-      };
-      let subject = "project settings";
-      if (state.name != props.project.name && state.key != props.project.key) {
-        subject = "project name and key";
-      } else if (state.name != props.project.name) {
-        subject = "project name";
-      } else if (state.key != props.project.key) {
-        subject = "project key";
+      const projectPatch: ProjectPatch = {};
+
+      if (state.name !== props.project.name) {
+        projectPatch.name = state.name;
       }
+      if (state.schemaMigrationType !== props.project.schemaMigrationType) {
+        projectPatch.schemaMigrationType = state.schemaMigrationType;
+      }
+
       projectStore
         .patchProject({
           projectId: props.project.id,
@@ -116,12 +146,10 @@ export default defineComponent({
           pushNotification({
             module: "bytebase",
             style: "SUCCESS",
-            title: t("project.settings.success-updated-prompt", {
-              subject: subject,
-            }),
+            title: t("project.settings.success-updated"),
           });
           state.name = updatedProject.name;
-          state.key = updatedProject.key;
+          state.schemaMigrationType = updatedProject.schemaMigrationType;
         });
     };
 

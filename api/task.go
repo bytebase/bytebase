@@ -8,14 +8,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-// These are special onboarding tasks for demo purpose when bootstrapping the workspace.
-
-// OnboardingTaskID1 is the ID for onboarding task1.
-const OnboardingTaskID1 = 101
-
-// OnboardingTaskID2 is the ID for onboarding task2.
-const OnboardingTaskID2 = 102
-
 // TaskStatus is the status of a task.
 type TaskStatus string
 
@@ -52,8 +44,6 @@ const (
 	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
 	// TaskDatabaseBackup is the task type for creating database backups.
 	TaskDatabaseBackup TaskType = "bb.task.database.backup"
-	// TaskDatabaseRestore is the task type for restoring databases.
-	TaskDatabaseRestore TaskType = "bb.task.database.restore"
 	// TaskDatabaseRestorePITRRestore is the task type for restoring databases using PITR.
 	TaskDatabaseRestorePITRRestore TaskType = "bb.task.database.restore.pitr.restore"
 	// TaskDatabaseRestorePITRCutover is the task type for swapping the pitr and original database.
@@ -136,14 +126,6 @@ type TaskDatabaseDataUpdatePayload struct {
 // TaskDatabaseBackupPayload is the task payload for database backup.
 type TaskDatabaseBackupPayload struct {
 	BackupID int `json:"backupId,omitempty"`
-}
-
-// TaskDatabaseRestorePayload is the task payload for database restore.
-type TaskDatabaseRestorePayload struct {
-	// The database name we restore to. When we restore a backup to a new database, we only have the database name
-	// and don't have the database id upon constructing the task yet.
-	DatabaseName string `json:"databaseName,omitempty"`
-	BackupID     int    `json:"backupId,omitempty"`
 }
 
 // Task is the API message for a task.
