@@ -191,7 +191,7 @@ const handleActionBtnOutsideClick = () => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  tabStore.addTab({
+  tabStore.updateCurrentTab({
     statement: queryHistory.statement,
     selectedStatement: "",
   });
