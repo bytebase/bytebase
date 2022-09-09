@@ -1062,9 +1062,9 @@
       "success-member-sync-prompt": "从 VCS 同步成功",
       "view-vcs-member": "在 VCS 中查看成员",
       "switch-role-provider-to-bytebase-success-prompt": "成功关闭了 VCS 项目成员同步",
-      "schema-migration-type": "Schema 迁移类型",
-      "select-schema-migration-type-ddl": "数据定义语言(DDL)",
-      "select-schema-migration-type-sdl": "Schema 定义语言(SDL)",
+      "schema-change-type": "Schema 变更类型",
+      "select-schema-migration-type-ddl": "通过指定过程 DDL 变更到期望的 Schema",
+      "select-schema-migration-type-sdl": "直接指定期望达到的 Schema",
       "schema-path-template-sdl-description": "Schema 定义文件应该包括了数据库 Schema 所在的状态。Bytebase 将会为在 Schema 状态和实际数据库之间发现的任何差异创建新的迁移。"
     },
     "mode": {
