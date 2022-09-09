@@ -166,6 +166,11 @@ const setConnection = (option: ConnectionAtom) => {
       conn.tableId = option.id;
     }
 
+    if (tabStore.currentTab.sheetId) {
+      // We won't mutate a saved sheet's connection.
+      // So we'll set connection in a temp or new tab.
+      tabStore.selectOrAddTempTab();
+    }
     tabStore.updateCurrentTab({
       connection: conn,
     });
