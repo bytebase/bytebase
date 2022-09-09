@@ -4,7 +4,7 @@
 
 bytebase:
   option:
-    host: localhost
+    host: 0.0.0.0
     port: 8080
     # You should set this to the URL where users visits Bytebase.
     # See https://www.bytebase.com/docs/get-started/install/external-url

@@ -26,8 +26,6 @@ func getBaseProfile() server.Profile {
 	datastorePort := flags.port + 1
 
 	return server.Profile{
-		BackendHost:          flags.host,
-		BackendPort:          flags.port,
 		ExternalURL:          flags.externalURL,
 		DatastorePort:        datastorePort,
 		Readonly:             flags.readonly,
@@ -52,8 +50,6 @@ func GetTestProfile(dataDir string, port int) server.Profile {
 	datastorePort := port + 1
 	return server.Profile{
 		Mode:                 common.ReleaseModeDev,
-		BackendHost:          "localhost",
-		BackendPort:          port,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		DatastorePort:        datastorePort,
 		PgUser:               "bbtest",
@@ -70,8 +66,6 @@ func GetTestProfile(dataDir string, port int) server.Profile {
 func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string) server.Profile {
 	return server.Profile{
 		Mode:                 common.ReleaseModeDev,
-		BackendHost:          "localhost",
-		BackendPort:          port,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		PgUser:               pgUser,
 		DataDir:              dataDir,

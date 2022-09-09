@@ -111,14 +111,6 @@ var (
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
 		Run: func(_ *cobra.Command, _ []string) {
-			if flags.externalURL == "" {
-				hostPort := fmt.Sprintf("%s:%d", flags.host, flags.port)
-				if !common.HasPrefixes(hostPort, "http://", "https://") {
-					hostPort = "http://" + hostPort
-				}
-				flags.externalURL = hostPort
-			}
-
 			start()
 
 			fmt.Print(byeBanner)
@@ -134,8 +126,8 @@ func Execute() error {
 func init() {
 	// In the release build, Bytebase runs as a mono server bundling frontend and backend together. Thus --host:--port is also where frontend runs.
 	// During development, Bytebase frontend runs on a separate port.
-	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "localhost", "host where Bytebase backend runs")
-	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend runs")
+	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "0.0.0.0", "host where Bytebase backend runs. Default to 0.0.0.0")
+	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend runs. Default to 80")
 	// When running the release build in production, most of the time, users would not expose the --host:--port directly to the public.
 	// Instead they would configure a gateway to forward the traffic to --host:--port. Users need to set --external-url to the address
 	// exposed on the gateway accordingly.
@@ -144,7 +136,7 @@ func init() {
 	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://. Default to --host:--port")
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://. Default value is based on --host --port")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
@@ -165,7 +157,22 @@ func init() {
 
 // -----------------------------------Command Line Config END--------------------------------------
 
-// -----------------------------------Main Entry Point---------------------------------------------
+func defaultExternalURLFromHostPort(host string, port int) string {
+	h := strings.TrimSpace(host)
+	// Derive protocol from host if specified.
+	protocol := "http://"
+	if strings.HasPrefix(h, "https://") {
+		protocol = "https://"
+	}
+
+	h = strings.TrimPrefix(h, "http://")
+	h = strings.TrimPrefix(h, "https://")
+	// If listens on all network interfaces (this is also our default value), then we set to localhost
+	if h == "0.0.0.0" {
+		h = "localhost"
+	}
+	return protocol + fmt.Sprintf("%s:%d", h, port)
+}
 
 func normalizeExternalURL(url string) (string, error) {
 	r := strings.TrimSpace(url)
@@ -184,7 +191,7 @@ func normalizeExternalURL(url string) (string, error) {
 		}
 		// The external URL is used as the redirectURL in the get token process of OAuth, and the
 		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend get it through window.location.origin in the get code
+		// The frontend gets it through window.location.origin in the get code
 		// process, so port 80/443 need to be cropped.
 		if port == 80 || port == 443 {
 			r = strings.Join(parts[0:2], ":")
@@ -236,6 +243,9 @@ func start() {
 	}
 	defer log.Sync()
 
+	if flags.externalURL == "" {
+		flags.externalURL = defaultExternalURLFromHostPort(flags.host, flags.port)
+	}
 	var err error
 	flags.externalURL, err = normalizeExternalURL(flags.externalURL)
 	if err != nil {
@@ -275,9 +285,22 @@ func start() {
 		log.Error("Cannot new server", zap.Error(err))
 		return
 	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d. You can visit Bytebase from %s", profile.Version, profile.BackendHost, profile.BackendPort, profile.ExternalURL))
+
+	// It's intentional that we strip http(s):// from --host. Technically, the --host is not coupled
+	// with a particular protocol, thus the accurate usage is to supply --host without http(s). e.g.
+	//
+	// --host localhost (only listen on loopback)
+	// --host 0.0.0.0 (listen on all network interfaces)
+	//
+	// In reality, host is an abused word and people are used to prefix it with http(s). If we
+	// keep the protocol part, it will cause failure when we feed it to start the Echo server.
+	host := strings.TrimSpace(flags.host)
+	host = strings.TrimPrefix(host, "http://")
+	host = strings.TrimPrefix(host, "https://")
+	addr := fmt.Sprintf("%s:%d", host, flags.port)
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s. You can visit Bytebase from %s", profile.Version, addr, profile.ExternalURL))
 	// Execute program.
-	if err := s.Run(ctx); err != nil {
+	if err := s.Run(ctx, addr); err != nil {
 		if err != http.ErrServerClosed {
 			log.Error(err.Error())
 			_ = s.Shutdown(ctx)

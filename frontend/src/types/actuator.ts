@@ -4,8 +4,6 @@ export type ServerInfo = {
   readonly: boolean;
   demo: boolean;
   demoName: string;
-  host: string;
-  port: string;
   externalUrl: string;
   needAdminSetup: boolean;
   startedTs: number;

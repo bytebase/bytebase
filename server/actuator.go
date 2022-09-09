@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -22,8 +21,6 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 			GitCommit:   s.profile.GitCommit,
 			Readonly:    s.profile.Readonly,
 			Demo:        s.profile.Demo,
-			Host:        s.profile.BackendHost,
-			Port:        strconv.Itoa(s.profile.BackendPort),
 			ExternalURL: s.profile.ExternalURL,
 		}
 
