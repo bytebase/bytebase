@@ -1,0 +1,137 @@
+categoryList:
+  - type: database-management
+    featureList:
+      - instance-count
+      - schema-change
+      - migration-history
+      - sql-editor
+      - disaster-recovery
+      - archiving
+      - sql-check
+      - anomaly-detection
+      - schedule-change
+      - review-and-backup-policy
+      - tenancy
+  - type: collaboration
+    featureList:
+      - ui-based-sql-review
+      - vsc-workflow
+      - shareable-query-link
+      - im-integration
+      - inbox-notification
+  - type: admin-and-security
+    featureList:
+      - activity-log
+      - rbac
+      - 3rd-party-auth
+      - sync-members-from-vcs
+  - type: branding
+    featureList:
+      - branding-logo
+planList:
+  - type: 0
+    title: free
+    trialDays: 0
+    unitPrice: 0
+    trialPrice: 0
+    freeInstanceCount: 1
+    pricePerInstancePerMonth: 0
+    featureList:
+      - type: instance-count
+        content: instance-upto-5
+      - type: schema-change
+        content: schema-change-basic
+        tooltip: schema-change-basic-tooltip
+      - type: migration-history
+      - type: sql-editor
+      - type: disaster-recovery
+        content: disaster-recovery-basic
+        tooltip: disaster-recovery-basic-tooltip
+      - type: archiving
+      - type: sql-check
+        content: sql-check-basic
+        tooltip: sql-check-basic-tooltip
+      - type: anomaly-detection
+        content: anomaly-detection-basic
+        tooltip: anomaly-detection-basic-tooltip
+      - type: ui-based-sql-review
+      - type: vsc-workflow
+      - type: shareable-query-link
+      - type: im-integration
+      - type: inbox-notification
+      - type: activity-log
+  - type: 1
+    title: team
+    trialDays: 14
+    unitPrice: 1740
+    trialPrice: 0
+    freeInstanceCount: 5
+    pricePerInstancePerMonth: 79
+    featureList:
+      - type: instance-count
+        content: instance-minimum-5
+      - type: schema-change
+        content: schema-change-advanced
+        tooltip: schema-change-advanced-tooltip
+      - type: migration-history
+      - type: sql-editor
+      - type: disaster-recovery
+        content: disaster-recovery-advanced
+        tooltip: disaster-recovery-advanced-tooltip
+      - type: archiving
+      - type: sql-check
+        content: sql-check-advanced
+        tooltip: sql-check-advanced-tooltip
+      - type: anomaly-detection
+        content: anomaly-detection-advanced
+        tooltip: anomaly-detection-advanced-tooltip
+      - type: schedule-change
+      - type: review-and-backup-policy
+      - type: ui-based-sql-review
+      - type: vsc-workflow
+      - type: shareable-query-link
+      - type: im-integration
+      - type: inbox-notification
+      - type: activity-log
+      - type: rbac
+      - type: 3rd-party-auth
+      - type: sync-members-from-vcs
+      - type: branding-logo
+  - type: 2
+    title: enterprise
+    trialDays: 0
+    unitPrice: 0
+    trialPrice: 0
+    freeInstanceCount: 5
+    pricePerInstancePerMonth: 199
+    featureList:
+      - type: instance-count
+        content: instance-customized
+      - type: schema-change
+        content: schema-change-advanced
+        tooltip: schema-change-advanced-tooltip
+      - type: migration-history
+      - type: sql-editor
+      - type: disaster-recovery
+        content: disaster-recovery-advanced
+        tooltip: disaster-recovery-advanced-tooltip
+      - type: archiving
+      - type: sql-check
+        content: sql-check-advanced
+        tooltip: sql-check-advanced-tooltip
+      - type: anomaly-detection
+        content: anomaly-detection-advanced
+        tooltip: anomaly-detection-advanced-tooltip
+      - type: schedule-change
+      - type: review-and-backup-policy
+      - type: tenancy
+      - type: ui-based-sql-review
+      - type: vsc-workflow
+      - type: shareable-query-link
+      - type: im-integration
+      - type: inbox-notification
+      - type: activity-log
+      - type: rbac
+      - type: 3rd-party-auth
+      - type: sync-members-from-vcs
+      - type: branding-logo
