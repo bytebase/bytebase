@@ -8,7 +8,10 @@
         class="guide-wrapper"
         :class="position"
       >
-        <p class="title">{{ props.title }}</p>
+        <p class="title">
+          <BBSpin v-if="loading" />
+          {{ props.title }}
+        </p>
       </div>
     </Transition>
     <Transition>
@@ -48,6 +51,10 @@ const props = defineProps({
   targetElementSelector: {
     type: String,
     default: "",
+  },
+  loading: {
+    type: Boolean,
+    default: false,
   },
 });
 

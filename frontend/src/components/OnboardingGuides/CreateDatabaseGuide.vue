@@ -5,6 +5,7 @@
       :key="guide.title"
       :title="guide.title"
       :position="guide.position"
+      :loading="guide.showLoading || false"
       :target-element-selector="guide.targetElementSelector"
     ></GuideDialog>
   </template>
@@ -31,10 +32,28 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
+type GuideData = {
+  title: string;
+  description: string;
+  position: string;
+  targetElementSelector: string;
+  route: string;
+  expectedUrl: any;
+  showLoading?: boolean;
+};
+
 const guideStepList = computed(() => {
   return [
     // guides for `add instance`
     [
+      {
+        title: t("onboarding-guide.create-database-guide.wait-issue-finished"),
+        description: "",
+        position: "center",
+        targetElementSelector: "#app",
+        expectedUrl: /.*/,
+        showLoading: true,
+      },
       {
         title: t("onboarding-guide.create-database-guide.let-add-a-instance"),
         description: "",
@@ -92,6 +111,7 @@ const guideStepList = computed(() => {
         position: "center",
         targetElementSelector: "#app",
         expectedUrl: /.*/,
+        showLoading: true,
       },
     ],
     // guides for `back to home`
@@ -105,7 +125,7 @@ const guideStepList = computed(() => {
         expectedUrl: /^\/.+/,
       },
     ],
-  ];
+  ] as GuideData[][];
 });
 
 const instanceList = useInstanceList();
