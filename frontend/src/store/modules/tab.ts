@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { TabInfo, AnyTabInfo, TabState, UNKNOWN_ID } from "@/types";
-import { getDefaultTab, INITIAL_TAB } from "@/utils";
+import { getDefaultTab, INITIAL_TAB, isTempTab } from "@/utils";
 import { useInstanceStore } from "./instance";
 
 export const useTabStore = defineStore("tab", {
@@ -13,9 +13,6 @@ export const useTabStore = defineStore("tab", {
     currentTab(state): TabInfo {
       const tab = state.tabList.find((tab) => tab.id === state.currentTabId);
       return tab ?? getDefaultTab();
-    },
-    hasTabs(state: TabState): boolean {
-      return state.tabList.length > 0;
     },
     isDisconnected(): boolean {
       const { instanceId, databaseId } = this.currentTab.connection;
@@ -56,6 +53,14 @@ export const useTabStore = defineStore("tab", {
     },
     setCurrentTabId(payload: string) {
       this.currentTabId = payload;
+    },
+    selectOrAddTempTab() {
+      const tempTab = this.tabList.find(isTempTab);
+      if (tempTab) {
+        this.setCurrentTabId(tempTab.id);
+      } else {
+        this.addTab();
+      }
     },
   },
 });

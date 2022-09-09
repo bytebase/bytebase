@@ -5,20 +5,21 @@
       <Pane size="20" min-size="20" max-size="30">
         <AsidePanel />
       </Pane>
-      <Pane size="80">
-        <template v-if="hasTabs">
-          <Splitpanes horizontal class="default-theme">
-            <Pane :size="isDisconnected ? 100 : 60">
-              <EditorPanel />
-            </Pane>
-            <Pane :size="isDisconnected ? 0 : 40">
-              <TablePanel />
-            </Pane>
-          </Splitpanes>
-        </template>
-        <template v-else>
-          <GettingStarted />
-        </template>
+      <Pane size="80" class="relative">
+        <Splitpanes horizontal class="default-theme">
+          <Pane :size="isDisconnected ? 100 : 60">
+            <EditorPanel />
+          </Pane>
+          <Pane :size="isDisconnected ? 0 : 40">
+            <TablePanel />
+          </Pane>
+        </Splitpanes>
+        <div
+          v-if="isFetchingSheet"
+          class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
+        >
+          <BBSpin />
+        </div>
       </Pane>
     </Splitpanes>
   </div>
@@ -26,19 +27,19 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useTabStore } from "@/store";
+import { useSQLEditorStore, useTabStore } from "@/store";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TabListContainer from "./TabListContainer.vue";
 import TablePanel from "./TablePanel/TablePanel.vue";
-import GettingStarted from "./GettingStarted.vue";
 import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
 
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
 
-const hasTabs = computed(() => tabStore.hasTabs);
 const isDisconnected = computed(() => tabStore.isDisconnected);
+const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
 </script>
 
 <style>
