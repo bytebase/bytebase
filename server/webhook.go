@@ -611,9 +611,8 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 // prepareIssueFromPushEventDDL returns the migration info and a list of update
 // schema details derived from the given push event for DDL.
 func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
-	// TODO(dragonly): handle modified file, try to update issue's SQL statement if the task is pending/failed.
-	if fileType != fileItemTypeAdded || schemaInfo != nil {
-		log.Debug("Ignored non-added or schema file for non-SDL",
+	if schemaInfo != nil {
+		log.Debug("Ignored schema file for non-SDL",
 			zap.String("file", file),
 			zap.String("type", string(fileType)),
 		)
@@ -680,13 +679,74 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			return nil, nil
 		}
 
-		for _, database := range databases {
-			updateSchemaDetails = append(updateSchemaDetails,
-				&api.UpdateSchemaDetail{
-					DatabaseID: database.ID,
-					Statement:  content,
-				},
-			)
+		// For modified files, we try to update the existing issue's statement.
+		// Find tasks related to database and payload.pushEvent.fileCommit.added=fileName.
+		// then use server.patchTask() to patch the task.
+		if fileType == fileItemTypeModified {
+			for _, database := range databases {
+				find := &api.TaskFind{
+					DatabaseID: &database.ID,
+					StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
+					TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
+				}
+				taskList, err := s.store.FindTask(ctx, find, true)
+				if err != nil {
+					s.createIgnoredFileActivity(
+						ctx,
+						repo.ProjectID,
+						pushEvent,
+						file,
+						errors.Wrap(err, "Failed to find project databases"),
+					)
+					return nil, nil
+				}
+				for _, task := range taskList {
+					var shouldPatch bool
+					if task.Type == api.TaskDatabaseSchemaUpdate {
+						payload := api.TaskDatabaseSchemaUpdatePayload{}
+						if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+							log.Error("Failed to unmarshal task payload", zap.Error(err))
+							return nil, nil
+						}
+						shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
+					} else {
+						payload := api.TaskDatabaseDataUpdatePayload{}
+						if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+							log.Error("Failed to unmarshal task payload", zap.Error(err))
+							return nil, nil
+						}
+						shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
+					}
+
+					if !shouldPatch {
+						continue
+					}
+					taskPatch := api.TaskPatch{
+						ID:        task.ID,
+						Statement: &content,
+						UpdaterID: api.SystemBotID,
+					}
+					issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+					if err != nil {
+						log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
+						return nil, nil
+					}
+					log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
+					if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
+						log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
+						return nil, nil
+					}
+				}
+			}
+		} else {
+			for _, database := range databases {
+				updateSchemaDetails = append(updateSchemaDetails,
+					&api.UpdateSchemaDetail{
+						DatabaseID: database.ID,
+						Statement:  content,
+					},
+				)
+			}
 		}
 	}
 	return migrationInfo, updateSchemaDetails

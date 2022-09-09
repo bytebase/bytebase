@@ -249,8 +249,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 }
 
 func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, *echo.HTTPError) {
-	oldStatement := ""
-	newStatement := ""
+	var oldStatement string
+	var newStatement string
 	if taskPatch.Statement != nil {
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
@@ -265,9 +265,11 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			// We should update the schema version if we've updated the SQL, otherwise we will
-			// get migration history version conflict if the previous task has been attempted.
-			payload.SchemaVersion = common.DefaultMigrationVersion()
+			if payload.MigrationInfo == nil {
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+			}
 			bytes, err := json.Marshal(payload)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
@@ -281,9 +283,11 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			// We should update the schema version if we've updated the SQL, otherwise we will
-			// get migration history version conflict if the previous task has been attempted.
-			payload.SchemaVersion = common.DefaultMigrationVersion()
+			if payload.MigrationInfo == nil {
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+			}
 			bytes, err := json.Marshal(payload)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)

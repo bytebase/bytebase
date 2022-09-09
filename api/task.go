@@ -221,9 +221,11 @@ type TaskFind struct {
 	// Related fields
 	PipelineID *int
 	StageID    *int
+	DatabaseID *int
 
 	// Domain specific fields
 	StatusList *[]TaskStatus
+	TypeList   *[]TaskType
 }
 
 func (find *TaskFind) String() string {
