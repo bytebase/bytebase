@@ -1,0 +1,109 @@
+{
+  "current": "当前版本",
+  "instance-count": "实例数",
+  "expires-at": "过期时间",
+  "free-trial": "无需信用卡即可免费试用",
+  "description-highlight": "购买证书",
+  "sensitive-placeholder": "粘贴您的证书 - 仅写入",
+  "plan-compare": "比较不同版本的功能，寻找适合您的方案",
+  "disabled-feature": "这是一个订阅版高级功能",
+  "trial": "您可以免费试用 14 天",
+  "upgrade": "升级订阅",
+  "per-month": "/ 月",
+  "price-unit-for-enterprise": "/ 月起",
+  "start-from": "",
+  "per-instance": "每个实例",
+  "free-price-intro": "最多 5 个实例",
+  "team-price-intro": "5 个起步，按年付费",
+  "enterprise-price-intro": "自定义实例数，按年付费",
+  "deploy": "部署",
+  "contact-us": "联系我们",
+  "start-trial": "免费试用",
+  "subscribe": "开始订阅",
+  "current-plan": "当前订阅",
+  "buy": "购买{plan}",
+  "cancel": "取消订阅",
+  "announcement": "您可以随时升级、降级或{cancel}。没有任何隐藏费用。",
+  "trialing": "试用期",
+  "plan": {
+    "title": "版本",
+    "try": "试用团队版",
+    "free": {
+      "title": "免费版",
+      "label": "",
+      "desc": "个人或小团队，无专职 DBA"
+    },
+    "team": {
+      "title": "团队版",
+      "label": "Beta",
+      "desc": "中型团队，有专职 DBA 或 TL 以提高工程速度"
+    },
+    "enterprise": {
+      "title": "企业版",
+      "label": "预览版",
+      "desc": "大型组织，有专属 DBA 团队来管理数据库"
+    }
+  },
+  "feature-sections": {
+    "database-management": {
+      "title": "数据库管理",
+      "features": {
+        "instance-count": "实例数",
+        "instance-upto-5": "不多于 5 个",
+        "instance-minimum-5": "5 ~ 无限制",
+        "instance-customized": "自定义",
+        "schema-change": "Schema 和数据变更",
+        "schema-change-basic": "基础",
+        "schema-change-basic-tooltip": "普通变更",
+        "schema-change-advanced": "高级",
+        "schema-change-advanced-tooltip": "普通变更 + 在线变更 (gh-ost)",
+        "migration-history": "变更历史",
+        "sql-editor": "SQL 编辑器",
+        "disaster-recovery": "数据灾备",
+        "disaster-recovery-basic": "基础",
+        "disaster-recovery-basic-tooltip": "数据库备份和恢复",
+        "disaster-recovery-advanced": "高级",
+        "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
+        "archiving": "归档",
+        "sql-check": "SQL 检查 / Schema 审核",
+        "sql-check-basic": "基础",
+        "sql-check-basic-tooltip": "语法检查、数据库连接检查",
+        "sql-check-advanced": "高级",
+        "sql-check-advanced-tooltip": "基础版功能 + 自定义 SQL 审核规则",
+        "anomaly-detection": "异常检测",
+        "anomaly-detection-basic": "基础",
+        "anomaly-detection-basic-tooltip": "数据库连接异常、备份缺失",
+        "anomaly-detection-advanced": "高级",
+        "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
+        "schedule-change": "设定任务执行时间",
+        "review-and-backup-policy": "审核和备份策略",
+        "tenancy": "多地域/多租户部署"
+      }
+    },
+    "collaboration": {
+      "title": "团队协作",
+      "features": {
+        "ui-based-sql-review": "基于 UI 的 SQL 审查",
+        "vsc-workflow": "VCS 工作流 #GitOps",
+        "shareable-query-link": "分享查询链接",
+        "im-integration": "IM 集成",
+        "inbox-notification": "站内信通知"
+      }
+    },
+    "admin-and-security": {
+      "title": "管理与安全",
+      "features": {
+        "activity-log": "活动日志",
+        "rbac": "RBAC 权限管理",
+        "3rd-party-auth": "通过 GitLab 登录",
+        "sync-members-from-vcs": "从 GitLab 同步成员信息"
+      }
+    },
+    "branding": {
+      "title": "自定义品牌信息",
+      "features": {
+        "branding-logo": "自定义 Logo"
+      }
+    }
+  }
+}

@@ -1,3 +1,6 @@
+import { useI18n } from "vue-i18n";
+import planData from "./plan.yaml";
+
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
   // Database management
@@ -30,6 +33,12 @@ export type PlanPatch = {
   type: PlanType;
 };
 
+interface PlanFeature {
+  type: string;
+  content?: string;
+  tooltip?: string;
+}
+
 export interface Plan {
   // Plan meta data
   type: PlanType;
@@ -40,7 +49,7 @@ export interface Plan {
   pricePerInstancePerMonth: number;
   // Plan desc and feature
   title: string;
-  features: { id: string; content?: string; tooltip?: string }[];
+  featureList: PlanFeature[];
 }
 
 // A map from the a particular feature to the respective enablement of a particular plan
@@ -70,225 +79,33 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.branding", [false, true, true]],
 ]);
 
-export const FEATURE_SECTIONS = [
-  {
-    id: "database-management",
-    features: [
-      "instance-count",
-      "schema-change",
-      "migration-history",
-      "sql-editor",
-      "disaster-recovery",
-      "archiving",
-      "sql-check",
-      "anomaly-detection",
-      "schedule-change",
-      "review-and-backup-policy",
-      "tenancy",
-    ],
-  },
-  {
-    id: "collaboration",
-    features: [
-      "ui-based-sql-review",
-      "vsc-workflow",
-      "shareable-query-link",
-      "im-integration",
-      "inbox-notification",
-    ],
-  },
-  {
-    id: "admin-and-security",
-    features: [
-      "activity-log",
-      "rbac",
-      "3rd-party-auth",
-      "sync-members-from-vcs",
-    ],
-  },
-  {
-    id: "branding",
-    features: ["branding-logo"],
-  },
-];
+export const FEATURE_SECTIONS: { type: string; featureList: string[] }[] =
+  planData.categoryList;
 
-export const FREE_PLAN: Plan = {
-  // Plan meta data
-  type: PlanType.FREE,
-  trialDays: 0,
-  unitPrice: 0,
-  trialPrice: 0,
-  freeInstanceCount: 1,
-  pricePerInstancePerMonth: 0,
-  // Plan desc and feature
-  title: "free",
-  features: [
-    {
-      id: "instance-count",
-      content:
-        "subscription.feature-sections.database-management.features.instance-upto-5",
-    },
-    {
-      id: "schema-change",
-      content:
-        "subscription.feature-sections.database-management.features.schema-change-basic",
-      tooltip:
-        "subscription.feature-sections.database-management.features.schema-change-basic-tooltip",
-    },
-    { id: "migration-history" },
-    { id: "sql-editor" },
-    {
-      id: "disaster-recovery",
-      content:
-        "subscription.feature-sections.database-management.features.disaster-recovery-basic",
-      tooltip:
-        "subscription.feature-sections.database-management.features.disaster-recovery-basic-tooltip",
-    },
-    { id: "archiving" },
-    {
-      id: "sql-check",
-      content:
-        "subscription.feature-sections.database-management.features.sql-check-basic",
-      tooltip:
-        "subscription.feature-sections.database-management.features.sql-check-basic-tooltip",
-    },
-    {
-      id: "anomaly-detection",
-      content:
-        "subscription.feature-sections.database-management.features.anomaly-detection-basic",
-      tooltip:
-        "subscription.feature-sections.database-management.features.anomaly-detection-basic-tooltip",
-    },
-    { id: "ui-based-sql-review" },
-    { id: "vsc-workflow" },
-    { id: "shareable-query-link" },
-    { id: "im-integration" },
-    { id: "inbox-notification" },
-    { id: "activity-log" },
-  ],
-};
+export const PLANS: Plan[] = planData.planList;
 
-export const TEAM_PLAN: Plan = {
-  // Plan meta data
-  type: PlanType.TEAM,
-  trialDays: 14,
-  unitPrice: 1740,
-  trialPrice: 0,
-  freeInstanceCount: 5,
-  pricePerInstancePerMonth: 79,
-  // Plan desc and feature
-  title: "team",
-  features: [
-    {
-      id: "instance-count",
-      content:
-        "subscription.feature-sections.database-management.features.instance-minimum-5",
-    },
-    {
-      id: "schema-change",
-      content:
-        "subscription.feature-sections.database-management.features.schema-change-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
-    },
-    { id: "migration-history" },
-    { id: "sql-editor" },
-    {
-      id: "disaster-recovery",
-      content:
-        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
-    },
-    { id: "archiving" },
-    {
-      id: "sql-check",
-      content:
-        "subscription.feature-sections.database-management.features.sql-check-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.sql-check-advanced-tooltip",
-    },
-    {
-      id: "anomaly-detection",
-      content:
-        "subscription.feature-sections.database-management.features.anomaly-detection-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.anomaly-detection-advanced-tooltip",
-    },
-    { id: "schedule-change" },
-    { id: "review-and-backup-policy" },
-    { id: "ui-based-sql-review" },
-    { id: "vsc-workflow" },
-    { id: "shareable-query-link" },
-    { id: "im-integration" },
-    { id: "inbox-notification" },
-    { id: "activity-log" },
-    { id: "rbac" },
-    { id: "3rd-party-auth" },
-    { id: "sync-members-from-vcs" },
-    { id: "branding-logo" },
-  ],
-};
+export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
+  const { t } = useI18n();
+  for (const section of FEATURE_SECTIONS) {
+    if (new Set(section.featureList).has(feature.type)) {
+      const res: PlanFeature = {
+        type: t(
+          `subscription.feature-sections.${section.type}.features.${feature.type}`
+        ),
+      };
+      if (feature.content) {
+        res.content = t(
+          `subscription.feature-sections.${section.type}.features.${feature.content}`
+        );
+      }
+      if (feature.tooltip) {
+        res.content = t(
+          `subscription.feature-sections.${section.type}.features.${feature.tooltip}`
+        );
+      }
+      return res;
+    }
+  }
 
-export const ENTERPRISE_PLAN: Plan = {
-  // Plan meta data
-  type: PlanType.ENTERPRISE,
-  trialDays: 0,
-  unitPrice: 0,
-  trialPrice: 0,
-  freeInstanceCount: 5,
-  pricePerInstancePerMonth: 199,
-  // Plan desc and feature
-  title: "enterprise",
-  features: [
-    {
-      id: "instance-count",
-      content:
-        "subscription.feature-sections.database-management.features.instance-customized",
-    },
-    {
-      id: "schema-change",
-      content:
-        "subscription.feature-sections.database-management.features.schema-change-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
-    },
-    { id: "migration-history" },
-    { id: "sql-editor" },
-    {
-      id: "disaster-recovery",
-      content:
-        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
-    },
-    { id: "archiving" },
-    {
-      id: "sql-check",
-      content:
-        "subscription.feature-sections.database-management.features.sql-check-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.sql-check-advanced-tooltip",
-    },
-    {
-      id: "anomaly-detection",
-      content:
-        "subscription.feature-sections.database-management.features.anomaly-detection-advanced",
-      tooltip:
-        "subscription.feature-sections.database-management.features.anomaly-detection-advanced-tooltip",
-    },
-    { id: "schedule-change" },
-    { id: "review-and-backup-policy" },
-    { id: "tenancy" },
-    { id: "ui-based-sql-review" },
-    { id: "vsc-workflow" },
-    { id: "shareable-query-link" },
-    { id: "im-integration" },
-    { id: "inbox-notification" },
-    { id: "activity-log" },
-    { id: "rbac" },
-    { id: "3rd-party-auth" },
-    { id: "sync-members-from-vcs" },
-    { id: "branding-logo" },
-  ],
+  return feature;
 };
