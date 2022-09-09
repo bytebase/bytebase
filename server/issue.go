@@ -639,6 +639,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	}
 
 	schemaVersion := common.DefaultMigrationVersion()
+	// VCS push event contains the migration version in the file path.
+	if c.MigrationInfo != nil {
+		schemaVersion = c.MigrationInfo.Version
+	}
 	// Tenant mode project pipeline has its own generation.
 	if project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
@@ -664,7 +668,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+			taskCreate, err := getUpdateTask(database, c, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -697,7 +701,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 
-					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+					taskCreate, err := getUpdateTask(database, c, d, schemaVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -743,7 +747,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+			taskCreate, err := getUpdateTask(database, c, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -825,32 +829,32 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 	return create, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, c api.UpdateSchemaContext, d *api.UpdateSchemaDetail, schemaVersion string) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
-	switch migrationType {
+	switch c.MigrationType {
 	case db.Migrate:
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
 	case db.Data:
 		taskName = fmt.Sprintf("Update %q data", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
-	payload.MigrationType = migrationType
 	payload.Statement = d.Statement
 	payload.SchemaVersion = schemaVersion
-	if vcsPushEvent != nil {
-		payload.VCSPushEvent = vcsPushEvent
+	if c.VCSPushEvent != nil {
+		payload.VCSPushEvent = c.VCSPushEvent
+		payload.MigrationInfo = c.MigrationInfo
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to marshal database schema update payload: %v", err)
-		if migrationType == db.Data {
+		if c.MigrationType == db.Data {
 			errMsg = fmt.Sprintf("Failed to marshal database data update payload: %v", err)
 		}
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
 	}
 
 	taskType := api.TaskDatabaseSchemaUpdate
-	if migrationType == db.Data {
+	if c.MigrationType == db.Data {
 		taskType = api.TaskDatabaseDataUpdate
 	}
 	return &api.TaskCreate{
@@ -861,7 +865,6 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
-		MigrationType:     migrationType,
 		Payload:           string(bytes),
 	}, nil
 }
@@ -1038,7 +1041,6 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
 		Statement:         detail.Statement,
 		EarliestAllowedTs: detail.EarliestAllowedTs,
-		MigrationType:     db.Migrate,
 		Payload:           string(bytesSync),
 	})
 
