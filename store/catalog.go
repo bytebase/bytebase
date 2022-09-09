@@ -23,7 +23,7 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(ctx context.Context, databaseID int, store *Store, engineType db.Type) (*Catalog, error) {
+func NewCatalog(ctx context.Context, databaseID int, store *Store, engineType db.Type) (catalog.Catalog, error) {
 	database, err := store.GetDatabase(ctx, &api.DatabaseFind{
 		ID: &databaseID,
 	})
