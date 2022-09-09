@@ -8,7 +8,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
-	"github.com/bytebase/bytebase/store"
 )
 
 // SQL review policy consists of a list of SQL review rules.
@@ -61,7 +60,7 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		return nil, common.Wrapf(err, common.Internal, "failed to get task by id")
 	}
 
-	catalog, err := store.NewCatalog(ctx, *task.DatabaseID, server.store, payload.DbType)
+	catalog, err := server.store.NewCatalog(ctx, *task.DatabaseID, payload.DbType)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}

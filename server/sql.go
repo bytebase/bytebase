@@ -203,7 +203,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			db := dbList[0]
 
-			catalog, err := store.NewCatalog(ctx, db.ID, s.store, instance.Engine)
+			catalog, err := s.store.NewCatalog(ctx, db.ID, instance.Engine)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}

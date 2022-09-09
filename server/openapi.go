@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/store"
 )
 
 var (
@@ -88,7 +87,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		}
 		dbType := database.Instance.Engine
 		databaseType = string(dbType)
-		catalog, err = store.NewCatalog(ctx, database.ID, s.store, dbType)
+		catalog, err = s.store.NewCatalog(ctx, database.ID, dbType)
 		if err != nil {
 			return err
 		}

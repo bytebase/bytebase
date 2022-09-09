@@ -23,8 +23,8 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(ctx context.Context, databaseID int, store *Store, engineType db.Type) (catalog.Catalog, error) {
-	database, err := store.GetDatabase(ctx, &api.DatabaseFind{
+func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Type) (catalog.Catalog, error) {
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{
 		ID: &databaseID,
 	})
 	if err != nil {
@@ -46,7 +46,7 @@ func NewCatalog(ctx context.Context, databaseID int, store *Store, engineType db
 		DbType:       dbType,
 	}
 
-	if databaseData.SchemaList, err = getSchemaList(ctx, databaseID, store, engineType); err != nil {
+	if databaseData.SchemaList, err = s.getSchemaList(ctx, databaseID, engineType); err != nil {
 		return nil, err
 	}
 
@@ -72,11 +72,11 @@ func (m schemaMap) getOrCreateSchema(name string) *catalog.Schema {
 	return schema
 }
 
-func getSchemaList(ctx context.Context, databaseID int, store *Store, engineType db.Type) ([]*catalog.Schema, error) {
+func (s *Store) getSchemaList(ctx context.Context, databaseID int, engineType db.Type) ([]*catalog.Schema, error) {
 	schemaSet := make(schemaMap)
 
 	// find table list
-	tableList, err := store.FindTable(ctx, &api.TableFind{
+	tableList, err := s.FindTable(ctx, &api.TableFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -92,7 +92,7 @@ func getSchemaList(ctx context.Context, databaseID int, store *Store, engineType
 		}
 
 		// find index list
-		indexList, err := store.FindIndex(ctx, &api.IndexFind{
+		indexList, err := s.FindIndex(ctx, &api.IndexFind{
 			DatabaseID: &databaseID,
 			TableID:    &table.ID,
 		})
@@ -102,7 +102,7 @@ func getSchemaList(ctx context.Context, databaseID int, store *Store, engineType
 		tableData.IndexList = convertIndexList(indexList)
 
 		// find column list
-		columnList, err := store.FindColumn(ctx, &api.ColumnFind{
+		columnList, err := s.FindColumn(ctx, &api.ColumnFind{
 			DatabaseID: &databaseID,
 			TableID:    &table.ID,
 		})
@@ -116,7 +116,7 @@ func getSchemaList(ctx context.Context, databaseID int, store *Store, engineType
 	}
 
 	// find view list
-	viewList, err := store.FindView(ctx, &api.ViewFind{
+	viewList, err := s.FindView(ctx, &api.ViewFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -135,7 +135,7 @@ func getSchemaList(ctx context.Context, databaseID int, store *Store, engineType
 	}
 
 	// find extension list
-	extensionList, err := store.FindDBExtension(ctx, &api.DBExtensionFind{
+	extensionList, err := s.FindDBExtension(ctx, &api.DBExtensionFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
