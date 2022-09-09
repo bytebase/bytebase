@@ -157,7 +157,7 @@ type UpdateSchemaDetail struct {
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
 }
 
-// UpdateSchemaContext is the issue create context for updating database schema.
+// UpdateSchemaContext is the shared issue create context for updating database schema and data.
 type UpdateSchemaContext struct {
 	// MigrationType is the type of a migration.
 	MigrationType db.MigrationType `json:"migrationType"`
@@ -166,6 +166,9 @@ type UpdateSchemaContext struct {
 	DetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent `json:"vcsPushEvent"`
+	// MigrationInfo is only available when VCSPushEvent != nil.
+	// It's parsed from VCSPushEvent.
+	MigrationInfo *db.MigrationInfo `json:"migrationInfo,omitempty"`
 }
 
 // UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.

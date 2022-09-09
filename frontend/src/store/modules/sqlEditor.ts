@@ -13,6 +13,7 @@ import {
   Sheet,
   unknown,
   InstanceId,
+  Connection,
 } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -34,7 +35,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     connectionContext: getDefaultConnectionContext(),
     isExecuting: false,
     isShowExecutingHint: false,
-    shouldSetContent: false,
     shouldFormatContent: false,
     // Related data and status
     queryHistoryList: [],
@@ -88,9 +88,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     setConnectionContext(payload: Partial<ConnectionContext>) {
       Object.assign(this.connectionContext, payload);
     },
-    setShouldSetContent(payload: boolean) {
-      this.shouldSetContent = payload;
-    },
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;
     },
@@ -123,21 +120,19 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     }: {
       instanceId: InstanceId;
       databaseId: DatabaseId;
-    }) {
+    }): Promise<Connection> {
       const [database] = await Promise.all([
-        useDatabaseStore().fetchDatabaseById(databaseId),
-        useInstanceStore().fetchInstanceById(instanceId),
-        useTableStore().fetchTableListByDatabaseId(databaseId),
+        useDatabaseStore().getOrFetchDatabaseById(databaseId),
+        useInstanceStore().getOrFetchInstanceById(instanceId),
+        useTableStore().getOrFetchTableListByDatabaseId(databaseId),
       ]);
 
-      useTabStore().updateCurrentTab({
-        connection: {
-          ...emptyConnection(),
-          projectId: database.project.id,
-          instanceId,
-          databaseId,
-        },
-      });
+      return {
+        ...emptyConnection(),
+        projectId: database.project.id,
+        instanceId,
+        databaseId,
+      };
     },
     async fetchQueryHistoryList() {
       this.setIsFetchingQueryHistory(true);

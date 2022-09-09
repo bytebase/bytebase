@@ -23,21 +23,29 @@
         <label class="textlabel">
           {{
             $t("task.progress.completed-units", {
-              units: $t(`task.progress.units.${unitKey}`),
+              units: unitStr,
             })
           }}
         </label>
-        <span>{{ progress.completedUnit }}</span>
+        <span>
+          <slot name="unit" :unit="progress.completedUnit">
+            {{ progress.completedUnit }}
+          </slot>
+        </span>
       </div>
       <div class="flex flex-col items-start">
         <label class="textlabel">
           {{
             $t("task.progress.total-units", {
-              units: $t(`task.progress.units.${unitKey}`),
+              units: unitStr,
             })
           }}
         </label>
-        <span v-if="progress.totalUnit > 0">{{ progress.totalUnit }}</span>
+        <span v-if="progress.totalUnit > 0">
+          <slot name="unit" :unit="progress.totalUnit">
+            {{ progress.totalUnit }}
+          </slot>
+        </span>
         <span v-else class="text-gray-400">
           {{ $t("task.progress.counting") }}
         </span>
@@ -63,6 +71,7 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { NPopover } from "naive-ui";
+import { useI18n } from "vue-i18n";
 import type { Task, TaskProgress } from "@/types";
 import { empty } from "@/types";
 import { BBProgressPie } from "@/bbkit";
@@ -79,9 +88,11 @@ const props = defineProps({
   },
   unitKey: {
     type: String,
-    default: "unit",
+    default: undefined,
   },
 });
+
+const { t } = useI18n();
 
 const showProgress = computed((): boolean => {
   const { status } = props.task;
@@ -133,5 +144,14 @@ const progress = computed((): ProgressSummary => {
 
 const showPopover = computed((): boolean => {
   return props.task.status !== "DONE";
+});
+
+const unitStr = computed(() => {
+  const { unitKey } = props;
+  if (!unitKey) {
+    return "";
+  }
+
+  return t(`task.progress.units.${unitKey}`);
 });
 </script>

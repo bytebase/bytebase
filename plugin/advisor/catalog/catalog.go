@@ -2,14 +2,12 @@
 package catalog
 
 import (
-	"context"
-
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 // Catalog is the service for catalog.
 type Catalog interface {
-	GetDatabase(ctx context.Context) (*Database, *Context, error)
+	GetDatabase() *Database
 }
 
 // Context is the context for catalog.

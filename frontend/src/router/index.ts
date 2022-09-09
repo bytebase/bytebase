@@ -38,7 +38,6 @@ import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
 import {
-  useTabStore,
   hasFeature,
   useVCSStore,
   useProjectWebhookStore,
@@ -838,21 +837,21 @@ const routes: Array<RouteRecordRaw> = [
         path: "",
         name: "sql-editor.home",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug",
         name: "sql-editor.detail",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug/:sheetSlug",
         name: "sql-editor.share",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
     ],
@@ -919,7 +918,6 @@ router.beforeEach((to, from, next) => {
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const issueStore = useIssueStore();
-  const tabStore = useTabStore();
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
   const projectStore = useProjectStore();
@@ -1324,6 +1322,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (connectionSlug) {
+    // TODO(Jim): use standard slug format instead of "_" joint format.
     const [, instanceId, , databaseId] = connectionSlug.split("_");
     useSQLEditorStore()
       .fetchConnectionByInstanceIdAndDatabaseId({
@@ -1333,16 +1332,11 @@ router.beforeEach((to, from, next) => {
       .then(() => {
         // for sharing the sheet to others
         if (sheetSlug) {
+          // TODO(Jim): use standard slug format instead of "_" joint format.
           const [_, sheetId] = sheetSlug.split("_");
           useSheetStore()
             .fetchSheetById(Number(sheetId))
             .then((sheet: Sheet) => {
-              tabStore.updateCurrentTab({
-                name: sheet.name,
-                statement: sheet.statement,
-                isSaved: true,
-                sheetId: sheet.id,
-              });
               useSQLEditorStore().setSQLEditorState({
                 sharedSheet: sheet,
               });

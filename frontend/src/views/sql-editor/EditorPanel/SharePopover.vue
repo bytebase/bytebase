@@ -171,6 +171,8 @@ const handleChangeAccess = (option: AccessOption) => {
 const sheetSlug = `${slug(tabStore.currentTab.name)}_${
   tabStore.currentTab.sheetId
 }`;
+
+// TODO(Jim): use standard slug format instead of "_" joint format.
 const sharedTabLink = ref(
   `${window.location.origin}/sql-editor/${connectionSlug.value}/${sheetSlug}`
 );
