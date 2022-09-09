@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/store"
 )
 
 var (
@@ -26,8 +25,8 @@ type catalogService struct{}
 
 // GetDatabase is the API message in catalog.
 // We will not connect to the user's database in the early version of sql check api.
-func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, error) {
-	return &catalog.Database{}, nil
+func (*catalogService) GetDatabase() *catalog.Database {
+	return &catalog.Database{}
 }
 
 type sqlCheckRequestBody struct {
@@ -88,7 +87,10 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		}
 		dbType := database.Instance.Engine
 		databaseType = string(dbType)
-		catalog = store.NewCatalog(&database.ID, s.store, dbType)
+		catalog, err = s.store.NewCatalog(ctx, database.ID, dbType)
+		if err != nil {
+			return err
+		}
 	} else {
 		databaseType = request.DatabaseType
 		if databaseType == "" {
