@@ -82,6 +82,30 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		// TODO(d): support semantic versioning.
 		mi.Version = schemaVersion
 		mi.Description = task.Name
+	} else if mi == nil {
+		// TODO(dragonly): remove this branch when old task without MigrationInfo is rare.
+		repo, err := findRepositoryByTask(ctx, server, task)
+		if err != nil {
+			return nil, err
+		}
+		mi, err = db.ParseMigrationInfo(
+			vcsPushEvent.FileCommit.Added,
+			filepath.Join(vcsPushEvent.BaseDirectory, repo.FilePathTemplate),
+		)
+		// This should not happen normally as we already check this when creating the issue. Just in case.
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to prepare for database migration")
+		}
+		mi.Creator = vcsPushEvent.FileCommit.AuthorName
+
+		miPayload := &db.MigrationInfoPayload{
+			VCSPushEvent: vcsPushEvent,
+		}
+		bytes, err := json.Marshal(miPayload)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to prepare for database migration, unable to marshal vcs push event payload")
+		}
+		mi.Payload = string(bytes)
 	}
 
 	mi.Database = databaseName
