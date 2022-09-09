@@ -36,7 +36,7 @@
           </template>
         </i18n-t>
         <a
-          href="https://bytebase.com/docs/get-started/install/deploy-with-docker#start-a-local-mysql-server-for-testing?source=console"
+          href="https://www.bytebase.com/docs/get-started/configure-workspace/add-a-mysql-instance-for-testing?source=console"
           target="_blank"
           class="normal-link"
         >
