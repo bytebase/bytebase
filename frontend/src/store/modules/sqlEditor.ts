@@ -13,6 +13,7 @@ import {
   Sheet,
   unknown,
   InstanceId,
+  Connection,
 } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -119,21 +120,19 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     }: {
       instanceId: InstanceId;
       databaseId: DatabaseId;
-    }) {
+    }): Promise<Connection> {
       const [database] = await Promise.all([
-        useDatabaseStore().fetchDatabaseById(databaseId),
-        useInstanceStore().fetchInstanceById(instanceId),
-        useTableStore().fetchTableListByDatabaseId(databaseId),
+        useDatabaseStore().getOrFetchDatabaseById(databaseId),
+        useInstanceStore().getOrFetchInstanceById(instanceId),
+        useTableStore().getOrFetchTableListByDatabaseId(databaseId),
       ]);
 
-      useTabStore().updateCurrentTab({
-        connection: {
-          ...emptyConnection(),
-          projectId: database.project.id,
-          instanceId,
-          databaseId,
-        },
-      });
+      return {
+        ...emptyConnection(),
+        projectId: database.project.id,
+        instanceId,
+        databaseId,
+      };
     },
     async fetchQueryHistoryList() {
       this.setIsFetchingQueryHistory(true);
