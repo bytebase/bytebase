@@ -102,10 +102,12 @@ const prepareSheet = async () => {
     return false;
   }
 
-  const openSheetTab = tabStore.tabList.find((tab) => tab.sheetId === sheet.id);
-  if (openSheetTab) {
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheetId === sheet.id
+  );
+  if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
-    tabStore.setCurrentTabId(openSheetTab.id);
+    tabStore.setCurrentTabId(openingSheetTab.id);
   } else {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
