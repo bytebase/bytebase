@@ -1062,7 +1062,7 @@
       "success-member-sync-prompt": "从 VCS 同步成功",
       "view-vcs-member": "在 VCS 中查看成员",
       "switch-role-provider-to-bytebase-success-prompt": "成功关闭了 VCS 项目成员同步",
-      "schema-change-type": "Schema 更改类型",
+      "schema-change-type": "Schema 变更类型",
       "select-schema-migration-type-ddl": "基于 DDL 的变更",
       "select-schema-migration-type-sdl": "基于状态的变更",
       "schema-path-template-sdl-description": "Schema 定义文件应该包括了数据库 Schema 所在的状态。Bytebase 将会为在 Schema 状态和实际数据库之间发现的任何差异创建新的迁移。"
