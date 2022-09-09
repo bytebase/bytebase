@@ -191,6 +191,7 @@ const handleActionBtnOutsideClick = () => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
+  // Changing SQL statement is quite harmless, so we just update the current tab.
   tabStore.updateCurrentTab({
     statement: queryHistory.statement,
     selectedStatement: "",
