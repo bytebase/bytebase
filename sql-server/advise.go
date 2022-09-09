@@ -1,7 +1,6 @@
 package sqlserver
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,8 +26,8 @@ type catalogService struct{}
 
 // GetDatabase is the API message in catalog.
 // We will not connect to the user's database in the early version of sql check api.
-func (*catalogService) GetDatabase(_ context.Context) (*catalog.Database, error) {
-	return &catalog.Database{}, nil
+func (*catalogService) GetDatabase() *catalog.Database {
+	return &catalog.Database{}
 }
 
 type sqlCheckRequestBody struct {
