@@ -19,28 +19,13 @@ var (
 
 // Catalog is the database catalog.
 type Catalog struct {
-	databaseID *int
-	store      *Store
-	engineType db.Type
+	Database *catalog.Database
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(databaseID *int, store *Store, dbType db.Type) *Catalog {
-	return &Catalog{
-		databaseID: databaseID,
-		store:      store,
-		engineType: dbType,
-	}
-}
-
-// GetDatabase implements the catalog.Catalog interface.
-func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
-	if c.databaseID == nil {
-		return &catalog.Database{}, nil
-	}
-
-	database, err := c.store.GetDatabase(ctx, &api.DatabaseFind{
-		ID: c.databaseID,
+func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Type) (catalog.Catalog, error) {
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{
+		ID: &databaseID,
 	})
 	if err != nil {
 		return nil, err
@@ -49,23 +34,28 @@ func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 		return nil, nil
 	}
 
-	dbType, err := advisorDB.ConvertToAdvisorDBType(string(c.engineType))
+	dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
 	if err != nil {
 		return nil, err
 	}
 
-	databaseData := catalog.Database{
+	databaseData := &catalog.Database{
 		Name:         database.Name,
 		CharacterSet: database.CharacterSet,
 		Collation:    database.Collation,
 		DbType:       dbType,
 	}
 
-	if databaseData.SchemaList, err = c.getSchemaList(ctx); err != nil {
+	if databaseData.SchemaList, err = s.getSchemaList(ctx, databaseID, engineType); err != nil {
 		return nil, err
 	}
 
-	return &databaseData, nil
+	return &Catalog{Database: databaseData}, nil
+}
+
+// GetDatabase implements the catalog.Catalog interface.
+func (c *Catalog) GetDatabase() *catalog.Database {
+	return c.Database
 }
 
 type schemaMap map[string]*catalog.Schema
@@ -82,12 +72,12 @@ func (m schemaMap) getOrCreateSchema(name string) *catalog.Schema {
 	return schema
 }
 
-func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) {
+func (s *Store) getSchemaList(ctx context.Context, databaseID int, engineType db.Type) ([]*catalog.Schema, error) {
 	schemaSet := make(schemaMap)
 
 	// find table list
-	tableList, err := c.store.FindTable(ctx, &api.TableFind{
-		DatabaseID: c.databaseID,
+	tableList, err := s.FindTable(ctx, &api.TableFind{
+		DatabaseID: &databaseID,
 	})
 	if err != nil {
 		return nil, err
@@ -95,15 +85,15 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 	for _, table := range tableList {
 		tableData := convertTable(table)
 		schemaName := ""
-		if c.engineType == db.Postgres {
+		if engineType == db.Postgres {
 			if schemaName, tableData.Name, err = splitPGSchema(tableData.Name); err != nil {
 				return nil, err
 			}
 		}
 
 		// find index list
-		indexList, err := c.store.FindIndex(ctx, &api.IndexFind{
-			DatabaseID: c.databaseID,
+		indexList, err := s.FindIndex(ctx, &api.IndexFind{
+			DatabaseID: &databaseID,
 			TableID:    &table.ID,
 		})
 		if err != nil {
@@ -112,8 +102,8 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 		tableData.IndexList = convertIndexList(indexList)
 
 		// find column list
-		columnList, err := c.store.FindColumn(ctx, &api.ColumnFind{
-			DatabaseID: c.databaseID,
+		columnList, err := s.FindColumn(ctx, &api.ColumnFind{
+			DatabaseID: &databaseID,
 			TableID:    &table.ID,
 		})
 		if err != nil {
@@ -126,8 +116,8 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 	}
 
 	// find view list
-	viewList, err := c.store.FindView(ctx, &api.ViewFind{
-		DatabaseID: c.databaseID,
+	viewList, err := s.FindView(ctx, &api.ViewFind{
+		DatabaseID: &databaseID,
 	})
 	if err != nil {
 		return nil, err
@@ -135,7 +125,7 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 	for _, view := range viewList {
 		viewData := convertView(view)
 		schemaName := ""
-		if c.engineType == db.Postgres {
+		if engineType == db.Postgres {
 			if schemaName, viewData.Name, err = splitPGSchema(viewData.Name); err != nil {
 				return nil, err
 			}
@@ -145,8 +135,8 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 	}
 
 	// find extension list
-	extensionList, err := c.store.FindDBExtension(ctx, &api.DBExtensionFind{
-		DatabaseID: c.databaseID,
+	extensionList, err := s.FindDBExtension(ctx, &api.DBExtensionFind{
+		DatabaseID: &databaseID,
 	})
 	if err != nil {
 		return nil, err
