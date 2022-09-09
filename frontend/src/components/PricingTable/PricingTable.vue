@@ -91,18 +91,18 @@
         Feature comparison
       </caption>
       <tbody class="border-t border-gray-200 divide-y divide-gray-200">
-        <template v-for="section in sections" :key="section.id">
+        <template v-for="section in sections" :key="section.type">
           <tr>
             <th
               class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
               colspan="4"
               scope="colgroup"
             >
-              {{ $t(`subscription.feature-sections.${section.id}.title`) }}
+              {{ $t(`subscription.feature-sections.${section.type}.title`) }}
             </th>
           </tr>
           <tr
-            v-for="feature in section.features"
+            v-for="feature in section.featureList"
             :key="feature"
             class="hover:bg-gray-50"
           >
@@ -112,7 +112,7 @@
             >
               {{
                 $t(
-                  `subscription.feature-sections.${section.id}.features.${feature}`
+                  `subscription.feature-sections.${section.type}.features.${feature}`
                 )
               }}
             </th>
@@ -210,17 +210,17 @@
           Feature comparison
         </caption>
         <tbody class="border-t border-gray-200 divide-y divide-gray-200">
-          <template v-for="section in sections" :key="section.id">
+          <template v-for="section in sections" :key="section.type">
             <tr>
               <th
                 class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
                 scope="colgroup"
               >
-                {{ $t(`subscription.feature-sections.${section.id}.title`) }}
+                {{ $t(`subscription.feature-sections.${section.type}.title`) }}
               </th>
             </tr>
             <tr
-              v-for="feature in section.features"
+              v-for="feature in section.featureList"
               :key="feature"
               class="hover:bg-gray-50"
             >
@@ -230,7 +230,7 @@
               >
                 {{
                   $t(
-                    `subscription.feature-sections.${section.id}.features.${feature}`
+                    `subscription.feature-sections.${section.type}.features.${feature}`
                   )
                 }}
               </th>
@@ -259,14 +259,7 @@
 <script lang="ts">
 import { reactive, computed, watch, defineComponent } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  Plan,
-  PlanType,
-  FEATURE_SECTIONS,
-  FREE_PLAN,
-  TEAM_PLAN,
-  ENTERPRISE_PLAN,
-} from "@/types";
+import { Plan, PlanType, PLANS, FEATURE_SECTIONS } from "@/types";
 import { useSubscriptionStore } from "@/store";
 import { LocalPlan } from "./types";
 import FeatureItem from "./FeatureItem.vue";
@@ -297,7 +290,7 @@ export default defineComponent({
     );
 
     const plans = computed((): LocalPlan[] => {
-      return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
+      return PLANS.map((plan) => ({
         ...plan,
         image: new URL(
           `../../assets/plan-${plan.title.toLowerCase()}.png`,

@@ -38,6 +38,7 @@
 import { PropType, computed } from "vue";
 import { NTooltip } from "naive-ui";
 import { LocalPlan } from "./types";
+import { getFeatureLocalization } from "@/types";
 
 const props = defineProps({
   plan: {
@@ -51,6 +52,11 @@ const props = defineProps({
 });
 
 const featureDetail = computed(() => {
-  return props.plan.features.find((f) => f.id === props.feature);
+  const feature = props.plan.featureList.find((f) => f.type === props.feature);
+  if (!feature) {
+    return;
+  }
+
+  return getFeatureLocalization(feature);
 });
 </script>
