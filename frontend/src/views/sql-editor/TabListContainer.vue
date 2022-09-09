@@ -277,12 +277,6 @@ const handleScollTabList = debounce((e: WheelEvent) => {
   console.log(e.offsetX);
 }, 333);
 
-onMounted(async () => {
-  if (!tabStore.hasTabs) {
-    handleAddTab();
-  }
-});
-
 // add listener to confirm confrim if close the tab.
 onMounted(() => {
   window.onbeforeunload = () => {
