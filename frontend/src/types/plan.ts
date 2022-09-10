@@ -99,7 +99,7 @@ export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
         );
       }
       if (feature.tooltip) {
-        res.content = t(
+        res.tooltip = t(
           `subscription.feature-sections.${section.type}.features.${feature.tooltip}`
         );
       }
