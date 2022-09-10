@@ -3,6 +3,7 @@
   "extends": [
     "config:base"
   ],
+  "schedule": ["every month"],
   "ignoreDeps": [
     "github.com/pingcap/tidb/parser"
   ]
