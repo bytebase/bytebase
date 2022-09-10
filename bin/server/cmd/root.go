@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -57,6 +58,12 @@ const (
 ╚═════╝    ╚═╝      ╚═╝   ╚══════╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
 
 %s
+
+************* External Visiting URL (--external-url) *************
+
+%s
+
+******************************************************************
 ___________________________________________________________________________________________
 
 `
@@ -71,6 +78,8 @@ ________________________________________________________________________________
 ╚═════╝    ╚═╝   ╚══════╝
 
 `
+	// The placeholder page to instruct user how to configure --external-url.
+	externalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
 
 // -----------------------------------Global constant END------------------------------------------
@@ -79,11 +88,9 @@ ________________________________________________________________________________
 var (
 	flags struct {
 		// Used for Bytebase command line config
-		host         string
-		port         int
-		frontendHost string
-		frontendPort int
-		dataDir      string
+		port        int
+		externalURL string
+		dataDir     string
 		// When we are running in readonly mode:
 		// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
 		// - Requests other than GET will be rejected
@@ -111,13 +118,6 @@ var (
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
 		Run: func(_ *cobra.Command, _ []string) {
-			if flags.frontendHost == "" {
-				flags.frontendHost = flags.host
-			}
-			if flags.frontendPort == 0 {
-				flags.frontendPort = flags.port
-			}
-
 			start()
 
 			fmt.Print(byeBanner)
@@ -131,10 +131,18 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().StringVar(&flags.frontendHost, "frontend-host", "", "host where Bytebase frontend is accessed from, must start with http:// or https://. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --host")
-	rootCmd.PersistentFlags().IntVar(&flags.frontendPort, "frontend-port", 0, "port where Bytebase frontend is accessed from. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --port")
+	// In the release build, Bytebase bundles frontend and backend together and runs on a single port as a mono server.
+	// During development, Bytebase frontend runs on a separate port.
+	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase server runs. Default to 80")
+	// When running the release build in production, most of the time, users would not expose Bytebase directly to the public.
+	// Instead they would configure a gateway to forward the traffic to Bytebase. Users need to set --external-url to the address
+	// exposed on that gateway accordingly.
+	//
+	// It's important to set the correct --external-url. This is used for:
+	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
+	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
+	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", externalURLPlaceholder, "the external URL where user visits Bytebase, must start with http:// or https://")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
@@ -155,7 +163,31 @@ func init() {
 
 // -----------------------------------Command Line Config END--------------------------------------
 
-// -----------------------------------Main Entry Point---------------------------------------------
+func normalizeExternalURL(url string) (string, error) {
+	r := strings.TrimSpace(url)
+	r = strings.TrimSuffix(r, "/")
+	if !common.HasPrefixes(r, "http://", "https://") {
+		return "", errors.Errorf("%s must start with http:// or https://", url)
+	}
+	parts := strings.Split(r, ":")
+	if len(parts) > 3 {
+		return "", errors.Errorf("%s malformed", url)
+	}
+	if len(parts) == 3 {
+		port, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return "", errors.Errorf("%s has non integer port", url)
+		}
+		// The external URL is used as the redirectURL in the get token process of OAuth, and the
+		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
+		// The frontend gets it through window.location.origin in the get code
+		// process, so port 80/443 need to be cropped.
+		if port == 80 || port == 443 {
+			r = strings.Join(parts[0:2], ":")
+		}
+	}
+	return r, nil
+}
 
 func checkDataDir() error {
 	// Convert to absolute path if relative path is supplied.
@@ -200,9 +232,10 @@ func start() {
 	}
 	defer log.Sync()
 
-	// check flags
-	if !common.HasPrefixes(flags.host, "http://", "https://") {
-		log.Error(fmt.Sprintf("--host %s must start with http:// or https://", flags.host))
+	var err error
+	flags.externalURL, err = normalizeExternalURL(flags.externalURL)
+	if err != nil {
+		log.Error("invalid --external-url", zap.Error(err))
 		return
 	}
 	if err := checkDataDir(); err != nil {
@@ -233,14 +266,20 @@ func start() {
 		cancel()
 	}()
 
-	s, err := server.NewServer(ctx, profile)
+	s, err = server.NewServer(ctx, profile)
 	if err != nil {
 		log.Error("Cannot new server", zap.Error(err))
 		return
 	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", profile.Version, profile.BackendHost, profile.BackendPort))
+
+	exteranlAddr := profile.ExternalURL
+	if profile.ExternalURL == externalURLPlaceholder {
+		exteranlAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", externalURLPlaceholder)
+	}
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started on port %d", profile.Version, flags.port), exteranlAddr)
+
 	// Execute program.
-	if err := s.Run(ctx); err != nil {
+	if err := s.Run(ctx, flags.port); err != nil {
 		if err != http.ErrServerClosed {
 			log.Error(err.Error())
 			_ = s.Shutdown(ctx)

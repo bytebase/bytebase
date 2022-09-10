@@ -67,16 +67,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		}
 
-		// We need to attach the RedirectURL in the get token process of oauth,
-		// and the RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend get it through window.location.origin in the get code process,
-		// so port 80 needs to be cropped when the backend splices the RedirectURL.
-		if s.profile.FrontendPort == 80 {
-			oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.FrontendHost)
-		} else {
-			oauthExchange.RedirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
-		}
-
+		oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).
 			ExchangeOAuthToken(
 				c.Request().Context(),
@@ -84,7 +75,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				oauthExchange,
 			)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to exchange OAuth token. Make sure --external-url: %s matches your browser host.", s.profile.ExternalURL)).SetInternal(err)
 		}
 
 		resp := &api.OAuthToken{

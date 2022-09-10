@@ -206,7 +206,7 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 	errChan := make(chan error, 1)
 
 	go func() {
-		if err := ctl.server.Run(ctx); err != nil {
+		if err := ctl.server.Run(ctx, port); err != nil {
 			errChan <- errors.Wrap(err, "failed to run main server")
 		}
 	}()

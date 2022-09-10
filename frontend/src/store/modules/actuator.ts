@@ -2,6 +2,9 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import { ActuatorState, ServerInfo } from "@/types";
 
+const EXTERNAL_URL_PLACEHOLDER =
+  "https://www.bytebase.com/docs/get-started/install/external-url";
+
 export const useActuatorStore = defineStore("actuator", {
   state: (): ActuatorState => ({
     serverInfo: undefined,
@@ -24,6 +27,9 @@ export const useActuatorStore = defineStore("actuator", {
     },
     needAdminSetup: (state) => {
       return state.serverInfo?.needAdminSetup || false;
+    },
+    needConfigureExternalUrl: (state) => {
+      return state.serverInfo?.externalUrl === EXTERNAL_URL_PLACEHOLDER;
     },
   },
   actions: {

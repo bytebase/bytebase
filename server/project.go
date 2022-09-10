@@ -247,7 +247,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
-		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
+		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
 		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 		if err != nil {
@@ -260,7 +260,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		switch vcs.Type {
 		case vcsPlugin.GitLabSelfHost:
 			webhookCreate := gitlab.WebhookCreate{
-				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
+				URL:                    fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
 				PushEvents:             true,
 				PushEventsBranchFilter: repositoryCreate.BranchFilter,
@@ -271,13 +271,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 		case vcsPlugin.GitHubCom:
-			webhookHost := s.profile.BackendHost
-			if s.profile.BackendHost == "http://localhost" {
-				webhookHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
-			}
 			webhookPost := github.WebhookCreateOrUpdate{
 				Config: github.WebhookConfig{
-					URL:         fmt.Sprintf("%s/%s/%s", webhookHost, githubWebhookPath, repositoryCreate.WebhookEndpointID),
+					URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, repositoryCreate.WebhookEndpointID),
 					ContentType: "json",
 					Secret:      repositoryCreate.WebhookSecretToken,
 					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
@@ -449,7 +445,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			switch vcs.Type {
 			case vcsPlugin.GitLabSelfHost:
 				webhookUpdate := gitlab.WebhookUpdate{
-					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitlabWebhookPath, updatedRepo.WebhookEndpointID),
+					URL:                    fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, updatedRepo.WebhookEndpointID),
 					PushEventsBranchFilter: *repoPatch.BranchFilter,
 				}
 				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
@@ -459,7 +455,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			case vcsPlugin.GitHubCom:
 				webhookUpdate := github.WebhookCreateOrUpdate{
 					Config: github.WebhookConfig{
-						URL:         fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, githubWebhookPath, updatedRepo.WebhookEndpointID),
+						URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, updatedRepo.WebhookEndpointID),
 						ContentType: "json",
 						Secret:      updatedRepo.WebhookSecretToken,
 						InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryPatch

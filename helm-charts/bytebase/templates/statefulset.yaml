@@ -29,10 +29,10 @@ spec:
             [
               "--data",
               {{ $data | quote }},
-              "--host",
-              {{ $host | quote }},
               "--port",
               {{ $port | quote }},
+              "--external-url",
+              {{ $external-url | quote }},
               "--pg",
               {{ $pg | quote}},
             ]
