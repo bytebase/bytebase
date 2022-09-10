@@ -4,8 +4,9 @@
 
 bytebase:
   option:
-    host: http://localhost
     port: 8080
+    # You should set this to the URL where users visits Bytebase.
+    external-url: https://www.bytebase.com/docs/get-started/install/external-url
     pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
   version: 1.3.2

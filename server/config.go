@@ -24,15 +24,10 @@ type config struct {
 type Profile struct {
 	// Mode can be "prod" or "dev"
 	Mode common.ReleaseMode
-	// BackendHost is the listening backend host for server
-	BackendHost string
-	// BackendPort is the binding backend port for server.
-	BackendPort int
-	// FrontendHost is the listening frontend host for server.
-	FrontendHost string
-	// FrontendPort is the listening frontend host for server.
-	FrontendPort int
-	// DatastorePort is the binding port for database instance for storing Bytebase data.
+	// ExternalURL is the URL user visits Bytebase.
+	ExternalURL string
+	// DatastorePort is the binding port for database instance for storing Bytebase metadata.
+	// Only applicable when using embedded PG (PgURL is empty).
 	DatastorePort int
 	// PgUser is the user we use to connect to bytebase's Postgres database.
 	// The name of the database storing metadata is the same as pgUser.
