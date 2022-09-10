@@ -290,7 +290,9 @@
     "extend-trial": "Extend trialing time",
     "action": "Deploy yours in 5 seconds",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
-    "readonly": "Server is in readonly mode. You can still view the console, but any change attempt will fail."
+    "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
+    "external-url": "Bytebase has not configured --external-url",
+    "configure-now": "Configure now"
   },
   "intro": {
     "doc": "doc",
@@ -1062,9 +1064,9 @@
       "success-member-sync-prompt": "Sync member from VCS Succeeded",
       "view-vcs-member": "View members in VCS",
       "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync.",
-      "schema-migration-type": "Schema migration type",
-      "select-schema-migration-type-ddl": "Data Definition Language (DDL)",
-      "select-schema-migration-type-sdl": "Schema Definition Language (SDL)",
+      "schema-change-type": "Schema change type",
+      "select-schema-migration-type-ddl": "Migration-based",
+      "select-schema-migration-type-sdl": "State-based",
       "schema-path-template-sdl-description": "The schema file that contains the desired state of the database schema. Bytebase creates new migrations for any discrepancy found between the desired state and the actual database schema."
     },
     "mode": {

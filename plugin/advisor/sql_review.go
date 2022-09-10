@@ -1,7 +1,6 @@
 package advisor
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"regexp"
@@ -375,10 +374,7 @@ type SQLReviewCheckContext struct {
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
-	database, err := checkContext.Catalog.GetDatabase(context.Background())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get database information from catalog")
-	}
+	database := checkContext.Catalog.GetDatabase()
 
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {

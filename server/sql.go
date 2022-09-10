@@ -203,6 +203,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			db := dbList[0]
 
+			catalog, err := s.store.NewCatalog(ctx, db.ID, instance.Engine)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
+			}
+
 			adviceLevel, adviceList, err = s.sqlCheck(
 				ctx,
 				dbType,
@@ -210,7 +215,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				db.Collation,
 				instance.EnvironmentID,
 				exec.Statement,
-				store.NewCatalog(&db.ID, s.store, instance.Engine),
+				catalog,
 			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check SQL review policy").SetInternal(err)
