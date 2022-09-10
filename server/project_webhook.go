@@ -194,7 +194,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				ActivityType: string(api.ActivityIssueCreate),
 				Title:        fmt.Sprintf("Test webhook %q", webhook.Name),
 				Description:  "This is a test",
-				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.profile.FrontendHost, s.profile.FrontendPort, api.ProjectSlug(project), api.ProjectWebhookSlug(webhook)),
+				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", s.profile.ExternalURL, api.ProjectSlug(project), api.ProjectWebhookSlug(webhook)),
 				CreatorID:    api.SystemBotID,
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",

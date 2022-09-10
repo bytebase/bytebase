@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.7"
 
 services:
   bb:
@@ -11,21 +11,13 @@ services:
     # # Uncomment the following lines to persist data
     # volumes:
     #   - ~/.bytebase/data:/var/opt/bytebase
-    command:
-      [
-        "--data",
-        "/var/opt/bytebase",
-        "--host",
-        "http://localhost",
-        "--port",
-        "8080"
-      ]
-    networks: [ clickhouse-network ]
+    command: ["--data", "/var/opt/bytebase", "--port", "8080"]
+    networks: [clickhouse-network]
 
   # Clickhouse cluster
   zookeeper:
     image: zookeeper
-    networks: [ clickhouse-network ]
+    networks: [clickhouse-network]
 
   clickhouse01:
     image: yandex/clickhouse-server
@@ -40,7 +32,7 @@ services:
       - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
       - ./clickhouse-cluster/clickhouse01.config.xml:/etc/clickhouse-server/config.xml
       - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
-    networks: [ clickhouse-network ]
+    networks: [clickhouse-network]
     depends_on:
       - zookeeper
 
@@ -57,7 +49,7 @@ services:
       - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
       - ./clickhouse-cluster/clickhouse02.config.xml:/etc/clickhouse-server/config.xml
       - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
-    networks: [ clickhouse-network ]
+    networks: [clickhouse-network]
     depends_on:
       - zookeeper
 
@@ -74,7 +66,7 @@ services:
       - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
       - ./clickhouse-cluster/clickhouse03.config.xml:/etc/clickhouse-server/config.xml
       - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
-    networks: [ clickhouse-network ]
+    networks: [clickhouse-network]
     depends_on:
       - zookeeper
 
@@ -91,7 +83,7 @@ services:
       - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
       - ./clickhouse-cluster/clickhouse04.config.xml:/etc/clickhouse-server/config.xml
       - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
-    networks: [ clickhouse-network ]
+    networks: [clickhouse-network]
     depends_on:
       - zookeeper
 
