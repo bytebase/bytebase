@@ -456,7 +456,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 }
 
 // Run will run the server.
-func (s *Server) Run(ctx context.Context, addr string) error {
+func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 	if !s.profile.Readonly {
@@ -481,7 +481,7 @@ func (s *Server) Run(ctx context.Context, addr string) error {
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	return s.e.Start(addr)
+	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 
 // Shutdown will shut down the server.

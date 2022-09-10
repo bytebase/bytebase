@@ -290,7 +290,9 @@
     "extend-trial": "申请延长试用",
     "action": "5 秒部署您自己的服务",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
-    "readonly": "服务器处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。"
+    "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
+    "external-url": "Bytebase 还没有配置 --external-url",
+    "configure-now": "现在配置"
   },
   "intro": {
     "doc": "文档",

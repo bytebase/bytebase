@@ -1,51 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"testing"
 )
-
-func TestDefaultExternalURLFromHost(t *testing.T) {
-	tests := []struct {
-		host string
-		port int
-		want string
-	}{
-		{
-			host: "http://localhost",
-			port: 3000,
-			want: "http://localhost:3000",
-		},
-		{
-			host: "   http://localhost  ",
-			port: 3000,
-			want: "http://localhost:3000",
-		},
-		{
-			host: "https://localhost",
-			port: 3000,
-			want: "https://localhost:3000",
-		},
-		{
-			host: "localhost",
-			port: 3000,
-			want: "http://localhost:3000",
-		},
-		{
-			host: "0.0.0.0",
-			port: 3000,
-			want: "http://localhost:3000",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s:%d", tt.host, tt.port), func(t *testing.T) {
-			g := defaultExternalURLFromHostPort(tt.host, tt.port)
-			if tt.want != g {
-				t.Errorf("expect %s, got %s", tt.want, g)
-			}
-		})
-	}
-}
 
 func TestNormalizeExternalURL(t *testing.T) {
 	tests := []struct {

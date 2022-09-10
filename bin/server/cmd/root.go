@@ -58,6 +58,12 @@ const (
 ╚═════╝    ╚═╝      ╚═╝   ╚══════╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
 
 %s
+
+************* External Visiting URL (--external-url) *************
+
+%s
+
+******************************************************************
 ___________________________________________________________________________________________
 
 `
@@ -72,6 +78,8 @@ ________________________________________________________________________________
 ╚═════╝    ╚═╝   ╚══════╝
 
 `
+	// The placeholder page to instruct user how to configure --external-url.
+	externalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
 
 // -----------------------------------Global constant END------------------------------------------
@@ -80,7 +88,6 @@ ________________________________________________________________________________
 var (
 	flags struct {
 		// Used for Bytebase command line config
-		host        string
 		port        int
 		externalURL string
 		dataDir     string
@@ -124,19 +131,18 @@ func Execute() error {
 }
 
 func init() {
-	// In the release build, Bytebase runs as a mono server bundling frontend and backend together. Thus --host:--port is also where frontend runs.
+	// In the release build, Bytebase bundles frontend and backend together and runs on a single port as a mono server.
 	// During development, Bytebase frontend runs on a separate port.
-	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "0.0.0.0", "host where Bytebase backend runs. Default to 0.0.0.0")
-	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend runs. Default to 80")
-	// When running the release build in production, most of the time, users would not expose the --host:--port directly to the public.
-	// Instead they would configure a gateway to forward the traffic to --host:--port. Users need to set --external-url to the address
-	// exposed on the gateway accordingly.
+	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase server runs. Default to 80")
+	// When running the release build in production, most of the time, users would not expose Bytebase directly to the public.
+	// Instead they would configure a gateway to forward the traffic to Bytebase. Users need to set --external-url to the address
+	// exposed on that gateway accordingly.
 	//
 	// It's important to set the correct --external-url. This is used for:
 	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://. Default value is based on --host --port")
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", externalURLPlaceholder, "the external URL where user visits Bytebase, must start with http:// or https://")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
@@ -156,23 +162,6 @@ func init() {
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
-
-func defaultExternalURLFromHostPort(host string, port int) string {
-	h := strings.TrimSpace(host)
-	// Derive protocol from host if specified.
-	protocol := "http://"
-	if strings.HasPrefix(h, "https://") {
-		protocol = "https://"
-	}
-
-	h = strings.TrimPrefix(h, "http://")
-	h = strings.TrimPrefix(h, "https://")
-	// If listens on all network interfaces (this is also our default value), then we set to localhost
-	if h == "0.0.0.0" {
-		h = "localhost"
-	}
-	return protocol + fmt.Sprintf("%s:%d", h, port)
-}
 
 func normalizeExternalURL(url string) (string, error) {
 	r := strings.TrimSpace(url)
@@ -243,9 +232,6 @@ func start() {
 	}
 	defer log.Sync()
 
-	if flags.externalURL == "" {
-		flags.externalURL = defaultExternalURLFromHostPort(flags.host, flags.port)
-	}
 	var err error
 	flags.externalURL, err = normalizeExternalURL(flags.externalURL)
 	if err != nil {
@@ -286,21 +272,14 @@ func start() {
 		return
 	}
 
-	// It's intentional that we strip http(s):// from --host. Technically, the --host is not coupled
-	// with a particular protocol, thus the accurate usage is to supply --host without http(s). e.g.
-	//
-	// --host localhost (only listen on loopback)
-	// --host 0.0.0.0 (listen on all network interfaces)
-	//
-	// In reality, host is an abused word and people are used to prefix it with http(s). If we
-	// keep the protocol part, it will cause failure when we feed it to start the Echo server.
-	host := strings.TrimSpace(flags.host)
-	host = strings.TrimPrefix(host, "http://")
-	host = strings.TrimPrefix(host, "https://")
-	addr := fmt.Sprintf("%s:%d", host, flags.port)
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s. You can visit Bytebase from %s", profile.Version, addr, profile.ExternalURL))
+	exteranlAddr := profile.ExternalURL
+	if profile.ExternalURL == externalURLPlaceholder {
+		exteranlAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", externalURLPlaceholder)
+	}
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started on port %d", profile.Version, flags.port), exteranlAddr)
+
 	// Execute program.
-	if err := s.Run(ctx, addr); err != nil {
+	if err := s.Run(ctx, flags.port); err != nil {
 		if err != http.ErrServerClosed {
 			log.Error(err.Error())
 			_ = s.Shutdown(ctx)

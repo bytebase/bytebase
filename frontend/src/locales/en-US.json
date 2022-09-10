@@ -290,7 +290,9 @@
     "extend-trial": "Extend trialing time",
     "action": "Deploy yours in 5 seconds",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
-    "readonly": "Server is in readonly mode. You can still view the console, but any change attempt will fail."
+    "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
+    "external-url": "Bytebase has not configured --external-url",
+    "configure-now": "Configure now"
   },
   "intro": {
     "doc": "doc",

@@ -8,8 +8,6 @@
       "mode": "exec",
       "program": "${workspaceFolder}/.air/bytebase",
       "args": [
-        "--host",
-        "localhost",
         "--port",
         "8080",
         "--external-url",
