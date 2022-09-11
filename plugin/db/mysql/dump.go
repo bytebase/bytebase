@@ -248,11 +248,12 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			return errors.Wrapf(err, "failed to get tables of database %q", dbName)
 		}
 		// Construct temporal views.
-		// Create a table with the same name as the view and with columns of
+		// Create a temporary view with the same name as the view and with columns of
 		// the same name in order to satisfy views that depend on this view.
-		// The table will be removed when the actual view is created.
+		// This temporary view will be removed when the actual view is created.
 		// The properties of each column, are not preserved in this temporary
-		// table, because they are not necessary.
+		// view. They are not necessary because other views only need to reference
+		// the column name, thus we generate SELECT 1 AS colName1, 1 AS colName2.
 		// This will not be necessary once we can determine dependencies
 		// between views and can simply dump them in the appropriate order.
 		// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
