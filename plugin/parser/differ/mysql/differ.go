@@ -36,7 +36,7 @@ func (m tableColumnMap) get(tableName, columnName string) (*ast.ColumnDef, bool)
 func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 	oldTableMap := make(map[string]*ast.CreateTableStmt)
 	oldColumnMap := make(tableColumnMap)
-	diff := make([]ast.Node, 0)
+	var diff []ast.Node
 	for _, node := range old {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
