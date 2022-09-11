@@ -45,6 +45,11 @@ const (
 		"-- View structure for `%s`\n" +
 		"--\n" +
 		"%s;\n"
+	tempViewStmtFmt = "" +
+		"--\n" +
+		"-- Temporary view structure for `%s`\n" +
+		"--\n" +
+		"%s\n"
 	routineStmtFmt = "" +
 		"--\n" +
 		"-- %s structure for `%s`\n" +
@@ -70,6 +75,9 @@ const (
 		"DELIMITER ;;\n" +
 		"%s ;;\n" +
 		"DELIMITER ;\n"
+
+	disableUniqueAndForeignKeyCheckStmt = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n"
+	restoreUniqueAndForeignKeyCheckStmt = "SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
 )
 
 var (
@@ -226,24 +234,68 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			}
 		}
 
+		// Disable foreign key check.
+		// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
+		// the unique and foreign key check so that the restoring will not fail.
+		if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
+			return err
+		}
+
 		// Table and view statement.
+		// We have to dump the table before views because of the structure dependency.
 		tables, err := getTablesTx(txn, dbName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get tables of database %q", dbName)
 		}
+		// Construct temporal views.
+		// Create a temporary view with the same name as the view and with columns of
+		// the same name in order to satisfy views that depend on this view.
+		// This temporary view will be removed when the actual view is created.
+		// The properties of each column, are not preserved in this temporary
+		// view. They are not necessary because other views only need to reference
+		// the column name, thus we generate SELECT 1 AS colName1, 1 AS colName2.
+		// This will not be necessary once we can determine dependencies
+		// between views and can simply dump them in the appropriate order.
+		// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
 		for _, tbl := range tables {
-			if schemaOnly && tbl.TableType == baseTableType {
+			if tbl.TableType != viewTableType {
+				continue
+			}
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
+				return err
+			}
+		}
+		// Construct tables.
+		for _, tbl := range tables {
+			if tbl.TableType != baseTableType {
+				continue
+			}
+			if schemaOnly {
 				tbl.Statement = excludeSchemaAutoIncrementValue(tbl.Statement)
 			}
 			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 				return err
 			}
-			if !schemaOnly && tbl.TableType == baseTableType {
+			if !schemaOnly {
 				// Include db prefix if dumping multiple databases.
 				includeDbPrefix := len(dumpableDbNames) > 1
 				if err := exportTableData(txn, dbName, tbl.Name, includeDbPrefix, out); err != nil {
 					return err
 				}
+			}
+		}
+		// Construct final views.
+		for _, tbl := range tables {
+			if tbl.TableType != viewTableType {
+				continue
+			}
+			// The temporary view just created above were used to satisfy the schema dependency. See comment above.
+			// We have to drop the temporary and incorrect view here to recreate the final and correct one.
+			if _, err := io.WriteString(out, fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n", tbl.Name)); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
+				return err
 			}
 		}
 
@@ -279,9 +331,23 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 				return err
 			}
 		}
+
+		// Restore foreign key check.
+		if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func getTemporaryView(name string, columns []string) string {
+	var parts []string
+	for _, col := range columns {
+		parts = append(parts, fmt.Sprintf("1 AS `%s`", col))
+	}
+	stmt := fmt.Sprintf("CREATE VIEW `%s` AS SELECT\n  %s;\n", name, strings.Join(parts, ",\n  "))
+	return fmt.Sprintf(tempViewStmtFmt, name, stmt)
 }
 
 // excludeSchemaAutoIncrementValue excludes the starting value of AUTO_INCREMENT if it's a schema only dump.
@@ -325,9 +391,10 @@ func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 
 // TableSchema describes the schema of a table or view.
 type TableSchema struct {
-	Name      string
-	TableType string
-	Statement string
+	Name        string
+	TableType   string
+	Statement   string
+	ViewColumns []string
 }
 
 // routineSchema describes the schema of a function or procedure (routine).
@@ -389,6 +456,13 @@ func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
 		tbl.Statement = stmt
+		if tbl.TableType == viewTableType {
+			viewColumns, err := getViewColumns(txn, dbName, tbl.Name)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to call getViewColumns(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
+			}
+			tbl.ViewColumns = viewColumns
+		}
 	}
 	return tables, nil
 }
@@ -420,6 +494,32 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 	default:
 		return "", errors.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
+}
+
+// getTableStmt gets the create statement of a table.
+func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
+	query := fmt.Sprintf("SHOW COLUMNS FROM `%s`.`%s`;", dbName, tblName)
+	// https://dev.mysql.com/doc/refman/8.0/en/show-columns.html
+	// Field, Type, Null, Key, Default, Extra.
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var fields []string
+	for rows.Next() {
+		var field string
+		var unused sql.NullString
+		if err := rows.Scan(&field, &unused, &unused, &unused, &unused, &unused); err != nil {
+			return nil, err
+		}
+		fields = append(fields, field)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return fields, nil
 }
 
 // exportTableData gets the data of a table.
