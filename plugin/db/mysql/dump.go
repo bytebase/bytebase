@@ -289,6 +289,8 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			if tbl.TableType != viewTableType {
 				continue
 			}
+			// The temporary view just created above were used to satisfy the schema dependency. See comment above.
+			// We have to drop the temporary and incorrect view here to recreate the final and correct one.
 			if _, err := io.WriteString(out, fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n", tbl.Name)); err != nil {
 				return err
 			}
