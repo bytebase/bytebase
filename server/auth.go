@@ -87,18 +87,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", login.Name, login.Name)).SetInternal(err)
 				}
 
-				// We need to attach the RedirectURL in the get token process of OAuth, and the
-				// RedirectURL needs to be consistent with the RedirectURL in the get code
-				// process. The frontend get it through window.location.origin in the get code
-				// process, so port 80 needs to be cropped when the backend splices the
-				// RedirectURL.
-				var redirectURL string
-				if s.profile.FrontendPort == 80 {
-					redirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.FrontendHost)
-				} else {
-					redirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
-				}
-
 				// Exchange OAuth Token
 				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).ExchangeOAuthToken(
 					ctx,
@@ -107,7 +95,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
 						Code:         login.Code,
-						RedirectURL:  redirectURL,
+						RedirectURL:  fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL),
 					},
 				)
 				if err != nil {

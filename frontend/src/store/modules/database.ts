@@ -372,6 +372,13 @@ export const useDatabaseStore = defineStore("database", {
 
       return database;
     },
+    async getOrFetchDatabaseById(databaseId: DatabaseId) {
+      const storedDatabase = this.getDatabaseById(databaseId);
+      if (storedDatabase.id !== UNKNOWN_ID) {
+        return storedDatabase;
+      }
+      return this.fetchDatabaseById(databaseId);
+    },
     async createDatabase(newDatabase: DatabaseCreate) {
       const data = (
         await axios.post(`/api/database`, {

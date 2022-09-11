@@ -28,3 +28,10 @@ export const getDefaultTab = (): TabInfo => {
 };
 
 export const INITIAL_TAB = getDefaultTab();
+
+export const isTempTab = (tab: TabInfo): boolean => {
+  if (tab.sheetId) return false;
+  if (!tab.isSaved) return false;
+  if (tab.statement) return false;
+  return true;
+};
