@@ -637,7 +637,7 @@
           "sql-driven-workflow": "SQL-driven workflow"
         },
         "postgresql": {
-          "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges.",
+          "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges. You should grant Bytebase privileges with 'GRANT role_name TO bytebase;' for all existing roles, otherwise Bytebase may not access existing databases or tables.",
           "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER."
         }
       }
