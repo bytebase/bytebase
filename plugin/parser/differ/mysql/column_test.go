@@ -21,7 +21,12 @@ func TestColumn(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT, PRIMARY KEY(id))`,
 			new:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
-			want: "ALTER TABLE `book` ADD COLUMN (`price` INT);\nALTER TABLE `book` ADD COLUMN (`code` VARCHAR(50));\n",
+			want: "ALTER TABLE `book` ADD COLUMN (`price` INT), ADD COLUMN (`code` VARCHAR(50));\n",
+		},
+		{
+			old:  ``,
+			new:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
+			want: "CREATE TABLE IF NOT EXISTS `book` (`id` INT,`price` INT,`code` VARCHAR(50),PRIMARY KEY(`id`));\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,

@@ -71,20 +71,22 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 			diff = append(diff, stmt)
 			continue
 		}
+		var alterTableAddColumnSpecs []*ast.AlterTableSpec
 		for columnName, columnDef := range newColumnMap[tableName] {
 			if _, ok := oldColumnMap.get(tableName, columnName); !ok {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
-					},
-					Specs: []*ast.AlterTableSpec{
-						{
-							Tp:         ast.AlterTableAddColumns,
-							NewColumns: []*ast.ColumnDef{columnDef},
-						},
-					},
+				alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
+					Tp:         ast.AlterTableAddColumns,
+					NewColumns: []*ast.ColumnDef{columnDef},
 				})
 			}
+		}
+		if len(alterTableAddColumnSpecs) > 0 {
+			diff = append(diff, &ast.AlterTableStmt{
+				Table: &ast.TableName{
+					Name: model.NewCIStr(tableName),
+				},
+				Specs: alterTableAddColumnSpecs,
+			})
 		}
 	}
 
