@@ -67,7 +67,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		}
 
-		oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.ExternalURL)
+		oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", oauthRedirectURL(s.profile.ExternalURL))
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).
 			ExchangeOAuthToken(
 				c.Request().Context(),
@@ -75,7 +75,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				oauthExchange,
 			)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to exchange OAuth token. Make sure --external-url: %s matches your browser host.", s.profile.ExternalURL)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, oauthErrorMessage(oauthExchange.RedirectURL)).SetInternal(err)
 		}
 
 		resp := &api.OAuthToken{

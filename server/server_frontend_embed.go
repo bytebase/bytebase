@@ -5,6 +5,7 @@ package server
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"net/http"
 
@@ -44,4 +45,12 @@ func embedFrontend(e *echo.Echo) {
 		HTML5:      true,
 		Filesystem: getFileSystem("dist/assets"),
 	}))
+}
+
+func oauthRedirectURL(externalURL string) string {
+	return externalURL
+}
+
+func oauthErrorMessage(redirectURL string) string {
+	return fmt.Sprintf("Failed to exchange OAuth token. Make sure --external-url: %s matches your browser host.", redirectURL)
 }
