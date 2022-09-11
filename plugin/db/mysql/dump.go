@@ -47,7 +47,7 @@ const (
 		"%s;\n"
 	tempViewStmtFmt = "" +
 		"--\n" +
-		"-- Temporal view structure for `%s`\n" +
+		"-- Temporary view structure for `%s`\n" +
 		"--\n" +
 		"%s\n"
 	routineStmtFmt = "" +
@@ -248,6 +248,14 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			return errors.Wrapf(err, "failed to get tables of database %q", dbName)
 		}
 		// Construct temporal views.
+		// Create a table with the same name as the view and with columns of
+		// the same name in order to satisfy views that depend on this view.
+		// The table will be removed when the actual view is created.
+		// The properties of each column, are not preserved in this temporary
+		// table, because they are not necessary.
+		// This will not be necessary once we can determine dependencies
+		// between views and can simply dump them in the appropriate order.
+		// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
 		for _, tbl := range tables {
 			if tbl.TableType != viewTableType {
 				continue
@@ -256,6 +264,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 				return err
 			}
 		}
+		// Construct tables.
 		for _, tbl := range tables {
 			if tbl.TableType != baseTableType {
 				continue
@@ -274,6 +283,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 				}
 			}
 		}
+		// Construct final views.
 		for _, tbl := range tables {
 			if tbl.TableType != viewTableType {
 				continue
