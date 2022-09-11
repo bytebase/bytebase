@@ -260,7 +260,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			if tbl.TableType != viewTableType {
 				continue
 			}
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporalView(tbl.Name, tbl.ViewColumns))); err != nil {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
 				return err
 			}
 		}
@@ -338,7 +338,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 	return nil
 }
 
-func getTemporalView(name string, columns []string) string {
+func getTemporaryView(name string, columns []string) string {
 	var parts []string
 	for _, col := range columns {
 		parts = append(parts, fmt.Sprintf("1 AS `%s`", col))
