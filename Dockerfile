@@ -68,6 +68,18 @@ LABEL org.opencontainers.image.revision=${GIT_COMMIT}
 LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
+# Create user "bytebase" for running Postgres database and server.
+RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
+
+# Directory to store the data, which can be referenced as the mounting point.
+RUN mkdir -p /var/opt/bytebase
+
+ENV OPENSSL_CONF /etc/ssl/
+
+# Copy utility scripts, we have
+# - Demo script to launch Bytebase in readonly demo mode
+COPY ./scripts /usr/local/bin/
+
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
 RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client procps
@@ -77,18 +89,6 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
-
-# Copy utility scripts, we have
-# - Demo script to launch Bytebase in readonly demo mode
-COPY ./scripts /usr/local/bin/
-
-# Create user "bytebase" for running Postgres database and server.
-RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
-
-# Directory to store the data, which can be referenced as the mounting point.
-RUN mkdir -p /var/opt/bytebase
-
-ENV OPENSSL_CONF /etc/ssl/
 
 CMD ["--port", "80", "--data", "/var/opt/bytebase"]
 
