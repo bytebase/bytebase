@@ -9,77 +9,61 @@ import (
 	"github.com/pingcap/tidb/parser/model"
 )
 
-// columnMap maps column name to columnDef.
-type columnMap map[string]*ast.ColumnDef
-
-// tableColumnMap maps table name to columnMap.
-type tableColumnMap map[string]columnMap
-
-// set sets the columnDef of the `tableName`.`columnName`.
-func (m tableColumnMap) set(tableName, columnName string, columnDef *ast.ColumnDef) {
-	if _, ok := m[tableName]; !ok {
-		m[tableName] = make(columnMap)
-	}
-	m[tableName][columnName] = columnDef
-}
-
-// get gets the columnDef of the `tableName`.`columnName`.
-func (m tableColumnMap) get(tableName, columnName string) (*ast.ColumnDef, bool) {
-	if _, ok := m[tableName]; !ok {
-		return nil, false
-	}
-	columnDef, ok := m[tableName][columnName]
-	return columnDef, ok
+type columnKey struct {
+	tableName  string
+	columnName string
 }
 
 // SchemaDiff returns the schema diff.
 func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 	oldTableMap := make(map[string]*ast.CreateTableStmt)
-	oldColumnMap := make(tableColumnMap)
 	var diff []ast.Node
 	for _, node := range old {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := stmt.Table.Name.String()
 			oldTableMap[tableName] = stmt
-			for _, column := range stmt.Cols {
-				columnName := column.Name.Name.String()
-				oldColumnMap.set(tableName, columnName, column)
-			}
 		default:
 		}
 	}
 
-	newColumnMap := make(tableColumnMap)
 	newTableMap := make(map[string]*ast.CreateTableStmt)
 	for _, node := range new {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := stmt.Table.Name.String()
 			newTableMap[tableName] = stmt
-			for _, column := range stmt.Cols {
-				columnName := column.Name.Name.String()
-				newColumnMap.set(tableName, columnName, column)
-			}
 		default:
 		}
 	}
 
-	for tableName, stmt := range newTableMap {
-		if _, ok := oldTableMap[tableName]; !ok {
-			stmt.IfNotExists = true
-			diff = append(diff, stmt)
+	for tableName, newStmt := range newTableMap {
+		oldStmt, ok := oldTableMap[tableName]
+		if !ok {
+			newStmt.IfNotExists = true
+			diff = append(diff, newStmt)
 			continue
 		}
+
 		var alterTableAddColumnSpecs []*ast.AlterTableSpec
-		for columnName, columnDef := range newColumnMap[tableName] {
-			if _, ok := oldColumnMap.get(tableName, columnName); !ok {
+		var oldColumnMap = make(map[columnKey]*ast.ColumnDef)
+		for _, oldColumnDef := range oldStmt.Cols {
+			oldColumnMap[columnKey{
+				tableName:  tableName,
+				columnName: oldColumnDef.Name.Name.String(),
+			}] = oldColumnDef
+		}
+
+		for _, columnDef := range newStmt.Cols {
+			columnName := columnDef.Name.Name.String()
+			if _, ok := oldColumnMap[columnKey{tableName, columnName}]; !ok {
 				alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
 					Tp:         ast.AlterTableAddColumns,
 					NewColumns: []*ast.ColumnDef{columnDef},
 				})
 			}
 		}
+
 		if len(alterTableAddColumnSpecs) > 0 {
 			diff = append(diff, &ast.AlterTableStmt{
 				Table: &ast.TableName{
