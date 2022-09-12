@@ -59,7 +59,7 @@ const checkShouldShowCreateDatabaseGuide = async () => {
     }
   }
 
-  return true;
+  return false;
 };
 
 watch(currentUser, async () => {

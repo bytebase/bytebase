@@ -47,14 +47,6 @@ const guideStepList = computed(() => {
     // guides for `add instance`
     [
       {
-        title: t("onboarding-guide.create-database-guide.wait-issue-finished"),
-        description: "",
-        position: "center",
-        targetElementSelector: "#app",
-        expectedUrl: /.*/,
-        showLoading: true,
-      },
-      {
         title: t("onboarding-guide.create-database-guide.let-add-a-instance"),
         description: "",
         position: "bottom-center",
