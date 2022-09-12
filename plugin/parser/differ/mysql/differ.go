@@ -9,54 +9,31 @@ import (
 	"github.com/pingcap/tidb/parser/model"
 )
 
-type columnKey struct {
-	tableName  string
-	columnName string
-}
-
 // SchemaDiff returns the schema diff.
 func SchemaDiff(old, new []ast.StmtNode) (string, error) {
-	oldTableMap := make(map[string]*ast.CreateTableStmt)
 	var diff []ast.Node
-	for _, node := range old {
-		switch stmt := node.(type) {
-		case *ast.CreateTableStmt:
-			tableName := stmt.Table.Name.String()
-			oldTableMap[tableName] = stmt
-		default:
-		}
-	}
-
-	newTableMap := make(map[string]*ast.CreateTableStmt)
-	for _, node := range new {
-		switch stmt := node.(type) {
-		case *ast.CreateTableStmt:
-			tableName := stmt.Table.Name.String()
-			newTableMap[tableName] = stmt
-		default:
-		}
-	}
+	oldTableMap := buildTableMap(old)
+	newTableMap := buildTableMap(new)
 
 	for tableName, newStmt := range newTableMap {
 		oldStmt, ok := oldTableMap[tableName]
 		if !ok {
-			newStmt.IfNotExists = true
-			diff = append(diff, newStmt)
+			stmt := *newStmt
+			stmt.IfNotExists = true
+			diff = append(diff, &stmt)
 			continue
 		}
 
 		var alterTableAddColumnSpecs []*ast.AlterTableSpec
-		var oldColumnMap = make(map[columnKey]*ast.ColumnDef)
+		var oldColumnMap = make(map[string]*ast.ColumnDef)
 		for _, oldColumnDef := range oldStmt.Cols {
-			oldColumnMap[columnKey{
-				tableName:  tableName,
-				columnName: oldColumnDef.Name.Name.String(),
-			}] = oldColumnDef
+			oldColumnName := oldColumnDef.Name.Name.String()
+			oldColumnMap[oldColumnName] = oldColumnDef
 		}
 
 		for _, columnDef := range newStmt.Cols {
-			columnName := columnDef.Name.Name.String()
-			if _, ok := oldColumnMap[columnKey{tableName, columnName}]; !ok {
+			newColumnName := columnDef.Name.Name.String()
+			if _, ok := oldColumnMap[newColumnName]; !ok {
 				alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
 					Tp:         ast.AlterTableAddColumns,
 					NewColumns: []*ast.ColumnDef{columnDef},
@@ -87,4 +64,18 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 		return buf.String(), nil
 	}
 	return deparse(diff)
+}
+
+// buildTableMap returns a map of table name to create table statements.
+func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
+	oldTableMap := make(map[string]*ast.CreateTableStmt)
+	for _, node := range nodes {
+		switch stmt := node.(type) {
+		case *ast.CreateTableStmt:
+			tableName := stmt.Table.Name.String()
+			oldTableMap[tableName] = stmt
+		default:
+		}
+	}
+	return oldTableMap
 }
