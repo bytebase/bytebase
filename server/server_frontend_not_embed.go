@@ -6,6 +6,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
 
@@ -23,9 +24,13 @@ func embedFrontend(e *echo.Echo) {
 // In non embedded mode, the redirect URL is the frontend URL which is different
 // from the external URL. By default, this frontend URL is http://localhost:3000
 func oauthRedirectURL(_ string) string {
+	url := os.Getenv("BB_REDIRECT_URL")
+	if url != "" {
+		return url
+	}
 	return "http://localhost:3000"
 }
 
 func oauthErrorMessage(redirectURL string) string {
-	return fmt.Sprintf("Failed to exchange OAuth token. Make sure oauthRedirectURL: %s matches your browser host.", redirectURL)
+	return fmt.Sprintf("Failed to exchange OAuth token. Make sure BB_REDIRECT_URL: %s matches your browser host.", redirectURL)
 }
