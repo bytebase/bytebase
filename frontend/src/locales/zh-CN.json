@@ -637,7 +637,7 @@
           "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。"
         },
         "postgresql": {
-          "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。",
+          "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。 您应该对所有 role 用 'GRANT role_name TO bytebase;' 语句赋予 Bytebase 权限，否则 Bytebase 可能没有权限操作已有的数据库或者表导致操作失败。",
           "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
         }
       }
