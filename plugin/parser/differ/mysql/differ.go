@@ -13,41 +13,45 @@ import (
 func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 	var diff []ast.Node
 	oldTableMap := buildTableMap(old)
-	newTableMap := buildTableMap(new)
 
-	for tableName, newStmt := range newTableMap {
-		oldStmt, ok := oldTableMap[tableName]
-		if !ok {
-			stmt := *newStmt
-			stmt.IfNotExists = true
-			diff = append(diff, &stmt)
-			continue
-		}
+	for _, node := range new {
+		switch newStmt := node.(type) {
+		case *ast.CreateTableStmt:
+			tableName := newStmt.Table.Name.String()
+			oldStmt, ok := oldTableMap[tableName]
+			if !ok {
+				stmt := *newStmt
+				stmt.IfNotExists = true
+				diff = append(diff, &stmt)
+				continue
+			}
 
-		var alterTableAddColumnSpecs []*ast.AlterTableSpec
-		var oldColumnMap = make(map[string]*ast.ColumnDef)
-		for _, oldColumnDef := range oldStmt.Cols {
-			oldColumnName := oldColumnDef.Name.Name.String()
-			oldColumnMap[oldColumnName] = oldColumnDef
-		}
+			var alterTableAddColumnSpecs []*ast.AlterTableSpec
+			var oldColumnMap = make(map[string]*ast.ColumnDef)
+			for _, oldColumnDef := range oldStmt.Cols {
+				oldColumnName := oldColumnDef.Name.Name.String()
+				oldColumnMap[oldColumnName] = oldColumnDef
+			}
 
-		for _, columnDef := range newStmt.Cols {
-			newColumnName := columnDef.Name.Name.String()
-			if _, ok := oldColumnMap[newColumnName]; !ok {
-				alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
-					Tp:         ast.AlterTableAddColumns,
-					NewColumns: []*ast.ColumnDef{columnDef},
+			for _, columnDef := range newStmt.Cols {
+				newColumnName := columnDef.Name.Name.String()
+				if _, ok := oldColumnMap[newColumnName]; !ok {
+					alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddColumns,
+						NewColumns: []*ast.ColumnDef{columnDef},
+					})
+				}
+			}
+
+			if len(alterTableAddColumnSpecs) > 0 {
+				diff = append(diff, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableAddColumnSpecs,
 				})
 			}
-		}
-
-		if len(alterTableAddColumnSpecs) > 0 {
-			diff = append(diff, &ast.AlterTableStmt{
-				Table: &ast.TableName{
-					Name: model.NewCIStr(tableName),
-				},
-				Specs: alterTableAddColumnSpecs,
-			})
+		default:
 		}
 	}
 
