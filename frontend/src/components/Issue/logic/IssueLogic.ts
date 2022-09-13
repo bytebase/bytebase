@@ -58,8 +58,8 @@ type IssueLogic = {
     newStatement: string,
     postUpdated?: (updatedTask: Task) => void
   ) => any;
-  allowApplyStatementToOtherStages: Ref<boolean>;
-  applyStatementToOtherStages: (statement: string) => any;
+  allowApplyStatementToOtherTasks: Ref<boolean>;
+  applyStatementToOtherTasks: (statement: string) => any;
   doCreate(): any;
 
   // events

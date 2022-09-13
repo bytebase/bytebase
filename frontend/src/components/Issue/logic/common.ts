@@ -152,7 +152,7 @@ export const useCommonLogic = () => {
     }
   };
 
-  const applyStatementToOtherStages = (statement: string) => {
+  const applyStatementToOtherTasks = (statement: string) => {
     const taskList = flattenTaskList<TaskCreate>(issue.value);
 
     for (const task of taskList) {
@@ -162,14 +162,8 @@ export const useCommonLogic = () => {
     }
   };
 
-  const allowApplyStatementToOtherStages = computed(() => {
+  const allowApplyStatementToOtherTasks = computed(() => {
     if (!create.value) {
-      return false;
-    }
-
-    const stageList = issue.value.pipeline?.stageList || [];
-    if (stageList.length <= 1) {
-      // Only available for multi-stage pipeline
       return false;
     }
     const taskList = flattenTaskList<TaskCreate>(issue.value);
@@ -208,8 +202,8 @@ export const useCommonLogic = () => {
     allowEditStatement,
     selectedStatement,
     updateStatement,
-    allowApplyStatementToOtherStages,
-    applyStatementToOtherStages,
+    allowApplyStatementToOtherTasks,
+    applyStatementToOtherTasks,
     doCreate,
   };
 };
