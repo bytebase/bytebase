@@ -105,5 +105,22 @@
         "branding-logo": "Customize the logo"
       }
     }
+  },
+  "main-features": {
+    "community-support": "Community support",
+    "review-workflow": "Schema and data change review workflow",
+    "sql-editor": "SQL Editor",
+    "database-backup-restore": "Database backup / restore",
+    "im-integration": "IM integration (e.g. Slack, Discord and etc)",
+    "email-support": "Email support",
+    "everything-in-free-plan": "Everything in free plan",
+    "rbac": "Owner, DBA and Developer roles",
+    "gitlab-login": "GitLab login",
+    "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",
+    "review-and-backup-policy": "Review and backup policy",
+    "sla": "SLA support",
+    "everything-in-team-plan": "Everything in team plan",
+    "multi-tenancy": "Multi-Region / Multi-Tenancy deployment",
+    "more-to-come": "More to come..."
   }
 }
