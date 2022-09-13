@@ -55,8 +55,8 @@
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
-    :schema-migration-type="state.schemaMigrationType"
-    @change-schema-migration-type="(type) => (state.schemaMigrationType = type)"
+    :schema-change-type="state.schemaChangeType"
+    @change-schema-change-type="(type) => (state.schemaChangeType = type)"
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
@@ -93,7 +93,7 @@ import {
   RepositoryConfig,
   Project,
   ProjectPatch,
-  SchemaMigrationType,
+  SchemaChangeType,
 } from "../types";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useProjectStore, useRepositoryStore } from "@/store";
@@ -101,7 +101,7 @@ import { isDev } from "@/utils";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
-  schemaMigrationType: SchemaMigrationType;
+  schemaChangeType: SchemaChangeType;
 }
 
 export default defineComponent({
@@ -133,7 +133,7 @@ export default defineComponent({
         schemaPathTemplate: props.repository.schemaPathTemplate,
         sheetPathTemplate: props.repository.sheetPathTemplate,
       },
-      schemaMigrationType: props.project.schemaMigrationType,
+      schemaChangeType: props.project.schemaChangeType,
     });
 
     watch(
@@ -172,7 +172,7 @@ export default defineComponent({
             state.repositoryConfig.schemaPathTemplate ||
           props.repository.sheetPathTemplate !==
             state.repositoryConfig.sheetPathTemplate ||
-          props.project.schemaMigrationType !== state.schemaMigrationType)
+          props.project.schemaChangeType !== state.schemaChangeType)
       );
     });
 
@@ -220,13 +220,13 @@ export default defineComponent({
           state.repositoryConfig.sheetPathTemplate;
       }
 
-      // Update project schemaMigrationType field firstly.
+      // Update project schemaChangeType field firstly.
       if (
         isDev() &&
-        state.schemaMigrationType !== props.project.schemaMigrationType
+        state.schemaChangeType !== props.project.schemaChangeType
       ) {
         const projectPatch: ProjectPatch = {
-          schemaMigrationType: state.schemaMigrationType,
+          schemaChangeType: state.schemaChangeType,
         };
         await useProjectStore().patchProject({
           projectId: props.project.id,

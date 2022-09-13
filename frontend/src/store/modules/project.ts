@@ -51,7 +51,7 @@ function convert(
     tenantMode: attrs.tenantMode,
     dbNameTemplate: attrs.dbNameTemplate,
     roleProvider: attrs.roleProvider,
-    schemaMigrationType: attrs.schemaMigrationType,
+    schemaChangeType: attrs.schemaChangeType,
   };
 
   const memberList: ProjectMember[] = [];
