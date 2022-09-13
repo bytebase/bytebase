@@ -43,16 +43,16 @@ const (
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
 
-// ProjectSchemaMigrationType is the schema migration type for projects.
-type ProjectSchemaMigrationType string
+// ProjectSchemaChangeType is the schema change type for projects.
+type ProjectSchemaChangeType string
 
 const (
-	// ProjectSchemaMigrationTypeDDL is the Data Definition Language (DDL) schema
+	// ProjectSchemaChangeTypeDDL is the Data Definition Language (DDL) schema
 	// migration.
-	ProjectSchemaMigrationTypeDDL ProjectSchemaMigrationType = "DDL"
-	// ProjectSchemaMigrationTypeSDL is the Schema Definition Language (SDL) schema
+	ProjectSchemaChangeTypeDDL ProjectSchemaChangeType = "DDL"
+	// ProjectSchemaChangeTypeSDL is the Schema Definition Language (SDL) schema
 	// migration.
-	ProjectSchemaMigrationTypeSDL ProjectSchemaMigrationType = "SDL"
+	ProjectSchemaChangeTypeSDL ProjectSchemaChangeType = "SDL"
 )
 
 // Project is the API message for a project.
@@ -81,8 +81,8 @@ type Project struct {
 	// Empty value means {{DB_NAME}}.
 	DBNameTemplate string              `jsonapi:"attr,dbNameTemplate"`
 	RoleProvider   ProjectRoleProvider `jsonapi:"attr,roleProvider"`
-	// SchemaMigrationType is the type of the schema migration script.
-	SchemaMigrationType ProjectSchemaMigrationType `jsonapi:"attr,schemaMigrationType"`
+	// SchemaChangeType is the type of the schema migration script.
+	SchemaChangeType ProjectSchemaChangeType `jsonapi:"attr,schemaChangeType"`
 }
 
 // ProjectCreate is the API message for creating a project.
@@ -92,12 +92,12 @@ type ProjectCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Name                string                     `jsonapi:"attr,name"`
-	Key                 string                     `jsonapi:"attr,key"`
-	TenantMode          ProjectTenantMode          `jsonapi:"attr,tenantMode"`
-	DBNameTemplate      string                     `jsonapi:"attr,dbNameTemplate"`
-	RoleProvider        ProjectRoleProvider        `jsonapi:"attr,roleProvider"`
-	SchemaMigrationType ProjectSchemaMigrationType `jsonapi:"attr,schemaMigrationType"`
+	Name             string                  `jsonapi:"attr,name"`
+	Key              string                  `jsonapi:"attr,key"`
+	TenantMode       ProjectTenantMode       `jsonapi:"attr,tenantMode"`
+	DBNameTemplate   string                  `jsonapi:"attr,dbNameTemplate"`
+	RoleProvider     ProjectRoleProvider     `jsonapi:"attr,roleProvider"`
+	SchemaChangeType ProjectSchemaChangeType `jsonapi:"attr,schemaChangeType"`
 }
 
 // ProjectFind is the API message for finding projects.
@@ -130,10 +130,10 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name                *string `jsonapi:"attr,name"`
-	WorkflowType        *string `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
-	RoleProvider        *string `jsonapi:"attr,roleProvider"`
-	SchemaMigrationType *string `jsonapi:"attr,schemaMigrationType"` // NOTE: We can't use *ProjectSchemaMigrationType because "google/jsonapi" doesn't support.
+	Name             *string `jsonapi:"attr,name"`
+	WorkflowType     *string `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
+	RoleProvider     *string `jsonapi:"attr,roleProvider"`
+	SchemaChangeType *string `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
 }
 
 var (

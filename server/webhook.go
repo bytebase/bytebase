@@ -801,7 +801,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	var migrationInfo *db.MigrationInfo
 	var updateSchemaDetails []*api.UpdateSchemaDetail
-	if repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
+	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 		migrationInfo, updateSchemaDetails = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
 	} else {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
