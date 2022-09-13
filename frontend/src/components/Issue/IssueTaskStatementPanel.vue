@@ -388,7 +388,13 @@ export default defineComponent({
       useRepositoryStore()
         .fetchRepositoryByProjectId(issueEntity.project.id)
         .then((repository: Repository) => {
-          window.open(baseDirectoryWebUrl(repository), "_blank");
+          window.open(
+            baseDirectoryWebUrl(repository, {
+              DB_NAME: selectedDatabase.value?.name,
+              ENV_NAME: selectedDatabase.value?.instance.environment.name,
+            }),
+            "_blank"
+          );
 
           state.showVCSGuideModal = false;
         });
