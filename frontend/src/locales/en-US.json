@@ -469,6 +469,7 @@
     "subscribe": "Subscribe",
     "unsubscribe": "Unsubscribe",
     "subscriber": "No subscribers | 1 subscriber | {n} subscribers",
+    "apply-to-other-tasks": "Apply to other tasks",
     "add-sql-statement": "Add SQL statement...",
     "optional-add-sql-statement": "(Optional) Add SQL statement...",
     "edit-description": "Edit description",
@@ -512,8 +513,7 @@
     "edit-sql-statement": "Edit SQL statement",
     "upload-sql": "Upload SQL",
     "override-current-statement": "Override current SQL statement",
-    "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
-    "apply-to-other-tasks": "Apply to other tasks"
+    "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded."
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
