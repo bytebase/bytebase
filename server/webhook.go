@@ -675,8 +675,43 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 				Statement:    content,
 			},
 		)
-	} else {
-		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+		return updateSchemaDetails
+	}
+
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	if err != nil {
+		s.createIgnoredFileActivity(
+			ctx,
+			repo.ProjectID,
+			pushEvent,
+			file,
+			errors.Wrap(err, "Failed to find project databases"),
+		)
+		return nil
+	}
+
+	if fileType == fileItemTypeAdded {
+		for _, database := range databases {
+			updateSchemaDetails = append(updateSchemaDetails,
+				&api.UpdateSchemaDetail{
+					DatabaseID: database.ID,
+					Statement:  content,
+				},
+			)
+		}
+		return updateSchemaDetails
+	}
+
+	// For modified files, we try to update the existing issue's statement.
+	// Find tasks related to database and payload.pushEvent.fileCommit.added=fileName.
+	// then use server.patchTask() to patch the task.
+	for _, database := range databases {
+		find := &api.TaskFind{
+			DatabaseID: &database.ID,
+			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
+			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
+		}
+		taskList, err := s.store.FindTask(ctx, find, true)
 		if err != nil {
 			s.createIgnoredFileActivity(
 				ctx,
@@ -687,79 +722,47 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			)
 			return nil
 		}
-
-		// For modified files, we try to update the existing issue's statement.
-		// Find tasks related to database and payload.pushEvent.fileCommit.added=fileName.
-		// then use server.patchTask() to patch the task.
-		if fileType == fileItemTypeModified {
-			for _, database := range databases {
-				find := &api.TaskFind{
-					DatabaseID: &database.ID,
-					StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
-					TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
-				}
-				taskList, err := s.store.FindTask(ctx, find, true)
-				if err != nil {
-					s.createIgnoredFileActivity(
-						ctx,
-						repo.ProjectID,
-						pushEvent,
-						file,
-						errors.Wrap(err, "Failed to find project databases"),
-					)
+		for _, task := range taskList {
+			var shouldPatch bool
+			if task.Type == api.TaskDatabaseSchemaUpdate {
+				payload := api.TaskDatabaseSchemaUpdatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+					log.Error("Failed to unmarshal task payload", zap.Error(err))
 					return nil
 				}
-				for _, task := range taskList {
-					var shouldPatch bool
-					if task.Type == api.TaskDatabaseSchemaUpdate {
-						payload := api.TaskDatabaseSchemaUpdatePayload{}
-						if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-							log.Error("Failed to unmarshal task payload", zap.Error(err))
-							return nil
-						}
-						shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
-					} else {
-						payload := api.TaskDatabaseDataUpdatePayload{}
-						if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-							log.Error("Failed to unmarshal task payload", zap.Error(err))
-							return nil
-						}
-						shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
-					}
-
-					if !shouldPatch {
-						continue
-					}
-					taskPatch := api.TaskPatch{
-						ID:        task.ID,
-						Statement: &content,
-						UpdaterID: api.SystemBotID,
-					}
-					issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
-					if err != nil {
-						log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
-						return nil
-					}
-					// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
-					log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
-					if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
-						log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
-						return nil
-					}
+				shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
+			} else {
+				payload := api.TaskDatabaseDataUpdatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+					log.Error("Failed to unmarshal task payload", zap.Error(err))
+					return nil
 				}
+				shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
 			}
-		} else {
-			for _, database := range databases {
-				updateSchemaDetails = append(updateSchemaDetails,
-					&api.UpdateSchemaDetail{
-						DatabaseID: database.ID,
-						Statement:  content,
-					},
-				)
+
+			if !shouldPatch {
+				continue
+			}
+			taskPatch := api.TaskPatch{
+				ID:        task.ID,
+				Statement: &content,
+				UpdaterID: api.SystemBotID,
+			}
+			issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+			if err != nil {
+				log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
+				return nil
+			}
+			// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
+			log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
+			if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
+				log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
+				return nil
 			}
 		}
 	}
-	return updateSchemaDetails
+
+	return nil
 }
 
 // createIssueFromPushEvent attempts to create a new issue for the given file of
