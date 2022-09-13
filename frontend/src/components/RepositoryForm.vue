@@ -73,7 +73,7 @@
       />
     </div>
     <!-- Project schemaChangeType selector -->
-    <div v-if="isDev">
+    <div>
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
