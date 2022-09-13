@@ -8,7 +8,10 @@
         class="guide-wrapper"
         :class="position"
       >
-        <p class="title">{{ props.title }}</p>
+        <p class="flex flex-row justify-start items-center">
+          <BBSpin v-if="loading" class="mr-1" />
+          {{ props.title }}
+        </p>
       </div>
     </Transition>
     <Transition>
@@ -48,6 +51,10 @@ const props = defineProps({
   targetElementSelector: {
     type: String,
     default: "",
+  },
+  loading: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -304,6 +311,6 @@ const updateDialogPosition = async () => {
 }
 
 .guide-wrapper.center {
-  @apply w-64 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-16 whitespace-nowrap;
+  @apply w-auto top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-16 whitespace-nowrap;
 }
 </style>
