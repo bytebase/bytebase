@@ -374,7 +374,6 @@ type SQLReviewCheckContext struct {
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
-	database := checkContext.Catalog.GetDatabase()
 
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
@@ -394,7 +393,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 				Charset:   checkContext.Charset,
 				Collation: checkContext.Collation,
 				Rule:      rule,
-				Catalog:   catalog.NewFinder(database),
+				Catalog:   checkContext.Catalog.GetFinder(),
 			},
 			statements,
 		)

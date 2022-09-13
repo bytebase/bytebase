@@ -8,32 +8,34 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-func newDatabaseState(d *Database) *databaseState {
+func newDatabaseState(d *Database, context *FinderContext) *databaseState {
 	database := &databaseState{
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
 		dbType:       d.DbType,
 		schemaSet:    make(schemaStateMap),
+		context:      context.Copy(),
 	}
 
 	for _, schema := range d.SchemaList {
-		database.schemaSet[schema.Name] = newSchemaState(schema)
+		database.schemaSet[schema.Name] = newSchemaState(schema, context)
 	}
 
 	return database
 }
 
-func newSchemaState(s *Schema) *schemaState {
+func newSchemaState(s *Schema, context *FinderContext) *schemaState {
 	schema := &schemaState{
 		name:         s.Name,
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
 		extensionSet: make(extensionStateMap),
+		context:      context.Copy(),
 	}
 
 	for _, table := range s.TableList {
-		schema.tableSet[table.Name] = newTableState(table)
+		schema.tableSet[table.Name] = newTableState(table, context)
 	}
 
 	for _, view := range s.ViewList {
@@ -63,7 +65,7 @@ func newExtensionState(e *Extension) *extensionState {
 	}
 }
 
-func newTableState(t *Table) *tableState {
+func newTableState(t *Table, context *FinderContext) *tableState {
 	table := &tableState{
 		name:          t.Name,
 		tableType:     t.Type,
@@ -77,6 +79,7 @@ func newTableState(t *Table) *tableState {
 		comment:       t.Comment,
 		columnSet:     make(columnStateMap),
 		indexSet:      make(indexStateMap),
+		context:       context.Copy(),
 	}
 
 	for _, column := range t.ColumnList {
@@ -122,12 +125,16 @@ type databaseState struct {
 	collation    string
 	dbType       db.Type
 	schemaSet    schemaStateMap
+
+	context *FinderContext
 }
 type schemaState struct {
 	name         string
 	tableSet     tableStateMap
 	viewSet      viewStateMap
 	extensionSet extensionStateMap
+
+	context *FinderContext
 }
 type schemaStateMap map[string]*schemaState
 
@@ -152,6 +159,8 @@ type tableState struct {
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
+
+	context *FinderContext
 }
 type tableStateMap map[string]*tableState
 
