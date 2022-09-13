@@ -60,6 +60,12 @@ planList:
       - type: im-integration
       - type: inbox-notification
       - type: activity-log
+    mainFeatureList:
+      - community-support
+      - review-workflow
+      - sql-editor
+      - database-backup-restore
+      - im-integration
   - type: 1
     title: team
     trialDays: 14
@@ -97,6 +103,13 @@ planList:
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
       - type: branding-logo
+    mainFeatureList:
+      - email-support
+      - everything-in-free-plan
+      - rbac
+      - gitlab-login
+      - sql-check-anomaly-detection
+      - review-and-backup-policy
   - type: 2
     title: enterprise
     trialDays: 0
@@ -135,3 +148,8 @@ planList:
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
       - type: branding-logo
+    mainFeatureList:
+      - sla
+      - everything-in-team-plan
+      - multi-tenancy
+      - more-to-come
