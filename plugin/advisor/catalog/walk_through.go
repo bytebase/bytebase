@@ -116,8 +116,106 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.createTable(node)
 	case *tidbast.DropTableStmt:
 		return d.dropTable(node)
+	case *tidbast.AlterTableStmt:
+		return d.alterTable(node)
 	default:
 		return nil
+	}
+}
+
+func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
+	if node.Table.Schema.O != "" && node.Table.Schema.O != d.name {
+		return &WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
+		}
+	}
+
+	schema, exists := d.schemaSet[""]
+	if !exists {
+		schema = d.createSchema("")
+	}
+
+	table, exists := schema.tableSet[node.Table.Name.O]
+	if !exists {
+		if !schema.context.CheckIntegrity {
+			return nil
+		}
+
+		return &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("Table `%s` does not exist", node.Table.Name.O),
+		}
+	}
+
+	for _, spec := range node.Specs {
+		switch spec.Tp {
+		case tidbast.AlterTableOption:
+			for _, option := range spec.Options {
+				switch option.Tp {
+				case tidbast.TableOptionCollate:
+					table.collation = option.StrValue
+				case tidbast.TableOptionComment:
+					table.comment = option.StrValue
+				case tidbast.TableOptionEngine:
+					table.engine = option.StrValue
+				}
+			}
+		case tidbast.AlterTableAddColumns:
+			for _, column := range spec.NewColumns {
+				pos := len(table.columnSet)
+				if spec.Position != nil && len(spec.NewColumns) == 1 {
+					var err error
+					pos, err = table.reorderColumn(spec.Position)
+					if err != nil {
+						return err
+					}
+				}
+				if err := table.createColumn(column, pos); err != nil {
+					return err
+				}
+			}
+			// MySQL can add table constraints in ALTER TABLE ADD COLUMN statements.
+			for _, constraint := range spec.NewConstraints {
+				if err := table.createConstraint(constraint); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// reorderColumn reorders the columns for new column and returns the new column position.
+func (t *tableState) reorderColumn(position *tidbast.ColumnPosition) (int, error) {
+	switch position.Tp {
+	case tidbast.ColumnPositionNone:
+		return len(t.columnSet), nil
+	case tidbast.ColumnPositionFirst:
+		for _, column := range t.columnSet {
+			column.position++
+		}
+		return 1, nil
+	case tidbast.ColumnPositionAfter:
+		columnName := position.RelativeColumn.Name.O
+		column, exist := t.columnSet[columnName]
+		if !exist {
+			return 0, &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: fmt.Sprintf("Column `%s` in table `%s` not exists", columnName, t.name),
+			}
+		}
+		for _, col := range t.columnSet {
+			if col.position > column.position {
+				col.position++
+			}
+		}
+		return column.position + 1, nil
+	}
+	return 0, &WalkThroughError{
+		Type:    ErrorTypeUnsupported,
+		Content: fmt.Sprintf("Unsupported column position type: %d", position.Tp),
 	}
 }
 
