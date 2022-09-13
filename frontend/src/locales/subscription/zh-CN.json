@@ -105,5 +105,22 @@
         "branding-logo": "自定义 Logo"
       }
     }
+  },
+  "main-features": {
+    "community-support": "社区支持",
+    "review-workflow": "Schema 和数据改动审核流",
+    "sql-editor": "SQL 编辑器",
+    "database-backup-restore": "数据库备份和恢复",
+    "im-integration": "IM 集成 (Slack, Discord 等)",
+    "email-support": "邮件支持",
+    "everything-in-free-plan": "所有免费版的功能",
+    "rbac": "RBAC 权限管理",
+    "gitlab-login": "通过 GitLab 登录",
+    "sql-check-anomaly-detection": "高阶 SQL 检查和异常检测",
+    "review-and-backup-policy": "审核和备份策略",
+    "sla": "SLA 支持",
+    "everything-in-team-plan": "所有团队版的功能",
+    "multi-tenancy": "多地域/多租户部署",
+    "more-to-come": "更多功能敬请期待..."
   }
 }
