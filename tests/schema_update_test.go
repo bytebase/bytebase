@@ -282,58 +282,43 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 func TestVCS(t *testing.T) {
 	tests := []struct {
-		name                        string
-		vcsProviderCreator          fake.VCSProviderCreator
-		vcsType                     vcs.Type
-		externalID                  string
-		repositoryFullPath          string
-		newWebhookPushEvent         func(gitFile string) interface{}
-		newWebhookPushEventModified func(gitFile string) interface{}
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(added []string, modified []string) interface{}
 	}{
-		// {
-		// 	name:               "GitLab",
-		// 	vcsProviderCreator: fake.NewGitLab,
-		// 	vcsType:            vcs.GitLabSelfHost,
-		// 	externalID:         "121",
-		// 	repositoryFullPath: "test/schemaUpdate",
-		// 	newWebhookPushEvent: func(gitFile string) interface{} {
-		// 		return gitlab.WebhookPushEvent{
-		// 			ObjectKind: gitlab.WebhookPush,
-		// 			Ref:        "refs/heads/feature/foo",
-		// 			Project: gitlab.WebhookProject{
-		// 				ID: 121,
-		// 			},
-		// 			CommitList: []gitlab.WebhookCommit{
-		// 				{
-		// 					Timestamp: "2021-01-13T13:14:00Z",
-		// 					AddedList: []string{gitFile},
-		// 				},
-		// 			},
-		// 		}
-		// 	},
-		// 	newWebhookPushEventModified: func(gitFile string) interface{} {
-		// 		return gitlab.WebhookPushEvent{
-		// 			ObjectKind: gitlab.WebhookPush,
-		// 			Ref:        "refs/heads/feature/foo",
-		// 			Project: gitlab.WebhookProject{
-		// 				ID: 121,
-		// 			},
-		// 			CommitList: []gitlab.WebhookCommit{
-		// 				{
-		// 					Timestamp:    "2021-01-13T13:14:01Z",
-		// 					ModifiedList: []string{gitFile},
-		// 				},
-		// 			},
-		// 		}
-		// 	},
-		// },
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(added []string, modified []string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp:    "2021-01-13T13:14:00Z",
+							AddedList:    added,
+							ModifiedList: modified,
+						},
+					},
+				}
+			},
+		},
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
 			vcsType:            vcs.GitHubCom,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, modified []string) interface{} {
 				return github.WebhookPushEvent{
 					Ref: "refs/heads/feature/foo",
 					Repository: github.WebhookRepository{
@@ -355,34 +340,8 @@ func TestVCS(t *testing.T) {
 								Name:  "fake_github_author",
 								Email: "fake_github_author@localhost",
 							},
-							Added: []string{gitFile},
-						},
-					},
-				}
-			},
-			newWebhookPushEventModified: func(gitFile string) interface{} {
-				return github.WebhookPushEvent{
-					Ref: "refs/heads/feature/foo",
-					Repository: github.WebhookRepository{
-						ID:       211,
-						FullName: "octocat/Hello-World",
-						HTMLURL:  "https://github.com/octocat/Hello-World",
-					},
-					Sender: github.WebhookSender{
-						Login: "fake_github_author",
-					},
-					Commits: []github.WebhookCommit{
-						{
-							ID:        "fake_github_commit_id",
-							Distinct:  true,
-							Message:   "Fake GitHub commit message",
-							Timestamp: time.Now().Add(time.Minute),
-							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
-							Author: github.WebhookCommitAuthor{
-								Name:  "fake_github_author",
-								Email: "fake_github_author@localhost",
-							},
-							Modified: []string{gitFile},
+							Added:    added,
+							Modified: modified,
 						},
 					},
 				}
@@ -478,7 +437,7 @@ func TestVCS(t *testing.T) {
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
 			a.NoError(err)
 
-			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			payload, err := json.Marshal(test.newWebhookPushEvent([]string{gitFile}, nil))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -515,7 +474,7 @@ func TestVCS(t *testing.T) {
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatementWrong})
 			a.NoError(err)
 
-			payload, err = json.Marshal(test.newWebhookPushEvent(gitFile))
+			payload, err = json.Marshal(test.newWebhookPushEvent([]string{gitFile}, nil))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -538,7 +497,7 @@ func TestVCS(t *testing.T) {
 			// // Simulate Git commits for modified schema update.
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatement})
 			a.NoError(err)
-			payload, err = json.Marshal(test.newWebhookPushEventModified(gitFile))
+			payload, err = json.Marshal(test.newWebhookPushEvent(nil, []string{gitFile}))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
