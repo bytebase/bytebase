@@ -74,14 +74,14 @@ import { useOnboardingGuideStore } from "@/store";
 import { onMounted } from "vue";
 
 onMounted(() => {
-  const colors = ["#ffffff", "#00bb00", "#0000bb"];
+  const colors = ["#2563eb", "#f43f5e", "#f5a30b", "#f5e10b"];
 
   import("canvas-confetti").then(({ default: confetti }) => {
     const end = Date.now() + 3 * 1000;
 
     const framework = () => {
       confetti({
-        particleCount: 3,
+        particleCount: 4,
         angle: 60,
         spread: 60,
         origin: { x: 0 },
@@ -89,7 +89,7 @@ onMounted(() => {
         colors,
       });
       confetti({
-        particleCount: 3,
+        particleCount: 4,
         angle: 120,
         spread: 60,
         origin: { x: 1 },

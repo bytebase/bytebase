@@ -75,7 +75,7 @@
     <!-- Project schemaMigrationType selector -->
     <div v-if="isDev">
       <div class="textlabel">
-        {{ $t("project.settings.schema-migration-type") }}
+        {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
       </div>
       <BBSelect
@@ -98,7 +98,7 @@
         </template>
       </BBSelect>
     </div>
-    <div v-if="isProjectSchemaMigrationTypeDDL">
+    <div>
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>

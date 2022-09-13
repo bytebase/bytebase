@@ -1,4 +1,4 @@
-{{- $host := .Values.bytebase.option.host -}}
+{{- $external_url := .Values.bytebase.option.external_url -}}
 {{- $port := .Values.bytebase.option.port -}}
 {{- $pg := .Values.bytebase.option.pg -}}
 {{- $data := .Values.bytebase.option.data -}}
@@ -29,10 +29,10 @@ spec:
             [
               "--data",
               {{ $data | quote }},
-              "--host",
-              {{ $host | quote }},
               "--port",
               {{ $port | quote }},
+              "--external-url",
+              {{ $external-url | quote }},
               "--pg",
               {{ $pg | quote}},
             ]

@@ -1,24 +1,27 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug Dev Binary",
-            "type": "go",
-            "request": "launch",
-            "mode": "exec",
-            "program": "${workspaceFolder}/.air/bytebase",
-            "args": [
-                "--port", "8080",
-                "--frontend-port", "3000",
-                "--data", "${workspaceFolder}/.air",
-            ]
-        },
-        {
-            "name": "Attach to Process",
-            "type": "go",
-            "request": "attach",
-            "mode": "local",
-            "processId": 0
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Dev Binary",
+      "type": "go",
+      "request": "launch",
+      "mode": "exec",
+      "program": "${workspaceFolder}/.air/bytebase",
+      "args": [
+        "--port",
+        "8080",
+        "--external-url",
+        "http://localhost:3000",
+        "--data",
+        "${workspaceFolder}/.air"
+      ]
+    },
+    {
+      "name": "Attach to Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": 0
+    }
+  ]
 }

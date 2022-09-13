@@ -238,6 +238,7 @@
     :in-progress="
       shouldShowCreateEmbeddedPostgresButton && isCreatingEmbeddedInstance
     "
+    :progress-text="$t('common.creating')"
     @ok="handleWarningModalOkClick"
     @cancel="state.showCreateInstanceWarningModal = false"
   ></BBAlert>

@@ -114,9 +114,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	// Display config
 	log.Info("-----Config BEGIN-----")
 	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
-	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
-	log.Info(fmt.Sprintf("datastore=%s:%d", prof.BackendHost, prof.DatastorePort))
-	log.Info(fmt.Sprintf("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort))
+	log.Info(fmt.Sprintf("externalURL=%s", prof.ExternalURL))
 	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
 	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
 	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
@@ -149,6 +147,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
 	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
+	log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
 	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
 	log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
 	log.Info("-----Embedded Postgres Config END-----")
@@ -457,7 +456,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 }
 
 // Run will run the server.
-func (s *Server) Run(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 	if !s.profile.Readonly {
@@ -482,7 +481,7 @@ func (s *Server) Run(ctx context.Context) error {
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	return s.e.Start(fmt.Sprintf(":%d", s.profile.BackendPort))
+	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 
 // Shutdown will shut down the server.

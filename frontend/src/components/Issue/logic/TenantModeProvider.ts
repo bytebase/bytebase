@@ -84,7 +84,7 @@ export default defineComponent({
     };
 
     // We are never allowed to "apply statement to other stages" in tenant mode.
-    const allowApplyStatementToOtherStages = computed(() => false);
+    const allowApplyStatementToOtherTasksOtherTasks = computed(() => false);
 
     const doCreate = () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
@@ -106,8 +106,8 @@ export default defineComponent({
       allowEditStatement,
       selectedStatement,
       updateStatement,
-      allowApplyStatementToOtherStages,
-      applyStatementToOtherStages: errorAssertion,
+      allowApplyStatementToOtherTasksOtherTasks,
+      applyStatementToOtherTasksOtherTasks: errorAssertion,
       doCreate,
     };
     provideIssueLogic(logic);
