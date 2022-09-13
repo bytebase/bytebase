@@ -1470,8 +1470,8 @@
       "click-new-project": "Click \"New Project\" to create a project",
       "click-new-database": "Click \"New Database\" to create a database",
       "click-approve": "Click \"Approve\" to perform the issue",
-      "wait-issue-finished": "...waiting for the issue finished",
-      "back-to-home": "Back to home",
+      "wait-issue-finished": "waiting for the issue finished...",
+      "back-to-home": "Back to Home",
       "finished-dialog": {
         "you-have-done": "You have done:",
         "add-an-instance": "Add an instance",

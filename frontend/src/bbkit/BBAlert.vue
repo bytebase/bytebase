@@ -91,7 +91,12 @@
           class="mt-5 flex"
           :class="inProgress ? 'justify-between' : 'justify-end'"
         >
-          <BBSpin v-if="inProgress" />
+          <div
+            v-if="inProgress"
+            class="flex flex-row justify-start items-center"
+          >
+            <BBSpin />{{ progressText }}
+          </div>
           <div>
             <button
               type="button"
@@ -134,6 +139,7 @@ const props = withDefaults(
     okText?: string;
     cancelText?: string;
     inProgress?: boolean;
+    progressText?: string;
     payload?: Payload; // Any payload pass through to "ok" and "cancel" events
   }>(),
   {
@@ -142,6 +148,7 @@ const props = withDefaults(
     okText: "bbkit.common.ok",
     cancelText: "bbkit.common.cancel",
     inProgress: false,
+    progressText: "",
     payload: undefined,
   }
 );
