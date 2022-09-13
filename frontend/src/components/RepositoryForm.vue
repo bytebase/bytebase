@@ -98,7 +98,7 @@
         </template>
       </BBSelect>
     </div>
-    <div v-if="isProjectSchemaMigrationTypeDDL">
+    <div>
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>

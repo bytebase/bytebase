@@ -514,12 +514,35 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+	// Having no schema info indicates that the file is not a schema file (e.g.
+	// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 	if schemaInfo == nil {
-		log.Debug("Ignored non-schema file for SDL",
-			zap.String("file", file),
-		)
-		return nil, nil
+		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+		if err != nil {
+			log.Error("Failed to parse migration info",
+				zap.Int("project", repo.ProjectID),
+				zap.Any("pushEvent", pushEvent),
+				zap.String("file", file),
+				zap.Error(err),
+			)
+			return nil, nil
+		}
+
+		// We only allow DML files when the project uses the state-based migration.
+		if migrationInfo.Type != db.Data {
+			s.createIgnoredFileActivity(
+				ctx,
+				repo.ProjectID,
+				pushEvent,
+				file,
+				errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type),
+			)
+			return nil, nil
+		}
+
+		return migrationInfo, s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, nil, file, fileType, webhookEndpointID, migrationInfo)
 	}
 
 	dbName := schemaInfo["DB_NAME"]
@@ -608,29 +631,18 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	return migrationInfo, updateSchemaDetails
 }
 
-// prepareIssueFromPushEventDDL returns the migration info and a list of update
-// schema details derived from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+// prepareIssueFromPushEventDDL returns a list of update schema details derived
+// from the given push event for DDL.
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) []*api.UpdateSchemaDetail {
 	// TODO(dragonly): handle modified file, try to update issue's SQL statement if the task is pending/failed.
 	if fileType != fileItemTypeAdded || schemaInfo != nil {
 		log.Debug("Ignored non-added or schema file for non-SDL",
 			zap.String("file", file),
 			zap.String("type", string(fileType)),
 		)
-		return nil, nil
+		return nil
 	}
 
-	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-	migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-	if err != nil {
-		log.Error("Failed to parse migration info",
-			zap.Int("project", repo.ProjectID),
-			zap.Any("pushEvent", pushEvent),
-			zap.String("file", file),
-			zap.Error(err),
-		)
-		return nil, nil
-	}
 	migrationInfo.Creator = pushEvent.FileCommit.AuthorName
 	miPayload := &db.MigrationInfoPayload{
 		VCSPushEvent: pushEvent,
@@ -643,7 +655,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			zap.String("file", file),
 			zap.Error(err),
 		)
-		return nil, nil
+		return nil
 	}
 	migrationInfo.Payload = string(bytes)
 
@@ -656,7 +668,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			file,
 			errors.Wrap(err, "Failed to read file content"),
 		)
-		return nil, nil
+		return nil
 	}
 
 	var updateSchemaDetails []*api.UpdateSchemaDetail
@@ -677,7 +689,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 				file,
 				errors.Wrap(err, "Failed to find project databases"),
 			)
-			return nil, nil
+			return nil
 		}
 
 		for _, database := range databases {
@@ -689,7 +701,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			)
 		}
 	}
-	return migrationInfo, updateSchemaDetails
+	return updateSchemaDetails
 }
 
 // createIssueFromPushEvent attempts to create a new issue for the given file of
@@ -729,9 +741,20 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	var migrationInfo *db.MigrationInfo
 	var updateSchemaDetails []*api.UpdateSchemaDetail
 	if repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
-		migrationInfo, updateSchemaDetails = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, webhookEndpointID)
+		migrationInfo, updateSchemaDetails = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
 	} else {
-		migrationInfo, updateSchemaDetails = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
+		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+		migrationInfo, err = db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+		if err != nil {
+			log.Error("Failed to parse migration info",
+				zap.Int("project", repo.ProjectID),
+				zap.Any("pushEvent", pushEvent),
+				zap.String("file", file),
+				zap.Error(err),
+			)
+			return "", false, nil
+		}
+		updateSchemaDetails = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID, migrationInfo)
 	}
 
 	if migrationInfo == nil || len(updateSchemaDetails) == 0 {
