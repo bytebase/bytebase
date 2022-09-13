@@ -469,7 +469,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(bookSchemaSQLResult, result)
 
-			// Simulate Git commits for failed schema update.
+			// Simulate Git commits for failed date update.
 			gitFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatementWrong})
 			a.NoError(err)
@@ -494,7 +494,7 @@ func TestVCS(t *testing.T) {
 			a.Error(err)
 			a.Equal(api.TaskFailed, status)
 
-			// // Simulate Git commits for modified schema update.
+			// Simulate Git commits for a correct modified date update.
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatement})
 			a.NoError(err)
 			payload, err = json.Marshal(test.newWebhookPushEvent(nil, []string{gitFile}))
