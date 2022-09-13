@@ -219,17 +219,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				)
 			}
 
-			if repo.Project.SchemaMigrationType == api.ProjectSchemaMigrationTypeSDL {
-				for _, modified := range commit.Modified {
-					files = append(files,
-						fileItem{
-							name:     modified,
-							itemType: fileItemTypeModified,
-						},
-					)
-				}
-			}
-
 			for _, file := range files {
 				createdMessage, created, httpErr := s.createIssueFromPushEvent(
 					ctx,
