@@ -15,6 +15,9 @@
       {{ $t("banner.readonly") }}
     </div>
   </template>
+  <template v-if="shouldShowExternalUrlBanner">
+    <BannerExternalUrl />
+  </template>
 </template>
 
 <script lang="ts" setup>
@@ -29,6 +32,7 @@ import {
 import { isDBAOrOwner } from "@/utils";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
+import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 
 const actuatorStore = useActuatorStore();
@@ -36,7 +40,8 @@ const currentUser = useCurrentUser();
 const debugStore = useDebugStore();
 const subscriptionStore = useSubscriptionStore();
 
-const { isDemo, isReadonly } = storeToRefs(actuatorStore);
+const { isDemo, isReadonly, needConfigureExternalUrl } =
+  storeToRefs(actuatorStore);
 const { isDebug } = storeToRefs(debugStore);
 const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 
@@ -63,5 +68,9 @@ const shouldShowSubscriptionBanner = computed(() => {
 
 const shouldShowReadonlyBanner = computed(() => {
   return !isDemo.value && isReadonly.value;
+});
+
+const shouldShowExternalUrlBanner = computed(() => {
+  return needConfigureExternalUrl.value;
 });
 </script>

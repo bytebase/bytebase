@@ -5,6 +5,7 @@
       :key="guide.title"
       :title="guide.title"
       :position="guide.position"
+      :loading="guide.showLoading || false"
       :target-element-selector="guide.targetElementSelector"
     ></GuideDialog>
   </template>
@@ -30,6 +31,16 @@ import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+
+type GuideData = {
+  title: string;
+  description: string;
+  position: string;
+  targetElementSelector: string;
+  route: string;
+  expectedUrl: any;
+  showLoading?: boolean;
+};
 
 const guideStepList = computed(() => {
   return [
@@ -92,6 +103,7 @@ const guideStepList = computed(() => {
         position: "center",
         targetElementSelector: "#app",
         expectedUrl: /.*/,
+        showLoading: true,
       },
     ],
     // guides for `back to home`
@@ -105,7 +117,7 @@ const guideStepList = computed(() => {
         expectedUrl: /^\/.+/,
       },
     ],
-  ];
+  ] as GuideData[][];
 });
 
 const instanceList = useInstanceList();

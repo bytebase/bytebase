@@ -555,7 +555,7 @@ func TestVCS_SDL(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile string) interface{}
+		newWebhookPushEvent func(added []string, modified []string) interface{}
 	}{
 		{
 			name:               "GitLab",
@@ -563,7 +563,7 @@ func TestVCS_SDL(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, modified []string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
@@ -573,7 +573,8 @@ func TestVCS_SDL(t *testing.T) {
 					CommitList: []gitlab.WebhookCommit{
 						{
 							Timestamp:    "2021-01-13T13:14:00Z",
-							ModifiedList: []string{gitFile},
+							AddedList:    added,
+							ModifiedList: modified,
 						},
 					},
 				}
@@ -585,7 +586,7 @@ func TestVCS_SDL(t *testing.T) {
 			vcsType:            vcs.GitHubCom,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, modified []string) interface{} {
 				return github.WebhookPushEvent{
 					Ref: "refs/heads/feature/foo",
 					Repository: github.WebhookRepository{
@@ -607,7 +608,8 @@ func TestVCS_SDL(t *testing.T) {
 								Name:  "fake_github_author",
 								Email: "fake_github_author@localhost",
 							},
-							Modified: []string{gitFile},
+							Added:    added,
+							Modified: modified,
 						},
 					},
 				}
@@ -675,9 +677,9 @@ func TestVCS_SDL(t *testing.T) {
 			// Create a project
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name:                "Test VCS Project",
-					Key:                 "TestVCSSchemaUpdate",
-					SchemaMigrationType: api.ProjectSchemaMigrationTypeSDL,
+					Name:             "Test VCS Project",
+					Key:              "TestVCSSchemaUpdate",
+					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
 				},
 			)
 			a.NoError(err)
@@ -725,15 +727,15 @@ func TestVCS_SDL(t *testing.T) {
 			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil /* labelMap */)
 			a.NoError(err)
 
-			// Simulate Git commits for schema update to create a new table "book".
-			const gitFile = "bbtest/Prod/.testVCSSchemaUpdate__LATEST.sql"
+			// Simulate Git commits for schema update to create a new table "users".
+			const schemaFile = "bbtest/Prod/.testVCSSchemaUpdate__LATEST.sql"
 			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
-				gitFile: schemaFileContent,
+				schemaFile: schemaFileContent,
 			})
 			a.NoError(err)
 
-			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			payload, err := json.Marshal(test.newWebhookPushEvent(nil /* added */, []string{schemaFile}))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -750,6 +752,40 @@ func TestVCS_SDL(t *testing.T) {
 			a.Len(issues, 1)
 			issue := issues[0]
 			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Simulate Git commits for data update to the table "users".
+			const dataFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				dataFile: `INSERT INTO users (id) VALUES (1);`,
+			})
+			a.NoError(err)
+
+			payload, err = json.Marshal(test.newWebhookPushEvent([]string{dataFile}, nil /* modified */))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get data update issue
+			openStatus = []api.IssueStatus{api.IssueOpen}
+			issues, err = ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: openStatus,
+				},
+			)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue = issues[0]
+			status, err = ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
 			_, err = ctl.patchIssueStatus(
@@ -784,15 +820,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 `
-			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
-			a.NoError(err)
-			wantHistories := []api.MigrationHistory{
-				{
-					Database: databaseName,
-					Source:   db.VCS,
-					Type:     db.Migrate,
-					Status:   db.Done,
-					Schema: `SET statement_timeout = 0;
+			const updatedSchema = `SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -845,7 +873,25 @@ ALTER TABLE ONLY public.projects
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
-`,
+`
+
+			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
+			a.NoError(err)
+			wantHistories := []api.MigrationHistory{
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Data,
+					Status:     db.Done,
+					Schema:     updatedSchema,
+					SchemaPrev: updatedSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     updatedSchema,
 					SchemaPrev: initialSchema,
 				},
 				{

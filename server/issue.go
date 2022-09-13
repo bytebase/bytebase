@@ -838,6 +838,7 @@ func getUpdateTask(database *api.Database, c api.UpdateSchemaContext, d *api.Upd
 		taskName = fmt.Sprintf("Update %q data", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
+	payload.MigrationType = c.MigrationType
 	payload.Statement = d.Statement
 	payload.SchemaVersion = schemaVersion
 	if c.VCSPushEvent != nil {
@@ -865,6 +866,7 @@ func getUpdateTask(database *api.Database, c api.UpdateSchemaContext, d *api.Upd
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
+		MigrationType:     c.MigrationType,
 		Payload:           string(bytes),
 	}, nil
 }
@@ -1041,6 +1043,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
 		Statement:         detail.Statement,
 		EarliestAllowedTs: detail.EarliestAllowedTs,
+		MigrationType:     db.Migrate,
 		Payload:           string(bytesSync),
 	})
 

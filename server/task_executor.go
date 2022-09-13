@@ -183,7 +183,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 
 	// We write back the latest schema after migration for VCS-based projects if the
 	// schema path template is specified and the schema migration type is not SDL.
-	writeBack := (vcsPushEvent != nil) && (repo.Project.SchemaMigrationType != api.ProjectSchemaMigrationTypeSDL) && (repo.SchemaPathTemplate != "")
+	writeBack := (vcsPushEvent != nil) && (repo.Project.SchemaChangeType != api.ProjectSchemaChangeTypeSDL) && (repo.SchemaPathTemplate != "")
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
 		return true, nil, err
@@ -238,7 +238,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.profile.FrontendHost, server.profile.FrontendPort, api.IssueSlug(issue), task.StageID)
+			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", server.profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
 		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)

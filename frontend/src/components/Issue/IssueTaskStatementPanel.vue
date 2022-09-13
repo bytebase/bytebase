@@ -12,13 +12,13 @@
         <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
       <button
-        v-if="allowApplyStatementToOtherStages"
+        v-if="allowApplyStatementToOtherTasks"
         :disabled="isEmpty(state.editStatement)"
         type="button"
         class="btn-small"
-        @click.prevent="applyStatementToOtherStages(state.editStatement)"
+        @click.prevent="applyStatementToOtherTasks(state.editStatement)"
       >
-        {{ $t("issue.apply-to-other-stages") }}
+        {{ $t("issue.apply-to-other-tasks") }}
       </button>
     </div>
 
@@ -214,8 +214,8 @@ export default defineComponent({
       selectedDatabase,
       selectedStatement: statement,
       updateStatement,
-      allowApplyStatementToOtherStages,
-      applyStatementToOtherStages,
+      allowApplyStatementToOtherTasks,
+      applyStatementToOtherTasks,
     } = useIssueLogic();
 
     const uiStateStore = useUIStateStore();
@@ -388,7 +388,13 @@ export default defineComponent({
       useRepositoryStore()
         .fetchRepositoryByProjectId(issueEntity.project.id)
         .then((repository: Repository) => {
-          window.open(baseDirectoryWebUrl(repository), "_blank");
+          window.open(
+            baseDirectoryWebUrl(repository, {
+              DB_NAME: selectedDatabase.value?.name,
+              ENV_NAME: selectedDatabase.value?.instance.environment.name,
+            }),
+            "_blank"
+          );
 
           state.showVCSGuideModal = false;
         });
@@ -399,13 +405,13 @@ export default defineComponent({
       create,
       allowEditStatement,
       statement,
-      allowApplyStatementToOtherStages,
+      allowApplyStatementToOtherTasks,
       dialect,
       formatOnSave,
       state,
       editorRef,
       updateStatement,
-      applyStatementToOtherStages,
+      applyStatementToOtherTasks,
       beginEdit,
       saveEdit,
       cancelEdit,

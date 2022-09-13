@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.7"
 
 services:
   bytebase:
@@ -11,15 +11,7 @@ services:
     # # Uncomment the following lines to persist data
     # volumes:
     #   - ~/.bytebase/data:/var/opt/bytebase
-    command:
-      [
-        "--data",
-        "/var/opt/bytebase",
-        "--host",
-        "http://localhost",
-        "--port",
-        "5678"
-      ]
+    command: ["--data", "/var/opt/bytebase", "--port", "5678"]
 
   employee-prod:
     image: bytebase/sample-database:mysql-employee-small
