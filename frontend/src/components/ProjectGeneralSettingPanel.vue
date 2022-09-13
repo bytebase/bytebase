@@ -42,24 +42,24 @@
     <div v-if="isDev">
       <dl class="">
         <div class="textlabel">
-          {{ $t("project.settings.schema-migration-type") }}
+          {{ $t("project.settings.schema-change-type") }}
           <span class="text-red-600">*</span>
         </div>
         <BBSelect
           id="schemamigrationtype"
-          :selected-item="state.schemaMigrationType"
+          :selected-item="state.schemaChangeType"
           :item-list="['DDL', 'SDL']"
           class="mt-1"
           @select-item="
-            (type: SchemaMigrationType) => {
-              state.schemaMigrationType = type;
+            (type: SchemaChangeType) => {
+              state.schemaChangeType = type;
             }
           "
         >
           <template #menuItem="{ item }">
             {{
               $t(
-                `project.settings.select-schema-migration-type-${item.toLowerCase()}`
+                `project.settings.select-schema-change-type-${item.toLowerCase()}`
               )
             }}
           </template>
@@ -88,13 +88,13 @@ import {
   DEFAULT_PROJECT_ID,
   Project,
   ProjectPatch,
-  SchemaMigrationType,
+  SchemaChangeType,
 } from "../types";
 import { pushNotification, useProjectStore } from "@/store";
 
 interface LocalState {
   name: string;
-  schemaMigrationType: SchemaMigrationType;
+  schemaChangeType: SchemaChangeType;
 }
 
 export default defineComponent({
@@ -115,7 +115,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       name: props.project.name,
-      schemaMigrationType: props.project.schemaMigrationType,
+      schemaChangeType: props.project.schemaChangeType,
     });
 
     const allowSave = computed((): boolean => {
@@ -123,7 +123,7 @@ export default defineComponent({
         props.project.id != DEFAULT_PROJECT_ID &&
         !isEmpty(state.name) &&
         (state.name !== props.project.name ||
-          state.schemaMigrationType != props.project.schemaMigrationType)
+          state.schemaChangeType != props.project.schemaChangeType)
       );
     });
 
@@ -133,8 +133,8 @@ export default defineComponent({
       if (state.name !== props.project.name) {
         projectPatch.name = state.name;
       }
-      if (state.schemaMigrationType !== props.project.schemaMigrationType) {
-        projectPatch.schemaMigrationType = state.schemaMigrationType;
+      if (state.schemaChangeType !== props.project.schemaChangeType) {
+        projectPatch.schemaChangeType = state.schemaChangeType;
       }
 
       projectStore
@@ -149,7 +149,7 @@ export default defineComponent({
             title: t("project.settings.success-updated"),
           });
           state.name = updatedProject.name;
-          state.schemaMigrationType = updatedProject.schemaMigrationType;
+          state.schemaChangeType = updatedProject.schemaChangeType;
         });
     };
 

@@ -1065,8 +1065,8 @@
       "view-vcs-member": "View members in VCS",
       "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync.",
       "schema-change-type": "Schema change type",
-      "select-schema-migration-type-ddl": "Migration-based",
-      "select-schema-migration-type-sdl": "State-based",
+      "select-schema-change-type-ddl": "Migration-based",
+      "select-schema-change-type-sdl": "State-based",
       "schema-path-template-sdl-description": "The schema file that contains the desired state of the database schema. Bytebase creates new migrations for any discrepancy found between the desired state and the actual database schema."
     },
     "mode": {

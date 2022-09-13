@@ -72,7 +72,7 @@
         :disabled="!allowEdit"
       />
     </div>
-    <!-- Project schemaMigrationType selector -->
+    <!-- Project schemaChangeType selector -->
     <div v-if="isDev">
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
@@ -80,19 +80,19 @@
       </div>
       <BBSelect
         id="schemamigrationtype"
-        :selected-item="schemaMigrationType"
+        :selected-item="schemaChangeType"
         :item-list="['DDL', 'SDL']"
         class="mt-1"
         @select-item="
           (type: string) => {
-            $emit('change-schema-migration-type', type);
+            $emit('change-schema-change-type', type);
           }
         "
       >
         <template #menuItem="{ item }">
           {{
             $t(
-              `project.settings.select-schema-migration-type-${item.toLowerCase()}`
+              `project.settings.select-schema-change-type-${item.toLowerCase()}`
             )
           }}
         </template>
@@ -165,7 +165,7 @@
         >
       </div>
       <div class="mt-1 textinfolabel">
-        <template v-if="isProjectSchemaMigrationTypeDDL">
+        <template v-if="isProjectSchemaChangeTypeDDL">
           {{ $t("repository.schema-writeback-description") }}
           <span class="font-medium text-main">{{
             $t("repository.schema-writeback-protected-branch")
@@ -236,7 +236,7 @@ import {
   ExternalRepositoryInfo,
   Project,
   RepositoryConfig,
-  SchemaMigrationType,
+  SchemaChangeType,
   VCSType,
 } from "@/types";
 
@@ -280,12 +280,12 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Project>,
     },
-    schemaMigrationType: {
+    schemaChangeType: {
       required: true,
-      type: String as PropType<SchemaMigrationType>,
+      type: String as PropType<SchemaChangeType>,
     },
   },
-  emits: ["change-repository", "change-schema-migration-type"],
+  emits: ["change-repository", "change-schema-change-type"],
   setup(props) {
     const state = reactive<LocalState>({});
 
@@ -293,8 +293,8 @@ export default defineComponent({
       return props.project.tenantMode === "TENANT";
     });
 
-    const isProjectSchemaMigrationTypeDDL = computed(() => {
-      return (props.project.schemaMigrationType || "DDL") === "DDL";
+    const isProjectSchemaChangeTypeDDL = computed(() => {
+      return (props.schemaChangeType || "DDL") === "DDL";
     });
 
     const sampleFilePath = (
@@ -389,7 +389,7 @@ export default defineComponent({
       fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
       state,
-      isProjectSchemaMigrationTypeDDL,
+      isProjectSchemaChangeTypeDDL,
       sampleFilePath,
       sampleSchemaPath,
     };
