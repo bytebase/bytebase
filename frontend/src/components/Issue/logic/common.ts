@@ -167,6 +167,7 @@ export const useCommonLogic = () => {
       return false;
     }
     const taskList = flattenTaskList<TaskCreate>(issue.value);
+    // Allowed when more than one tasks need SQL statement.
     const count = taskList.filter((task) =>
       TaskTypeWithStatement.includes(task.type)
     ).length;
