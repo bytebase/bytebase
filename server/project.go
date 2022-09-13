@@ -260,11 +260,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		switch vcs.Type {
 		case vcsPlugin.GitLabSelfHost:
 			webhookCreate := gitlab.WebhookCreate{
-				URL:                    fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
-				SecretToken:            repositoryCreate.WebhookSecretToken,
-				PushEvents:             true,
-				PushEventsBranchFilter: "",    // For consistency with GitHub, we leave blank for all.
-				EnableSSLVerification:  false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+				URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
+				SecretToken:           repositoryCreate.WebhookSecretToken,
+				PushEvents:            true,
+				EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
 			}
 			webhookCreatePayload, err = json.Marshal(webhookCreate)
 			if err != nil {
