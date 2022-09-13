@@ -528,7 +528,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 			return nil, nil
 		}
 
-		// We only allow DML files when the project uses the state-based migration
+		// We only allow DML files when the project uses the state-based migration.
 		if migrationInfo.Type != db.Data {
 			s.createIgnoredFileActivity(
 				ctx,
