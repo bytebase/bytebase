@@ -515,6 +515,8 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
 func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+	// Having no schema info indicates that the file is not a schema file (e.g.
+	// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 	if schemaInfo == nil {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
