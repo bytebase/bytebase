@@ -40,8 +40,8 @@
         <RepositoryConfigPanel
           :config="state.config"
           :project="project"
-          @change-schema-migration-type="
-            (type) => (state.config.schemaMigrationType = type)
+          @change-schema-change-type="
+            (type) => (state.config.schemaChangeType = type)
           "
         />
       </template>
@@ -158,7 +158,7 @@ export default defineComponent({
             ? DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE
             : DEFAULT_SHEET_PATH_TEMPLATE,
         },
-        schemaMigrationType: props.project.schemaMigrationType,
+        schemaChangeType: props.project.schemaChangeType,
       },
       currentStep: CHOOSE_PROVIDER_STEP,
     });
@@ -189,13 +189,13 @@ export default defineComponent({
           externalId = state.config.repositoryInfo.fullPath;
         }
 
-        // Update project schemaMigrationType field firstly.
+        // Update project schemaChangeType field firstly.
         if (
           isDev() &&
-          state.config.schemaMigrationType !== props.project.schemaMigrationType
+          state.config.schemaChangeType !== props.project.schemaChangeType
         ) {
           const projectPatch: ProjectPatch = {
-            schemaMigrationType: state.config.schemaMigrationType,
+            schemaChangeType: state.config.schemaChangeType,
           };
           await useProjectStore().patchProject({
             projectId: props.project.id,
