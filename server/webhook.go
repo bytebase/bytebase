@@ -683,6 +683,8 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		// Find tasks related to database and payload.pushEvent.fileCommit.added=fileName.
 		// then use server.patchTask() to patch the task.
 		if fileType == fileItemTypeModified {
+			// Force executing the migration even if there's a pending or failed migration history record.
+			migrationInfo.Force = true
 			for _, database := range databases {
 				find := &api.TaskFind{
 					DatabaseID: &database.ID,
@@ -731,6 +733,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 						log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
 						return nil, nil
 					}
+					// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
 					log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
 					if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
 						log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))

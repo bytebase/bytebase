@@ -270,6 +270,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				// get migration history version conflict if the previous task has been attempted.
 				payload.SchemaVersion = common.DefaultMigrationVersion()
 			}
+			//  else if taskPatch.ForceMigration {
+			// 	payload.MigrationInfo.Force = true
+			// }
 			bytes, err := json.Marshal(payload)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)

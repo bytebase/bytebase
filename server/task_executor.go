@@ -126,7 +126,10 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	}
 	// We will force migration for baseline and migrate type of migrations.
 	// This usually happens when the previous attempt fails and the client retries the migration.
-	if mi.Type == db.Baseline || mi.Type == db.Migrate {
+	// We also force migration for VCS migrations, which is usually a modified file to correct a former wrong migration commit.
+	if mi.Type == db.Baseline ||
+		mi.Type == db.Migrate ||
+		vcsPushEvent != nil {
 		mi.Force = true
 	}
 
