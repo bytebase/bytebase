@@ -103,7 +103,7 @@ export function baseDirectoryWebUrl(
     }
   }
   if (url) {
-    // BYT-1344. Replace the patterns in the filePathTemplate if possible.
+    // Replace the patterns in the filePathTemplate if possible.
     const segments = repository.filePathTemplate.split("/");
     segments.pop(); // exclude the last one, it's the filename.
     // Try to replace the segments from left to right.
