@@ -67,7 +67,7 @@ import {
   unknown,
   VCS,
 } from "../types";
-import { isDev, projectSlug } from "../utils";
+import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useProjectStore, useRepositoryStore } from "@/store";
 
