@@ -61,11 +61,6 @@ type WebhookCreate struct {
 	EnableSSLVerification bool `json:"enable_ssl_verification"`
 }
 
-// WebhookUpdate represents a GitLab API request for updating a new webhook.
-type WebhookUpdate struct {
-	URL string `json:"url"`
-}
-
 // WebhookProject is the API message for webhook project.
 type WebhookProject struct {
 	ID       int    `json:"id"`
