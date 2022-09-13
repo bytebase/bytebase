@@ -469,7 +469,7 @@
     "subscribe": "订阅",
     "unsubscribe": "取消订阅",
     "subscriber": "没有订阅者 | 1 个订阅者 | {n} 个订阅者",
-    "apply-to-other-stages": "@:{'common.apply'}到其他@:{'common.stage'}",
+    "apply-to-other-tasks": "@:{'common.apply'}到其他@:{'common.task'}",
     "add-sql-statement": "添加 SQL @:{'common.statement'}…",
     "optional-add-sql-statement": "（可选）添加 SQL @:{'common.statement'}…",
     "edit-description": "编辑描述",
