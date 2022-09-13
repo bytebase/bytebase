@@ -260,11 +260,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		switch vcs.Type {
 		case vcsPlugin.GitLabSelfHost:
 			webhookCreate := gitlab.WebhookCreate{
-				URL:                    fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
-				SecretToken:            repositoryCreate.WebhookSecretToken,
-				PushEvents:             true,
-				PushEventsBranchFilter: repositoryCreate.BranchFilter,
-				EnableSSLVerification:  false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+				URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
+				SecretToken:           repositoryCreate.WebhookSecretToken,
+				PushEvents:            true,
+				EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
 			}
 			webhookCreatePayload, err = json.Marshal(webhookCreate)
 			if err != nil {
@@ -428,65 +427,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
-		}
-
-		if repoPatch.BranchFilter != nil {
-			vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
-			}
-			if vcs == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
-			}
-			// Update the webhook after we successfully update the repository.
-			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
-			// If we update it before we update the repository, then if the repository update fails, then the reconcile process will reconcile the webhook to the pre-update state which is likely not intended.
-			var webhookUpdatePayload []byte
-			switch vcs.Type {
-			case vcsPlugin.GitLabSelfHost:
-				webhookUpdate := gitlab.WebhookUpdate{
-					URL:                    fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, updatedRepo.WebhookEndpointID),
-					PushEventsBranchFilter: *repoPatch.BranchFilter,
-				}
-				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
-				}
-			case vcsPlugin.GitHubCom:
-				webhookUpdate := github.WebhookCreateOrUpdate{
-					Config: github.WebhookConfig{
-						URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, updatedRepo.WebhookEndpointID),
-						ContentType: "json",
-						Secret:      updatedRepo.WebhookSecretToken,
-						InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryPatch
-					},
-					Events: []string{"push"},
-				}
-				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
-				}
-			}
-
-			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).PatchWebhook(
-				ctx,
-				common.OauthContext{
-					// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
-				},
-				vcs.InstanceURL,
-				repo.ExternalID,
-				repo.ExternalWebhookID,
-				webhookUpdatePayload,
-			)
-
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

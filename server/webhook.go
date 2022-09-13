@@ -63,6 +63,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
 		}
 
+		if branch, err := parseBranchNameFromRefs(pushEvent.Ref); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref").SetInternal(err)
+		} else if branch != repo.BranchFilter {
+			return c.String(http.StatusOK, "")
+		}
+
 		if repo.VCS == nil {
 			err := errors.Errorf("VCS not found for ID: %v", repo.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
@@ -176,7 +182,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
 
-		if branch, err := parseBranchNameFromGitHubRefs(pushEvent.Ref); err != nil {
+		if branch, err := parseBranchNameFromRefs(pushEvent.Ref); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref").SetInternal(err)
 		} else if branch != repo.BranchFilter {
 			return c.String(http.StatusOK, "")
@@ -284,10 +290,10 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-// parseBranchNameFromGitHubRefs is for GitHub.
-// GitLab webhook has the option to listen to push events to a certain branch while GitHub doesn't. So we need to manually parse the branch name from the refs field in the request.
+// parseBranchNameFromRefs parses the branch name from the refs field in the request.
 // https://docs.github.com/en/rest/git/refs
-func parseBranchNameFromGitHubRefs(ref string) (string, error) {
+// https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html#push-events
+func parseBranchNameFromRefs(ref string) (string, error) {
 	expectedPrefix := "refs/heads/"
 	if !strings.HasPrefix(ref, expectedPrefix) || len(expectedPrefix) == len(ref) {
 		log.Debug("ref is not prefix with expected prefix", zap.String("escaped ref", common.EscapeForLogging(ref)), zap.String("expected prefix", expectedPrefix))

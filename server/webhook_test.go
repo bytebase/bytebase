@@ -507,7 +507,7 @@ func TestParseBranchNameFromGitHubRefs(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		branch, err := parseBranchNameFromGitHubRefs(test.refs)
+		branch, err := parseBranchNameFromRefs(test.refs)
 		if test.err {
 			assert.Error(t, err)
 		} else {
