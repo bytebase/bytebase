@@ -8,22 +8,7 @@ import (
 // Catalog is the service for catalog.
 type Catalog interface {
 	GetDatabase() *Database
-}
-
-// Context is the context for catalog.
-type Context struct {
-	// CheckCatalog defines the policy for presence detection.
-	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
-	// It's hard to distinguish these cases from exactly empty database.
-	// So we need CheckCatalog to distinguish them.
-	CheckCatalog bool
-}
-
-// Copy returns the deep copy.
-func (ctx *Context) Copy() *Context {
-	return &Context{
-		CheckCatalog: ctx.CheckCatalog,
-	}
+	GetFinder() *Finder
 }
 
 // Database is the database.

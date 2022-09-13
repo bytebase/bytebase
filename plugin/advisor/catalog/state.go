@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-func newDatabaseState(d *Database, context *Context) *databaseState {
+func newDatabaseState(d *Database, context *FinderContext) *databaseState {
 	database := &databaseState{
 		name:         d.Name,
 		characterSet: d.CharacterSet,
@@ -25,7 +25,7 @@ func newDatabaseState(d *Database, context *Context) *databaseState {
 	return database
 }
 
-func newSchemaState(s *Schema, context *Context) *schemaState {
+func newSchemaState(s *Schema, context *FinderContext) *schemaState {
 	schema := &schemaState{
 		name:         s.Name,
 		tableSet:     make(tableStateMap),
@@ -65,7 +65,7 @@ func newExtensionState(e *Extension) *extensionState {
 	}
 }
 
-func newTableState(t *Table, context *Context) *tableState {
+func newTableState(t *Table, context *FinderContext) *tableState {
 	table := &tableState{
 		name:          t.Name,
 		tableType:     t.Type,
@@ -126,7 +126,7 @@ type databaseState struct {
 	dbType       db.Type
 	schemaSet    schemaStateMap
 
-	context *Context
+	context *FinderContext
 }
 type schemaState struct {
 	name         string
@@ -134,7 +134,7 @@ type schemaState struct {
 	viewSet      viewStateMap
 	extensionSet extensionStateMap
 
-	context *Context
+	context *FinderContext
 }
 type schemaStateMap map[string]*schemaState
 
@@ -160,7 +160,7 @@ type tableState struct {
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
 
-	context *Context
+	context *FinderContext
 }
 type tableStateMap map[string]*tableState
 

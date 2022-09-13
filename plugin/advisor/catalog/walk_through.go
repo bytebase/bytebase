@@ -138,7 +138,7 @@ func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
 			}
 
 			if _, exists = schema.tableSet[name.Name.O]; !exists {
-				if node.IfExists || !schema.context.CheckCatalog {
+				if node.IfExists || !schema.context.CheckIntegrity {
 					return nil
 				}
 				return &WalkThroughError{
@@ -180,7 +180,7 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 		name:      node.Table.Name.O,
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
-		context:   d.context,
+		context:   &FinderContext{CheckIntegrity: true},
 	}
 	schema.tableSet[table.name] = table
 

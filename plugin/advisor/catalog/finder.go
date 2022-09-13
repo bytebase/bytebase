@@ -2,14 +2,35 @@ package catalog
 
 import "github.com/bytebase/bytebase/plugin/advisor/db"
 
+// FinderContext is the context for finder.
+type FinderContext struct {
+	// CheckIntegrity defines the policy for integrity checking.
+	// In some cases we can not fetch the catalog, such as GitHub App/Actions.
+	// It's hard to distinguish these cases from exactly empty database.
+	// So we need CheckIntegrity to distinguish them.
+	CheckIntegrity bool
+}
+
+// Copy returns the deep copy.
+func (ctx *FinderContext) Copy() *FinderContext {
+	return &FinderContext{
+		CheckIntegrity: ctx.CheckIntegrity,
+	}
+}
+
 // Finder is the service for finding schema information in database.
 type Finder struct {
 	database *databaseState
 }
 
 // NewFinder creates a new finder.
-func NewFinder(database *Database, context *Context) *Finder {
+func NewFinder(database *Database, context *FinderContext) *Finder {
 	return &Finder{database: newDatabaseState(database, context)}
+}
+
+// NewEmptyFinder creates a finder with empty databse.
+func NewEmptyFinder(ctx *FinderContext) *Finder {
+	return &Finder{database: newDatabaseState(&Database{}, ctx)}
 }
 
 // HasNoTable returns true if the current database has no table.
