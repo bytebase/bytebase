@@ -181,6 +181,10 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 					return err
 				}
 			}
+		case tidbast.AlterTableAddConstraint:
+			if err := table.createConstraint(spec.Constraint); err != nil {
+				return err
+			}
 		}
 	}
 
