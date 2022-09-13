@@ -197,17 +197,6 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 	return err
 }
 
-func (Driver) UpdateFailedHistoryAsPending(ctx context.Context, tx *sql.Tx, version, statement string) error {
-	const updateHistoryAsFailedQuery = `
-		UPDATE
-			bytebase.migration_history
-		SET
-			status = ?
-		WHERE version = ? AND namespace = ?
-		`
-	return nil
-}
-
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)

@@ -249,7 +249,6 @@ type TaskPatch struct {
 	// Domain specific fields
 	DatabaseID        *int
 	Statement         *string `jsonapi:"attr,statement"`
-	ForceMigration    bool
 	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
 }

@@ -46,12 +46,8 @@ var (
 	bookDataQuery       = `SELECT * FROM book;`
 	bookDataSQLResult   = `[["id","name"],["INTEGER","TEXT"],[[1,"byte"],[2,null]]]`
 
-	dataUpdateStatementWrong = `
-	INSERT INTO book(name) VALUESxxx
-		("byte"),
-		(NULL);
-	`
-	dataUpdateStatement = `
+	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
+	dataUpdateStatement      = `
 	INSERT INTO book(name) VALUES
 		("byte"),
 		(NULL);
