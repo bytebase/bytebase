@@ -5,18 +5,18 @@ import "github.com/bytebase/bytebase/plugin/advisor/db"
 // FinderContext is the context for finder.
 type FinderContext struct {
 	// CheckIntegrity defines the policy for integrity checking.
-	// There are two cases that will cause database to be empty:
+	// There are two cases that will cause database to have an empty catalog:
 	//   1. we can not fetch the catalog, such as GitHub App/Actions.
 	//   2. the databse is indeed empty.
-	// We need two policies to deal with these two cases separately.
+	// We need different logic to deal with these two cases separately.
 	// If DROP TABLE t and t not exists:
 	//   1. For case one, just ignore this statement.
 	//   2. For case two, return the error that table t not exists.
 	// In addition, We need fine-grained CheckIntegrity.
 	// Consider the case one, and then create a table t by CREATE TABLE statement.
 	// After this, drop column a in table t, but column a not exists.
-	// In this case, we need return the error that column a not exists in table t,
-	// instead of ignore this drop-column statement.
+	// In this case, we need return the error that column a does not exist in table t,
+	// instead of ignoring this drop-column statement.
 	CheckIntegrity bool
 }
 
