@@ -125,7 +125,7 @@ func RunSQLReviewRuleTests(
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
-		Catalog:   catalog.NewFinder(database),
+		Catalog:   catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true}),
 	}
 	for _, tc := range tests {
 		adviceList, err := adv.Check(ctx, tc.Statement)
