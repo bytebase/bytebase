@@ -677,9 +677,9 @@ func TestVCS_SDL(t *testing.T) {
 			// Create a project
 			project, err := ctl.createProject(
 				api.ProjectCreate{
-					Name:                "Test VCS Project",
-					Key:                 "TestVCSSchemaUpdate",
-					SchemaMigrationType: api.ProjectSchemaMigrationTypeSDL,
+					Name:             "Test VCS Project",
+					Key:              "TestVCSSchemaUpdate",
+					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
 				},
 			)
 			a.NoError(err)

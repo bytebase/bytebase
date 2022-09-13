@@ -5,10 +5,10 @@
     :vcs-name="config.vcs.name"
     :repository-info="config.repositoryInfo"
     :repository-config="config.repositoryConfig"
-    :schema-migration-type="config.schemaMigrationType"
+    :schema-change-type="config.schemaChangeType"
     :project="project"
-    @change-schema-migration-type="
-      (type) => $emit('change-schema-migration-type', type)
+    @change-schema-change-type="
+      (type) => $emit('change-schema-change-type', type)
     "
   />
 </template>
@@ -31,6 +31,6 @@ export default defineComponent({
       type: Object as PropType<Project>,
     },
   },
-  emits: ["change-schema-migration-type"],
+  emits: ["change-schema-change-type"],
 });
 </script>
