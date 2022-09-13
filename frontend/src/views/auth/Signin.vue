@@ -221,6 +221,7 @@ export default defineComponent({
     onMounted(() => {
       state.email = isDev() || isDemo.value ? "demo@example.com" : "";
       state.password = isDev() || isDemo.value ? "1024" : "";
+      state.showPassword = isDev() || isDemo.value ? true : false;
       // Navigate to signup if needs admin setup.
       // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.
