@@ -469,7 +469,7 @@
     "subscribe": "Subscribe",
     "unsubscribe": "Unsubscribe",
     "subscriber": "No subscribers | 1 subscriber | {n} subscribers",
-    "apply-to-other-stages": "Apply to other stages",
+    "apply-to-other-tasks": "Apply to other tasks",
     "add-sql-statement": "Add SQL statement...",
     "optional-add-sql-statement": "(Optional) Add SQL statement...",
     "edit-description": "Edit description",
