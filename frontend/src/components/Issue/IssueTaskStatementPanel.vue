@@ -405,7 +405,7 @@ export default defineComponent({
       state,
       editorRef,
       updateStatement,
-      applyStatementToOtherTasks: applyStatementToOtherTasks,
+      applyStatementToOtherTasks,
       beginEdit,
       saveEdit,
       cancelEdit,
