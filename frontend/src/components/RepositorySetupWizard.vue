@@ -190,10 +190,7 @@ export default defineComponent({
         }
 
         // Update project schemaChangeType field firstly.
-        if (
-          isDev() &&
-          state.config.schemaChangeType !== props.project.schemaChangeType
-        ) {
+        if (state.config.schemaChangeType !== props.project.schemaChangeType) {
           const projectPatch: ProjectPatch = {
             schemaChangeType: state.config.schemaChangeType,
           };
