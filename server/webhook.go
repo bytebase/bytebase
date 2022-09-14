@@ -649,22 +649,6 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		return nil
 	}
 
-	migrationInfo.Creator = pushEvent.FileCommit.AuthorName
-	miPayload := &db.MigrationInfoPayload{
-		VCSPushEvent: pushEvent,
-	}
-	bytes, err := json.Marshal(miPayload)
-	if err != nil {
-		log.Error("Failed to marshal vcs push event payload",
-			zap.Int("project", repo.ProjectID),
-			zap.Any("pushEvent", pushEvent),
-			zap.String("file", file),
-			zap.Error(err),
-		)
-		return nil
-	}
-	migrationInfo.Payload = string(bytes)
-
 	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
 		s.createIgnoredFileActivity(
@@ -788,10 +772,9 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	createContext, err := json.Marshal(
 		&api.UpdateSchemaContext{
-			MigrationType: migrationInfo.Type,
+			MigrationType: db.Migrate,
 			VCSPushEvent:  pushEvent,
 			DetailList:    updateSchemaDetails,
-			MigrationInfo: migrationInfo,
 		},
 	)
 	if err != nil {
