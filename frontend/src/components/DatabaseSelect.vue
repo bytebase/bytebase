@@ -1,29 +1,18 @@
 <template>
-  <select
-    class="btn-select disabled:cursor-not-allowed"
+  <BBSelect
+    :selected-item="state.selectedDatabase"
+    :item-list="databaseList"
     :disabled="disabled"
-    @change="onSelectChange"
+    :placeholder="$t('database.select')"
+    :show-prefix-item="true"
+    @select-item="(database: Database) => $emit('select-database-id', database.id)"
   >
-    <option disabled :selected="UNKNOWN_ID === state.selectedId">
-      <template v-if="mode == 'INSTANCE' && instanceId == UNKNOWN_ID">
-        {{ $t("db.select-instance-first") }}
-      </template>
-      <template
-        v-else-if="mode == 'ENVIRONMENT' && environmentId == UNKNOWN_ID"
-      >
-        {{ $t("db.select-environment-first") }}
-      </template>
-      <template v-else> {{ $t("db.select") }} </template>
-    </option>
-    <option
-      v-for="(database, index) in databaseList"
-      :key="index"
-      :value="database.id"
-      :selected="database.id == state.selectedId"
-    >
-      {{ database.name }}
-    </option>
-  </select>
+    <template #menuItem="{ item: database }">
+      <div class="flex items-center">
+        {{ database.name }}
+      </div>
+    </template>
+  </BBSelect>
 </template>
 
 <script lang="ts">
@@ -46,6 +35,7 @@ import {
 
 interface LocalState {
   selectedId?: number;
+  selectedDatabase?: Database;
 }
 
 export default defineComponent({
@@ -156,8 +146,12 @@ export default defineComponent({
 
     watch(
       () => props.selectedId,
-      (cur) => {
-        state.selectedId = cur;
+      (selectedId) => {
+        invalidateSelectionIfNeeded();
+        state.selectedId = selectedId;
+        state.selectedDatabase = databaseList.value.find(
+          (database) => database.id === selectedId
+        );
       }
     );
 

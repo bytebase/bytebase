@@ -5,7 +5,7 @@
     :disabled="disabled"
     :placeholder="$t('environment.select')"
     :show-prefix-item="true"
-    @select-item="(env) => $emit('select-environment-id', env.id)"
+    @select-item="(env: Environment) => $emit('select-environment-id', env.id)"
   >
     <template #menuItem="{ item: environment }">
       <div class="flex items-center">
