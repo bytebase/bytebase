@@ -702,7 +702,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			DatabaseID: &database.ID,
 			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
 			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
-			Payload:    fmt.Sprintf("payload->'migrationInfo'->>'version'='%s'", migrationInfo.Version),
+			Payload:    fmt.Sprintf("payload->>'schemaVersion' = '%s'", migrationInfo.Version),
 		}
 		taskList, err := s.store.FindTask(ctx, find, true)
 		if err != nil {
