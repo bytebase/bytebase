@@ -24,8 +24,6 @@ const (
 
 	// ErrorTypeUnsupported is the error for unsupported cases.
 	ErrorTypeUnsupported WalkThroughErrorType = 1
-	// ErrorTypeInternal is the internal error.
-	ErrorTypeInternal WalkThroughErrorType = 2
 
 	// 101 parse error type.
 
@@ -208,7 +206,11 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 		case tidbast.AlterTableDropForeignKey:
 			// we do not deal with DROP FOREIGN KEY statements.
 		case tidbast.AlterTableModifyColumn:
-			if err := table.modifyColumn(spec); err != nil {
+			if err := table.modifyColumn(spec.NewColumns[0], spec.Position); err != nil {
+				return err
+			}
+		case tidbast.AlterTableChangeColumn:
+			if err := table.changeColumn(spec.OldColumnName.Name.O, spec.NewColumns[0], spec.Position); err != nil {
 				return err
 			}
 		}
@@ -217,38 +219,35 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 	return nil
 }
 
-func (t *tableState) modifyColumn(spec *tidbast.AlterTableSpec) error {
-	if spec.Tp != tidbast.AlterTableModifyColumn {
-		return &WalkThroughError{
-			Type:    ErrorTypeInternal,
-			Content: fmt.Sprintf("Expected MODIFY COLUMN, but got %d", spec.Tp),
-		}
-	}
-
-	column, exists := t.columnSet[spec.NewColumns[0].Name.Name.O]
+func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
+	column, exists := t.columnSet[oldName]
 	if !exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnNotExists,
-			Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", spec.NewColumns[0].Name.Name.O, t.name),
+			Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name),
 		}
 	}
 
 	pos := column.position
-	if spec.Position != nil && spec.Position.Tp != tidbast.ColumnPositionNone {
+	if position != nil && position.Tp != tidbast.ColumnPositionNone {
 		for _, col := range t.columnSet {
 			if col.position > pos {
 				col.position--
 			}
 		}
 		var err error
-		pos, err = t.reorderColumn(spec.Position)
+		pos, err = t.reorderColumn(position)
 		if err != nil {
 			return err
 		}
 	}
 
 	delete(t.columnSet, column.name)
-	return t.createColumn(spec.NewColumns[0], pos)
+	return t.createColumn(newColumn, pos)
+}
+
+func (t *tableState) modifyColumn(newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
+	return t.changeColumn(newColumn.Name.Name.O, newColumn, position)
 }
 
 func (t *tableState) dropIndex(indexName string) error {
