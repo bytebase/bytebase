@@ -639,10 +639,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	}
 
 	schemaVersion := common.DefaultMigrationVersion()
-	// VCS push event contains schema version in the file name, which is parsed against the file template.
-	if c.SchemaVersion != "" {
-		schemaVersion = c.SchemaVersion
-	}
 	// Tenant mode project pipeline has its own generation.
 	if project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {

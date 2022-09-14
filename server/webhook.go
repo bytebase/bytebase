@@ -825,7 +825,6 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			MigrationType: migrationInfo.Type,
 			VCSPushEvent:  pushEvent,
 			DetailList:    updateSchemaDetails,
-			SchemaVersion: migrationInfo.Version,
 		},
 	)
 	if err != nil {
