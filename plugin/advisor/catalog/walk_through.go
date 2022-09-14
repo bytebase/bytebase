@@ -81,6 +81,14 @@ func NewParseError(content string) *WalkThroughError {
 	}
 }
 
+// NewColumnNotExistsError returns a new ErrorTypeColumnNotExists.
+func NewColumnNotExistsError(tableName string, columnName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeColumnNotExists,
+		Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, tableName),
+	}
+}
+
 // Error implements the error interface.
 func (e *WalkThroughError) Error() string {
 	return e.Content
@@ -221,9 +229,34 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := schema.renameTable(table.name, spec.NewTable.Name.O); err != nil {
 				return err
 			}
+		case tidbast.AlterTableAlterColumn:
+			if err := table.alterColumn(spec.NewColumns[0]); err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+func (t *tableState) alterColumn(column *tidbast.ColumnDef) error {
+	columnName := column.Name.Name.O
+	colState, exists := t.columnSet[columnName]
+	if !exists {
+		return NewColumnNotExistsError(t.name, columnName)
+	}
+
+	if len(column.Options) == 1 {
+		// SET DEFAULT
+		defaultValue, err := restoreNode(column.Options[0].Expr, format.RestoreStringWithoutCharset)
+		if err != nil {
+			return err
+		}
+		colState.defaultValue = &defaultValue
+	} else {
+		// DROP DEFAULT
+		colState.defaultValue = nil
+	}
 	return nil
 }
 
@@ -292,10 +325,7 @@ func (t *tableState) renameColumn(oldName string, newName string) error {
 func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	column, exists := t.columnSet[oldName]
 	if !exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeColumnNotExists,
-			Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name),
-		}
+		return NewColumnNotExistsError(t.name, oldName)
 	}
 
 	pos := column.position
@@ -341,10 +371,7 @@ func (t *tableState) dropIndex(indexName string) error {
 func (t *tableState) dropColumn(columnName string) error {
 	column, exists := t.columnSet[columnName]
 	if !exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeColumnNotExists,
-			Content: fmt.Sprintf("Column `%s` in table `%s` does not exist", columnName, t.name),
-		}
+		return NewColumnNotExistsError(t.name, columnName)
 	}
 
 	// Can not drop all columns in a table using ALTER TABLE DROP COLUMN.
@@ -401,10 +428,7 @@ func (t *tableState) reorderColumn(position *tidbast.ColumnPosition) (int, error
 		columnName := position.RelativeColumn.Name.O
 		column, exist := t.columnSet[columnName]
 		if !exist {
-			return 0, &WalkThroughError{
-				Type:    ErrorTypeColumnNotExists,
-				Content: fmt.Sprintf("Column `%s` in table `%s` not exists", columnName, t.name),
-			}
+			return 0, NewColumnNotExistsError(t.name, columnName)
 		}
 		for _, col := range t.columnSet {
 			if col.position > column.position {
@@ -553,10 +577,7 @@ func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 			columnName := key.Column.Name.O
 			column, exists := t.columnSet[columnName]
 			if !exists {
-				return nil, &WalkThroughError{
-					Type:    ErrorTypeColumnNotExists,
-					Content: fmt.Sprintf("Column `%s` in table `%s` not exists", columnName, t.name),
-				}
+				return nil, NewColumnNotExistsError(t.name, columnName)
 			}
 			if primary {
 				column.nullable = false
