@@ -149,7 +149,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
 		}
-		return -1, "", err
+		return -1, "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
 	}
 
 	startedNs := time.Now().UnixNano()
@@ -210,16 +210,19 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}); err != nil {
 		return -1, errors.Wrap(err, "failed to check duplicate version")
 	} else if len(list) > 0 {
-		switch list[0].Status {
+		migrationHistory := list[0]
+		switch migrationHistory.Status {
 		case db.Done:
-			return int64(list[0].ID),
-				common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
+			if migrationHistory.IssueID != m.IssueID {
+				return int64(migrationHistory.ID), common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
+			}
+			return int64(migrationHistory.ID), common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
 			log.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
-				return int64(list[0].ID), nil
+				return int64(migrationHistory.ID), nil
 			}
 			return -1, common.Wrap(err, common.MigrationPending)
 		case db.Failed:
@@ -227,7 +230,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			log.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
-				return int64(list[0].ID), nil
+				return int64(migrationHistory.ID), nil
 			}
 			return -1, common.Wrap(err, common.MigrationFailed)
 		}
@@ -302,9 +305,15 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
 	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
-	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	readOnly := true
+	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
+	// https://github.com/pingcap/tidb/issues/34626
+	if dbType == db.TiDB {
+		readOnly = false
+	}
+	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
 	if err != nil {
 		return nil, err
 	}

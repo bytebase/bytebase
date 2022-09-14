@@ -138,13 +138,13 @@ func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error 
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	if err := deleteSheet(ctx, tx.PTx, delete); err != nil {
+	if err := deleteSheet(ctx, tx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -157,9 +157,9 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT row_status, visibility, source, type, COUNT(*) AS count
 		FROM sheet
 		GROUP BY row_status, visibility, source, type`)
@@ -243,14 +243,14 @@ func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*s
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	sheet, err := createSheetImpl(ctx, tx.PTx, create)
+	sheet, err := createSheetImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -263,14 +263,14 @@ func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*shee
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	sheet, err := patchSheetImpl(ctx, tx.PTx, patch)
+	sheet, err := patchSheetImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -283,9 +283,9 @@ func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheet
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findSheetImpl(ctx, tx.PTx, find)
+	list, err := findSheetImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -300,9 +300,9 @@ func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findSheetImpl(ctx, tx.PTx, find)
+	list, err := findSheetImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,7 @@ func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw
 }
 
 // createSheetImpl creates a new sheet.
-func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*sheetRaw, error) {
+func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*sheetRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -379,7 +379,7 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 }
 
 // patchSheetImpl updates a sheet's name/statement/visibility.
-func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*sheetRaw, error) {
+func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetRaw, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
@@ -439,7 +439,7 @@ func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*sh
 	return &sheetRaw, nil
 }
 
-func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*sheetRaw, error) {
+func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 
 	if v := find.ID; v != nil {
@@ -543,7 +543,7 @@ func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*she
 }
 
 // deleteSheet permanently deletes a sheet by ID.
-func deleteSheet(ctx context.Context, tx *sql.Tx, delete *api.SheetDelete) error {
+func deleteSheet(ctx context.Context, tx *Tx, delete *api.SheetDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}

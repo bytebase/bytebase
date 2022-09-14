@@ -48,6 +48,7 @@ import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
 import { TabInfo } from "./tab";
+import type { DebugLog } from "@/types/debug";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -193,7 +194,6 @@ export interface LabelState {
 export interface SQLEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
-  shouldSetContent: boolean;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
@@ -219,6 +219,9 @@ export interface SheetState {
 
 export interface DebugState {
   isDebug: boolean;
+}
+export interface DebugLogState {
+  debugLogList: DebugLog[];
 }
 
 export interface OnboardingGuideState {

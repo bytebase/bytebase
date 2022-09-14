@@ -6,16 +6,14 @@ import {
   isPagedResponse,
   Issue,
   IssueCreate,
+  IssueFind,
   IssueId,
   IssuePatch,
   IssueState,
-  IssueStatus,
   IssueStatusPatch,
   Pipeline,
   Principal,
-  PrincipalId,
   Project,
-  ProjectId,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -133,35 +131,8 @@ export const useIssueStore = defineStore("issue", {
     setIssueById({ issueId, issue }: { issueId: IssueId; issue: Issue }) {
       this.issueById.set(issueId, issue);
     },
-    async fetchPagedIssueList({
-      issueStatusList,
-      userId,
-      projectId,
-      limit,
-      token,
-    }: {
-      issueStatusList?: IssueStatus[];
-      userId?: PrincipalId;
-      projectId?: ProjectId;
-      limit?: number;
-      token?: string;
-    }) {
-      const queryList = [];
-      if (issueStatusList && issueStatusList.length > 0) {
-        queryList.push(`status=${issueStatusList.join(",")}`);
-      }
-      if (userId) {
-        queryList.push(`user=${userId}`);
-      }
-      if (projectId) {
-        queryList.push(`project=${projectId}`);
-      }
-      if (limit) {
-        queryList.push(`limit=${limit}`);
-      }
-      if (token) {
-        queryList.push(`token=${token}`);
-      }
+    async fetchPagedIssueList(params: IssueFind & { token?: string }) {
+      const queryList = buildQueryListByIssueFind(params);
 
       let url = "/api/issue";
       if (queryList.length > 0) {
@@ -187,12 +158,7 @@ export const useIssueStore = defineStore("issue", {
         issueList,
       };
     },
-    async fetchIssueList(params: {
-      issueStatusList?: IssueStatus[];
-      userId?: PrincipalId;
-      projectId?: ProjectId;
-      limit?: number;
-    }) {
+    async fetchIssueList(params: IssueFind) {
       const result = await this.fetchPagedIssueList(params);
       return result.issueList;
     },
@@ -321,3 +287,46 @@ export const useIssueStore = defineStore("issue", {
     },
   },
 });
+
+export const buildQueryListByIssueFind = (
+  params: IssueFind & { token?: string }
+): string[] => {
+  const {
+    projectId,
+    principalId,
+    creatorId,
+    assigneeId,
+    subscriberId,
+    statusList,
+    limit,
+    token,
+  } = params;
+
+  const queryList = [];
+  if (statusList && statusList.length > 0) {
+    queryList.push(`status=${statusList.join(",")}`);
+  }
+  if (principalId) {
+    queryList.push(`user=${principalId}`);
+  }
+  if (creatorId) {
+    queryList.push(`creator=${creatorId}`);
+  }
+  if (assigneeId) {
+    queryList.push(`assignee=${assigneeId}`);
+  }
+  if (subscriberId) {
+    queryList.push(`subscriber=${subscriberId}`);
+  }
+  if (projectId) {
+    queryList.push(`project=${projectId}`);
+  }
+  if (limit) {
+    queryList.push(`limit=${limit}`);
+  }
+  if (token) {
+    queryList.push(`token=${token}`);
+  }
+
+  return queryList;
+};

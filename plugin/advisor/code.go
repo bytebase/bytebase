@@ -27,6 +27,7 @@ const (
 	StatementNoWhere             Code = 202
 	StatementSelectAll           Code = 203
 	StatementLeadingWildcardLike Code = 204
+	StatementCreateTableAs       Code = 205
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -43,8 +44,17 @@ const (
 	NamingPKConventionMismatch Code = 306
 
 	// 401 ~ 499 column error code.
-	NoRequiredColumn Code = 401
-	ColumnCanNotNull Code = 402
+	NoRequiredColumn              Code = 401
+	ColumnCanNotNull              Code = 402
+	ChangeColumnType              Code = 403
+	NotNullColumnWithNullDefault  Code = 404
+	ColumnNotExists               Code = 405
+	UseChangeColumnStatement      Code = 406
+	ChangeColumnOrder             Code = 407
+	NoColumnComment               Code = 408
+	ColumnCommentTooLong          Code = 409
+	AutoIncrementColumnNotInteger Code = 410
+	DisabledColumnType            Code = 411
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -53,13 +63,27 @@ const (
 	TableNoPK                         Code = 601
 	TableHasFK                        Code = 602
 	TableDropNamingConventionMismatch Code = 603
+	TableNotExists                    Code = 604
+	NoTableComment                    Code = 605
+	TableCommentTooLong               Code = 606
+	TableExists                       Code = 607
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
 	NotCurrentDatabase Code = 702
 
 	// 801 miss index error code.
-	NotUseIndex Code = 801
+	NotUseIndex                Code = 801
+	IndexKeyNumberExceedsLimit Code = 802
+	IndexPKType                Code = 803
+	IndexTypeNoBlob            Code = 804
+	IndexExists                Code = 805
+
+	// 901 ~ 999 index error code.
+	DuplicateColumnInIndex Code = 901
+
+	// 1001 ~ 1099 charset error code.
+	DisabledCharset Code = 1001
 )
 
 // Int returns the int type of code.

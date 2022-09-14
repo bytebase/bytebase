@@ -5,5 +5,6 @@ type ColumnDef struct {
 	node
 
 	ColumnName     string
+	Type           DataType
 	ConstraintList []*ConstraintDef
 }

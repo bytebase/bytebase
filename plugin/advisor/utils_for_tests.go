@@ -38,8 +38,14 @@ var (
 					{
 						Name: MockTableName,
 						ColumnList: []*catalog.Column{
-							{Name: "id"},
-							{Name: "name"},
+							{
+								Name: "id",
+								Type: "int",
+							},
+							{
+								Name: "name",
+								Type: "varchar(255)",
+							},
 						},
 						IndexList: []*catalog.Index{
 							{
@@ -119,7 +125,7 @@ func RunSQLReviewRuleTests(
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
-		Database:  database,
+		Catalog:   catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true}),
 	}
 	for _, tc := range tests {
 		adviceList, err := adv.Check(ctx, tc.Statement)

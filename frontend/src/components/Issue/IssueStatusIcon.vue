@@ -54,6 +54,7 @@ export default defineComponent({
     // Specify taskStatus if we want to show the task specific status when issueStatus is OPEN.
     taskStatus: {
       type: String as PropType<TaskStatus>,
+      default: undefined,
     },
     size: {
       type: String as PropType<SizeType>,
@@ -62,7 +63,7 @@ export default defineComponent({
   },
   setup(props) {
     const issueIconClass = () => {
-      let iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
+      const iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
       switch (props.issueStatus) {
         case "OPEN":
           if (props.taskStatus && props.taskStatus === "FAILED") {

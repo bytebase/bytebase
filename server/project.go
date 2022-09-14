@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 
@@ -28,6 +29,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		projectCreate := &api.ProjectCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project request").SetInternal(err)
+		}
+		if projectCreate.Key == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
 		}
 		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -213,6 +217,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Wildcard isn't supported for branch setting")
 		}
 
+		// We need to check the FilePathTemplate in create repository request.
+		// This avoids to a certain extent that the creation succeeds but does not work.
+		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, errors.Wrap(err, "Invalid base directory and filepath template combination").Error()))
+		}
+
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
@@ -237,7 +247,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
-		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
+		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
 		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 		if err != nil {
@@ -250,24 +260,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		switch vcs.Type {
 		case vcsPlugin.GitLabSelfHost:
 			webhookCreate := gitlab.WebhookCreate{
-				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
-				SecretToken:            repositoryCreate.WebhookSecretToken,
-				PushEvents:             true,
-				PushEventsBranchFilter: repositoryCreate.BranchFilter,
-				EnableSSLVerification:  false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+				URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
+				SecretToken:           repositoryCreate.WebhookSecretToken,
+				PushEvents:            true,
+				EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
 			}
 			webhookCreatePayload, err = json.Marshal(webhookCreate)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 		case vcsPlugin.GitHubCom:
-			webhookHost := s.profile.BackendHost
-			if s.profile.BackendHost == "http://localhost" {
-				webhookHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
-			}
 			webhookPost := github.WebhookCreateOrUpdate{
 				Config: github.WebhookConfig{
-					URL:         fmt.Sprintf("%s/%s/%s", webhookHost, githubWebhookPath, repositoryCreate.WebhookEndpointID),
+					URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, repositoryCreate.WebhookEndpointID),
 					ContentType: "json",
 					Secret:      repositoryCreate.WebhookSecretToken,
 					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
@@ -404,68 +409,24 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repo := repoList[0]
 		repoPatch.ID = repo.ID
+
+		// We need to check the FilePathTemplate in create repository request.
+		// This avoids to a certain extent that the creation succeeds but does not work.
+		newBaseDirectory, newFilePathTemplate := repo.BaseDirectory, repo.FilePathTemplate
+		if repoPatch.BaseDirectory != nil {
+			newBaseDirectory = *repoPatch.BaseDirectory
+		}
+		if repoPatch.FilePathTemplate != nil {
+			newFilePathTemplate = *repoPatch.FilePathTemplate
+		}
+
+		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
+		}
+
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
-		}
-
-		if repoPatch.BranchFilter != nil {
-			vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
-			}
-			if vcs == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
-			}
-			// Update the webhook after we successfully update the repository.
-			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
-			// If we update it before we update the repository, then if the repository update fails, then the reconcile process will reconcile the webhook to the pre-update state which is likely not intended.
-			var webhookUpdatePayload []byte
-			switch vcs.Type {
-			case vcsPlugin.GitLabSelfHost:
-				webhookUpdate := gitlab.WebhookUpdate{
-					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitlabWebhookPath, updatedRepo.WebhookEndpointID),
-					PushEventsBranchFilter: *repoPatch.BranchFilter,
-				}
-				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
-				}
-			case vcsPlugin.GitHubCom:
-				webhookUpdate := github.WebhookCreateOrUpdate{
-					Config: github.WebhookConfig{
-						URL:         fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, githubWebhookPath, updatedRepo.WebhookEndpointID),
-						ContentType: "json",
-						Secret:      updatedRepo.WebhookSecretToken,
-						InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryPatch
-					},
-					Events: []string{"push"},
-				}
-				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
-				}
-			}
-
-			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).PatchWebhook(
-				ctx,
-				common.OauthContext{
-					// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
-				},
-				vcs.InstanceURL,
-				repo.ExternalID,
-				repo.ExternalWebhookID,
-				webhookUpdatePayload,
-			)
-
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

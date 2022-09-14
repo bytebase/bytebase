@@ -21,13 +21,18 @@ const (
 	TiDB EngineType = "TIDB"
 )
 
-// Context is the context for parser.
-type Context struct {
+// ParseContext is the context for parsing.
+type ParseContext struct {
+}
+
+// DeparseContext is the contxt for restoring.
+type DeparseContext struct {
 }
 
 // Parser is the interface for parser.
 type Parser interface {
-	Parse(ctx Context, statement string) ([]ast.Node, error)
+	Parse(ctx ParseContext, statement string) ([]ast.Node, error)
+	Deparse(ctx DeparseContext, node ast.Node) (string, error)
 }
 
 var (
@@ -51,7 +56,7 @@ func Register(engineType EngineType, p Parser) {
 }
 
 // Parse parses the statement and return nodes.
-func Parse(engineType EngineType, ctx Context, statement string) ([]ast.Node, error) {
+func Parse(engineType EngineType, ctx ParseContext, statement string) ([]ast.Node, error) {
 	parserMu.RLock()
 	p, ok := parsers[engineType]
 	parserMu.RUnlock()
@@ -59,4 +64,15 @@ func Parse(engineType EngineType, ctx Context, statement string) ([]ast.Node, er
 		return nil, errors.Errorf("engine: unknown engine type %v", engineType)
 	}
 	return p.Parse(ctx, statement)
+}
+
+// Deparse deparses the statement from node(AST).
+func Deparse(engineType EngineType, ctx DeparseContext, node ast.Node) (string, error) {
+	parserMu.RLock()
+	p, ok := parsers[engineType]
+	parserMu.RUnlock()
+	if !ok {
+		return "", errors.Errorf("engine: unknown engine type %v", engineType)
+	}
+	return p.Deparse(ctx, node)
 }

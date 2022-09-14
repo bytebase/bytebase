@@ -5,6 +5,7 @@ package server
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"net/http"
 
@@ -12,11 +13,12 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+//go:embed dist/assets/*
 //go:embed dist
 var embeddedFiles embed.FS
 
-func getFileSystem() http.FileSystem {
-	fs, err := fs.Sub(embeddedFiles, "dist")
+func getFileSystem(path string) http.FileSystem {
+	fs, err := fs.Sub(embeddedFiles, path)
 	if err != nil {
 		panic(err)
 	}
@@ -29,6 +31,26 @@ func embedFrontend(e *echo.Echo) {
 	// refer: https://github.com/labstack/echo/blob/master/middleware/static.go
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		HTML5:      true,
-		Filesystem: getFileSystem(),
+		Filesystem: getFileSystem("dist"),
 	}))
+
+	g := e.Group("assets")
+	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Response().Header().Set(echo.HeaderCacheControl, "max-age=31536000, immutable")
+			return next(c)
+		}
+	})
+	g.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		HTML5:      true,
+		Filesystem: getFileSystem("dist/assets"),
+	}))
+}
+
+func oauthRedirectURL(externalURL string) string {
+	return externalURL
+}
+
+func oauthErrorMessage(redirectURL string) string {
+	return fmt.Sprintf("Failed to exchange OAuth token. Make sure --external-url: %s matches your browser host.", redirectURL)
 }

@@ -3,8 +3,10 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -44,6 +46,15 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.GET("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		issueFind := &api.IssueFind{}
+
+		pageToken := c.QueryParams().Get("token")
+		// We use descending order by default for issues.
+		sinceID, err := unmarshalPageToken(pageToken, api.DESC)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
+		}
+		issueFind.SinceID = &sinceID
+
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
 			projectID, err := strconv.Atoi(projectIDStr)
@@ -65,14 +76,38 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("limit query parameter is not a number: %s", limitStr)).SetInternal(err)
 			}
 			issueFind.Limit = &limit
+		} else {
+			limit := api.DefaultPageSize
+			issueFind.Limit = &limit
 		}
-		userIDStr := c.QueryParams().Get("user")
-		if userIDStr != "" {
+
+		if userIDStr := c.QueryParam("user"); userIDStr != "" {
 			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("user query parameter is not a number: %s", userIDStr)).SetInternal(err)
 			}
 			issueFind.PrincipalID = &userID
+		}
+		if creatorIDStr := c.QueryParam("creator"); creatorIDStr != "" {
+			creatorID, err := strconv.Atoi(creatorIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("creator query parameter is not a number: %s", creatorIDStr)).SetInternal(err)
+			}
+			issueFind.CreatorID = &creatorID
+		}
+		if assigneeIDStr := c.QueryParam("assignee"); assigneeIDStr != "" {
+			assigneeID, err := strconv.Atoi(assigneeIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee query parameter is not a number: %s", assigneeIDStr)).SetInternal(err)
+			}
+			issueFind.AssigneeID = &assigneeID
+		}
+		if subscriberIDStr := c.QueryParam("subscriber"); subscriberIDStr != "" {
+			subscriberID, err := strconv.Atoi(subscriberIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("subscriber query parameter is not a number: %s", subscriberIDStr)).SetInternal(err)
+			}
+			issueFind.SubscriberID = &subscriberID
 		}
 
 		issueList, err := s.store.FindIssueStripped(ctx, issueFind)
@@ -84,8 +119,20 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			s.setTaskProgressForIssue(issue)
 		}
 
+		issueResponse := &api.IssueResponse{}
+		issueResponse.Issues = issueList
+
+		nextSinceID := sinceID
+		if len(issueList) > 0 {
+			// Decrement the ID as we use decreasing order by default.
+			nextSinceID = issueList[len(issueList)-1].ID - 1
+		}
+		if issueResponse.NextToken, err = marshalPageToken(nextSinceID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal page token").SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, issueResponse); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue list response").SetInternal(err)
 		}
 		return nil
@@ -464,9 +511,12 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		if backup == nil {
 			return nil, errors.Errorf("backup not found with ID %d", c.BackupID)
 		}
-		restorePayload := api.TaskDatabaseRestorePayload{}
-		restorePayload.DatabaseName = c.DatabaseName
-		restorePayload.BackupID = c.BackupID
+		restorePayload := api.TaskDatabasePITRRestorePayload{
+			ProjectID:        issueCreate.ProjectID,
+			TargetInstanceID: &c.InstanceID,
+			DatabaseName:     &c.DatabaseName,
+			BackupID:         &c.BackupID,
+		}
 		restoreBytes, err := json.Marshal(restorePayload)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create restore database task, unable to marshal payload")
@@ -475,8 +525,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		taskCreateList = append(taskCreateList, api.TaskCreate{
 			InstanceID:   c.InstanceID,
 			Name:         fmt.Sprintf("Restore backup %v", backup.Name),
-			Status:       api.TaskPending,
-			Type:         api.TaskDatabaseRestore,
+			Status:       api.TaskPendingApproval,
+			Type:         api.TaskDatabaseRestorePITRRestore,
 			DatabaseName: c.DatabaseName,
 			BackupID:     &c.BackupID,
 			Payload:      string(restoreBytes),
@@ -528,6 +578,9 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}
 	if database == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
+	}
+	if database.ProjectID != issueCreate.ProjectID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The issue project %d must be the same as the database project %d.", issueCreate.ProjectID, database.ProjectID))
 	}
 
 	taskCreateList, taskIndexDAGList, err := s.createPITRTaskList(ctx, database, issueCreate.ProjectID, c)
@@ -586,6 +639,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	}
 
 	schemaVersion := common.DefaultMigrationVersion()
+	// VCS push event contains the migration version in the file path.
+	if c.MigrationInfo != nil {
+		schemaVersion = c.MigrationInfo.Version
+	}
 	// Tenant mode project pipeline has its own generation.
 	if project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
@@ -611,7 +668,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+			taskCreate, err := getUpdateTask(database, c, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -644,7 +701,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 
-					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+					taskCreate, err := getUpdateTask(database, c, d, schemaVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -690,7 +747,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+			taskCreate, err := getUpdateTask(database, c, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -772,32 +829,33 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 	return create, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, c api.UpdateSchemaContext, d *api.UpdateSchemaDetail, schemaVersion string) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
-	switch migrationType {
+	switch c.MigrationType {
 	case db.Migrate:
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
 	case db.Data:
 		taskName = fmt.Sprintf("Update %q data", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
-	payload.MigrationType = migrationType
+	payload.MigrationType = c.MigrationType
 	payload.Statement = d.Statement
 	payload.SchemaVersion = schemaVersion
-	if vcsPushEvent != nil {
-		payload.VCSPushEvent = vcsPushEvent
+	if c.VCSPushEvent != nil {
+		payload.VCSPushEvent = c.VCSPushEvent
+		payload.MigrationInfo = c.MigrationInfo
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to marshal database schema update payload: %v", err)
-		if migrationType == db.Data {
+		if c.MigrationType == db.Data {
 			errMsg = fmt.Sprintf("Failed to marshal database data update payload: %v", err)
 		}
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
 	}
 
 	taskType := api.TaskDatabaseSchemaUpdate
-	if migrationType == db.Data {
+	if c.MigrationType == db.Data {
 		taskType = api.TaskDatabaseDataUpdate
 	}
 	return &api.TaskCreate{
@@ -808,7 +866,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
-		MigrationType:     migrationType,
+		MigrationType:     c.MigrationType,
 		Payload:           string(bytes),
 	}, nil
 }
@@ -1359,4 +1417,34 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 			}
 		}
 	}
+}
+
+func marshalPageToken(id int) (string, error) {
+	b, err := json.Marshal(id)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal page token")
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+// unmarshalPageToken unmarshals the page token, and returns the last issue ID. If the page token nil empty, it returns MaxInt32.
+func unmarshalPageToken(pageToken string, sortOrder api.SortOrder) (int, error) {
+	if pageToken == "" {
+		if sortOrder == api.ASC {
+			return 0, nil
+		}
+		return math.MaxInt32, nil
+	}
+
+	bs, err := base64.StdEncoding.DecodeString(pageToken)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to decode page token")
+	}
+
+	var id int
+	if err := json.Unmarshal(bs, &id); err != nil {
+		return 0, errors.Wrap(err, "failed to unmarshal page token")
+	}
+
+	return id, nil
 }

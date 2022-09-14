@@ -69,10 +69,10 @@ const initials = computed(() => {
     return "?";
   }
 
-  let parts = props.username.split(/[ -]/);
+  const parts = props.username.split(/[ -]/);
   let initials = "";
-  for (var i = 0; i < parts.length; i++) {
-    for (var j = 0; j < parts[i].length; j++) {
+  for (let i = 0; i < parts.length; i++) {
+    for (let j = 0; j < parts[i].length; j++) {
       // Skip non-alphabet leading letters
       if (/[a-zA-Z0-9]/.test(parts[i].charAt(j))) {
         initials += parts[i].charAt(j);

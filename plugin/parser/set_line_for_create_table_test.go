@@ -82,7 +82,7 @@ func TestPGCreateTableSetLine(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		nodeList, err := parser.Parse(parser.Postgres, parser.Context{}, test.statement)
+		nodeList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, test.statement)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
 		node, ok := nodeList[0].(*ast.CreateTableStmt)
@@ -103,6 +103,16 @@ func TestPGCreateTableSetLine(t *testing.T) {
 
 func TestMySQLCreateTableSetLine(t *testing.T) {
 	tests := []setLineTestData{
+		{
+			statement:          "CREATE TABLE t as select * from t1",
+			columnLineList:     []int{},
+			constraintLineList: []int{},
+		},
+		{
+			statement:          "CREATE TABLE t like t1",
+			columnLineList:     []int{},
+			constraintLineList: []int{},
+		},
 		{
 			statement: `-- this is the first line.
 			CREATE TABLE t(

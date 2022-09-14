@@ -37,7 +37,13 @@
         />
       </template>
       <template #2>
-        <RepositoryConfigPanel :config="state.config" :project="project" />
+        <RepositoryConfigPanel
+          :config="state.config"
+          :project="project"
+          @change-schema-change-type="
+            (type) => (state.config.schemaChangeType = type)
+          "
+        />
       </template>
     </BBStepTab>
   </div>
@@ -55,6 +61,7 @@ import {
   ExternalRepositoryInfo,
   OAuthToken,
   Project,
+  ProjectPatch,
   ProjectRepositoryConfig,
   RepositoryCreate,
   unknown,
@@ -62,7 +69,7 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useRepositoryStore } from "@/store";
+import { useProjectStore, useRepositoryStore } from "@/store";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -151,6 +158,7 @@ export default defineComponent({
             ? DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE
             : DEFAULT_SHEET_PATH_TEMPLATE,
         },
+        schemaChangeType: props.project.schemaChangeType,
       },
       currentStep: CHOOSE_PROVIDER_STEP,
     });
@@ -175,11 +183,23 @@ export default defineComponent({
     };
 
     const tryFinishSetup = (allowFinishCallback: () => void) => {
-      const createFunc = () => {
+      const createFunc = async () => {
         let externalId = state.config.repositoryInfo.externalId;
         if (state.config.vcs.type == "GITHUB_COM") {
           externalId = state.config.repositoryInfo.fullPath;
         }
+
+        // Update project schemaChangeType field firstly.
+        if (state.config.schemaChangeType !== props.project.schemaChangeType) {
+          const projectPatch: ProjectPatch = {
+            schemaChangeType: state.config.schemaChangeType,
+          };
+          await useProjectStore().patchProject({
+            projectId: props.project.id,
+            projectPatch,
+          });
+        }
+
         const repositoryCreate: RepositoryCreate = {
           vcsId: state.config.vcs.id,
           name: state.config.repositoryInfo.name,
@@ -195,16 +215,14 @@ export default defineComponent({
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
         };
-        repositoryStore
-          .createRepository({
-            projectId: props.project.id,
-            repositoryCreate,
-          })
-          .then(() => {
-            allowFinishCallback();
-            emit("finish");
-          });
+        await repositoryStore.createRepository({
+          projectId: props.project.id,
+          repositoryCreate,
+        });
+        allowFinishCallback();
+        emit("finish");
       };
+
       if (props.create) {
         createFunc();
       } else {

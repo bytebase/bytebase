@@ -170,7 +170,7 @@ CREATE TABLE project (
     db_name_template TEXT NOT NULL,
     role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
     schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP',
-    schema_migration_type TEXT NOT NULL CHECK (schema_migration_type IN ('DDL', 'SDL')) DEFAULT 'DDL'
+    schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -931,7 +931,7 @@ CREATE TABLE repository (
     -- Push webhook id from the corresponding VCS provider.
     -- For GitLab, this is the project webhook id. e.g. 123
     external_webhook_id TEXT NOT NULL,
-    -- Identify the host of the webhook url where the webhook event sends. We store this to identify stale webhook url whose url doesn't match the current bytebase --host.
+    -- Identify the host of the webhook url where the webhook event sends. We store this to identify stale webhook url whose url doesn't match the current bytebase --external-url.
     webhook_url_host TEXT NOT NULL,
     -- Identify the target repository receiving the webhook event. This is a random string.
     webhook_endpoint_id TEXT NOT NULL,
@@ -944,8 +944,6 @@ CREATE TABLE repository (
 );
 
 CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);
-
-CREATE UNIQUE INDEX idx_repository_unique_webhook_endpoint_id ON repository(webhook_endpoint_id);
 
 ALTER SEQUENCE repository_id_seq RESTART WITH 101;
 

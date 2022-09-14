@@ -30,6 +30,11 @@ const (
 	DESC SortOrder = "DESC"
 )
 
+const (
+	// DefaultPageSize is the default number of items in a page.
+	DefaultPageSize = 1000
+)
+
 // StringToSortOrder converts a valid string to SortOrder.
 func StringToSortOrder(s string) (SortOrder, error) {
 	switch strings.ToUpper(s) {

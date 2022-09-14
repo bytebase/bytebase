@@ -14,9 +14,9 @@ OUTPUT_DIR=$(mkdir_output "$1")
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
-if [ "$(version ${GO_VERSION})" -lt "$(version 1.18)" ];
+if [ "$(version ${GO_VERSION})" -lt "$(version 1.19)" ];
 then
-   echo "${RED}Precheck failed.${NC} Require go version >= 1.18. Current version ${GO_VERSION}."; exit 1;
+   echo "${RED}Precheck failed.${NC} Require go version >= 1.19. Current version ${GO_VERSION}."; exit 1;
 fi
 
 if ! command -v npm > /dev/null
@@ -25,7 +25,7 @@ then
 fi
 
 # Step 1 - Build the frontend release version into the backend/server/dist folder
-# Step 2 - Build the monolithic app by building backend release version together with the backend/server/dist (leveraing embed introduced in Golang 1.18).
+# Step 2 - Build the monolithic app by building backend release version together with the backend/server/dist (leveraing embed introduced in Golang 1.19).
 echo "Start building Bytebase monolithic ${VERSION}..."
 
 echo ""
@@ -62,7 +62,11 @@ ${OUTPUT_BINARY} version
 echo ""
 echo "${GREEN}Completed building Bytebase monolithic ${VERSION} at ${OUTPUT_BINARY}.${NC}"
 echo ""
-echo "Command to start Bytebase on http://localhost:8080"
+echo "Command to start Bytebase on port 8080"
 echo ""
-echo "$ ${OUTPUT_BINARY} --host http://localhost --port 8080${NC}"
+echo "$ ${OUTPUT_BINARY} --port 8080${NC}"
+echo ""
+echo "Command to start Bytebase on port 8080 and exposed at http://example.com via a separate gateway"
+echo ""
+echo "$ ${OUTPUT_BINARY} --port 8080 --external-url http://example.com${NC}"
 echo ""

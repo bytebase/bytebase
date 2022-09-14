@@ -3,7 +3,6 @@ import { useCurrentUser } from "@/store";
 import {
   Issue,
   SYSTEM_BOT_ID,
-  ONBOARDING_ISSUE_ID,
   IssueStatusTransitionType,
   ASSIGNEE_APPLICABLE_ACTION_LIST,
   CREATOR_APPLICABLE_ACTION_LIST,
@@ -62,9 +61,6 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     const currentTask = activeTaskOfPipeline(issue.pipeline);
 
     const issueEntity = issue as Issue;
-    if (issueEntity.id == ONBOARDING_ISSUE_ID) {
-      return [];
-    }
     const list: IssueStatusTransitionType[] = [];
     // Allow assignee, or assignee is the system bot and current user is DBA or owner
     if (
@@ -116,9 +112,6 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     if (create.value) {
       return [];
     }
-    if (issue.id == ONBOARDING_ISSUE_ID) {
-      return [];
-    }
     switch (issue.status) {
       case "DONE":
       case "CANCELED":
@@ -142,9 +135,6 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     issue: Issue
   ): TaskStatusTransition[] => {
     if (create.value) {
-      return [];
-    }
-    if (issue.id == ONBOARDING_ISSUE_ID) {
       return [];
     }
     switch (issue.status) {

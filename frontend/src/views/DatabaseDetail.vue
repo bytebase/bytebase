@@ -546,7 +546,15 @@ const createMigration = async (
     repositoryStore
       .fetchRepositoryByProjectId(database.value.project.id)
       .then((repository: Repository) => {
-        window.open(baseDirectoryWebUrl(repository), "_blank");
+        window.open(
+          baseDirectoryWebUrl(repository, {
+            DB_NAME: database.value.name,
+            ENV_NAME: database.value.instance.environment.name,
+            TYPE:
+              type === "bb.issue.database.schema.update" ? "migrate" : "data",
+          }),
+          "_blank"
+        );
       });
   }
 };

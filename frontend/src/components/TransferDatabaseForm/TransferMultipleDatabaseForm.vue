@@ -3,7 +3,7 @@
     <slot name="transfer-source-selector" />
 
     <DatabaseTable
-      :mode="'ALL_SHORT'"
+      :mode="transferSource === 'DEFAULT' ? 'PROJECT_SHORT' : 'ALL_SHORT'"
       :bordered="true"
       :custom-click="true"
       :database-list="databaseList"
@@ -18,7 +18,12 @@
           type="checkbox"
           class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
           v-bind="getAllSelectionState(renderedDatabaseList)"
-          @input="toggleAllDatabasesSelection(renderedDatabaseList, ($event.target as HTMLInputElement).checked)"
+          @input="
+            toggleAllDatabasesSelection(
+              renderedDatabaseList,
+              ($event.target as HTMLInputElement).checked
+            )
+          "
         />
       </template>
 

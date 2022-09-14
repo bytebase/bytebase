@@ -5,7 +5,7 @@
     <template v-for="(quickAction, index) in quickActionList" :key="index">
       <div
         v-if="quickAction === 'quickaction.bb.instance.create'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
         data-label="bb-quick-action-add-instance"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createInstance">
@@ -18,7 +18,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.user.manage'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
       >
         <router-link to="/setting/member" class="btn-icon-primary p-3">
           <heroicons-outline:users class="w-6 h-6" />
@@ -32,7 +32,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.database.create'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
         data-label="bb-quick-action-new-db"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
@@ -47,7 +47,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.database.request'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
       >
         <button class="btn-icon-primary p-3" @click.prevent="requestDatabase">
           <heroicons-outline:database class="w-6 h-6" />
@@ -61,7 +61,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.database.schema.update'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
       >
         <button
           class="btn-icon-primary p-3"
@@ -77,7 +77,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.database.data.update'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
       >
         <button class="btn-icon-primary p-3" @click.prevent="changeData">
           <heroicons-outline:pencil class="w-6 h-6" />
@@ -89,7 +89,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.database.troubleshoot'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
       >
         <router-link to="/issue/new" class="btn-icon-primary p-3">
           <heroicons-outline:hand class="w-6 h-6" />
@@ -113,7 +113,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.environment.reorder'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
       >
         <button
           class="btn-icon-primary p-3"
@@ -128,7 +128,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.project.create'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
         data-label="bb-quick-action-new-project"
       >
         <button class="btn-icon-primary p-3" @click.prevent="createProject">
@@ -141,7 +141,7 @@
 
       <div
         v-if="quickAction === 'quickaction.bb.project.database.transfer'"
-        class="flex flex-col items-center w-28"
+        class="flex flex-col items-center w-28 py-1"
       >
         <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
           <heroicons-outline:chevron-double-down class="w-6 h-6" />

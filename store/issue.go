@@ -156,9 +156,9 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT type, status, COUNT(*)
 		FROM issue
 		WHERE (id <= 101 AND updater_id != 1) OR id > 101
@@ -464,14 +464,14 @@ func (s *Store) createIssueRaw(ctx context.Context, create *api.IssueCreate) (*i
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	issue, err := s.createIssueImpl(ctx, tx.PTx, create)
+	issue, err := s.createIssueImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -488,9 +488,9 @@ func (s *Store) findIssueRaw(ctx context.Context, find *api.IssueFind) ([]*issue
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findIssueImpl(ctx, tx.PTx, find)
+	list, err := s.findIssueImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -513,9 +513,9 @@ func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findIssueImpl(ctx, tx.PTx, find)
+	list, err := s.findIssueImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -538,14 +538,14 @@ func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issu
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	issue, err := s.patchIssueImpl(ctx, tx.PTx, patch)
+	issue, err := s.patchIssueImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -557,7 +557,7 @@ func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issu
 }
 
 // createIssueImpl creates a new issue.
-func (*Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.IssueCreate) (*issueRaw, error) {
+func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCreate) (*issueRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -611,7 +611,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Issue
 	return &issueRaw, nil
 }
 
-func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
+func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([]*issueRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -624,11 +624,27 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
+		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.New("principal_id cannot be used with creator_id, assignee_id, or subscriber_id")}
+		}
 		where = append(where, fmt.Sprintf("(creator_id = $%d OR assignee_id = $%d OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d))", len(args)+1, len(args)+2, len(args)+3))
 		args = append(args, *v)
 		args = append(args, *v)
 		args = append(args, *v)
 	}
+	if v := find.CreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.AssigneeID; v != nil {
+		where, args = append(where, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.SubscriberID; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d)", len(args)+1)), append(args, *v)
+	}
+	if v := find.SinceID; v != nil {
+		where, args = append(where, fmt.Sprintf("id <= $%d", len(args)+1)), append(args, *v)
+	}
+
 	if len(find.StatusList) != 0 {
 		list := []string{}
 		for _, status := range find.StatusList {
@@ -655,7 +671,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 			payload
 		FROM issue
 		WHERE ` + strings.Join(where, " AND ")
-	query += " ORDER BY updated_ts DESC"
+	query += " ORDER BY id DESC"
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
@@ -698,7 +714,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind
 }
 
 // patchIssueImpl updates a issue by ID. Returns the new state of the issue after update.
-func (*Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.IssuePatch) (*issueRaw, error) {
+func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch) (*issueRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Name; v != nil {

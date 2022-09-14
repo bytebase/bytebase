@@ -145,9 +145,9 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		WITH database_backup_policy AS (
 			SELECT db.id AS database_id, backup_policy.payload AS payload
 			FROM db, instance LEFT JOIN (
@@ -247,16 +247,6 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	anomalyList, err := s.FindAnomaly(ctx, &api.AnomalyFind{
-		RowStatus:  &rowStatus,
-		DatabaseID: &db.ID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	db.AnomalyList = anomalyList
-
-	rowStatus = api.Normal
 	labelList, err := s.FindDatabaseLabel(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &db.ID,
 		RowStatus:  &rowStatus,
@@ -292,14 +282,14 @@ func (s *Store) createDatabaseRaw(ctx context.Context, create *api.DatabaseCreat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	database, err := s.createDatabaseRawTx(ctx, tx.PTx, create)
+	database, err := s.createDatabaseRawTx(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -307,7 +297,7 @@ func (s *Store) createDatabaseRaw(ctx context.Context, create *api.DatabaseCreat
 }
 
 // createDatabaseRawTx creates a database with a transaction.
-func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
+func (s *Store) createDatabaseRawTx(ctx context.Context, tx *Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, create.EnvironmentID)
 	if err != nil {
 		return nil, err
@@ -352,9 +342,9 @@ func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
+	list, err := s.findDatabaseImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -388,9 +378,9 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
+	list, err := s.findDatabaseImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -415,14 +405,14 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	database, err := s.patchDatabaseImpl(ctx, tx.PTx, patch)
+	database, err := s.patchDatabaseImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -434,7 +424,7 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 }
 
 // createDatabaseImpl creates a new database.
-func (*Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
+func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO db (
@@ -498,7 +488,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.Da
 	return &databaseRaw, nil
 }
 
-func (*Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
+func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -582,7 +572,7 @@ func (*Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Databa
 }
 
 // patchDatabaseImpl updates a database by ID. Returns the new state of the database after update.
-func (*Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
+func (*Store) patchDatabaseImpl(ctx context.Context, tx *Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.ProjectID; v != nil {

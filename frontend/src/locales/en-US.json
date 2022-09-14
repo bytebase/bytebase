@@ -124,6 +124,7 @@
     "config-guide": "config guide",
     "required-placeholder": "required placeholder",
     "optional-placeholder": "optional placeholder",
+    "optional-directory-wildcard": "optional directory wildcard",
     "sensitive-placeholder": "sensitive - write only",
     "enabled": "enabled",
     "default": "default",
@@ -206,7 +207,8 @@
     "go-now": "Go now",
     "sync-now": "Sync Now",
     "show-help": "Show help",
-    "success": "Succeed"
+    "success": "Succeed",
+    "load-more": "Load more"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -288,11 +290,14 @@
     "extend-trial": "Extend trialing time",
     "action": "Deploy yours in 5 seconds",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
-    "readonly": "Server is in readonly mode. You can still view the console, but any change attempt will fail."
+    "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
+    "external-url": "Bytebase has not configured --external-url",
+    "configure-now": "Configure now"
   },
   "intro": {
     "doc": "doc",
-    "issue": "issue"
+    "issue": "issue",
+    "quickstart": "quickstart"
   },
   "bbkit": {
     "common": {
@@ -316,7 +321,8 @@
       "members": "Members",
       "version-control": "Version Control",
       "subscription": "Subscription",
-      "labels": "Labels"
+      "labels": "Labels",
+      "debug-log": "Debug Log"
     },
     "profile": {
       "email": "Email",
@@ -463,7 +469,7 @@
     "subscribe": "Subscribe",
     "unsubscribe": "Unsubscribe",
     "subscriber": "No subscribers | 1 subscriber | {n} subscribers",
-    "apply-to-other-stages": "Apply to other stages",
+    "apply-to-other-tasks": "Apply to other tasks",
     "add-sql-statement": "Add SQL statement...",
     "optional-add-sql-statement": "(Optional) Add SQL statement...",
     "edit-description": "Edit description",
@@ -631,7 +637,7 @@
           "sql-driven-workflow": "SQL-driven workflow"
         },
         "postgresql": {
-          "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges.",
+          "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges. You should grant Bytebase privileges with 'GRANT role_name TO bytebase;' for all existing roles, otherwise Bytebase may not access existing databases or tables.",
           "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER."
         }
       }
@@ -640,7 +646,7 @@
     "password-write-only": "YOUR_DB_PWD - write only",
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
-    "create-an-onboarding-postgresql-instance": "Create an onboarding PostgreSQL instance",
+    "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance",
     "successfully-created-postgresql-instance": "Successfully created onboarding PostgreSQL instance and automatically filled into the form.",
     "connection-info-seems-to-be-incorrect": "Connection info seems to be incorrect",
     "new-instance": "New Instance",
@@ -1037,7 +1043,7 @@
       }
     },
     "settings": {
-      "success-updated-prompt": "Successfully updated {subject}.",
+      "success-updated": "Project settings updated successfully.",
       "success-member-added-prompt": "Successfully added {name} to the project.",
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
@@ -1057,7 +1063,11 @@
       "sync-from-vcs": "Sync from VCS",
       "success-member-sync-prompt": "Sync member from VCS Succeeded",
       "view-vcs-member": "View members in VCS",
-      "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync."
+      "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync.",
+      "schema-change-type": "Schema change type",
+      "select-schema-change-type-ddl": "Migration-based",
+      "select-schema-change-type-sdl": "State-based",
+      "schema-path-template-sdl-description": "The schema file that contains the desired state of the database schema. Bytebase creates new migrations for any discrepancy found between the desired state and the actual database schema."
     },
     "mode": {
       "standard": "Standard",
@@ -1298,33 +1308,7 @@
   },
   "subscription": {
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
-    "current": "Current plan",
-    "instance-count": "Instance count",
-    "expires-at": "Expires at",
-    "free-trial": "Your first 14 days are free - no credit card required",
-    "description-highlight": "Purchase a license",
-    "sensitive-placeholder": "Paste your license here - write only",
     "upload-license": "Upload license",
-    "plan-compare": "Compare features between different plans",
-    "disabled-feature": "This is a premium feature in subscription plan",
-    "trial": "You can start a free trial - no credit card required",
-    "upgrade": "Upgrade subscription",
-    "per-month": "/ month",
-    "price-unit-for-enterprise": "/ month",
-    "start-from": "Start from",
-    "per-instance": "Per instance",
-    "free-price-intro": "Up to 5",
-    "team-price-intro": "5 minimum, billed annually",
-    "enterprise-price-intro": "Customized, billed annually",
-    "deploy": "Deploy",
-    "contact-us": "Contact us",
-    "start-trial": "Try free now",
-    "subscribe": "Subscribe now",
-    "current-plan": "Current plan",
-    "buy": "Buy {plan} plan",
-    "cancel": "cancel your subscription",
-    "announcement": "You can upgrade, downgrade, or {cancel} anytime. No hidden charges.",
-    "trialing": "trialing",
     "update": {
       "success": {
         "title": "Successfully updated license",
@@ -1392,87 +1376,6 @@
         "title": "Point-in-Time-Recovery (PITR)",
         "desc": "Restore the database state to a point in time."
       }
-    },
-    "feature-sections": {
-      "database-management": {
-        "title": "Database Development",
-        "features": {
-          "instance-count": "Instance count",
-          "instance-upto-5": "Up to 5",
-          "instance-customized": "Customized",
-          "instance-minimum-5": "5 ~ unlimited",
-          "schema-change": "Schema and data change",
-          "schema-change-basic": "Basic",
-          "schema-change-basic-tooltip": "Normal migration",
-          "schema-change-advanced": "Advanced",
-          "schema-change-advanced-tooltip": "Normal migration + Online migration (gh-ost)",
-          "migration-history": "Migration history",
-          "sql-editor": "SQL Editor",
-          "disaster-recovery": "Disaster recovery",
-          "disaster-recovery-basic": "Basic",
-          "disaster-recovery-basic-tooltip": "Database backup / restore",
-          "disaster-recovery-advanced": "Advanced",
-          "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
-          "archiving": "Archiving",
-          "sql-check": "SQL check / SQL review",
-          "sql-check-basic": "Basic",
-          "sql-check-basic-tooltip": "Syntax check, connection check",
-          "sql-check-advanced": "Advanced",
-          "sql-check-advanced-tooltip": "Basic + Customized SQL review rules",
-          "anomaly-detection": "Anomaly detection",
-          "anomaly-detection-basic": "Basic",
-          "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
-          "anomaly-detection-advanced": "Advanced",
-          "anomaly-detection-advanced-tooltip": "Basic + Drift detection",
-          "schedule-change": "Scheduled change at specific time",
-          "review-and-backup-policy": "Review and backup policy",
-          "tenancy": "Multi-Region / Multi-Tenancy deployment"
-        }
-      },
-      "collaboration": {
-        "title": "Collaboration",
-        "features": {
-          "ui-based-sql-review": "UI based SQL review",
-          "vsc-workflow": "VCS workflow #GitOps",
-          "shareable-query-link": "Shareable query link",
-          "im-integration": "IM integration",
-          "inbox-notification": "Inbox notification"
-        }
-      },
-      "admin-and-security": {
-        "title": "Admin & Security",
-        "features": {
-          "activity-log": "Activity log",
-          "rbac": "RBAC (Owner, DBA, Developer role)",
-          "3rd-party-auth": "Login with GitLab account",
-          "sync-members-from-vcs": "Sync project membership from the linked GitLab project"
-        }
-      },
-      "branding": {
-        "title": "Branding",
-        "features": {
-          "branding-logo": "Customize the logo"
-        }
-      }
-    },
-    "plan": {
-      "title": "Plan",
-      "try": "Try Team",
-      "free": {
-        "title": "Free Plan",
-        "label": "",
-        "desc": "Personal project or small team, no DBA"
-      },
-      "team": {
-        "title": "Team Plan",
-        "label": "Beta",
-        "desc": "Medium size team, has dedicated DBA or TL for engineering velocity"
-      },
-      "enterprise": {
-        "title": "Enterprise Plan",
-        "label": "Early access",
-        "desc": "Large organization, has dedicated DBA group to manage database fleet"
-      }
     }
   },
   "sheet": {
@@ -1534,6 +1437,48 @@
       },
       "preview": {
         "name": "Preview"
+      }
+    }
+  },
+  "debug-log": {
+    "title": "Debug Log",
+    "no-logs": "No debug logs",
+    "count-of-logs": "Fetched latest {count} log(s) from server.",
+    "debug-log-detail": "Debug Log Details",
+    "table": {
+      "record-ts": "Time",
+      "method": "Method",
+      "request-path": "Request path",
+      "role": "Role",
+      "error": "Error",
+      "stack-trace": "Stack trace",
+      "empty": "<Empty>",
+      "operation": {
+        "operation": "Operation",
+        "view-details": "View Details",
+        "copy": "Copy",
+        "copy-all": "Copy All",
+        "copied": "Copied!",
+        "export": "Export"
+      }
+    }
+  },
+  "onboarding-guide": {
+    "create-database-guide": {
+      "let-add-a-instance": "Let's add an instance",
+      "go-to-project-list-page": "Go to project list page",
+      "click-new-project": "Click \"New Project\" to create a project",
+      "click-new-database": "Click \"New Database\" to create a database",
+      "click-approve": "Click \"Approve\" to perform the issue",
+      "wait-issue-finished": "waiting for the issue finished...",
+      "back-to-home": "Back to Home",
+      "finished-dialog": {
+        "you-have-done": "You have done:",
+        "add-an-instance": "Add an instance",
+        "create-a-project": "Create a project",
+        "create-an-issue": "Create an issue",
+        "create-a-new-database": "Create a new database",
+        "keep-going-with-bytebase": "Keep going with Bytebase"
       }
     }
   }

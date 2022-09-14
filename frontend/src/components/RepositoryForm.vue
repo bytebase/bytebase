@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div class="space-y-4">
     <div>
@@ -71,6 +72,32 @@
         :disabled="!allowEdit"
       />
     </div>
+    <!-- Project schemaChangeType selector -->
+    <div>
+      <div class="textlabel">
+        {{ $t("project.settings.schema-change-type") }}
+        <span class="text-red-600">*</span>
+      </div>
+      <BBSelect
+        id="schemamigrationtype"
+        :selected-item="schemaChangeType"
+        :item-list="['DDL', 'SDL']"
+        class="mt-1"
+        @select-item="
+          (type: string) => {
+            $emit('change-schema-change-type', type);
+          }
+        "
+      >
+        <template #menuItem="{ item }">
+          {{
+            $t(
+              `project.settings.select-schema-change-type-${item.toLowerCase()}`
+            )
+          }}
+        </template>
+      </BBSelect>
+    </div>
     <div>
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
@@ -100,8 +127,10 @@
         {{ FILE_REQUIRED_PLACEHOLDER }};
         <template v-if="fileOptionalPlaceholder.length > 0">
           {{ $t("common.optional-placeholder") }}:
-          {{ fileOptionalPlaceholder.join(", ") }}
+          {{ fileOptionalPlaceholder.join(", ") }};
         </template>
+        {{ $t("common.optional-directory-wildcard") }}:
+        {{ FILE_OPTIONAL_DIRECTORY_WILDCARD }}
       </div>
       <div class="mt-2 textinfolabel">
         • {{ $t("repository.file-path-example-schema-migration") }}:
@@ -136,10 +165,15 @@
         >
       </div>
       <div class="mt-1 textinfolabel">
-        {{ $t("repository.schema-writeback-description") }}
-        <span class="font-medium text-main">{{
-          $t("repository.schema-writeback-protected-branch")
-        }}</span>
+        <template v-if="isProjectSchemaChangeTypeDDL">
+          {{ $t("repository.schema-writeback-description") }}
+          <span class="font-medium text-main">{{
+            $t("repository.schema-writeback-protected-branch")
+          }}</span>
+        </template>
+        <template v-else>
+          {{ $t("project.settings.schema-path-template-sdl-description") }}
+        </template>
       </div>
       <input
         id="schemapathtemplate"
@@ -202,11 +236,15 @@ import {
   ExternalRepositoryInfo,
   Project,
   RepositoryConfig,
+  SchemaChangeType,
   VCSType,
 } from "@/types";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
+const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
+const SINGLE_ASTERISK_REGEX = /\/\*\//g;
+const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -242,13 +280,21 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Project>,
     },
+    schemaChangeType: {
+      required: true,
+      type: String as PropType<SchemaChangeType>,
+    },
   },
-  emits: ["change-repository"],
+  emits: ["change-repository", "change-schema-change-type"],
   setup(props) {
     const state = reactive<LocalState>({});
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
+    });
+
+    const isProjectSchemaChangeTypeDDL = computed(() => {
+      return (props.schemaChangeType || "DDL") === "DDL";
     });
 
     const sampleFilePath = (
@@ -285,6 +331,11 @@ export default defineComponent({
       ];
 
       let result = `${baseDirectory}/${filePathTemplate}`;
+
+      // To replace the wildcard.
+      result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
+      result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
+
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);
@@ -333,10 +384,12 @@ export default defineComponent({
 
     return {
       FILE_REQUIRED_PLACEHOLDER,
-      fileOptionalPlaceholder,
       SCHEMA_REQUIRED_PLACEHOLDER,
+      FILE_OPTIONAL_DIRECTORY_WILDCARD,
+      fileOptionalPlaceholder,
       schemaOptionalTagPlaceholder,
       state,
+      isProjectSchemaChangeTypeDDL,
       sampleFilePath,
       sampleSchemaPath,
     };

@@ -1,4 +1,4 @@
-import { reactive } from "vue";
+import { markRaw, reactive } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
@@ -45,7 +45,7 @@ const useExecuteSQL = () => {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
 
-    const isDisconnected = sqlEditorStore.isDisconnected;
+    const isDisconnected = tabStore.isDisconnected;
     if (isDisconnected) {
       notify("CRITICAL", t("sql-editor.select-connection"));
       return;
@@ -125,7 +125,8 @@ const useExecuteSQL = () => {
         );
       }
       tabStore.updateCurrentTab({
-        queryResult: sqlResultSet.data as any,
+        // use `markRaw` to prevent vue from monitoring the object change deeply
+        queryResult: markRaw(sqlResultSet.data) as any,
         adviceList: sqlResultSet.adviceList,
         executeParams: {
           query,

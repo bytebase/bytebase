@@ -11,7 +11,7 @@
             />
           </div>
           <BBTextField
-            class="ml-2 my-0.5 w-full text-lg font-bold"
+            class="ml-2 my-0.5 w-full text-lg font-bold truncate"
             :disabled="!allowEditNameAndDescription"
             :required="true"
             :focus-on-mount="create"
@@ -124,15 +124,6 @@ const pushEvent = computed((): VCSPushEvent | undefined => {
     return payload?.pushEvent;
   }
   return undefined;
-});
-
-const vcsType = computed((): string => {
-  if (pushEvent.value) {
-    if (pushEvent.value.vcsType.startsWith("GITLAB")) {
-      return "GitLab";
-    }
-  }
-  return "";
 });
 
 const vcsBranch = computed((): string => {

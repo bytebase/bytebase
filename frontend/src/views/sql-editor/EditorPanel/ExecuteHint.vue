@@ -51,24 +51,24 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-
-import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
-import { UNKNOWN_ID } from "@/types";
-
+import { pushNotification, useTabStore, useDatabaseStore } from "@/store";
 import {
   parseSQL,
   transformSQL,
   isDDLStatement,
 } from "@/components/MonacoEditor/sqlParser";
+import { UNKNOWN_ID } from "@/types";
 
 const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
+const DDLIssueTemplate = "bb.issue.database.schema.update";
+const DMLIssueTemplate = "bb.issue.database.data.update";
+
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
 
 const sqlStatement = computed(
   () => tabStore.currentTab.selectedStatement || tabStore.currentTab.statement
@@ -86,8 +86,6 @@ const isDDLSQLStatement = computed(() => {
   return data !== null ? isDDLStatement(data) : false;
 });
 
-const ctx = computed(() => sqlEditorStore.connectionContext);
-
 const docLink =
   "https://bytebase.com/docs/concepts/schema-change-workflow#ui-workflow?source=console";
 
@@ -96,7 +94,8 @@ const handleColse = () => {
 };
 
 const gotoAlterSchema = () => {
-  if (ctx.value.databaseId === UNKNOWN_ID) {
+  const { databaseId } = tabStore.currentTab.connection;
+  if (databaseId === UNKNOWN_ID) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -107,11 +106,7 @@ const gotoAlterSchema = () => {
 
   emit("close");
 
-  const projectId = sqlEditorStore.findProjectIdByDatabaseId(
-    ctx.value.databaseId as number
-  );
-  const DDLIssueTemplate = "bb.issue.database.schema.update";
-  const DMLIssueTemplate = "bb.issue.database.data.update";
+  const database = useDatabaseStore().getDatabaseById(databaseId);
 
   router.push({
     name: "workspace.issue.detail",
@@ -120,11 +115,11 @@ const gotoAlterSchema = () => {
     },
     query: {
       template: isDDLSQLStatement.value ? DDLIssueTemplate : DMLIssueTemplate,
-      name: `[${ctx.value.databaseName}] ${
+      name: `[${database.name}] ${
         isDDLSQLStatement.value ? "Alter schema" : "Change Data"
       }`,
-      project: projectId,
-      databaseList: ctx.value.databaseId,
+      project: database.project.id,
+      databaseList: databaseId,
       sql: getParsedStatement(),
     },
   });

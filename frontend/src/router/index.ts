@@ -38,7 +38,6 @@ import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
 import {
-  useTabStore,
   hasFeature,
   useVCSStore,
   useProjectWebhookStore,
@@ -57,8 +56,6 @@ const SIGNUP_MODULE = "auth.signup";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
-
-// console.log(useProjectWebhookStore());
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -428,6 +425,16 @@ const routes: Array<RouteRecordRaw> = [
                 },
                 component: () =>
                   import("../views/SettingWorkspaceSQLReviewDetail.vue"),
+                props: true,
+              },
+              {
+                path: "debug-log",
+                name: "setting.workspace.debug-log",
+                meta: {
+                  title: () => t("settings.sidebar.debug-log"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceDebugLog.vue"),
                 props: true,
               },
             ],
@@ -830,21 +837,21 @@ const routes: Array<RouteRecordRaw> = [
         path: "",
         name: "sql-editor.home",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug",
         name: "sql-editor.detail",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug/:sheetSlug",
         name: "sql-editor.share",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
     ],
@@ -911,7 +918,6 @@ router.beforeEach((to, from, next) => {
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const issueStore = useIssueStore();
-  const tabStore = useTabStore();
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
   const projectStore = useProjectStore();
@@ -998,6 +1004,17 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name?.toString().startsWith("setting.workspace.project")) {
+    // Returns 403 immediately if not DBA or Owner.
+    if (!isDBAOrOwner(currentUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
+  if (to.name?.toString().startsWith("setting.workspace.debug-log")) {
     // Returns 403 immediately if not DBA or Owner.
     if (!isDBAOrOwner(currentUser.role)) {
       next({
@@ -1305,6 +1322,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (connectionSlug) {
+    // TODO(Jim): use standard slug format instead of "_" joint format.
     const [, instanceId, , databaseId] = connectionSlug.split("_");
     useSQLEditorStore()
       .fetchConnectionByInstanceIdAndDatabaseId({
@@ -1314,18 +1332,11 @@ router.beforeEach((to, from, next) => {
       .then(() => {
         // for sharing the sheet to others
         if (sheetSlug) {
+          // TODO(Jim): use standard slug format instead of "_" joint format.
           const [_, sheetId] = sheetSlug.split("_");
           useSheetStore()
             .fetchSheetById(Number(sheetId))
             .then((sheet: Sheet) => {
-              tabStore.addTab({
-                name: sheet.name,
-                statement: sheet.statement,
-                isSaved: true,
-              });
-              tabStore.updateCurrentTab({
-                sheetId: sheet.id,
-              });
               useSQLEditorStore().setSQLEditorState({
                 sharedSheet: sheet,
               });

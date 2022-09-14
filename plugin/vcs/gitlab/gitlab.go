@@ -58,14 +58,7 @@ type WebhookCreate struct {
 	// So we can't possibly display useful info when reviewing a MR, thus we don't enable this event.
 	// Saying that, delivering a souding dry run solution would be great and hopefully we can achieve that one day.
 	// MergeRequestsEvents  bool   `json:"merge_requests_events"`
-	PushEventsBranchFilter string `json:"push_events_branch_filter"`
-	EnableSSLVerification  bool   `json:"enable_ssl_verification"`
-}
-
-// WebhookUpdate represents a GitLab API request for updating a new webhook.
-type WebhookUpdate struct {
-	URL                    string `json:"url"`
-	PushEventsBranchFilter string `json:"push_events_branch_filter"`
+	EnableSSLVerification bool `json:"enable_ssl_verification"`
 }
 
 // WebhookProject is the API message for webhook project.

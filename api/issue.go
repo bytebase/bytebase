@@ -89,6 +89,12 @@ type Issue struct {
 	Payload        string       `jsonapi:"attr,payload"`
 }
 
+// IssueResponse is the API message for an issue response.
+type IssueResponse struct {
+	Issues    []*Issue `jsonapi:"relation,issues"`
+	NextToken string   `jsonapi:"attr,nextToken"`
+}
+
 // IssueCreate is the API message for creating an issue.
 type IssueCreate struct {
 	// Standard fields
@@ -151,7 +157,7 @@ type UpdateSchemaDetail struct {
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
 }
 
-// UpdateSchemaContext is the issue create context for updating database schema.
+// UpdateSchemaContext is the shared issue create context for updating database schema and data.
 type UpdateSchemaContext struct {
 	// MigrationType is the type of a migration.
 	MigrationType db.MigrationType `json:"migrationType"`
@@ -160,6 +166,9 @@ type UpdateSchemaContext struct {
 	DetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent `json:"vcsPushEvent"`
+	// MigrationInfo is only available when VCSPushEvent != nil.
+	// It's parsed from VCSPushEvent.
+	MigrationInfo *db.MigrationInfo `json:"migrationInfo,omitempty"`
 }
 
 // UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.
@@ -213,7 +222,15 @@ type IssueFind struct {
 	PipelineID *int
 	// Find issue where principalID is either creator, assignee or subscriber
 	PrincipalID *int
-	StatusList  []IssueStatus
+	// To support pagination, we add into creator, assignee and subscriber.
+	// Only principleID or one of the following three fields can be set.
+	CreatorID    *int
+	AssigneeID   *int
+	SubscriberID *int
+
+	StatusList []IssueStatus
+	// If specified, only find issues whose ID is smaller that SinceID.
+	SinceID *int
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
 }

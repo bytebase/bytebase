@@ -18,6 +18,8 @@ export type ProjectRoleProvider =
   | "GITHUB_COM"
   | "BYTEBASE";
 
+export type SchemaChangeType = "DDL" | "SDL";
+
 export type ProjectRoleProviderPayload = {
   vcsRole: string;
   lastSyncTs: number;
@@ -50,6 +52,7 @@ export type Project = {
   tenantMode: ProjectTenantMode;
   dbNameTemplate: string;
   roleProvider: ProjectRoleProvider;
+  schemaChangeType: SchemaChangeType;
 };
 
 export type ProjectCreate = {
@@ -59,6 +62,7 @@ export type ProjectCreate = {
   tenantMode: ProjectTenantMode;
   dbNameTemplate: string;
   roleProvider: ProjectRoleProvider;
+  schemaChangeType: SchemaChangeType;
 };
 
 export type ProjectPatch = {
@@ -67,8 +71,8 @@ export type ProjectPatch = {
 
   // Domain specific fields
   name?: string;
-  key?: string;
   roleProvider?: ProjectRoleProvider;
+  schemaChangeType?: SchemaChangeType;
 };
 
 // Project Member
@@ -111,4 +115,5 @@ export type ProjectRepositoryConfig = {
   code: string;
   repositoryInfo: ExternalRepositoryInfo;
   repositoryConfig: RepositoryConfig;
+  schemaChangeType: SchemaChangeType;
 };

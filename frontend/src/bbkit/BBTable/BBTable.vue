@@ -58,16 +58,16 @@
                 }
               "
             >
-              <slot name="body" :rowData="item" />
+              <slot name="body" :row-data="item" />
             </tr>
           </template>
           <template v-else>
-            <tr>
+            <tr v-if="showPlaceholder">
               <td
                 :colspan="columnList.length"
                 class="text-center text-gray-400"
               >
-                -
+                <slot name="placeholder">-</slot>
               </td>
             </tr>
           </template>
@@ -88,7 +88,7 @@
             }
           "
         >
-          <slot name="body" :rowData="item" />
+          <slot name="body" :row-data="item" />
         </tr></tbody
     ></template>
     <slot name="footer" />
@@ -119,6 +119,7 @@ const props = withDefaults(
     rightBordered?: boolean;
     topBordered?: boolean;
     bottomBordered?: boolean;
+    showPlaceholder?: boolean;
   }>(),
   {
     columnList: () => [],
@@ -133,6 +134,7 @@ const props = withDefaults(
     rightBordered: true,
     topBordered: true,
     bottomBordered: true,
+    showPlaceholder: true,
   }
 );
 

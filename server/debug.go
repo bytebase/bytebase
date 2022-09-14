@@ -30,6 +30,43 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 
 		return currentDebugState(c)
 	})
+
+	g.GET("/debug/log", func(c echo.Context) error {
+		var errorRecordList []*api.DebugLog
+		// incrementID is used as primary key in jsonapi.
+		var incrementID int
+
+		// Only Owner and DBA can see debug logs.
+		role := c.Get(getRoleContextKey()).(api.Role)
+		if role != api.Owner && role != api.DBA {
+			return echo.NewHTTPError(http.StatusForbidden, "Not allowed to fetch debug logs")
+		}
+
+		s.errorRecordRing.RWMutex.RLock()
+		defer s.errorRecordRing.RWMutex.RUnlock()
+
+		s.errorRecordRing.Ring.Do(func(p interface{}) {
+			if p == nil {
+				return
+			}
+			errRecord, ok := p.(*api.ErrorRecord)
+			if !ok {
+				return
+			}
+			errorRecordList = append(errorRecordList, &api.DebugLog{
+				ID:          incrementID,
+				ErrorRecord: *errRecord,
+			})
+			incrementID++
+		})
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, errorRecordList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal debug log response").SetInternal(err)
+		}
+
+		return nil
+	})
 }
 
 func currentDebugState(c echo.Context) error {

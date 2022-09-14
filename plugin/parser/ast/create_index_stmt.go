@@ -2,7 +2,7 @@ package ast
 
 // CreateIndexStmt is the struct for create index statement.
 type CreateIndexStmt struct {
-	node
+	ddl
 
 	Index *IndexDef
 }

@@ -2,14 +2,13 @@
 package catalog
 
 import (
-	"context"
-
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
 // Catalog is the service for catalog.
 type Catalog interface {
-	GetDatabase(ctx context.Context) (*Database, error)
+	GetDatabase() *Database
+	GetFinder() *Finder
 }
 
 // Database is the database.
@@ -103,72 +102,4 @@ type Extension struct {
 	Name        string
 	Version     string
 	Description string
-}
-
-// HasNoTable returns true if the current database has no table.
-func (d *Database) HasNoTable() bool {
-	for _, schema := range d.SchemaList {
-		for _, table := range schema.TableList {
-			if table != nil {
-				return false
-			}
-		}
-	}
-
-	return true
-}
-
-// IndexFind is for find index.
-type IndexFind struct {
-	SchemaName string
-	TableName  string
-	IndexName  string
-}
-
-// FindIndex finds the index.
-func (d *Database) FindIndex(find *IndexFind) (string, *Index) {
-	// notMatchTable is used for PostgreSQL. In PostgreSQL, the index name is unique in a schema, not a table.
-	notMatchTable := (d.DbType == db.Postgres && find.SchemaName != "" && find.TableName == "")
-	for _, schema := range d.SchemaList {
-		if schema.Name != find.SchemaName {
-			continue
-		}
-		for _, table := range schema.TableList {
-			if !notMatchTable && table.Name != find.TableName {
-				continue
-			}
-			for _, index := range table.IndexList {
-				if index.Name == find.IndexName {
-					return table.Name, index
-				}
-			}
-		}
-	}
-	return "", nil
-}
-
-// PrimaryKeyFind is for find primary key.
-type PrimaryKeyFind struct {
-	SchemaName string
-	TableName  string
-}
-
-// FindPrimaryKey finds the primary key.
-func (d *Database) FindPrimaryKey(find *PrimaryKeyFind) *Index {
-	for _, schema := range d.SchemaList {
-		if schema.Name != find.SchemaName {
-			continue
-		}
-		for _, table := range schema.TableList {
-			if table.Name != find.TableName {
-				continue
-			}
-			for _, index := range table.IndexList {
-				if index.Primary {
-					return index
-				}
-			}
-		}
-	}
-	return nil
 }

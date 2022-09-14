@@ -38,7 +38,8 @@ type Driver struct {
 	binlogDir     string
 	db            *sql.DB
 
-	replayBinlogCounter *common.CountingReader
+	replayedBinlogBytes *common.CountingReader
+	restoredBackupBytes *common.CountingReader
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -174,5 +175,5 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.db, statement, limit)
+	return util.Query(ctx, driver.dbType, driver.db, statement, limit)
 }

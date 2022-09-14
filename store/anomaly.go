@@ -118,7 +118,7 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
 	status := api.Normal
 	find := &api.AnomalyFind{
@@ -127,14 +127,14 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 		DatabaseID: upsert.DatabaseID,
 		Type:       &upsert.Type,
 	}
-	list, err := findAnomalyListImpl(ctx, tx.PTx, find)
+	list, err := findAnomalyListImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	var anomalyRaw *anomalyRaw
 	if len(list) == 0 {
-		anomalyRaw, err = createAnomalyImpl(ctx, tx.PTx, upsert)
+		anomalyRaw, err = createAnomalyImpl(ctx, tx, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +145,7 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 			UpdaterID: upsert.CreatorID,
 			Payload:   upsert.Payload,
 		}
-		anomalyRaw, err = patchAnomalyImpl(ctx, tx.PTx, patch)
+		anomalyRaw, err = patchAnomalyImpl(ctx, tx, patch)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -166,9 +166,9 @@ func (s *Store) findAnomalyRaw(ctx context.Context, find *api.AnomalyFind) ([]*a
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	list, err := findAnomalyListImpl(ctx, tx.PTx, find)
+	list, err := findAnomalyListImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -183,13 +183,13 @@ func (s *Store) ArchiveAnomaly(ctx context.Context, archive *api.AnomalyArchive)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer tx.Rollback()
 
-	if err := archiveAnomalyImpl(ctx, tx.PTx, archive); err != nil {
+	if err := archiveAnomalyImpl(ctx, tx, archive); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -197,7 +197,7 @@ func (s *Store) ArchiveAnomaly(ctx context.Context, archive *api.AnomalyArchive)
 }
 
 // createAnomalyImpl creates a new anomaly.
-func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpsert) (*anomalyRaw, error) {
+func createAnomalyImpl(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (*anomalyRaw, error) {
 	// Inserts row into database.
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
@@ -247,7 +247,7 @@ func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpser
 	return &anomalyRaw, nil
 }
 
-func findAnomalyListImpl(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*anomalyRaw, error) {
+func findAnomalyListImpl(ctx context.Context, tx *Tx, find *api.AnomalyFind) ([]*anomalyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
@@ -338,7 +338,7 @@ type anomalyPatch struct {
 }
 
 // patchAnomalyImpl patches an anomaly.
-func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*anomalyRaw, error) {
+func patchAnomalyImpl(ctx context.Context, tx *Tx, patch *anomalyPatch) (*anomalyRaw, error) {
 	// Build UPDATE clause.
 	if patch.Payload == "" {
 		patch.Payload = "{}"
@@ -382,7 +382,7 @@ func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*an
 }
 
 // archiveAnomalyImpl archives an anomaly by ID.
-func archiveAnomalyImpl(ctx context.Context, tx *sql.Tx, archive *api.AnomalyArchive) error {
+func archiveAnomalyImpl(ctx context.Context, tx *Tx, archive *api.AnomalyArchive) error {
 	if archive.InstanceID == nil && archive.DatabaseID == nil {
 		return &common.Error{Code: common.Internal, Err: errors.Errorf("failed to close anomaly, should specify either instanceID or databaseID")}
 	}

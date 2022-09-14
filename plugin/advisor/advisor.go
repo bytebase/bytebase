@@ -40,7 +40,7 @@ func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 }
 
 // Type is the type of advisor.
-//nolint
+// nolint
 type Type string
 
 const (
@@ -88,6 +88,27 @@ const (
 	// MySQLColumnDisallowChangingType is an advisor type for MySQL disallow changing column type.
 	MySQLColumnDisallowChangingType Type = "bb.plugin.advisor.mysql.column.disallow-changing-type"
 
+	// MySQLColumnSetDefaultForNotNull is an advisor type for MySQL set default value for not null column.
+	MySQLColumnSetDefaultForNotNull Type = "bb.plugin.advisor.mysql.column.set-default-for-not-null"
+
+	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
+	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-change"
+
+	// MySQLColumnExists is an advisor type for MySQL column existence.
+	MySQLColumnExists Type = "bb.plugin.advisor.mysql.column.exists"
+
+	// MySQLColumnDisallowChangingOrder is an advisor type for MySQL disallow changing column order.
+	MySQLColumnDisallowChangingOrder Type = "bb.plugin.advisor.mysql.column.disallow-changing-order"
+
+	// MySQLColumnCommentConvention is an advisor type for MySQL column comment convention.
+	MySQLColumnCommentConvention Type = "bb.plugin.advisor.mysql.column.comment"
+
+	// MySQLAutoIncrementColumnMustInteger is an advisor type for auto-increment column.
+	MySQLAutoIncrementColumnMustInteger Type = "bb.plugin.advisor.mysql.column.auto-increment-must-integer"
+
+	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
+	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
@@ -100,8 +121,38 @@ const (
 	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
 	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
 
+	// MySQLTableExists is an advisor type for MySQL table existence.
+	MySQLTableExists Type = "bb.plugin.advisor.mysql.table.exists"
+
+	// MySQLTableCommentConvention is an advisor for MySQL table comment convention.
+	MySQLTableCommentConvention Type = "bb.plugin.advisor.mysql.table.comment"
+
+	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
+	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
+
+	// MySQLTableNotExists is an advisor for MySQL table name conflict check.
+	MySQLTableNotExists Type = "bb.plugin.advisor.mysql.table.not-exists"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
+
+	// MySQLIndexNoDuplicateColumn is an advisor type for MySQL no duplicate columns in index.
+	MySQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.mysql.index.no-duplicate-column"
+
+	// MySQLIndexPKType is an advisor type for MySQL correct type of PK.
+	MySQLIndexPKType Type = "bb.plugin.advisor.mysql.index.pk-type"
+
+	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
+	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
+
+	// MySQLIndexNotExists is an advisor type for MySQL index name conflict check.
+	MySQLIndexNotExists Type = "bb.plugin.advisor.mysql.index.not-exists"
+
+	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
+	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
+
+	// MySQLIndexTypeNoBlob is an advisor type for MySQL index type no blob.
+	MySQLIndexTypeNoBlob Type = "bb.plugin.advisor.mysql.index.type-no-blob"
 
 	// PostgreSQL Advisor.
 
@@ -191,8 +242,8 @@ type Context struct {
 	Collation string
 
 	// SQL review rule special fields.
-	Rule     *SQLReviewRule
-	Database *catalog.Database
+	Rule    *SQLReviewRule
+	Catalog *catalog.Finder
 }
 
 // Advisor is the interface for advisor.

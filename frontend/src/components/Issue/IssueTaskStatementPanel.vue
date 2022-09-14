@@ -12,13 +12,13 @@
         <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
       <button
-        v-if="allowApplyStatementToOtherStages"
+        v-if="allowApplyStatementToOtherTasks"
         :disabled="isEmpty(state.editStatement)"
         type="button"
         class="btn-small"
-        @click.prevent="applyStatementToOtherStages(state.editStatement)"
+        @click.prevent="applyStatementToOtherTasks(state.editStatement)"
       >
-        {{ $t("issue.apply-to-other-stages") }}
+        {{ $t("issue.apply-to-other-tasks") }}
       </button>
     </div>
 
@@ -126,6 +126,7 @@
       :value="state.editStatement"
       :readonly="!state.editing"
       :auto-focus="false"
+      :dialect="dialect"
       @change="onStatementChange"
       @ready="handleMonacoEditorReady"
     />
@@ -177,7 +178,7 @@ import {
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { baseDirectoryWebUrl, Issue, Repository } from "@/types";
+import { baseDirectoryWebUrl, Issue, Repository, SQLDialect } from "@/types";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
@@ -210,10 +211,11 @@ export default defineComponent({
       issue,
       create,
       allowEditStatement,
+      selectedDatabase,
       selectedStatement: statement,
       updateStatement,
-      allowApplyStatementToOtherStages,
-      applyStatementToOtherStages,
+      allowApplyStatementToOtherTasks,
+      applyStatementToOtherTasks,
     } = useIssueLogic();
 
     const uiStateStore = useUIStateStore();
@@ -227,6 +229,15 @@ export default defineComponent({
 
     const editorRef = ref<InstanceType<typeof MonacoEditor>>();
     const overrideSQLDialog = useDialog();
+
+    const dialect = computed((): SQLDialect => {
+      const db = selectedDatabase.value;
+      if (db?.instance.engine === "POSTGRES") {
+        return "postgresql";
+      }
+      // fallback to mysql dialect anyway
+      return "mysql";
+    });
 
     const formatOnSave = computed({
       get: () => uiStateStore.issueFormatStatementOnSave,
@@ -377,7 +388,13 @@ export default defineComponent({
       useRepositoryStore()
         .fetchRepositoryByProjectId(issueEntity.project.id)
         .then((repository: Repository) => {
-          window.open(baseDirectoryWebUrl(repository), "_blank");
+          window.open(
+            baseDirectoryWebUrl(repository, {
+              DB_NAME: selectedDatabase.value?.name,
+              ENV_NAME: selectedDatabase.value?.instance.environment.name,
+            }),
+            "_blank"
+          );
 
           state.showVCSGuideModal = false;
         });
@@ -388,12 +405,13 @@ export default defineComponent({
       create,
       allowEditStatement,
       statement,
-      allowApplyStatementToOtherStages,
+      allowApplyStatementToOtherTasks,
+      dialect,
       formatOnSave,
       state,
       editorRef,
       updateStatement,
-      applyStatementToOtherStages,
+      applyStatementToOtherTasks,
       beginEdit,
       saveEdit,
       cancelEdit,

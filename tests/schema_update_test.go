@@ -2,10 +2,12 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"testing"
 	"time"
 
@@ -16,6 +18,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
@@ -540,6 +544,733 @@ func TestVCS(t *testing.T) {
 			}
 			a.Equal(histories[0].Version, "ver2")
 			a.Equal(histories[1].Version, "ver1")
+		})
+	}
+}
+
+func TestVCS_SDL(t *testing.T) {
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(added []string, modified []string) interface{}
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(added []string, modified []string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp:    "2021-01-13T13:14:00Z",
+							AddedList:    added,
+							ModifiedList: modified,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(added []string, modified []string) interface{} {
+				return github.WebhookPushEvent{
+					Ref: "refs/heads/feature/foo",
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Added:    added,
+							Modified: modified,
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a PostgreSQL instance.
+			port := getTestPort(t.Name()) + 3
+			_, stopInstance := postgres.SetupTestInstance(t, port)
+			defer stopInstance()
+
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=127.0.0.1 port=%d user=root database=postgres", port))
+			a.NoError(err)
+			defer func() {
+				_ = pgDB.Close()
+			}()
+
+			err = pgDB.Ping()
+			a.NoError(err)
+
+			const databaseName = "testVCSSchemaUpdate"
+			_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+			a.NoError(err)
+			_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
+			a.NoError(err)
+			_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
+			a.NoError(err)
+
+			// Create a table in the database
+			schemaFileContent := `CREATE TABLE projects (id serial PRIMARY KEY);`
+			_, err = pgDB.Exec(schemaFileContent)
+			a.NoError(err)
+
+			// Create a VCS
+			vcs, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name:             "Test VCS Project",
+					Key:              "TestVCSSchemaUpdate",
+					SchemaChangeType: api.ProjectSchemaChangeTypeSDL,
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcs.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
+
+			environments, err := ctl.getEnvironments()
+			a.NoError(err)
+			prodEnvironment, err := findEnvironment(environments, "Prod")
+			a.NoError(err)
+
+			// Add an instance
+			instance, err := ctl.addInstance(
+				api.InstanceCreate{
+					EnvironmentID: prodEnvironment.ID,
+					Name:          "pgInstance",
+					Engine:        db.Postgres,
+					Host:          "127.0.0.1",
+					Port:          strconv.Itoa(port),
+					Username:      "bytebase",
+					Password:      "bytebase",
+				},
+			)
+			a.NoError(err)
+
+			// Create an issue that creates a database
+			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil /* labelMap */)
+			a.NoError(err)
+
+			// Simulate Git commits for schema update to create a new table "users".
+			const schemaFile = "bbtest/Prod/.testVCSSchemaUpdate__LATEST.sql"
+			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				schemaFile: schemaFileContent,
+			})
+			a.NoError(err)
+
+			payload, err := json.Marshal(test.newWebhookPushEvent(nil /* added */, []string{schemaFile}))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get schema update issue
+			openStatus := []api.IssueStatus{api.IssueOpen}
+			issues, err := ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: openStatus,
+				},
+			)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue := issues[0]
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Simulate Git commits for data update to the table "users".
+			const dataFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				dataFile: `INSERT INTO users (id) VALUES (1);`,
+			})
+			a.NoError(err)
+
+			payload, err = json.Marshal(test.newWebhookPushEvent([]string{dataFile}, nil /* modified */))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get data update issue
+			openStatus = []api.IssueStatus{api.IssueOpen}
+			issues, err = ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: openStatus,
+				},
+			)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue = issues[0]
+			status, err = ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			_, err = ctl.patchIssueStatus(
+				api.IssueStatusPatch{
+					ID:     issue.ID,
+					Status: api.IssueDone,
+				},
+			)
+			a.NoError(err)
+
+			// Query list of tables
+			result, err := ctl.query(instance, databaseName, `
+SELECT table_name 
+    FROM information_schema.tables 
+WHERE table_type = 'BASE TABLE' 
+    AND table_schema NOT IN 
+        ('pg_catalog', 'information_schema');
+`)
+			a.NoError(err)
+			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]]]`, result)
+
+			// Get migration history
+			const initialSchema = `SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+`
+			const updatedSchema = `SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.projects (
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE public.projects_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
+
+CREATE TABLE public.users (
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE public.users_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+`
+
+			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
+			a.NoError(err)
+			wantHistories := []api.MigrationHistory{
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Data,
+					Status:     db.Done,
+					Schema:     updatedSchema,
+					SchemaPrev: updatedSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     updatedSchema,
+					SchemaPrev: initialSchema,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.UI,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     initialSchema,
+					SchemaPrev: "",
+				},
+			}
+			a.Equal(len(wantHistories), len(histories))
+
+			for i, history := range histories {
+				got := api.MigrationHistory{
+					Database:   history.Database,
+					Source:     history.Source,
+					Type:       history.Type,
+					Status:     history.Status,
+					Schema:     history.Schema,
+					SchemaPrev: history.SchemaPrev,
+				}
+				a.Equal(wantHistories[i], got, i)
+				a.NotEmpty(history.Version)
+			}
+		})
+	}
+}
+
+func TestWildcardInVCSFilePathTemplate(t *testing.T) {
+	branchFilter := "feature/foo"
+	dbName := "db"
+	externalID := "121"
+	repoFullPath := "test/wildcard"
+
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		baseDirectory       string
+		envName             string
+		filePathTemplate    string
+		commitFileNames     []string
+		commitContents      []string
+		expect              []bool
+		newWebhookPushEvent func(gitFile string) interface{}
+	}{
+		{
+			name:               "singleAsterisk",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			baseDirectory:      "bbtest",
+			envName:            "wildcard",
+			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			commitFileNames: []string{
+				// Normal
+				fmt.Sprintf("%s/%s/foo/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "wildcard", dbName),
+				// One singleAsterisk cannot match two directories.
+				fmt.Sprintf("%s/%s/foo/bar/%s__ver2__data__insert_data.sql", baseDirectory, "wildcard", dbName),
+				// One singleAsterisk cannot match zero directory.
+				fmt.Sprintf("%s/%s/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "wildcard", dbName),
+			},
+			commitContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"INSERT INTO t1 VALUES (1);",
+				"CREATE TABLE t3 (id INT);",
+			},
+			expect: []bool{
+				true,
+				false,
+				false,
+			},
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "doubleAsterisks",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			baseDirectory:      "bbtest",
+			envName:            "wildcard",
+			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			commitFileNames: []string{
+				// Two singleAsterisk can match one directory.
+				fmt.Sprintf("%s/%s/foo/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "wildcard", dbName),
+				// Two singleAsterisk can match two directories.
+				fmt.Sprintf("%s/%s/foo/bar/%s__ver2__migrate__create_table_t2.sql", baseDirectory, "wildcard", dbName),
+				// Two singleAsterisk can match three directories or more.
+				fmt.Sprintf("%s/%s/foo/bar/foo/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "wildcard", dbName),
+				// Two singleAsterisk cannot match zero directory.
+				fmt.Sprintf("%s/%s/%s__ver4__migrate__create_table_t4.sql", baseDirectory, "wildcard", dbName),
+			},
+			commitContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"CREATE TABLE t2 (id INT);",
+				"CREATE TABLE t3 (id INT);",
+				"CREATE TABLE t4 (id INT);",
+			},
+			expect: []bool{
+				true,
+				true,
+				true,
+				false,
+			},
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "emptyBaseAndMixAsterisks",
+			vcsProviderCreator: fake.NewGitLab,
+			envName:            "wildcard",
+			baseDirectory:      "",
+			vcsType:            vcs.GitLabSelfHost,
+			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			commitFileNames: []string{
+				// ** matches foo, foo matches foo, * matches bar
+				fmt.Sprintf("%s/foo/foo/bar/%s__ver1__migrate__create_table_t1.sql", "wildcard", dbName),
+				// ** matches foo/bar/foo, foo matches foo, * matches bar
+				fmt.Sprintf("%s/foo/bar/foo/foo/bar/%s__ver2__migrate__create_table_t2.sql", "wildcard", dbName),
+				// cannot match
+				fmt.Sprintf("%s/%s__ver3__migrate__create_table_t3.sql", "wildcard", dbName),
+			},
+			commitContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"CREATE TABLE t2 (id INT);",
+				"CREATE TABLE t3 (id INT);",
+			},
+			expect: []bool{
+				true,
+				true,
+				false,
+			},
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		// We test the combination of ** and *, and the place holder is not fully represented by the ascii character set.
+		{
+			name:               "mixAsterisks",
+			vcsProviderCreator: fake.NewGitLab,
+			envName:            "生产",
+			baseDirectory:      "bbtest",
+			vcsType:            vcs.GitLabSelfHost,
+			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			commitFileNames: []string{
+				// ** matches foo, foo matches foo, * matches bar
+				fmt.Sprintf("%s/%s/foo/foo/bar/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "生产", dbName),
+				// ** matches foo/bar/foo, foo matches foo, * matches bar
+				fmt.Sprintf("%s/%s/foo/bar/foo/foo/bar/%s__ver2__migrate__create_table_t2.sql", baseDirectory, "生产", dbName),
+				// cannot match
+				fmt.Sprintf("%s/%s/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "生产", dbName),
+			},
+			commitContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"CREATE TABLE t2 (id INT);",
+				"CREATE TABLE t3 (id INT);",
+			},
+			expect: []bool{
+				true,
+				true,
+				false,
+			},
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		// No asterisk
+		{
+			name:               "placeholderAsFolder",
+			vcsProviderCreator: fake.NewGitLab,
+			envName:            "ZO",
+			baseDirectory:      "bbtest",
+			vcsType:            vcs.GitLabSelfHost,
+			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			commitFileNames: []string{
+				fmt.Sprintf("%s/%s/%s/sql/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/%s__ver2__migrate__create_table_t2.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/sql/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "ZO", dbName, dbName),
+			},
+			commitContents: []string{
+				"CREATE TABLE t1 (id INT);",
+				"CREATE TABLE t2 (id INT);",
+				"CREATE TABLE t3 (id INT);",
+			},
+			expect: []bool{
+				true,
+				false,
+				true,
+			},
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			port := getTestPort(t.Name())
+			mysqlPort := port + 3
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, port)
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a VCS.
+			vcs, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VCS Project",
+					Key:  "TVP",
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository.
+			ctl.vcsProvider.CreateRepository(externalID)
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcs.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           repoFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
+					BranchFilter:       branchFilter,
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   test.filePathTemplate,
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					ExternalID:         externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
+
+			environment, err := ctl.createEnvrionment(api.EnvironmentCreate{
+				Name: test.envName,
+			})
+			a.NoError(err)
+			// Provision an instance.
+			instanceName := "testInstance"
+			_, stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
+			defer stopInstance()
+			connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
+			instance, err := ctl.addInstance(api.InstanceCreate{
+				EnvironmentID: environment.ID,
+				Name:          instanceName,
+				Engine:        db.MySQL,
+				Host:          connCfg.Host,
+				Port:          connCfg.Port,
+				Username:      connCfg.Username,
+			})
+			a.NoError(err)
+
+			// Create an issue that creates a database.
+			err = ctl.createDatabase(project, instance, dbName, "", nil /* labelMap */)
+			a.NoError(err)
+
+			a.Equal(len(test.expect), len(test.commitFileNames))
+			a.Equal(len(test.expect), len(test.commitContents))
+			for idx, commitFileName := range test.commitFileNames {
+				// Simulate Git commits for schema update.
+				err = ctl.vcsProvider.AddFiles(externalID, map[string]string{commitFileName: test.commitContents[idx]})
+				a.NoError(err)
+
+				payload, err := json.Marshal(test.newWebhookPushEvent(commitFileName))
+				a.NoError(err)
+				err = ctl.vcsProvider.SendWebhookPush(externalID, payload)
+				a.NoError(err)
+
+				// Check for newly generated issues.
+				openStatus := []api.IssueStatus{api.IssueOpen}
+				issues, err := ctl.getIssues(
+					api.IssueFind{
+						ProjectID:  &project.ID,
+						StatusList: openStatus,
+					},
+				)
+				a.NoError(err)
+				if test.expect[idx] {
+					a.Len(issues, 1)
+					issue := issues[0]
+					status, err := ctl.waitIssuePipeline(issue.ID)
+					a.NoError(err)
+					a.Equal(api.TaskDone, status)
+					_, err = ctl.patchIssueStatus(
+						api.IssueStatusPatch{
+							ID:     issue.ID,
+							Status: api.IssueDone,
+						},
+					)
+					a.NoError(err)
+				} else {
+					a.Len(issues, 0)
+				}
+			}
 		})
 	}
 }

@@ -57,13 +57,14 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile    Profile
-	e          *echo.Echo
-	pgInstance *postgres.Instance
-	metaDB     *store.MetadataDB
-	store      *store.Store
-	startedTs  int64
-	secret     string
+	profile         Profile
+	e               *echo.Echo
+	pgInstance      *postgres.Instance
+	metaDB          *store.MetadataDB
+	store           *store.Store
+	startedTs       int64
+	secret          string
+	errorRecordRing api.ErrorRecordRing
 
 	s3Client *s3bb.Client
 
@@ -105,16 +106,15 @@ var casbinDeveloperPolicy string
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
-		profile:   prof,
-		startedTs: time.Now().Unix(),
+		profile:         prof,
+		startedTs:       time.Now().Unix(),
+		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
 	// Display config
 	log.Info("-----Config BEGIN-----")
 	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
-	log.Info(fmt.Sprintf("server=%s:%d", prof.BackendHost, prof.BackendPort))
-	log.Info(fmt.Sprintf("datastore=%s:%d", prof.BackendHost, prof.DatastorePort))
-	log.Info(fmt.Sprintf("frontend=%s:%d", prof.FrontendHost, prof.FrontendPort))
+	log.Info(fmt.Sprintf("externalURL=%s", prof.ExternalURL))
 	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
 	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
 	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
@@ -147,6 +147,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
 	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
+	log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
 	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
 	log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
 	log.Info("-----Embedded Postgres Config END-----")
@@ -231,8 +232,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
-		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
-
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
@@ -284,6 +283,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		errorRecorderMiddleware(err, s, c, e)
+	}
+
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
@@ -350,6 +353,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
+	s.registerAnomalyRoutes(apiGroup)
 	s.registerOpenAPIRoutes(openAPIGroup)
 
 	// Register healthz endpoint.
@@ -452,7 +456,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 }
 
 // Run will run the server.
-func (s *Server) Run(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 	if !s.profile.Readonly {
@@ -477,7 +481,7 @@ func (s *Server) Run(ctx context.Context) error {
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	return s.e.Start(fmt.Sprintf(":%d", s.profile.BackendPort))
+	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 
 // Shutdown will shut down the server.

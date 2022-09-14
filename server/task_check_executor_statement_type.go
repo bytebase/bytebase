@@ -100,11 +100,12 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
 		for _, node := range stmts {
-			_, isDML := node.(tidbast.DMLNode)
-			_, isQuery := node.(*tidbast.SelectStmt)
-			if !isDML || isQuery {
+			_, isDDL := node.(tidbast.DDLNode)
+			// We only want to disallow DDL statements in CHANGE DATA.
+			// We need to run some common statements, e.g. COMMIT.
+			if isDDL {
 				result = append(result, api.TaskCheckResult{
-					Status:    api.TaskCheckStatusError,
+					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
 					Code:      common.TaskTypeNotDML.Int(),
 					Title:     "Data change can only run DML",
@@ -118,7 +119,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 			_, isExplain := node.(*tidbast.ExplainStmt)
 			if isDML || isExplain {
 				result = append(result, api.TaskCheckResult{
-					Status:    api.TaskCheckStatusError,
+					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
 					Code:      common.TaskTypeNotDDL.Int(),
 					Title:     "Alter schema can only run DDL",
@@ -134,7 +135,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 }
 
 func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (result []api.TaskCheckResult, err error) {
-	stmts, err := parser.Parse(parser.Postgres, parser.Context{}, statement)
+	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
 		//nolint:nilerr
 		return []api.TaskCheckResult{
@@ -151,9 +152,12 @@ func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (resu
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
 		for _, node := range stmts {
-			if _, ok := node.(ast.DMLNode); !ok {
+			_, isDDL := node.(ast.DDLNode)
+			// We only want to disallow DDL statements in CHANGE DATA.
+			// We need to run some common statements, e.g. COMMIT.
+			if isDDL {
 				result = append(result, api.TaskCheckResult{
-					Status:    api.TaskCheckStatusError,
+					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
 					Code:      common.TaskTypeNotDML.Int(),
 					Title:     "Data change can only run DML",
@@ -168,7 +172,7 @@ func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (resu
 			_, isExplain := node.(*ast.ExplainStmt)
 			if isDML || isSelect || isExplain {
 				result = append(result, api.TaskCheckResult{
-					Status:    api.TaskCheckStatusError,
+					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
 					Code:      common.TaskTypeNotDDL.Int(),
 					Title:     "Alter schema can only run DDL",

@@ -83,25 +83,59 @@
       <p class="text-lg font-medium leading-7 text-main">
         {{ $t("common.issue") }}
       </p>
-      <IssueTable
-        :mode="'PROJECT'"
-        :issue-section-list="[
-          {
-            title: $t('project.overview.in-progress'),
-            list: state.progressIssueList,
-          },
-          {
-            title: $t('project.overview.recently-closed'),
-            list: state.closedIssueList,
-          },
-        ]"
-      />
-      <router-link
-        :to="`/issue?status=closed&project=${project.id}`"
-        class="mt-2 flex justify-end normal-link"
-      >
-        {{ $t("project.overview.view-all-closed") }}
-      </router-link>
+
+      <!-- show OPEN issues with pageSize=10 -->
+      <div>
+        <PagedIssueTable
+          :issue-find="{
+            statusList: ['OPEN'],
+            projectId: project.id,
+          }"
+          :page-size="10"
+        >
+          <template #table="{ issueList, loading }">
+            <IssueTable
+              :mode="'PROJECT'"
+              :issue-section-list="[
+                { title: $t('project.overview.in-progress'), list: issueList },
+              ]"
+              :show-placeholder="!loading"
+            />
+          </template>
+        </PagedIssueTable>
+
+        <!-- show the first 5 DONE or CANCELED issues -->
+        <!-- But won't show "Load more", since we have a "View all closed" link below -->
+        <PagedIssueTable
+          :issue-find="{
+            statusList: ['DONE', 'CANCELED'],
+            projectId: project.id,
+          }"
+          :page-size="5"
+          :hide-load-more="true"
+        >
+          <template #table="{ issueList, loading }">
+            <IssueTable
+              class="-mt-px"
+              :mode="'PROJECT'"
+              :issue-section-list="[
+                {
+                  title: $t('project.overview.recently-closed'),
+                  list: issueList,
+                },
+              ]"
+              :show-placeholder="!loading"
+            />
+          </template>
+        </PagedIssueTable>
+
+        <router-link
+          :to="`/issue?status=closed&project=${project.id}`"
+          class="mt-2 flex justify-end normal-link"
+        >
+          {{ $t("project.overview.view-all-closed") }}
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -122,7 +156,8 @@ import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import { useActivityStore, useIssueStore, useLabelList } from "@/store";
+import { useActivityStore, useLabelList } from "@/store";
+import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
 // Show at most 5 activity
 const ACTIVITY_LIMIT = 5;
@@ -145,6 +180,7 @@ export default defineComponent({
     IssueTable,
     YAxisRadioGroup,
     NSpin,
+    PagedIssueTable,
   },
   props: {
     project: {
@@ -186,34 +222,12 @@ export default defineComponent({
       });
     };
 
-    const prepareIssueList = () => {
-      useIssueStore()
-        .fetchIssueList({
-          projectId: props.project.id,
-        })
-        .then((issueList: Issue[]) => {
-          state.progressIssueList = [];
-          state.closedIssueList = [];
-          for (const issue of issueList) {
-            // "OPEN"
-            if (issue.status === "OPEN") {
-              state.progressIssueList.push(issue);
-            }
-            // "DONE" or "CANCELED"
-            else if (issue.status === "DONE" || issue.status === "CANCELED") {
-              state.closedIssueList.push(issue);
-            }
-          }
-        });
-    };
-
     const isTenantProject = computed((): boolean => {
       return props.project.tenantMode === "TENANT";
     });
 
     const prepare = () => {
       prepareActivityList();
-      prepareIssueList();
     };
 
     onBeforeMount(prepare);

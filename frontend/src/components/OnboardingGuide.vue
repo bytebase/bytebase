@@ -5,7 +5,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   useCurrentUser,
   useProjectStore,
@@ -14,7 +15,7 @@ import {
   useOnboardingGuideStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { isOwner } from "@/utils";
+import { isDev, isOwner } from "@/utils";
 import CreateDatabaseGuide from "./OnboardingGuides/CreateDatabaseGuide.vue";
 
 const currentUser = useCurrentUser();
@@ -22,7 +23,26 @@ const guideStore = useOnboardingGuideStore();
 
 const shouldShowCreateDatabaseGuide = ref(false);
 
+const route = useRoute();
+const router = useRouter();
+
+onMounted(async () => {
+  await router.isReady();
+  if (currentUser.value.id !== UNKNOWN_ID) {
+    shouldShowCreateDatabaseGuide.value =
+      await checkShouldShowCreateDatabaseGuide();
+    if (shouldShowCreateDatabaseGuide.value) {
+      guideStore.setGuideName("create-database");
+    }
+  }
+});
+
 const checkShouldShowCreateDatabaseGuide = async () => {
+  // Do not show guide in dev mode and `noguide` flag in query.
+  if (isDev() && route.query.noguide) {
+    return false;
+  }
+
   // Show create database guide when user is owner and no data at all.
   if (isOwner(currentUser.value.role)) {
     const instanceList = await useInstanceStore().fetchInstanceList();
@@ -31,7 +51,8 @@ const checkShouldShowCreateDatabaseGuide = async () => {
 
     if (
       instanceList.length === 0 &&
-      projectList.length === 0 &&
+      // We have a default project so the length should be 1 not 0.
+      projectList.length === 1 &&
       databaseList.length === 0
     ) {
       return true;
@@ -41,16 +62,22 @@ const checkShouldShowCreateDatabaseGuide = async () => {
   return false;
 };
 
+watch(currentUser, async () => {
+  // Check should show guide only when user is logged in.
+  if (currentUser.value.id !== UNKNOWN_ID) {
+    shouldShowCreateDatabaseGuide.value =
+      await checkShouldShowCreateDatabaseGuide();
+    if (shouldShowCreateDatabaseGuide.value) {
+      guideStore.setGuideName("create-database");
+    }
+  }
+});
+
 watch(
-  currentUser,
+  guideStore,
   async () => {
-    // Check should show guide only when user is logged in.
-    if (currentUser.value.id !== UNKNOWN_ID) {
-      shouldShowCreateDatabaseGuide.value =
-        await checkShouldShowCreateDatabaseGuide();
-      if (shouldShowCreateDatabaseGuide.value) {
-        guideStore.setGuideName("create-database");
-      }
+    if (!guideStore.guideName) {
+      shouldShowCreateDatabaseGuide.value = false;
     }
   },
   {

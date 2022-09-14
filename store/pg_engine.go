@@ -647,7 +647,7 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 	// Return wrapper Tx that includes the transaction start time.
 	return &Tx{
-		PTx: ptx,
+		Tx:  ptx,
 		db:  db,
 		now: db.Now().UTC().Truncate(time.Second),
 	}, nil
@@ -655,7 +655,7 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 // Tx wraps the SQL Tx object to provide a timestamp at the start of the transaction.
 type Tx struct {
-	PTx *sql.Tx
+	*sql.Tx
 	db  *DB
 	now time.Time
 }
@@ -707,8 +707,6 @@ func FormatError(err error) error {
 			return common.Errorf(common.Conflict, "bookmark already exists")
 		case strings.Contains(err.Error(), "idx_repository_unique_project_id"):
 			return common.Errorf(common.Conflict, "project has already linked repository")
-		case strings.Contains(err.Error(), "idx_repository_unique_webhook_endpoint_id"):
-			return common.Errorf(common.Conflict, "webhook endpoint already exists")
 		case strings.Contains(err.Error(), "idx_label_key_unique_key"):
 			return common.Errorf(common.Conflict, "label key already exists")
 		case strings.Contains(err.Error(), "idx_label_value_unique_key_value"):

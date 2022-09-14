@@ -198,7 +198,6 @@ import { useRouter } from "vue-router";
 import { idFromSlug, environmentName, isDBAOrOwner } from "@/utils";
 import {
   unknown,
-  RuleType,
   LEVEL_LIST,
   RuleLevel,
   RuleTemplate,
@@ -402,14 +401,15 @@ const onRestore = () => {
 };
 
 const onRemove = () => {
-  store.removeReviewPolicy(reviewPolicy.value.id);
+  store.removeReviewPolicy(reviewPolicy.value.id).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("sql-review.policy-removed"),
+    });
+  });
   router.replace({
     name: ROUTE_NAME,
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("sql-review.policy-removed"),
   });
 };
 </script>

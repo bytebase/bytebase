@@ -120,12 +120,18 @@ func getTestPort(testName string) int {
 		"TestSchemaAndDataUpdate",
 		"TestVCS/GitLab",
 		"TestVCS/GitHub",
+		"TestVCS_SDL/GitLab",
+		"TestVCS_SDL/GitHub",
+		"TestWildcardInVCSFilePathTemplate/emptyBaseAndMixAsterisks",
+		"TestWildcardInVCSFilePathTemplate/singleAsterisk",
+		"TestWildcardInVCSFilePathTemplate/doubleAsterisks",
+		"TestWildcardInVCSFilePathTemplate/mixAsterisks",
+		"TestWildcardInVCSFilePathTemplate/placeholderAsFolder",
 		"TestTenant",
 		"TestTenantVCS/GitLab",
 		"TestTenantVCS/GitHub",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
-		"TestBackupRestoreBasic",
 		"TestTenantVCSDatabaseNameTemplate/GitLab",
 		"TestTenantVCSDatabaseNameTemplate/GitHub",
 		"TestBootWithExternalPg",
@@ -134,14 +140,12 @@ func getTestPort(testName string) int {
 		"TestPrepare",
 
 		// PITR related cases
-		"TestPITR",
-		"TestPITR/Buggy_Application",
-		"TestPITR/Schema_Migration_Failure",
-		"TestPITR/Drop_Database",
-		"TestPITR/Case_Sensitive",
-		"TestPITR/Invalid_Time_Point",
-		"TestPITR/PITR_Twice",
-		"TestPITR/Restore_To_New_Database_In_Another_Instance",
+		"TestRestoreToNewDatabase",
+		"TestPITRGeneral",
+		"TestPITRDropDatabase",
+		"TestPITRInvalidTimePoint",
+		"TestPITRTwice",
+		"TestPITRToNewDatabaseInAnotherInstance",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
@@ -202,7 +206,7 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 	errChan := make(chan error, 1)
 
 	go func() {
-		if err := ctl.server.Run(ctx); err != nil {
+		if err := ctl.server.Run(ctx, port); err != nil {
 			errChan <- errors.Wrap(err, "failed to run main server")
 		}
 	}()
@@ -515,6 +519,24 @@ func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
 	return nil
 }
 
+func (ctl *controller) createEnvrionment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &environmentCreate); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal environment create")
+	}
+
+	body, err := ctl.post("/environment", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	environment := new(api.Environment)
+	if err = jsonapi.UnmarshalPayload(body, environment); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal post project response")
+	}
+	return environment, nil
+}
+
 // getProjects gets the environments.
 func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
 	body, err := ctl.get("/environment", nil)
@@ -689,6 +711,24 @@ func (ctl *controller) getIssue(id int) (*api.Issue, error) {
 
 // getIssue gets the issue with given ID.
 func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) {
+	var ret []*api.Issue
+	// call getOnePageIssuesWithToken until no more issues.
+	token := ""
+	for {
+		issues, nextToken, err := ctl.getOnePageIssuesWithToken(issueFind, token)
+		if err != nil {
+			return nil, err
+		}
+		if len(issues) == 0 {
+			break
+		}
+		ret = append(ret, issues...)
+		token = nextToken
+	}
+	return ret, nil
+}
+
+func (ctl *controller) getOnePageIssuesWithToken(issueFind api.IssueFind, token string) ([]*api.Issue, string, error) {
 	params := make(map[string]string)
 	if issueFind.ProjectID != nil {
 		params["project"] = fmt.Sprintf("%d", *issueFind.ProjectID)
@@ -700,24 +740,19 @@ func (ctl *controller) getIssues(issueFind api.IssueFind) ([]*api.Issue, error) 
 		}
 		params["status"] = strings.Join(sl, ",")
 	}
+	if token != "" {
+		params["token"] = token
+	}
 	body, err := ctl.get("/issue", params)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-
-	var issues []*api.Issue
-	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Issue)))
+	issueResp := new(api.IssueResponse)
+	err = jsonapi.UnmarshalPayload(body, issueResp)
 	if err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get issue response")
+		return nil, "", errors.Wrap(err, "fail to unmarshal get issue response")
 	}
-	for _, p := range ps {
-		issue, ok := p.(*api.Issue)
-		if !ok {
-			return nil, errors.Errorf("fail to convert issue")
-		}
-		issues = append(issues, issue)
-	}
-	return issues, nil
+	return issueResp.Issues, issueResp.NextToken, nil
 }
 
 // patchIssue patches the issue with given ID.

@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -178,50 +179,67 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 func TestGetReplayBinlogPathList(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		binlogFileNames []string
-		startBinlogInfo api.BinlogInfo
-		expect          []string
-		err             bool
+		binlogFileNames  []string
+		startBinlogInfo  api.BinlogInfo
+		targetBinlogInfo api.BinlogInfo
+		expect           []string
+		err              bool
 	}{
 		{
-			// Test skip stale binlog
-			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
-			startBinlogInfo: api.BinlogInfo{
-				FileName: "binlog.000002",
-				Position: 0xdeadbeaf,
-			},
-			expect: []string{"binlog.000002", "binlog.000003"},
-			err:    false,
+			// skip stale binlog
+			binlogFileNames:  []string{"binlog.000001", "binlog.000002", "binlog.000003"},
+			startBinlogInfo:  api.BinlogInfo{FileName: "binlog.000002"},
+			targetBinlogInfo: api.BinlogInfo{FileName: "binlog.000002"},
+			expect:           []string{"binlog.000002"},
+			err:              false,
 		},
 		{
-			// Test binlog files no hole
-			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000004"},
-			startBinlogInfo: api.BinlogInfo{
-				FileName: "binlog.000002",
-				Position: 0xdeadbeaf,
-			},
-			expect: []string{},
-			err:    true,
+			// binlog files not continuous
+			binlogFileNames:  []string{"binlog.000001", "binlog.000002", "binlog.000004"},
+			startBinlogInfo:  api.BinlogInfo{FileName: "binlog.000002"},
+			targetBinlogInfo: api.BinlogInfo{FileName: "binlog.000004"},
+			expect:           nil,
+			err:              true,
 		},
 		{
-			// Test mysql-bin prefix
-			binlogFileNames: []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
-			startBinlogInfo: api.BinlogInfo{
-				FileName: "bin.000001",
-				Position: 0xdeadbeaf,
-			},
-			expect: []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
-			err:    false,
+			// binlog files not continuous, but replayed list is continuous
+			binlogFileNames:  []string{"binlog.000001", "binlog.000002", "binlog.000004"},
+			startBinlogInfo:  api.BinlogInfo{FileName: "binlog.000001"},
+			targetBinlogInfo: api.BinlogInfo{FileName: "binlog.000002"},
+			expect:           []string{"binlog.000001", "binlog.000002"},
+			err:              false,
 		},
 		{
-			// Test out of binlog.999999
-			binlogFileNames: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
-			startBinlogInfo: api.BinlogInfo{
-				FileName: "binlog.999999",
-				Position: 0xdeadbeaf,
-			},
-			expect: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
-			err:    false,
+			// mysql-bin prefix
+			binlogFileNames:  []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
+			startBinlogInfo:  api.BinlogInfo{FileName: "mysql-bin.000001"},
+			targetBinlogInfo: api.BinlogInfo{FileName: "mysql-bin.000002"},
+			expect:           []string{"mysql-bin.000001", "mysql-bin.000002"},
+			err:              false,
+		},
+		{
+			// out of binlog.999999
+			binlogFileNames:  []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
+			startBinlogInfo:  api.BinlogInfo{FileName: "binlog.999999"},
+			targetBinlogInfo: api.BinlogInfo{FileName: "binlog.1000001"},
+			expect:           []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
+			err:              false,
+		},
+		{
+			// start seq not exist
+			binlogFileNames:  []string{"binlog.000001", "binlog.000003", "binlog.000004"},
+			startBinlogInfo:  api.BinlogInfo{FileName: "binlog.000002"},
+			targetBinlogInfo: api.BinlogInfo{FileName: "binlog.000003"},
+			expect:           nil,
+			err:              true,
+		},
+		{
+			// target seq not exist
+			binlogFileNames:  []string{"binlog.000001", "binlog.000003", "binlog.000004"},
+			startBinlogInfo:  api.BinlogInfo{FileName: "binlog.000001"},
+			targetBinlogInfo: api.BinlogInfo{FileName: "binlog.000002"},
+			expect:           nil,
+			err:              true,
 		},
 	}
 
@@ -229,20 +247,89 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		for _, binlogFileName := range test.binlogFileNames {
-			f, err := os.Create(filepath.Join(tmpDir, binlogFileName))
+			f, err := os.Create(filepath.Join(tmpDir, binlogFileName+binlogMetaSuffix))
+			a.NoError(err)
+			content, err := json.Marshal(binlogFileMeta{})
+			a.NoError(err)
+			_, err = f.Write(content)
 			a.NoError(err)
 			err = f.Close()
 			a.NoError(err)
 		}
 
-		result, err := GetBinlogReplayList(test.startBinlogInfo, tmpDir)
+		result, err := GetBinlogReplayList(test.startBinlogInfo, test.targetBinlogInfo, tmpDir)
 		if test.err {
 			a.Error(err)
 		} else {
+			a.NoError(err)
 			a.EqualValues(len(test.expect), len(result))
 			for idx := range test.expect {
 				a.EqualValues(filepath.Join(tmpDir, test.expect[idx]), result[idx])
 			}
+		}
+	}
+}
+
+func TestGetMetaReplayList(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		metaList  []binlogFileMeta
+		startSeq  int64
+		targetSeq int64
+		expect    []binlogFileMeta
+		err       bool
+	}{
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  1,
+			targetSeq: 3,
+			expect:    []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			err:       false,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 3}},
+			startSeq:  1,
+			targetSeq: 3,
+			expect:    []binlogFileMeta{{seq: 1}, {seq: 3}},
+			err:       false,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  1,
+			targetSeq: 1,
+			expect:    []binlogFileMeta{{seq: 1}},
+			err:       false,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  3,
+			targetSeq: 1,
+			expect:    nil,
+			err:       true,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  1,
+			targetSeq: 4,
+			expect:    nil,
+			err:       true,
+		},
+		{
+			metaList:  []binlogFileMeta{{seq: 1}, {seq: 2}, {seq: 3}},
+			startSeq:  0,
+			targetSeq: 3,
+			expect:    nil,
+			err:       true,
+		},
+	}
+
+	for _, test := range tests {
+		result, err := getMetaReplayList(test.metaList, test.startSeq, test.targetSeq)
+		a.Equal(test.expect, result)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
 		}
 	}
 }
@@ -279,31 +366,30 @@ func TestSortBinlogFiles(t *testing.T) {
 	}
 }
 
-func TestBinlogFilesAreContinuous(t *testing.T) {
+func TestBinlogMetaAreContinuous(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		binlogFiles []BinlogFile
-		expect      bool
+		metaList []binlogFileMeta
+		expect   bool
 	}{
 		{
-			binlogFiles: []BinlogFile{},
-			expect:      true,
+			metaList: []binlogFileMeta{},
+			expect:   true},
+		{
+			metaList: []binlogFileMeta{{seq: 1}},
+			expect:   true,
 		},
 		{
-			binlogFiles: []BinlogFile{{Seq: 1}},
-			expect:      true,
+			metaList: []binlogFileMeta{{seq: 1}, {seq: 2}},
+			expect:   true,
 		},
 		{
-			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 2}},
-			expect:      true,
-		},
-		{
-			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 3}},
-			expect:      false,
+			metaList: []binlogFileMeta{{seq: 1}, {seq: 3}},
+			expect:   false,
 		},
 	}
 	for _, test := range tests {
-		result := binlogFilesAreContinuous(test.binlogFiles)
+		result := binlogMetaAreContinuous(test.metaList)
 		a.Equal(test.expect, result)
 	}
 }

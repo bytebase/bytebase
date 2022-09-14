@@ -4,6 +4,8 @@ package s3
 import (
 	"context"
 	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -80,15 +82,40 @@ func (c *Client) UploadObject(ctx context.Context, path string, body io.Reader) 
 	})
 }
 
-// DeleteObject deletes the object with path.
-func (c *Client) DeleteObject(ctx context.Context, path string) (*s3.DeleteObjectOutput, error) {
-	return c.c.DeleteObject(ctx, &s3.DeleteObjectInput{
+// DeleteObjects deletes the objects with path.
+func (c *Client) DeleteObjects(ctx context.Context, pathList ...string) (*s3.DeleteObjectsOutput, error) {
+	var oidList []types.ObjectIdentifier
+	for _, path := range pathList {
+		path := path // create a new 'path'.
+		oidList = append(oidList, types.ObjectIdentifier{Key: &path})
+	}
+	return c.c.DeleteObjects(ctx, &s3.DeleteObjectsInput{
 		Bucket: &c.bucket,
-		Key:    &path,
+		Delete: &types.Delete{Objects: oidList},
 	})
 }
 
 // GetBucket returns the bucket.
 func (c *Client) GetBucket() string {
 	return c.bucket
+}
+
+// DownloadFileFromCloud downloads a binlog or metadata file from the cloud storage.
+// In case of network errors which will get partially downloaded files, we first download to a temporary file.
+// After that, we then rename it to the target file path.
+func (c *Client) DownloadFileFromCloud(ctx context.Context, filePathLocal, filePathOnCloud string) error {
+	tempDir := os.TempDir()
+	baseName := filepath.Base(filePathLocal)
+	filePathTemp := filepath.Join(tempDir, baseName)
+	fileTemp, err := os.Create(filePathTemp)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create the local temporary file %s", filePathTemp)
+	}
+	if _, err := c.DownloadObject(ctx, filePathOnCloud, fileTemp); err != nil {
+		return errors.Wrapf(err, "failed to download file %q from the cloud storage", filePathOnCloud)
+	}
+	if err := os.Rename(filePathTemp, filePathLocal); err != nil {
+		return errors.Wrapf(err, "failed to rename %q to %q", filePathTemp, filePathLocal)
+	}
+	return nil
 }

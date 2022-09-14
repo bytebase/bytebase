@@ -8,9 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -53,7 +52,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 	return exec.RunOnce(ctx, server, task)
 }
 
-func preMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
+func preMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo) (*db.MigrationInfo, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -63,11 +62,11 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	}
 	databaseName := task.Database.Name
 
-	mi := &db.MigrationInfo{
-		ReleaseVersion: server.profile.Version,
-		Type:           migrationType,
-	}
 	if vcsPushEvent == nil {
+		mi = &db.MigrationInfo{
+			ReleaseVersion: server.profile.Version,
+			Type:           migrationType,
+		}
 		mi.Source = db.UI
 		creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
 		if err != nil {
@@ -83,7 +82,8 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		// TODO(d): support semantic versioning.
 		mi.Version = schemaVersion
 		mi.Description = task.Name
-	} else {
+	} else if mi == nil {
+		// TODO(dragonly): remove this branch when old task without MigrationInfo is rare.
 		repo, err := findRepositoryByTask(ctx, server, task)
 		if err != nil {
 			return nil, err
@@ -180,8 +180,10 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 			return true, nil, err
 		}
 	}
-	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
+
+	// We write back the latest schema after migration for VCS-based projects if the
+	// schema path template is specified and the schema migration type is not SDL.
+	writeBack := (vcsPushEvent != nil) && (repo.Project.SchemaChangeType != api.ProjectSchemaChangeTypeSDL) && (repo.SchemaPathTemplate != "")
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
 		return true, nil, err
@@ -236,7 +238,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.profile.FrontendHost, server.profile.FrontendPort, api.IssueSlug(issue), task.StageID)
+			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", server.profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
 		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
@@ -299,8 +301,8 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}, nil
 }
 
-func runMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
+func runMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo) (bool, *api.TaskRunResultPayload, error) {
+	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent, mi)
 	if err != nil {
 		return true, nil, err
 	}

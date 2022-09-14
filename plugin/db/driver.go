@@ -16,7 +16,7 @@ import (
 )
 
 // Type is the type of a database.
-//nolint
+// nolint
 type Type string
 
 const (
@@ -243,10 +243,14 @@ type MigrationInfo struct {
 	Force bool
 }
 
+// placeholderRegexp is the regexp for placeholder.
+// Refer to https://stackoverflow.com/a/6222235/19075342, but we support '.' for now.
+const placeholderRegexp = `[^\\/?%*:|"<>]+`
+
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
 // Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
-func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInfo, error) {
+func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, error) {
 	placeholderList := []string{
 		"ENV_NAME",
 		"VERSION",
@@ -256,9 +260,13 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 	}
 
 	// Escape "." characters to match literals instead of using it as a wildcard.
-	filePathRegex := strings.ReplaceAll(filePathTemplate, ".", `\.`)
+	filePathRegex := strings.ReplaceAll(filePathTemplate, `.`, `\.`)
+
+	filePathRegex = strings.ReplaceAll(filePathRegex, `/*/`, `/[^/]+/`)
+	filePathRegex = strings.ReplaceAll(filePathRegex, `**`, `.*`)
+
 	for _, placeholder := range placeholderList {
-		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+		filePathRegex = strings.ReplaceAll(filePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf(`(?P<%s>%s)`, placeholder, placeholderRegexp))
 	}
 	myRegex, err := regexp.Compile(filePathRegex)
 	if err != nil {
@@ -288,10 +296,14 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 				switch matchList[index] {
 				case "data":
 					mi.Type = Data
+				case "dml":
+					mi.Type = Data
 				case "migrate":
 					mi.Type = Migrate
+				case "ddl":
+					mi.Type = Migrate
 				default:
-					return nil, errors.Errorf("file path %q contains invalid migration type %q, must be 'migrate' or 'data'", filePath, matchList[index])
+					return nil, errors.Errorf("file path %q contains invalid migration type %q, must be 'migrate'('ddl') or 'data'('dml')", filePath, matchList[index])
 				}
 			case "DESCRIPTION":
 				mi.Description = matchList[index]

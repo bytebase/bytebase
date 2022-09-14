@@ -1,4 +1,11 @@
-import { Advice, SheetId } from "../types";
+import {
+  Advice,
+  DatabaseId,
+  InstanceId,
+  ProjectId,
+  SheetId,
+  TableId,
+} from "../types";
 
 export type ExecuteConfig = {
   databaseType: string;
@@ -8,9 +15,17 @@ export type ExecuteOption = {
   explain: boolean;
 };
 
+export type Connection = {
+  projectId: ProjectId;
+  instanceId: InstanceId;
+  databaseId: DatabaseId;
+  tableId: TableId;
+};
+
 export interface TabInfo {
   id: string;
   name: string;
+  connection: Connection;
   isSaved: boolean;
   savedAt: string;
   statement: string;

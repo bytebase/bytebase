@@ -2,7 +2,7 @@ package ast
 
 // CreateTableStmt is the strcut for create table stmt.
 type CreateTableStmt struct {
-	node
+	ddl
 
 	IfNotExists    bool
 	Name           *TableDef

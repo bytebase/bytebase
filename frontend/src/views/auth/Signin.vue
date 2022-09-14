@@ -108,15 +108,31 @@
                 >{{ $t("auth.sign-in.forget-password") }}</router-link
               >
             </label>
-            <div class="mt-1 rounded-md shadow-sm">
+            <div
+              class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
+            >
               <input
                 id="password"
                 v-model="state.password"
-                type="password"
+                :type="state.showPassword ? 'text' : 'password'"
                 autocomplete="on"
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
+              <div
+                class="hover:cursor-pointer absolute right-3"
+                @click="
+                  () => {
+                    state.showPassword = !state.showPassword;
+                  }
+                "
+              >
+                <heroicons-outline:eye
+                  v-if="state.showPassword"
+                  class="w-4 h-4"
+                />
+                <heroicons-outline:eye-slash v-else class="w-4 h-4" />
+              </div>
             </div>
           </div>
 
@@ -183,6 +199,7 @@ interface LocalState {
   email: string;
   password: string;
   activeAuthProvider: AuthProvider;
+  showPassword: boolean;
 }
 
 export default defineComponent({
@@ -197,12 +214,14 @@ export default defineComponent({
       email: "",
       password: "",
       activeAuthProvider: EmptyAuthProvider,
+      showPassword: false,
     });
     const { isDemo } = storeToRefs(actuatorStore);
 
     onMounted(() => {
       state.email = isDev() || isDemo.value ? "demo@example.com" : "";
       state.password = isDev() || isDemo.value ? "1024" : "";
+      state.showPassword = isDev() || isDemo.value ? true : false;
       // Navigate to signup if needs admin setup.
       // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.

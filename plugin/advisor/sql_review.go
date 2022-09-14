@@ -1,7 +1,6 @@
 package advisor
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"regexp"
@@ -54,6 +53,8 @@ const (
 	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
+	// SchemaRuleStatementNoCreateTableAs disallow 'CREATE TABLE ... [AS] SELECT.
+	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -61,17 +62,53 @@ const (
 	SchemaRuleTableNoFK SQLReviewRuleType = "table.no-foreign-key"
 	// SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
 	SchemaRuleTableDropNamingConvention SQLReviewRuleType = "table.drop-naming-convention"
+	// SchemaRuleTableExists require the table existence.
+	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
+	// SchemaRuleTableCommentConvention enforce the table comment convention.
+	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
+	// SchemaRuleTableNotExists check the table name conflict.
+	SchemaRuleTableNotExists SQLReviewRuleType = "table.not-exists"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
 	SchemaRuleColumnNotNull SQLReviewRuleType = "column.no-null"
+	// SchemaRuleColumnDisallowChangeType disallow change column type.
+	SchemaRuleColumnDisallowChangeType SQLReviewRuleType = "column.disallow-change-type"
+	// SchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
+	SchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "column.set-default-for-not-null"
+	// SchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
+	SchemaRuleColumnDisallowChange SQLReviewRuleType = "column.disallow-change"
+	// SchemaRuleColumnExists require the column existence.
+	SchemaRuleColumnExists SQLReviewRuleType = "column.exists"
+	// SchemaRuleColumnDisallowChangingOrder disallow changing column order.
+	SchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "column.disallow-changing-order"
+	// SchemaRuleColumnCommentConvention enforce the column comment convention.
+	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
+	// SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
+	SchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "column.auto-increment-must-integer"
+	// SchemaRuleColumnTypeRestriction enforce the column type restriction.
+	SchemaRuleColumnTypeRestriction SQLReviewRuleType = "column.type-restriction"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
 
 	// SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
 	SchemaRuleDropEmptyDatabase SQLReviewRuleType = "database.drop-empty-database"
+
+	// SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
+	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
+	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
+	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
+	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
+	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
+	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
+	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
+	// SchemaRuleIndexNotExists check the index name conflict.
+	SchemaRuleIndexNotExists SQLReviewRuleType = "index.not-exists"
+
+	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
+	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -161,6 +198,18 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalRequiredColumnRulePayload(rule.Payload); err != nil {
 			return err
 		}
+	case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
+		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
+			return err
+		}
+	case SchemaRuleIndexKeyNumberLimit:
+		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
+			return err
+		}
+	case SchemaRuleColumnTypeRestriction:
+		if _, err := UnmarshalTypeRestrictionRulePayload(rule.Payload); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -174,6 +223,27 @@ type NamingRulePayload struct {
 // RequiredColumnRulePayload is the payload for required column rule.
 type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
+}
+
+// CommentConventionRulePayload is the payload for comment convention rule.
+type CommentConventionRulePayload struct {
+	Required  bool `json:"required"`
+	MaxLength int  `json:"maxLength"`
+}
+
+// NumberLimitRulePayload is the payload for number limit rule.
+type NumberLimitRulePayload struct {
+	Number int `json:"number"`
+}
+
+// TypeRestrictionRulePayload is the payload for type restriction rule.
+type TypeRestrictionRulePayload struct {
+	TypeList []string `json:"typeList"`
+}
+
+// CharsetAllowlistRulePayload is the payload for charset allowlist rule.
+type CharsetAllowlistRulePayload struct {
+	CharsetAllowlist []string `json:"charsetAllowlist"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -257,6 +327,42 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 	return &rcr, nil
 }
 
+// UnmarshalCommentConventionRulePayload will unmarshal payload to CommentConventionRulePayload.
+func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRulePayload, error) {
+	var ccr CommentConventionRulePayload
+	if err := json.Unmarshal([]byte(payload), &ccr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal comment convention rule payload %q", payload)
+	}
+	return &ccr, nil
+}
+
+// UnmarshalNumberLimitRulePayload will unmarshal payload to NumberLimitRulePayload.
+func UnmarshalNumberLimitRulePayload(payload string) (*NumberLimitRulePayload, error) {
+	var nlr NumberLimitRulePayload
+	if err := json.Unmarshal([]byte(payload), &nlr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal number limit rule payload %q", payload)
+	}
+	return &nlr, nil
+}
+
+// UnmarshalTypeRestrictionRulePayload will unmarshal payload to TypeRestrictionRulePayload.
+func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePayload, error) {
+	var trr TypeRestrictionRulePayload
+	if err := json.Unmarshal([]byte(payload), &trr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal type restriction rule payload %q", payload)
+	}
+	return &trr, nil
+}
+
+// UnmarshalCharsetAllowlistRulePayload will unmarshal payload to CharsetAllowlistRulePayload.
+func UnmarshalCharsetAllowlistRulePayload(payload string) (*CharsetAllowlistRulePayload, error) {
+	var cwr CharsetAllowlistRulePayload
+	if err := json.Unmarshal([]byte(payload), &cwr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal charset allowlist rule payload %q", payload)
+	}
+	return &cwr, nil
+}
+
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
 	Charset   string
@@ -268,10 +374,7 @@ type SQLReviewCheckContext struct {
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
-	database, err := checkContext.Catalog.GetDatabase(context.Background())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get database information from catalog")
-	}
+
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
@@ -290,7 +393,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 				Charset:   checkContext.Charset,
 				Collation: checkContext.Collation,
 				Rule:      rule,
-				Database:  database,
+				Catalog:   checkContext.Catalog.GetFinder(),
 			},
 			statements,
 		)
@@ -399,6 +502,46 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.Postgres:
 			return PostgreSQLColumnNoNull, nil
 		}
+	case SchemaRuleColumnDisallowChangeType:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnDisallowChangingType, nil
+		}
+	case SchemaRuleColumnSetDefaultForNotNull:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnSetDefaultForNotNull, nil
+		}
+	case SchemaRuleColumnDisallowChange:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnDisallowChanging, nil
+		}
+	case SchemaRuleColumnExists:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnExists, nil
+		}
+	case SchemaRuleColumnDisallowChangingOrder:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnDisallowChangingOrder, nil
+		}
+	case SchemaRuleColumnCommentConvention:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnCommentConvention, nil
+		}
+	case SchemaRuleColumnAutoIncrementMustInteger:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLAutoIncrementColumnMustInteger, nil
+		}
+	case SchemaRuleColumnTypeRestriction:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnTypeRestriction, nil
+		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -418,6 +561,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLTableDropNamingConvention, nil
 		}
+	case SchemaRuleTableExists:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableExists, nil
+		}
+	case SchemaRuleTableCommentConvention:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableCommentConvention, nil
+		}
 	case SchemaRuleMySQLEngine:
 		if engine == db.MySQL {
 			return MySQLUseInnoDB, nil
@@ -426,6 +579,41 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLDatabaseAllowDropIfEmpty, nil
+		}
+	case SchemaRuleIndexNoDuplicateColumn:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexNoDuplicateColumn, nil
+		}
+	case SchemaRuleIndexKeyNumberLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexKeyNumberLimit, nil
+		}
+	case SchemaRuleStatementNoCreateTableAs:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableDisallowCreateTableAs, nil
+		}
+	case SchemaRuleCharsetAllowlist:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLCharsetAllowlist, nil
+		}
+	case SchemaRuleIndexPKType:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexPKType, nil
+		}
+	case SchemaRuleIndexTypeNoBlob:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexTypeNoBlob, nil
+		}
+	case SchemaRuleIndexNotExists:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexNotExists, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

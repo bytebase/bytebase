@@ -44,14 +44,14 @@
             </div>
             <span v-else class="flex items-center space-x-2">
               <heroicons-outline:user-group
-                v-if="sheet.visibility === 'PROJECT'"
+                v-if="sheetOfTab(tab).visibility === 'PROJECT'"
                 class="w-4 h-4"
               />
               <heroicons-outline:globe
-                v-if="sheet.visibility === 'PUBLIC'"
+                v-if="sheetOfTab(tab).visibility === 'PUBLIC'"
                 class="w-4 h-4"
               />
-              <span>{{ tab.name }}</span>
+              <span :class="isTempTab(tab) && 'italic'">{{ tab.name }}</span>
             </span>
           </div>
           <template v-if="enterTabId === tab.id && tabStore.tabList.length > 1">
@@ -120,18 +120,14 @@ import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
 import { debounce } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useDialog } from "naive-ui";
-
 import { pushNotification, useTabStore, useSheetStore } from "@/store";
-import { TabInfo } from "@/types";
-import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
+import { TabInfo, unknown } from "@/types";
+import { isTempTab } from "@/utils";
 
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
 
-const sheet = computed(() => sheetStore.currentSheet);
-
 const { t } = useI18n();
-const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
 
 const enterTabId = ref("");
@@ -141,7 +137,18 @@ const labelState = reactive({
   currentLabelName: "",
   editingTabId: "",
 });
-const labelInputRef = ref<HTMLInputElement>();
+const labelInputRef = ref<HTMLInputElement | HTMLInputElement[]>();
+
+const sheetOfTab = (tab: TabInfo) => {
+  const { sheetId } = tab;
+  if (sheetId) {
+    const sheet = sheetStore.sheetById.get(sheetId);
+    if (sheet) {
+      return sheet;
+    }
+  }
+  return unknown("SHEET");
+};
 
 const localTabList = computed(() => {
   return tabStore.tabList.map((tab: TabInfo) => {
@@ -183,7 +190,10 @@ const handleEditLabel = (tab: TabInfo) => {
   labelState.editingTabId = tab.id;
   labelState.currentLabelName = tab.name;
   nextTick(() => {
-    labelInputRef.value?.focus();
+    const inputElem = Array.isArray(labelInputRef.value)
+      ? labelInputRef.value[0]
+      : labelInputRef.value;
+    inputElem?.focus();
   });
 };
 
@@ -219,7 +229,6 @@ const handleCancelChangeLabel = () => {
 
 const handleSelectTab = async (tab: TabInfo) => {
   tabStore.setCurrentTabId(tab.id);
-  setConnectionContextFromCurrentTab();
 };
 const handleAddTab = () => {
   tabStore.addTab();
@@ -260,7 +269,6 @@ const handleRemoveTab = async (tab: TabInfo) => {
 };
 const handleSelectTabFromPopselect = (tabId: string) => {
   tabStore.setCurrentTabId(tabId);
-  setConnectionContextFromCurrentTab();
 };
 
 const handleScollTabList = debounce((e: WheelEvent) => {
@@ -268,12 +276,6 @@ const handleScollTabList = debounce((e: WheelEvent) => {
   console.log(e.deltaX > 0 ? "Move to right" : "Move to left");
   console.log(e.offsetX);
 }, 333);
-
-onMounted(async () => {
-  if (!tabStore.hasTabs) {
-    handleAddTab();
-  }
-});
 
 // add listener to confirm confrim if close the tab.
 onMounted(() => {
