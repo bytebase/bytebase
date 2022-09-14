@@ -215,28 +215,28 @@ type MigrationInfoPayload struct {
 
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
-	ReleaseVersion string          `json:"releaseVersion,omitempty"`
-	Version        string          `json:"version,omitempty"`
-	Namespace      string          `json:"namespace,omitempty"`
-	Database       string          `json:"database,omitempty"`
-	Environment    string          `json:"environment,omitempty"`
-	Source         MigrationSource `json:"source,omitempty"`
-	Type           MigrationType   `json:"type,omitempty"`
-	Status         MigrationStatus `json:"status,omitempty"`
-	Description    string          `json:"description,omitempty"`
-	Creator        string          `json:"creator,omitempty"`
-	IssueID        string          `json:"issueId,omitempty"`
+	ReleaseVersion string
+	Version        string
+	Namespace      string
+	Database       string
+	Environment    string
+	Source         MigrationSource
+	Type           MigrationType
+	Status         MigrationStatus
+	Description    string
+	Creator        string
+	IssueID        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
-	Payload        string `json:"payload,omitempty"`
-	CreateDatabase bool   `json:"migrationInfo,omitempty"`
+	Payload        string
+	CreateDatabase bool
 	// UseSemanticVersion is whether version is a semantic version.
 	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
 	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
 	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405" (common.DefaultMigrationVersion).
-	UseSemanticVersion bool `json:"useSemanticVersion,omitempty"`
+	UseSemanticVersion bool
 	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" (common.DefaultMigrationVersion) if UseSemanticVersion is set.
 	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
-	SemanticVersionSuffix string `json:"semanticVersionSuffix,omitempty"`
+	SemanticVersionSuffix string
 	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.
 	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retry-able.
 	// We don't use force option for DATA type of migrations yet till there's customer needs.
