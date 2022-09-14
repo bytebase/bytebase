@@ -502,7 +502,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.TypeList; v != nil {
-		list := []string{}
+		var list []string
 		for _, taskType := range *v {
 			list = append(list, fmt.Sprintf("$%d", len(args)+1))
 			args = append(args, taskType)
