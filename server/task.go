@@ -265,7 +265,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			if payload.MigrationInfo == nil {
+			if payload.VCSPushEvent == nil {
 				// We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
 				// get migration history version conflict if the previous task has been attempted.
 				payload.SchemaVersion = common.DefaultMigrationVersion()
@@ -283,7 +283,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			if payload.MigrationInfo == nil {
+			if payload.VCSPushEvent == nil {
 				// We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
 				// get migration history version conflict if the previous task has been attempted.
 				payload.SchemaVersion = common.DefaultMigrationVersion()
