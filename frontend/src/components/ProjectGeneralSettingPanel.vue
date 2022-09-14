@@ -28,7 +28,7 @@
         <dd class="mt-1 text-sm text-main">
           <input
             id="projectKey"
-            :value="state.key"
+            v-model="state.key"
             :disabled="!allowEdit"
             required
             autocomplete="off"
@@ -125,6 +125,7 @@ export default defineComponent({
         props.project.id != DEFAULT_PROJECT_ID &&
         !isEmpty(state.name) &&
         (state.name !== props.project.name ||
+          state.key !== props.project.key ||
           state.schemaChangeType != props.project.schemaChangeType)
       );
     });
@@ -154,6 +155,7 @@ export default defineComponent({
             title: t("project.settings.success-updated"),
           });
           state.name = updatedProject.name;
+          state.key = updatedProject.key;
           state.schemaChangeType = updatedProject.schemaChangeType;
         });
     };
