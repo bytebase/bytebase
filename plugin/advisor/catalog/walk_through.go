@@ -65,6 +65,8 @@ const (
 	ErrorTypePrimaryKeyNotExists = 504
 	// ErrorTypeIndexNotExists is the error that index does not exist.
 	ErrorTypeIndexNotExists = 505
+	// ErrorTypeIncorrectIndexName is the incorrect index name error.
+	ErrorTypeIncorrectIndexName = 506
 )
 
 // WalkThroughError is the error for walking-through.
@@ -86,6 +88,21 @@ func NewColumnNotExistsError(tableName string, columnName string) *WalkThroughEr
 	return &WalkThroughError{
 		Type:    ErrorTypeColumnNotExists,
 		Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, tableName),
+	}
+}
+
+// NewIndexNotExistsError returns a new ErrorTypeIndexNotExists.
+func NewIndexNotExistsError(tableName string, indexName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeIndexNotExists,
+		Content: fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, tableName),
+	}
+}
+
+func NewIndexExistsError(tableName string, indexName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeIndexExists,
+		Content: fmt.Sprintf("Index `%s` exists in table `%s`", indexName, tableName),
 	}
 }
 
@@ -233,9 +250,40 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := table.alterColumn(spec.NewColumns[0]); err != nil {
 				return err
 			}
+		case tidbast.AlterTableRenameIndex:
+			if err := table.renameIndex(spec.FromKey.O, spec.ToKey.O); err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+func (t *tableState) renameIndex(oldName string, newName string) error {
+	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
+		incorrectName := oldName
+		if strings.ToUpper(oldName) != PrimaryKeyName {
+			incorrectName = newName
+		}
+		return &WalkThroughError{
+			Type:    ErrorTypeIncorrectIndexName,
+			Content: fmt.Sprintf("Incorrect index name `%s`", incorrectName),
+		}
+	}
+
+	index, exists := t.indexSet[oldName]
+	if !exists {
+		return NewIndexNotExistsError(t.name, oldName)
+	}
+
+	if _, exists := t.indexSet[newName]; exists {
+		return NewIndexExistsError(t.name, newName)
+	}
+
+	index.name = newName
+	delete(t.indexSet, oldName)
+	t.indexSet[newName] = index
 	return nil
 }
 
@@ -358,10 +406,7 @@ func (t *tableState) dropIndex(indexName string) error {
 				Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
 			}
 		}
-		return &WalkThroughError{
-			Type:    ErrorTypeIndexNotExists,
-			Content: fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, t.name),
-		}
+		return NewIndexNotExistsError(t.name, indexName)
 	}
 
 	delete(t.indexSet, indexName)
@@ -667,10 +712,7 @@ func (t *tableState) createIndex(name string, keyList []string, unique bool, tp 
 	}
 	if name != "" {
 		if _, exists := t.indexSet[name]; exists {
-			return &WalkThroughError{
-				Type:    ErrorTypeIndexExists,
-				Content: fmt.Sprintf("Index `%s` exists in table `%s`", name, t.name),
-			}
+			return NewIndexExistsError(t.name, name)
 		}
 	} else {
 		suffix := 1
