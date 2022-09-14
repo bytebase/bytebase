@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
@@ -64,13 +65,13 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	}
 	sharedGhost := value.(sharedGhostState)
 
-	return cutover(ctx, server, task, payload, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	return cutover(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 }
 
-func cutover(ctx context.Context, server *Server, task *api.Task, payload *api.TaskDatabaseSchemaUpdateGhostSyncPayload, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	statement := strings.TrimSpace(payload.Statement)
+func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	statement = strings.TrimSpace(statement)
 
-	mi, err := preMigration(ctx, server, task, db.Migrate, statement, payload.SchemaVersion, payload.VCSPushEvent, nil)
+	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
@@ -139,7 +140,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, payload *api.T
 		return true, nil, err
 	}
 
-	return postMigration(ctx, server, task, payload.VCSPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {
