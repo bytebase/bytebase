@@ -5,14 +5,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/parser"
 )
 
@@ -78,19 +76,27 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
 	}
 	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
-	cmd.Stderr = os.Stderr
-	r, err := cmd.StdoutPipe()
+	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
+	defer outPipe.Close()
+	outScanner := bufio.NewScanner(outPipe)
+
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	defer errPipe.Close()
+	errScanner := bufio.NewScanner(errPipe)
+
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	s := bufio.NewScanner(r)
 	previousLineComment := false
 	previousLineEmpty := false
-	for s.Scan() {
-		line := s.Text()
+	for outScanner.Scan() {
+		line := outScanner.Text()
 		// Skip "SET SESSION AUTHORIZATION" till we can support it.
 		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 			continue
@@ -122,10 +128,32 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 			return err
 		}
 	}
-	if s.Err() != nil {
-		log.Warn(s.Err().Error())
+	if outScanner.Err() != nil {
+		return outScanner.Err()
 	}
-	return cmd.Wait()
+
+	var errBuilder strings.Builder
+	for errScanner.Scan() {
+		line := errScanner.Text()
+		if errBuilder.Len() > 1024 {
+			break
+		}
+		if _, err := errBuilder.WriteString(line); err != nil {
+			return err
+		}
+		if _, err := errBuilder.WriteString("\n"); err != nil {
+			return err
+		}
+	}
+	if errScanner.Err() != nil {
+		return errScanner.Err()
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return errors.Wrapf(err, "error message: %s", errBuilder.String())
+	}
+	return nil
 }
 
 // Restore restores a database.
