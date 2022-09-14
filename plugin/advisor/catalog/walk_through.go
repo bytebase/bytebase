@@ -213,6 +213,45 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := table.changeColumn(spec.OldColumnName.Name.O, spec.NewColumns[0], spec.Position); err != nil {
 				return err
 			}
+		case tidbast.AlterTableRenameColumn:
+			if err := table.renameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (t *tableState) renameColumn(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+	column, exists := t.columnSet[oldName]
+	if !exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnNotExists,
+			Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name),
+		}
+	}
+
+	if _, exists := t.columnSet[newName]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s", newName, t.name),
+		}
+	}
+
+	column.name = newName
+	delete(t.columnSet, oldName)
+	t.columnSet[newName] = column
+
+	// rename column in index key list
+	for _, index := range t.indexSet {
+		for i, key := range index.expressionList {
+			if key == oldName {
+				index.expressionList[i] = newName
+			}
 		}
 	}
 
@@ -501,7 +540,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 	if _, exists := t.columnSet[column.Name.Name.O]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
-			Content: fmt.Sprintf("Column `%s` exists in table `%s`", column.Name.Name.O, t.name),
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.name),
 		}
 	}
 
