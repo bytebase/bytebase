@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/parser"
 )
 
@@ -135,14 +136,15 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	var errBuilder strings.Builder
 	for errScanner.Scan() {
 		line := errScanner.Text()
-		if errBuilder.Len() > 1024 {
-			break
-		}
-		if _, err := errBuilder.WriteString(line); err != nil {
-			return err
-		}
-		if _, err := errBuilder.WriteString("\n"); err != nil {
-			return err
+		// Log the error, but return the first 1024 characters in the error to users.
+		log.Warn(line)
+		if errBuilder.Len() < 1024 {
+			if _, err := errBuilder.WriteString(line); err != nil {
+				return err
+			}
+			if _, err := errBuilder.WriteString("\n"); err != nil {
+				return err
+			}
 		}
 	}
 	if errScanner.Err() != nil {
