@@ -774,7 +774,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	createContext, err := json.Marshal(
 		&api.UpdateSchemaContext{
-			MigrationType: db.Migrate,
+			MigrationType: migrationInfo.Type,
 			VCSPushEvent:  pushEvent,
 			DetailList:    updateSchemaDetails,
 		},
