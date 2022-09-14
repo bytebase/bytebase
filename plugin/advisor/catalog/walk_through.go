@@ -199,6 +199,10 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := table.dropIndex(PrimaryKeyName); err != nil {
 				return err
 			}
+		case tidbast.AlterTableDropIndex:
+			if err := table.dropIndex(spec.Name); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -212,11 +216,10 @@ func (t *tableState) dropIndex(indexName string) error {
 				Type:    ErrorTypePrimaryKeyNotExists,
 				Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
 			}
-		} else {
-			return &WalkThroughError{
-				Type:    ErrorTypeIndexNotExists,
-				Content: fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, t.name),
-			}
+		}
+		return &WalkThroughError{
+			Type:    ErrorTypeIndexNotExists,
+			Content: fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, t.name),
 		}
 	}
 
