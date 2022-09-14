@@ -265,9 +265,12 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			if payload.VCSPushEvent == nil {
-				// We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
-				// get migration history version conflict if the previous task has been attempted.
+			// 1. For VCS workflows, patchTask only happens when we modify the same file.
+			// 	  In that case, we want to use the same schema version parsed from the file name.
+			//    The task executor will force retry using the new SQL statement.
+			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
+			//    get migration history version conflict if the previous task has been attempted.
+			if issue.Project.WorkflowType == api.UIWorkflow {
 				payload.SchemaVersion = common.DefaultMigrationVersion()
 			}
 			bytes, err := json.Marshal(payload)
@@ -283,9 +286,12 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			if payload.VCSPushEvent == nil {
-				// We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
-				// get migration history version conflict if the previous task has been attempted.
+			// 1. For VCS workflows, patchTask only happens when we modify the same file.
+			// 	  In that case, we want to use the same schema version parsed from the file name.
+			//    The task executor will force retry using the new SQL statement.
+			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
+			//    get migration history version conflict if the previous task has been attempted.
+			if issue.Project.WorkflowType == api.UIWorkflow {
 				payload.SchemaVersion = common.DefaultMigrationVersion()
 			}
 			bytes, err := json.Marshal(payload)
