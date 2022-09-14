@@ -469,7 +469,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(bookSchemaSQLResult, result)
 
-			// Simulate Git commits for failed date update.
+			// Simulate Git commits for failed data update.
 			gitFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatementWrong})
 			a.NoError(err)
