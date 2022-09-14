@@ -568,6 +568,9 @@ func patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch
 	if v := patch.RefreshToken; v != nil {
 		set, args = append(set, fmt.Sprintf("refresh_token = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.WebURL; v != nil {
+		set, args = append(set, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 

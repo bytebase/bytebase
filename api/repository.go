@@ -114,6 +114,7 @@ type RepositoryPatch struct {
 	SchemaPathTemplate *string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  *string `jsonapi:"attr,sheetPathTemplate"`
 	AccessToken        *string
+	WebURL             *string
 	ExpiresTs          *int64
 	RefreshToken       *string
 }

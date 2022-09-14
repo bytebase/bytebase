@@ -510,7 +510,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					ClientSecret: vcs.Secret,
 					AccessToken:  repo.AccessToken,
 					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
+					Refresher:    s.refreshToken(ctx, repo.WebURL),
 				},
 				vcs.InstanceURL,
 				repo.ExternalID,
@@ -596,10 +596,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 }
 
 // refreshToken is a token refresher that stores the latest access token configuration to repository.
-func (s *Server) refreshToken(ctx context.Context, repositoryID int) common.TokenRefresher {
+func (s *Server) refreshToken(ctx context.Context, webURL string) common.TokenRefresher {
 	return func(token, refreshToken string, expiresTs int64) error {
 		if _, err := s.store.PatchRepository(ctx, &api.RepositoryPatch{
-			ID:           repositoryID,
+			WebURL:       &webURL,
 			UpdaterID:    api.SystemBotID,
 			AccessToken:  &token,
 			ExpiresTs:    &expiresTs,
