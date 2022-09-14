@@ -509,6 +509,9 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 		}
 		where = append(where, fmt.Sprintf("type in (%s)", strings.Join(list, ",")))
 	}
+	if v := find.Payload; v != "" {
+		where = append(where, v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT

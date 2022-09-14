@@ -668,6 +668,8 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 	}
 
 	var updateSchemaDetails []*api.UpdateSchemaDetail
+
+	// TODO(dragonly): handle modified file for tenant mode.
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		updateSchemaDetails = append(updateSchemaDetails,
 			&api.UpdateSchemaDetail{
@@ -703,13 +705,12 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 	}
 
 	// For modified files, we try to update the existing issue's statement.
-	// Find tasks related to database and payload.pushEvent.fileCommit.added=fileName.
-	// then use server.patchTask() to patch the task.
 	for _, database := range databases {
 		find := &api.TaskFind{
 			DatabaseID: &database.ID,
 			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
 			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
+			Payload:    fmt.Sprintf("payload->'migrationInfo'->>'version'='%s'", migrationInfo.Version),
 		}
 		taskList, err := s.store.FindTask(ctx, find, true)
 		if err != nil {
@@ -723,26 +724,6 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			return nil
 		}
 		for _, task := range taskList {
-			var shouldPatch bool
-			if task.Type == api.TaskDatabaseSchemaUpdate {
-				payload := api.TaskDatabaseSchemaUpdatePayload{}
-				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-					log.Error("Failed to unmarshal task payload", zap.Error(err))
-					return nil
-				}
-				shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
-			} else {
-				payload := api.TaskDatabaseDataUpdatePayload{}
-				if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-					log.Error("Failed to unmarshal task payload", zap.Error(err))
-					return nil
-				}
-				shouldPatch = payload.MigrationInfo != nil && payload.MigrationInfo.Version == migrationInfo.Version
-			}
-
-			if !shouldPatch {
-				continue
-			}
 			taskPatch := api.TaskPatch{
 				ID:        task.ID,
 				Statement: &content,

@@ -228,6 +228,9 @@ type TaskFind struct {
 	// Domain specific fields
 	StatusList *[]TaskStatus
 	TypeList   *[]TaskType
+	// Payload contains JSONB expressions
+	// Ref: https://www.postgresql.org/docs/current/functions-json.html
+	Payload string
 }
 
 func (find *TaskFind) String() string {
