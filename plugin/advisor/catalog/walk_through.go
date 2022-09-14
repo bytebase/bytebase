@@ -61,6 +61,10 @@ const (
 	ErrorTypeIndexExists = 502
 	// ErrorTypeIndexEmptyKeys is the error that index has empty keys.
 	ErrorTypeIndexEmptyKeys = 503
+	// ErrorTypePrimaryKeyNotExists is the error that PK does not exist.
+	ErrorTypePrimaryKeyNotExists = 504
+	// ErrorTypeIndexNotExists is the error that index does not exist.
+	ErrorTypeIndexNotExists = 505
 )
 
 // WalkThroughError is the error for walking-through.
@@ -191,9 +195,32 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := table.dropColumn(spec.OldColumnName.Name.O); err != nil {
 				return err
 			}
+		case tidbast.AlterTableDropPrimaryKey:
+			if err := table.dropIndex(PrimaryKeyName); err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+func (t *tableState) dropIndex(indexName string) error {
+	if _, exists := t.indexSet[indexName]; !exists {
+		if indexName == PrimaryKeyName {
+			return &WalkThroughError{
+				Type:    ErrorTypePrimaryKeyNotExists,
+				Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
+			}
+		} else {
+			return &WalkThroughError{
+				Type:    ErrorTypeIndexNotExists,
+				Content: fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, t.name),
+			}
+		}
+	}
+
+	delete(t.indexSet, indexName)
 	return nil
 }
 
