@@ -598,16 +598,22 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 // refreshToken is a token refresher that stores the latest access token configuration to repository.
 func (s *Server) refreshToken(ctx context.Context, webURL string) common.TokenRefresher {
 	return func(token, refreshToken string, expiresTs int64) error {
-		if _, err := s.store.PatchRepository(ctx, &api.RepositoryPatch{
-			WebURL:       &webURL,
-			UpdaterID:    api.SystemBotID,
-			AccessToken:  &token,
-			ExpiresTs:    &expiresTs,
-			RefreshToken: &refreshToken,
-		}); err != nil {
+		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+			WebURL: &webURL,
+		})
+		if err != nil {
 			return err
 		}
-		return nil
+		for _, repo := range repos {
+			_, err = s.store.PatchRepository(ctx, &api.RepositoryPatch{
+				ID:           repo.ID,
+				UpdaterID:    api.SystemBotID,
+				AccessToken:  &token,
+				ExpiresTs:    &expiresTs,
+				RefreshToken: &refreshToken,
+			})
+		}
+		return err
 	}
 }
 
