@@ -155,6 +155,9 @@ type UpdateSchemaDetail struct {
 	Statement string `json:"statement"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
+	// SchemaVersion is parsed from VCS file name.
+	// It is automatically generated in the UI workflow.
+	SchemaVersion string `json:"schemaVersion"`
 }
 
 // UpdateSchemaContext is the issue create context for updating database schema.
@@ -166,9 +169,6 @@ type UpdateSchemaContext struct {
 	DetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent `json:"vcsPushEvent"`
-	// SchemaVersion is parsed from VCS file name.
-	// It is automatically generated in the UI workflow.
-	SchemaVersion string `json:"schemaVersion"`
 }
 
 // UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.

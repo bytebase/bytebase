@@ -665,8 +665,9 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		updateSchemaDetails = append(updateSchemaDetails,
 			&api.UpdateSchemaDetail{
-				DatabaseName: migrationInfo.Database,
-				Statement:    content,
+				DatabaseName:  migrationInfo.Database,
+				Statement:     content,
+				SchemaVersion: migrationInfo.Version,
 			},
 		)
 	} else {
@@ -685,8 +686,9 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		for _, database := range databases {
 			updateSchemaDetails = append(updateSchemaDetails,
 				&api.UpdateSchemaDetail{
-					DatabaseID: database.ID,
-					Statement:  content,
+					DatabaseID:    database.ID,
+					Statement:     content,
+					SchemaVersion: migrationInfo.Version,
 				},
 			)
 		}
@@ -775,7 +777,6 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			MigrationType: db.Migrate,
 			VCSPushEvent:  pushEvent,
 			DetailList:    updateSchemaDetails,
-			SchemaVersion: migrationInfo.Version,
 		},
 	)
 	if err != nil {
