@@ -95,6 +95,9 @@
               `project.settings.select-schema-change-type-${item.toLowerCase()}`
             )
           }}
+          <span v-if="item === 'SDL'" class="text-xs border px-1 rounded ml-1"
+            >Beta</span
+          >
         </template>
       </BBSelect>
     </div>
