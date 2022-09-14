@@ -617,12 +617,8 @@ const gotoSQLEditor = () => {
     state.editingProjectId = database.value.project.id;
     state.showIncorrectProjectModal = true;
   } else {
-    router.push({
-      name: "sql-editor.detail",
-      params: {
-        connectionSlug: connectionSlug(database.value),
-      },
-    });
+    const url = `/sql-editor/${connectionSlug(database.value)}`;
+    window.open(url);
   }
 };
 
