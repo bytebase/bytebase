@@ -649,18 +649,6 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		return nil
 	}
 
-	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-	migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-	if err != nil {
-		log.Debug("Failed to parse migration info",
-			zap.Int("project", repo.ProjectID),
-			zap.Any("pushEvent", pushEvent),
-			zap.String("file", file),
-			zap.Error(err),
-		)
-		return nil
-	}
-
 	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
 		s.createIgnoredFileActivity(
