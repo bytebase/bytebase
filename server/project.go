@@ -491,27 +491,36 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}
 
-		// Delete the webhook after we successfully delete the repository.
-		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
-		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
-			ctx,
-			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.ID),
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			repo.ExternalWebhookID,
-		)
-
+		// We use one webhook in one repo for at least one Bytebase project, so we only delete the webhook if this project is the last one using this webhook.
+		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+			WebURL: &repo.WebURL,
+		})
 		if err != nil {
-			// Despite the error here, we have deleted the repository in the database, we still return success.
-			log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository for web url: %s", repo.WebURL)).SetInternal(err)
+		}
+		if len(repos) == 0 {
+			// Delete the webhook after we successfully delete the repository.
+			// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
+			// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
+			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
+				ctx,
+				// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.ID),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				repo.ExternalWebhookID,
+			)
+
+			if err != nil {
+				// Despite the error here, we have deleted the repository in the database, we still return success.
+				log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
