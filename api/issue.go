@@ -155,6 +155,9 @@ type UpdateSchemaDetail struct {
 	Statement string `json:"statement"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
+	// SchemaVersion is parsed from VCS file name.
+	// It is automatically generated in the UI workflow.
+	SchemaVersion string `json:"schemaVersion"`
 }
 
 // UpdateSchemaContext is the issue create context for updating database schema.
