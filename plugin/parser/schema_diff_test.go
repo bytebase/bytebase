@@ -3,7 +3,6 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/plugin/parser"
@@ -12,33 +11,61 @@ import (
 )
 
 func TestComputeDiff(t *testing.T) {
-	oldSchema, err := parser.Parse(parser.Postgres, parser.ParseContext{}, `
-CREATE TABLE projects ();
-`)
-	require.NoError(t, err)
-	newSchema, err := parser.Parse(parser.Postgres, parser.ParseContext{}, `
-CREATE TABLE users (
+	tests := []struct {
+		engineType parser.EngineType
+		oldSchema  string
+		newSchema  string
+		want       string
+		err        error
+	}{
+		{
+			engineType: parser.Postgres,
+			oldSchema:  `CREATE TABLE projects ();`,
+			newSchema: `CREATE TABLE users (
 	id serial PRIMARY KEY,
 	username TEXT NOT NULL
 );
 CREATE TABLE projects ();
 CREATE TABLE repositories (
 	id serial PRIMARY KEY
-);
-`)
-	require.NoError(t, err)
-
-	got, err := parser.SchemaDiff(oldSchema, newSchema)
-	require.NoError(t, err)
-
-	// The DDLs for the diff should be in the exact same order as the DDLs in the new schema.
-	want := `CREATE TABLE users (
+);`,
+			want: `CREATE TABLE users (
 	id serial PRIMARY KEY,
 	username TEXT NOT NULL
 );
 CREATE TABLE repositories (
 	id serial PRIMARY KEY
 );
-`
-	assert.Equal(t, want, got)
+`,
+			err: nil,
+		},
+		{
+			engineType: parser.Postgres,
+			oldSchema:  `CREATE TABLE projects ();`,
+			newSchema: `CREATE TABLE projects (
+	id serial PRIMARY KEY
+);`,
+			// FIXME(@joe): this is an unwanted result.
+			want: ``,
+			err:  nil,
+		},
+	}
+
+	for _, test := range tests {
+		oldSchemaNodes, err := parser.Parse(test.engineType, parser.ParseContext{}, test.oldSchema)
+		require.NoError(t, err)
+		newSchemaNodes, err := parser.Parse(test.engineType, parser.ParseContext{}, test.newSchema)
+		require.NoError(t, err)
+
+		diff, err := parser.SchemaDiff(oldSchemaNodes, newSchemaNodes)
+		if err != nil {
+			if test.err != nil {
+				require.Equal(t, test.err.Error(), err.Error())
+			} else {
+				t.Error(err)
+			}
+		} else {
+			require.Equal(t, test.want, diff)
+		}
+	}
 }
