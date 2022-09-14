@@ -45,7 +45,7 @@ CREATE TABLE repositories (
 			newSchema: `CREATE TABLE projects (
 	id serial PRIMARY KEY
 );`,
-			// FIXME(joe): this is an unwanted result.
+			// FIXME(@joe): this is an unwanted result.
 			want: ``,
 			err:  nil,
 		},
