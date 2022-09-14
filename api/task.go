@@ -95,12 +95,10 @@ type TaskDatabaseCreatePayload struct {
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
-	Statement     string         `json:"statement,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
-	// MigrationInfo is only available when VCSPushEvent != nil.
-	// It's parsed from VCSPushEvent.
-	MigrationInfo *db.MigrationInfo `json:"migrationInfo,omitempty"`
+	MigrationType db.MigrationType `json:"migrationType,omitempty"`
+	Statement     string           `json:"statement,omitempty"`
+	SchemaVersion string           `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
@@ -123,9 +121,6 @@ type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
-	// MigrationInfo is only available when VCSPushEvent != nil.
-	// It's parsed from VCSPushEvent.
-	MigrationInfo *db.MigrationInfo `json:"migrationInfo,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -212,6 +207,7 @@ type TaskCreate struct {
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *vcs.PushEvent
+	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 
 // TaskFind is the API message for finding tasks.

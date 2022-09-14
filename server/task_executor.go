@@ -52,7 +52,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 	return exec.RunOnce(ctx, server, task)
 }
 
-func preMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo) (*db.MigrationInfo, error) {
+func preMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -62,11 +62,11 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	}
 	databaseName := task.Database.Name
 
+	mi := &db.MigrationInfo{
+		ReleaseVersion: server.profile.Version,
+		Type:           migrationType,
+	}
 	if vcsPushEvent == nil {
-		mi = &db.MigrationInfo{
-			ReleaseVersion: server.profile.Version,
-			Type:           migrationType,
-		}
 		mi.Source = db.UI
 		creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
 		if err != nil {
@@ -82,8 +82,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		// TODO(d): support semantic versioning.
 		mi.Version = schemaVersion
 		mi.Description = task.Name
-	} else if mi == nil {
-		// TODO(dragonly): remove this branch when old task without MigrationInfo is rare.
+	} else {
 		repo, err := findRepositoryByTask(ctx, server, task)
 		if err != nil {
 			return nil, err
@@ -301,8 +300,8 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}, nil
 }
 
-func runMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo) (bool, *api.TaskRunResultPayload, error) {
-	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent, mi)
+func runMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}

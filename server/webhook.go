@@ -649,13 +649,10 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		return nil
 	}
 
-	migrationInfo.Creator = pushEvent.FileCommit.AuthorName
-	miPayload := &db.MigrationInfoPayload{
-		VCSPushEvent: pushEvent,
-	}
-	bytes, err := json.Marshal(miPayload)
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
 	if err != nil {
-		log.Error("Failed to marshal vcs push event payload",
+		log.Debug("Failed to parse migration info",
 			zap.Int("project", repo.ProjectID),
 			zap.Any("pushEvent", pushEvent),
 			zap.String("file", file),
@@ -663,7 +660,6 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		)
 		return nil
 	}
-	migrationInfo.Payload = string(bytes)
 
 	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
@@ -788,10 +784,9 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	createContext, err := json.Marshal(
 		&api.UpdateSchemaContext{
-			MigrationType: migrationInfo.Type,
+			MigrationType: db.Migrate,
 			VCSPushEvent:  pushEvent,
 			DetailList:    updateSchemaDetails,
-			MigrationInfo: migrationInfo,
 		},
 	)
 	if err != nil {
