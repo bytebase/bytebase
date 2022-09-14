@@ -99,6 +99,7 @@ func NewIndexNotExistsError(tableName string, indexName string) *WalkThroughErro
 	}
 }
 
+// NewIndexExistsError returns a new ErrorTypeIndexExists.
 func NewIndexExistsError(tableName string, indexName string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeIndexExists,
@@ -254,9 +255,27 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := table.renameIndex(spec.FromKey.O, spec.ToKey.O); err != nil {
 				return err
 			}
+		case tidbast.AlterTableIndexInvisible:
+			if err := table.changeIndexVisibility(spec.IndexName.O, spec.Visibility); err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+func (t *tableState) changeIndexVisibility(indexName string, visibility tidbast.IndexVisibility) error {
+	index, exists := t.indexSet[indexName]
+	if !exists {
+		return NewIndexNotExistsError(t.name, indexName)
+	}
+	switch visibility {
+	case tidbast.IndexVisibilityVisible:
+		index.visible = true
+	case tidbast.IndexVisibilityInvisible:
+		index.visible = false
+	}
 	return nil
 }
 
@@ -581,7 +600,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, false /* unique */, getIndexType(constraint.Option)); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, false /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
@@ -589,7 +608,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, true /* unique */, getIndexType(constraint.Option)); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, true /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintForeignKey:
@@ -599,7 +618,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, false /* unique */, FullTextName); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, false /* unique */, FullTextName, constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintCheck:
@@ -668,7 +687,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 			}
 			col.defaultValue = &defaultValue
 		case tidbast.ColumnOptionUniqKey:
-			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String()); err != nil {
+			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNull:
@@ -703,7 +722,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 	return nil
 }
 
-func (t *tableState) createIndex(name string, keyList []string, unique bool, tp string) error {
+func (t *tableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) error {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
 			Type:    ErrorTypeIndexEmptyKeys,
@@ -734,7 +753,13 @@ func (t *tableState) createIndex(name string, keyList []string, unique bool, tp 
 		unique:         unique,
 		primary:        false,
 		indextype:      tp,
+		visible:        true,
 	}
+
+	if option != nil && option.Visibility == tidbast.IndexVisibilityInvisible {
+		index.visible = false
+	}
+
 	t.indexSet[name] = index
 	return nil
 }
@@ -753,6 +778,7 @@ func (t *tableState) createPrimaryKey(keys []string, tp string) error {
 		unique:         true,
 		primary:        true,
 		indextype:      tp,
+		visible:        true,
 	}
 	t.indexSet[pk.name] = pk
 	return nil

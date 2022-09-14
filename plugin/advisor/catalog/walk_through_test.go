@@ -37,7 +37,7 @@ func TestWalkThrough(t *testing.T) {
 					KEY idx_a (a),
 					INDEX (b, a),
 					UNIQUE (b, c, d),
-					FULLTEXT (b, d) WITH PARSER ngram
+					FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
 				)
 			`,
 			want: &Database{
@@ -89,6 +89,7 @@ func TestWalkThrough(t *testing.T) {
 										Type:           "BTREE",
 										Unique:         true,
 										Primary:        true,
+										Visible:        true,
 									},
 									{
 										Name:           "b",
@@ -96,6 +97,7 @@ func TestWalkThrough(t *testing.T) {
 										Type:           "BTREE",
 										Unique:         true,
 										Primary:        false,
+										Visible:        true,
 									},
 									{
 										Name:           "idx_a",
@@ -103,6 +105,7 @@ func TestWalkThrough(t *testing.T) {
 										Type:           "BTREE",
 										Unique:         false,
 										Primary:        false,
+										Visible:        true,
 									},
 									{
 										Name:           "b_2",
@@ -110,6 +113,7 @@ func TestWalkThrough(t *testing.T) {
 										Type:           "BTREE",
 										Unique:         false,
 										Primary:        false,
+										Visible:        true,
 									},
 									{
 										Name:           "b_3",
@@ -117,6 +121,7 @@ func TestWalkThrough(t *testing.T) {
 										Type:           "BTREE",
 										Unique:         true,
 										Primary:        false,
+										Visible:        true,
 									},
 									{
 										Name:           "b_4",
@@ -124,6 +129,7 @@ func TestWalkThrough(t *testing.T) {
 										Type:           "FULLTEXT",
 										Unique:         false,
 										Primary:        false,
+										Visible:        false,
 									},
 								},
 							},
@@ -174,6 +180,7 @@ func TestWalkThrough(t *testing.T) {
 										Type:           "BTREE",
 										Unique:         true,
 										Primary:        true,
+										Visible:        true,
 									},
 								},
 							},
