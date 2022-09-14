@@ -461,6 +461,9 @@ func findRepositoryImpl(ctx context.Context, tx *Tx, find *api.RepositoryFind) (
 	if v := find.WebhookEndpointID; v != nil {
 		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.WebURL; v != nil {
+		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
+	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
