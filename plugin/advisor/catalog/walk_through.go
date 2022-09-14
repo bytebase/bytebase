@@ -217,9 +217,39 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := table.renameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O); err != nil {
 				return err
 			}
+		case tidbast.AlterTableRenameTable:
+			if err := schema.renameTable(table.name, spec.NewTable.Name.O); err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+func (s *schemaState) renameTable(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	table, exists := s.tableSet[oldName]
+	if !exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("Table `%s` does not exist", oldName),
+		}
+	}
+
+	if _, exists := s.tableSet[newName]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeTableExists,
+			Content: fmt.Sprintf("Table `%s` already exists", newName),
+		}
+	}
+
+	table.name = newName
+	delete(s.tableSet, oldName)
+	s.tableSet[newName] = table
 	return nil
 }
 
@@ -227,6 +257,7 @@ func (t *tableState) renameColumn(oldName string, newName string) error {
 	if oldName == newName {
 		return nil
 	}
+
 	column, exists := t.columnSet[oldName]
 	if !exists {
 		return &WalkThroughError{
