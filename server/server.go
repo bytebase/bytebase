@@ -308,6 +308,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return openAPIMetricMiddleware(s, next)
 	})
+	s.registerOpenAPIRoutes(openAPIGroup)
 
 	apiGroup := e.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -354,7 +355,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
 	s.registerAnomalyRoutes(apiGroup)
-	s.registerOpenAPIRoutes(openAPIGroup)
 
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
