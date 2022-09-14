@@ -221,7 +221,6 @@ import {
   idFromSlug,
   isGhostTable,
 } from "../utils";
-import { useRouter } from "vue-router";
 import { useTableStore } from "@/store";
 import { Table } from "@/types";
 
@@ -239,7 +238,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const router = useRouter();
     const tableStore = useTableStore();
 
     const table = computed(() => {
@@ -254,12 +252,8 @@ export default defineComponent({
     });
 
     const gotoSQLEditor = () => {
-      router.push({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database.value),
-        },
-      });
+      const url = `/sql-editor/${connectionSlug(database.value)}`;
+      window.open(url);
     };
 
     return {

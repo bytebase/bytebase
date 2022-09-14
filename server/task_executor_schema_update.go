@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // NewSchemaUpdateTaskExecutor creates a schema update (DDL) task executor.
@@ -29,7 +28,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	return runMigration(ctx, server, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, payload.MigrationInfo)
+	return runMigration(ctx, server, task, payload.MigrationType, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.

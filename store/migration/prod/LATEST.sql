@@ -944,8 +944,6 @@ CREATE TABLE repository (
 
 CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);
 
-CREATE UNIQUE INDEX idx_repository_unique_webhook_endpoint_id ON repository(webhook_endpoint_id);
-
 ALTER SEQUENCE repository_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_repository_updated_ts

@@ -7,10 +7,8 @@ import (
 	"io/fs"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 )
 
 //go:embed keys
@@ -43,14 +41,10 @@ const (
 
 // NewConfig will create a new enterprise config instance.
 func NewConfig(mode common.ReleaseMode) (*Config, error) {
-	log.Info("get project env", zap.String("env", string(mode)))
-
-	filename := fmt.Sprintf("keys/%s.pub.pem", mode)
 	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
 	if err != nil {
 		return nil, errors.Errorf("cannot read license public key for env %s", mode)
 	}
-	log.Info("load public pem", zap.String("file", filename))
 
 	return &Config{
 		PublicKey:       string(licensePubKey),
