@@ -377,7 +377,15 @@ func (t *tableState) renameColumn(oldName string, newName string) error {
 	delete(t.columnSet, oldName)
 	t.columnSet[newName] = column
 
-	// rename column in index key list
+	t.renameColumnInIndexKey(oldName, newName)
+
+	return nil
+}
+
+func (t *tableState) renameColumnInIndexKey(oldName string, newName string) {
+	if oldName == newName {
+		return
+	}
 	for _, index := range t.indexSet {
 		for i, key := range index.expressionList {
 			if key == oldName {
@@ -385,8 +393,6 @@ func (t *tableState) renameColumn(oldName string, newName string) error {
 			}
 		}
 	}
-
-	return nil
 }
 
 func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
@@ -410,6 +416,7 @@ func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, 
 	}
 
 	delete(t.columnSet, column.name)
+	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
 	return t.createColumn(newColumn, pos)
 }
 

@@ -224,6 +224,127 @@ func TestWalkThrough(t *testing.T) {
 				Content: "Table `t1` does not exist",
 			},
 		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(
+					a int PRIMARY KEY DEFAULT 1,
+					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+					c int auto_increment NULL COMMENT 'This is a comment',
+					d varchar(10) COLLATE utf8mb4_polish_ci,
+					KEY idx_a (a),
+					INDEX (b, a),
+					UNIQUE (b, c, d),
+					FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+				);
+				ALTER TABLE t COLLATE utf8mb4_0900_ai_ci, ENGINE = INNODB, COMMENT 'This is a table comment';
+				ALTER TABLE t ADD COLUMN a1 int AFTER a;
+				ALTER TABLE t ADD INDEX idx_a_b (a, b);
+				ALTER TABLE t DROP COLUMN c;
+				ALTER TABLE t DROP PRIMARY KEY;
+				ALTER TABLE t DROP INDEX b_2;
+				ALTER TABLE t MODIFY COLUMN b varchar(20);
+				ALTER TABLE t CHANGE COLUMN d d_copy varchar(10) COLLATE utf8mb4_polish_ci FIRST;
+				ALTER TABLE t RENAME COLUMN a to a_copy;
+				ALTER TABLE t RENAME TO t_copy;
+				ALTER TABLE t_copy ALTER COLUMN a_copy DROP DEFAULT;
+				ALTER TABLE t_copy RENAME INDEX b TO idx_b;
+				ALTER TABLE t_copy ALTER INDEX b_3 INVISIBLE;
+			`,
+			want: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+				SchemaList: []*Schema{
+					{
+						Name: "",
+						TableList: []*Table{
+							{
+								Name:      "t_copy",
+								Collation: "utf8mb4_0900_ai_ci",
+								Engine:    "INNODB",
+								Comment:   "This is a table comment",
+								ColumnList: []*Column{
+									{
+										Name:      "d_copy",
+										Position:  1,
+										Default:   nil,
+										Nullable:  true,
+										Type:      "varchar(10)",
+										Collation: "utf8mb4_polish_ci",
+									},
+									{
+										Name:     "a_copy",
+										Position: 2,
+										Default:  nil,
+										Nullable: false,
+										Type:     "int(11)",
+									},
+									{
+										Name:     "a1",
+										Position: 3,
+										Default:  nil,
+										Nullable: true,
+										Type:     "int(11)",
+									},
+									{
+										Name:     "b",
+										Position: 4,
+										Default:  nil,
+										Nullable: true,
+										Type:     "varchar(20)",
+									},
+								},
+								IndexList: []*Index{
+									{
+										Name:           "idx_b",
+										ExpressionList: []string{"b"},
+										Type:           "BTREE",
+										Unique:         true,
+										Primary:        false,
+										Visible:        true,
+									},
+									{
+										Name:           "idx_a",
+										ExpressionList: []string{"a_copy"},
+										Type:           "BTREE",
+										Unique:         false,
+										Primary:        false,
+										Visible:        true,
+									},
+									{
+										Name:           "b_3",
+										ExpressionList: []string{"b", "d_copy"},
+										Type:           "BTREE",
+										Unique:         true,
+										Primary:        false,
+										Visible:        false,
+									},
+									{
+										Name:           "b_4",
+										ExpressionList: []string{"b", "d_copy"},
+										Type:           "FULLTEXT",
+										Unique:         false,
+										Primary:        false,
+										Visible:        false,
+									},
+									{
+										Name:           "idx_a_b",
+										ExpressionList: []string{"a_copy", "b"},
+										Type:           "BTREE",
+										Unique:         false,
+										Primary:        false,
+										Visible:        true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
