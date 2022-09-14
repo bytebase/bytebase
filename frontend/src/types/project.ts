@@ -71,6 +71,7 @@ export type ProjectPatch = {
 
   // Domain specific fields
   name?: string;
+  key?: string;
   roleProvider?: ProjectRoleProvider;
   schemaChangeType?: SchemaChangeType;
 };
