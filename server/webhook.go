@@ -723,23 +723,29 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			)
 			return nil
 		}
-		for _, task := range taskList {
-			taskPatch := api.TaskPatch{
-				ID:        task.ID,
-				Statement: &content,
-				UpdaterID: api.SystemBotID,
-			}
-			issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
-			if err != nil {
-				log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
-				return nil
-			}
-			// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
-			log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
-			if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
-				log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
-				return nil
-			}
+		if len(taskList) == 0 {
+			continue
+		}
+		if len(taskList) > 1 {
+			log.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", zap.Int("databaseID", database.ID), zap.String("schemaVersion", migrationInfo.Version))
+			return nil
+		}
+		task := taskList[0]
+		taskPatch := api.TaskPatch{
+			ID:        task.ID,
+			Statement: &content,
+			UpdaterID: api.SystemBotID,
+		}
+		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+		if err != nil {
+			log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
+			return nil
+		}
+		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
+		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
+		if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
+			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
+			return nil
 		}
 	}
 
