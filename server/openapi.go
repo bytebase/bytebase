@@ -187,9 +187,9 @@ type schemaDiffRequestBody struct {
 // @Summary  Get the diff statement between source and target schema.
 // @Description  Parse and diff the schema statements.
 // @Accept  */*
-// @Tags  SQL review
+// @Tags  SQL schema diff
 // @Produce  json
-// @Param  engineType  			body  string  true   "The database engine type."
+// @Param  engineType       body  string  true   "The database engine type."
 // @Param  sourceSchema     body  string  true   "The source schema statement."
 // @Param  targetSchema     body  string  false  "The target schema statement."
 // @Success  200  {array}   the target diff string of schemas
