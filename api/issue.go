@@ -166,6 +166,9 @@ type UpdateSchemaContext struct {
 	DetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent `json:"vcsPushEvent"`
+	// SchemaVersion is parsed from VCS file name.
+	// It is automatically generated in the UI workflow.
+	SchemaVersion string `json:"schemaVersion"`
 }
 
 // UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.

@@ -65,6 +65,9 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
 		Type:           migrationType,
+		// TODO(d): support semantic versioning.
+		Version:     schemaVersion,
+		Description: task.Name,
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
@@ -79,24 +82,9 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		} else {
 			mi.Creator = creator.Name
 		}
-		// TODO(d): support semantic versioning.
-		mi.Version = schemaVersion
-		mi.Description = task.Name
 	} else {
-		repo, err := findRepositoryByTask(ctx, server, task)
-		if err != nil {
-			return nil, err
-		}
-		mi, err = db.ParseMigrationInfo(
-			vcsPushEvent.FileCommit.Added,
-			filepath.Join(vcsPushEvent.BaseDirectory, repo.FilePathTemplate),
-		)
-		// This should not happen normally as we already check this when creating the issue. Just in case.
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to prepare for database migration")
-		}
+		mi.Source = db.VCS
 		mi.Creator = vcsPushEvent.FileCommit.AuthorName
-
 		miPayload := &db.MigrationInfoPayload{
 			VCSPushEvent: vcsPushEvent,
 		}
