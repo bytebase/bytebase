@@ -247,61 +247,76 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
+		// We want to use only one webhook for Bytebase per repo/project.
+		repositories, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+			WebURL: &repositoryCreate.WebURL,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository with web url: %s", repositoryCreate.WebURL)).SetInternal(err)
+		}
+
 		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
-		repositoryCreate.WebhookEndpointID = uuid.New().String()
-		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for GitLab").SetInternal(err)
-		}
-		repositoryCreate.WebhookSecretToken = secretToken
-
-		// Create a new webhook and retrieve the created webhook ID
-		var webhookCreatePayload []byte
-		switch vcs.Type {
-		case vcsPlugin.GitLabSelfHost:
-			webhookCreate := gitlab.WebhookCreate{
-				URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
-				SecretToken:           repositoryCreate.WebhookSecretToken,
-				PushEvents:            true,
-				EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
-			}
-			webhookCreatePayload, err = json.Marshal(webhookCreate)
+		// If we can find at least one repository with same web url, we will use the same webhook instead of create a new one.
+		if len(repositories) == 0 {
+			repositoryCreate.WebhookEndpointID = uuid.New().String()
+			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for GitLab").SetInternal(err)
 			}
-		case vcsPlugin.GitHubCom:
-			webhookPost := github.WebhookCreateOrUpdate{
-				Config: github.WebhookConfig{
-					URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, repositoryCreate.WebhookEndpointID),
-					ContentType: "json",
-					Secret:      repositoryCreate.WebhookSecretToken,
-					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
+			repositoryCreate.WebhookSecretToken = secretToken
+
+			// Create a new webhook and retrieve the created webhook ID
+			var webhookCreatePayload []byte
+			switch vcs.Type {
+			case vcsPlugin.GitLabSelfHost:
+				webhookCreate := gitlab.WebhookCreate{
+					URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
+					SecretToken:           repositoryCreate.WebhookSecretToken,
+					PushEvents:            true,
+					EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+				}
+				webhookCreatePayload, err = json.Marshal(webhookCreate)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
+				}
+			case vcsPlugin.GitHubCom:
+				webhookPost := github.WebhookCreateOrUpdate{
+					Config: github.WebhookConfig{
+						URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, repositoryCreate.WebhookEndpointID),
+						ContentType: "json",
+						Secret:      repositoryCreate.WebhookSecretToken,
+						InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
+					},
+					Events: []string{"push"},
+				}
+				webhookCreatePayload, err = json.Marshal(webhookPost)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
+				}
+			}
+
+			webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateWebhook(
+				ctx,
+				common.OauthContext{
+					AccessToken: repositoryCreate.AccessToken,
+					// We use refreshTokenNoop() because the repository isn't created yet.
+					Refresher: refreshTokenNoop(),
 				},
-				Events: []string{"push"},
-			}
-			webhookCreatePayload, err = json.Marshal(webhookPost)
+				vcs.InstanceURL,
+				repositoryCreate.ExternalID,
+				webhookCreatePayload,
+			)
+
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
+			repositoryCreate.ExternalWebhookID = webhookID
+		} else {
+			repo := repositories[0]
+			repositoryCreate.WebhookEndpointID = repo.WebhookEndpointID
+			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
+			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
 		}
-
-		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateWebhook(
-			ctx,
-			common.OauthContext{
-				AccessToken: repositoryCreate.AccessToken,
-				// We use refreshTokenNoop() because the repository isn't created yet.
-				Refresher: refreshTokenNoop(),
-			},
-			vcs.InstanceURL,
-			repositoryCreate.ExternalID,
-			webhookCreatePayload,
-		)
-
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
-		}
-		repositoryCreate.ExternalWebhookID = webhookID
-
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.store.CreateRepository(ctx, repositoryCreate)
