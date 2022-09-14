@@ -41,6 +41,8 @@ const (
 
 	// ErrorTypeTableExists is the error that table exists.
 	ErrorTypeTableExists = 301
+	// ErrorTypeTableNotExists is the error that table not exists.
+	ErrorTypeTableNotExists = 302
 
 	// 401 ~ 499 column error type.
 
@@ -112,9 +114,43 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 	switch node := in.(type) {
 	case *tidbast.CreateTableStmt:
 		return d.createTable(node)
+	case *tidbast.DropTableStmt:
+		return d.dropTable(node)
 	default:
 		return nil
 	}
+}
+
+func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
+	// TODO(rebelice): deal with DROP VIEW statement.
+	if !node.IsView {
+		for _, name := range node.Tables {
+			if name.Schema.O != "" && d.name != name.Schema.O {
+				return &WalkThroughError{
+					Type:    ErrorTypeAccessOtherDatabase,
+					Content: fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.name),
+				}
+			}
+
+			schema, exists := d.schemaSet[""]
+			if !exists {
+				schema = d.createSchema("")
+			}
+
+			if _, exists = schema.tableSet[name.Name.O]; !exists {
+				if node.IfExists || !schema.context.CheckIntegrity {
+					return nil
+				}
+				return &WalkThroughError{
+					Type:    ErrorTypeTableNotExists,
+					Content: fmt.Sprintf("Table `%s` does not exist", name.Name.O),
+				}
+			}
+
+			delete(schema.tableSet, name.Name.O)
+		}
+	}
+	return nil
 }
 
 func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
@@ -144,6 +180,7 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 		name:      node.Table.Name.O,
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
+		context:   &FinderContext{CheckIntegrity: true},
 	}
 	schema.tableSet[table.name] = table
 
@@ -366,6 +403,7 @@ func (d *databaseState) createSchema(name string) *schemaState {
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
 		extensionSet: make(extensionStateMap),
+		context:      d.context.Copy(),
 	}
 
 	d.schemaSet[name] = schema

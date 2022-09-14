@@ -707,8 +707,6 @@ func FormatError(err error) error {
 			return common.Errorf(common.Conflict, "bookmark already exists")
 		case strings.Contains(err.Error(), "idx_repository_unique_project_id"):
 			return common.Errorf(common.Conflict, "project has already linked repository")
-		case strings.Contains(err.Error(), "idx_repository_unique_webhook_endpoint_id"):
-			return common.Errorf(common.Conflict, "webhook endpoint already exists")
 		case strings.Contains(err.Error(), "idx_label_key_unique_key"):
 			return common.Errorf(common.Conflict, "label key already exists")
 		case strings.Contains(err.Error(), "idx_label_value_unique_key_value"):

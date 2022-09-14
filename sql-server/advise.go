@@ -30,6 +30,12 @@ func (*catalogService) GetDatabase() *catalog.Database {
 	return &catalog.Database{}
 }
 
+// GetDatabase is the API message in catalog.
+// We will not connect to the user's database in the early version of sql check api.
+func (*catalogService) GetFinder() *catalog.Finder {
+	return catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false})
+}
+
 type sqlCheckRequestBody struct {
 	Statement    string                      `json:"statement"`
 	DatabaseType string                      `json:"databaseType"`

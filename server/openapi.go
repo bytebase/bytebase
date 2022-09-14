@@ -13,7 +13,9 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/parser"
 )
 
 var (
@@ -29,6 +31,17 @@ func (*catalogService) GetDatabase() *catalog.Database {
 	return &catalog.Database{}
 }
 
+// GetFinder is the API message in catalog.
+// We will not connect to the user's database in the early version of sql check api.
+func (*catalogService) GetFinder() *catalog.Finder {
+	return catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false})
+}
+
+func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
+	g.POST("/sql/advise", s.sqlCheckController)
+	g.POST("/sql/schema/diff", schemaDiff)
+}
+
 type sqlCheckRequestBody struct {
 	Statement       string `json:"statement"`
 	DatabaseType    string `json:"databaseType"`
@@ -36,10 +49,6 @@ type sqlCheckRequestBody struct {
 	EnvironmentName string `json:"environmentName"`
 	Host            string `json:"host"`
 	Port            string `json:"port"`
-}
-
-func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
-	g.POST("/sql/advise", s.sqlCheckController)
 }
 
 // sqlCheckController godoc
@@ -166,4 +175,61 @@ func (s *Server) findDatabase(ctx context.Context, host string, port string, dat
 	}
 
 	return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find database %s in instance %s:%s", databaseName, host, port))
+}
+
+type schemaDiffRequestBody struct {
+	EngineType   parser.EngineType `json:"engineType"`
+	SourceSchema string            `json:"sourceSchema"`
+	TargetSchema string            `json:"targetSchema"`
+}
+
+// schemaDiff godoc
+// @Summary  Get the diff statement between source and target schema.
+// @Description  Parse and diff the schema statements.
+// @Accept  */*
+// @Tags  SQL schema diff
+// @Produce  json
+// @Param  engineType       body  string  true   "The database engine type."
+// @Param  sourceSchema     body  string  true   "The source schema statement."
+// @Param  targetSchema     body  string  false  "The target schema statement."
+// @Success  200  {array}   the target diff string of schemas
+// @Failure  400  {object}  echo.HTTPError
+// @Failure  500  {object}  echo.HTTPError
+// @Router  /sql/schema/diff  [post].
+func schemaDiff(c echo.Context) error {
+	request := &schemaDiffRequestBody{}
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+	if err := json.Unmarshal(body, request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Cannot format request body").SetInternal(err)
+	}
+
+	var engine parser.EngineType
+	switch request.EngineType {
+	case parser.EngineType(db.Postgres):
+		engine = parser.Postgres
+	case parser.EngineType(db.MySQL):
+		engine = parser.MySQL
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database engine %s", request.EngineType))
+	}
+
+	sourceSchemaNodes, err := parser.Parse(engine, parser.ParseContext{}, request.SourceSchema)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse source schema to AST nodes: %s", request.SourceSchema)).SetInternal(err)
+	}
+
+	targetSchemaNodes, err := parser.Parse(engine, parser.ParseContext{}, request.TargetSchema)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse target schema to AST nodes: %s", request.TargetSchema)).SetInternal(err)
+	}
+
+	diff, err := parser.SchemaDiff(sourceSchemaNodes, targetSchemaNodes)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compute diff between source and target schemas").SetInternal(err)
+	}
+
+	return c.JSON(http.StatusOK, diff)
 }

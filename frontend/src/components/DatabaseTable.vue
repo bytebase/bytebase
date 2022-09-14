@@ -467,12 +467,8 @@ const gotoSQLEditor = (database: Database) => {
     state.warningDatabase = database;
     state.showIncorrectProjectModal = true;
   } else {
-    router.push({
-      name: "sql-editor.detail",
-      params: {
-        connectionSlug: connectionSlug(database),
-      },
-    });
+    const url = `/sql-editor/${connectionSlug(database)}`;
+    window.open(url);
   }
 };
 

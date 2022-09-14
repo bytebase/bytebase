@@ -546,7 +546,15 @@ const createMigration = async (
     repositoryStore
       .fetchRepositoryByProjectId(database.value.project.id)
       .then((repository: Repository) => {
-        window.open(baseDirectoryWebUrl(repository), "_blank");
+        window.open(
+          baseDirectoryWebUrl(repository, {
+            DB_NAME: database.value.name,
+            ENV_NAME: database.value.instance.environment.name,
+            TYPE:
+              type === "bb.issue.database.schema.update" ? "migrate" : "data",
+          }),
+          "_blank"
+        );
       });
   }
 };
@@ -609,12 +617,8 @@ const gotoSQLEditor = () => {
     state.editingProjectId = database.value.project.id;
     state.showIncorrectProjectModal = true;
   } else {
-    router.push({
-      name: "sql-editor.detail",
-      params: {
-        connectionSlug: connectionSlug(database.value),
-      },
-    });
+    const url = `/sql-editor/${connectionSlug(database.value)}`;
+    window.open(url);
   }
 };
 
