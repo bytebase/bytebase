@@ -472,6 +472,8 @@ const handleWarningModalOkClick = async () => {
       style: "SUCCESS",
       title: t("common.success"),
       description: t("instance.successfully-created-postgresql-instance"),
+      // This is a bit magic to the user, so do not auto dismiss the notification.
+      manualHide: true,
     });
     state.showCreateInstanceWarningModal = false;
   } else {
