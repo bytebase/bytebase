@@ -23,13 +23,13 @@
 
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.key") }}
+          {{ $t("common.key") }} <span class="text-red-600">*</span>
         </dt>
         <dd class="mt-1 text-sm text-main">
           <input
             id="projectKey"
-            :value="project.key"
-            disabled
+            :value="state.key"
+            :disabled="!allowEdit"
             required
             autocomplete="off"
             type="text"
@@ -94,6 +94,7 @@ import { pushNotification, useProjectStore } from "@/store";
 
 interface LocalState {
   name: string;
+  key: string;
   schemaChangeType: SchemaChangeType;
 }
 
@@ -115,6 +116,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       name: props.project.name,
+      key: props.project.key,
       schemaChangeType: props.project.schemaChangeType,
     });
 
@@ -132,6 +134,9 @@ export default defineComponent({
 
       if (state.name !== props.project.name) {
         projectPatch.name = state.name;
+      }
+      if (state.key !== props.project.key) {
+        projectPatch.key = state.key;
       }
       if (state.schemaChangeType !== props.project.schemaChangeType) {
         projectPatch.schemaChangeType = state.schemaChangeType;

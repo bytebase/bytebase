@@ -549,6 +549,9 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch, mode
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Key; v != nil {
+		set, args = append(set, fmt.Sprintf("key = $%d", len(args)+1)), append(args, strings.ToUpper(*v))
+	}
 	if v := patch.WorkflowType; v != nil {
 		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
 	}
