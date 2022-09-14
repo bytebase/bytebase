@@ -654,6 +654,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if d.Statement == "" {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 		}
+		// VCS push event contains schema version in the file name, which is parsed against the file template.
+		if d.SchemaVersion != "" {
+			schemaVersion = d.SchemaVersion
+		}
 
 		if d.DatabaseName == "" && d.DatabaseID > 0 {
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
@@ -743,6 +747,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
+			// VCS push event contains schema version in the file name, which is parsed against the file template.
+			if d.SchemaVersion != "" {
+				schemaVersion = d.SchemaVersion
+			}
 			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
 			if err != nil {
 				return nil, err
