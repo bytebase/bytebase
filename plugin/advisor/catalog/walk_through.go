@@ -50,6 +50,8 @@ const (
 	ErrorTypeColumnExists = 401
 	// ErrorTypeColumnNotExists is the error that column not exists.
 	ErrorTypeColumnNotExists = 402
+	// ErrorTypeDropAllColumns is the error that dropping all columns in a table.
+	ErrorTypeDropAllColumns = 403
 
 	// 501 ~ 599 index error type.
 
@@ -185,10 +187,55 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			if err := table.createConstraint(spec.Constraint); err != nil {
 				return err
 			}
+		case tidbast.AlterTableDropColumn:
+			if err := table.dropColumn(spec.OldColumnName.Name.O); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+func (t *tableState) dropColumn(columnName string) error {
+	if _, exists := t.columnSet[columnName]; !exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnNotExists,
+			Content: fmt.Sprintf("Column `%s` in table `%s` does not exist", columnName, t.name),
+		}
+	}
+
+	// Can not drop all columns in a table using ALTER TABLE DROP COLUMN.
+	if len(t.columnSet) == 1 {
+		return &WalkThroughError{
+			Type: ErrorTypeDropAllColumns,
+			// Error content comes from MySQL error content.
+			Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
+		}
+	}
+
+	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
+	for _, index := range t.indexSet {
+		index.dropColumn(columnName)
+		// If all columns that make up an index are dropped, the index is dropped as well.
+		if len(index.expressionList) == 0 {
+			delete(t.indexSet, index.name)
+		}
+	}
+
+	delete(t.columnSet, columnName)
+	return nil
+}
+
+func (idx *indexState) dropColumn(columnName string) {
+	var newKeyList []string
+	for _, key := range idx.expressionList {
+		if key != columnName {
+			newKeyList = append(newKeyList, key)
+		}
+	}
+
+	idx.expressionList = newKeyList
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
