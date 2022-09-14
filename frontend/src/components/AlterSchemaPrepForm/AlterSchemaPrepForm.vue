@@ -397,7 +397,16 @@ export default defineComponent({
         repositoryStore
           .fetchRepositoryByProjectId(project.id)
           .then((repository: Repository) => {
-            window.open(baseDirectoryWebUrl(repository), "_blank");
+            window.open(
+              baseDirectoryWebUrl(repository, {
+                DB_NAME: state.selectedDatabaseName!,
+                TYPE:
+                  props.type === "bb.issue.database.schema.update"
+                    ? "migrate"
+                    : "data",
+              }),
+              "_blank"
+            );
           });
       }
     };
@@ -430,7 +439,17 @@ export default defineComponent({
         repositoryStore
           .fetchRepositoryByProjectId(database.project.id)
           .then((repository: Repository) => {
-            window.open(baseDirectoryWebUrl(repository), "_blank");
+            window.open(
+              baseDirectoryWebUrl(repository, {
+                DB_NAME: database.name,
+                ENV_NAME: database.instance.environment.name,
+                TYPE:
+                  props.type === "bb.issue.database.schema.update"
+                    ? "migrate"
+                    : "data",
+              }),
+              "_blank"
+            );
           });
         emit("dismiss");
       }

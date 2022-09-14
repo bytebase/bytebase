@@ -20,6 +20,7 @@ var (
 // Catalog is the database catalog.
 type Catalog struct {
 	Database *catalog.Database
+	Finder   *catalog.Finder
 }
 
 // NewCatalog creates a new database catalog.
@@ -49,13 +50,19 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Ty
 	if databaseData.SchemaList, err = s.getSchemaList(ctx, databaseID, engineType); err != nil {
 		return nil, err
 	}
-
-	return &Catalog{Database: databaseData}, nil
+	c := &Catalog{Database: databaseData}
+	c.Finder = catalog.NewFinder(c.Database, &catalog.FinderContext{CheckIntegrity: true})
+	return c, nil
 }
 
 // GetDatabase implements the catalog.Catalog interface.
 func (c *Catalog) GetDatabase() *catalog.Database {
 	return c.Database
+}
+
+// GetFinder implements the catalog.Catalog interface.
+func (c *Catalog) GetFinder() *catalog.Finder {
+	return c.Finder
 }
 
 type schemaMap map[string]*catalog.Schema
