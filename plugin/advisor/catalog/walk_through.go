@@ -129,6 +129,14 @@ func NewTableNotExistsError(tableName string) *WalkThroughError {
 	}
 }
 
+// NewTableExistsError returns a new ErrorTypeTableExists.
+func NewTableExistsError(tableName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeTableExists,
+		Content: fmt.Sprintf("Table `%s` already exists", tableName),
+	}
+}
+
 // Error implements the error interface.
 func (e *WalkThroughError) Error() string {
 	return e.Content
@@ -188,9 +196,65 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.dropDatabase(node)
 	case *tidbast.CreateDatabaseStmt:
 		return NewAccessOtherDatabaseError(d.name, node.Name)
+	case *tidbast.RenameTableStmt:
+		return d.renameTable(node)
 	default:
 		return nil
 	}
+}
+
+func (d *databaseState) renameTable(node *tidbast.RenameTableStmt) error {
+	for _, tableToTable := range node.TableToTables {
+		schema, exists := d.schemaSet[""]
+		if !exists {
+			schema = d.createSchema("")
+		}
+		if d.theCurrentDatabase(tableToTable) {
+			table, exists := schema.tableSet[tableToTable.OldTable.Name.O]
+			if !exists {
+				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+			}
+			if _, exists := schema.tableSet[tableToTable.NewTable.Name.O]; exists {
+				return NewTableExistsError(tableToTable.NewTable.Name.O)
+			}
+			delete(schema.tableSet, table.name)
+			table.name = tableToTable.NewTable.Name.O
+			schema.tableSet[table.name] = table
+		} else if d.moveToOtherDatabase(tableToTable) {
+			_, exists := schema.tableSet[tableToTable.OldTable.Name.O]
+			if !exists {
+				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+			}
+			delete(schema.tableSet, tableToTable.OldTable.Name.O)
+		} else {
+			return NewAccessOtherDatabaseError(d.name, d.targetDatabase(tableToTable))
+		}
+	}
+	return nil
+}
+
+func (d *databaseState) targetDatabase(node *tidbast.TableToTable) string {
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return node.OldTable.Schema.O
+	}
+	return node.NewTable.Schema.O
+}
+
+func (d *databaseState) moveToOtherDatabase(node *tidbast.TableToTable) bool {
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return false
+	}
+	return node.OldTable.Schema.O != node.NewTable.Schema.O
+}
+
+func (d *databaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
+	if node.NewTable.Schema.O != "" && node.NewTable.Schema.O != d.name {
+		return false
+	}
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return false
+	}
+	return true
 }
 
 func (d *databaseState) dropDatabase(node *tidbast.DropDatabaseStmt) error {

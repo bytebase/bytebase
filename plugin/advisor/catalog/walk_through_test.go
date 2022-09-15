@@ -449,6 +449,56 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t(a int);
+				RENAME TABLE t to other_db.t1
+			`,
+			want: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+				SchemaList: []*Schema{
+					{},
+				},
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int);
+				RENAME TABLE t to test.t1
+			`,
+			want: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+				SchemaList: []*Schema{
+					{
+						Name: "",
+						TableList: []*Table{
+							{
+								Name: "t1",
+								ColumnList: []*Column{
+									{
+										Name:     "a",
+										Position: 1,
+										Default:  nil,
+										Nullable: true,
+										Type:     "int(11)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				DROP DATABASE test;
 				CREATE TABLE t(a int);
 			`,
