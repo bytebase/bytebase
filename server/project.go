@@ -256,7 +256,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
-		// If we can find at least one repository with same web url, we will use the same webhook instead of create a new one.
+		// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
 		if len(repositories) == 0 {
 			repositoryCreate.WebhookEndpointID = uuid.New().String()
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
