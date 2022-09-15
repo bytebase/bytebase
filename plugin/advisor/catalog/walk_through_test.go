@@ -449,6 +449,20 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				DROP DATABASE test;
+				CREATE TABLE t(a int);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeDatabaseIsDeleted,
+				Content: "Database `test` is deleted",
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				CREATE TABLE t(
 					a int PRIMARY KEY DEFAULT 1,
 					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
