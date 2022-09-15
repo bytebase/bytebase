@@ -354,6 +354,175 @@ func TestWalkThrough(t *testing.T) {
 				},
 			},
 		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(
+					a int PRIMARY KEY DEFAULT 1,
+					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+					c int auto_increment NULL COMMENT 'This is a comment',
+					d varchar(10) COLLATE utf8mb4_polish_ci
+				);
+				CREATE INDEX idx_a on t(a);
+				CREATE INDEX b_2 on t(b, a);
+				CREATE UNIQUE INDEX b_3 on t(b, c, d);
+				CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
+			`,
+			want: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+				SchemaList: []*Schema{
+					{
+						Name: "",
+						TableList: []*Table{
+							{
+								Name: "t",
+								ColumnList: []*Column{
+									{
+										Name:     "a",
+										Position: 1,
+										Default:  &one,
+										Nullable: false,
+										Type:     "int(11)",
+									},
+									{
+										Name:         "b",
+										Position:     2,
+										Default:      nil,
+										Nullable:     false,
+										Type:         "varchar(200)",
+										CharacterSet: "utf8mb4",
+									},
+									{
+										Name:     "c",
+										Position: 3,
+										Default:  nil,
+										Nullable: true,
+										Type:     "int(11)",
+										Comment:  "This is a comment",
+									},
+									{
+										Name:      "d",
+										Position:  4,
+										Default:   nil,
+										Nullable:  true,
+										Type:      "varchar(10)",
+										Collation: "utf8mb4_polish_ci",
+									},
+								},
+								IndexList: []*Index{
+									{
+										Name:           "PRIMARY",
+										ExpressionList: []string{"a"},
+										Type:           "BTREE",
+										Unique:         true,
+										Primary:        true,
+										Visible:        true,
+									},
+									{
+										Name:           "b",
+										ExpressionList: []string{"b"},
+										Type:           "BTREE",
+										Unique:         true,
+										Primary:        false,
+										Visible:        true,
+									},
+									{
+										Name:           "idx_a",
+										ExpressionList: []string{"a"},
+										Type:           "BTREE",
+										Unique:         false,
+										Primary:        false,
+										Visible:        true,
+									},
+									{
+										Name:           "b_2",
+										ExpressionList: []string{"b", "a"},
+										Type:           "BTREE",
+										Unique:         false,
+										Primary:        false,
+										Visible:        true,
+									},
+									{
+										Name:           "b_3",
+										ExpressionList: []string{"b", "c", "d"},
+										Type:           "BTREE",
+										Unique:         true,
+										Primary:        false,
+										Visible:        true,
+									},
+									{
+										Name:           "b_4",
+										ExpressionList: []string{"b", "d"},
+										Type:           "FULLTEXT",
+										Unique:         false,
+										Primary:        false,
+										Visible:        false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(
+					a int PRIMARY KEY DEFAULT 1,
+					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE
+				);
+				DROP INDEX b on t;
+			`,
+			want: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+				SchemaList: []*Schema{
+					{
+						Name: "",
+						TableList: []*Table{
+							{
+								Name: "t",
+								ColumnList: []*Column{
+									{
+										Name:     "a",
+										Position: 1,
+										Default:  &one,
+										Nullable: false,
+										Type:     "int(11)",
+									},
+									{
+										Name:         "b",
+										Position:     2,
+										Default:      nil,
+										Nullable:     false,
+										Type:         "varchar(200)",
+										CharacterSet: "utf8mb4",
+									},
+								},
+								IndexList: []*Index{
+									{
+										Name:           "PRIMARY",
+										ExpressionList: []string{"a"},
+										Type:           "BTREE",
+										Unique:         true,
+										Primary:        true,
+										Visible:        true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
