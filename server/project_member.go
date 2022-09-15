@@ -57,7 +57,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				ClientSecret: vcs.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.ID),
+				Refresher:    s.refreshToken(ctx, repo.WebURL),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
