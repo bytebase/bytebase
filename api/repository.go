@@ -101,6 +101,7 @@ func (find *RepositoryFind) String() string {
 
 // RepositoryPatch is the API message for patching a repository.
 type RepositoryPatch struct {
+	// We ignore id and patch all records with webURL as specified value when webURL is not empty.
 	ID     int `jsonapi:"primary,repositoryPatch"`
 	WebURL *string
 
