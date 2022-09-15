@@ -4,6 +4,7 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
   useCurrentUser,
   useDatabaseStore,
+  useInstanceStore,
   useIssueStore,
   useTaskStore,
   useUIStateStore,
@@ -24,6 +25,7 @@ import {
   TaskId,
   TaskPatch,
   TaskType,
+  UpdateSchemaContext,
   UpdateSchemaDetail,
 } from "@/types";
 import { useIssueLogic } from "./index";
@@ -189,10 +191,30 @@ export const useCommonLogic = () => {
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
+    const migrationType = taskList[0].migrationType!;
+
     issueCreate.createContext = {
-      migrationType: taskList[0].migrationType!,
+      migrationType,
       updateSchemaDetailList: detailList,
     };
+
+    // If the database is within VCS project, try to find its latest and done migration history from VCS.
+    // If not found, keep the vcsPushEvent field empty and check in backend.
+    if (migrationType === "BASELINE" && detailList.length === 1) {
+      const databaseId = detailList[0].databaseId;
+      const database = databaseStore.getDatabaseById(databaseId);
+      if (database.project.workflowType === "VCS") {
+        const migrationHistory =
+          useInstanceStore().getLatestDoneVCSMigrationHistory(
+            database.instance.id,
+            database.name
+          );
+        if (migrationHistory) {
+          (issueCreate.createContext as UpdateSchemaContext).vcsPushEvent =
+            migrationHistory.payload?.pushEvent;
+        }
+      }
+    }
 
     createIssue(issueCreate);
   };
