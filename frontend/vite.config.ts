@@ -61,6 +61,7 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@/": `${resolve(__dirname, "src")}/`,
+        "@sql-lsp/": `${resolve(__dirname, "src/plugins/sql-lsp")}/`,
       },
     },
     test: {

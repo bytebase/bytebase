@@ -1,4 +1,4 @@
-const keyword = [
+export const keywords = [
   "ACCESSIBLE",
   "ACCOUNT",
   "ACTION",
@@ -622,7 +622,8 @@ const keyword = [
   "GROUP BY",
   "ORDER BY",
 ];
-const operators = [
+
+export const operators = [
   "AND",
   "BETWEEN",
   "IN",
@@ -640,7 +641,7 @@ const operators = [
   "RIGHT",
 ];
 
-const builtinFunctions = [
+export const builtinFunctions = [
   "ABS",
   "ACOS",
   "ADDDATE",
@@ -1069,7 +1070,3 @@ const builtinFunctions = [
   "YEAR",
   "YEARWEEK",
 ];
-
-const keywords = [...keyword, ...operators, ...builtinFunctions];
-
-export { keywords };
