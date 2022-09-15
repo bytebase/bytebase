@@ -535,6 +535,7 @@
     "create-project": "@:common.create @:common.project",
     "edit-data": "Edit Data",
     "troubleshoot": "Troubleshoot",
+    "sync-schema": "Sync Schema",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
     "from-unassigned-databases": "From unassigned databases",
@@ -754,6 +755,7 @@
   },
   "migration-history": {
     "self": "Migration History",
+    "select": "Select a version",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
@@ -782,6 +784,7 @@
     "no-succeed-vcs-migration-record": "No succeed migration record from VCS"
   },
   "database": {
+    "select": "Select database",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",

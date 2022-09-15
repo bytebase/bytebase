@@ -161,8 +161,6 @@ const routes: Array<RouteRecordRaw> = [
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
-                      // "quickaction.bb.database.request",
-                      // "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.project.create",
                     ]
                   : [
@@ -566,7 +564,8 @@ const routes: Array<RouteRecordRaw> = [
                   if (allowAlterSchemaOrChangeData) {
                     actionList.push(
                       "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update"
+                      "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.schema.sync"
                     );
                   }
 
