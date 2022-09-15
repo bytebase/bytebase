@@ -247,7 +247,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
-		// We want to use only one webhook for Bytebase per repo/project.
+		// For a particular VCS repo, all Bytebase projects share the same webhook.
 		repositories, err := s.store.FindRepository(ctx, &api.RepositoryFind{
 			WebURL: &repositoryCreate.WebURL,
 		})
