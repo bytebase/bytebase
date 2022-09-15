@@ -103,7 +103,7 @@ func NewIndexNotExistsError(tableName string, indexName string) *WalkThroughErro
 func NewIndexExistsError(tableName string, indexName string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeIndexExists,
-		Content: fmt.Sprintf("Index `%s` exists in table `%s`", indexName, tableName),
+		Content: fmt.Sprintf("Index `%s` already exists in table `%s`", indexName, tableName),
 	}
 }
 
@@ -195,13 +195,9 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 			}
 		case tidbast.AlterTableAddColumns:
 			for _, column := range spec.NewColumns {
-				pos := len(table.columnSet)
-				if spec.Position != nil && len(spec.NewColumns) == 1 {
-					var err error
-					pos, err = table.reorderColumn(spec.Position)
-					if err != nil {
-						return err
-					}
+				var pos *tidbast.ColumnPosition
+				if len(spec.NewColumns) == 1 {
+					pos = spec.Position
 				}
 				if err := table.createColumn(column, pos); err != nil {
 					return err
@@ -232,7 +228,7 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 		case tidbast.AlterTableDropForeignKey:
 			// we do not deal with DROP FOREIGN KEY statements.
 		case tidbast.AlterTableModifyColumn:
-			if err := table.modifyColumn(spec.NewColumns[0], spec.Position); err != nil {
+			if err := table.changeColumn(spec.NewColumns[0].Name.Name.O, spec.NewColumns[0], spec.Position); err != nil {
 				return err
 			}
 		case tidbast.AlterTableChangeColumn:
@@ -248,7 +244,7 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 				return err
 			}
 		case tidbast.AlterTableAlterColumn:
-			if err := table.alterColumn(spec.NewColumns[0]); err != nil {
+			if err := table.changeColumnDefault(spec.NewColumns[0]); err != nil {
 				return err
 			}
 		case tidbast.AlterTableRenameIndex:
@@ -306,7 +302,7 @@ func (t *tableState) renameIndex(oldName string, newName string) error {
 	return nil
 }
 
-func (t *tableState) alterColumn(column *tidbast.ColumnDef) error {
+func (t *tableState) changeColumnDefault(column *tidbast.ColumnDef) error {
 	columnName := column.Name.Name.O
 	colState, exists := t.columnSet[columnName]
 	if !exists {
@@ -395,6 +391,11 @@ func (t *tableState) renameColumnInIndexKey(oldName string, newName string) {
 	}
 }
 
+// changeColumn changes column definition.
+// It works as:
+// 1. drop column from tableState.columnSet, but do not drop column from indexSet.
+// 2. rename column from indexSet.
+// 3. create a new column in columnSet.
 func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	column, exists := t.columnSet[oldName]
 	if !exists {
@@ -402,26 +403,38 @@ func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, 
 	}
 
 	pos := column.position
-	if position != nil && position.Tp != tidbast.ColumnPositionNone {
-		for _, col := range t.columnSet {
-			if col.position > pos {
-				col.position--
+
+	// generate Position struct for creating new column
+	if position == nil {
+		position = &tidbast.ColumnPosition{Tp: tidbast.ColumnPositionNone}
+	}
+	if position.Tp == tidbast.ColumnPositionNone {
+		if pos == 1 {
+			position.Tp = tidbast.ColumnPositionFirst
+		} else {
+			for _, col := range t.columnSet {
+				if col.position == pos-1 {
+					position.Tp = tidbast.ColumnPositionAfter
+					position.RelativeColumn = &tidbast.ColumnName{Name: model.NewCIStr(col.name)}
+					break
+				}
 			}
-		}
-		var err error
-		pos, err = t.reorderColumn(position)
-		if err != nil {
-			return err
 		}
 	}
 
+	// drop column from columnSet
+	for _, col := range t.columnSet {
+		if col.position > pos {
+			col.position--
+		}
+	}
 	delete(t.columnSet, column.name)
-	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
-	return t.createColumn(newColumn, pos)
-}
 
-func (t *tableState) modifyColumn(newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
-	return t.changeColumn(newColumn.Name.Name.O, newColumn, position)
+	// rename column from indexSet
+	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
+
+	// create a new column in columnSet
+	return t.createColumn(newColumn, position)
 }
 
 func (t *tableState) dropIndex(indexName string) error {
@@ -489,7 +502,7 @@ func (idx *indexState) dropColumn(columnName string) {
 func (t *tableState) reorderColumn(position *tidbast.ColumnPosition) (int, error) {
 	switch position.Tp {
 	case tidbast.ColumnPositionNone:
-		return len(t.columnSet), nil
+		return len(t.columnSet) + 1, nil
 	case tidbast.ColumnPositionFirst:
 		for _, column := range t.columnSet {
 			column.position++
@@ -577,8 +590,8 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 	}
 	schema.tableSet[table.name] = table
 
-	for i, column := range node.Cols {
-		if err := table.createColumn(column, i+1); err != nil {
+	for _, column := range node.Cols {
+		if err := table.createColumn(column, nil); err != nil {
 			return err
 		}
 	}
@@ -659,7 +672,7 @@ func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 	return res, nil
 }
 
-func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error {
+func (t *tableState) createColumn(column *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	if _, exists := t.columnSet[column.Name.Name.O]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
@@ -667,9 +680,18 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 		}
 	}
 
+	pos := len(t.columnSet) + 1
+	if position != nil {
+		var err error
+		pos, err = t.reorderColumn(position)
+		if err != nil {
+			return err
+		}
+	}
+
 	col := &columnState{
 		name:         column.Name.Name.O,
-		position:     position,
+		position:     pos,
 		columnType:   column.Tp.CompactStr(),
 		characterSet: column.Tp.GetCharset(),
 		collation:    column.Tp.GetCollate(),

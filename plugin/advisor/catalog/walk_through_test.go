@@ -235,6 +235,7 @@ func TestWalkThrough(t *testing.T) {
 					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
 					c int auto_increment NULL COMMENT 'This is a comment',
 					d varchar(10) COLLATE utf8mb4_polish_ci,
+					e int,
 					KEY idx_a (a),
 					INDEX (b, a),
 					UNIQUE (b, c, d),
@@ -246,8 +247,8 @@ func TestWalkThrough(t *testing.T) {
 				ALTER TABLE t DROP COLUMN c;
 				ALTER TABLE t DROP PRIMARY KEY;
 				ALTER TABLE t DROP INDEX b_2;
-				ALTER TABLE t MODIFY COLUMN b varchar(20);
-				ALTER TABLE t CHANGE COLUMN d d_copy varchar(10) COLLATE utf8mb4_polish_ci FIRST;
+				ALTER TABLE t MODIFY COLUMN b varchar(20) FIRST;
+				ALTER TABLE t CHANGE COLUMN d d_copy varchar(10) COLLATE utf8mb4_polish_ci;
 				ALTER TABLE t RENAME COLUMN a to a_copy;
 				ALTER TABLE t RENAME TO t_copy;
 				ALTER TABLE t_copy ALTER COLUMN a_copy DROP DEFAULT;
@@ -268,12 +269,11 @@ func TestWalkThrough(t *testing.T) {
 								Comment:   "This is a table comment",
 								ColumnList: []*Column{
 									{
-										Name:      "d_copy",
-										Position:  1,
-										Default:   nil,
-										Nullable:  true,
-										Type:      "varchar(10)",
-										Collation: "utf8mb4_polish_ci",
+										Name:     "b",
+										Position: 1,
+										Default:  nil,
+										Nullable: true,
+										Type:     "varchar(20)",
 									},
 									{
 										Name:     "a_copy",
@@ -289,12 +289,21 @@ func TestWalkThrough(t *testing.T) {
 										Nullable: true,
 										Type:     "int(11)",
 									},
+
 									{
-										Name:     "b",
-										Position: 4,
+										Name:      "d_copy",
+										Position:  4,
+										Default:   nil,
+										Nullable:  true,
+										Type:      "varchar(10)",
+										Collation: "utf8mb4_polish_ci",
+									},
+									{
+										Name:     "e",
+										Position: 5,
 										Default:  nil,
 										Nullable: true,
-										Type:     "varchar(20)",
+										Type:     "int(11)",
 									},
 								},
 								IndexList: []*Index{
