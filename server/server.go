@@ -64,6 +64,7 @@ type Server struct {
 	store           *store.Store
 	startedTs       int64
 	secret          string
+	workspaceID     string
 	errorRecordRing api.ErrorRecordRing
 
 	s3Client *s3bb.Client
@@ -192,6 +193,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
+	s.workspaceID = config.workspaceID
 
 	e := echo.New()
 	e.Debug = prof.Debug

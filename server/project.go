@@ -258,15 +258,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
 		if len(repositories) == 0 {
 			// We use workspace id as webhook endpoint id
-			settingName := api.SettingWorkspaceID
-			settings, err := s.store.FindSetting(ctx, &api.SettingFind{Name: &settingName})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find settings with name: %s", settingName)).SetInternal(err)
-			} else if len(settings) != 1 {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Expect 1 settings with name: %s, but get %d", settingName, len(settings)))
-			}
-
-			repositoryCreate.WebhookEndpointID = settings[0].Value
+			repositoryCreate.WebhookEndpointID = s.workspaceID
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for VCS").SetInternal(err)
