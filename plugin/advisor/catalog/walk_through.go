@@ -276,6 +276,8 @@ func (t *tableState) changeIndexVisibility(indexName string, visibility tidbast.
 }
 
 func (t *tableState) renameIndex(oldName string, newName string) error {
+	// For MySQL, the primary key has a special name 'PRIMARY'.
+	// And the other indexes can not use the name which case-insensitive equals 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
 		incorrectName := oldName
 		if strings.ToUpper(oldName) != PrimaryKeyName {
