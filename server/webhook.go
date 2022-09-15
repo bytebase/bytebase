@@ -252,9 +252,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				var createdMessageList []string
 				repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
 				for _, repo := range repos {
-					if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && file.itemType == fileItemTypeModified {
-						continue
-					}
 					pushEvent := &vcs.PushEvent{
 						VCSType:            repo.VCS.Type,
 						BaseDirectory:      repo.BaseDirectory,
