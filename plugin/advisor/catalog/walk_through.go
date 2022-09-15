@@ -172,14 +172,16 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.alterTable(node)
 	case *tidbast.CreateIndexStmt:
 		return d.createIndex(node)
+	case *tidbast.DropIndexStmt:
+		return d.dropIndex(node)
 	default:
 		return nil
 	}
 }
 
-func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) error {
-	if node.Table.Schema.O != "" && node.Table.Schema.O != d.name {
-		return NewAccessOtherDatabaseError(d.name, node.Table.Schema.O)
+func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, error) {
+	if tableName.Schema.O != "" && tableName.Schema.O != d.name {
+		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
 
 	schema, exists := d.schemaSet[""]
@@ -187,13 +189,37 @@ func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) error {
 		schema = d.createSchema("")
 	}
 
-	table, exists := schema.tableSet[node.Table.Name.O]
+	table, exists := schema.tableSet[tableName.Name.O]
 	if !exists {
 		if !schema.context.CheckIntegrity {
-			return nil
+			return nil, nil
 		}
 
-		return NewTableNotExistsError(node.Table.Name.O)
+		return nil, NewTableNotExistsError(tableName.Name.O)
+	}
+
+	return table, nil
+}
+
+func (d *databaseState) dropIndex(node *tidbast.DropIndexStmt) error {
+	table, err := d.findTable(node.Table)
+	if err != nil {
+		return err
+	}
+	if table == nil {
+		return nil
+	}
+
+	return table.dropIndex(node.IndexName)
+}
+
+func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) error {
+	table, err := d.findTable(node.Table)
+	if err != nil {
+		return err
+	}
+	if table == nil {
+		return nil
 	}
 
 	unique := false
@@ -220,22 +246,12 @@ func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) error {
 }
 
 func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
-	if node.Table.Schema.O != "" && node.Table.Schema.O != d.name {
-		return NewAccessOtherDatabaseError(d.name, node.Table.Schema.O)
+	table, err := d.findTable(node.Table)
+	if err != nil {
+		return err
 	}
-
-	schema, exists := d.schemaSet[""]
-	if !exists {
-		schema = d.createSchema("")
-	}
-
-	table, exists := schema.tableSet[node.Table.Name.O]
-	if !exists {
-		if !schema.context.CheckIntegrity {
-			return nil
-		}
-
-		return NewTableNotExistsError(node.Table.Name.O)
+	if table == nil {
+		return nil
 	}
 
 	for _, spec := range node.Specs {
@@ -298,6 +314,7 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 				return err
 			}
 		case tidbast.AlterTableRenameTable:
+			schema := d.schemaSet[""]
 			if err := schema.renameTable(table.name, spec.NewTable.Name.O); err != nil {
 				return err
 			}
