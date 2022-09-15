@@ -552,9 +552,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID string) (webhookID string, err error) {
+func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID string) (string, error) {
 	// Create a new webhook and retrieve the created webhook ID
 	var webhookCreatePayload []byte
+	var err error
 	switch vcsType {
 	case vcsPlugin.GitLabSelfHost:
 		webhookCreate := gitlab.WebhookCreate{
@@ -582,7 +583,7 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
 	}
-	webhookID, err = vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).CreateWebhook(
+	webhookID, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).CreateWebhook(
 		ctx,
 		common.OauthContext{
 			AccessToken: accessToken,
