@@ -124,6 +124,7 @@ type databaseState struct {
 	collation    string
 	dbType       db.Type
 	schemaSet    schemaStateMap
+	deleted      bool
 
 	context *FinderContext
 }

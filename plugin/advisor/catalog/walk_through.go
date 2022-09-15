@@ -38,6 +38,8 @@ const (
 
 	// ErrorTypeAccessOtherDatabase is the error that try to access other database.
 	ErrorTypeAccessOtherDatabase = 201
+	// ErrorTypeDatabaseIsDeleted is the error that try to access the deleted database.
+	ErrorTypeDatabaseIsDeleted = 202
 
 	// 301 ~ 399 table error type.
 
@@ -163,6 +165,12 @@ func (d *databaseState) WalkThrough(stmts string) error {
 }
 
 func (d *databaseState) changeState(in tidbast.StmtNode) error {
+	if d.deleted {
+		return &WalkThroughError{
+			Type:    ErrorTypeDatabaseIsDeleted,
+			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
+		}
+	}
 	switch node := in.(type) {
 	case *tidbast.CreateTableStmt:
 		return d.createTable(node)
@@ -176,9 +184,20 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.dropIndex(node)
 	case *tidbast.AlterDatabaseStmt:
 		return d.alterDatabase(node)
+	case *tidbast.DropDatabaseStmt:
+		return d.dropDatabase(node)
 	default:
 		return nil
 	}
+}
+
+func (d *databaseState) dropDatabase(node *tidbast.DropDatabaseStmt) error {
+	if node.Name != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	}
+
+	d.deleted = true
+	return nil
 }
 
 func (d *databaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) error {
