@@ -490,6 +490,9 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 	if v := find.StageID; v != nil {
 		where, args = append(where, fmt.Sprintf("stage_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.DatabaseID; v != nil {
+		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.StatusList; v != nil {
 		list := []string{}
 		for _, status := range *v {
@@ -497,6 +500,17 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 			args = append(args, status)
 		}
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
+	}
+	if v := find.TypeList; v != nil {
+		var list []string
+		for _, taskType := range *v {
+			list = append(list, fmt.Sprintf("$%d", len(args)+1))
+			args = append(args, taskType)
+		}
+		where = append(where, fmt.Sprintf("type in (%s)", strings.Join(list, ",")))
+	}
+	if v := find.Payload; v != "" {
+		where = append(where, v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
