@@ -256,7 +256,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
 		// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
-		if len(repositories) == 0 {
+		if len(repositories) > 0 {
+			repo := repositories[0]
+			repositoryCreate.WebhookEndpointID = repo.WebhookEndpointID
+			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
+			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
+		} else {
 			// We use workspace id as webhook endpoint id
 			repositoryCreate.WebhookEndpointID = s.workspaceID
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
@@ -270,11 +275,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 			repositoryCreate.ExternalWebhookID = webhookID
-		} else {
-			repo := repositories[0]
-			repositoryCreate.WebhookEndpointID = repo.WebhookEndpointID
-			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
-			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
 		}
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
