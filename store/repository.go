@@ -568,11 +568,15 @@ func patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch
 	if v := patch.RefreshToken; v != nil {
 		set, args = append(set, fmt.Sprintf("refresh_token = $%d", len(args)+1)), append(args, *v)
 	}
-	where := []string{"1 = 1"}
+	where := []string{}
+	if v := patch.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
-	} else {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, patch.ID)
+	}
+	if len(where) == 0 {
+		return nil, common.Errorf(common.DbMissingWhereClause, "missing where clause for patching repository")
 	}
 
 	var repository repositoryRaw
