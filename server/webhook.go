@@ -96,7 +96,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		var createdMessages []string
 		for _, item := range distinctFileList {
 			var createdMessageList []string
-			repoID2PushEvent := make(map[int]*vcs.PushEvent)
+			repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
 			for _, repo := range handleRepos {
 				pushEvent := &vcs.PushEvent{
 					VCSType:            repo.VCS.Type,
@@ -117,8 +117,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						Added:       common.EscapeForLogging(item.fileName),
 					},
 				}
-				repoID2PushEvent[repo.ID] = pushEvent
-				createdMessage, created, httpErr := s.createIssueFromPushEvent(
+				createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
 					ctx,
 					pushEvent,
 					repo,
@@ -127,17 +126,23 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					item.itemType,
 				)
 				if httpErr != nil {
-					return httpErr
+					continue
 				}
 				if created {
 					createdMessageList = append(createdMessageList, createdMessage)
 				}
+				repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
 			}
 			if len(createdMessageList) == 0 {
-				log.Debug("Ignored push event file because no applicable file found in the commit list", zap.String("fileName", item.fileName), zap.Any("repos", handleRepos))
 				for _, repo := range handleRepos {
-					if pushEvent, ok := repoID2PushEvent[repo.ID]; ok {
-						s.createIgnoredFileActivity(ctx, repo.ProjectID, pushEvent, item.fileName, errors.New("no applicable file found in the commit list"))
+					if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
+						for _, activityCreate := range activityCreateList {
+							if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+								log.Warn("Failed to create project activity for the ignored repository file",
+									zap.Error(err),
+								)
+							}
+						}
 					}
 				}
 			}
@@ -246,7 +251,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 			for _, file := range files {
 				var createdMessageList []string
-				repoID2PushEvent := make(map[int]*vcs.PushEvent)
+				repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
 				for _, repo := range repos {
 					if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && file.itemType == fileItemTypeModified {
 						continue
@@ -270,8 +275,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 							Added:       common.EscapeForLogging(file.name),
 						},
 					}
-					repoID2PushEvent[repo.ID] = pushEvent
-					createdMessage, created, httpErr := s.createIssueFromPushEvent(
+					createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
 						ctx,
 						pushEvent,
 						repo,
@@ -285,12 +289,19 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					if created {
 						createdMessageList = append(createdMessageList, createdMessage)
 					}
+					repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
 				}
 				if len(createdMessageList) == 0 {
 					log.Debug("Ignored push event file because no applicable file found in the commit list", zap.String("fileName", file.name), zap.Any("repos", handleRepos))
 					for _, repo := range handleRepos {
-						if pushEvent, ok := repoID2PushEvent[repo.ID]; ok {
-							s.createIgnoredFileActivity(ctx, repo.ProjectID, pushEvent, file.name, errors.New("no applicable file found in the commit list"))
+						if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
+							for _, activityCreate := range activityCreateList {
+								if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+									log.Warn("Failed to create project activity for the ignored repository file",
+										zap.Error(err),
+									)
+								}
+							}
 						}
 					}
 				}
@@ -482,13 +493,8 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 	return filteredDatabases, nil
 }
 
-// createIgnoredFileActivity creates a warning project activity for the ignored file with given error.
-func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, pushEvent *vcs.PushEvent, file string, err error) {
-	log.Warn("Ignored file",
-		zap.String("file", file),
-		zap.Error(err),
-	)
-
+// getIgnoredFileActivityCreate get a warning project activityCreate for the ignored file with given error.
+func getIgnoredFileActivityCreate(projectID int, pushEvent *vcs.PushEvent, file string, err error) *api.ActivityCreate {
 	payload, marshalErr := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: *pushEvent,
@@ -498,21 +504,16 @@ func (s *Server) createIgnoredFileActivity(ctx context.Context, projectID int, p
 		log.Warn("Failed to construct project activity payload for the ignored repository file",
 			zap.Error(marshalErr),
 		)
-		return
+		return nil
 	}
 
-	activityCreate := &api.ActivityCreate{
+	return &api.ActivityCreate{
 		CreatorID:   api.SystemBotID,
 		ContainerID: projectID,
 		Type:        api.ActivityProjectRepositoryPush,
 		Level:       api.ActivityWarn,
 		Comment:     fmt.Sprintf("Ignored file %q, %v.", file, err),
 		Payload:     string(payload),
-	}
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-		log.Warn("Failed to create project activity for the ignored repository file",
-			zap.Error(err),
-		)
 	}
 }
 
@@ -552,7 +553,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail, []*api.ActivityCreate) {
 	// Having no schema info indicates that the file is not a schema file (e.g.
 	// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 	if schemaInfo == nil {
@@ -565,22 +566,17 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 				zap.String("file", file),
 				zap.Error(err),
 			)
-			return nil, nil
+			return nil, nil, nil
 		}
 
 		// We only allow DML files when the project uses the state-based migration.
 		if migrationInfo.Type != db.Data {
-			s.createIgnoredFileActivity(
-				ctx,
-				repo.ProjectID,
-				pushEvent,
-				file,
-				errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type),
-			)
-			return nil, nil
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type))
+			return nil, nil, []*api.ActivityCreate{activityCreate}
 		}
 
-		return migrationInfo, s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, nil, file, fileType, webhookEndpointID, migrationInfo)
+		updateSchemaDetailList, activityCreateList := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, nil, file, fileType, webhookEndpointID, migrationInfo)
+		return migrationInfo, updateSchemaDetailList, activityCreateList
 	}
 
 	dbName := schemaInfo["DB_NAME"]
@@ -588,21 +584,16 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 		log.Debug("Ignored schema file without a database name",
 			zap.String("file", file),
 		)
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
-		s.createIgnoredFileActivity(
-			ctx,
-			repo.ProjectID,
-			pushEvent,
-			file,
-			errors.Wrap(err, "Failed to read file content"),
-		)
-		return nil, nil
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
+		return nil, nil, []*api.ActivityCreate{activityCreate}
 	}
 
+	activityCreateList := []*api.ActivityCreate{}
 	envName := schemaInfo["ENV_NAME"]
 	var updateSchemaDetails []*api.UpdateSchemaDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
@@ -615,26 +606,15 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	} else {
 		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
 		if err != nil {
-			s.createIgnoredFileActivity(
-				ctx,
-				repo.ProjectID,
-				pushEvent,
-				file,
-				errors.Wrap(err, "Failed to find project databases"),
-			)
-			return nil, nil
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+			return nil, nil, []*api.ActivityCreate{activityCreate}
 		}
 
 		for _, database := range databases {
 			diff, err := s.computeDatabaseSchemaDiff(ctx, database, content)
 			if err != nil {
-				s.createIgnoredFileActivity(
-					ctx,
-					repo.ProjectID,
-					pushEvent,
-					file,
-					errors.Wrap(err, "Failed to compute database schema diff"),
-				)
+				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
+				activityCreateList = append(activityCreateList, activityCreate)
 				continue
 			}
 
@@ -666,19 +646,19 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	).Replace(repo.FilePathTemplate)
 	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
-	return migrationInfo, updateSchemaDetails
+	return migrationInfo, updateSchemaDetails, activityCreateList
 }
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) []*api.UpdateSchemaDetail {
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) ([]*api.UpdateSchemaDetail, []*api.ActivityCreate) {
 	// TODO(dragonly): handle modified file, try to update issue's SQL statement if the task is pending/failed.
 	if fileType != fileItemTypeAdded || schemaInfo != nil {
 		log.Debug("Ignored non-added or schema file for non-SDL",
 			zap.String("file", file),
 			zap.String("type", string(fileType)),
 		)
-		return nil
+		return nil, nil
 	}
 
 	migrationInfo.Creator = pushEvent.FileCommit.AuthorName
@@ -693,20 +673,14 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			zap.String("file", file),
 			zap.Error(err),
 		)
-		return nil
+		return nil, nil
 	}
 	migrationInfo.Payload = string(bytes)
 
 	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
-		s.createIgnoredFileActivity(
-			ctx,
-			repo.ProjectID,
-			pushEvent,
-			file,
-			errors.Wrap(err, "Failed to read file content"),
-		)
-		return nil
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
+		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	var updateSchemaDetails []*api.UpdateSchemaDetail
@@ -720,7 +694,8 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 	} else {
 		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
 		if err != nil {
-			return nil
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+			return nil, []*api.ActivityCreate{activityCreate}
 		}
 
 		for _, database := range databases {
@@ -732,17 +707,17 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			)
 		}
 	}
-	return updateSchemaDetails
+	return updateSchemaDetails, nil
 }
 
 // createIssueFromPushEvent attempts to create a new issue for the given file of
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (message string, created bool, err error) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (message string, created bool, activityCreateList []*api.ActivityCreate, err error) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
-			return "", false, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 	}
 
@@ -757,7 +732,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			zap.String("file", fileEscaped),
 			zap.String("base_directory", repo.BaseDirectory),
 		)
-		return "", false, nil
+		return "", false, nil, nil
 	}
 
 	schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, fileEscaped)
@@ -766,13 +741,13 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			zap.String("file", fileEscaped),
 			zap.Error(err),
 		)
-		return "", false, nil
+		return "", false, nil, nil
 	}
 
 	var migrationInfo *db.MigrationInfo
 	var updateSchemaDetails []*api.UpdateSchemaDetail
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-		migrationInfo, updateSchemaDetails = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
+		migrationInfo, updateSchemaDetails, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
 	} else {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 		migrationInfo, err = db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
@@ -783,13 +758,13 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 				zap.String("file", file),
 				zap.Error(err),
 			)
-			return "", false, nil
+			return "", false, nil, nil
 		}
-		updateSchemaDetails = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID, migrationInfo)
+		updateSchemaDetails, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID, migrationInfo)
 	}
 
 	if migrationInfo == nil || len(updateSchemaDetails) == 0 {
-		return "", false, nil
+		return "", false, activityCreateList, nil
 	}
 
 	// Create schema update issue
@@ -820,7 +795,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		},
 	)
 	if err != nil {
-		return "", false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
 	}
 
 	issueType := api.IssueDatabaseSchemaUpdate
@@ -841,7 +816,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		if issueType == api.IssueDatabaseDataUpdate {
 			errMsg = "Failed to create data update issue"
 		}
-		return "", false, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
 	}
 
 	// Create a project activity after successfully creating the issue as the result of the push event
@@ -853,7 +828,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		},
 	)
 	if err != nil {
-		return "", false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 	}
 
 	activityCreate := &api.ActivityCreate{
@@ -865,10 +840,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		Payload:     string(payload),
 	}
 	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-		return "", false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
-	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, nil
+	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, activityCreateList, nil
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract
