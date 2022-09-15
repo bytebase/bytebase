@@ -680,7 +680,7 @@ func FormatError(err error) error {
 		case strings.Contains(err.Error(), "idx_policy_unique_environment_id_type"):
 			return common.Errorf(common.Conflict, "policy environment and type already exists")
 		case strings.Contains(err.Error(), "idx_project_unique_key"):
-			return common.Errorf(common.Conflict, "project key already exists")
+			return common.Errorf(common.Conflict, "The project key already exists")
 		case strings.Contains(err.Error(), "idx_project_member_unique_project_id_role_provider_principal_id"):
 			return common.Errorf(common.Conflict, "project member already exists")
 		case strings.Contains(err.Error(), "idx_project_webhook_unique_project_id_url"):
