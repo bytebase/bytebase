@@ -247,8 +247,8 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	labelList, err := s.FindDatabaseLabel(ctx, &api.DatabaseLabelFind{
-		DatabaseID: &db.ID,
+	labelList, err := s.findDatabaseLabel(ctx, &api.DatabaseLabelFind{
+		DatabaseID: db.ID,
 		RowStatus:  &rowStatus,
 	})
 	if err != nil {
