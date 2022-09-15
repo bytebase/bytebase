@@ -461,7 +461,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			// Delete the webhook after we successfully delete the repository.
 			// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
 			// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
+			if err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
 				ctx,
 				// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 				common.OauthContext{
@@ -474,9 +474,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				vcs.InstanceURL,
 				repo.ExternalID,
 				repo.ExternalWebhookID,
-			)
-
-			if err != nil {
+			); err != nil {
 				// Despite the error here, we have deleted the repository in the database, we still return success.
 				log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
 			}
