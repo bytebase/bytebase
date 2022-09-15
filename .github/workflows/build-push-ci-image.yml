@@ -20,6 +20,8 @@ jobs:
           - docker-image-tag: "release-ci"
             docker-build-args: "RELEASE=release"
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Login to DockerHub
@@ -35,5 +37,6 @@ jobs:
           push: true
           tags: bytebase/bytebase:${{ matrix.docker-image-tag }}
           build-args: ${{ matrix.docker-build-args }}
+          platforms: linux/amd64,linux/arm64,darwin/arm64
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ matrix.docker-image-tag }} " ${{ steps.docker_build.outputs.digest }}
