@@ -29,6 +29,23 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				ALTER DATABASE CHARACTER SET = utf8mb4;
+				ALTER DATABASE test COLLATE utf8mb4_polish_ci;
+			`,
+			want: &Database{
+				Name:         "test",
+				DbType:       db.MySQL,
+				CharacterSet: "utf8mb4",
+				Collation:    "utf8mb4_polish_ci",
+				SchemaList:   []*Schema{{}},
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				CREATE TABLE t(
 					a int PRIMARY KEY DEFAULT 1,
 					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,

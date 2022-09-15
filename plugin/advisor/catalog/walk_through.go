@@ -174,9 +174,27 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.createIndex(node)
 	case *tidbast.DropIndexStmt:
 		return d.dropIndex(node)
+	case *tidbast.AlterDatabaseStmt:
+		return d.alterDatabase(node)
 	default:
 		return nil
 	}
+}
+
+func (d *databaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) error {
+	if !node.AlterDefaultDatabase && node.Name != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	}
+
+	for _, option := range node.Options {
+		switch option.Tp {
+		case tidbast.DatabaseOptionCharset:
+			d.characterSet = option.Value
+		case tidbast.DatabaseOptionCollate:
+			d.collation = option.Value
+		}
+	}
+	return nil
 }
 
 func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, error) {
