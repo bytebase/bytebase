@@ -688,19 +688,18 @@ func (driver *Driver) getBinlogMetaFileListToDownload(ctx context.Context, clien
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
 func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
-	tempDir := os.TempDir()
-	// for mysqlbinlog binary, --result-file must end with '/'
-	mysqlbinlogResultFileDir := strings.TrimRight(tempDir, "/") + "/"
+	tempBinlogPrefix := filepath.Join(driver.binlogDir, "tmp-")
 	// TODO(zp): support ssl?
 	args := []string{
 		binlogFileToDownload.Name,
 		"--read-from-remote-server",
 		// Verify checksum binlog events.
 		"--verify-binlog-checksum",
-		"--raw",
 		"--host", driver.connCfg.Host,
 		"--user", driver.connCfg.Username,
-		"--result-file", mysqlbinlogResultFileDir,
+		"--raw",
+		// With --raw this is a prefix for the file names.
+		"--result-file", tempBinlogPrefix,
 	}
 	if driver.connCfg.Port != "" {
 		args = append(args, "--port", driver.connCfg.Port)
@@ -714,7 +713,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	cmd.Stderr = os.Stderr
 
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
-	binlogFilePathTemp := filepath.Join(tempDir, binlogFileToDownload.Name)
+	binlogFilePathTemp := tempBinlogPrefix + binlogFileToDownload.Name
 	defer os.Remove(binlogFilePathTemp)
 	if err := cmd.Run(); err != nil {
 		log.Error("Failed to execute mysqlbinlog binary", zap.Error(err))
