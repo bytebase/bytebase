@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -104,9 +103,7 @@ func (c *Client) GetBucket() string {
 // In case of network errors which will get partially downloaded files, we first download to a temporary file.
 // After that, we then rename it to the target file path.
 func (c *Client) DownloadFileFromCloud(ctx context.Context, filePathLocal, filePathOnCloud string) error {
-	tempDir := os.TempDir()
-	baseName := filepath.Base(filePathLocal)
-	filePathTemp := filepath.Join(tempDir, baseName)
+	filePathTemp := filePathLocal + ".tmp"
 	fileTemp, err := os.Create(filePathTemp)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create the local temporary file %s", filePathTemp)
