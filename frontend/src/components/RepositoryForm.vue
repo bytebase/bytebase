@@ -73,7 +73,7 @@
       />
     </div>
     <!-- Project schemaChangeType selector -->
-    <div>
+    <div v-if="isDev">
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
@@ -168,14 +168,14 @@
         >
       </div>
       <div class="mt-1 textinfolabel">
-        <template v-if="isProjectSchemaChangeTypeDDL">
+        <template v-if="isDev && !isProjectSchemaChangeTypeDDL">
+          {{ $t("project.settings.schema-path-template-sdl-description") }}
+        </template>
+        <template v-else>
           {{ $t("repository.schema-writeback-description") }}
           <span class="font-medium text-main">{{
             $t("repository.schema-writeback-protected-branch")
           }}</span>
-        </template>
-        <template v-else>
-          {{ $t("project.settings.schema-path-template-sdl-description") }}
         </template>
       </div>
       <input
