@@ -95,10 +95,13 @@
               `project.settings.select-schema-change-type-${item.toLowerCase()}`
             )
           }}
+          <span v-if="item === 'SDL'" class="text-xs border px-1 rounded ml-1"
+            >Beta</span
+          >
         </template>
       </BBSelect>
     </div>
-    <div>
+    <div v-if="isProjectSchemaChangeTypeDDL">
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>

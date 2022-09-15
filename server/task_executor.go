@@ -52,7 +52,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 	return exec.RunOnce(ctx, server, task)
 }
 
-func preMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo) (*db.MigrationInfo, error) {
+func preMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -62,11 +62,14 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	}
 	databaseName := task.Database.Name
 
+	mi := &db.MigrationInfo{
+		ReleaseVersion: server.profile.Version,
+		Type:           migrationType,
+		// TODO(d): support semantic versioning.
+		Version:     schemaVersion,
+		Description: task.Name,
+	}
 	if vcsPushEvent == nil {
-		mi = &db.MigrationInfo{
-			ReleaseVersion: server.profile.Version,
-			Type:           migrationType,
-		}
 		mi.Source = db.UI
 		creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
 		if err != nil {
@@ -79,25 +82,9 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		} else {
 			mi.Creator = creator.Name
 		}
-		// TODO(d): support semantic versioning.
-		mi.Version = schemaVersion
-		mi.Description = task.Name
-	} else if mi == nil {
-		// TODO(dragonly): remove this branch when old task without MigrationInfo is rare.
-		repo, err := findRepositoryByTask(ctx, server, task)
-		if err != nil {
-			return nil, err
-		}
-		mi, err = db.ParseMigrationInfo(
-			vcsPushEvent.FileCommit.Added,
-			filepath.Join(vcsPushEvent.BaseDirectory, repo.FilePathTemplate),
-		)
-		// This should not happen normally as we already check this when creating the issue. Just in case.
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to prepare for database migration")
-		}
+	} else {
+		mi.Source = db.VCS
 		mi.Creator = vcsPushEvent.FileCommit.AuthorName
-
 		miPayload := &db.MigrationInfoPayload{
 			VCSPushEvent: vcsPushEvent,
 		}
@@ -126,7 +113,8 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	}
 	// We will force migration for baseline and migrate type of migrations.
 	// This usually happens when the previous attempt fails and the client retries the migration.
-	if mi.Type == db.Baseline || mi.Type == db.Migrate {
+	// We also force migration for VCS migrations, which is usually a modified file to correct a former wrong migration commit.
+	if mi.Type == db.Baseline || mi.Type == db.Migrate || mi.Type == db.Data {
 		mi.Force = true
 	}
 
@@ -301,8 +289,8 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}, nil
 }
 
-func runMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo) (bool, *api.TaskRunResultPayload, error) {
-	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent, mi)
+func runMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}

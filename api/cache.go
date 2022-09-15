@@ -20,6 +20,8 @@ const (
 	PipelineCache CacheNamespace = "pl"
 	// IssueCache is the cache type of issues.
 	IssueCache CacheNamespace = "is"
+	// DatabaseLabelCache is the cache type of database labels.
+	DatabaseLabelCache CacheNamespace = "dl"
 )
 
 // CacheService is the service for caches.
