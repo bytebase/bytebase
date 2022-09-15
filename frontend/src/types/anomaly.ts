@@ -1,8 +1,10 @@
 import {
   AnomalyId,
   BackupPlanPolicySchedule,
+  Database,
   DatabaseId,
   EnvironmentId,
+  Instance,
   InstanceId,
   Principal,
 } from ".";
@@ -53,7 +55,9 @@ export type Anomaly = {
 
   // Related fields
   instanceId: InstanceId;
+  instance: Instance;
   databaseId?: DatabaseId;
+  database?: Database;
 
   // Standard fields
   creator: Principal;
