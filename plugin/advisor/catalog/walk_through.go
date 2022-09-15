@@ -186,6 +186,8 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.alterDatabase(node)
 	case *tidbast.DropDatabaseStmt:
 		return d.dropDatabase(node)
+	case *tidbast.CreateDatabaseStmt:
+		return NewAccessOtherDatabaseError(d.name, node.Name)
 	default:
 		return nil
 	}
