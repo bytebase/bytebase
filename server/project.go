@@ -162,6 +162,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
 		}
 
+		if v := projectPatch.Key; v != nil && *v == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+		}
+
 		// Verify before archiving the project:
 		// 1. the project has no database.
 		// 2. the issue status of this project should be canceled or done.
@@ -188,7 +192,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
+			if common.ErrorCode(err) == common.Conflict {
+				return echo.NewHTTPError(http.StatusConflict, errors.Cause(err).Error())
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project with ID %v", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

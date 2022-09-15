@@ -110,7 +110,7 @@ func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*
 func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
 	projectRaw, err := s.patchProjectRaw(ctx, patch)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Project with ProjectPatch[%+v]", patch)
+		return nil, errors.Wrapf(err, "failed to patch Project with ProjectPatch %#v", patch)
 	}
 	project, err := s.composeProject(ctx, projectRaw)
 	if err != nil {
