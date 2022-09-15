@@ -549,7 +549,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.UpdateSchemaDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.MigrationDetail, []*api.ActivityCreate) {
 	// Having no schema info indicates that the file is not a schema file (e.g.
 	// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 	if schemaInfo == nil {
@@ -571,8 +571,8 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 			return nil, nil, []*api.ActivityCreate{activityCreate}
 		}
 
-		updateSchemaDetailList, activityCreateList := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, nil, file, fileType, webhookEndpointID, migrationInfo)
-		return migrationInfo, updateSchemaDetailList, activityCreateList
+		detailList, activityCreateList := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, nil, file, fileType, webhookEndpointID, migrationInfo)
+		return migrationInfo, detailList, activityCreateList
 	}
 
 	dbName := schemaInfo["DB_NAME"]
@@ -591,10 +591,10 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 
 	activityCreateList := []*api.ActivityCreate{}
 	envName := schemaInfo["ENV_NAME"]
-	var updateSchemaDetails []*api.UpdateSchemaDetail
+	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
-		updateSchemaDetails = append(updateSchemaDetails,
-			&api.UpdateSchemaDetail{
+		migrationDetailList = append(migrationDetailList,
+			&api.MigrationDetail{
 				DatabaseName: dbName,
 				Statement:    content,
 			},
@@ -614,8 +614,8 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 				continue
 			}
 
-			updateSchemaDetails = append(updateSchemaDetails,
-				&api.UpdateSchemaDetail{
+			migrationDetailList = append(migrationDetailList,
+				&api.MigrationDetail{
 					DatabaseID: database.ID,
 					Statement:  diff,
 				},
@@ -642,12 +642,12 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	).Replace(repo.FilePathTemplate)
 	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
-	return migrationInfo, updateSchemaDetails, activityCreateList
+	return migrationInfo, migrationDetailList, activityCreateList
 }
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) ([]*api.UpdateSchemaDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	if schemaInfo != nil {
 		log.Debug("Ignored schema file for non-SDL",
 			zap.String("file", file),
@@ -662,18 +662,18 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
-	var updateSchemaDetails []*api.UpdateSchemaDetail
+	var migrationDetailList []*api.MigrationDetail
 
 	// TODO(dragonly): handle modified file for tenant mode.
 	if repo.Project.TenantMode == api.TenantModeTenant {
-		updateSchemaDetails = append(updateSchemaDetails,
-			&api.UpdateSchemaDetail{
+		migrationDetailList = append(migrationDetailList,
+			&api.MigrationDetail{
 				DatabaseName:  migrationInfo.Database,
 				Statement:     content,
 				SchemaVersion: migrationInfo.Version,
 			},
 		)
-		return updateSchemaDetails, nil
+		return migrationDetailList, nil
 	}
 
 	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
@@ -684,15 +684,15 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 
 	if fileType == fileItemTypeAdded {
 		for _, database := range databases {
-			updateSchemaDetails = append(updateSchemaDetails,
-				&api.UpdateSchemaDetail{
+			migrationDetailList = append(migrationDetailList,
+				&api.MigrationDetail{
 					DatabaseID:    database.ID,
 					Statement:     content,
 					SchemaVersion: migrationInfo.Version,
 				},
 			)
 		}
-		return updateSchemaDetails, nil
+		return migrationDetailList, nil
 	}
 
 	// For modified files, we try to update the existing issue's statement.
@@ -771,9 +771,9 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	}
 
 	var migrationInfo *db.MigrationInfo
-	var updateSchemaDetails []*api.UpdateSchemaDetail
+	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-		migrationInfo, updateSchemaDetails, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
+		migrationInfo, migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
 	} else {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 		migrationInfo, err = db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
@@ -786,10 +786,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			)
 			return "", false, nil, nil
 		}
-		updateSchemaDetails, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID, migrationInfo)
+		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID, migrationInfo)
 	}
 
-	if migrationInfo == nil || len(updateSchemaDetails) == 0 {
+	if migrationInfo == nil || len(migrationDetailList) == 0 {
 		return "", false, activityCreateList, nil
 	}
 
@@ -813,10 +813,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	}
 
 	createContext, err := json.Marshal(
-		&api.UpdateSchemaContext{
+		&api.MigrationContext{
 			MigrationType: migrationInfo.Type,
 			VCSPushEvent:  pushEvent,
-			DetailList:    updateSchemaDetails,
+			DetailList:    migrationDetailList,
 		},
 	)
 	if err != nil {

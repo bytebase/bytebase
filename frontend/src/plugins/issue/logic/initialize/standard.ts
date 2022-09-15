@@ -4,7 +4,7 @@ import {
   IssueCreate,
   IssueCreateContext,
   MigrationType,
-  UpdateSchemaContext,
+  MigrationContext,
 } from "@/types";
 import {
   findDatabaseListByQuery,
@@ -37,7 +37,7 @@ export const buildNewStandardIssue = async (
 
   const createContext: IssueCreateContext = {
     migrationType,
-    updateSchemaDetailList: databaseList.map((db) => {
+    detailList: databaseList.map((db) => {
       return {
         databaseId: db.id,
         databaseName: "", // Only `databaseId` is needed in standard pipeline.
@@ -58,7 +58,7 @@ export const buildNewStandardIssue = async (
           database.name
         );
       if (migrationHistory) {
-        (createContext as UpdateSchemaContext).vcsPushEvent =
+        (createContext as MigrationContext).vcsPushEvent =
           migrationHistory.payload?.pushEvent;
       }
     }

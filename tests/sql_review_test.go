@@ -734,9 +734,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 }
 
 func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string, wait bool) []api.TaskCheckResult {
-	createContext, err := json.Marshal(&api.UpdateSchemaContext{
+	createContext, err := json.Marshal(&api.MigrationContext{
 		MigrationType: db.Migrate,
-		DetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseID: databaseID,
 				Statement:  statement,

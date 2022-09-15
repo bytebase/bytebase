@@ -3,7 +3,7 @@ import {
   IssueCreate,
   IssueType,
   MigrationType,
-  UpdateSchemaContext,
+  MigrationContext,
 } from "@/types";
 import {
   findProject,
@@ -49,7 +49,7 @@ const buildNewTenantSchemaUpdateIssue = async (
   }
   helper.issueCreate!.createContext = {
     migrationType,
-    updateSchemaDetailList: [
+    detailList: [
       {
         databaseName: route.query.databaseName,
         statement: VALIDATE_ONLY_SQL,
@@ -63,8 +63,8 @@ const buildNewTenantSchemaUpdateIssue = async (
   // setting it to empty can provide a placeholder to user, along with an
   // exclamation mark indicating "No SQL statement"
   const createContext = helper.issueCreate!
-    .createContext as UpdateSchemaContext;
-  createContext.updateSchemaDetailList[0].statement = "";
+    .createContext as MigrationContext;
+  createContext.detailList[0].statement = "";
 
   return helper.generate();
 };
