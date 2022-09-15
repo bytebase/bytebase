@@ -636,6 +636,23 @@ func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
 	return nil
 }
 
+func (d *databaseState) copyTable(node *tidbast.CreateTableStmt) error {
+	targetTable, err := d.findTable(node.ReferTable)
+	if err != nil {
+		return err
+	}
+	if targetTable == nil {
+		// For CREATE TABLE ... LIKE ... statements, we can not walk-through if target table dese not exist in catalog.
+		return NewTableNotExistsError(node.ReferTable.Name.O)
+	}
+
+	schema := d.schemaSet[""]
+	table := targetTable.copy()
+	table.name = node.Table.Name.O
+	schema.tableSet[table.name] = table
+	return nil
+}
+
 func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 	if node.Table.Schema.O != "" && d.name != node.Table.Schema.O {
 		return &WalkThroughError{
@@ -659,11 +676,14 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 		}
 	}
 
+	if node.ReferTable != nil {
+		return d.copyTable(node)
+	}
+
 	table := &tableState{
 		name:      node.Table.Name.O,
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
-		context:   &FinderContext{CheckIntegrity: true},
 	}
 	schema.tableSet[table.name] = table
 
