@@ -50,6 +50,8 @@ const (
 	ErrorTypeColumnExists = 401
 	// ErrorTypeColumnNotExists is the error that column not exists.
 	ErrorTypeColumnNotExists = 402
+	// ErrorTypeDropAllColumns is the error that dropping all columns in a table.
+	ErrorTypeDropAllColumns = 403
 
 	// 501 ~ 599 index error type.
 
@@ -59,6 +61,12 @@ const (
 	ErrorTypeIndexExists = 502
 	// ErrorTypeIndexEmptyKeys is the error that index has empty keys.
 	ErrorTypeIndexEmptyKeys = 503
+	// ErrorTypePrimaryKeyNotExists is the error that PK does not exist.
+	ErrorTypePrimaryKeyNotExists = 504
+	// ErrorTypeIndexNotExists is the error that index does not exist.
+	ErrorTypeIndexNotExists = 505
+	// ErrorTypeIncorrectIndexName is the incorrect index name error.
+	ErrorTypeIncorrectIndexName = 506
 )
 
 // WalkThroughError is the error for walking-through.
@@ -72,6 +80,30 @@ func NewParseError(content string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeParseError,
 		Content: content,
+	}
+}
+
+// NewColumnNotExistsError returns a new ErrorTypeColumnNotExists.
+func NewColumnNotExistsError(tableName string, columnName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeColumnNotExists,
+		Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, tableName),
+	}
+}
+
+// NewIndexNotExistsError returns a new ErrorTypeIndexNotExists.
+func NewIndexNotExistsError(tableName string, indexName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeIndexNotExists,
+		Content: fmt.Sprintf("Index `%s` does not exist in table `%s`", indexName, tableName),
+	}
+}
+
+// NewIndexExistsError returns a new ErrorTypeIndexExists.
+func NewIndexExistsError(tableName string, indexName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeIndexExists,
+		Content: fmt.Sprintf("Index `%s` already exists in table `%s`", indexName, tableName),
 	}
 }
 
@@ -116,8 +148,384 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.createTable(node)
 	case *tidbast.DropTableStmt:
 		return d.dropTable(node)
+	case *tidbast.AlterTableStmt:
+		return d.alterTable(node)
 	default:
 		return nil
+	}
+}
+
+func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
+	if node.Table.Schema.O != "" && node.Table.Schema.O != d.name {
+		return &WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
+		}
+	}
+
+	schema, exists := d.schemaSet[""]
+	if !exists {
+		schema = d.createSchema("")
+	}
+
+	table, exists := schema.tableSet[node.Table.Name.O]
+	if !exists {
+		if !schema.context.CheckIntegrity {
+			return nil
+		}
+
+		return &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("Table `%s` does not exist", node.Table.Name.O),
+		}
+	}
+
+	for _, spec := range node.Specs {
+		switch spec.Tp {
+		case tidbast.AlterTableOption:
+			for _, option := range spec.Options {
+				switch option.Tp {
+				case tidbast.TableOptionCollate:
+					table.collation = option.StrValue
+				case tidbast.TableOptionComment:
+					table.comment = option.StrValue
+				case tidbast.TableOptionEngine:
+					table.engine = option.StrValue
+				}
+			}
+		case tidbast.AlterTableAddColumns:
+			for _, column := range spec.NewColumns {
+				var pos *tidbast.ColumnPosition
+				if len(spec.NewColumns) == 1 {
+					pos = spec.Position
+				}
+				if err := table.createColumn(column, pos); err != nil {
+					return err
+				}
+			}
+			// MySQL can add table constraints in ALTER TABLE ADD COLUMN statements.
+			for _, constraint := range spec.NewConstraints {
+				if err := table.createConstraint(constraint); err != nil {
+					return err
+				}
+			}
+		case tidbast.AlterTableAddConstraint:
+			if err := table.createConstraint(spec.Constraint); err != nil {
+				return err
+			}
+		case tidbast.AlterTableDropColumn:
+			if err := table.dropColumn(spec.OldColumnName.Name.O); err != nil {
+				return err
+			}
+		case tidbast.AlterTableDropPrimaryKey:
+			if err := table.dropIndex(PrimaryKeyName); err != nil {
+				return err
+			}
+		case tidbast.AlterTableDropIndex:
+			if err := table.dropIndex(spec.Name); err != nil {
+				return err
+			}
+		case tidbast.AlterTableDropForeignKey:
+			// we do not deal with DROP FOREIGN KEY statements.
+		case tidbast.AlterTableModifyColumn:
+			if err := table.changeColumn(spec.NewColumns[0].Name.Name.O, spec.NewColumns[0], spec.Position); err != nil {
+				return err
+			}
+		case tidbast.AlterTableChangeColumn:
+			if err := table.changeColumn(spec.OldColumnName.Name.O, spec.NewColumns[0], spec.Position); err != nil {
+				return err
+			}
+		case tidbast.AlterTableRenameColumn:
+			if err := table.renameColumn(spec.OldColumnName.Name.O, spec.NewColumnName.Name.O); err != nil {
+				return err
+			}
+		case tidbast.AlterTableRenameTable:
+			if err := schema.renameTable(table.name, spec.NewTable.Name.O); err != nil {
+				return err
+			}
+		case tidbast.AlterTableAlterColumn:
+			if err := table.changeColumnDefault(spec.NewColumns[0]); err != nil {
+				return err
+			}
+		case tidbast.AlterTableRenameIndex:
+			if err := table.renameIndex(spec.FromKey.O, spec.ToKey.O); err != nil {
+				return err
+			}
+		case tidbast.AlterTableIndexInvisible:
+			if err := table.changeIndexVisibility(spec.IndexName.O, spec.Visibility); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (t *tableState) changeIndexVisibility(indexName string, visibility tidbast.IndexVisibility) error {
+	index, exists := t.indexSet[indexName]
+	if !exists {
+		return NewIndexNotExistsError(t.name, indexName)
+	}
+	switch visibility {
+	case tidbast.IndexVisibilityVisible:
+		index.visible = true
+	case tidbast.IndexVisibilityInvisible:
+		index.visible = false
+	}
+	return nil
+}
+
+func (t *tableState) renameIndex(oldName string, newName string) error {
+	// For MySQL, the primary key has a special name 'PRIMARY'.
+	// And the other indexes can not use the name which case-insensitive equals 'PRIMARY'.
+	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
+		incorrectName := oldName
+		if strings.ToUpper(oldName) != PrimaryKeyName {
+			incorrectName = newName
+		}
+		return &WalkThroughError{
+			Type:    ErrorTypeIncorrectIndexName,
+			Content: fmt.Sprintf("Incorrect index name `%s`", incorrectName),
+		}
+	}
+
+	index, exists := t.indexSet[oldName]
+	if !exists {
+		return NewIndexNotExistsError(t.name, oldName)
+	}
+
+	if _, exists := t.indexSet[newName]; exists {
+		return NewIndexExistsError(t.name, newName)
+	}
+
+	index.name = newName
+	delete(t.indexSet, oldName)
+	t.indexSet[newName] = index
+	return nil
+}
+
+func (t *tableState) changeColumnDefault(column *tidbast.ColumnDef) error {
+	columnName := column.Name.Name.O
+	colState, exists := t.columnSet[columnName]
+	if !exists {
+		return NewColumnNotExistsError(t.name, columnName)
+	}
+
+	if len(column.Options) == 1 {
+		// SET DEFAULT
+		defaultValue, err := restoreNode(column.Options[0].Expr, format.RestoreStringWithoutCharset)
+		if err != nil {
+			return err
+		}
+		colState.defaultValue = &defaultValue
+	} else {
+		// DROP DEFAULT
+		colState.defaultValue = nil
+	}
+	return nil
+}
+
+func (s *schemaState) renameTable(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	table, exists := s.tableSet[oldName]
+	if !exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("Table `%s` does not exist", oldName),
+		}
+	}
+
+	if _, exists := s.tableSet[newName]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeTableExists,
+			Content: fmt.Sprintf("Table `%s` already exists", newName),
+		}
+	}
+
+	table.name = newName
+	delete(s.tableSet, oldName)
+	s.tableSet[newName] = table
+	return nil
+}
+
+func (t *tableState) renameColumn(oldName string, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+
+	column, exists := t.columnSet[oldName]
+	if !exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnNotExists,
+			Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name),
+		}
+	}
+
+	if _, exists := t.columnSet[newName]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s", newName, t.name),
+		}
+	}
+
+	column.name = newName
+	delete(t.columnSet, oldName)
+	t.columnSet[newName] = column
+
+	t.renameColumnInIndexKey(oldName, newName)
+
+	return nil
+}
+
+func (t *tableState) renameColumnInIndexKey(oldName string, newName string) {
+	if oldName == newName {
+		return
+	}
+	for _, index := range t.indexSet {
+		for i, key := range index.expressionList {
+			if key == oldName {
+				index.expressionList[i] = newName
+			}
+		}
+	}
+}
+
+// changeColumn changes column definition.
+// It works as:
+// 1. drop column from tableState.columnSet, but do not drop column from indexSet.
+// 2. rename column from indexSet.
+// 3. create a new column in columnSet.
+func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
+	column, exists := t.columnSet[oldName]
+	if !exists {
+		return NewColumnNotExistsError(t.name, oldName)
+	}
+
+	pos := column.position
+
+	// generate Position struct for creating new column
+	if position == nil {
+		position = &tidbast.ColumnPosition{Tp: tidbast.ColumnPositionNone}
+	}
+	if position.Tp == tidbast.ColumnPositionNone {
+		if pos == 1 {
+			position.Tp = tidbast.ColumnPositionFirst
+		} else {
+			for _, col := range t.columnSet {
+				if col.position == pos-1 {
+					position.Tp = tidbast.ColumnPositionAfter
+					position.RelativeColumn = &tidbast.ColumnName{Name: model.NewCIStr(col.name)}
+					break
+				}
+			}
+		}
+	}
+
+	// drop column from columnSet
+	for _, col := range t.columnSet {
+		if col.position > pos {
+			col.position--
+		}
+	}
+	delete(t.columnSet, column.name)
+
+	// rename column from indexSet
+	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
+
+	// create a new column in columnSet
+	return t.createColumn(newColumn, position)
+}
+
+func (t *tableState) dropIndex(indexName string) error {
+	if _, exists := t.indexSet[indexName]; !exists {
+		if indexName == PrimaryKeyName {
+			return &WalkThroughError{
+				Type:    ErrorTypePrimaryKeyNotExists,
+				Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
+			}
+		}
+		return NewIndexNotExistsError(t.name, indexName)
+	}
+
+	delete(t.indexSet, indexName)
+	return nil
+}
+
+func (t *tableState) dropColumn(columnName string) error {
+	column, exists := t.columnSet[columnName]
+	if !exists {
+		return NewColumnNotExistsError(t.name, columnName)
+	}
+
+	// Can not drop all columns in a table using ALTER TABLE DROP COLUMN.
+	if len(t.columnSet) == 1 {
+		return &WalkThroughError{
+			Type: ErrorTypeDropAllColumns,
+			// Error content comes from MySQL error content.
+			Content: fmt.Sprintf("Can't delete all columns with ALTER TABLE; use DROP TABLE %s instead", t.name),
+		}
+	}
+
+	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
+	for _, index := range t.indexSet {
+		index.dropColumn(columnName)
+		// If all columns that make up an index are dropped, the index is dropped as well.
+		if len(index.expressionList) == 0 {
+			delete(t.indexSet, index.name)
+		}
+	}
+
+	// modify the column position
+	for _, col := range t.columnSet {
+		if col.position > column.position {
+			col.position--
+		}
+	}
+
+	delete(t.columnSet, columnName)
+	return nil
+}
+
+func (idx *indexState) dropColumn(columnName string) {
+	var newKeyList []string
+	for _, key := range idx.expressionList {
+		if key != columnName {
+			newKeyList = append(newKeyList, key)
+		}
+	}
+
+	idx.expressionList = newKeyList
+}
+
+// reorderColumn reorders the columns for new column and returns the new column position.
+func (t *tableState) reorderColumn(position *tidbast.ColumnPosition) (int, error) {
+	switch position.Tp {
+	case tidbast.ColumnPositionNone:
+		return len(t.columnSet) + 1, nil
+	case tidbast.ColumnPositionFirst:
+		for _, column := range t.columnSet {
+			column.position++
+		}
+		return 1, nil
+	case tidbast.ColumnPositionAfter:
+		columnName := position.RelativeColumn.Name.O
+		column, exist := t.columnSet[columnName]
+		if !exist {
+			return 0, NewColumnNotExistsError(t.name, columnName)
+		}
+		for _, col := range t.columnSet {
+			if col.position > column.position {
+				col.position++
+			}
+		}
+		return column.position + 1, nil
+	}
+	return 0, &WalkThroughError{
+		Type:    ErrorTypeUnsupported,
+		Content: fmt.Sprintf("Unsupported column position type: %d", position.Tp),
 	}
 }
 
@@ -184,8 +592,8 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 	}
 	schema.tableSet[table.name] = table
 
-	for i, column := range node.Cols {
-		if err := table.createColumn(column, i+1); err != nil {
+	for _, column := range node.Cols {
+		if err := table.createColumn(column, nil); err != nil {
 			return err
 		}
 	}
@@ -214,7 +622,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, false /* unique */, getIndexType(constraint.Option)); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, false /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
@@ -222,7 +630,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, true /* unique */, getIndexType(constraint.Option)); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, true /* unique */, getIndexType(constraint.Option), constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintForeignKey:
@@ -232,7 +640,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 		if err != nil {
 			return err
 		}
-		if err := t.createIndex(constraint.Name, keyList, false /* unique */, FullTextName); err != nil {
+		if err := t.createIndex(constraint.Name, keyList, false /* unique */, FullTextName, constraint.Option); err != nil {
 			return err
 		}
 	case tidbast.ConstraintCheck:
@@ -255,10 +663,7 @@ func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 			columnName := key.Column.Name.O
 			column, exists := t.columnSet[columnName]
 			if !exists {
-				return nil, &WalkThroughError{
-					Type:    ErrorTypeColumnNotExists,
-					Content: fmt.Sprintf("Column `%s` in table `%s` not exists", columnName, t.name),
-				}
+				return nil, NewColumnNotExistsError(t.name, columnName)
 			}
 			if primary {
 				column.nullable = false
@@ -269,17 +674,26 @@ func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 	return res, nil
 }
 
-func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error {
+func (t *tableState) createColumn(column *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
 	if _, exists := t.columnSet[column.Name.Name.O]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
-			Content: fmt.Sprintf("Column `%s` exists in table `%s`", column.Name.Name.O, t.name),
+			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.name),
+		}
+	}
+
+	pos := len(t.columnSet) + 1
+	if position != nil {
+		var err error
+		pos, err = t.reorderColumn(position)
+		if err != nil {
+			return err
 		}
 	}
 
 	col := &columnState{
 		name:         column.Name.Name.O,
-		position:     position,
+		position:     pos,
 		columnType:   column.Tp.CompactStr(),
 		characterSet: column.Tp.GetCharset(),
 		collation:    column.Tp.GetCollate(),
@@ -304,7 +718,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 			}
 			col.defaultValue = &defaultValue
 		case tidbast.ColumnOptionUniqKey:
-			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String()); err != nil {
+			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNull:
@@ -339,7 +753,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position int) error
 	return nil
 }
 
-func (t *tableState) createIndex(name string, keyList []string, unique bool, tp string) error {
+func (t *tableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) error {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
 			Type:    ErrorTypeIndexEmptyKeys,
@@ -348,10 +762,7 @@ func (t *tableState) createIndex(name string, keyList []string, unique bool, tp 
 	}
 	if name != "" {
 		if _, exists := t.indexSet[name]; exists {
-			return &WalkThroughError{
-				Type:    ErrorTypeIndexExists,
-				Content: fmt.Sprintf("Index `%s` exists in table `%s`", name, t.name),
-			}
+			return NewIndexExistsError(t.name, name)
 		}
 	} else {
 		suffix := 1
@@ -373,7 +784,13 @@ func (t *tableState) createIndex(name string, keyList []string, unique bool, tp 
 		unique:         unique,
 		primary:        false,
 		indextype:      tp,
+		visible:        true,
 	}
+
+	if option != nil && option.Visibility == tidbast.IndexVisibilityInvisible {
+		index.visible = false
+	}
+
 	t.indexSet[name] = index
 	return nil
 }
@@ -392,6 +809,7 @@ func (t *tableState) createPrimaryKey(keys []string, tp string) error {
 		unique:         true,
 		primary:        true,
 		indextype:      tp,
+		visible:        true,
 	}
 	t.indexSet[pk.name] = pk
 	return nil
