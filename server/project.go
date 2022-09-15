@@ -382,7 +382,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repo := repoList[0]
-		repoPatch.ID = repo.ID
+		repoPatch.ID = &repo.ID
 
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
