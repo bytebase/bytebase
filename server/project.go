@@ -265,48 +265,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			repositoryCreate.WebhookSecretToken = secretToken
 
-			// Create a new webhook and retrieve the created webhook ID
-			var webhookCreatePayload []byte
-			switch vcs.Type {
-			case vcsPlugin.GitLabSelfHost:
-				webhookCreate := gitlab.WebhookCreate{
-					URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
-					SecretToken:           repositoryCreate.WebhookSecretToken,
-					PushEvents:            true,
-					EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
-				}
-				webhookCreatePayload, err = json.Marshal(webhookCreate)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
-				}
-			case vcsPlugin.GitHubCom:
-				webhookPost := github.WebhookCreateOrUpdate{
-					Config: github.WebhookConfig{
-						URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, repositoryCreate.WebhookEndpointID),
-						ContentType: "json",
-						Secret:      repositoryCreate.WebhookSecretToken,
-						InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
-					},
-					Events: []string{"push"},
-				}
-				webhookCreatePayload, err = json.Marshal(webhookPost)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
-				}
-			}
-
-			webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateWebhook(
-				ctx,
-				common.OauthContext{
-					AccessToken: repositoryCreate.AccessToken,
-					// We use refreshTokenNoop() because the repository isn't created yet.
-					Refresher: refreshTokenNoop(),
-				},
-				vcs.InstanceURL,
-				repositoryCreate.ExternalID,
-				webhookCreatePayload,
-			)
-
+			webhookID, err := s.createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
@@ -593,6 +552,53 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID string) (webhookID string, err error) {
+	// Create a new webhook and retrieve the created webhook ID
+	var webhookCreatePayload []byte
+	switch vcsType {
+	case vcsPlugin.GitLabSelfHost:
+		webhookCreate := gitlab.WebhookCreate{
+			URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, webhookEndpointID),
+			SecretToken:           secretToken,
+			PushEvents:            true,
+			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+		}
+		webhookCreatePayload, err = json.Marshal(webhookCreate)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcsPlugin.GitHubCom:
+		webhookPost := github.WebhookCreateOrUpdate{
+			Config: github.WebhookConfig{
+				URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, webhookEndpointID),
+				ContentType: "json",
+				Secret:      secretToken,
+				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
+			},
+			Events: []string{"push"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	}
+	webhookID, err = vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).CreateWebhook(
+		ctx,
+		common.OauthContext{
+			AccessToken: accessToken,
+			// We use refreshTokenNoop() because the repository isn't created yet.
+			Refresher: refreshTokenNoop(),
+		},
+		instanceURL,
+		externalRepoID,
+		webhookCreatePayload,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create webhook")
+	}
+	return webhookID, nil
 }
 
 // refreshToken is a token refresher that stores the latest access token configuration to repository.
