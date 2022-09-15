@@ -249,8 +249,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 }
 
 func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, *echo.HTTPError) {
-	oldStatement := ""
-	newStatement := ""
+	var oldStatement string
+	var newStatement string
 	if taskPatch.Statement != nil {
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
@@ -265,9 +265,14 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			// We should update the schema version if we've updated the SQL, otherwise we will
-			// get migration history version conflict if the previous task has been attempted.
-			payload.SchemaVersion = common.DefaultMigrationVersion()
+			// 1. For VCS workflows, patchTask only happens when we modify the same file.
+			// 	  In that case, we want to use the same schema version parsed from the file name.
+			//    The task executor will force retry using the new SQL statement.
+			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
+			//    get migration history version conflict if the previous task has been attempted.
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+			}
 			bytes, err := json.Marshal(payload)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
@@ -281,9 +286,14 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			// We should update the schema version if we've updated the SQL, otherwise we will
-			// get migration history version conflict if the previous task has been attempted.
-			payload.SchemaVersion = common.DefaultMigrationVersion()
+			// 1. For VCS workflows, patchTask only happens when we modify the same file.
+			// 	  In that case, we want to use the same schema version parsed from the file name.
+			//    The task executor will force retry using the new SQL statement.
+			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
+			//    get migration history version conflict if the previous task has been attempted.
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+			}
 			bytes, err := json.Marshal(payload)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
