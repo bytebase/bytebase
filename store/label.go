@@ -69,32 +69,10 @@ type databaseLabelRaw struct {
 	Value string
 }
 
-// toDatabaseLabel creates an instance of DatabaseLabel based on the databaseLabelRaw.
-// This is intended to be called when we need to compose an DatabaseLabel relationship.
-func (raw *databaseLabelRaw) toDatabaseLabel() *api.DatabaseLabel {
-	return &api.DatabaseLabel{
-		ID: raw.ID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-		Key:        raw.Key,
-
-		// Domain specific fields
-		Value: raw.Value,
-	}
-}
-
 // SetDatabaseLabelList sets the labels for a database.
 func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.DatabaseLabel, databaseID int, updaterID int) ([]*api.DatabaseLabel, error) {
 	oldLabelRawList, err := s.findDatabaseLabelRaw(ctx, &api.DatabaseLabelFind{
-		DatabaseID: &databaseID,
+		DatabaseID: databaseID,
 	})
 	if err != nil {
 		return nil, FormatError(err)
@@ -105,8 +83,6 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
-
-	var ret []*api.DatabaseLabel
 
 	for _, oldLabelRaw := range oldLabelRawList {
 		// Archive all old labels
@@ -126,6 +102,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 		}
 	}
 
+	var ret []*api.DatabaseLabel
 	for _, label := range labelList {
 		// Upsert all new labels
 		// Skip environment label key because we don't store it.
@@ -143,16 +120,15 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 		if err != nil {
 			return nil, err
 		}
-
-		label, err := s.composeDatabaseLabel(ctx, labelRaw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose DatabaseLabel with databaseLabelRaw[%+v]", labelRaw)
-		}
-		ret = append(ret, label)
+		ret = append(ret, &api.DatabaseLabel{Key: labelRaw.Key, Value: labelRaw.Value})
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.DatabaseLabelCache, databaseID, ret); err != nil {
+		return nil, err
 	}
 
 	return ret, nil
@@ -188,21 +164,28 @@ func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*a
 	return labelKey, nil
 }
 
-// FindDatabaseLabel finds a list of DatabaseLabel instances.
-func (s *Store) FindDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+// findDatabaseLabel finds a list of DatabaseLabel instances.
+func (s *Store) findDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
+	var l []*api.DatabaseLabel
+	has, err := s.cache.FindCache(api.DatabaseLabelCache, find.DatabaseID, &l)
+	if err != nil {
+		return nil, err
+	}
+	if has {
+		return l, nil
+	}
+
 	labelKeyRawList, err := s.findDatabaseLabelRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find DatabaseLabel list with DatabaseLabelFind[%+v]", find)
 	}
-	var labelKeyList []*api.DatabaseLabel
 	for _, raw := range labelKeyRawList {
-		labelKey, err := s.composeDatabaseLabel(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose DatabaseLabel with labelKeyRaw[%+v]", raw)
-		}
-		labelKeyList = append(labelKeyList, labelKey)
+		l = append(l, &api.DatabaseLabel{Key: raw.Key, Value: raw.Value})
 	}
-	return labelKeyList, nil
+	if err := s.cache.UpsertCache(api.DatabaseLabelCache, find.DatabaseID, l); err != nil {
+		return nil, err
+	}
+	return l, nil
 }
 
 //
@@ -226,25 +209,6 @@ func (s *Store) composeLabelKey(ctx context.Context, raw *labelKeyRaw) (*api.Lab
 	labelKey.Updater = updater
 
 	return labelKey, nil
-}
-
-// composeDatabaseLabel composes an instance of DatabaseLabel by databaseLabelRaw.
-func (s *Store) composeDatabaseLabel(ctx context.Context, raw *databaseLabelRaw) (*api.DatabaseLabel, error) {
-	databaseLabel := raw.toDatabaseLabel()
-
-	creator, err := s.GetPrincipalByID(ctx, databaseLabel.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	databaseLabel.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, databaseLabel.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	databaseLabel.Updater = updater
-
-	return databaseLabel, nil
 }
 
 // findLabelKeyRaw retrieves a list of label keys for labels based on find.
@@ -467,15 +431,10 @@ func (s *Store) findDatabaseLabelRaw(ctx context.Context, find *api.DatabaseLabe
 func (*Store) findDatabaseLabelsImpl(ctx context.Context, tx *Tx, find *api.DatabaseLabelFind) ([]*databaseLabelRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.DatabaseID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
-	}
+	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, find.DatabaseID)
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
