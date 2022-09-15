@@ -35,7 +35,7 @@ func newSchemaState(s *Schema, context *FinderContext) *schemaState {
 	}
 
 	for _, table := range s.TableList {
-		schema.tableSet[table.Name] = newTableState(table, context)
+		schema.tableSet[table.Name] = newTableState(table)
 	}
 
 	for _, view := range s.ViewList {
@@ -65,7 +65,7 @@ func newExtensionState(e *Extension) *extensionState {
 	}
 }
 
-func newTableState(t *Table, context *FinderContext) *tableState {
+func newTableState(t *Table) *tableState {
 	table := &tableState{
 		name:          t.Name,
 		tableType:     t.Type,
@@ -79,7 +79,6 @@ func newTableState(t *Table, context *FinderContext) *tableState {
 		comment:       t.Comment,
 		columnSet:     make(columnStateMap),
 		indexSet:      make(indexStateMap),
-		context:       context.Copy(),
 	}
 
 	for _, column := range t.ColumnList {
@@ -125,6 +124,7 @@ type databaseState struct {
 	collation    string
 	dbType       db.Type
 	schemaSet    schemaStateMap
+	deleted      bool
 
 	context *FinderContext
 }
@@ -159,8 +159,6 @@ type tableState struct {
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
-
-	context *FinderContext
 }
 type tableStateMap map[string]*tableState
 
@@ -179,6 +177,10 @@ func (table *tableState) convertToCatalog() *Table {
 		ColumnList:    table.columnSet.convertToCatalog(),
 		IndexList:     table.indexSet.convertToCatalog(),
 	}
+}
+
+func (table *tableState) copy() *tableState {
+	return newTableState(table.convertToCatalog())
 }
 
 type indexState struct {

@@ -38,6 +38,8 @@ const (
 
 	// ErrorTypeAccessOtherDatabase is the error that try to access other database.
 	ErrorTypeAccessOtherDatabase = 201
+	// ErrorTypeDatabaseIsDeleted is the error that try to access the deleted database.
+	ErrorTypeDatabaseIsDeleted = 202
 
 	// 301 ~ 399 table error type.
 
@@ -127,6 +129,14 @@ func NewTableNotExistsError(tableName string) *WalkThroughError {
 	}
 }
 
+// NewTableExistsError returns a new ErrorTypeTableExists.
+func NewTableExistsError(tableName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeTableExists,
+		Content: fmt.Sprintf("Table `%s` already exists", tableName),
+	}
+}
+
 // Error implements the error interface.
 func (e *WalkThroughError) Error() string {
 	return e.Content
@@ -163,6 +173,12 @@ func (d *databaseState) WalkThrough(stmts string) error {
 }
 
 func (d *databaseState) changeState(in tidbast.StmtNode) error {
+	if d.deleted {
+		return &WalkThroughError{
+			Type:    ErrorTypeDatabaseIsDeleted,
+			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
+		}
+	}
 	switch node := in.(type) {
 	case *tidbast.CreateTableStmt:
 		return d.createTable(node)
@@ -174,9 +190,96 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.createIndex(node)
 	case *tidbast.DropIndexStmt:
 		return d.dropIndex(node)
+	case *tidbast.AlterDatabaseStmt:
+		return d.alterDatabase(node)
+	case *tidbast.DropDatabaseStmt:
+		return d.dropDatabase(node)
+	case *tidbast.CreateDatabaseStmt:
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	case *tidbast.RenameTableStmt:
+		return d.renameTable(node)
 	default:
 		return nil
 	}
+}
+
+func (d *databaseState) renameTable(node *tidbast.RenameTableStmt) error {
+	for _, tableToTable := range node.TableToTables {
+		schema, exists := d.schemaSet[""]
+		if !exists {
+			schema = d.createSchema("")
+		}
+		if d.theCurrentDatabase(tableToTable) {
+			table, exists := schema.tableSet[tableToTable.OldTable.Name.O]
+			if !exists {
+				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+			}
+			if _, exists := schema.tableSet[tableToTable.NewTable.Name.O]; exists {
+				return NewTableExistsError(tableToTable.NewTable.Name.O)
+			}
+			delete(schema.tableSet, table.name)
+			table.name = tableToTable.NewTable.Name.O
+			schema.tableSet[table.name] = table
+		} else if d.moveToOtherDatabase(tableToTable) {
+			_, exists := schema.tableSet[tableToTable.OldTable.Name.O]
+			if !exists {
+				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+			}
+			delete(schema.tableSet, tableToTable.OldTable.Name.O)
+		} else {
+			return NewAccessOtherDatabaseError(d.name, d.targetDatabase(tableToTable))
+		}
+	}
+	return nil
+}
+
+func (d *databaseState) targetDatabase(node *tidbast.TableToTable) string {
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return node.OldTable.Schema.O
+	}
+	return node.NewTable.Schema.O
+}
+
+func (d *databaseState) moveToOtherDatabase(node *tidbast.TableToTable) bool {
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return false
+	}
+	return node.OldTable.Schema.O != node.NewTable.Schema.O
+}
+
+func (d *databaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
+	if node.NewTable.Schema.O != "" && node.NewTable.Schema.O != d.name {
+		return false
+	}
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return false
+	}
+	return true
+}
+
+func (d *databaseState) dropDatabase(node *tidbast.DropDatabaseStmt) error {
+	if node.Name != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	}
+
+	d.deleted = true
+	return nil
+}
+
+func (d *databaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) error {
+	if !node.AlterDefaultDatabase && node.Name != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	}
+
+	for _, option := range node.Options {
+		switch option.Tp {
+		case tidbast.DatabaseOptionCharset:
+			d.characterSet = option.Value
+		case tidbast.DatabaseOptionCollate:
+			d.collation = option.Value
+		}
+	}
+	return nil
 }
 
 func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, error) {
@@ -636,6 +739,23 @@ func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
 	return nil
 }
 
+func (d *databaseState) copyTable(node *tidbast.CreateTableStmt) error {
+	targetTable, err := d.findTable(node.ReferTable)
+	if err != nil {
+		return err
+	}
+	if targetTable == nil {
+		// For CREATE TABLE ... LIKE ... statements, we can not walk-through if target table dese not exist in catalog.
+		return NewTableNotExistsError(node.ReferTable.Name.O)
+	}
+
+	schema := d.schemaSet[""]
+	table := targetTable.copy()
+	table.name = node.Table.Name.O
+	schema.tableSet[table.name] = table
+	return nil
+}
+
 func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 	if node.Table.Schema.O != "" && d.name != node.Table.Schema.O {
 		return &WalkThroughError{
@@ -659,11 +779,14 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 		}
 	}
 
+	if node.ReferTable != nil {
+		return d.copyTable(node)
+	}
+
 	table := &tableState{
 		name:      node.Table.Name.O,
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
-		context:   &FinderContext{CheckIntegrity: true},
 	}
 	schema.tableSet[table.name] = table
 
