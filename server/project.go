@@ -261,7 +261,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			repositoryCreate.WebhookEndpointID = uuid.New().String()
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for GitLab").SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for VCS").SetInternal(err)
 			}
 			repositoryCreate.WebhookSecretToken = secretToken
 
