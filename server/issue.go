@@ -564,12 +564,12 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 }
 
 func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
-	if !s.feature(api.FeaturePITR) {
-		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
-	}
 	c := api.PITRContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
+	}
+	if c.PointInTimeTs != nil && !s.feature(api.FeaturePITR) {
+		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
 	}
 
 	database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &c.DatabaseID})
