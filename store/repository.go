@@ -568,17 +568,21 @@ func patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch
 	if v := patch.RefreshToken; v != nil {
 		set, args = append(set, fmt.Sprintf("refresh_token = $%d", len(args)+1)), append(args, *v)
 	}
-
-	args = append(args, patch.ID)
+	where := []string{"1 = 1"}
+	if v := patch.WebURL; v != nil {
+		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
+	} else {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, patch.ID)
+	}
 
 	var repository repositoryRaw
 	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
+		WHERE `+strings.Join(where, " AND ")+`
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
-		`, len(args)),
+		`,
 		args...,
 	).Scan(
 		&repository.ID,

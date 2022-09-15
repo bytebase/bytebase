@@ -612,21 +612,13 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 // refreshToken is a token refresher that stores the latest access token configuration to repository.
 func (s *Server) refreshToken(ctx context.Context, webURL string) common.TokenRefresher {
 	return func(token, refreshToken string, expiresTs int64) error {
-		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
-			WebURL: &webURL,
+		_, err := s.store.PatchRepository(ctx, &api.RepositoryPatch{
+			WebURL:       &webURL,
+			UpdaterID:    api.SystemBotID,
+			AccessToken:  &token,
+			ExpiresTs:    &expiresTs,
+			RefreshToken: &refreshToken,
 		})
-		if err != nil {
-			return err
-		}
-		for _, repo := range repos {
-			_, err = s.store.PatchRepository(ctx, &api.RepositoryPatch{
-				ID:           repo.ID,
-				UpdaterID:    api.SystemBotID,
-				AccessToken:  &token,
-				ExpiresTs:    &expiresTs,
-				RefreshToken: &refreshToken,
-			})
-		}
 		return err
 	}
 }

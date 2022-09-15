@@ -101,7 +101,8 @@ func (find *RepositoryFind) String() string {
 
 // RepositoryPatch is the API message for patching a repository.
 type RepositoryPatch struct {
-	ID int `jsonapi:"primary,repositoryPatch"`
+	ID     int `jsonapi:"primary,repositoryPatch"`
+	WebURL *string
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
