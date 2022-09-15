@@ -88,6 +88,7 @@ type RepositoryFind struct {
 
 	// Domain specific fields
 	WebhookEndpointID *string
+	WebURL            *string
 }
 
 func (find *RepositoryFind) String() string {
@@ -100,7 +101,9 @@ func (find *RepositoryFind) String() string {
 
 // RepositoryPatch is the API message for patching a repository.
 type RepositoryPatch struct {
-	ID int `jsonapi:"primary,repositoryPatch"`
+	// Predicate fields
+	ID     *int `jsonapi:"primary,repositoryPatch"`
+	WebURL *string
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

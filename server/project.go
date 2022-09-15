@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/google/jsonapi"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -254,61 +253,36 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
+		// For a particular VCS repo, all Bytebase projects share the same webhook.
+		repositories, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+			WebURL: &repositoryCreate.WebURL,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository with web url: %s", repositoryCreate.WebURL)).SetInternal(err)
+		}
+
 		repositoryCreate.WebhookURLHost = s.profile.ExternalURL
-		repositoryCreate.WebhookEndpointID = uuid.New().String()
-		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for GitLab").SetInternal(err)
-		}
-		repositoryCreate.WebhookSecretToken = secretToken
-
-		// Create a new webhook and retrieve the created webhook ID
-		var webhookCreatePayload []byte
-		switch vcs.Type {
-		case vcsPlugin.GitLabSelfHost:
-			webhookCreate := gitlab.WebhookCreate{
-				URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
-				SecretToken:           repositoryCreate.WebhookSecretToken,
-				PushEvents:            true,
-				EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
-			}
-			webhookCreatePayload, err = json.Marshal(webhookCreate)
+		// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
+		if len(repositories) > 0 {
+			repo := repositories[0]
+			repositoryCreate.WebhookEndpointID = repo.WebhookEndpointID
+			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
+			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
+		} else {
+			// We use workspace id as webhook endpoint id
+			repositoryCreate.WebhookEndpointID = s.workspaceID
+			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for VCS").SetInternal(err)
 			}
-		case vcsPlugin.GitHubCom:
-			webhookPost := github.WebhookCreateOrUpdate{
-				Config: github.WebhookConfig{
-					URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, repositoryCreate.WebhookEndpointID),
-					ContentType: "json",
-					Secret:      repositoryCreate.WebhookSecretToken,
-					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
-				},
-				Events: []string{"push"},
-			}
-			webhookCreatePayload, err = json.Marshal(webhookPost)
+			repositoryCreate.WebhookSecretToken = secretToken
+
+			webhookID, err := s.createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
 			}
+			repositoryCreate.ExternalWebhookID = webhookID
 		}
-
-		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateWebhook(
-			ctx,
-			common.OauthContext{
-				AccessToken: repositoryCreate.AccessToken,
-				// We use refreshTokenNoop() because the repository isn't created yet.
-				Refresher: refreshTokenNoop(),
-			},
-			vcs.InstanceURL,
-			repositoryCreate.ExternalID,
-			webhookCreatePayload,
-		)
-
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
-		}
-		repositoryCreate.ExternalWebhookID = webhookID
-
 		// Remove enclosing /
 		repositoryCreate.BaseDirectory = strings.Trim(repositoryCreate.BaseDirectory, "/")
 		repository, err := s.store.CreateRepository(ctx, repositoryCreate)
@@ -415,7 +389,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repo := repoList[0]
-		repoPatch.ID = repo.ID
+		repoPatch.ID = &repo.ID
 
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
@@ -483,27 +457,34 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)
 		}
 
-		// Delete the webhook after we successfully delete the repository.
-		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
-		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
-			ctx,
-			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.ID),
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			repo.ExternalWebhookID,
-		)
-
+		// We use one webhook in one repo for at least one Bytebase project, so we only delete the webhook if this project is the last one using this webhook.
+		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+			WebURL: &repo.WebURL,
+		})
 		if err != nil {
-			// Despite the error here, we have deleted the repository in the database, we still return success.
-			log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository for web url: %s", repo.WebURL)).SetInternal(err)
+		}
+		if len(repos) == 0 {
+			// Delete the webhook after we successfully delete the repository.
+			// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
+			// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
+			if err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
+				ctx,
+				// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.WebURL),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				repo.ExternalWebhookID,
+			); err != nil {
+				// Despite the error here, we have deleted the repository in the database, we still return success.
+				log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -578,19 +559,65 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
+func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID string) (string, error) {
+	// Create a new webhook and retrieve the created webhook ID
+	var webhookCreatePayload []byte
+	var err error
+	switch vcsType {
+	case vcsPlugin.GitLabSelfHost:
+		webhookCreate := gitlab.WebhookCreate{
+			URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, webhookEndpointID),
+			SecretToken:           secretToken,
+			PushEvents:            true,
+			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+		}
+		webhookCreatePayload, err = json.Marshal(webhookCreate)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcsPlugin.GitHubCom:
+		webhookPost := github.WebhookCreateOrUpdate{
+			Config: github.WebhookConfig{
+				URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, webhookEndpointID),
+				ContentType: "json",
+				Secret:      secretToken,
+				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
+			},
+			Events: []string{"push"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	}
+	webhookID, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).CreateWebhook(
+		ctx,
+		common.OauthContext{
+			AccessToken: accessToken,
+			// We use refreshTokenNoop() because the repository isn't created yet.
+			Refresher: refreshTokenNoop(),
+		},
+		instanceURL,
+		externalRepoID,
+		webhookCreatePayload,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create webhook")
+	}
+	return webhookID, nil
+}
+
 // refreshToken is a token refresher that stores the latest access token configuration to repository.
-func (s *Server) refreshToken(ctx context.Context, repositoryID int) common.TokenRefresher {
+func (s *Server) refreshToken(ctx context.Context, webURL string) common.TokenRefresher {
 	return func(token, refreshToken string, expiresTs int64) error {
-		if _, err := s.store.PatchRepository(ctx, &api.RepositoryPatch{
-			ID:           repositoryID,
+		_, err := s.store.PatchRepository(ctx, &api.RepositoryPatch{
+			WebURL:       &webURL,
 			UpdaterID:    api.SystemBotID,
 			AccessToken:  &token,
 			ExpiresTs:    &expiresTs,
 			RefreshToken: &refreshToken,
-		}); err != nil {
-			return err
-		}
-		return nil
+		})
+		return err
 	}
 }
 
