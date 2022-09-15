@@ -21,6 +21,8 @@ const (
 	PrimaryKeyName string = "PRIMARY"
 	// FullTextName is the string for FULLTEXT.
 	FullTextName string = "FULLTEXT"
+	// SpatialName is the string for SPATIAL.
+	SpatialName string = "SPATIAL"
 
 	// ErrorTypeUnsupported is the error for unsupported cases.
 	ErrorTypeUnsupported WalkThroughErrorType = 1
@@ -67,6 +69,8 @@ const (
 	ErrorTypeIndexNotExists = 505
 	// ErrorTypeIncorrectIndexName is the incorrect index name error.
 	ErrorTypeIncorrectIndexName = 506
+	// ErrorTypeSpatialIndexKeyNullable is the error that keys in spatial index are nullable.
+	ErrorTypeSpatialIndexKeyNullable = 507
 )
 
 // WalkThroughError is the error for walking-through.
@@ -104,6 +108,22 @@ func NewIndexExistsError(tableName string, indexName string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeIndexExists,
 		Content: fmt.Sprintf("Index `%s` already exists in table `%s`", indexName, tableName),
+	}
+}
+
+// NewAccessOtherDatabaseError returns a new ErrorTypeAccessOtherDatabase.
+func NewAccessOtherDatabaseError(current string, target string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeAccessOtherDatabase,
+		Content: fmt.Sprintf("Database `%s` is not the current database `%s`", target, current),
+	}
+}
+
+// NewTableNotExistsError returns a new ErrorTypeTableNotExists.
+func NewTableNotExistsError(tableName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeTableNotExists,
+		Content: fmt.Sprintf("Table `%s` does not exist", tableName),
 	}
 }
 
@@ -150,17 +170,18 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.dropTable(node)
 	case *tidbast.AlterTableStmt:
 		return d.alterTable(node)
+	case *tidbast.CreateIndexStmt:
+		return d.createIndex(node)
+	case *tidbast.DropIndexStmt:
+		return d.dropIndex(node)
 	default:
 		return nil
 	}
 }
 
-func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
-	if node.Table.Schema.O != "" && node.Table.Schema.O != d.name {
-		return &WalkThroughError{
-			Type:    ErrorTypeAccessOtherDatabase,
-			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
-		}
+func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, error) {
+	if tableName.Schema.O != "" && tableName.Schema.O != d.name {
+		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
 
 	schema, exists := d.schemaSet[""]
@@ -168,16 +189,69 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 		schema = d.createSchema("")
 	}
 
-	table, exists := schema.tableSet[node.Table.Name.O]
+	table, exists := schema.tableSet[tableName.Name.O]
 	if !exists {
 		if !schema.context.CheckIntegrity {
-			return nil
+			return nil, nil
 		}
 
-		return &WalkThroughError{
-			Type:    ErrorTypeTableNotExists,
-			Content: fmt.Sprintf("Table `%s` does not exist", node.Table.Name.O),
-		}
+		return nil, NewTableNotExistsError(tableName.Name.O)
+	}
+
+	return table, nil
+}
+
+func (d *databaseState) dropIndex(node *tidbast.DropIndexStmt) error {
+	table, err := d.findTable(node.Table)
+	if err != nil {
+		return err
+	}
+	if table == nil {
+		return nil
+	}
+
+	return table.dropIndex(node.IndexName)
+}
+
+func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) error {
+	table, err := d.findTable(node.Table)
+	if err != nil {
+		return err
+	}
+	if table == nil {
+		return nil
+	}
+
+	unique := false
+	tp := model.IndexTypeBtree.String()
+	isSpatial := false
+
+	switch node.KeyType {
+	case tidbast.IndexKeyTypeNone:
+	case tidbast.IndexKeyTypeUnique:
+		unique = true
+	case tidbast.IndexKeyTypeFullText:
+		tp = FullTextName
+	case tidbast.IndexKeyTypeSpatial:
+		isSpatial = true
+		tp = SpatialName
+	}
+
+	keyList, err := table.validateAndGetKeyStringList(node.IndexPartSpecifications, false /* primary */, isSpatial)
+	if err != nil {
+		return err
+	}
+
+	return table.createIndex(node.IndexName, keyList, unique, tp, node.IndexOption)
+}
+
+func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
+	table, err := d.findTable(node.Table)
+	if err != nil {
+		return err
+	}
+	if table == nil {
+		return nil
 	}
 
 	for _, spec := range node.Specs {
@@ -240,6 +314,7 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 				return err
 			}
 		case tidbast.AlterTableRenameTable:
+			schema := d.schemaSet[""]
 			if err := schema.renameTable(table.name, spec.NewTable.Name.O); err != nil {
 				return err
 			}
@@ -610,7 +685,7 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 	switch constraint.Tp {
 	case tidbast.ConstraintPrimaryKey:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, true /* primary */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, true /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -618,7 +693,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 			return err
 		}
 	case tidbast.ConstraintKey, tidbast.ConstraintIndex:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -626,7 +701,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 			return err
 		}
 	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -636,7 +711,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 	case tidbast.ConstraintForeignKey:
 		// we do not deal with FOREIGN KEY constraints
 	case tidbast.ConstraintFulltext:
-		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */)
+		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, false /* primary */, false /* isSpatial */)
 		if err != nil {
 			return err
 		}
@@ -650,7 +725,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 	return nil
 }
 
-func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpecification, primary bool) ([]string, error) {
+func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, error) {
 	var res []string
 	for _, key := range keyList {
 		if key.Expr != nil {
@@ -667,6 +742,13 @@ func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 			}
 			if primary {
 				column.nullable = false
+			}
+			if isSpatial && column.nullable {
+				return nil, &WalkThroughError{
+					Type: ErrorTypeSpatialIndexKeyNullable,
+					// The error content comes from MySQL.
+					Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
+				}
 			}
 			res = append(res, columnName)
 		}
