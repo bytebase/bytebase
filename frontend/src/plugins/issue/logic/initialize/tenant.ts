@@ -62,8 +62,7 @@ const buildNewTenantSchemaUpdateIssue = async (
   // is not that friendly to users
   // setting it to empty can provide a placeholder to user, along with an
   // exclamation mark indicating "No SQL statement"
-  const createContext = helper.issueCreate!
-    .createContext as MigrationContext;
+  const createContext = helper.issueCreate!.createContext as MigrationContext;
   createContext.detailList[0].statement = "";
 
   return helper.generate();
