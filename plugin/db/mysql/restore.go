@@ -688,19 +688,18 @@ func (driver *Driver) getBinlogMetaFileListToDownload(ctx context.Context, clien
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
 func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
-	tempDir := os.TempDir()
-	// for mysqlbinlog binary, --result-file must end with '/'
-	mysqlbinlogResultFileDir := strings.TrimRight(tempDir, "/") + "/"
+	tempBinlogPrefix := filepath.Join(driver.binlogDir, "tmp-")
 	// TODO(zp): support ssl?
 	args := []string{
 		binlogFileToDownload.Name,
 		"--read-from-remote-server",
 		// Verify checksum binlog events.
 		"--verify-binlog-checksum",
-		"--raw",
 		"--host", driver.connCfg.Host,
 		"--user", driver.connCfg.Username,
-		"--result-file", mysqlbinlogResultFileDir,
+		"--raw",
+		// With --raw this is a prefix for the file names.
+		"--result-file", tempBinlogPrefix,
 	}
 	if driver.connCfg.Port != "" {
 		args = append(args, "--port", driver.connCfg.Port)
@@ -714,7 +713,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	cmd.Stderr = os.Stderr
 
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
-	binlogFilePathTemp := filepath.Join(tempDir, binlogFileToDownload.Name)
+	binlogFilePathTemp := tempBinlogPrefix + binlogFileToDownload.Name
 	defer os.Remove(binlogFilePathTemp)
 	if err := cmd.Run(); err != nil {
 		log.Error("Failed to execute mysqlbinlog binary", zap.Error(err))
@@ -722,26 +721,26 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	}
 
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", binlogFilePathTemp))
-	binlogFileInfo, err := os.Stat(binlogFilePathTemp)
+	binlogFileTempInfo, err := os.Stat(binlogFilePathTemp)
 	if err != nil {
 		log.Error("Failed to get stat of the binlog file.", zap.String("path", binlogFilePathTemp), zap.Error(err))
 		return errors.Wrapf(err, "failed to get stat of the binlog file %q", binlogFilePathTemp)
 	}
-	if !isLast && binlogFileInfo.Size() != binlogFileToDownload.Size {
+	if !isLast && binlogFileTempInfo.Size() != binlogFileToDownload.Size {
 		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server earlier.",
 			zap.String("binlog", binlogFileToDownload.Name),
 			zap.Int64("sizeInfo", binlogFileToDownload.Size),
-			zap.Int64("downloadedSize", binlogFileInfo.Size()),
+			zap.Int64("downloadedSize", binlogFileTempInfo.Size()),
 		)
-		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePathTemp, binlogFileInfo.Size(), binlogFileToDownload.Size)
+		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePathTemp, binlogFileTempInfo.Size(), binlogFileToDownload.Size)
 	}
 
-	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileInfo.Name())
+	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileToDownload.Name)
 	if err := os.Rename(binlogFilePathTemp, binlogFilePath); err != nil {
 		return errors.Wrapf(err, "failed to rename %q to %q", binlogFilePathTemp, binlogFilePath)
 	}
 
-	if err := driver.writeBinlogMetadataFile(ctx, binlogFileInfo.Name()); err != nil {
+	if err := driver.writeBinlogMetadataFile(ctx, binlogFileToDownload.Name); err != nil {
 		return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePathTemp)
 	}
 	return nil
