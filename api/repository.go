@@ -85,10 +85,10 @@ type RepositoryFind struct {
 	// Related fields
 	VCSID     *int
 	ProjectID *int
-	WebURL    *string
 
 	// Domain specific fields
 	WebhookEndpointID *string
+	WebURL            *string
 }
 
 func (find *RepositoryFind) String() string {
