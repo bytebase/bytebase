@@ -7,7 +7,7 @@ import {
   Task,
   TaskCreate,
   TaskDatabaseSchemaUpdatePayload,
-  UpdateSchemaContext,
+  MigrationContext,
 } from "@/types";
 import {
   errorAssertion,
@@ -37,8 +37,8 @@ export default defineComponent({
     const selectedStatement = computed(() => {
       if (create.value) {
         const issueCreate = issue.value as IssueCreate;
-        const context = issueCreate.createContext as UpdateSchemaContext;
-        return context.updateSchemaDetailList[0].statement;
+        const context = issueCreate.createContext as MigrationContext;
+        return context.detailList[0].statement;
       } else {
         const issueEntity = issue.value as Issue;
         const task = issueEntity.pipeline.stageList[0].taskList[0];
@@ -59,9 +59,9 @@ export default defineComponent({
         });
 
         const issueCreate = issue.value as IssueCreate;
-        const context = issueCreate.createContext as UpdateSchemaContext;
+        const context = issueCreate.createContext as MigrationContext;
         // We also apply it back to the CreateContext
-        context.updateSchemaDetailList.forEach(
+        context.detailList.forEach(
           (detail) => (detail.statement = newStatement)
         );
       } else {
@@ -92,8 +92,8 @@ export default defineComponent({
       // for multi-tenancy issue pipeline (M * N)
       // createContext is up-to-date already
       // so we just format the statement if needed
-      const context = issueCreate.createContext as UpdateSchemaContext;
-      context.updateSchemaDetailList.forEach((detail) => {
+      const context = issueCreate.createContext as MigrationContext;
+      context.detailList.forEach((detail) => {
         const db = databaseStore.getDatabaseById(detail.databaseId!);
         detail.statement = maybeFormatStatementOnSave(detail.statement, db);
       });
