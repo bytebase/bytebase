@@ -291,7 +291,7 @@ func (d *databaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 	return nil
 }
 
-func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, *WalkThroughError) {
+func (d *databaseState) findTableState(tableName *tidbast.TableName) (*tableState, *WalkThroughError) {
 	if tableName.Schema.O != "" && tableName.Schema.O != d.name {
 		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
@@ -314,7 +314,7 @@ func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, *W
 }
 
 func (d *databaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError {
-	table, err := d.findTable(node.Table)
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func (d *databaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError
 }
 
 func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
-	table, err := d.findTable(node.Table)
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -358,7 +358,7 @@ func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 }
 
 func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughError {
-	table, err := d.findTable(node.Table)
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -749,7 +749,7 @@ func (d *databaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 }
 
 func (d *databaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	targetTable, err := d.findTable(node.ReferTable)
+	targetTable, err := d.findTableState(node.ReferTable)
 	if err != nil {
 		return err
 	}
