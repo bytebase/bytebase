@@ -3,6 +3,9 @@ name: Build and push CI image
 on:
   push:
     branches:
+      - main
+  pull_request:
+    branches:
       - "*"
 
   # Allows you to run this workflow manually from the Actions tab
