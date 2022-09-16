@@ -186,7 +186,7 @@ func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
 	return "", nil
 }
 
-// PrimaryKeyFind is for find primary key.
+// PrimaryKeyFind is for finding primary key.
 type PrimaryKeyFind struct {
 	SchemaName string
 	TableName  string
