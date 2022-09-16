@@ -13,8 +13,9 @@ func TestColumn(t *testing.T) {
 		new  string
 		want string
 	}{
+		// Missing columns
 		{
-			old:  `CREATE TABLE book(id INT, PRIMARY KEY(id))`,
+			old:  `CREATE TABLE book(id INT, PRIMARY KEY(id));`,
 			new:  `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));`,
 			want: "ALTER TABLE `book` ADD COLUMN (`price` INT);\n",
 		},
@@ -31,6 +32,24 @@ func TestColumn(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
 			new:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
+			want: "",
+		},
+
+		// Different types.
+		{
+			old:  `CREATE TABLE book(id INT);`,
+			new:  `CREATE TABLE book(id VARCHAR(50));`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `id` VARCHAR(50);\n",
+		},
+
+		{
+			old:  `CREATE TABLE book(id INT, isbn VARCHAR(50));`,
+			new:  `CREATE TABLE book(id VARCHAR(50), isbn VARCHAR(100));`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `id` VARCHAR(50), MODIFY COLUMN `isbn` VARCHAR(100);\n",
+		},
+		{
+			old:  `CREATE TABLE book(id INT, isbn VARCHAR(50));`,
+			new:  `CREATE TABLE book(id INT, isbn VARCHAR(50));`,
 			want: "",
 		},
 	}
