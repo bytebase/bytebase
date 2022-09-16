@@ -198,7 +198,6 @@ export interface SQLEditorState {
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
   isLoadingTree: boolean;
-  isExecuting: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
   sharedSheet: Sheet;
