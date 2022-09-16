@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"strings"
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
@@ -65,6 +66,7 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 	}
 
 	for i, node := range root {
+		node.SetText(nil, strings.TrimSpace(node.Text()))
 		node.SetOriginTextPosition(sqlList[i].Line)
 		if n, ok := node.(*ast.CreateTableStmt); ok {
 			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {

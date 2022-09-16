@@ -588,14 +588,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			{
 				statement: `
 					CREATE TABLE user(
-						id int,
+						id int NOT NULL,
 						creator_id INT NOT NULL,
 						created_ts TIMESTAMP NOT NULL,
 						updater_id INT NOT NULL,
 						updated_ts TIMESTAMP NOT NULL,
 						CONSTRAINT pk_user_id PRIMARY KEY (id)
 					);
-					DROP TABLE user
+					DROP TABLE user;
 					`,
 				result: []api.TaskCheckResult{
 					{
@@ -610,7 +610,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.CompatibilityDropTable.Int(),
 						Title:     "schema.backward-compatibility",
-						Content:   "\"DROP TABLE user\" may cause incompatibility with the existing data and code",
+						Content:   "\"DROP TABLE user;\" may cause incompatibility with the existing data and code",
 					},
 				},
 			},
