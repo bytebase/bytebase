@@ -50,7 +50,12 @@ const getLanguageClient = () => {
 };
 
 const executeCommand = (params: ExecuteCommandParams) => {
+  // Don't go further if we are not connected.
+  if (state.stopped) {
+    return;
+  }
   getLanguageClient().then((client) => {
+    // Double check the status since we are in an async callback
     if (state.stopped) {
       return;
     }
@@ -73,19 +78,32 @@ const changeDialect = (dialect: SQLDialect) => {
 };
 
 const start = () => {
+  if (!state.stopped) {
+    // Don't start twice
+    return;
+  }
   state.client.then((client) => {
-    client.start();
-    state.stopped = false;
+    if (!state.stopped) {
+      // Double check
+      return;
+    }
+    try {
+      client.start();
+      state.stopped = false;
+    } catch {
+      // nothing todo
+    }
   });
 };
 const stop = () => {
+  state.stopped = true;
+
   if (!state.client) {
     // We don't need to stop if the client is not started yet
     return;
   }
 
   state.client.then((client) => {
-    state.stopped = true;
     client.stop();
   });
 };
