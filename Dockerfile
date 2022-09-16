@@ -82,7 +82,7 @@ COPY ./scripts /usr/local/bin/
 
 # We want to install postgresql-client-14
 # https://packages.debian.org/sid/amd64/postgresql-client-14/download
-RUN echo deb http://ftp.hk.debian.org/debian sid main
+RUN echo deb http://ftp.hk.debian.org/debian sid main >> /etc/apt/sources.list
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
 RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client-14 procps
