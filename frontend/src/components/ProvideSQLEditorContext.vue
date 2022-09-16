@@ -4,8 +4,8 @@
 
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
-import { reactive, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { reactive, onMounted, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   useCurrentUser,
   useDatabaseStore,
@@ -22,7 +22,13 @@ import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
 } from "@/types";
-import { emptyConnection, mapConnectionAtom } from "@/utils";
+import {
+  emptyConnection,
+  idFromSlug,
+  mapConnectionAtom,
+  sheetSlug as makeSheetSlug,
+  connectionSlug as makeConnectionSlug,
+} from "@/utils";
 
 type LocalState = {
   instanceList: Instance[];
@@ -30,6 +36,7 @@ type LocalState = {
 };
 
 const route = useRoute();
+const router = useRouter();
 
 const state = reactive<LocalState>({
   instanceList: [],
@@ -85,13 +92,8 @@ const prepareSQLEditorContext = async () => {
 };
 
 const prepareSheet = async () => {
-  // TODO(Jim): use standard slug format instead of "_" joint format.
-
-  let sheetId = parseInt(route.query.sheetId as string, 10);
-  if (Number.isNaN(sheetId)) {
-    const sheetSlug = (route.params.sheetSlug as string) || "";
-    sheetId = parseInt(sheetSlug.split("_").pop()!, 10);
-  }
+  const sheetSlug = (route.params.sheetSlug as string) || "";
+  const sheetId = idFromSlug(sheetSlug);
   if (Number.isNaN(sheetId)) {
     return false;
   }
@@ -125,45 +127,44 @@ const prepareSheet = async () => {
     },
   });
 
-  // TODO(Jim): remove this after refactor `sharedSheet`
-  useSQLEditorStore().setSQLEditorState({
-    sharedSheet: sheet,
-  });
-
   return true;
 };
 
 const prepareConnectionSlug = async () => {
-  // TODO(Jim): use standard slug format instead of "_" joint format.
-
   const connectionSlug = (route.params.connectionSlug as string) || "";
-  // [instanceName, instanceId, databaseName, databaseId]
-  const parts = connectionSlug.split("_");
-  const instanceId = parseInt(parts[1], 10);
-  const databaseId = parseInt(parts[3], 10);
-  if (Number.isNaN(instanceId) || Number.isNaN(databaseId)) {
+  const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
+  const instanceId = idFromSlug(instanceSlug);
+  const databaseId = idFromSlug(databaseSlug);
+
+  if (Number.isNaN(instanceId) && Number.isNaN(databaseId)) {
     return false;
   }
 
   tabStore.selectOrAddTempTab();
-  const connection =
-    await sqlEditorStore.fetchConnectionByInstanceIdAndDatabaseId({
-      instanceId,
-      databaseId,
-    });
-  tabStore.updateCurrentTab({
-    connection,
-  });
+  if (Number.isNaN(databaseId)) {
+    // connected to instance
+    const connection = await sqlEditorStore.fetchConnectionByInstanceId(
+      instanceId
+    );
+    tabStore.updateCurrentTab({ connection });
+  } else {
+    // connected to db
+    const connection =
+      await sqlEditorStore.fetchConnectionByInstanceIdAndDatabaseId(
+        instanceId,
+        databaseId
+      );
+    tabStore.updateCurrentTab({ connection });
+  }
   return true;
 };
 
 // Get sheetId from query.
 const setConnectionFromQuery = async () => {
   // Priority:
-  // 1. sheetId in query
-  // 2. idFromSlug in sheetSlug
-  // 3. instanceId and databaseId in connectionSlug
-  // 4. disconnected
+  // 1. idFromSlug in sheetSlug
+  // 2. instanceId and databaseId in connectionSlug
+  // 3. disconnected
 
   if (await prepareSheet()) {
     return;
@@ -178,6 +179,50 @@ const setConnectionFromQuery = async () => {
   // default tab.
 };
 
+// Keep the URL synced with connection
+// 1. /sql-editor/sheet/{sheet_slug}  - saved sheets
+// 2. /sql-editor/{connection_slug}   - unsaved tabs
+// 3. /sql-editor                     - clean tabs
+const syncURLWithConnection = () => {
+  const connection = computed(() => tabStore.currentTab.connection);
+  watch(
+    [
+      () => connection.value.instanceId,
+      () => connection.value.databaseId,
+      () => tabStore.currentTab.sheetId,
+    ],
+    ([instanceId, databaseId, sheetId]) => {
+      if (sheetId && sheetId !== UNKNOWN_ID) {
+        const sheet = sheetStore.sheetById.get(sheetId);
+        if (sheet) {
+          router.replace({
+            name: "sql-editor.share",
+            params: {
+              sheetSlug: makeSheetSlug(sheet),
+            },
+          });
+          return;
+        }
+      }
+      if (instanceId !== UNKNOWN_ID) {
+        const instance = instanceStore.getInstanceById(instanceId);
+        const database = databaseStore.getDatabaseById(databaseId); // might be <<Unknown database>> here
+        router.replace({
+          name: "sql-editor.detail",
+          params: {
+            connectionSlug: makeConnectionSlug(instance, database),
+          },
+        });
+        return;
+      }
+      router.replace({
+        name: "sql-editor.home",
+      });
+    },
+    { immediate: true }
+  );
+};
+
 onMounted(async () => {
   sqlEditorStore.isLoadingTree = true;
   await prepareAccessibleConnectionByProject();
@@ -187,5 +232,7 @@ onMounted(async () => {
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
+
+  syncURLWithConnection();
 });
 </script>

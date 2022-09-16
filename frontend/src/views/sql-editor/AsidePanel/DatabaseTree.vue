@@ -59,7 +59,6 @@ import {
   useTabStore,
 } from "@/store";
 import {
-  connectionSlug,
   emptyConnection,
   getHighlightHTMLByKeyWords,
   mapConnectionAtom,
@@ -174,20 +173,6 @@ const setConnection = (option: ConnectionAtom) => {
     tabStore.updateCurrentTab({
       connection: conn,
     });
-
-    // TODO(Jim): move the URL sync logic to <ProvideSQLEditorContext>
-    if (conn.instanceId !== UNKNOWN_ID && conn.databaseId !== UNKNOWN_ID) {
-      const database = useDatabaseStore().getDatabaseById(
-        conn.databaseId,
-        conn.instanceId
-      );
-      router.replace({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database),
-        },
-      });
-    }
 
     // TODO(Jim): This part is for <TableSchema> only
     // and should be removed after upcoming refactor.
