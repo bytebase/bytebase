@@ -87,20 +87,12 @@
 import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
-import slug from "slug";
-import {
-  pushNotification,
-  useTabStore,
-  useSheetStore,
-  useInstanceStore,
-  useDatabaseStore,
-} from "@/store";
+import { pushNotification, useTabStore, useSheetStore } from "@/store";
 import { AccessOption } from "@/types";
+import { sheetSlug } from "@/utils";
 
 const { t } = useI18n();
 const tabStore = useTabStore();
-const instanceStore = useInstanceStore();
-const databaseStore = useDatabaseStore();
 const sheetStore = useSheetStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
@@ -125,18 +117,6 @@ const accessOptions = computed<AccessOption[]>(() => {
 
 const sheet = computed(() => sheetStore.currentSheet);
 const creator = computed(() => sheetStore.isCreator);
-
-const connectionSlug = computed((): string => {
-  const { instanceId, databaseId } = tabStore.currentTab.connection;
-  const instance = instanceStore.getInstanceById(instanceId);
-  const database = databaseStore.getDatabaseById(databaseId);
-  return [
-    slug(instance.name),
-    instanceId,
-    slug(database.name),
-    databaseId,
-  ].join("_");
-});
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
@@ -168,13 +148,8 @@ const handleChangeAccess = (option: AccessOption) => {
   isShowAccessPopover.value = false;
 };
 
-const sheetSlug = `${slug(tabStore.currentTab.name)}_${
-  tabStore.currentTab.sheetId
-}`;
-
-// TODO(Jim): use standard slug format instead of "_" joint format.
-const sharedTabLink = ref(
-  `${window.location.origin}/sql-editor/${connectionSlug.value}/${sheetSlug}`
+const sharedTabLink = computed(
+  () => `${window.location.origin}/sql-editor/sheet/${sheetSlug(sheet.value)}`
 );
 
 const { copy, copied } = useClipboard({

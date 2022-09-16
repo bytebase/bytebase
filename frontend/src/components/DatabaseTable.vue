@@ -467,7 +467,7 @@ const gotoSQLEditor = (database: Database) => {
     state.warningDatabase = database;
     state.showIncorrectProjectModal = true;
   } else {
-    const url = `/sql-editor/${connectionSlug(database)}`;
+    const url = `/sql-editor/${connectionSlug(database.instance, database)}`;
     window.open(url);
   }
 };

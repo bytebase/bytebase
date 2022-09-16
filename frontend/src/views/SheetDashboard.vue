@@ -126,7 +126,7 @@ import { t } from "@/plugins/i18n";
 import dayjs from "@/plugins/dayjs";
 import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
 import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
-import { isDev } from "@/utils";
+import { isDev, sheetSlug } from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
@@ -257,9 +257,9 @@ watch(
 
 const handleSheetClick = (sheet: Sheet) => {
   router.push({
-    name: "sql-editor.home",
-    query: {
-      sheetId: sheet.id,
+    name: "sql-editor.share",
+    params: {
+      sheetSlug: sheetSlug(sheet),
     },
   });
 };
