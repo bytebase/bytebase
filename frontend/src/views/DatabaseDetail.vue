@@ -617,7 +617,10 @@ const gotoSQLEditor = () => {
     state.editingProjectId = database.value.project.id;
     state.showIncorrectProjectModal = true;
   } else {
-    const url = `/sql-editor/${connectionSlug(database.value)}`;
+    const url = `/sql-editor/${connectionSlug(
+      database.value.instance,
+      database.value
+    )}`;
     window.open(url);
   }
 };

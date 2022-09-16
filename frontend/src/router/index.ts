@@ -28,7 +28,6 @@ import {
   DEFAULT_PROJECT_ID,
   PlanType,
   QuickActionType,
-  Sheet,
   UNKNOWN_ID,
 } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner, isProjectOwner } from "../utils";
@@ -848,7 +847,7 @@ const routes: Array<RouteRecordRaw> = [
         props: true,
       },
       {
-        path: "/sql-editor/:connectionSlug/:sheetSlug",
+        path: "/sql-editor/sheet/:sheetSlug",
         name: "sql-editor.share",
         meta: { title: () => "SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
@@ -1321,36 +1320,11 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (connectionSlug) {
-    // TODO(Jim): use standard slug format instead of "_" joint format.
-    const [, instanceId, , databaseId] = connectionSlug.split("_");
-    useSQLEditorStore()
-      .fetchConnectionByInstanceIdAndDatabaseId({
-        instanceId: Number(instanceId),
-        databaseId: Number(databaseId),
-      })
+  if (sheetSlug) {
+    const sheetId = idFromSlug(sheetSlug);
+    useSheetStore()
+      .fetchSheetById(sheetId)
       .then(() => {
-        // for sharing the sheet to others
-        if (sheetSlug) {
-          // TODO(Jim): use standard slug format instead of "_" joint format.
-          const [_, sheetId] = sheetSlug.split("_");
-          useSheetStore()
-            .fetchSheetById(Number(sheetId))
-            .then((sheet: Sheet) => {
-              useSQLEditorStore().setSQLEditorState({
-                sharedSheet: sheet,
-              });
-
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
-              });
-              throw error;
-            });
-        }
         next();
       })
       .catch((error) => {
@@ -1360,6 +1334,38 @@ router.beforeEach((to, from, next) => {
         });
         throw error;
       });
+    return;
+  }
+
+  if (connectionSlug) {
+    const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
+    const instanceId = idFromSlug(instanceSlug);
+    const databaseId = idFromSlug(databaseSlug);
+    if (Number.isNaN(databaseId)) {
+      // Connected to instance
+      useSQLEditorStore()
+        .fetchConnectionByInstanceId(instanceId)
+        .then(() => next())
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+    } else {
+      // Connected to db
+      useSQLEditorStore()
+        .fetchConnectionByInstanceIdAndDatabaseId(instanceId, databaseId)
+        .then(() => next())
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
+    }
     return;
   }
 

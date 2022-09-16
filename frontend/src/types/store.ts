@@ -200,7 +200,6 @@ export interface SQLEditorState {
   isLoadingTree: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-  sharedSheet: Sheet;
 }
 
 export interface TabState {

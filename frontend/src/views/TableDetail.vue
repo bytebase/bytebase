@@ -252,7 +252,10 @@ export default defineComponent({
     });
 
     const gotoSQLEditor = () => {
-      const url = `/sql-editor/${connectionSlug(database.value)}`;
+      const url = `/sql-editor/${connectionSlug(
+        database.value.instance,
+        database.value
+      )}`;
       window.open(url);
     };
 
