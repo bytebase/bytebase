@@ -79,6 +79,7 @@ ENV OPENSSL_CONF /etc/ssl/
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
+COPY ./.psqlrc /root/.psqlrc
 
 # We want to install postgresql-client-14
 # https://packages.debian.org/sid/amd64/postgresql-client-14/download
