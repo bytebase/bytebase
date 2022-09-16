@@ -86,22 +86,22 @@ RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client p
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
-RUN echo $" \n\
-\set QUIET 1 \n\
-\set PROMPT1 '%M:%[%033[1;31m%]%>%[%033[0m%] %n@%/%R%#%x ' \n\
-\set PROMPT2 '%M %n@%/%R %# ' \n\
-\pset null '[null]' \n\
-\set COMP_KEYWORD_CASE upper \n\
-\timing \n\
-\set HISTSIZE 2000 \n\
-\x auto \n\
-\set VERBOSITY verbose \n\
-\set QUIET 0 \n\
-\echo 'Welcome to PostgreSQL! \n' \n\
-\echo 'Type :version to see the PostgreSQL version. \n' \n\
-\echo 'Type :extensions to see the available extensions. \n' \n\
-\echo 'Type \\q to exit. \n' \n\
-\set version 'SELECT version();' \n\
+RUN nl=$'\n' && echo "\
+\set QUIET 1 $nl\
+\set PROMPT1 '%M:%[%033[1;31m%]%>%[%033[0m%] %n@%/%R%#%x ' $nl\
+\set PROMPT2 '%M %n@%/%R %# ' $nl\
+\pset null '[null]' $nl\
+\set COMP_KEYWORD_CASE upper $nl\
+\timing $nl\
+\set HISTSIZE 2000 $nl\
+\x auto $nl\
+\set VERBOSITY verbose $nl\
+\set QUIET 0 $nl\
+\echo 'Welcome to PostgreSQL! \n' $nl\
+\echo 'Type :version to see the PostgreSQL version. \n' $nl\
+\echo 'Type :extensions to see the available extensions. \n' $nl\
+\echo 'Type \\q to exit. \n' $nl\
+\set version 'SELECT version();' $nl\
 \set extensions 'select * from pg_available_extensions;' "> /root/.psqlrc
 
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
