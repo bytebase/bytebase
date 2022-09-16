@@ -1,0 +1,26 @@
+\set QUIET 1
+
+\set PROMPT1 '%M:%[%033[1;31m%]%>%[%033[0m%] %n@%/%R%#%x '
+
+\set PROMPT2 '%M %n@%/%R %# '
+
+\pset null '[null]'
+
+\set COMP_KEYWORD_CASE upper
+
+\timing
+
+\set HISTSIZE 2000
+
+\x auto
+
+\set VERBOSITY verbose
+
+\set QUIET 0
+
+\echo 'Welcome to PostgreSQL! \n'
+\echo 'Type :version to see the PostgreSQL version. \n' 
+\echo 'Type :extensions to see the available extensions. \n'
+\echo 'Type \\q to exit. \n'
+\set version 'SELECT version();'
+\set extensions 'select * from pg_available_extensions;'
