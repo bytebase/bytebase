@@ -173,8 +173,9 @@ const setConnectionFromQuery = async () => {
     return;
   }
 
-  tabStore.selectOrAddTempTab();
   // Keep disconnected otherwise
+  // We don't need to `selectOrAddTempTab` here since we already have the
+  // default tab.
 };
 
 onMounted(async () => {
