@@ -181,7 +181,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) {
+		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) && exec.DatabaseName != "" {
 			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
