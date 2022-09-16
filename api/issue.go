@@ -144,7 +144,7 @@ type CreateDatabaseContext struct {
 	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
-// MigrationDetail is the detail of updating database schema.
+// MigrationDetail is the detail for database migration such as Migrate, Data.
 type MigrationDetail struct {
 	// DatabaseID is the ID of a database.
 	DatabaseID int `json:"databaseId"`
