@@ -378,7 +378,7 @@ type UpdateSchemaGhostDetail struct {
 }
 
 type UpdateSchemaGhostContext struct {
-    UpdateSchemaDetailList []*UpdateSchemaGhostDetail `json:"updateSchemaDetailList`
+    DetailList []*UpdateSchemaGhostDetail `json:"detailList`
     VCSPushEvent *vcs.PushEvent
 }
 

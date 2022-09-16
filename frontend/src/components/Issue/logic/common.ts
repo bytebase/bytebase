@@ -25,8 +25,8 @@ import {
   TaskId,
   TaskPatch,
   TaskType,
-  UpdateSchemaContext,
-  UpdateSchemaDetail,
+  MigrationContext,
+  MigrationDetail,
 } from "@/types";
 import { useIssueLogic } from "./index";
 import { taskCheckRunSummary } from "./utils";
@@ -182,7 +182,7 @@ export const useCommonLogic = () => {
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
     const taskList = flattenTaskList<TaskCreate>(issueCreate);
-    const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
+    const detailList: MigrationDetail[] = taskList.map((task) => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
         databaseId: task.databaseId!,
@@ -195,7 +195,7 @@ export const useCommonLogic = () => {
 
     issueCreate.createContext = {
       migrationType,
-      updateSchemaDetailList: detailList,
+      detailList: detailList,
     };
 
     // If the database is within VCS project, try to find its latest and done migration history from VCS.
@@ -210,7 +210,7 @@ export const useCommonLogic = () => {
             database.name
           );
         if (migrationHistory) {
-          (issueCreate.createContext as UpdateSchemaContext).vcsPushEvent =
+          (issueCreate.createContext as MigrationContext).vcsPushEvent =
             migrationHistory.payload?.pushEvent;
         }
       }
