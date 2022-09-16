@@ -220,7 +220,7 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getBlobStr(colDef.Tp), nil
 	}
-	column := v.catalog.FindColumn(&catalog.ColumnFind{
+	column := v.catalog.Origin.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
 		ColumnName: columnName,
 	})

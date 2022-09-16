@@ -5,9 +5,10 @@ type Code int
 
 // Application error codes.
 const (
-	Ok       Code = 0
-	Internal Code = 1
-	NotFound Code = 2
+	Ok          Code = 0
+	Internal    Code = 1
+	NotFound    Code = 2
+	Unsupported Code = 3
 
 	// 101 ~ 199 compatibility error code.
 	CompatibilityDropDatabase  Code = 101
@@ -55,6 +56,8 @@ const (
 	ColumnCommentTooLong          Code = 409
 	AutoIncrementColumnNotInteger Code = 410
 	DisabledColumnType            Code = 411
+	ColumnExists                  Code = 412
+	DropAllColumns                Code = 413
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -71,6 +74,7 @@ const (
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
 	NotCurrentDatabase Code = 702
+	DatabaseIsDeleted  Code = 703
 
 	// 801 miss index error code.
 	NotUseIndex                Code = 801
@@ -78,6 +82,12 @@ const (
 	IndexPKType                Code = 803
 	IndexTypeNoBlob            Code = 804
 	IndexExists                Code = 805
+	PrimaryKeyExists           Code = 806
+	IndexEmptyKeys             Code = 807
+	PrimaryKeyNotExists        Code = 808
+	IndexNotExists             Code = 809
+	IncorrectIndexName         Code = 810
+	SpatialIndexKeyNullable    Code = 811
 
 	// 901 ~ 999 index error code.
 	DuplicateColumnInIndex Code = 901

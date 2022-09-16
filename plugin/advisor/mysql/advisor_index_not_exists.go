@@ -124,6 +124,6 @@ func (*indexNotExistsChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (checker *indexNotExistsChecker) indexExists(table string, index string) bool {
-	_, idx := checker.catalog.FindIndex(&catalog.IndexFind{TableName: table, IndexName: index})
+	_, idx := checker.catalog.Origin.FindIndex(&catalog.IndexFind{TableName: table, IndexName: index})
 	return idx != nil
 }

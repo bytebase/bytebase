@@ -112,7 +112,7 @@ func (checker *columnExistsChecker) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	for _, column := range columnList {
-		table := checker.catalog.FindTable(&catalog.TableFind{TableName: column.table})
+		table := checker.catalog.Origin.FindTable(&catalog.TableFind{TableName: column.table})
 		if table == nil {
 			continue
 		}
