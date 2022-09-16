@@ -24,6 +24,7 @@ export const getDefaultTab = (): TabInfo => {
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     statement: "",
     selectedStatement: "",
+    isExecutingSQL: false,
   };
 };
 

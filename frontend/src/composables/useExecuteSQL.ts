@@ -1,4 +1,4 @@
-import { markRaw, reactive } from "vue";
+import { markRaw } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
@@ -19,10 +19,6 @@ const useExecuteSQL = () => {
   const tabStore = useTabStore();
   const sqlEditorStore = useSQLEditorStore();
 
-  const state = reactive({
-    isLoadingData: false,
-  });
-
   const notify = (
     type: BBNotificationStyle,
     title: string,
@@ -41,8 +37,11 @@ const useExecuteSQL = () => {
     config: ExecuteConfig,
     option?: Partial<ExecuteOption>
   ) => {
-    if (state.isLoadingData) {
+    const tab = tabStore.currentTab;
+
+    if (tab.isExecutingSQL) {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
+      return;
     }
 
     const isDisconnected = tabStore.isDisconnected;
@@ -96,8 +95,7 @@ const useExecuteSQL = () => {
     }
 
     try {
-      state.isLoadingData = true;
-      sqlEditorStore.setIsExecuting(true);
+      tab.isExecutingSQL = true;
       const sqlResultSet = await sqlEditorStore.executeQuery({
         statement: selectStatement,
       });
@@ -124,7 +122,7 @@ const useExecuteSQL = () => {
           adviceNotifyMessage
         );
       }
-      tabStore.updateCurrentTab({
+      Object.assign(tab, {
         // use `markRaw` to prevent vue from monitoring the object change deeply
         queryResult: markRaw(sqlResultSet.data) as any,
         adviceList: sqlResultSet.adviceList,
@@ -136,7 +134,7 @@ const useExecuteSQL = () => {
       });
       sqlEditorStore.fetchQueryHistoryList();
     } catch (error) {
-      tabStore.updateCurrentTab({
+      Object.assign(tab, {
         queryResult: undefined,
         adviceList: undefined,
         executeParams: {
@@ -147,13 +145,11 @@ const useExecuteSQL = () => {
       });
       notify("CRITICAL", error as string);
     } finally {
-      state.isLoadingData = false;
-      sqlEditorStore.setIsExecuting(false);
+      tab.isExecutingSQL = false;
     }
   };
 
   return {
-    state,
     execute,
   };
 };
