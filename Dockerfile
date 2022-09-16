@@ -86,7 +86,7 @@ RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client p
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
-RUN echo $' \n\
+RUN echo $" \n\
 \set QUIET 1 \n\
 \set PROMPT1 '%M:%[%033[1;31m%]%>%[%033[0m%] %n@%/%R%#%x ' \n\
 \set PROMPT2 '%M %n@%/%R %# ' \n\
@@ -102,7 +102,7 @@ RUN echo $' \n\
 \echo 'Type :extensions to see the available extensions. \n' \n\
 \echo 'Type \\q to exit. \n' \n\
 \set version 'SELECT version();' \n\
-\set extensions 'select * from pg_available_extensions;' '> /root/.psqlrc
+\set extensions 'select * from pg_available_extensions;' "> /root/.psqlrc
 
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
