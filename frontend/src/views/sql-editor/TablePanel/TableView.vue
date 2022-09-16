@@ -48,9 +48,9 @@
     <div
       v-if="showPlaceholder"
       class="absolute inset-0 flex flex-col justify-center items-center z-10"
-      :class="sqlEditorStore.isExecuting && 'bg-white/80'"
+      :class="tabStore.currentTab.isExecutingSQL && 'bg-white/80'"
     >
-      <template v-if="sqlEditorStore.isExecuting">
+      <template v-if="tabStore.currentTab.isExecutingSQL">
         <BBSpin />
         {{ $t("sql-editor.loading-data") }}
       </template>
@@ -68,7 +68,7 @@ import { debouncedRef } from "@vueuse/core";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
-import { useTabStore, useSQLEditorStore, useInstanceStore } from "@/store";
+import { useTabStore, useInstanceStore } from "@/store";
 import { createExplainToken } from "@/utils";
 import DataTable from "./DataTable.vue";
 
@@ -79,7 +79,6 @@ interface State {
 const { t } = useI18n();
 const tabStore = useTabStore();
 const instanceStore = useInstanceStore();
-const sqlEditorStore = useSQLEditorStore();
 
 const queryResult = computed(() => tabStore.currentTab.queryResult || null);
 
@@ -125,7 +124,7 @@ const data = computed(() => {
 
 const showPlaceholder = computed(() => {
   if (!queryResult.value) return true;
-  if (sqlEditorStore.isExecuting) return true;
+  if (tabStore.currentTab.isExecutingSQL) return true;
   return false;
 });
 

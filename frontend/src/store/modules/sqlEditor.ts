@@ -33,7 +33,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     connectionTree: [],
     connectionContext: getDefaultConnectionContext(),
     isLoadingTree: false,
-    isExecuting: false,
     isShowExecutingHint: false,
     shouldFormatContent: false,
     // Related data and status
@@ -90,9 +89,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;
-    },
-    setIsExecuting(payload: boolean) {
-      this.isExecuting = payload;
     },
     setQueryHistoryList(payload: QueryHistory[]) {
       this.queryHistoryList = payload;

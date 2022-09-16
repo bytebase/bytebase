@@ -3,19 +3,19 @@
     <div class="action-left space-x-2 flex items-center">
       <NButton
         type="primary"
-        :disabled="isEmptyStatement || executeState.isLoadingData"
+        :disabled="isEmptyStatement || isExecutingSQL"
         @click="handleRunQuery"
       >
         <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
       </NButton>
       <NButton
-        :disabled="isEmptyStatement || executeState.isLoadingData"
+        :disabled="isEmptyStatement || isExecutingSQL"
         @click="handleExplainQuery"
       >
         <mdi:play class="h-5 w-5" /> Explain (⌘+E)
       </NButton>
       <NButton
-        :disabled="isEmptyStatement || executeState.isLoadingData"
+        :disabled="isEmptyStatement || isExecutingSQL"
         @click="handleFormatSQL"
       >
         {{ $t("sql-editor.format") }} (⇧+⌥+F)
@@ -154,6 +154,7 @@ const connection = computed(() => tabStore.currentTab.connection);
 const isEmptyStatement = computed(
   () => !tabStore.currentTab || tabStore.currentTab.statement === ""
 );
+const isExecutingSQL = computed(() => tabStore.currentTab.isExecutingSQL);
 const selectedInstance = useInstanceById(
   computed(() => connection.value.instanceId)
 );
@@ -177,7 +178,7 @@ const hasReadonlyDataSource = computed(() => {
   return false;
 });
 
-const { execute, state: executeState } = useExecuteSQL();
+const { execute } = useExecuteSQL();
 
 const handleRunQuery = async () => {
   const currentTab = tabStore.currentTab;
