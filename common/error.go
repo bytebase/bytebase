@@ -21,9 +21,8 @@ const (
 	NotImplemented Code = 6
 
 	// 101 ~ 199 db error.
-	DbConnectionFailure  Code = 101
-	DbExecutionError     Code = 102
-	DbMissingWhereClause Code = 103
+	DbConnectionFailure Code = 101
+	DbExecutionError    Code = 102
 
 	// 201 db migration error
 	// Db migration is a core feature, so we separate it from the db error.
