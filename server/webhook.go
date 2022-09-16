@@ -549,30 +549,12 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, webhookEndpointID string) (*db.MigrationInfo, []*api.MigrationDetail, []*api.ActivityCreate) {
 	// Having no schema info indicates that the file is not a schema file (e.g.
 	// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 	if schemaInfo == nil {
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-		if err != nil {
-			log.Error("Failed to parse migration info",
-				zap.Int("project", repo.ProjectID),
-				zap.Any("pushEvent", pushEvent),
-				zap.String("file", file),
-				zap.Error(err),
-			)
-			return nil, nil, nil
-		}
-
-		// We only allow DML files when the project uses the state-based migration.
-		if migrationInfo.Type != db.Data {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type))
-			return nil, nil, []*api.ActivityCreate{activityCreate}
-		}
-
-		detailList, activityCreateList := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, nil, file, fileType, webhookEndpointID, migrationInfo)
-		return migrationInfo, detailList, activityCreateList
+		log.Error(fmt.Sprintf("Schema info can not be empty for state based migration. Skipping file %s", common.EscapeForLogging(file)))
+		return nil, nil, nil
 	}
 
 	dbName := schemaInfo["DB_NAME"]
@@ -647,19 +629,31 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, fileType fileItemType, webhookEndpointID string) (*db.MigrationInfo, []*api.MigrationDetail, []*api.ActivityCreate) {
 	if schemaInfo != nil {
 		log.Debug("Ignored schema file for non-SDL",
 			zap.String("file", file),
 			zap.String("type", string(fileType)),
 		)
-		return nil, nil
+		return nil, nil, nil
+	}
+
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+	if err != nil {
+		log.Error("Failed to parse migration info",
+			zap.Int("project", repo.ProjectID),
+			zap.Any("pushEvent", pushEvent),
+			zap.String("file", file),
+			zap.Error(err),
+		)
+		return nil, nil, nil
 	}
 
 	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
-		return nil, []*api.ActivityCreate{activityCreate}
+		return nil, nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	var migrationDetailList []*api.MigrationDetail
@@ -673,13 +667,13 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 				SchemaVersion: migrationInfo.Version,
 			},
 		)
-		return migrationDetailList, nil
+		return migrationInfo, migrationDetailList, nil
 	}
 
 	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
-		return nil, []*api.ActivityCreate{activityCreate}
+		return nil, nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	if fileType == fileItemTypeAdded {
@@ -692,7 +686,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 				},
 			)
 		}
-		return migrationDetailList, nil
+		return migrationInfo, migrationDetailList, nil
 	}
 
 	// For modified files, we try to update the existing issue's statement.
@@ -706,14 +700,14 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		taskList, err := s.store.FindTask(ctx, find, true)
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project task"))
-			return nil, []*api.ActivityCreate{activityCreate}
+			return nil, nil, []*api.ActivityCreate{activityCreate}
 		}
 		if len(taskList) == 0 {
 			continue
 		}
 		if len(taskList) > 1 {
 			log.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", zap.Int("databaseID", database.ID), zap.String("schemaVersion", migrationInfo.Version))
-			return nil, nil
+			return nil, nil, nil
 		}
 		task := taskList[0]
 		taskPatch := api.TaskPatch{
@@ -724,16 +718,16 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
 			log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
-			return nil, nil
+			return nil, nil, nil
 		}
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
 		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
 		if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
 			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
-			return nil, nil
+			return nil, nil, nil
 		}
 	}
-	return nil, nil
+	return nil, nil, nil
 }
 
 // createIssueFromPushEvent attempts to create a new issue for the given file of
@@ -773,20 +767,9 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	var migrationInfo *db.MigrationInfo
 	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-		migrationInfo, migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
+		migrationInfo, migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, webhookEndpointID)
 	} else {
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		migrationInfo, err = db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-		if err != nil {
-			log.Error("Failed to parse migration info",
-				zap.Int("project", repo.ProjectID),
-				zap.Any("pushEvent", pushEvent),
-				zap.String("file", file),
-				zap.Error(err),
-			)
-			return "", false, nil, nil
-		}
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID, migrationInfo)
+		migrationInfo, migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, schemaInfo, file, fileType, webhookEndpointID)
 	}
 
 	if migrationInfo == nil || len(migrationDetailList) == 0 {
