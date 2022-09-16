@@ -153,7 +153,12 @@ type IndexFind struct {
 }
 
 func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
-	// needMatchTable is used for PostgreSQL. In PostgreSQL, the index name is unique in a schema, not a table.
+	// There are two cases to find a index:
+	// 1. find an index in specific table. e.g. MySQL and TiDB.
+	// 2. find an index in the schema. e.g. PostgreSQL.
+	// In PostgreSQL, the index name is unique in a schema, not a table.
+	// In MySQL and TiDB, the index name is unique in a table.
+	// So for case one, we need match table name, but for case two, we don't need.
 	needMatchTable := (d.dbType != db.Postgres || find.SchemaName == "" || find.TableName != "")
 	if needMatchTable {
 		schema, exists := d.schemaSet[find.SchemaName]
@@ -175,7 +180,7 @@ func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
 			continue
 		}
 		for _, table := range schema.tableSet {
-			// no need to match table name.
+			// no need to match table name because needMatchTable is false here.
 			index, exists := table.indexSet[find.IndexName]
 			if !exists {
 				return "", nil
