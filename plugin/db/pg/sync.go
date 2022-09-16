@@ -575,9 +575,15 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 
 // getIndices gets all indices of a database.
 func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
-	query := "" +
-		"SELECT schemaname, tablename, indexname, indexdef " +
-		"FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
+	query := `
+	SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
+		FROM information_schema.table_constraints
+		WHERE constraint_schema = idx.schemaname
+		AND constraint_name = idx.indexname
+		AND table_schema = idx.schemaname
+		AND table_name = idx.tablename
+		AND constraint_type = 'PRIMARY KEY')
+	FROM pg_indexes AS idx WHERE idx.schemaname NOT IN ('pg_catalog', 'information_schema');`
 
 	var indices []*indexSchema
 	rows, err := txn.Query(query)
@@ -588,7 +594,8 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 	for rows.Next() {
 		var idx indexSchema
-		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement); err != nil {
+		var primary sql.NullInt32
+		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement, &primary); err != nil {
 			return nil, err
 		}
 		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
@@ -596,6 +603,9 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		idx.columnExpressions, err = getIndexColumnExpressions(idx.statement)
 		if err != nil {
 			return nil, err
+		}
+		if primary.Valid && primary.Int32 == 1 {
+			idx.primary = true
 		}
 		indices = append(indices, &idx)
 	}
@@ -607,33 +617,9 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		if err = getIndex(txn, idx); err != nil {
 			return nil, errors.Wrapf(err, "failed to call getIndex(%q, %q)", idx.schemaName, idx.name)
 		}
-
-		if err = getPrimary(txn, idx); err != nil {
-			return nil, errors.Wrapf(err, "failed to call getPrimary(%q, %q)", idx.schemaName, idx.name)
-		}
 	}
 
 	return indices, nil
-}
-
-func getPrimary(txn *sql.Tx, idx *indexSchema) error {
-	isPrimaryQuery := `
-		SELECT EXISTS (SELECT 1
-			FROM information_schema.table_constraints
-			WHERE constraint_schema = $1
-				AND constraint_name = $2
-				AND table_schema = $1
-				AND table_name = $3
-				AND constraint_type = 'PRIMARY KEY')
-	`
-
-	var isPrimary bool
-	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&isPrimary); err != nil {
-		return err
-	}
-
-	idx.primary = isPrimary
-	return nil
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
