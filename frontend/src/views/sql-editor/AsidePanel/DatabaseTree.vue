@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!sqlEditorStore.connectionContext.isLoadingTree"
+    v-if="!sqlEditorStore.isLoadingTree"
     class="databases-tree p-2 space-y-2 h-full"
   >
     <div class="databases-tree--input">

@@ -26,10 +26,8 @@ export enum SortText {
   KEYWORD = "3",
 }
 
-// TODO(Jim): Move `isLoadingTree` to the root of sql editor state.
-// refactor <TableSchema> to get rid of this structure totally.
+// TODO(Jim): refactor <TableSchema> to get rid of this structure totally.
 export type ConnectionContext = {
-  isLoadingTree: boolean;
   option: ConnectionAtom;
 };
 
