@@ -39,6 +39,6 @@ jobs:
           build-args: |
             ${{ matrix.docker-build-args-release }}
             ${{ matrix.docker-build-args-version-suffix }}
-            GIT_COMMIT=${{ GITHUB_SHA }}
+            GIT_COMMIT=${{ env.GITHUB_SHA }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ matrix.docker-image-tag }} " ${{ steps.docker_build.outputs.digest }}
