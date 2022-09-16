@@ -751,7 +751,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		migrationInfo, migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, webhookEndpointID)
 	} else {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+		migrationInfo, err = db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
 		if err != nil {
 			log.Error("Failed to parse migration info",
 				zap.Int("project", repo.ProjectID),
