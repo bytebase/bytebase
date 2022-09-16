@@ -212,7 +212,7 @@ func (d *databaseState) FindPrimaryKey(find *PrimaryKeyFind) *Index {
 	return nil
 }
 
-// ColumnFind is for find column.
+// ColumnFind is for finding column.
 type ColumnFind struct {
 	SchemaName string
 	TableName  string
