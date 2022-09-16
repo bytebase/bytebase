@@ -39,6 +39,8 @@ jobs:
           file: Dockerfile
           push: false
           tags: bytebase/bytebase:${{ matrix.docker-image-tag }}
-          build-args: ${{ matrix.docker-build-args-release }}\n${{ matrix.docker-build-args-git-commit }}
+          build-args: |
+            ${{ matrix.docker-build-args-release }}
+            ${{ matrix.docker-build-args-git-commit }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ matrix.docker-image-tag }} " ${{ steps.docker_build.outputs.digest }}
