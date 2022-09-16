@@ -93,9 +93,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	// Create an issue that updates database schema.
-	createContext, err := json.Marshal(&api.UpdateSchemaContext{
+	createContext, err := json.Marshal(&api.MigrationContext{
 		MigrationType: db.Migrate,
-		DetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseID: database.ID,
 				Statement:  migrationStatement,
@@ -123,9 +123,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(bookSchemaSQLResult, result)
 
 	// Create an issue that updates database data.
-	createContext, err = json.Marshal(&api.UpdateSchemaContext{
+	createContext, err = json.Marshal(&api.MigrationContext{
 		MigrationType: db.Data,
-		DetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseID: database.ID,
 				Statement:  dataUpdateStatement,

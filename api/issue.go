@@ -144,8 +144,8 @@ type CreateDatabaseContext struct {
 	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
-// UpdateSchemaDetail is the detail of updating database schema.
-type UpdateSchemaDetail struct {
+// MigrationDetail is the detail for database migration such as Migrate, Data.
+type MigrationDetail struct {
 	// DatabaseID is the ID of a database.
 	DatabaseID int `json:"databaseId"`
 	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
@@ -160,13 +160,13 @@ type UpdateSchemaDetail struct {
 	SchemaVersion string `json:"schemaVersion"`
 }
 
-// UpdateSchemaContext is the issue create context for updating database schema.
-type UpdateSchemaContext struct {
+// MigrationContext is the issue create context for database migration such as Migrate, Data.
+type MigrationContext struct {
 	// MigrationType is the type of a migration.
 	MigrationType db.MigrationType `json:"migrationType"`
 	// DetailList is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
-	DetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
+	DetailList []*MigrationDetail `json:"detailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent `json:"vcsPushEvent"`
 }
@@ -186,9 +186,9 @@ type UpdateSchemaGhostDetail struct {
 
 // UpdateSchemaGhostContext is the issue create context for updating database schema using gh-ost.
 type UpdateSchemaGhostContext struct {
-	// UpdateSchemaGhostDetail is the details of schema update.
+	// DetailList is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
-	DetailList []*UpdateSchemaGhostDetail `json:"updateSchemaGhostDetailList"`
+	DetailList []*UpdateSchemaGhostDetail `json:"detailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent
 }

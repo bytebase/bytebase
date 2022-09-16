@@ -49,7 +49,7 @@ export default defineComponent({
       const stageList = issueCreate.pipeline!.stageList;
       const createContext =
         issueCreate.createContext as UpdateSchemaGhostContext;
-      const detailList = createContext.updateSchemaGhostDetailList;
+      const detailList = createContext.detailList;
       stageList.forEach((stage, i) => {
         const detail = detailList[i];
         const syncTask = stage.taskList.find(

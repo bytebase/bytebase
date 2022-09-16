@@ -44,26 +44,26 @@ export type CreateDatabaseContext = {
   labels?: string; // JSON encoded
 };
 
-export type UpdateSchemaDetail = {
+export type MigrationDetail = {
   databaseId: DatabaseId;
   databaseName: string;
   statement: string;
   earliestAllowedTs: number;
 };
 
-export type UpdateSchemaGhostDetail = UpdateSchemaDetail & {
+export type UpdateSchemaGhostDetail = MigrationDetail & {
   // empty by now
   // more input parameters in the future
 };
 
-export type UpdateSchemaContext = {
+export type MigrationContext = {
   migrationType: MigrationType;
-  updateSchemaDetailList: UpdateSchemaDetail[];
+  detailList: MigrationDetail[];
   vcsPushEvent?: VCSPushEvent;
 };
 
 export type UpdateSchemaGhostContext = {
-  updateSchemaGhostDetailList: UpdateSchemaGhostDetail[];
+  detailList: UpdateSchemaGhostDetail[];
 };
 
 export type PITRContext = {
@@ -78,7 +78,7 @@ export type EmptyContext = {};
 
 export type IssueCreateContext =
   | CreateDatabaseContext
-  | UpdateSchemaContext
+  | MigrationContext
   | UpdateSchemaGhostContext
   | PITRContext
   | EmptyContext;
