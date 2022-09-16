@@ -178,10 +178,10 @@ const setConnectionFromQuery = async () => {
 };
 
 onMounted(async () => {
-  sqlEditorStore.setConnectionContext({ isLoadingTree: true });
+  sqlEditorStore.isLoadingTree = true;
   await prepareAccessibleConnectionByProject();
   await prepareSQLEditorContext();
-  sqlEditorStore.setConnectionContext({ isLoadingTree: false });
+  sqlEditorStore.isLoadingTree = false;
 
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();

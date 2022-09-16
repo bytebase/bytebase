@@ -25,7 +25,6 @@ import { useTabStore } from "./tab";
 import { emptyConnection } from "@/utils";
 
 export const getDefaultConnectionContext = () => ({
-  isLoadingTree: false,
   option: {} as any,
 });
 
@@ -33,6 +32,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
     connectionTree: [],
     connectionContext: getDefaultConnectionContext(),
+    isLoadingTree: false,
     isExecuting: false,
     isShowExecutingHint: false,
     shouldFormatContent: false,
