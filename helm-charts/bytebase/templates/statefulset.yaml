@@ -22,9 +22,9 @@ spec:
       labels:
         app: bytebase
     spec:
-      imagePullPolicy: Always
       containers:
         - name: bytebase
+          imagePullPolicy: Always
           image: "bytebase/bytebase:{{ $version }}"
           args:
             [
