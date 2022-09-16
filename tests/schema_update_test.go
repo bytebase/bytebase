@@ -456,6 +456,9 @@ func TestVCS(t *testing.T) {
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -516,7 +519,9 @@ func TestVCS(t *testing.T) {
 			status, err = ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
