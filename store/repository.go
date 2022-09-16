@@ -576,7 +576,7 @@ func patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.RepositoryPatch
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
 	}
 	if len(where) == 0 {
-		return nil, common.Errorf(common.DbMissingWhereClause, "missing where clause for patching repository")
+		return nil, common.Errorf(common.Invalid, "missing predicate in where clause for patching repository")
 	}
 
 	var repository repositoryRaw
