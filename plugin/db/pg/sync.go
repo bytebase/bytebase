@@ -311,6 +311,10 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table constraints")
 	}
+	columns, err := getTableColumns(txn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get table columns")
+	}
 
 	var tables []*tableSchema
 	query := "" +
@@ -348,14 +352,10 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 		if err := getTable(txn, tbl); err != nil {
 			return nil, errors.Wrapf(err, "failed to call getTable(%q, %q)", tbl.schemaName, tbl.name)
 		}
-		columns, err := getTableColumns(txn, tbl.schemaName, tbl.name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to call getTableColumns(%q, %q)", tbl.schemaName, tbl.name)
-		}
-		tbl.columns = columns
 
 		key := fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 		tbl.constraints = constraints[key]
+		tbl.columns = columns[key]
 	}
 	return tables, nil
 }
@@ -395,9 +395,11 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 }
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema, error) {
+func getTableColumns(txn *sql.Tx) (map[string][]*columnSchema, error) {
 	query := `
 	SELECT
+		cols.table_schema,
+		cols.table_name,
 		cols.column_name,
 		cols.data_type,
 		cols.ordinal_position,
@@ -409,19 +411,19 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.udt_name,
 		pg_catalog.col_description((quote_ident(table_schema) || '.' || quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
 	FROM INFORMATION_SCHEMA.COLUMNS AS cols
-	WHERE table_schema=$1 AND table_name=$2;`
-	rows, err := txn.Query(query, schemaName, tableName)
+	WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema');`
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var columns []*columnSchema
+	columnsMap := make(map[string][]*columnSchema)
 	for rows.Next() {
-		var columnName, dataType, isNullable string
+		var tableSchema, tableName, columnName, dataType, isNullable string
 		var characterMaximumLength, columnDefault, collationName, udtSchema, udtName, comment sql.NullString
 		var ordinalPosition int
-		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
+		if err := rows.Scan(&tableSchema, &tableName, &columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
 		isNullBool, err := convertBoolFromYesNo(isNullable)
@@ -444,12 +446,13 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		case "ARRAY":
 			c.dataType = udtName.String
 		}
-		columns = append(columns, &c)
+		key := fmt.Sprintf("%s.%s", tableSchema, tableName)
+		columnsMap[key] = append(columnsMap[key], &c)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return columns, nil
+	return columnsMap, nil
 }
 
 // getTableConstraints gets all table constraints of a database.
@@ -540,6 +543,7 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 	return rows.Err()
 }
 
+// getExtensions gets all extensions of a database.
 func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 	query := "" +
 		"SELECT e.extname, e.extversion, n.nspname, c.description " +
