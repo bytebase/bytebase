@@ -377,8 +377,8 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		return err
 	}
 
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
-	crows, err := txn.Query(commentQuery)
+	commentQuery := "SELECT obj_description(format('%s.%s', quote_ident($1), quote_ident($2))::regclass);"
+	crows, err := txn.Query(commentQuery, tbl.schemaName, tbl.name)
 	if err != nil {
 		return err
 	}
@@ -488,9 +488,9 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) ([]*viewSchema, error) {
-	query := "" +
-		"SELECT schemaname, viewname, definition FROM pg_catalog.pg_views " +
-		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
+	query := `
+	SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views
+	WHERE schemaname NOT IN ('pg_catalog', 'information_schema');`
 	var views []*viewSchema
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -500,8 +500,8 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 	for rows.Next() {
 		var view viewSchema
-		var def sql.NullString
-		if err := rows.Scan(&view.schemaName, &view.name, &def); err != nil {
+		var def, comment sql.NullString
+		if err := rows.Scan(&view.schemaName, &view.name, &def, &comment); err != nil {
 			return nil, err
 		}
 		// Return error on NULL view definition.
@@ -510,37 +510,15 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
 		view.definition = def.String
+		if comment.Valid {
+			view.comment = comment.String
+		}
 		views = append(views, &view)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	for _, view := range views {
-		if err = getView(txn, view); err != nil {
-			return nil, errors.Wrapf(err, "failed to call getPgView(%q, %q)", view.schemaName, view.name)
-		}
-	}
 	return views, nil
-}
-
-// getView gets the schema of a view.
-func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var comment sql.NullString
-		if err := rows.Scan(&comment); err != nil {
-			return err
-		}
-		view.comment = comment.String
-	}
-	return rows.Err()
 }
 
 // getExtensions gets all extensions of a database.
@@ -623,8 +601,8 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
-	rows, err := txn.Query(commentQuery)
+	commentQuery := "SELECT obj_description(format('%s.%s', quote_ident($1), quote_ident($2))::regclass);"
+	rows, err := txn.Query(commentQuery, idx.schemaName, idx.name)
 	if err != nil {
 		return err
 	}
