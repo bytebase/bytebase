@@ -57,6 +57,12 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
+  - type: statement.disallow-multi-transaction
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:

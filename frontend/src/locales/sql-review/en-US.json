@@ -154,6 +154,10 @@
       "title": "Disallow leading wildcard like",
       "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
     },
+    "statement.disallow-multi-transaction": {
+      "title": "Disallow multi transaction",
+      "description": "Disallow using multiply transaction in one script."
+    },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
       "description": "MySQL and TiDB support checking whether the schema change is backward compatible."

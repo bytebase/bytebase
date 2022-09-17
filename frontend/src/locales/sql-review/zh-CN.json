@@ -154,6 +154,10 @@
       "title": "禁止左模糊",
       "description": "WHERE 语句中禁止使用左模糊匹配，例如禁止 LIKE foo = '%x'。"
     },
+    "statement.disallow-multi-transaction": {
+      "title": "禁止多个事务",
+      "description": "禁止在一个脚本内开启多个事务。"
+    },
     "schema-backward-compatibility": {
       "title": "向后兼容",
       "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容"

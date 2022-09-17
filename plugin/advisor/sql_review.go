@@ -55,6 +55,8 @@ const (
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
 	// SchemaRuleStatementNoCreateTableAs disallow 'CREATE TABLE ... [AS] SELECT.
 	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
+	// SchemaRuleStatementDisallowMultiTransaction disallow multi transaction in one script.
+	SchemaRuleStatementDisallowMultiTransaction SQLReviewRuleType = "statement.disallow-multi-transaction"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
