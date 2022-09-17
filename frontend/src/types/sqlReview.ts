@@ -3,6 +3,7 @@ import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
+import { PlanType } from "./plan";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
@@ -138,6 +139,7 @@ export interface RuleTemplate {
   engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
+  availablePlanList: PlanType[];
 }
 
 // SQLReviewPolicyTemplate is the rule template set
@@ -479,4 +481,11 @@ export const getRuleLocalization = (
     title,
     description,
   };
+};
+
+export const ruleIsAvailableInSubscription = (
+  rule: RuleTemplate,
+  subscriptionPlan: PlanType
+): boolean => {
+  return rule.availablePlanList.indexOf(subscriptionPlan) >= 0;
 };
