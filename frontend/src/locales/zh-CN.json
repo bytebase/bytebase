@@ -1413,7 +1413,7 @@
     "enable": "开启审查策略",
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
-    "not-available-for-free": "免费版订阅不能使用该规则",
+    "not-available-for-free": "{plan}订阅不能使用该规则",
     "create": {
       "breadcrumb": "创建审核策略",
       "basic-info": {

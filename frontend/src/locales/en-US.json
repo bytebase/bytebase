@@ -1413,7 +1413,7 @@
     "enable": "Enable",
     "delete": "Delete SQL review policy",
     "input-then-press-enter": "Input the value then press enter to add",
-    "not-available-for-free": "Rule is not available for free plan",
+    "not-available-for-free": "Rule is not available for {plan}",
     "create": {
       "breadcrumb": "Create SQL review policy",
       "basic-info": {

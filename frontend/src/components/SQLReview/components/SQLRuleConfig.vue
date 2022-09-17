@@ -21,7 +21,15 @@
                 </div>
               </template>
               <span class="whitespace-nowrap">
-                {{ $t("sql-review.not-available-for-free") }}
+                {{
+                  $t("sql-review.not-available-for-free", {
+                    plan: $t(
+                      `subscription.plan.${planTypeToString(
+                        subscriptionStore.currentPlan
+                      )}.title`
+                    ),
+                  })
+                }}
               </span>
             </NTooltip>
             {{ getRuleLocalization(selectedRule.type).title }}
@@ -174,6 +182,8 @@ import {
   getRuleLocalizationKey,
   SchemaRuleEngineType,
 } from "@/types/sqlReview";
+import { useSubscriptionStore } from "@/store";
+import { planTypeToString } from "@/types/plan";
 
 type PayloadValueList = (string | number | string[])[];
 interface LocalState {
@@ -210,6 +220,8 @@ const emit = defineEmits(["activate", "payload-change", "level-change"]);
 const state = reactive<LocalState>({
   payload: initStatePayload(props.selectedRule.componentList),
 });
+
+const subscriptionStore = useSubscriptionStore();
 
 watch(
   () => state.payload,
