@@ -329,7 +329,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 			}
 		}
 
-		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
+		if api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {
 				return false, err
