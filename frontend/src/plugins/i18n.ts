@@ -45,7 +45,7 @@ const mergedLocalMessage = Object.entries(
   const name = key.slice(localPathPrefix.length, -5);
   const sections = name.split("/");
   if (sections.length === 1) {
-    map[name] = _.merge(value.default, map[name]);
+    map[name] = _.merge(value.default, map[name] || {});
   } else {
     const file = sections.slice(-1)[0];
     const sectionsName = sections[0];
