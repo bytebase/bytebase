@@ -123,7 +123,7 @@ func getTypeString(tp *types.FieldType) string {
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := checker.catalog.FindColumn(&catalog.ColumnFind{
+	column := checker.catalog.Origin.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
 		ColumnName: columName,
 	})

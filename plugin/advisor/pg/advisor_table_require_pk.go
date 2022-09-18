@@ -84,7 +84,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 		}
 	// DROP CONSTRAINT
 	case *ast.DropConstraintStmt:
-		_, index := checker.catalog.FindIndex(&catalog.IndexFind{
+		_, index := checker.catalog.Origin.FindIndex(&catalog.IndexFind{
 			SchemaName: normalizeSchemaName(n.Table.Schema),
 			TableName:  n.Table.Name,
 			IndexName:  n.ConstraintName,
@@ -94,7 +94,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 		}
 	// DROP COLUMN
 	case *ast.DropColumnStmt:
-		pk := checker.catalog.FindPrimaryKey(&catalog.PrimaryKeyFind{
+		pk := checker.catalog.Origin.FindPrimaryKey(&catalog.PrimaryKeyFind{
 			SchemaName: normalizeSchemaName(n.Table.Schema),
 			TableName:  n.Table.Name,
 		})

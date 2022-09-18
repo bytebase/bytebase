@@ -92,5 +92,5 @@ func (*tableNotExistsChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (checker *tableNotExistsChecker) tableExists(table string) bool {
-	return checker.catalog.FindTable(&catalog.TableFind{TableName: table}) != nil
+	return checker.catalog.Origin.FindTable(&catalog.TableFind{TableName: table}) != nil
 }
