@@ -51,7 +51,7 @@ specifiers:
   js-yaml: 4.1.0
   lodash-es: 4.17.21
   monaco-editor: 0.34.0
-  monaco-languageclient: ^4.0.0
+  monaco-languageclient: 4.0.0
   naive-ui: 2.33.2
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
@@ -74,13 +74,13 @@ specifiers:
   v-code-diff: 0.3.12
   vite: 3.1.0
   vitest: 0.23.1
-  vscode: npm:@codingame/monaco-vscode-api@~1.67.20
-  vscode-languageserver: ^8.0.2
-  vscode-languageserver-protocol: ^3.17.2
-  vscode-languageserver-textdocument: ^1.0.7
-  vscode-languageserver-types: ^3.17.2
-  vscode-oniguruma: ^1.6.2
-  vscode-textmate: ^7.0.1
+  vscode: npm:@codingame/monaco-vscode-api@1.67.20
+  vscode-languageserver: 8.0.2
+  vscode-languageserver-protocol: 3.17.2
+  vscode-languageserver-textdocument: 1.0.7
+  vscode-languageserver-types: 3.17.2
+  vscode-oniguruma: 1.6.2
+  vscode-textmate: 7.0.1
   vue: 3.2.39
   vue-i18n: 9.2.2
   vue-router: 4.1.5
@@ -166,7 +166,7 @@ devDependencies:
   popper.js: 1.16.1
   postcss: 8.4.16
   prettier: 2.7.1
-  tailwindcss: 3.1.8
+  tailwindcss: 3.1.8_postcss@8.4.16
   typescript: 4.8.3
   unplugin-icons: 0.14.9_b5qhthmr2npzumir7idjn655wu
   unplugin-vue-components: 0.22.4_2rkqk3fjdl56jlkjdcck35zto4
@@ -561,7 +561,7 @@ packages:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.1.8
+      tailwindcss: 3.1.8_postcss@8.4.16
     dev: true
 
   /@tailwindcss/line-clamp/0.4.2_tailwindcss@3.1.8:
@@ -569,7 +569,7 @@ packages:
     peerDependencies:
       tailwindcss: '>=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1'
     dependencies:
-      tailwindcss: 3.1.8
+      tailwindcss: 3.1.8_postcss@8.4.16
     dev: true
 
   /@tailwindcss/typography/0.5.7_tailwindcss@3.1.8:
@@ -581,7 +581,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.1.8
+      tailwindcss: 3.1.8_postcss@8.4.16
     dev: true
 
   /@tanstack/table-core/8.5.13:
@@ -3449,10 +3449,12 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /tailwindcss/3.1.8:
+  /tailwindcss/3.1.8_postcss@8.4.16:
     resolution: {integrity: sha512-YSneUCZSFDYMwk+TGq8qYFdCA3yfBRdBlS7txSq0LUmzyeqRe3a8fBQzbz9M3WS/iFT4BNf/nmw9mEzrnSaC0g==}
     engines: {node: '>=12.13.0'}
     hasBin: true
+    peerDependencies:
+      postcss: ^8.0.9
     dependencies:
       arg: 5.0.2
       chokidar: 3.5.3
