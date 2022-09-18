@@ -227,7 +227,7 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 
 // findIndex returns index found in catalogs, nil if not found.
 func (checker *namingUKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.Index) {
-	return checker.catalog.FindIndex(&catalog.IndexFind{
+	return checker.catalog.Origin.FindIndex(&catalog.IndexFind{
 		SchemaName: normalizeSchemaName(schemaName),
 		TableName:  tableName,
 		IndexName:  indexName,

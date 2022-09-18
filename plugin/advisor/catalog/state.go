@@ -128,6 +128,154 @@ type databaseState struct {
 
 	context *FinderContext
 }
+
+// HasNoTable returns true if the current database has no table.
+func (d *databaseState) HasNoTable() bool {
+	for _, schema := range d.schemaSet {
+		if len(schema.tableSet) != 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// DatabaseName returns the database name.
+func (d *databaseState) DatabaseName() string {
+	return d.name
+}
+
+// IndexFind is for find index.
+type IndexFind struct {
+	SchemaName string
+	TableName  string
+	IndexName  string
+}
+
+func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
+	// There are two cases to find a index:
+	// 1. find an index in specific table. e.g. MySQL and TiDB.
+	// 2. find an index in the schema. e.g. PostgreSQL.
+	// In PostgreSQL, the index name is unique in a schema, not a table.
+	// In MySQL and TiDB, the index name is unique in a table.
+	// So for case one, we need match table name, but for case two, we don't need.
+	needMatchTable := (d.dbType != db.Postgres || find.SchemaName == "" || find.TableName != "")
+	if needMatchTable {
+		schema, exists := d.schemaSet[find.SchemaName]
+		if !exists {
+			return "", nil
+		}
+		table, exists := schema.tableSet[find.TableName]
+		if !exists {
+			return "", nil
+		}
+		index, exists := table.indexSet[find.IndexName]
+		if !exists {
+			return "", nil
+		}
+		return table.name, index.convertToCatalog()
+	}
+	for _, schema := range d.schemaSet {
+		if schema.name != find.SchemaName {
+			continue
+		}
+		for _, table := range schema.tableSet {
+			// no need to further match table name because index is already unique in the schema
+			index, exists := table.indexSet[find.IndexName]
+			if !exists {
+				return "", nil
+			}
+			return table.name, index.convertToCatalog()
+		}
+	}
+	return "", nil
+}
+
+// PrimaryKeyFind is for finding primary key.
+type PrimaryKeyFind struct {
+	SchemaName string
+	TableName  string
+}
+
+// FindPrimaryKey finds the primary key.
+func (d *databaseState) FindPrimaryKey(find *PrimaryKeyFind) *Index {
+	for _, schema := range d.schemaSet {
+		if schema.name != find.SchemaName {
+			continue
+		}
+		for _, table := range schema.tableSet {
+			if table.name != find.TableName {
+				continue
+			}
+			for _, index := range table.indexSet {
+				if index.primary {
+					return index.convertToCatalog()
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// ColumnFind is for finding column.
+type ColumnFind struct {
+	SchemaName string
+	TableName  string
+	ColumnName string
+}
+
+// FindColumn finds the column.
+func (d *databaseState) FindColumn(find *ColumnFind) *Column {
+	schema, exists := d.schemaSet[find.SchemaName]
+	if !exists {
+		return nil
+	}
+	table, exists := schema.tableSet[find.TableName]
+	if !exists {
+		return nil
+	}
+	column, exists := table.columnSet[find.ColumnName]
+	if !exists {
+		return nil
+	}
+	return column.convertToCatalog()
+}
+
+// TableFind is for find table.
+type TableFind struct {
+	SchemaName string
+	TableName  string
+}
+
+// FindTable finds the table.
+func (d *databaseState) FindTable(find *TableFind) *Table {
+	schema, exists := d.schemaSet[find.SchemaName]
+	if !exists {
+		return nil
+	}
+	table, exists := schema.tableSet[find.TableName]
+	if !exists {
+		return nil
+	}
+	return table.convertToCatalog()
+}
+
+func (d *databaseState) copy() *databaseState {
+	newDb := newDatabaseState(d.convertToCatalog(), &FinderContext{CheckIntegrity: d.context.CheckIntegrity})
+	newDb.deleted = d.deleted
+	return newDb
+}
+
+func (d *databaseState) convertToCatalog() *Database {
+	return &Database{
+		Name:         d.name,
+		CharacterSet: d.characterSet,
+		Collation:    d.collation,
+		DbType:       d.dbType,
+		SchemaList:   d.schemaSet.convertToCatalog(),
+	}
+}
+
 type schemaState struct {
 	name         string
 	tableSet     tableStateMap
@@ -137,6 +285,23 @@ type schemaState struct {
 	context *FinderContext
 }
 type schemaStateMap map[string]*schemaState
+
+func (m schemaStateMap) convertToCatalog() []*Schema {
+	var res []*Schema
+	for _, schema := range m {
+		res = append(res, schema.convertToCatalog())
+	}
+	return res
+}
+
+func (schema *schemaState) convertToCatalog() *Schema {
+	return &Schema{
+		Name:          schema.name,
+		TableList:     schema.tableSet.convertToCatalog(),
+		ViewList:      schema.viewSet.convertToCatalog(),
+		ExtensionList: schema.extensionSet.convertToCatalog(),
+	}
+}
 
 type tableState struct {
 	name      string
@@ -161,6 +326,14 @@ type tableState struct {
 	indexSet indexStateMap
 }
 type tableStateMap map[string]*tableState
+
+func (m tableStateMap) convertToCatalog() []*Table {
+	var res []*Table
+	for _, table := range m {
+		res = append(res, table.convertToCatalog())
+	}
+	return res
+}
 
 func (table *tableState) convertToCatalog() *Table {
 	return &Table{
@@ -262,9 +435,41 @@ type viewState struct {
 }
 type viewStateMap map[string]*viewState
 
+func (m viewStateMap) convertToCatalog() []*View {
+	var res []*View
+	for _, view := range m {
+		res = append(res, view.convertToCatalog())
+	}
+	return res
+}
+
+func (view *viewState) convertToCatalog() *View {
+	return &View{
+		Name:       view.name,
+		Definition: view.definition,
+		Comment:    view.comment,
+	}
+}
+
 type extensionState struct {
 	name        string
 	version     string
 	description string
 }
 type extensionStateMap map[string]*extensionState
+
+func (m extensionStateMap) convertToCatalog() []*Extension {
+	var res []*Extension
+	for _, extension := range m {
+		res = append(res, extension.convertToCatalog())
+	}
+	return res
+}
+
+func (extension *extensionState) convertToCatalog() *Extension {
+	return &Extension{
+		Name:        extension.name,
+		Version:     extension.version,
+		Description: extension.description,
+	}
+}
