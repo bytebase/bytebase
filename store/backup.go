@@ -186,7 +186,11 @@ func (s *Store) FindBackupSetting(ctx context.Context, find api.BackupSettingFin
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compose BackupSetting with backupSettingRaw %+v", raw)
 		}
-		backupSettingList = append(backupSettingList, backupSetting)
+		// We may have existing backup settings for database with name "*" (api.AllDatabaseName).
+		// This will cause GetDatabase() in composeBackupSettings to return nil, and we need to filter out these stale data.
+		if backupSetting != nil {
+			backupSettingList = append(backupSettingList, backupSetting)
+		}
 	}
 	return backupSettingList, nil
 }
@@ -232,7 +236,11 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compose Backup with backupRaw[%+v]", raw)
 		}
-		backupSettingList = append(backupSettingList, backupSetting)
+		// We may have existing backup settings for database with name "*" (api.AllDatabaseName).
+		// This will cause GetDatabase() in composeBackupSettings to return nil, and we need to filter out these stale data.
+		if backupSetting != nil {
+			backupSettingList = append(backupSettingList, backupSetting)
+		}
 	}
 	return backupSettingList, nil
 }
@@ -280,7 +288,7 @@ func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw)
 		return nil, err
 	}
 	if database == nil {
-		return nil, errors.Errorf("failed to get database with databaseID %v", backupSetting.DatabaseID)
+		return nil, nil
 	}
 	backupSetting.Database = database
 
