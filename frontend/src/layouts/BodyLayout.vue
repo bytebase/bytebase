@@ -85,13 +85,15 @@
           <router-link
             to="/setting/subscription"
             exact-active-class
-            class="text-sm flex"
+            class="text-sm flex whitespace-nowrap mr-1"
             :class="isFreePlan ? 'text-accent' : ''"
           >
-            <heroicons-outline:sparkles class="w-5 h-5" />
+            <heroicons-outline:sparkles class="w-4 h-auto" />
             {{ $t(currentPlan) }}
           </router-link>
-          <div class="text-sm ml-auto text-control-light tooltip-wrapper">
+          <div
+            class="text-sm ml-auto text-control-light tooltip-wrapper whitespace-nowrap truncate"
+          >
             {{ version }}
             <span v-if="gitCommit" class="tooltip"
               >Git hash {{ gitCommit }}</span
