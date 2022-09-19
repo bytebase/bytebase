@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"testing"
 
@@ -27,8 +26,7 @@ import (
 )
 
 var (
-	sqlReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSQLReviewPolicy.AccessErrorMessage())
-	noSQLReviewPolicy  = []api.TaskCheckResult{
+	noSQLReviewPolicy = []api.TaskCheckResult{
 		{
 			Status:    api.TaskCheckStatusSuccess,
 			Namespace: api.AdvisorNamespace,
@@ -305,7 +303,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 	})
-	a.EqualError(err, sqlReviewAccessErr)
+	a.NoError(err)
 
 	err = ctl.setLicense()
 	a.NoError(err)
@@ -694,7 +692,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		Type:          api.PolicyTypeSQLReview,
 		Payload:       &policyPayload,
 	})
-	a.EqualError(err, sqlReviewAccessErr)
+	a.NoError(err)
 
 	err = ctl.setLicense()
 	a.NoError(err)

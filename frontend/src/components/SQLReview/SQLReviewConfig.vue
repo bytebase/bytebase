@@ -39,6 +39,12 @@
             <SQLRuleConfig
               :selected-rule="rule"
               :active="rule.type === state.activeRuleType"
+              :disabled="
+                !ruleIsAvailableInSubscription(
+                  rule.type,
+                  subscriptionStore.currentPlan
+                )
+              "
               @activate="onRuleActivate"
               @level-change="(level) => onLevelChange(rule, level)"
               @payload-change="(val) => onPayloadChange(rule, val)"
@@ -58,7 +64,9 @@ import {
   RuleTemplate,
   RuleConfigComponent,
   SQLReviewPolicyTemplate,
+  ruleIsAvailableInSubscription,
 } from "@/types/sqlReview";
+import { useSubscriptionStore } from "@/store";
 
 interface LocalState {
   activeRuleType: RuleType | null;
@@ -81,6 +89,8 @@ defineProps({
 });
 
 const emit = defineEmits(["apply-template", "change"]);
+
+const subscriptionStore = useSubscriptionStore();
 
 const state = reactive<LocalState>({
   activeRuleType: null,

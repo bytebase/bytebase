@@ -61,11 +61,6 @@
       @cancel="state.showAlertModal = false"
     >
     </BBAlert>
-    <FeatureModal
-      v-if="state.showFeatureModal"
-      feature="bb.feature.sql-review"
-      @cancel="state.showFeatureModal = false"
-    />
   </div>
 </template>
 
@@ -75,18 +70,20 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "@/bbkit/types";
 import {
+  RuleLevel,
   Environment,
   RuleTemplate,
   TEMPLATE_LIST,
   convertToCategoryList,
   convertRuleTemplateToPolicyRule,
+  ruleIsAvailableInSubscription,
 } from "@/types";
 import {
-  featureToRef,
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
   useSQLReviewStore,
+  useSubscriptionStore,
 } from "@/store";
 import { isOwner, isDBA } from "@/utils";
 
@@ -97,7 +94,6 @@ interface LocalState {
   selectedRuleList: RuleTemplate[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
-  showFeatureModal: boolean;
   templateIndex: number;
   pendingApplyTemplateIndex: number;
 }
@@ -123,12 +119,11 @@ const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
 const currentUser = useCurrentUser();
+const subscriptionStore = useSubscriptionStore();
 
 const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
-
-const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
@@ -149,7 +144,6 @@ const state = reactive<LocalState>({
   selectedRuleList: [...props.selectedRuleList],
   ruleUpdated: false,
   showAlertModal: false,
-  showFeatureModal: false,
   templateIndex: props.policyId ? -1 : DEFAULT_TEMPLATE_INDEX,
   pendingApplyTemplateIndex: -1,
 });
@@ -163,7 +157,17 @@ const onTemplateApply = (index: number) => {
 
   const categoryList = convertToCategoryList(TEMPLATE_LIST[index].ruleList);
   state.selectedRuleList = categoryList.reduce((res, category) => {
-    res.push(...category.ruleList);
+    res.push(
+      ...category.ruleList.map((rule) => ({
+        ...rule,
+        level: ruleIsAvailableInSubscription(
+          rule.type,
+          subscriptionStore.currentPlan
+        )
+          ? rule.level
+          : RuleLevel.DISABLED,
+      }))
+    );
     return res;
   }, [] as RuleTemplate[]);
 };
@@ -219,10 +223,6 @@ const tryChangeStep = (
 };
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
-  if (!hasSQLReviewPolicyFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
   if (!hasPermission.value) {
     pushNotification({
       module: "bytebase",
@@ -283,6 +283,12 @@ const tryApplyTemplate = (index: number) => {
 };
 
 const onRuleChange = (rule: RuleTemplate) => {
+  if (
+    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
+  ) {
+    return;
+  }
+
   const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
   state.selectedRuleList = [
     ...state.selectedRuleList.slice(0, index),

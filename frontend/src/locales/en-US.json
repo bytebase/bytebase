@@ -1349,7 +1349,7 @@
       },
       "bb-feature-sql-review": {
         "title": "SQL review policy",
-        "desc": "Customize the SQL review policy for different environments. @:{'subscription.trial'}."
+        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan. @:{'subscription.trial'}."
       },
       "bb-feature-rbac": {
         "title": "Role management",
@@ -1413,6 +1413,7 @@
     "enable": "Enable",
     "delete": "Delete SQL review policy",
     "input-then-press-enter": "Input the value then press enter to add",
+    "not-available-for-free": "Rule is not available for {plan}",
     "create": {
       "breadcrumb": "Create SQL review policy",
       "basic-info": {
