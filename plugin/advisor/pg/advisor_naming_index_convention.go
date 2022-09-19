@@ -132,7 +132,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 			})
 		}
 	case *ast.RenameIndexStmt:
-		tableName, index := checker.catalog.FindIndex(&catalog.IndexFind{
+		tableName, index := checker.catalog.Origin.FindIndex(&catalog.IndexFind{
 			SchemaName: normalizeSchemaName(node.Table.Schema),
 			TableName:  "",
 			IndexName:  node.IndexName,

@@ -30,9 +30,6 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 	if taskCheckRun.Type != api.TaskCheckDatabaseStatementAdvise {
 		return nil, common.Errorf(common.Invalid, "invalid check statement advisor composite type: %v", taskCheckRun.Type)
 	}
-	if !server.feature(api.FeatureSQLReviewPolicy) {
-		return nil, common.Errorf(common.NotAuthorized, api.FeatureSQLReviewPolicy.AccessErrorMessage())
-	}
 
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {

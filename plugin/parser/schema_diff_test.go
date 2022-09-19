@@ -12,13 +12,15 @@ import (
 
 func TestComputeDiff(t *testing.T) {
 	tests := []struct {
+		name       string
 		engineType parser.EngineType
 		oldSchema  string
 		newSchema  string
 		want       string
-		err        error
+		errPart    string
 	}{
 		{
+			name:       "diffCreateTableInPostgres",
 			engineType: parser.Postgres,
 			oldSchema:  `CREATE TABLE projects ();`,
 			newSchema: `CREATE TABLE users (
@@ -37,35 +39,23 @@ CREATE TABLE repositories (
 	id serial PRIMARY KEY
 );
 `,
-			err: nil,
-		},
-		{
-			engineType: parser.Postgres,
-			oldSchema:  `CREATE TABLE projects ();`,
-			newSchema: `CREATE TABLE projects (
-	id serial PRIMARY KEY
-);`,
-			// FIXME(@joe): this is an unwanted result.
-			want: ``,
-			err:  nil,
+			errPart: "",
 		},
 	}
 
 	for _, test := range tests {
 		oldSchemaNodes, err := parser.Parse(test.engineType, parser.ParseContext{}, test.oldSchema)
+		// This is an unrelated error and should always be nil.
 		require.NoError(t, err)
 		newSchemaNodes, err := parser.Parse(test.engineType, parser.ParseContext{}, test.newSchema)
 		require.NoError(t, err)
 
 		diff, err := parser.SchemaDiff(oldSchemaNodes, newSchemaNodes)
-		if err != nil {
-			if test.err != nil {
-				require.Equal(t, test.err.Error(), err.Error())
-			} else {
-				t.Error(err)
-			}
+		if test.errPart == "" {
+			require.NoError(t, err)
 		} else {
-			require.Equal(t, test.want, diff)
+			require.Contains(t, err.Error(), test.errPart, test.name)
 		}
+		require.Equal(t, test.want, diff)
 	}
 }

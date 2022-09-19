@@ -279,6 +279,9 @@ func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw)
 	if err != nil {
 		return nil, err
 	}
+	if database == nil {
+		return nil, errors.Errorf("failed to get database with databaseID %v", backupSetting.DatabaseID)
+	}
 	backupSetting.Database = database
 
 	return backupSetting, nil
