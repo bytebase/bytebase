@@ -27,6 +27,7 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 			}
 
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
+			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var oldColumnMap = make(map[string]*ast.ColumnDef)
 			for _, oldColumnDef := range oldStmt.Cols {
 				oldColumnName := oldColumnDef.Name.Name.String()
@@ -35,10 +36,20 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 
 			for _, columnDef := range newStmt.Cols {
 				newColumnName := columnDef.Name.Name.String()
-				if _, ok := oldColumnMap[newColumnName]; !ok {
+				oldColumnDef, ok := oldColumnMap[newColumnName]
+				if !ok {
 					alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableAddColumns,
 						NewColumns: []*ast.ColumnDef{columnDef},
+					})
+					continue
+				}
+				// We need to compare the two column definitions.
+				if !isTwoColumnsSame(oldColumnDef, columnDef) {
+					alterTableModifyColumnSpecs = append(alterTableModifyColumnSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableModifyColumn,
+						NewColumns: []*ast.ColumnDef{columnDef},
+						Position:   &ast.ColumnPosition{Tp: ast.ColumnPositionNone},
 					})
 				}
 			}
@@ -49,6 +60,14 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 						Name: model.NewCIStr(tableName),
 					},
 					Specs: alterTableAddColumnSpecs,
+				})
+			}
+			if len(alterTableModifyColumnSpecs) > 0 {
+				diff = append(diff, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableModifyColumnSpecs,
 				})
 			}
 		default:
@@ -82,4 +101,9 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 		}
 	}
 	return oldTableMap
+}
+
+// isTwoColumnsSame returns true if the two columns are the same.
+func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
+	return old.Tp.String() == new.Tp.String()
 }

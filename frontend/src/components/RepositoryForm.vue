@@ -141,7 +141,7 @@
           sampleFilePath(
             repositoryConfig.baseDirectory,
             repositoryConfig.filePathTemplate,
-            "migrate"
+            "ddl"
           )
         }}
       </div>
@@ -151,7 +151,7 @@
           sampleFilePath(
             repositoryConfig.baseDirectory,
             repositoryConfig.filePathTemplate,
-            "data"
+            "dml"
           )
         }}
       </div>

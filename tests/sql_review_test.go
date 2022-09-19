@@ -586,7 +586,17 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DROP TABLE user",
+				statement: `
+					CREATE TABLE user(
+						id int NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					DROP TABLE user;
+					`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
@@ -600,7 +610,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.CompatibilityDropTable.Int(),
 						Title:     "schema.backward-compatibility",
-						Content:   "\"DROP TABLE user\" may cause incompatibility with the existing data and code",
+						Content:   "\"DROP TABLE user;\" may cause incompatibility with the existing data and code",
 					},
 				},
 			},
@@ -734,9 +744,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 }
 
 func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string, wait bool) []api.TaskCheckResult {
-	createContext, err := json.Marshal(&api.UpdateSchemaContext{
+	createContext, err := json.Marshal(&api.MigrationContext{
 		MigrationType: db.Migrate,
-		DetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseID: databaseID,
 				Statement:  statement,

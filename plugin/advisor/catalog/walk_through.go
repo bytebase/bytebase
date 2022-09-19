@@ -38,6 +38,8 @@ const (
 
 	// ErrorTypeAccessOtherDatabase is the error that try to access other database.
 	ErrorTypeAccessOtherDatabase = 201
+	// ErrorTypeDatabaseIsDeleted is the error that try to access the deleted database.
+	ErrorTypeDatabaseIsDeleted = 202
 
 	// 301 ~ 399 table error type.
 
@@ -77,6 +79,7 @@ const (
 type WalkThroughError struct {
 	Type    WalkThroughErrorType
 	Content string
+	Line    int
 }
 
 // NewParseError returns a new ErrorTypeParseError.
@@ -127,6 +130,14 @@ func NewTableNotExistsError(tableName string) *WalkThroughError {
 	}
 }
 
+// NewTableExistsError returns a new ErrorTypeTableExists.
+func NewTableExistsError(tableName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeTableExists,
+		Content: fmt.Sprintf("Table `%s` already exists", tableName),
+	}
+}
+
 // Error implements the error interface.
 func (e *WalkThroughError) Error() string {
 	return e.Content
@@ -134,10 +145,10 @@ func (e *WalkThroughError) Error() string {
 
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmts.
 func (d *databaseState) WalkThrough(stmts string) error {
-	if d.dbType != db.MySQL {
+	if d.dbType != db.MySQL && d.dbType != db.TiDB {
 		return &WalkThroughError{
 			Type:    ErrorTypeUnsupported,
-			Content: fmt.Sprintf("Engine type %s is not supported", d.dbType),
+			Content: fmt.Sprintf("Walk-through doesn't support engine type: %s", d.dbType),
 		}
 	}
 
@@ -162,7 +173,21 @@ func (d *databaseState) WalkThrough(stmts string) error {
 	return nil
 }
 
-func (d *databaseState) changeState(in tidbast.StmtNode) error {
+func (d *databaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		if err.Line == 0 {
+			err.Line = in.OriginTextPosition()
+		}
+	}()
+	if d.deleted {
+		return &WalkThroughError{
+			Type:    ErrorTypeDatabaseIsDeleted,
+			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
+		}
+	}
 	switch node := in.(type) {
 	case *tidbast.CreateTableStmt:
 		return d.createTable(node)
@@ -174,12 +199,99 @@ func (d *databaseState) changeState(in tidbast.StmtNode) error {
 		return d.createIndex(node)
 	case *tidbast.DropIndexStmt:
 		return d.dropIndex(node)
+	case *tidbast.AlterDatabaseStmt:
+		return d.alterDatabase(node)
+	case *tidbast.DropDatabaseStmt:
+		return d.dropDatabase(node)
+	case *tidbast.CreateDatabaseStmt:
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	case *tidbast.RenameTableStmt:
+		return d.renameTable(node)
 	default:
 		return nil
 	}
 }
 
-func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, error) {
+func (d *databaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughError {
+	for _, tableToTable := range node.TableToTables {
+		schema, exists := d.schemaSet[""]
+		if !exists {
+			schema = d.createSchema("")
+		}
+		if d.theCurrentDatabase(tableToTable) {
+			table, exists := schema.tableSet[tableToTable.OldTable.Name.O]
+			if !exists {
+				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+			}
+			if _, exists := schema.tableSet[tableToTable.NewTable.Name.O]; exists {
+				return NewTableExistsError(tableToTable.NewTable.Name.O)
+			}
+			delete(schema.tableSet, table.name)
+			table.name = tableToTable.NewTable.Name.O
+			schema.tableSet[table.name] = table
+		} else if d.moveToOtherDatabase(tableToTable) {
+			_, exists := schema.tableSet[tableToTable.OldTable.Name.O]
+			if !exists {
+				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+			}
+			delete(schema.tableSet, tableToTable.OldTable.Name.O)
+		} else {
+			return NewAccessOtherDatabaseError(d.name, d.targetDatabase(tableToTable))
+		}
+	}
+	return nil
+}
+
+func (d *databaseState) targetDatabase(node *tidbast.TableToTable) string {
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return node.OldTable.Schema.O
+	}
+	return node.NewTable.Schema.O
+}
+
+func (d *databaseState) moveToOtherDatabase(node *tidbast.TableToTable) bool {
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return false
+	}
+	return node.OldTable.Schema.O != node.NewTable.Schema.O
+}
+
+func (d *databaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
+	if node.NewTable.Schema.O != "" && node.NewTable.Schema.O != d.name {
+		return false
+	}
+	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+		return false
+	}
+	return true
+}
+
+func (d *databaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroughError {
+	if node.Name != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	}
+
+	d.deleted = true
+	return nil
+}
+
+func (d *databaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThroughError {
+	if !node.AlterDefaultDatabase && node.Name != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name)
+	}
+
+	for _, option := range node.Options {
+		switch option.Tp {
+		case tidbast.DatabaseOptionCharset:
+			d.characterSet = option.Value
+		case tidbast.DatabaseOptionCollate:
+			d.collation = option.Value
+		}
+	}
+	return nil
+}
+
+func (d *databaseState) findTableState(tableName *tidbast.TableName) (*tableState, *WalkThroughError) {
 	if tableName.Schema.O != "" && tableName.Schema.O != d.name {
 		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
@@ -201,8 +313,8 @@ func (d *databaseState) findTable(tableName *tidbast.TableName) (*tableState, er
 	return table, nil
 }
 
-func (d *databaseState) dropIndex(node *tidbast.DropIndexStmt) error {
-	table, err := d.findTable(node.Table)
+func (d *databaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError {
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -213,8 +325,8 @@ func (d *databaseState) dropIndex(node *tidbast.DropIndexStmt) error {
 	return table.dropIndex(node.IndexName)
 }
 
-func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) error {
-	table, err := d.findTable(node.Table)
+func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -245,8 +357,8 @@ func (d *databaseState) createIndex(node *tidbast.CreateIndexStmt) error {
 	return table.createIndex(node.IndexName, keyList, unique, tp, node.IndexOption)
 }
 
-func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
-	table, err := d.findTable(node.Table)
+func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughError {
+	table, err := d.findTableState(node.Table)
 	if err != nil {
 		return err
 	}
@@ -336,7 +448,7 @@ func (d *databaseState) alterTable(node *tidbast.AlterTableStmt) error {
 	return nil
 }
 
-func (t *tableState) changeIndexVisibility(indexName string, visibility tidbast.IndexVisibility) error {
+func (t *tableState) changeIndexVisibility(indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
 	index, exists := t.indexSet[indexName]
 	if !exists {
 		return NewIndexNotExistsError(t.name, indexName)
@@ -350,7 +462,7 @@ func (t *tableState) changeIndexVisibility(indexName string, visibility tidbast.
 	return nil
 }
 
-func (t *tableState) renameIndex(oldName string, newName string) error {
+func (t *tableState) renameIndex(oldName string, newName string) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
 	// And the other indexes can not use the name which case-insensitive equals 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
@@ -379,7 +491,7 @@ func (t *tableState) renameIndex(oldName string, newName string) error {
 	return nil
 }
 
-func (t *tableState) changeColumnDefault(column *tidbast.ColumnDef) error {
+func (t *tableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThroughError {
 	columnName := column.Name.Name.O
 	colState, exists := t.columnSet[columnName]
 	if !exists {
@@ -400,7 +512,7 @@ func (t *tableState) changeColumnDefault(column *tidbast.ColumnDef) error {
 	return nil
 }
 
-func (s *schemaState) renameTable(oldName string, newName string) error {
+func (s *schemaState) renameTable(oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
@@ -426,7 +538,7 @@ func (s *schemaState) renameTable(oldName string, newName string) error {
 	return nil
 }
 
-func (t *tableState) renameColumn(oldName string, newName string) error {
+func (t *tableState) renameColumn(oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
@@ -473,7 +585,7 @@ func (t *tableState) renameColumnInIndexKey(oldName string, newName string) {
 // 1. drop column from tableState.columnSet, but do not drop column from indexSet.
 // 2. rename column from indexSet.
 // 3. create a new column in columnSet.
-func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
+func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	column, exists := t.columnSet[oldName]
 	if !exists {
 		return NewColumnNotExistsError(t.name, oldName)
@@ -514,7 +626,7 @@ func (t *tableState) changeColumn(oldName string, newColumn *tidbast.ColumnDef, 
 	return t.createColumn(newColumn, position)
 }
 
-func (t *tableState) dropIndex(indexName string) error {
+func (t *tableState) dropIndex(indexName string) *WalkThroughError {
 	if _, exists := t.indexSet[indexName]; !exists {
 		if indexName == PrimaryKeyName {
 			return &WalkThroughError{
@@ -529,7 +641,7 @@ func (t *tableState) dropIndex(indexName string) error {
 	return nil
 }
 
-func (t *tableState) dropColumn(columnName string) error {
+func (t *tableState) dropColumn(columnName string) *WalkThroughError {
 	column, exists := t.columnSet[columnName]
 	if !exists {
 		return NewColumnNotExistsError(t.name, columnName)
@@ -576,7 +688,7 @@ func (idx *indexState) dropColumn(columnName string) {
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
-func (t *tableState) reorderColumn(position *tidbast.ColumnPosition) (int, error) {
+func (t *tableState) reorderColumn(position *tidbast.ColumnPosition) (int, *WalkThroughError) {
 	switch position.Tp {
 	case tidbast.ColumnPositionNone:
 		return len(t.columnSet) + 1, nil
@@ -604,7 +716,7 @@ func (t *tableState) reorderColumn(position *tidbast.ColumnPosition) (int, error
 	}
 }
 
-func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
+func (d *databaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError {
 	// TODO(rebelice): deal with DROP VIEW statement.
 	if !node.IsView {
 		for _, name := range node.Tables {
@@ -636,7 +748,24 @@ func (d *databaseState) dropTable(node *tidbast.DropTableStmt) error {
 	return nil
 }
 
-func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
+func (d *databaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
+	targetTable, err := d.findTableState(node.ReferTable)
+	if err != nil {
+		return err
+	}
+	if targetTable == nil {
+		// For CREATE TABLE ... LIKE ... statements, we can not walk-through if target table dese not exist in catalog.
+		return NewTableNotExistsError(node.ReferTable.Name.O)
+	}
+
+	schema := d.schemaSet[""]
+	table := targetTable.copy()
+	table.name = node.Table.Name.O
+	schema.tableSet[table.name] = table
+	return nil
+}
+
+func (d *databaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughError {
 	if node.Table.Schema.O != "" && d.name != node.Table.Schema.O {
 		return &WalkThroughError{
 			Type:    ErrorTypeAccessOtherDatabase,
@@ -659,22 +788,27 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 		}
 	}
 
+	if node.ReferTable != nil {
+		return d.copyTable(node)
+	}
+
 	table := &tableState{
 		name:      node.Table.Name.O,
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
-		context:   &FinderContext{CheckIntegrity: true},
 	}
 	schema.tableSet[table.name] = table
 
 	for _, column := range node.Cols {
 		if err := table.createColumn(column, nil); err != nil {
+			err.Line = column.OriginTextPosition()
 			return err
 		}
 	}
 
 	for _, constraint := range node.Constraints {
 		if err := table.createConstraint(constraint); err != nil {
+			err.Line = constraint.OriginTextPosition()
 			return err
 		}
 	}
@@ -682,7 +816,7 @@ func (d *databaseState) createTable(node *tidbast.CreateTableStmt) error {
 	return nil
 }
 
-func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
+func (t *tableState) createConstraint(constraint *tidbast.Constraint) *WalkThroughError {
 	switch constraint.Tp {
 	case tidbast.ConstraintPrimaryKey:
 		keyList, err := t.validateAndGetKeyStringList(constraint.Keys, true /* primary */, false /* isSpatial */)
@@ -725,7 +859,7 @@ func (t *tableState) createConstraint(constraint *tidbast.Constraint) error {
 	return nil
 }
 
-func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, error) {
+func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpecification, primary bool, isSpatial bool) ([]string, *WalkThroughError) {
 	var res []string
 	for _, key := range keyList {
 		if key.Expr != nil {
@@ -756,7 +890,7 @@ func (t *tableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 	return res, nil
 }
 
-func (t *tableState) createColumn(column *tidbast.ColumnDef, position *tidbast.ColumnPosition) error {
+func (t *tableState) createColumn(column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.O]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
@@ -766,7 +900,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 
 	pos := len(t.columnSet) + 1
 	if position != nil {
-		var err error
+		var err *WalkThroughError
 		pos, err = t.reorderColumn(position)
 		if err != nil {
 			return err
@@ -835,7 +969,7 @@ func (t *tableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 	return nil
 }
 
-func (t *tableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) error {
+func (t *tableState) createIndex(name string, keyList []string, unique bool, tp string, option *tidbast.IndexOption) *WalkThroughError {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
 			Type:    ErrorTypeIndexEmptyKeys,
@@ -877,7 +1011,7 @@ func (t *tableState) createIndex(name string, keyList []string, unique bool, tp 
 	return nil
 }
 
-func (t *tableState) createPrimaryKey(keys []string, tp string) error {
+func (t *tableState) createPrimaryKey(keys []string, tp string) *WalkThroughError {
 	if _, exists := t.indexSet[PrimaryKeyName]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypePrimaryKeyExists,
@@ -910,7 +1044,7 @@ func (d *databaseState) createSchema(name string) *schemaState {
 	return schema
 }
 
-func (d *databaseState) parse(stmts string) ([]tidbast.StmtNode, error) {
+func (d *databaseState) parse(stmts string) ([]tidbast.StmtNode, *WalkThroughError) {
 	p := tidbparser.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
@@ -940,7 +1074,7 @@ func (d *databaseState) parse(stmts string) ([]tidbast.StmtNode, error) {
 	return nodeList, nil
 }
 
-func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, error) {
+func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThroughError) {
 	var buffer strings.Builder
 	ctx := format.NewRestoreCtx(flag, &buffer)
 	if err := node.Restore(ctx); err != nil {

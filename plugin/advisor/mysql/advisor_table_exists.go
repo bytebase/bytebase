@@ -80,13 +80,13 @@ func (checker *tableExistsChecker) Enter(in ast.Node) (ast.Node, bool) {
 	case *ast.AlterTableStmt:
 		tableList = append(tableList, node.Table.Name.O)
 	case *ast.CreateTableStmt:
-		if node.ReferTable != nil && sameDatabase(node.ReferTable.Schema.O, checker.catalog.DatabaseName()) {
+		if node.ReferTable != nil && sameDatabase(node.ReferTable.Schema.O, checker.catalog.Origin.DatabaseName()) {
 			tableList = append(tableList, node.ReferTable.Name.O)
 		}
 	}
 
 	for _, table := range tableList {
-		if checker.catalog.FindTable(&catalog.TableFind{TableName: table}) == nil {
+		if checker.catalog.Origin.FindTable(&catalog.TableFind{TableName: table}) == nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.TableNotExists,

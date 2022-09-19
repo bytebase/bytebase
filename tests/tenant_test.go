@@ -151,9 +151,9 @@ func TestTenant(t *testing.T) {
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	// Create an issue that updates database schema.
-	createContext, err := json.Marshal(&api.UpdateSchemaContext{
+	createContext, err := json.Marshal(&api.MigrationContext{
 		MigrationType: db.Migrate,
-		DetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseName: databaseName,
 				Statement:    migrationStatement,
@@ -616,9 +616,9 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.Equal(len(prodDatabases), prodTenantNumber)
 
 	// Create an issue that updates database schema.
-	createContext, err := json.Marshal(&api.UpdateSchemaContext{
+	createContext, err := json.Marshal(&api.MigrationContext{
 		MigrationType: db.Migrate,
-		DetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseName: baseDatabaseName,
 				Statement:    migrationStatement,

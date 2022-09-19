@@ -25,6 +25,7 @@ spec:
       containers:
         - name: bytebase
           image: "bytebase/bytebase:{{ $version }}"
+          imagePullPolicy: Always
           args:
             [
               "--data",

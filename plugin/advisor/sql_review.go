@@ -375,6 +375,14 @@ type SQLReviewCheckContext struct {
 func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
 
+	finder := checkContext.Catalog.GetFinder()
+	switch checkContext.DbType {
+	case db.TiDB, db.MySQL:
+		if err := finder.WalkThrough(statements); err != nil {
+			return convertWalkThroughErrorToAdvice(err)
+		}
+	}
+
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
@@ -393,7 +401,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 				Charset:   checkContext.Charset,
 				Collation: checkContext.Collation,
 				Rule:      rule,
-				Catalog:   checkContext.Catalog.GetFinder(),
+				Catalog:   finder,
 			},
 			statements,
 		)
@@ -417,6 +425,154 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 		})
 	}
 	return result, nil
+}
+
+func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
+	walkThroughError, ok := err.(*catalog.WalkThroughError)
+	if !ok {
+		return nil, err
+	}
+
+	var res []Advice
+	switch walkThroughError.Type {
+	case catalog.ErrorTypeUnsupported:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    Unsupported,
+			Title:   walkThroughError.Content,
+			Content: "",
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeParseError:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    StatementSyntaxError,
+			Title:   SyntaxErrorTitle,
+			Content: walkThroughError.Content,
+		})
+	case catalog.ErrorTypeRestoreError:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    Internal,
+			Title:   "Internal error for walk-through",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeAccessOtherDatabase:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    NotCurrentDatabase,
+			Title:   "Access other database",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeDatabaseIsDeleted:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    DatabaseIsDeleted,
+			Title:   "Access deleted database",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeTableExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    TableExists,
+			Title:   "Table already exists",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeTableNotExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    TableNotExists,
+			Title:   "Table does not exist",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeColumnExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    ColumnExists,
+			Title:   "Column already exists",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeColumnNotExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    ColumnNotExists,
+			Title:   "Column does not exist",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeDropAllColumns:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    DropAllColumns,
+			Title:   "Drop all columns",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypePrimaryKeyExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    PrimaryKeyExists,
+			Title:   "Primary key exists",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeIndexExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    IndexExists,
+			Title:   "Index exists",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeIndexEmptyKeys:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    IndexEmptyKeys,
+			Title:   "Index empty keys",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypePrimaryKeyNotExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    PrimaryKeyNotExists,
+			Title:   "Primary key does not exist",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeIndexNotExists:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    IndexNotExists,
+			Title:   "Index does not exist",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeIncorrectIndexName:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    IncorrectIndexName,
+			Title:   "Incorrect index name",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	case catalog.ErrorTypeSpatialIndexKeyNullable:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    SpatialIndexKeyNullable,
+			Title:   "Spatial index key must be NOT NULL",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	}
+
+	return res, nil
 }
 
 func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, error) {

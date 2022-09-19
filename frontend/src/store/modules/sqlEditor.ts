@@ -10,8 +10,6 @@ import {
   ProjectId,
   QueryHistory,
   UNKNOWN_ID,
-  Sheet,
-  unknown,
   InstanceId,
   Connection,
 } from "@/types";
@@ -25,7 +23,6 @@ import { useTabStore } from "./tab";
 import { emptyConnection } from "@/utils";
 
 export const getDefaultConnectionContext = () => ({
-  isLoadingTree: false,
   option: {} as any,
 });
 
@@ -33,14 +30,13 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
     connectionTree: [],
     connectionContext: getDefaultConnectionContext(),
-    isExecuting: false,
+    isLoadingTree: false,
     isShowExecutingHint: false,
     shouldFormatContent: false,
     // Related data and status
     queryHistoryList: [],
     isFetchingQueryHistory: false,
     isFetchingSheet: false,
-    sharedSheet: unknown("SHEET") as Sheet,
   }),
 
   getters: {
@@ -91,9 +87,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;
     },
-    setIsExecuting(payload: boolean) {
-      this.isExecuting = payload;
-    },
     setQueryHistoryList(payload: QueryHistory[]) {
       this.queryHistoryList = payload;
     },
@@ -114,13 +107,10 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
 
       return queryResult;
     },
-    async fetchConnectionByInstanceIdAndDatabaseId({
-      instanceId,
-      databaseId,
-    }: {
-      instanceId: InstanceId;
-      databaseId: DatabaseId;
-    }): Promise<Connection> {
+    async fetchConnectionByInstanceIdAndDatabaseId(
+      instanceId: InstanceId,
+      databaseId: DatabaseId
+    ): Promise<Connection> {
       const [database] = await Promise.all([
         useDatabaseStore().getOrFetchDatabaseById(databaseId),
         useInstanceStore().getOrFetchInstanceById(instanceId),
@@ -132,6 +122,25 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         projectId: database.project.id,
         instanceId,
         databaseId,
+      };
+    },
+    async fetchConnectionByInstanceId(
+      instanceId: InstanceId
+    ): Promise<Connection> {
+      const [databaseList] = await Promise.all([
+        useDatabaseStore().getDatabaseListByInstanceId(instanceId),
+        useInstanceStore().getOrFetchInstanceById(instanceId),
+      ]);
+      const tableStore = useTableStore();
+      await Promise.all(
+        databaseList.map((db) =>
+          tableStore.getOrFetchTableListByDatabaseId(db.id)
+        )
+      );
+
+      return {
+        ...emptyConnection(),
+        instanceId,
       };
     },
     async fetchQueryHistoryList() {

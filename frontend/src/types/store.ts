@@ -197,10 +197,9 @@ export interface SQLEditorState {
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
-  isExecuting: boolean;
+  isLoadingTree: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-  sharedSheet: Sheet;
 }
 
 export interface TabState {
