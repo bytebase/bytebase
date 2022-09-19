@@ -64,6 +64,7 @@
               :key="index"
               role="option"
               class="group text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 pl-3 pr-9"
+              :class="itemAdditionClass"
               @click="
                 if (item !== state.selectedItem) {
                   $emit('select-item', item, () => {
@@ -145,6 +146,10 @@ export default defineComponent({
     fitWidth: {
       type: String as PropType<FitWidthMode>,
       default: "fit",
+    },
+    itemAdditionClass: {
+      type: String,
+      default: "",
     },
   },
   emits: ["select-item"],
