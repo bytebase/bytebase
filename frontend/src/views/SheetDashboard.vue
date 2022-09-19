@@ -7,7 +7,7 @@
         v-for="nav in navigationList"
         :key="nav.path"
         :to="nav.path"
-        class="text-base p-2 px-3 rounded-lg mt-1 select-none hover:bg-gray-100"
+        class="text-base w-full p-2 px-3 rounded-lg mt-1 select-none hover:bg-gray-100"
         active-class="actived-link"
         exact-active-class="actived-link"
         >{{ nav.label }}</router-link
