@@ -8,12 +8,11 @@
       v-show="state.currentStep === 0"
       class="w-full flex flex-col justify-start items-start"
     >
-      <p class="mb-2">
-        Synchronize schema from the base database to the target database with
-        the selected migration version.
-      </p>
+      <p class="mb-2">{{ $t("database.sync-schema.description") }}</p>
       <div class="w-full">
-        <p class="mt-4 mb-2 text-gray-600">Base database</p>
+        <p class="mt-4 mb-2 text-gray-600">
+          {{ $t("database.sync-schema.base-database") }}
+        </p>
         <div class="w-full flex flex-row justify-start items-center">
           <EnvironmentSelect
             class="!w-48 mr-2 shrink-0"
@@ -56,7 +55,9 @@
         </div>
       </div>
       <div class="w-full">
-        <p class="mt-4 mb-2 text-gray-600">Target database</p>
+        <p class="mt-4 mb-2 text-gray-600">
+          {{ $t("database.sync-schema.target-database") }}
+        </p>
         <div class="w-full flex flex-row justify-start items-center">
           <EnvironmentSelect
             class="!w-48 mr-2 shrink-0"
@@ -90,9 +91,11 @@
       v-show="state.currentStep === 1"
       class="w-full flex flex-col justify-start items-start"
     >
-      <div class="w-full flex flex-row justify-between items-center mb-2">
+      <div
+        class="w-full flex flex-row justify-between items-center mb-2 leading-8"
+      >
         <div class="flex flex-row justify-start items-center">
-          <span>The statements of synchronize</span>
+          <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
           <button
             type="button"
             class="btn-icon ml-2"
@@ -103,33 +106,27 @@
         </div>
         <div>
           <button
+            v-if="state.recommandStatement !== state.editStatement"
             type="button"
-            class="btn-icon border px-3 leading-7 hover:border-gray-500"
-            @click.prevent="handleEditButtonClick"
+            class="btn-icon border px-3 pl-4 leading-7 hover:border-gray-500"
+            @click.prevent="handleGenerateButtonClick"
           >
-            <template v-if="!state.isEditting">
-              {{ $t("common.edit") }}
-              <heroicons-solid:pencil class="h-5 w-5 ml-1 -mr-1" />
-            </template>
-            <template v-else>{{ $t("common.cancel") }}</template>
+            {{ $t("common.restore") }}
+            <heroicons-solid:refresh class="h-4 w-4 ml-1" />
           </button>
         </div>
       </div>
       <p
         class="text-sm border px-2 mb-3 -mt-1 rounded leading-6 text-yellow-600 border-yellow-600 bg-yellow-50"
       >
-        Please check the following generated DDL statement.
+        {{ $t("database.sync-schema.check-generated-ddl-statement") }}
       </p>
-      <div
-        class="whitespace-pre-wrap w-full overflow-hidden border"
-        :class="state.isEditting ? 'border-blue-600 border-2' : ''"
-      >
+      <div class="whitespace-pre-wrap w-full overflow-hidden border">
         <MonacoEditor
           ref="editorRef"
-          class="w-full h-auto max-h-[360px]"
+          class="w-full h-auto max-h-[300px]"
           data-label="bb-issue-sql-editor"
-          :value="state.recommandSchema"
-          :readonly="!state.isEditting"
+          :value="state.editStatement"
           :auto-focus="false"
           :dialect="(state.engineType as SQLDialect)"
           @change="onStatementChange"
@@ -137,7 +134,7 @@
         />
       </div>
       <div class="w-full flex flex-row justify-start items-center mt-4 mb-2">
-        <span>The schema comparison result</span>
+        <span>{{ $t("database.sync-schema.schema-comparison-result") }}</span>
       </div>
       <code-diff
         class="w-full"
@@ -221,8 +218,8 @@ type LocalState = {
     databaseId?: DatabaseId;
   };
   engineType?: EngineType;
-  recommandSchema: string;
-  isEditting: boolean;
+  recommandStatement: string;
+  editStatement: string;
 };
 
 const props = withDefaults(
@@ -251,8 +248,8 @@ const state = reactive<LocalState>({
   currentStep: 0,
   baseSchemaInfo: {},
   targetSchemaInfo: {},
-  recommandSchema: "",
-  isEditting: false,
+  recommandStatement: "",
+  editStatement: "",
 });
 
 const targetDatabaseLatestDoneMigrationHistory = computed(() => {
@@ -305,8 +302,8 @@ const handleCancelButtonClick = () => {
     emit("dismiss");
   } else {
     state.currentStep = 0;
-    state.isEditting = false;
-    state.recommandSchema = "";
+    state.recommandStatement = "";
+    state.editStatement = "";
   }
 };
 
@@ -318,9 +315,10 @@ const handleNextButtonClick = async () => {
       state.baseSchemaInfo.migrationHistory?.schema ?? "",
       targetDatabaseLatestDoneMigrationHistory.value.schema ?? ""
     );
-    state.recommandSchema = schema;
+    state.recommandStatement = schema;
+    state.editStatement = schema;
   } else if (state.currentStep === 1) {
-    if (state.recommandSchema === "") {
+    if (state.editStatement === "") {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -342,7 +340,7 @@ const handleNextButtonClick = async () => {
         {
           databaseId: targetDatabase.id,
           databaseName: targetDatabase.name,
-          statement: state.recommandSchema,
+          statement: state.editStatement,
           earliestAllowedTs: 0,
         },
       ],
@@ -407,7 +405,7 @@ const handleMonacoEditorReady = () => {
 };
 
 const onStatementChange = (value: string) => {
-  state.recommandSchema = value;
+  state.editStatement = value;
   updateEditorHeight();
 };
 
@@ -419,7 +417,7 @@ const updateEditorHeight = () => {
 };
 
 const copyStatement = () => {
-  toClipboard(state.recommandSchema).then(() => {
+  toClipboard(state.editStatement).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -428,8 +426,14 @@ const copyStatement = () => {
   });
 };
 
-const handleEditButtonClick = () => {
-  state.isEditting = !state.isEditting;
+const handleGenerateButtonClick = async () => {
+  const schema = await getSchemaDiff(
+    state.engineType as EngineType,
+    state.baseSchemaInfo.migrationHistory?.schema ?? "",
+    targetDatabaseLatestDoneMigrationHistory.value.schema ?? ""
+  );
+  state.recommandStatement = schema;
+  state.editStatement = schema;
 };
 
 watch(
