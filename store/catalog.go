@@ -55,11 +55,6 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Ty
 	return c, nil
 }
 
-// GetDatabase implements the catalog.Catalog interface.
-func (c *Catalog) GetDatabase() *catalog.Database {
-	return c.Database
-}
-
 // GetFinder implements the catalog.Catalog interface.
 func (c *Catalog) GetFinder() *catalog.Finder {
 	return c.Finder
