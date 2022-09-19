@@ -11,7 +11,27 @@
             class="w-5 h-5 transform transition-all"
             :class="active ? 'rotate-90' : ''"
           />
-          <h1 class="text-base font-semibold text-gray-900">
+          <h1 class="flex text-base font-semibold text-gray-900 gap-x-1">
+            <NTooltip v-if="disabled" trigger="hover" :show-arrow="false">
+              <template #trigger>
+                <div class="flex justify-center">
+                  <heroicons-outline:exclamation
+                    class="h-6 w-6 text-yellow-600"
+                  />
+                </div>
+              </template>
+              <span class="whitespace-nowrap">
+                {{
+                  $t("sql-review.not-available-for-free", {
+                    plan: $t(
+                      `subscription.plan.${planTypeToString(
+                        subscriptionStore.currentPlan
+                      )}.title`
+                    ),
+                  })
+                }}
+              </span>
+            </NTooltip>
             {{ getRuleLocalization(selectedRule.type).title }}
           </h1>
           <SQLRuleLevelBadge :level="selectedRule.level" />
@@ -47,13 +67,20 @@
               :id="`level-${level}`"
               :value="level"
               type="radio"
+              :disabled="disabled"
               :checked="level === selectedRule.level"
-              class="text-accent disabled:text-accent-disabled focus:ring-accent"
+              :class="[
+                'text-accent disabled:text-accent-disabled focus:ring-accent',
+                disabled ? 'cursor-not-allowed' : '',
+              ]"
               @input="emit('level-change', level)"
             />
             <label
               :for="`level-${level}`"
-              class="ml-2 items-center text-sm text-gray-600"
+              :class="[
+                'ml-2 items-center text-sm text-gray-600',
+                disabled ? 'cursor-not-allowed' : '',
+              ]"
             >
               {{ $t(`sql-review.level.${level.toLowerCase()}`) }}
             </label>
@@ -78,14 +105,22 @@
           v-if="config.payload.type == 'STRING'"
           v-model="state.payload[index]"
           type="text"
-          class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
+          :disabled="disabled"
+          :class="[
+            'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
+            disabled ? 'cursor-not-allowed' : '',
+          ]"
           :placeholder="config.payload.default"
         />
         <input
           v-if="config.payload.type == 'NUMBER'"
           v-model="state.payload[index]"
           type="number"
-          class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
+          :disabled="disabled"
+          :class="[
+            'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
+            disabled ? 'cursor-not-allowed' : '',
+          ]"
           :placeholder="`${config.payload.default}`"
         />
         <div
@@ -99,13 +134,18 @@
               v-for="(val, i) in state.payload[index]"
               :key="`${index}-${i}`"
               :text="`${val}`"
+              :can-remove="!disabled"
               @remove="() => removeFromList(index, val)"
             />
           </div>
           <input
             type="text"
             pattern="[a-z]+"
-            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
+            :disabled="disabled"
+            :class="[
+              'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
+              disabled ? 'cursor-not-allowed' : '',
+            ]"
             :placeholder="$t('sql-review.input-then-press-enter')"
             @keyup.enter="(e) => pushToList(index, e)"
           />
@@ -133,6 +173,7 @@
 <script lang="ts" setup>
 import { reactive, PropType, watch } from "vue";
 import { pullAt } from "lodash-es";
+import { NTooltip } from "naive-ui";
 import {
   LEVEL_LIST,
   RuleTemplate,
@@ -141,6 +182,8 @@ import {
   getRuleLocalizationKey,
   SchemaRuleEngineType,
 } from "@/types/sqlReview";
+import { useSubscriptionStore } from "@/store";
+import { planTypeToString } from "@/types/plan";
 
 type PayloadValueList = (string | number | string[])[];
 interface LocalState {
@@ -165,6 +208,11 @@ const props = defineProps({
     require: true,
     type: Boolean,
   },
+  disabled: {
+    require: false,
+    default: false,
+    type: Boolean,
+  },
 });
 
 const emit = defineEmits(["activate", "payload-change", "level-change"]);
@@ -172,6 +220,8 @@ const emit = defineEmits(["activate", "payload-change", "level-change"]);
 const state = reactive<LocalState>({
   payload: initStatePayload(props.selectedRule.componentList),
 });
+
+const subscriptionStore = useSubscriptionStore();
 
 watch(
   () => state.payload,
