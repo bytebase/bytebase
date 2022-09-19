@@ -23,18 +23,19 @@ var (
 )
 
 // catalogService is the catalog service for sql check api.
-type catalogService struct{}
+type catalogService struct {
+	finder *catalog.Finder
+}
 
-// GetDatabase is the API message in catalog.
-// We will not connect to the user's database in the early version of sql check api.
-func (*catalogService) GetDatabase() *catalog.Database {
-	return &catalog.Database{}
+func newCatalogService(dbType advisorDB.Type) *catalogService {
+	return &catalogService{
+		finder: catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false}, dbType),
+	}
 }
 
 // GetFinder is the API message in catalog.
-// We will not connect to the user's database in the early version of sql check api.
-func (*catalogService) GetFinder() *catalog.Finder {
-	return catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false})
+func (c *catalogService) GetFinder() *catalog.Finder {
+	return c.finder
 }
 
 func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
@@ -87,7 +88,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	var databaseType string
-	var catalog catalog.Catalog = &catalogService{}
+	var catalog catalog.Catalog
 
 	if request.DatabaseName != "" && request.Host != "" && request.Port != "" {
 		database, err := s.findDatabase(ctx, request.Host, request.Port, request.DatabaseName)
@@ -110,6 +111,9 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	advisorDBType, err := advisorDB.ConvertToAdvisorDBType(databaseType)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", databaseType))
+	}
+	if catalog == nil {
+		catalog = newCatalogService(advisorDBType)
 	}
 
 	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
