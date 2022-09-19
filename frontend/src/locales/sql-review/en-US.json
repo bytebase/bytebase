@@ -154,9 +154,9 @@
       "title": "Disallow leading wildcard like",
       "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
     },
-    "statement-disallow-multi-transaction": {
-      "title": "Disallow multi transaction",
-      "description": "Disallow using multiply transaction in one script."
+    "statement-disallow-commit": {
+      "title": "Disallow commit",
+      "description": "Disallow using commit in the issue."
     },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",

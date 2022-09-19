@@ -154,8 +154,8 @@ const (
 	// MySQLIndexTypeNoBlob is an advisor type for MySQL index type no blob.
 	MySQLIndexTypeNoBlob Type = "bb.plugin.advisor.mysql.index.type-no-blob"
 
-	// MySQLStatementDisallowMultiTransaction is an advisor type for MySQL to disallow multi transaction.
-	MySQLStatementDisallowMultiTransaction Type = "bb.plugin.advisor.mysql.statement.disallow-multi-transaction"
+	// MySQLStatementDisallowCommit is an advisor type for MySQL to disallow commit.
+	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
 
 	// PostgreSQL Advisor.
 

@@ -12,21 +12,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*StatementDisallowMultiTransactionAdvisor)(nil)
-	_ ast.Visitor     = (*statementDisallowMultiTransactionChecker)(nil)
+	_ advisor.Advisor = (*StatementDisallowCommitAdvisor)(nil)
+	_ ast.Visitor     = (*statementDisallowCommitChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLStatementDisallowMultiTransaction, &StatementDisallowMultiTransactionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLStatementDisallowMultiTransaction, &StatementDisallowMultiTransactionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 }
 
-// StatementDisallowMultiTransactionAdvisor is the advisor checking for index type no blob.
-type StatementDisallowMultiTransactionAdvisor struct {
+// StatementDisallowCommitAdvisor is the advisor checking for index type no blob.
+type StatementDisallowCommitAdvisor struct {
 }
 
 // Check checks for index type no blob.
-func (*StatementDisallowMultiTransactionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -36,7 +36,7 @@ func (*StatementDisallowMultiTransactionAdvisor) Check(ctx advisor.Context, stat
 	if err != nil {
 		return nil, err
 	}
-	checker := &statementDisallowMultiTransactionChecker{
+	checker := &statementDisallowCommitChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -45,10 +45,6 @@ func (*StatementDisallowMultiTransactionAdvisor) Check(ctx advisor.Context, stat
 		checker.text = stmt.Text()
 		checker.line = stmt.OriginTextPosition()
 		(stmt).Accept(checker)
-	}
-
-	if len(checker.adviceList) > 0 {
-		checker.adviceList = checker.adviceList[1:]
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -62,7 +58,7 @@ func (*StatementDisallowMultiTransactionAdvisor) Check(ctx advisor.Context, stat
 	return checker.adviceList, nil
 }
 
-type statementDisallowMultiTransactionChecker struct {
+type statementDisallowCommitChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -71,13 +67,13 @@ type statementDisallowMultiTransactionChecker struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (c *statementDisallowMultiTransactionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if _, ok := in.(*ast.BeginStmt); ok {
+func (c *statementDisallowCommitChecker) Enter(in ast.Node) (ast.Node, bool) {
+	if _, ok := in.(*ast.CommitStmt); ok {
 		c.adviceList = append(c.adviceList, advisor.Advice{
 			Status:  c.level,
-			Code:    advisor.StatementDisallowMultiTransaction,
+			Code:    advisor.StatementDisallowCommit,
 			Title:   c.title,
-			Content: fmt.Sprintf("Multiply transaction is not allowed, related statement: \"%s\"", c.text),
+			Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", c.text),
 			Line:    c.line,
 		})
 	}
@@ -86,6 +82,6 @@ func (c *statementDisallowMultiTransactionChecker) Enter(in ast.Node) (ast.Node,
 }
 
 // Leave implements the ast.Visitor interface.
-func (*statementDisallowMultiTransactionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*statementDisallowCommitChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

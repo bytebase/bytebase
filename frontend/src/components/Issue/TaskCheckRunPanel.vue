@@ -146,7 +146,7 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
         case SQLReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
         case SQLReviewPolicyErrorCode.STATEMENT_CREATE_TABLE_AS:
-        case SQLReviewPolicyErrorCode.STATEMENT_DISALLOW_MULTI_TRANSACTION:
+        case SQLReviewPolicyErrorCode.STATEMENT_DISALLOW_COMMIT:
         case SQLReviewPolicyErrorCode.TABLE_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.COLUMN_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.INDEX_NAMING_MISMATCH:

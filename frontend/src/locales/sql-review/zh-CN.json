@@ -154,9 +154,9 @@
       "title": "禁止左模糊",
       "description": "WHERE 语句中禁止使用左模糊匹配，例如禁止 LIKE foo = '%x'。"
     },
-    "statement-disallow-multi-transaction": {
-      "title": "禁止多个事务",
-      "description": "禁止在一个脚本内开启多个事务。"
+    "statement-disallow-commit": {
+      "title": "禁止使用提交",
+      "description": "禁止在工单中使用提交。"
     },
     "schema-backward-compatibility": {
       "title": "向后兼容",
