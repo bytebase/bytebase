@@ -233,7 +233,6 @@ UPDATE
     ON project_setting FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
-
 -- Project member
 CREATE TABLE project_member (
     id SERIAL PRIMARY KEY,
