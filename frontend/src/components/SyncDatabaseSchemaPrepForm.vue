@@ -30,6 +30,7 @@
             :mode="'ENVIRONMENT'"
             :environment-id="state.baseSchemaInfo.environmentId"
             :project-id="props.projectId"
+            :show-engine-icon="true"
             @select-database-id="
               (databaseId: DatabaseId) => {
                 state.baseSchemaInfo.databaseId = databaseId;
@@ -76,6 +77,7 @@
             :environment-id="state.targetSchemaInfo.environmentId"
             :project-id="props.projectId"
             :engine-type="state.engineType"
+            :show-engine-icon="true"
             @select-database-id="
               (databaseId: DatabaseId) => {
                 state.targetSchemaInfo.databaseId = databaseId;

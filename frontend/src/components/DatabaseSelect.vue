@@ -5,11 +5,18 @@
     :disabled="disabled"
     :placeholder="$t('database.select')"
     :show-prefix-item="true"
+    :item-addition-class="
+      showEngineIcon ? 'hover:!bg-gray-200 hover:text-main' : ''
+    "
     @select-item="(database: Database) => $emit('select-database-id', database.id)"
   >
     <template #menuItem="{ item: database }">
       <div class="flex items-center">
-        {{ database.name }}
+        <InstanceEngineIcon
+          v-if="showEngineIcon"
+          :instance="database.instance"
+        />
+        <span :class="showEngineIcon ? 'ml-2' : ''">{{ database.name }}</span>
       </div>
     </template>
   </BBSelect>
@@ -66,6 +73,10 @@ export default defineComponent({
     engineType: {
       default: undefined,
       type: String as PropType<EngineType>,
+    },
+    showEngineIcon: {
+      type: Boolean,
+      default: false,
     },
     disabled: {
       default: false,
