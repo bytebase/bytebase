@@ -79,7 +79,6 @@ import {
   ruleIsAvailableInSubscription,
 } from "@/types";
 import {
-  featureToRef,
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
