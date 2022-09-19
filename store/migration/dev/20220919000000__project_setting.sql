@@ -15,7 +15,7 @@ CREATE INDEX idx_project_setting_project_id ON project_setting(project_id);
 
 CREATE UNIQUE INDEX idx_project_setting_unique_project_id_type ON project_setting(project_id, type);
 
-ALTER SEQUENCE project_setting RESTART WITH 101;
+ALTER SEQUENCE project_setting_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_project_setting_updated_ts
 BEFORE
