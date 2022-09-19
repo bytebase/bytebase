@@ -5,6 +5,7 @@
     :disabled="disabled"
     :placeholder="$t('project.select')"
     :show-prefix-item="true"
+    :error="!validate()"
     @select-item="(project) => $emit('select-project-id', project.id)"
   >
     <template #menuItem="{ item: project }">
@@ -63,6 +64,10 @@ export default defineComponent({
     mode: {
       type: Number as PropType<Mode>,
       default: Mode.Standard | Mode.Tenant,
+    },
+    required: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ["select-project-id"],
@@ -173,6 +178,14 @@ export default defineComponent({
 
       return list;
     });
+
+    const validate = () => {
+      if (!props.required) {
+        return true;
+      }
+      return !!state.selectedProject && state.selectedProject.id !== UNKNOWN_ID;
+    };
+
     watch(
       [() => props.selectedId, projectList],
       ([selectedId, list]) => {
@@ -188,6 +201,7 @@ export default defineComponent({
       DEFAULT_PROJECT_ID,
       state,
       projectList,
+      validate,
       selectedIdNotInList,
     };
   },
