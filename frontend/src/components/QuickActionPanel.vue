@@ -86,7 +86,20 @@
           {{ $t("database.change-data") }}
         </h3>
       </div>
-
+      <div
+        v-if="isDev && quickAction === 'quickaction.bb.database.schema.sync'"
+        class="flex flex-col items-center w-28 py-1"
+      >
+        <button
+          class="btn-icon-primary p-3"
+          @click.prevent="syncDatabaseSchema"
+        >
+          <heroicons-outline:refresh class="w-6 h-6" />
+        </button>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("quick-action.sync-schema") }}
+        </h3>
+      </div>
       <div
         v-if="quickAction === 'quickaction.bb.database.troubleshoot'"
         class="flex flex-col items-center w-28 py-1"
@@ -215,6 +228,15 @@
         @dismiss="state.showModal = false"
       />
     </template>
+    <template
+      v-else-if="state.quickActionType == 'quickaction.bb.database.schema.sync'"
+    >
+      <SyncDatabaseSchemaPrepForm
+        v-if="projectId"
+        :project-id="projectId"
+        @dismiss="state.showModal = false"
+      />
+    </template>
   </BBModal>
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -224,24 +246,25 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, PropType, computed, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { kebabCase } from "lodash-es";
+import { defineComponent, reactive, PropType, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
+import { ProjectId, QuickActionType } from "../types";
+import { idFromSlug } from "../utils";
+import {
+  useCommandStore,
+  useInstanceStore,
+  useSubscriptionStore,
+} from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import { ProjectId, QuickActionType } from "../types";
-import { idFromSlug } from "../utils";
-import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { useI18n } from "vue-i18n";
-import {
-  useCommandStore,
-  useInstanceStore,
-  useSubscriptionStore,
-} from "@/store";
+import SyncDatabaseSchemaPrepForm from "./SyncDatabaseSchemaPrepForm.vue";
 
 interface LocalState {
   showModal: boolean;
@@ -260,6 +283,7 @@ export default defineComponent({
     CreateDatabasePrepForm,
     RequestDatabasePrepForm,
     TransferDatabaseForm,
+    SyncDatabaseSchemaPrepForm,
   },
   props: {
     quickActionList: {
@@ -328,6 +352,12 @@ export default defineComponent({
       state.showModal = true;
     };
 
+    const syncDatabaseSchema = () => {
+      state.modalTitle = t("quick-action.sync-schema");
+      state.quickActionType = "quickaction.bb.database.schema.sync";
+      state.showModal = true;
+    };
+
     const changeData = () => {
       state.modalTitle = t("database.change-data");
       state.modalSubtitle = t("quick-action.choose-db");
@@ -382,6 +412,10 @@ export default defineComponent({
         name: t("quick-action.troubleshoot"),
         perform: () => router.push({ path: "/issue/new" }),
       },
+      "quickaction.bb.database.schema.sync": {
+        name: t("quick-action.sync-schema"),
+        perform: () => syncDatabaseSchema(),
+      },
       "quickaction.bb.environment.create": {
         name: t("quick-action.add-environment"),
         perform: () => createEnvironment(),
@@ -426,6 +460,7 @@ export default defineComponent({
       createInstance,
       alterSchema,
       changeData,
+      syncDatabaseSchema,
       createDatabase,
       requestDatabase,
       createEnvironment,

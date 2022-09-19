@@ -535,6 +535,7 @@
     "create-project": "@:common.create@:common.project",
     "edit-data": "编辑数据",
     "troubleshoot": "问题排查",
+    "sync-schema": "同步 Schema",
     "transfer-in-db": "转移数据库",
     "request-db": "申请数据库",
     "from-unassigned-databases": "从未分配的数据库",
@@ -754,6 +755,7 @@
   },
   "migration-history": {
     "self": "变更历史",
+    "select": "选择一个版本",
     "workflow": "工作流",
     "commit-info": "由 {author} 于 {time}",
     "no-schema-change": "本次变更没有任何 Schema 的改动",
@@ -782,6 +784,7 @@
     "no-succeed-vcs-migration-record": "没有来自 VCS 的变更历史。"
   },
   "database": {
+    "select": "选择数据库",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "该表每隔约10分钟刷新一次，所以展示的可能不是最新信息。",
     "last-successful-sync": "最后一次成功的同步",
     "no-anomalies-detected": "没有检测到异常",
@@ -888,7 +891,15 @@
     "view-unassigned-databases": "查看未分配的数据库",
     "unassigned-databases": "未分配的数据库",
     "restore-database": "恢复数据库",
-    "selected-n-databases": "已选择 {n} 个数据库"
+    "selected-n-databases": "已选择 {n} 个数据库",
+    "sync-schema": {
+      "description": "使用选定的迁移版本将架构从基础数据库同步到目标数据库。",
+      "base-database": "基础数据库",
+      "target-database": "目标数据库",
+      "synchronize-statements": "生成的 Schema DDL 语句",
+      "schema-comparison-result": "Schema 比较结果",
+      "check-generated-ddl-statement": "请检查下面的自动生成的 DDL 语句。"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

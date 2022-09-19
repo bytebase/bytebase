@@ -196,7 +196,7 @@ type schemaDiffRequestBody struct {
 // @Param  engineType       body  string  true   "The database engine type."
 // @Param  sourceSchema     body  string  true   "The source schema statement."
 // @Param  targetSchema     body  string  false  "The target schema statement."
-// @Success  200  {array}   the target diff string of schemas
+// @Success  200  {string}  the target diff string of schemas
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/schema/diff  [post].
@@ -222,12 +222,12 @@ func schemaDiff(c echo.Context) error {
 
 	sourceSchemaNodes, err := parser.Parse(engine, parser.ParseContext{}, request.SourceSchema)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse source schema to AST nodes: %s", request.SourceSchema)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse source schema into AST nodes").SetInternal(err)
 	}
 
 	targetSchemaNodes, err := parser.Parse(engine, parser.ParseContext{}, request.TargetSchema)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to parse target schema to AST nodes: %s", request.TargetSchema)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse target schema into AST nodes").SetInternal(err)
 	}
 
 	diff, err := parser.SchemaDiff(sourceSchemaNodes, targetSchemaNodes)
