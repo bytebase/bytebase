@@ -11,7 +11,7 @@ import (
 func TestTableExists(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
-			Statement: `INSERT INTO db.tech_book values (1)`,
+			Statement: `INSERT INTO tech_book values (1)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
