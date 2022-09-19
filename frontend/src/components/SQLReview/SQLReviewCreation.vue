@@ -126,8 +126,6 @@ const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
 
-const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
-
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
