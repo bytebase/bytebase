@@ -165,12 +165,44 @@ func (d *databaseState) WalkThrough(stmts string) error {
 	}
 
 	for _, node := range nodeList {
+		// validate DML
+		if dml, ok := node.(tidbast.DMLNode); ok {
+			if err := d.validateDML(dml); err != nil {
+				return err
+			}
+			continue
+		}
+		// change state
 		if err := d.changeState(node); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (d *databaseState) validateDML(in tidbast.DMLNode) (err *WalkThroughError) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		if err.Line == 0 {
+			err.Line = in.OriginTextPosition()
+		}
+	}()
+	if d.deleted {
+		return &WalkThroughError{
+			Type:    ErrorTypeDatabaseIsDeleted,
+			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
+		}
+	}
+
+	switch node := in.(type) {
+	case *tidbast.InsertStmt:
+		return d.checkInsert(node)
+	default:
+		return nil
+	}
 }
 
 func (d *databaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError) {
@@ -210,6 +242,25 @@ func (d *databaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 	default:
 		return nil
 	}
+}
+
+func (d *databaseState) checkInsert(node *tidbast.InsertStmt) *WalkThroughError {
+	tableName, ok := getTableSourceName(node.Table)
+	if ok {
+		table, err := d.findTableState(tableName)
+		if err != nil {
+			return err
+		}
+		if table == nil {
+			return nil
+		}
+		for _, col := range node.Columns {
+			if _, exists := table.columnSet[col.Name.O]; !exists {
+				return NewColumnNotExistsError(table.name, col.Name.O)
+			}
+		}
+	}
+	return nil
 }
 
 func (d *databaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughError {
@@ -1063,6 +1114,7 @@ func (d *databaseState) parse(stmts string) ([]tidbast.StmtNode, *WalkThroughErr
 	}
 
 	for i, node := range nodeList {
+		node.SetText(nil, strings.TrimSpace(node.Text()))
 		node.SetOriginTextPosition(sqlList[i].Line)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
@@ -1096,4 +1148,16 @@ func getIndexType(option *tidbast.IndexOption) string {
 		}
 	}
 	return model.IndexTypeBtree.String()
+}
+
+func getTableSourceName(table *tidbast.TableRefsClause) (*tidbast.TableName, bool) {
+	source, isTableSource := table.TableRefs.Left.(*tidbast.TableSource)
+	nilRight := table.TableRefs.Right == nil
+	if isTableSource && nilRight {
+		// isTableSource and nilRight mean it's a table.
+		if tableName, ok := source.Source.(*tidbast.TableName); ok {
+			return tableName, true
+		}
+	}
+	return nil, false
 }
