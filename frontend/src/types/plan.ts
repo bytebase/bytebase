@@ -29,6 +29,17 @@ export enum PlanType {
   ENTERPRISE = 2,
 }
 
+export const planTypeToString = (planType: PlanType): string => {
+  switch (planType) {
+    case PlanType.FREE:
+      return "free";
+    case PlanType.TEAM:
+      return "team";
+    case PlanType.ENTERPRISE:
+      return "enterprise";
+  }
+};
+
 export type PlanPatch = {
   type: PlanType;
 };
