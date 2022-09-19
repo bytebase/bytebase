@@ -535,6 +535,7 @@
     "create-project": "@:common.create @:common.project",
     "edit-data": "Edit Data",
     "troubleshoot": "Troubleshoot",
+    "sync-schema": "Sync Schema",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
     "from-unassigned-databases": "From unassigned databases",
@@ -754,6 +755,7 @@
   },
   "migration-history": {
     "self": "Migration History",
+    "select": "Select a version",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
@@ -782,6 +784,7 @@
     "no-succeed-vcs-migration-record": "No succeed migration record from VCS"
   },
   "database": {
+    "select": "Select database",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
@@ -888,7 +891,15 @@
     "view-unassigned-databases": "View unassigned databases",
     "unassigned-databases": "Unassigned databases",
     "restore-database": "Restore database",
-    "selected-n-databases": "{n} database selected | {n} databases selected"
+    "selected-n-databases": "{n} database selected | {n} databases selected",
+    "sync-schema": {
+      "description": "Synchronize schema from the base database to the target database with the selected migration version.",
+      "base-database": "Base database",
+      "target-database": "Target database",
+      "synchronize-statements": "The statements to synchronize",
+      "schema-comparison-result": "The schema comparison result",
+      "check-generated-ddl-statement": "Please check the following generated DDL statement."
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
