@@ -441,6 +441,7 @@ func TestWalkThrough(t *testing.T) {
 			err: &WalkThroughError{
 				Type:    ErrorTypeTableNotExists,
 				Content: "Table `t1` does not exist",
+				Line:    2,
 			},
 		},
 		{
@@ -498,13 +499,14 @@ func TestWalkThrough(t *testing.T) {
 				Name:   "test",
 				DbType: db.MySQL,
 			},
-			statement: `
+			statement: `-- this is comment
 				DROP DATABASE test;
 				CREATE TABLE t(a int);
 			`,
 			err: &WalkThroughError{
 				Type:    ErrorTypeDatabaseIsDeleted,
 				Content: "Database `test` is deleted",
+				Line:    3,
 			},
 		},
 		{

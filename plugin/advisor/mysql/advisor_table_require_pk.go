@@ -169,7 +169,7 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	if _, ok := v.tables[table]; !ok {
-		_, pk := v.catalog.FindIndex(&catalog.IndexFind{
+		_, pk := v.catalog.Origin.FindIndex(&catalog.IndexFind{
 			TableName: table,
 			IndexName: primaryKeyName,
 		})

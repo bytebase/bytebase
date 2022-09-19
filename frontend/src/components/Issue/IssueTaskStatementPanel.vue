@@ -84,7 +84,7 @@
             v-if="state.editing"
             type="button"
             class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-            :disabled="state.editStatement == statement"
+            :disabled="!allowSaveSQL"
             @click.prevent="saveEdit"
           >
             {{ $t("common.save") }}
@@ -313,6 +313,20 @@ export default defineComponent({
       state.editing = false;
     };
 
+    const allowSaveSQL = computed((): boolean => {
+      if (state.editStatement === "") {
+        // Not allowed if the statement is empty.
+        return false;
+      }
+      if (state.editStatement === statement.value) {
+        // Not allowed if the statement is not modified.
+        return false;
+      }
+
+      // Allowed to save otherwise
+      return true;
+    });
+
     const handleUploadFile = (e: Event) => {
       const target = e.target as HTMLInputElement;
       const file = (target.files || [])[0];
@@ -415,6 +429,7 @@ export default defineComponent({
       beginEdit,
       saveEdit,
       cancelEdit,
+      allowSaveSQL,
       handleUploadFile,
       onStatementChange,
       goToVCS,
