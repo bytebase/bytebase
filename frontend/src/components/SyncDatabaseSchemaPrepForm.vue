@@ -132,7 +132,7 @@
           :auto-focus="false"
           :dialect="(state.engineType as SQLDialect)"
           @change="onStatementChange"
-          @ready="handleMonacoEditorReady"
+          @ready="updateEditorHeight"
         />
       </div>
       <div class="w-full flex flex-row justify-start items-center mt-4 mb-2">
@@ -268,16 +268,6 @@ const targetDatabaseLatestDoneMigrationHistory = computed(() => {
   return list[0];
 });
 
-const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
-  const database = databaseStore.getDatabaseById(databaseId);
-  const list = instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-    database.instance.id,
-    database.name
-  );
-
-  return list;
-};
-
 const isValidId = (id: any) => {
   if (isNullOrUndefined(id) || id === UNKNOWN_ID) {
     return false;
@@ -294,10 +284,20 @@ const allowNext = computed(() => {
       isValidId(state.targetSchemaInfo.environmentId) &&
       isValidId(state.targetSchemaInfo.databaseId)
     );
+  } else {
+    return state.editStatement !== "";
   }
-
-  return true;
 });
+
+const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
+  const database = databaseStore.getDatabaseById(databaseId);
+  const list = instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
+    database.instance.id,
+    database.name
+  );
+
+  return list;
+};
 
 const handleCancelButtonClick = () => {
   if (state.currentStep === 0) {
@@ -402,10 +402,6 @@ const getSchemaDiff = async (
   return data;
 };
 
-const handleMonacoEditorReady = () => {
-  updateEditorHeight();
-};
-
 const onStatementChange = (value: string) => {
   state.editStatement = value;
   updateEditorHeight();
@@ -442,8 +438,15 @@ watch(
   () => [state.baseSchemaInfo.environmentId, state.baseSchemaInfo.databaseId],
   () => {
     const databaseId = state.baseSchemaInfo.databaseId;
+
     if (isValidId(databaseId)) {
       prepareMigrationHistoryList(databaseId as DatabaseId);
+      const database = databaseStore.getDatabaseById(
+        state.baseSchemaInfo.databaseId as DatabaseId
+      );
+      state.engineType = database.instance.engine;
+    } else {
+      state.engineType = undefined;
     }
     state.baseSchemaInfo.migrationHistory = undefined;
   }
@@ -459,21 +462,6 @@ watch(
     if (isValidId(databaseId)) {
       prepareMigrationHistoryList(databaseId as DatabaseId);
     }
-  }
-);
-
-watch(
-  () => [state.baseSchemaInfo.databaseId],
-  () => {
-    if (!isValidId(state.baseSchemaInfo.databaseId)) {
-      state.engineType = undefined;
-      return;
-    }
-
-    const database = databaseStore.getDatabaseById(
-      state.baseSchemaInfo.databaseId as DatabaseId
-    );
-    state.engineType = database.instance.engine;
   }
 );
 </script>
