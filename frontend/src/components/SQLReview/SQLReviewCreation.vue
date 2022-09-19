@@ -161,7 +161,7 @@ const onTemplateApply = (index: number) => {
       ...category.ruleList.map((rule) => ({
         ...rule,
         level: ruleIsAvailableInSubscription(
-          rule,
+          rule.type,
           subscriptionStore.currentPlan
         )
           ? rule.level
@@ -283,7 +283,9 @@ const tryApplyTemplate = (index: number) => {
 };
 
 const onRuleChange = (rule: RuleTemplate) => {
-  if (!ruleIsAvailableInSubscription(rule, subscriptionStore.currentPlan)) {
+  if (
+    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
+  ) {
     return;
   }
 

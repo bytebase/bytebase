@@ -94,6 +94,11 @@ export type RuleType =
   | "schema.backward-compatibility"
   | "database.drop-empty-database";
 
+export const availableRulesForFreePlan: RuleType[] = [
+  "statement.where.require",
+  "column.no-null",
+];
+
 // The naming format rule payload.
 // Used by the backend.
 interface NamingFormatPayload {
@@ -139,7 +144,6 @@ export interface RuleTemplate {
   engineList: SchemaRuleEngineType[];
   componentList: RuleConfigComponent[];
   level: RuleLevel;
-  availablePlanList: PlanType[];
 }
 
 // SQLReviewPolicyTemplate is the rule template set
@@ -484,8 +488,11 @@ export const getRuleLocalization = (
 };
 
 export const ruleIsAvailableInSubscription = (
-  rule: RuleTemplate,
+  ruleType: RuleType,
   subscriptionPlan: PlanType
 ): boolean => {
-  return rule.availablePlanList.indexOf(subscriptionPlan) >= 0;
+  if (subscriptionPlan === PlanType.FREE) {
+    return availableRulesForFreePlan.indexOf(ruleType) >= 0;
+  }
+  return true;
 };

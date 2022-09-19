@@ -41,7 +41,7 @@
               :active="rule.type === state.activeRuleType"
               :disabled="
                 !ruleIsAvailableInSubscription(
-                  rule,
+                  rule.type,
                   subscriptionStore.currentPlan
                 )
               "

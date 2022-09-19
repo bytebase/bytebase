@@ -12,7 +12,6 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
-    availablePlanList: [1, 2]
   - type: table.require-pk
     category: TABLE
     engineList:
@@ -20,7 +19,6 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
-    availablePlanList: [1, 2]
   - type: table.no-foreign-key
     category: TABLE
     engineList:
@@ -28,7 +26,6 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
-    availablePlanList: [1, 2]
   - type: table.drop-naming-convention
     category: TABLE
     engineList:
@@ -39,7 +36,6 @@ ruleList:
         payload:
           type: STRING
           default: _del$
-    availablePlanList: [1, 2]
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -47,7 +43,6 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
-    availablePlanList: [1, 2]
   - type: statement.where.require
     category: STATEMENT
     engineList:
@@ -55,7 +50,6 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
-    availablePlanList: [0, 1, 2]
   - type: statement.where.no-leading-wildcard-like
     category: STATEMENT
     engineList:
@@ -63,7 +57,6 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
-    availablePlanList: [1, 2]
   - type: naming.table
     category: NAMING
     engineList:
@@ -79,7 +72,6 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
-    availablePlanList: [1, 2]
   - type: naming.column
     category: NAMING
     engineList:
@@ -95,7 +87,6 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
-    availablePlanList: [1, 2]
   - type: naming.index.uk
     category: NAMING
     engineList:
@@ -114,7 +105,6 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
-    availablePlanList: [1, 2]
   - type: naming.index.idx
     category: NAMING
     engineList:
@@ -133,7 +123,6 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
-    availablePlanList: [1, 2]
   - type: naming.index.fk
     category: NAMING
     engineList:
@@ -154,7 +143,6 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
-    availablePlanList: [1, 2]
   - type: naming.index.pk
     category: NAMING
     engineList:
@@ -171,7 +159,6 @@ ruleList:
         payload:
           type: NUMBER
           default: 63
-    availablePlanList: [1, 2]
   - type: column.required
     category: COLUMN
     engineList:
@@ -188,7 +175,6 @@ ruleList:
             - updated_ts
             - creator_id
             - updater_id
-    availablePlanList: [1, 2]
   - type: column.no-null
     category: COLUMN
     engineList:
@@ -196,7 +182,6 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
-    availablePlanList: [0, 1, 2]
   - type: schema.backward-compatibility
     category: SCHEMA
     engineList:
@@ -204,11 +189,9 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
-    availablePlanList: [1, 2]
   - type: database.drop-empty-database
     category: DATABASE
     engineList:
       - MYSQL
       - TIDB
     componentList: []
-    availablePlanList: [1, 2]
