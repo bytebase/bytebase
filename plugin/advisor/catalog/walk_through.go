@@ -165,12 +165,44 @@ func (d *databaseState) WalkThrough(stmts string) error {
 	}
 
 	for _, node := range nodeList {
+		// validate DML
+		if dml, ok := node.(tidbast.DMLNode); ok {
+			if err := d.validateDML(dml); err != nil {
+				return err
+			}
+			continue
+		}
+		// change state
 		if err := d.changeState(node); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (d *databaseState) validateDML(in tidbast.DMLNode) (err *WalkThroughError) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		if err.Line == 0 {
+			err.Line = in.OriginTextPosition()
+		}
+	}()
+	if d.deleted {
+		return &WalkThroughError{
+			Type:    ErrorTypeDatabaseIsDeleted,
+			Content: fmt.Sprintf("Database `%s` is deleted", d.name),
+		}
+	}
+
+	switch node := in.(type) {
+	case *tidbast.InsertStmt:
+		return d.checkInsert(node)
+	default:
+		return nil
+	}
 }
 
 func (d *databaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError) {
@@ -207,8 +239,6 @@ func (d *databaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 		return NewAccessOtherDatabaseError(d.name, node.Name)
 	case *tidbast.RenameTableStmt:
 		return d.renameTable(node)
-	case *tidbast.InsertStmt:
-		return d.checkInsert(node)
 	default:
 		return nil
 	}
