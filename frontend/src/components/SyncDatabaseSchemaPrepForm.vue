@@ -193,7 +193,7 @@ import {
   SQLDialect,
   SYSTEM_BOT_ID,
   UNKNOWN_ID,
-  UpdateSchemaContext,
+  MigrationContext,
 } from "@/types";
 import {
   pushNotification,
@@ -336,9 +336,9 @@ const handleNextButtonClick = async () => {
       state.targetSchemaInfo.databaseId as DatabaseId
     );
 
-    const updateSchemaContext: UpdateSchemaContext = {
+    const migrationContext: MigrationContext = {
       migrationType: "MIGRATE",
-      updateSchemaDetailList: [
+      detailList: [
         {
           databaseId: targetDatabase.id,
           databaseName: targetDatabase.name,
@@ -361,7 +361,7 @@ const handleNextButtonClick = async () => {
         stageList: [],
         name: "",
       },
-      createContext: updateSchemaContext,
+      createContext: migrationContext,
       payload: {},
     };
 
