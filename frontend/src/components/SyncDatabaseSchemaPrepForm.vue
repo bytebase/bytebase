@@ -141,8 +141,8 @@
       </div>
       <code-diff
         class="w-full"
-        :old-string="targetDatabaseLatestDoneMigrationHistory?.schema ?? ''"
-        :new-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
+        :old-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
+        :new-string="targetDatabaseLatestDoneMigrationHistory?.schema ?? ''"
         output-format="side-by-side"
         data-label="bb-migration-history-code-diff-block"
       />
@@ -176,9 +176,11 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import axios from "axios";
 import { computed, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
+import { useRouter } from "vue-router";
 import { CodeDiff } from "v-code-diff";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import {
@@ -190,6 +192,7 @@ import {
   MigrationSchemaStatus,
   ProjectId,
   SQLDialect,
+  SYSTEM_BOT_ID,
   UNKNOWN_ID,
   UpdateSchemaContext,
 } from "@/types";
@@ -203,8 +206,6 @@ import { isNullOrUndefined } from "@/plugins/demo/utils";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import MonacoEditor from "./MonacoEditor/MonacoEditor.vue";
-import dayjs from "dayjs";
-import { useRouter } from "vue-router";
 import { issueSlug } from "@/utils";
 
 type LocalState = {
@@ -319,9 +320,22 @@ const handleNextButtonClick = async () => {
     );
     state.recommandSchema = schema;
   } else if (state.currentStep === 1) {
+    if (state.recommandSchema === "") {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Statements shouldn't be empty",
+      });
+      return;
+    }
+
+    const sourceDatabase = databaseStore.getDatabaseById(
+      state.baseSchemaInfo.databaseId as DatabaseId
+    );
     const targetDatabase = databaseStore.getDatabaseById(
       state.targetSchemaInfo.databaseId as DatabaseId
     );
+
     const updateSchemaContext: UpdateSchemaContext = {
       migrationType: "MIGRATE",
       updateSchemaDetailList: [
@@ -329,40 +343,20 @@ const handleNextButtonClick = async () => {
           databaseId: targetDatabase.id,
           databaseName: targetDatabase.name,
           statement: state.recommandSchema,
-          earliestAllowedTs: Date.now() / 1000,
+          earliestAllowedTs: 0,
         },
       ],
     };
 
-    const databaseName = isDbNameTemplateMode.value
-      ? generatedDatabaseName.value
-      : state.databaseName;
-    const instanceId = state.instanceId as InstanceId;
-    let owner = "";
-    if (requireDatabaseOwnerName.value && state.instanceUserId) {
-      const instanceUser = await useInstanceStore().fetchInstanceUser(
-        instanceId,
-        state.instanceUserId
-      );
-      owner = instanceUser.name;
-    }
-
-    if (isTenantProject.value) {
-      if (!hasFeature("bb.feature.multi-tenancy")) {
-        state.showFeatureModal = true;
-        return;
-      }
-    }
-    // Do not submit non-selected optional labels
-    const labelList = state.labelList.filter((label) => !!label.value);
-
-    // Otherwise we create a simple database.create issue.
+    const databaseName = targetDatabase.name;
     const newIssue: IssueCreate = {
-      name: `Create database '${databaseName}'`,
-      type: "bb.issue.database.create",
+      name: `[${databaseName}] Sync Schema from ${
+        sourceDatabase.name
+      } @ ${dayjs().format("MM-DD HH:mm")}`,
+      type: "bb.issue.database.schema.update",
       description: "",
-      assigneeId: state.assigneeId!,
-      projectId: state.projectId!,
+      assigneeId: SYSTEM_BOT_ID,
+      projectId: targetDatabase.projectId,
       pipeline: {
         stageList: [],
         name: "",
