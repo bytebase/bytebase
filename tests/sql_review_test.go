@@ -543,7 +543,24 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "INSERT INTO t_copy SELECT * FROM t",
+				statement: `
+					CREATE TABLE t(
+						id int NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					CREATE TABLE t_copy(
+						id int NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					INSERT INTO t_copy SELECT * FROM t`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
@@ -562,7 +579,16 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `INSERT INTO t VALUES (1), (2)`,
+				statement: `
+					CREATE TABLE t(
+						id int NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					INSERT INTO t VALUES (1, 1, now(), 1, now())`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
