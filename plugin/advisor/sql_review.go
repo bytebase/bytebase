@@ -597,6 +597,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
 		}
+	case SchemaRuleStatementDisallowMultiTransaction:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLStatementDisallowMultiTransaction, nil
+		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
 		case db.MySQL, db.TiDB:
