@@ -95,9 +95,7 @@
               `project.settings.select-schema-change-type-${item.toLowerCase()}`
             )
           }}
-          <span v-if="item === 'SDL'" class="text-xs border px-1 rounded ml-1"
-            >Beta</span
-          >
+          <BBBetaBadge v-if="item === 'SDL'" />
         </template>
       </BBSelect>
     </div>
@@ -242,6 +240,8 @@ import {
   SchemaChangeType,
   VCSType,
 } from "@/types";
+import BBBadge from "@/bbkit/BBBadge.vue";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -291,15 +291,12 @@ export default defineComponent({
   emits: ["change-repository", "change-schema-change-type"],
   setup(props) {
     const state = reactive<LocalState>({});
-
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
     });
-
     const isProjectSchemaChangeTypeDDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "DDL";
     });
-
     const sampleFilePath = (
       baseDirectory: string,
       filePathTemplate: string,
@@ -309,7 +306,6 @@ export default defineComponent({
         placeholder: string;
         sampleText: string;
       };
-
       const placeholderList: Item[] = [
         {
           placeholder: "{{VERSION}}",
@@ -332,20 +328,16 @@ export default defineComponent({
           sampleText: "create_tablefoo_for_bar",
         },
       ];
-
       let result = `${baseDirectory}/${filePathTemplate}`;
-
       // To replace the wildcard.
       result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
       result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
-
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);
       }
       return result;
     };
-
     const sampleSchemaPath = (
       baseDirectory: string,
       schemaPathTemplate: string
@@ -354,14 +346,12 @@ export default defineComponent({
         placeholder: string;
         sampleText: string;
       };
-
       const placeholderList: Item[] = [
         {
           placeholder: "{{DB_NAME}}",
           sampleText: "db1",
         },
       ];
-
       let result = `${baseDirectory}/${schemaPathTemplate}`;
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
@@ -369,7 +359,6 @@ export default defineComponent({
       }
       return result;
     };
-
     const fileOptionalPlaceholder = computed(() => {
       const tags = [] as string[];
       // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
@@ -377,14 +366,12 @@ export default defineComponent({
       tags.push("{{DESCRIPTION}}");
       return tags;
     });
-
     const schemaOptionalTagPlaceholder = computed(() => {
       const tags = [] as string[];
       // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
       if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
       return tags;
     });
-
     return {
       FILE_REQUIRED_PLACEHOLDER,
       SCHEMA_REQUIRED_PLACEHOLDER,
@@ -397,5 +384,6 @@ export default defineComponent({
       sampleSchemaPath,
     };
   },
+  components: { BBBadge, BBBetaBadge },
 });
 </script>
