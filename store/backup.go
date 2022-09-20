@@ -369,25 +369,8 @@ func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*ba
 
 // upsertBackupSettingRaw sets the backup settings for a database.
 func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
-	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
-	if err != nil {
+	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
 		return nil, err
-	}
-	// Backup plan policy check for backup setting mutation.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
-		if !upsert.Enabled {
-			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-		}
-		switch backupPlanPolicy.Schedule {
-		case api.BackupPlanPolicyScheduleDaily:
-			if upsert.DayOfWeek != -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		case api.BackupPlanPolicyScheduleWeekly:
-			if upsert.DayOfWeek == -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -406,6 +389,30 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 	}
 
 	return backupRaw, nil
+}
+
+func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.BackupSettingUpsert) error {
+	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
+	if err != nil {
+		return err
+	}
+	// Backup plan policy check for backup setting mutation.
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
+		if !upsert.Enabled {
+			return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+		}
+		switch backupPlanPolicy.Schedule {
+		case api.BackupPlanPolicyScheduleDaily:
+			if upsert.DayOfWeek != -1 {
+				return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		case api.BackupPlanPolicyScheduleWeekly:
+			if upsert.DayOfWeek == -1 {
+				return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		}
+	}
+	return nil
 }
 
 // createBackupImpl creates a new backup.
