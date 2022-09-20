@@ -109,8 +109,8 @@ func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
 	if old.Tp.String() != new.Tp.String() {
 		return false
 	}
-	oldNormalizeOptions := normalizeOptions(old.Options)
-	newNormalizeOptions := normalizeOptions(new.Options)
+	oldNormalizeOptions := normalizeColumnOptions(old.Options)
+	newNormalizeOptions := normalizeColumnOptions(new.Options)
 	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
 		return false
 	}
@@ -123,9 +123,9 @@ func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
 	return true
 }
 
-// normalizeOptions normalizes the column options.
+// normalizeColumnOptions normalizes the column options.
 // It skips the NULL option and order the options by OptionType.
-func normalizeOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
+func normalizeColumnOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
 	var retOptions []*ast.ColumnOption
 	for _, option := range options {
 		if option.Tp == ast.ColumnOptionNull {
