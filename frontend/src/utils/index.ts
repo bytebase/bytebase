@@ -17,4 +17,5 @@ export * from "./tab";
 export * from "./task";
 export * from "./principal";
 export * from "./sql-editor";
+export * from "./sheet";
 export * from "./pev2";
