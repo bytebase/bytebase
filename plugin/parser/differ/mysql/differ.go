@@ -105,5 +105,34 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 
 // isTwoColumnsSame returns true if the two columns are the same.
 func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
-	return old.Tp.String() == new.Tp.String()
+	if old.Tp.String() != new.Tp.String() {
+		return false
+	}
+	oldColumnOptions := make(map[ast.ColumnOptionType]*ast.ColumnOption)
+	newColumnOptions := make(map[ast.ColumnOptionType]*ast.ColumnOption)
+	for _, option := range old.Options {
+		oldColumnOptions[option.Tp] = option
+	}
+	for _, option := range new.Options {
+		switch option.Tp {
+		case ast.ColumnOptionNotNull:
+			if _, ok := oldColumnOptions[ast.ColumnOptionNotNull]; !ok {
+				return false
+			}
+		case ast.ColumnOptionNull:
+			if _, ok := oldColumnOptions[ast.ColumnOptionNotNull]; ok {
+				return false
+			}
+		default:
+		}
+		newColumnOptions[option.Tp] = option
+	}
+
+	if _, ok := newColumnOptions[ast.ColumnOptionNotNull]; !ok {
+		if _, ok := oldColumnOptions[ast.ColumnOptionNotNull]; ok {
+			return false
+		}
+	}
+
+	return true
 }
