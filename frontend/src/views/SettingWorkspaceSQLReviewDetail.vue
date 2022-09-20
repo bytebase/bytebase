@@ -204,7 +204,8 @@ import {
   SQLReviewPolicy,
   SchemaRuleEngineType,
   convertToCategoryList,
-  ruleTemplateMap,
+  RuleType,
+  TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
 import {
@@ -264,6 +265,16 @@ const reviewPolicy = computed((): SQLReviewPolicy => {
   );
 });
 
+const ruleTemplateMap: Map<RuleType, RuleTemplate> = TEMPLATE_LIST.reduce(
+  (map, template) => {
+    for (const rule of template.ruleList) {
+      map.set(rule.type, rule);
+    }
+    return map;
+  },
+  new Map<RuleType, RuleTemplate>()
+);
+
 const selectedRuleList = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
     return [];
@@ -281,6 +292,14 @@ const selectedRuleList = computed((): RuleTemplate[] => {
     if (data) {
       ruleTemplateList.push(data);
     }
+    ruleTemplateMap.delete(policyRule.type);
+  }
+
+  for (const rule of ruleTemplateMap.values()) {
+    ruleTemplateList.push({
+      ...rule,
+      level: RuleLevel.DISABLED,
+    });
   }
 
   return ruleTemplateList;
