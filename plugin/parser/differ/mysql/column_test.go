@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/pingcap/tidb/parser"
+	"github.com/pingcap/tidb/parser/ast"
 	"github.com/stretchr/testify/require"
 )
 
-func TestColumn(t *testing.T) {
+func TestColumnExist(t *testing.T) {
 	tests := []struct {
 		old  string
 		new  string
@@ -34,7 +35,23 @@ func TestColumn(t *testing.T) {
 			new:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
 			want: "",
 		},
+	}
+	a := require.New(t)
+	for _, test := range tests {
+		oldNodes := getStmtNodes(t, test.old)
+		newNodes := getStmtNodes(t, test.new)
+		out, err := SchemaDiff(oldNodes, newNodes)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
 
+func TestColumnType(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
 		// Different types.
 		{
 			old:  `CREATE TABLE book(id INT);`,
@@ -55,12 +72,74 @@ func TestColumn(t *testing.T) {
 	}
 	a := require.New(t)
 	for _, test := range tests {
-		oldNodes, _, err := parser.New().Parse(test.old, "", "")
-		a.NoError(err)
-		newNodes, _, err := parser.New().Parse(test.new, "", "")
-		a.NoError(err)
+		oldNodes := getStmtNodes(t, test.old)
+		newNodes := getStmtNodes(t, test.new)
 		out, err := SchemaDiff(oldNodes, newNodes)
 		a.NoError(err)
-		a.Equal(test.want, out)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
+}
+
+func TestColumnOption(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
+		// NULL option not match.
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50));`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50);\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NULL DEFAULT 'Harry Potter');`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NULL DEFAULT _UTF8MB4'Harry Potter';\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');`,
+			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter');`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT _UTF8MB4'Harry Potter';\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50));`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50));`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NULL);`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NULL);`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
+			want: "",
+		},
+	}
+	a := require.New(t)
+	for _, test := range tests {
+		oldNodes := getStmtNodes(t, test.old)
+		newNodes := getStmtNodes(t, test.new)
+		out, err := SchemaDiff(oldNodes, newNodes)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
+
+func getStmtNodes(t *testing.T, sql string) []ast.StmtNode {
+	nodes, _, err := parser.New().Parse(sql, "", "")
+	require.NoError(t, err)
+	return nodes
 }
