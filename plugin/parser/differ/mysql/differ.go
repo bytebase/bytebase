@@ -3,6 +3,7 @@ package mysql
 
 import (
 	"bytes"
+	"sort"
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
@@ -108,31 +109,32 @@ func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
 	if old.Tp.String() != new.Tp.String() {
 		return false
 	}
-	oldColumnOptions := make(map[ast.ColumnOptionType]*ast.ColumnOption)
-	newColumnOptions := make(map[ast.ColumnOptionType]*ast.ColumnOption)
-	for _, option := range old.Options {
-		oldColumnOptions[option.Tp] = option
+	oldNormalizeOptions := normalizeOptions(old.Options)
+	newNormalizeOptions := normalizeOptions(new.Options)
+	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
+		return false
 	}
-	for _, option := range new.Options {
-		switch option.Tp {
-		case ast.ColumnOptionNotNull:
-			if _, ok := oldColumnOptions[ast.ColumnOptionNotNull]; !ok {
-				return false
-			}
-		case ast.ColumnOptionNull:
-			if _, ok := oldColumnOptions[ast.ColumnOptionNotNull]; ok {
-				return false
-			}
-		default:
-		}
-		newColumnOptions[option.Tp] = option
-	}
-
-	if _, ok := newColumnOptions[ast.ColumnOptionNotNull]; !ok {
-		if _, ok := oldColumnOptions[ast.ColumnOptionNotNull]; ok {
+	for idx, oldOption := range oldNormalizeOptions {
+		newOption := newNormalizeOptions[idx]
+		if oldOption.Tp != newOption.Tp {
 			return false
 		}
 	}
-
 	return true
+}
+
+// normalizeOptions normalizes the column options.
+// It skips the NULL option and order the options by OptionType.
+func normalizeOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
+	var retOptions []*ast.ColumnOption
+	for _, option := range options {
+		if option.Tp == ast.ColumnOptionNull {
+			continue
+		}
+		retOptions = append(retOptions, option)
+	}
+	sort.Slice(retOptions, func(i, j int) bool {
+		return retOptions[i].Tp < retOptions[j].Tp
+	})
+	return retOptions
 }
