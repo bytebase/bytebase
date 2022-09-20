@@ -38,8 +38,8 @@ func TestColumnExist(t *testing.T) {
 	}
 	a := require.New(t)
 	for _, test := range tests {
-		oldNodes := getNodes(t, test.old)
-		newNodes := getNodes(t, test.new)
+		oldNodes := getStmtNodes(t, test.old)
+		newNodes := getStmtNodes(t, test.new)
 		out, err := SchemaDiff(oldNodes, newNodes)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
@@ -72,8 +72,8 @@ func TestColumnType(t *testing.T) {
 	}
 	a := require.New(t)
 	for _, test := range tests {
-		oldNodes := getNodes(t, test.old)
-		newNodes := getNodes(t, test.new)
+		oldNodes := getStmtNodes(t, test.old)
+		newNodes := getStmtNodes(t, test.new)
 		out, err := SchemaDiff(oldNodes, newNodes)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
@@ -98,8 +98,8 @@ func TestColumnOption(t *testing.T) {
 			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50);\n",
 		},
 		{
-			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL DEFAULT _UTF8MB4'Harry Potter');`,
-			new:  `CREATE TABLE book(name VARCHAR(50) NULL DEFAULT _UTF8MB4'Harry Potter');`,
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NULL DEFAULT 'Harry Potter');`,
 			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NULL DEFAULT _UTF8MB4'Harry Potter';\n",
 		},
 		{
@@ -130,15 +130,15 @@ func TestColumnOption(t *testing.T) {
 	}
 	a := require.New(t)
 	for _, test := range tests {
-		oldNodes := getNodes(t, test.old)
-		newNodes := getNodes(t, test.new)
+		oldNodes := getStmtNodes(t, test.old)
+		newNodes := getStmtNodes(t, test.new)
 		out, err := SchemaDiff(oldNodes, newNodes)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
 }
 
-func getNodes(t *testing.T, sql string) []ast.StmtNode {
+func getStmtNodes(t *testing.T, sql string) []ast.StmtNode {
 	nodes, _, err := parser.New().Parse(sql, "", "")
 	require.NoError(t, err)
 	return nodes
