@@ -118,7 +118,7 @@ func TestRequirePK(t *testing.T) {
 		},
 		{
 			// Use MockCatalogService
-			Statement: `ALTER TABLE t CHANGE COLUMN id uid INT`,
+			Statement: `ALTER TABLE tech_book CHANGE COLUMN id uid INT`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -142,7 +142,7 @@ func TestRequirePK(t *testing.T) {
 		},
 		{
 			// Use MockCatalogService
-			Statement: `ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY`,
+			Statement: `ALTER TABLE tech_book MODIFY COLUMN id INT`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -179,7 +179,7 @@ func TestRequirePK(t *testing.T) {
 		},
 		{
 			// Use MockCatalogService
-			Statement: `ALTER TABLE tech_book DROP COLUMN id, DROP COLUMN name`,
+			Statement: `ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
@@ -192,7 +192,7 @@ func TestRequirePK(t *testing.T) {
 		},
 		{
 			// Use MockCatalogService
-			Statement: `ALTER TABLE tech_book DROP COLUMN uid, DROP COLUMN name`,
+			Statement: `ALTER TABLE tech_book DROP COLUMN name`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -205,7 +205,7 @@ func TestRequirePK(t *testing.T) {
 		{
 			// Use MockCatalogService
 			Statement: `ALTER TABLE tech_book CHANGE COLUMN id uid int;
-						ALTER TABLE tech_book DROP COLUMN uid, DROP COLUMN name`,
+						ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
