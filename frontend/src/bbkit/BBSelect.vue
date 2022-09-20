@@ -12,8 +12,17 @@
         v-bind="$attrs"
         @click="toggle"
       >
-        <div class="whitespace-nowrap hide-scrollbar overflow-x-auto">
-          <template v-if="typeof state.selectedItem !== 'undefined'">
+        <div
+          class="whitespace-nowrap hide-scrollbar overflow-x-auto"
+          :class="
+            error
+              ? 'text-error'
+              : isSelected
+              ? 'text-control'
+              : 'text-control-placeholder'
+          "
+        >
+          <template v-if="isSelected">
             <slot
               name="menuItem"
               :item="state.selectedItem"
@@ -104,6 +113,7 @@ import {
 } from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
 import { onClickOutside, useElementBounding } from "@vueuse/core";
+import { isEmpty } from "lodash-es";
 
 interface LocalState {
   showMenu: boolean;
@@ -147,6 +157,10 @@ export default defineComponent({
       type: String as PropType<FitWidthMode>,
       default: "fit",
     },
+    error: {
+      type: Boolean,
+      default: false,
+    },
     itemAdditionClass: {
       type: String,
       default: "",
@@ -159,8 +173,8 @@ export default defineComponent({
       selectedItem: props.selectedItem,
     });
 
-    const button = ref<HTMLButtonElement | null>(null);
-    const popup = ref<HTMLElement | null>(null);
+    const button = ref<HTMLButtonElement>();
+    const popup = ref<HTMLElement>();
 
     const { width } = useElementBounding(button);
 
@@ -171,6 +185,10 @@ export default defineComponent({
       style[key] = `${width.value}px`;
 
       return style;
+    });
+
+    const isSelected = computed(() => {
+      return !isEmpty(state.selectedItem);
     });
 
     watch(
@@ -192,6 +210,7 @@ export default defineComponent({
 
     return {
       state,
+      isSelected,
       toggle,
       close,
       button,
