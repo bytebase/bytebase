@@ -369,7 +369,7 @@ func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*ba
 
 // upsertBackupSettingRaw sets the backup settings for a database.
 func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
-	if err := s.validateBackupSettingMutation(ctx, upsert); err != nil {
+	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
 		return nil, err
 	}
 
@@ -391,7 +391,7 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 	return backupRaw, nil
 }
 
-func (s *Store) validateBackupSettingMutation(ctx context.Context, upsert *api.BackupSettingUpsert) error {
+func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.BackupSettingUpsert) error {
 	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
 	if err != nil {
 		return err
