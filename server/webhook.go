@@ -796,7 +796,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		}
 		for i, file := range fileListSorted {
 			if migrationInfoList[i].Type != db.Data {
-				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file.name, errors.Errorf("kkip %s type migration script %s. Only allow DATA type migration in state-based migration project.", migrationInfoList[i].Type))
+				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file.name, errors.Errorf("skip %s type migration script %s. Only allow DATA type migration in state-based migration project", migrationInfoList[i].Type, common.EscapeForLogging(file.name)))
 				activityCreateList = append(activityCreateList, activityCreate)
 				continue
 			}
@@ -889,26 +889,36 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 }
 
 func sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []fileItem) ([]fileItem, []*db.MigrationInfo, error) {
-	var fileListNew []fileItem
-	var migrationInfoList []*db.MigrationInfo
-	fileListNew = append(fileListNew, fileList...)
+	type sortItem struct {
+		file fileItem
+		mi   *db.MigrationInfo
+	}
+	var sortItemList []sortItem
 	for _, file := range fileList {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 		template := path.Join(repo.BaseDirectory, repo.FilePathTemplate)
-		migrationInfo, err := db.ParseMigrationInfo(file.name, template)
+		mi, err := db.ParseMigrationInfo(file.name, template)
 		if err != nil {
 			fileNameEscaped := common.EscapeForLogging(file.name)
 			log.Error("Failed to parse migration info", zap.String("file", fileNameEscaped), zap.String("template", template), zap.Error(err))
 			return nil, nil, errors.Wrapf(err, "failed to parse migration info with file name %s and template %s", fileNameEscaped, template)
 		}
-		migrationInfoList = append(migrationInfoList, migrationInfo)
+		sortItemList = append(sortItemList, sortItem{file: file, mi: mi})
 	}
-	sort.Slice(fileListNew, func(i, j int) bool {
-		mi := migrationInfoList[i]
-		mj := migrationInfoList[j]
-		return mi.Database < mj.Database && mi.Version < mj.Version
+	sort.Slice(sortItemList, func(i, j int) bool {
+		mi := sortItemList[i].mi
+		mj := sortItemList[j].mi
+		return mi.Database < mj.Database || (mi.Database == mj.Database && mi.Version < mj.Version)
 	})
-	return fileListNew, migrationInfoList, nil
+
+	var fileListSorted []fileItem
+	var miListSorted []*db.MigrationInfo
+	for _, item := range sortItemList {
+		fileListSorted = append(fileListSorted, item.file)
+		miListSorted = append(miListSorted, item.mi)
+	}
+
+	return fileListSorted, miListSorted, nil
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract
