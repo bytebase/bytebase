@@ -144,7 +144,6 @@ func TestColumnComment(t *testing.T) {
 		new  string
 		want string
 	}{
-		// NULL option not match.
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) COMMENT 'Author Name' NOT NULL);`,
 			new:  `CREATE TABLE book(name VARCHAR(50) COMMENT 'Book Name' NOT NULL);`,
