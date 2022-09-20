@@ -178,10 +178,11 @@ onMounted(async () => {
 
   nextTick(() => {
     emit("ready");
-  });
 
-  watch(dialect, () => languageClient.changeDialect(dialect.value), {
-    immediate: true,
+    watch(dialect, () => languageClient.changeDialect(dialect.value), {
+      immediate: true,
+      flush: "post",
+    });
   });
 });
 
