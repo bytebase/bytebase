@@ -222,7 +222,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				s serial4,
 				t decimal,
 				u "user defined data type")`,
-					LastLine: 1,
+					LastLine: 22,
 				},
 			},
 			columnLine: [][]int{
@@ -1362,7 +1362,7 @@ func TestPGSelectStmt(t *testing.T) {
 						(SELECT * FROM t1 WHERE x LIKE b)
 				UNION
 				SELECT * FROM t`,
-					LastLine: 2,
+					LastLine: 13,
 				},
 			},
 		},
