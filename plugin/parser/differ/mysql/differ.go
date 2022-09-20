@@ -119,6 +119,7 @@ func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
 		if oldOption.Tp != newOption.Tp {
 			return false
 		}
+		// TODO(zp): it's not enough to compare the type for some option.
 	}
 	return true
 }
