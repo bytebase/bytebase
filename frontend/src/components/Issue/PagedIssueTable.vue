@@ -25,8 +25,13 @@
 </template>
 
 <script lang="ts" setup>
-import { buildQueryListByIssueFind, useIssueStore } from "@/store";
+import {
+  buildQueryListByIssueFind,
+  useIsLoggedIn,
+  useIssueStore,
+} from "@/store";
 import { Issue, IssueFind } from "@/types";
+import { useSessionStorage } from "@vueuse/core";
 import { computed, PropType, reactive, watch } from "vue";
 
 type LocalState = {
@@ -36,9 +41,29 @@ type LocalState = {
   hasMore: boolean;
 };
 
+/**
+ * It's complex and dangerous to cache the issue list.
+ * So we just memorize how many times the user clicks the "load more" button.
+ * And load the first N pages in the first fetch.
+ * E.g., the user clicked "load more" 4 times, then the first time will set limit
+ *   to `pageSize * 5`.
+ */
+type SessionState = {
+  // How many times the user clicks the "load more" button.
+  page: number;
+  // Help us to check if the session is outdated.
+  updatedTs: number;
+};
+
 const MAX_PAGE_SIZE = 1000;
+const SESSION_LIFE = 1 * 60 * 1000; // 1 minute
 
 const props = defineProps({
+  // A unique key to identify the session state.
+  sessionKey: {
+    type: String,
+    required: true,
+  },
   issueFind: {
     type: Object as PropType<IssueFind>,
     default: undefined,
@@ -60,7 +85,16 @@ const state = reactive<LocalState>({
   hasMore: true,
 });
 
+const sessionState = useSessionStorage<SessionState>(
+  `bb.page-issue-table.${props.sessionKey}`,
+  {
+    page: 1,
+    updatedTs: 0,
+  }
+);
+
 const issueStore = useIssueStore();
+const isLoggedIn = useIsLoggedIn();
 
 const limit = computed(() => {
   if (props.pageSize <= 0) return MAX_PAGE_SIZE;
@@ -77,10 +111,17 @@ const condition = computed(() => {
 
 const fetchData = (refresh = false) => {
   state.loading = true;
+
+  const isFirstFetch = state.paginationToken === "";
+
   issueStore
     .fetchPagedIssueList({
       ...props.issueFind,
-      limit: limit.value,
+      limit: isFirstFetch
+        ? // Load one or more page for the first fetch to restore the session
+          limit.value * sessionState.value.page
+        : // Always load one page if NOT the first fetch
+          limit.value,
       token: state.paginationToken,
     })
     .then(({ nextToken, issueList }) => {
@@ -92,8 +133,12 @@ const fetchData = (refresh = false) => {
 
       if (issueList.length === 0) {
         state.hasMore = false;
+      } else if (!isFirstFetch) {
+        // If we didn't reach the end, memorize we've clicked the "load more" button.
+        sessionState.value.page++;
       }
 
+      sessionState.value.updatedTs = Date.now();
       state.paginationToken = nextToken;
     })
     .finally(() => {
@@ -101,9 +146,17 @@ const fetchData = (refresh = false) => {
     });
 };
 
+const resetSession = () => {
+  sessionState.value = {
+    page: 1,
+    updatedTs: 0,
+  };
+};
+
 const refresh = () => {
   state.paginationToken = "";
   state.hasMore = true;
+  resetSession();
   fetchData(true);
 };
 
@@ -111,6 +164,16 @@ const fetchNextPage = () => {
   fetchData(false);
 };
 
+if (Date.now() - sessionState.value.updatedTs > SESSION_LIFE) {
+  // Reset session if it's outdated.
+  resetSession();
+}
 fetchData(true);
 watch(condition, refresh);
+watch(isLoggedIn, () => {
+  // Reset session when logged out.
+  if (!isLoggedIn.value) {
+    resetSession();
+  }
+});
 </script>
