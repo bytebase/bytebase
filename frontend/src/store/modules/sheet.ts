@@ -23,6 +23,7 @@ import { useAuthStore } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
+import { isSheetWritable } from "@/utils";
 
 function convertSheet(
   sheet: ResourceObject,
@@ -104,37 +105,20 @@ export const useSheetStore = defineStore("sheet", {
         return true;
       }
 
-      // The sheet is not saved yet, it is editable.
+      // The tab is not saved yet, it is editable.
       if (currentSheet.id === UNKNOWN_ID) {
         return false;
       }
 
-      // Always editable if current user is the creator of the sheet.
-      if (currentSheet.creator.id === currentUser.id) {
-        return false;
-      }
-
-      // Check the role of the current user in the sheet's project.
-      if (currentSheet.visibility === "PROJECT") {
-        const isCurrentUserProjectOwner = () => {
-          const projectMemberList = currentSheet.project.memberList || [];
-          const memberInProject = projectMemberList.find((member) => {
-            return member.principal.id === currentUser.id;
-          });
-
-          return memberInProject && memberInProject.role === "OWNER";
-        };
-
-        return !isCurrentUserProjectOwner();
-      }
-
-      // visibility === "PRIVATE" | "PUBLIC"
-      // Readonly if the sheet is private or public.
-      return true;
+      return !isSheetWritable(currentSheet, currentUser);
     },
   },
 
   actions: {
+    getSheetById(sheetId: SheetId) {
+      const sheet = this.sheetById.get(sheetId);
+      return sheet ?? unknown("SHEET");
+    },
     setSheetList(payload: Sheet[]) {
       this.sheetList = payload;
     },
