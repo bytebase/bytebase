@@ -177,6 +177,57 @@ func TestDedupMigrationFiles(t *testing.T) {
 			},
 		},
 		{
+			name: "Multi commits, single file, direct push",
+			commitList: []gitlab.WebhookCommit{
+				{
+					ID:        "1",
+					Title:     "Commit 1",
+					Message:   "Update 1",
+					Timestamp: timestamp1,
+					URL:       "example.com",
+					Author: gitlab.WebhookCommitAuthor{
+						Name: "bob",
+					},
+					AddedList: []string{
+						"v1.sql",
+					},
+				},
+				{
+					ID:        "2",
+					Title:     "Commit 2",
+					Message:   "Update 2",
+					Timestamp: timestamp2,
+					URL:       "example.com",
+					Author: gitlab.WebhookCommitAuthor{
+						Name: "bob",
+					},
+					ModifiedList: []string{
+						"v1.sql",
+					},
+				},
+			},
+			want: []distinctFileItem{
+				{
+					createdTime: time2,
+					commit: gitlab.WebhookCommit{
+						ID:        "2",
+						Title:     "Commit 2",
+						Message:   "Update 2",
+						Timestamp: timestamp2,
+						URL:       "example.com",
+						Author: gitlab.WebhookCommitAuthor{
+							Name: "bob",
+						},
+						ModifiedList: []string{
+							"v1.sql",
+						},
+					},
+					fileName: "v1.sql",
+					itemType: fileItemTypeAdded,
+				},
+			},
+		},
+		{
 			name: "Multi commits, multi files",
 			commitList: []gitlab.WebhookCommit{
 				{
