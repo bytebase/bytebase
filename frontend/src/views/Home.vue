@@ -9,12 +9,13 @@
       <BBTableSearch
         ref="searchField"
         :placeholder="$t('issue.search-issue-name')"
-        @change-text="(text) => changeSearchText(text)"
+        @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
 
     <!-- show OPEN Assigned issues with pageSize=10 -->
     <PagedIssueTable
+      session-key="home-assigned"
       :issue-find="{
         statusList: ['OPEN'],
         assigneeId: currentUser.id,
@@ -38,6 +39,7 @@
 
     <!-- show OPEN Created issues with pageSize=10 -->
     <PagedIssueTable
+      session-key="home-created"
       :issue-find="{
         statusList: ['OPEN'],
         creatorId: currentUser.id,
@@ -62,6 +64,7 @@
 
     <!-- show OPEN Subscribed issues with pageSize=10 -->
     <PagedIssueTable
+      session-key="home-subscribed"
       :issue-find="{
         statusList: ['OPEN'],
         subscriberId: currentUser.id,
@@ -87,6 +90,7 @@
     <!-- show the first 5 DONE or CANCELED issues -->
     <!-- But won't show "Load more", since we have a "View all closed" link below -->
     <PagedIssueTable
+      session-key="home-closed"
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
         principalId: currentUser.id,

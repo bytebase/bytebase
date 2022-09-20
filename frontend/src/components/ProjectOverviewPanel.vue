@@ -87,6 +87,7 @@
       <!-- show OPEN issues with pageSize=10 -->
       <div>
         <PagedIssueTable
+          session-key="project-open"
           :issue-find="{
             statusList: ['OPEN'],
             projectId: project.id,
@@ -107,6 +108,7 @@
         <!-- show the first 5 DONE or CANCELED issues -->
         <!-- But won't show "Load more", since we have a "View all closed" link below -->
         <PagedIssueTable
+          session-key="project-closed"
           :issue-find="{
             statusList: ['DONE', 'CANCELED'],
             projectId: project.id,

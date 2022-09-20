@@ -34,6 +34,7 @@
     <!-- show all OPEN issues with pageSize=10  -->
     <PagedIssueTable
       v-if="showOpen"
+      session-key="dashboard-open"
       :issue-find="{
         statusList: ['OPEN'],
         principalId: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
@@ -58,6 +59,7 @@
     <!-- show all DONE and CANCELED issues with pageSize=10 -->
     <PagedIssueTable
       v-if="showClosed"
+      session-key="dashboard-closed"
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
         principalId: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
