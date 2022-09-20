@@ -52,11 +52,20 @@ func NewClient(ctx context.Context, region, bucket string, credentials aws.Crede
 }
 
 // ListObjects lists objects with prefix in their names.
-func (c *Client) ListObjects(ctx context.Context, prefix string) (*s3.ListObjectsV2Output, error) {
-	return c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+func (c *Client) ListObjects(ctx context.Context, prefix string) ([]types.Object, error) {
+	var ret []types.Object
+	paginator := s3.NewListObjectsV2Paginator(c.c, &s3.ListObjectsV2Input{
 		Bucket: &c.bucket,
 		Prefix: &prefix,
 	})
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load the next page of S3 objects")
+		}
+		ret = append(ret, output.Contents...)
+	}
+	return ret, nil
 }
 
 // DownloadObject downloads the object with path.
