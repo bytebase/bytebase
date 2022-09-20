@@ -134,7 +134,7 @@ const fetchData = (refresh = false) => {
       if (issueList.length === 0) {
         state.hasMore = false;
       } else if (!isFirstFetch) {
-        // If we didn't reach the end, memoize we've clicked the "load more" button.
+        // If we didn't reach the end, memorize we've clicked the "load more" button.
         sessionState.value.page++;
       }
 
