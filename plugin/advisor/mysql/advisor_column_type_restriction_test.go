@@ -51,47 +51,51 @@ func TestColumnTypeRestriction(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT)`,
+			Statement: `
+				CREATE TABLE t(d int);
+				ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
 					Title:   "column.type-restriction",
 					Content: "Disallow column type JSON but column `t`.`a` is",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
 					Title:   "column.type-restriction",
 					Content: "Disallow column type BLOB but column `t`.`b` is",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
 					Title:   "column.type-restriction",
 					Content: "Disallow column type TEXT but column `t`.`c` is",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB`,
+			Statement: `
+				CREATE TABLE t(c int, b int);
+				ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
 					Title:   "column.type-restriction",
 					Content: "Disallow column type JSON but column `t`.`a` is",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
 					Title:   "column.type-restriction",
 					Content: "Disallow column type BLOB but column `t`.`b` is",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},

@@ -125,9 +125,12 @@ func RunSQLReviewRuleTests(
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
-		Catalog:   catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true}),
 	}
 	for _, tc := range tests {
+		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true})
+		err := finder.WalkThrough(tc.Statement)
+		require.NoError(t, err, tc.Statement)
+		ctx.Catalog = finder
 		adviceList, err := adv.Check(ctx, tc.Statement)
 		require.NoError(t, err)
 		assert.Equal(t, tc.Want, adviceList, tc.Statement)
