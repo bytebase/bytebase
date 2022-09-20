@@ -106,20 +106,20 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 
 // isColumnEqual returns true if definitions of two columns with the same name are the same.
 func isColumnEqual(old, new *ast.ColumnDef) bool {
-	if !isSameColumnTypes(old, new) {
+	if !isColumnTypesEqual(old, new) {
 		return false
 	}
-	if !isSameColumnOptions(old.Options, new.Options) {
+	if !isColumnOptionsEqaul(old.Options, new.Options) {
 		return false
 	}
 	return true
 }
 
-func isSameColumnTypes(old, new *ast.ColumnDef) bool {
+func isColumnTypesEqual(old, new *ast.ColumnDef) bool {
 	return old.Tp.String() == new.Tp.String()
 }
 
-func isSameColumnOptions(old, new []*ast.ColumnOption) bool {
+func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
 	oldNormalizeOptions := normalizeColumnOptions(old)
 	newNormalizeOptions := normalizeColumnOptions(new)
 	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
