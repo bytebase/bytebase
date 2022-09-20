@@ -240,7 +240,6 @@ import {
   SchemaChangeType,
   VCSType,
 } from "@/types";
-import BBBadge from "@/bbkit/BBBadge.vue";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
@@ -254,6 +253,7 @@ interface LocalState {}
 
 export default defineComponent({
   name: "RepositoryForm",
+  components: { BBBetaBadge },
   props: {
     allowEdit: {
       default: true,
@@ -384,6 +384,5 @@ export default defineComponent({
       sampleSchemaPath,
     };
   },
-  components: { BBBadge, BBBetaBadge },
 });
 </script>
