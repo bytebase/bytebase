@@ -16,6 +16,8 @@ ruleList:
     level: ERROR
   - type: statement.where.no-leading-wildcard-like
     level: ERROR
+  - type: statement.disallow-commit
+    level: ERROR
   - type: naming.table
     level: WARNING
     payload:
