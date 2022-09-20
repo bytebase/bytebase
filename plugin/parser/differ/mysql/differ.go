@@ -130,7 +130,14 @@ func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
 		if oldOption.Tp != newOption.Tp {
 			return false
 		}
-		// TODO(zp): it's not enough to compare the type for some option.
+		// TODO(zp): it's not enough to compare the type for some options.
+		switch oldOption.Tp {
+		case ast.ColumnOptionComment:
+			if oldOption.Expr.(ast.ValueExpr).GetString() != newOption.Expr.(ast.ValueExpr).GetString() {
+				return false
+			}
+		default:
+		}
 	}
 	return true
 }
