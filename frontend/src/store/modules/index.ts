@@ -39,6 +39,6 @@ export * from "./task";
 export * from "./uistate";
 export * from "./vcs";
 export * from "./view";
-export * from "./db_extension";
+export * from "./dbExtension";
 export * from "./sqlReview";
 export * from "./onboardingGuide";

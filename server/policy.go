@@ -39,9 +39,7 @@ func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 			return errors.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeSQLReview:
-		if !s.feature(api.FeatureSQLReviewPolicy) {
-			return errors.Errorf(api.FeatureSQLReviewPolicy.AccessErrorMessage())
-		}
+		return nil
 	case api.PolicyTypeEnvironmentTier:
 		if !s.feature(api.FeatureEnvironmentTierPolicy) {
 			return errors.Errorf(api.FeatureEnvironmentTierPolicy.AccessErrorMessage())

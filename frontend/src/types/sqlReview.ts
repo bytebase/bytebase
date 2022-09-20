@@ -3,6 +3,7 @@ import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
+import { PlanType } from "./plan";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
@@ -92,6 +93,11 @@ export type RuleType =
   | "statement.where.no-leading-wildcard-like"
   | "schema.backward-compatibility"
   | "database.drop-empty-database";
+
+export const availableRulesForFreePlan: RuleType[] = [
+  "statement.where.require",
+  "column.no-null",
+];
 
 // The naming format rule payload.
 // Used by the backend.
@@ -479,4 +485,14 @@ export const getRuleLocalization = (
     title,
     description,
   };
+};
+
+export const ruleIsAvailableInSubscription = (
+  ruleType: RuleType,
+  subscriptionPlan: PlanType
+): boolean => {
+  if (subscriptionPlan === PlanType.FREE) {
+    return availableRulesForFreePlan.indexOf(ruleType) >= 0;
+  }
+  return true;
 };

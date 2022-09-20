@@ -98,7 +98,7 @@
         secondary
         strong
         type="primary"
-        :disabled="isEmptyStatement || tabStore.currentTab.isSaved"
+        :disabled="!allowSave"
         @click="() => emit('save-sheet')"
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
@@ -176,6 +176,21 @@ const hasReadonlyDataSource = computed(() => {
     }
   }
   return false;
+});
+
+const allowSave = computed(() => {
+  if (isEmptyStatement.value) {
+    return false;
+  }
+  if (tabStore.currentTab.isSaved) {
+    return false;
+  }
+  // Temporarily disable saving and sharing if we are connected to an instance
+  // but not a database.
+  if (tabStore.currentTab.connection.databaseId === UNKNOWN_ID) {
+    return false;
+  }
+  return true;
 });
 
 const { execute } = useExecuteSQL();

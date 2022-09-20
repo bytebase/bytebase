@@ -429,7 +429,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				}
 			}
 
-			if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
+			if api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
 				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 				}

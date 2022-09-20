@@ -93,7 +93,8 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.request" // Used by Developer
   | "quickaction.bb.database.schema.update"
   | "quickaction.bb.database.data.update"
-  | "quickaction.bb.database.troubleshoot";
+  | "quickaction.bb.database.troubleshoot"
+  | "quickaction.bb.database.schema.sync";
 
 export type QuickActionType =
   | EnvironmentQuickActionType

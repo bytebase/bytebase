@@ -323,7 +323,7 @@ func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task
 	return nil
 }
 func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
-	if !s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
+	if !api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
 		return nil
 	}
 	policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
