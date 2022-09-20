@@ -24,11 +24,10 @@ var (
 )
 
 type tokenizer struct {
-	buffer    []rune
-	cursor    uint
-	len       uint
-	line      int
-	startLine int
+	buffer []rune
+	cursor uint
+	len    uint
+	line   int
 
 	// steaming API specific field
 	scanner *bufio.Scanner
@@ -40,10 +39,9 @@ type tokenizer struct {
 // Notice: we append an additional eofRune in the statement. This is a sentinel rune.
 func newTokenizer(statement string) *tokenizer {
 	t := &tokenizer{
-		buffer:    []rune(statement),
-		cursor:    0,
-		line:      1,
-		startLine: 1,
+		buffer: []rune(statement),
+		cursor: 0,
+		line:   1,
 	}
 	t.len = uint(len(t.buffer))
 	// append an additional eofRune.
@@ -70,11 +68,10 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
 func newStreamTokenizer(src io.Reader, f func(string) error) *tokenizer {
 	t := &tokenizer{
-		cursor:    0,
-		line:      1,
-		startLine: 1,
-		scanner:   bufio.NewScanner(src),
-		f:         f,
+		cursor:  0,
+		line:    1,
+		scanner: bufio.NewScanner(src),
+		f:       f,
 	}
 	t.scanner.Split(scanLines)
 	if t.scanner.Scan() {
@@ -87,7 +84,7 @@ func newStreamTokenizer(src io.Reader, f func(string) error) *tokenizer {
 	return t
 }
 
-func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
+func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt, firstLine int) error {
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
@@ -109,7 +106,6 @@ func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt
 	parentheses := 1
 	t.skipBlank()
 	startPos := t.pos()
-	t.startLine = t.line
 	for {
 		switch {
 		case t.char(0) == '\n':
@@ -146,10 +142,29 @@ func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt
 				def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
 				if columnPos < len(node.Cols) &&
 					strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
-					node.Cols[columnPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+					// Consider this text:
+					// CREATE TABLE t(
+					//   a int
+					// )
+					//
+					// Our current location is ')'.
+					// The line (t.line + firstLine - 1) is the line of ')',
+					// but we want to get the line of 'a int'.
+					// So we need minus the aboveNonBlankLineDistance.
+					node.Cols[columnPos].SetOriginTextPosition(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
 				} else if constraintPos < len(node.Constraints) &&
 					matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
-					node.Constraints[constraintPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+					// Consider this text:
+					// CREATE TABLE t(
+					//   a int,
+					//   UNIQUE (a)
+					// )
+					//
+					// Our current location is ')'.
+					// The line (t.line + firstLine - 1) is the line of ')',
+					// but we want to get the line of 'UNIQUE (a)'.
+					// So we need minus the aboveNonBlankLineDistance.
+					node.Constraints[constraintPos].SetOriginTextPosition(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
 				}
 				return nil
 			}
@@ -169,17 +184,16 @@ func (t *tokenizer) setLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt
 			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
 			if columnPos < len(node.Cols) &&
 				strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
-				node.Cols[columnPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				node.Cols[columnPos].SetOriginTextPosition(t.line + firstLine - 1)
 				columnPos++
 			} else if constraintPos < len(node.Constraints) &&
 				matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
-				node.Constraints[constraintPos].SetOriginTextPosition(t.startLine + node.OriginTextPosition() - 1)
+				node.Constraints[constraintPos].SetOriginTextPosition(t.line + firstLine - 1)
 				constraintPos++
 			}
 			t.skip(1)
 			t.skipBlank()
 			startPos = t.pos()
-			t.startLine = t.line
 		case t.char(0) == eofRune:
 			return nil
 		default:
@@ -213,18 +227,18 @@ func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
 }
 
 // setLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
-func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error {
+func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt, firstLine int) error {
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
 	for _, col := range node.ColumnList {
-		col.SetLine(node.Line())
+		col.SetLastLine(node.LastLine())
 		for _, inlineCons := range col.ConstraintList {
-			inlineCons.SetLine(node.Line())
+			inlineCons.SetLastLine(node.LastLine())
 		}
 	}
 	for _, cons := range node.ConstraintList {
-		cons.SetLine(node.Line())
+		cons.SetLastLine(node.LastLine())
 	}
 
 	columnPos := 0
@@ -238,7 +252,6 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error
 	parentheses := 1
 	t.skipBlank()
 	startPos := t.pos()
-	t.startLine = t.line
 	for {
 		switch {
 		case t.char(0) == '\n':
@@ -275,13 +288,32 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error
 				def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
 				if columnPos < len(node.ColumnList) &&
 					strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
-					node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+					// Consider this text:
+					// CREATE TABLE t(
+					//   a int
+					// )
+					//
+					// Our current location is ')'.
+					// The line (t.line + firstLine - 1) is the line of ')',
+					// but we want to get the line of 'a int'.
+					// So we need minus the aboveNonBlankLineDistance.
+					node.ColumnList[columnPos].SetLastLine(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
 					for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
-						inlineConstraint.SetLine(node.ColumnList[columnPos].Line())
+						inlineConstraint.SetLastLine(node.ColumnList[columnPos].LastLine())
 					}
 				} else if constraintPos < len(node.ConstraintList) &&
 					matchTableConstraint(def, node.ConstraintList[constraintPos]) {
-					node.ConstraintList[constraintPos].SetLine(t.startLine + node.Line() - 1)
+					// Consider this text:
+					// CREATE TABLE t(
+					//   a int,
+					//   UNIQUE (a)
+					// )
+					//
+					// Our current location is ')'.
+					// The line (t.line + firstLine - 1) is the line of ')',
+					// but we want to get the line of 'UNIQUE (a)'.
+					// So we need minus the aboveNonBlankLineDistance.
+					node.ConstraintList[constraintPos].SetLastLine(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
 				}
 				return nil
 			}
@@ -301,25 +333,38 @@ func (t *tokenizer) setLineForPGCreateTableStmt(node *ast.CreateTableStmt) error
 			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
 			if columnPos < len(node.ColumnList) &&
 				strings.Contains(def, strings.ToLower(node.ColumnList[columnPos].ColumnName)) {
-				node.ColumnList[columnPos].SetLine(t.startLine + node.Line() - 1)
+				node.ColumnList[columnPos].SetLastLine(t.line + firstLine - 1)
 				for _, inlineConstraint := range node.ColumnList[columnPos].ConstraintList {
-					inlineConstraint.SetLine(node.ColumnList[columnPos].Line())
+					inlineConstraint.SetLastLine(node.ColumnList[columnPos].LastLine())
 				}
 				columnPos++
 			} else if constraintPos < len(node.ConstraintList) &&
 				matchTableConstraint(def, node.ConstraintList[constraintPos]) {
-				node.ConstraintList[constraintPos].SetLine(t.startLine + node.Line() - 1)
+				node.ConstraintList[constraintPos].SetLastLine(t.line + firstLine - 1)
 				constraintPos++
 			}
 			t.skip(1)
 			t.skipBlank()
 			startPos = t.pos()
-			t.startLine = t.line
 		case t.char(0) == eofRune:
 			return nil
 		default:
 			t.skip(1)
 		}
+	}
+}
+
+func (t *tokenizer) aboveNonBlankLineDistance() int {
+	pos := uint(1)
+	dis := 0
+	for {
+		c := t.preChar(pos)
+		if c == '\n' {
+			dis++
+		} else if !emptyRune(c) {
+			return dis
+		}
+		pos++
 	}
 }
 
@@ -348,7 +393,6 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 	delimiter := []rune{';'}
 
 	t.skipBlank()
-	t.startLine = t.line
 	startPos := t.cursor
 	for {
 		switch {
@@ -358,7 +402,19 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 				if t.f == nil {
 					res = append(res, SingleSQL{
 						Text: s,
-						Line: t.startLine,
+						// Consider this text:
+						// CREATE TABLE t(
+						//   a int
+						// )
+						//
+						// EOF line
+						//
+						// Our current location is the EOF line.
+						// The line t.line is the line of ')',
+						// but we want to get the line of last line of the SQL
+						// which means the line of ')'.
+						// So we need minus the aboveNonBlankLineDistance.
+						LastLine: t.line - t.aboveNonBlankLineDistance(),
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -371,15 +427,14 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, SingleSQL{
-					Text: text,
-					Line: t.startLine,
+					Text:     text,
+					LastLine: t.line,
 				})
 			}
 			t.skipBlank()
 			if err := t.processStreaming(text); err != nil {
 				return nil, err
 			}
-			t.startLine = t.line
 			startPos = t.pos()
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
@@ -391,15 +446,14 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, SingleSQL{
-					Text: text,
-					Line: t.startLine,
+					Text:     text,
+					LastLine: t.line,
 				})
 			}
 			t.skipBlank()
 			if err := t.processStreaming(text); err != nil {
 				return nil, err
 			}
-			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == '/' && t.char(1) == '*':
 			if err := t.scanComment(); err != nil {
@@ -450,7 +504,6 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 	var res []SingleSQL
 
 	t.skipBlank()
-	t.startLine = t.line
 	startPos := t.cursor
 	for {
 		switch {
@@ -479,15 +532,14 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, SingleSQL{
-					Text: text,
-					Line: t.startLine,
+					Text:     text,
+					LastLine: t.line,
 				})
 			}
 			t.skipBlank()
 			if err := t.processStreaming(text); err != nil {
 				return nil, err
 			}
-			t.startLine = t.line
 			startPos = t.pos()
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
@@ -495,7 +547,19 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 				if t.f == nil {
 					res = append(res, SingleSQL{
 						Text: s,
-						Line: t.startLine,
+						// Consider this text:
+						// CREATE TABLE t(
+						//   a int
+						// )
+						//
+						// EOF line
+						//
+						// Our current location is the EOF line.
+						// The line t.line is the line of ')',
+						// but we want to get the line of last line of the SQL
+						// which means the line of ')'.
+						// So we need minus the aboveNonBlankLineDistance.
+						LastLine: t.line - t.aboveNonBlankLineDistance(),
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -728,6 +792,14 @@ func (t *tokenizer) char(after uint) rune {
 	return t.buffer[t.cursor+after]
 }
 
+func (t *tokenizer) preChar(before uint) rune {
+	if t.cursor < before {
+		return eofRune
+	}
+
+	return t.buffer[t.cursor-before]
+}
+
 func (t *tokenizer) skip(step uint) {
 	t.cursor += step
 	for t.cursor > t.len && t.scanner != nil {
@@ -796,7 +868,7 @@ func (t *tokenizer) equalWordCaseInsensitive(word []rune) bool {
 }
 
 func emptyRune(r rune) bool {
-	return r != ' ' && r != '\n' && r != '\t' && r != '\r'
+	return r == ' ' || r == '\n' || r == '\t' || r == '\r'
 }
 
 func emptyString(s string) bool {

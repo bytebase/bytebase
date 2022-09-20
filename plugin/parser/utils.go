@@ -2,6 +2,7 @@ package parser
 
 import (
 	"io"
+	"strings"
 
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
@@ -11,8 +12,8 @@ import (
 
 // SingleSQL is a separate SQL split from multi-SQL.
 type SingleSQL struct {
-	Text string
-	Line int
+	Text     string
+	LastLine int
 }
 
 // SplitMultiSQL splits statement into a slice of the single SQL.
@@ -48,7 +49,8 @@ func SetLineForCreateTableStmt(engineType EngineType, node *ast.CreateTableStmt)
 	switch engineType {
 	case Postgres:
 		t := newTokenizer(node.Text())
-		return t.setLineForPGCreateTableStmt(node)
+		firstLine := node.LastLine() - strings.Count(node.Text(), "\n")
+		return t.setLineForPGCreateTableStmt(node, firstLine)
 	default:
 		return errors.Errorf("engine type is not supported: %s", engineType)
 	}
@@ -62,5 +64,6 @@ func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
 	if len(node.Cols) == 0 {
 		return nil
 	}
-	return newTokenizer(node.Text()).setLineForMySQLCreateTableStmt(node)
+	firstLine := node.OriginTextPosition() - strings.Count(node.Text(), "\n")
+	return newTokenizer(node.Text()).setLineForMySQLCreateTableStmt(node, firstLine)
 }

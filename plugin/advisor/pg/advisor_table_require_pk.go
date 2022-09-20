@@ -117,7 +117,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 				missingPK.Name,
 				checker.text,
 			),
-			Line: node.Line(),
+			Line: node.LastLine(),
 		})
 	}
 

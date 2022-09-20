@@ -119,26 +119,26 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.ConstraintList {
-			if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint, constraint.Line()); metadata != nil {
+			if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint, constraint.LastLine()); metadata != nil {
 				res = append(res, metadata)
 			}
 		}
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint, column.Line()); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint, column.LastLine()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
 		}
 	case *ast.AddConstraintStmt:
 		constraint := node.Constraint
-		if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint, node.Line()); metadata != nil {
+		if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint, node.LastLine()); metadata != nil {
 			res = append(res, metadata)
 		}
 	case *ast.AddColumnListStmt:
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint, node.Line()); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint, node.LastLine()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
@@ -156,7 +156,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.Index.Name,
 				tableName: node.Index.Table.Name,
-				line:      node.Line(),
+				line:      node.LastLine(),
 				metaData:  metaData,
 			})
 		}
@@ -170,7 +170,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
 				tableName: node.Table.Name,
-				line:      node.Line(),
+				line:      node.LastLine(),
 				metaData:  metaData,
 			})
 		}
@@ -185,7 +185,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
 				tableName: tableName,
-				line:      node.Line(),
+				line:      node.LastLine(),
 				metaData:  metaData,
 			})
 		}

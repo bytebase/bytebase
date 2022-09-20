@@ -22,7 +22,7 @@ func TestTableDisallowCreateTableAs(t *testing.T) {
 					Code:    advisor.StatementCreateTableAs,
 					Title:   "statement.create-table.no-create-table-as",
 					Content: "cannot create table `t` by using CREATE TABLE ... [AS] SELECT ...",
-					Line:    1,
+					Line:    4,
 				},
 			},
 		},
