@@ -3,6 +3,7 @@ package mysql
 
 import (
 	"bytes"
+	"sort"
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
@@ -45,7 +46,7 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 					continue
 				}
 				// We need to compare the two column definitions.
-				if !isTwoColumnsSame(oldColumnDef, columnDef) {
+				if !isColumnEqual(oldColumnDef, columnDef) {
 					alterTableModifyColumnSpecs = append(alterTableModifyColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableModifyColumn,
 						NewColumns: []*ast.ColumnDef{columnDef},
@@ -103,7 +104,49 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 	return oldTableMap
 }
 
-// isTwoColumnsSame returns true if the two columns are the same.
-func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
+// isColumnEqual returns true if definitions of two columns with the same name are the same.
+func isColumnEqual(old, new *ast.ColumnDef) bool {
+	if !isColumnTypesEqual(old, new) {
+		return false
+	}
+	if !isColumnOptionsEqaul(old.Options, new.Options) {
+		return false
+	}
+	return true
+}
+
+func isColumnTypesEqual(old, new *ast.ColumnDef) bool {
 	return old.Tp.String() == new.Tp.String()
+}
+
+func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
+	oldNormalizeOptions := normalizeColumnOptions(old)
+	newNormalizeOptions := normalizeColumnOptions(new)
+	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
+		return false
+	}
+	for idx, oldOption := range oldNormalizeOptions {
+		newOption := newNormalizeOptions[idx]
+		if oldOption.Tp != newOption.Tp {
+			return false
+		}
+		// TODO(zp): it's not enough to compare the type for some option.
+	}
+	return true
+}
+
+// normalizeColumnOptions normalizes the column options.
+// It skips the NULL option, NO option and then order the options by OptionType.
+func normalizeColumnOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
+	var retOptions []*ast.ColumnOption
+	for _, option := range options {
+		if option.Tp == ast.ColumnOptionNull || option.Tp == ast.ColumnOptionNoOption {
+			continue
+		}
+		retOptions = append(retOptions, option)
+	}
+	sort.Slice(retOptions, func(i, j int) bool {
+		return retOptions[i].Tp < retOptions[j].Tp
+	})
+	return retOptions
 }
