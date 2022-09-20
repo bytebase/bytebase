@@ -5,9 +5,6 @@
     :disabled="disabled"
     :placeholder="$t('database.select')"
     :show-prefix-item="true"
-    :item-addition-class="
-      showEngineIcon ? 'hover:!bg-gray-200 hover:text-main' : ''
-    "
     @select-item="(database: Database) => $emit('select-database-id', database.id)"
   >
     <template #menuItem="{ item: database }">
