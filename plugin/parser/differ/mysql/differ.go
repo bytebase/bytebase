@@ -46,7 +46,7 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 					continue
 				}
 				// We need to compare the two column definitions.
-				if !isTwoColumnsWithSameNameSame(oldColumnDef, columnDef) {
+				if !isColumnEqual(oldColumnDef, columnDef) {
 					alterTableModifyColumnSpecs = append(alterTableModifyColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableModifyColumn,
 						NewColumns: []*ast.ColumnDef{columnDef},
@@ -104,8 +104,8 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 	return oldTableMap
 }
 
-// isTwoColumnsWithSameNameSame returns true if definitions of two columns with the same name are the same.
-func isTwoColumnsWithSameNameSame(old, new *ast.ColumnDef) bool {
+// isColumnEqual returns true if definitions of two columns with the same name are the same.
+func isColumnEqual(old, new *ast.ColumnDef) bool {
 	if !isSameColumnTypes(old, new) {
 		return false
 	}
