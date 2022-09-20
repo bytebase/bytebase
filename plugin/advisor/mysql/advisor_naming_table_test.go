@@ -27,7 +27,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id int, name varchar(255))",
+			Statement: "CREATE TABLE tech_book_copy(id int, name varchar(255))",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -50,7 +50,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "ALTER TABLE techBook RENAME TO TechBook",
+			Statement: "ALTER TABLE tech_book RENAME TO TechBook",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
@@ -62,7 +62,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "ALTER TABLE techBook RENAME TO tech_book",
+			Statement: "ALTER TABLE tech_book RENAME TO tech_book_copy",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -73,7 +73,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "RENAME TABLE techBook TO tech_book, literaryBook TO LiteraryBook",
+			Statement: "RENAME TABLE tech_book TO tech_book_copy, tech_book_copy TO LiteraryBook",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
@@ -85,7 +85,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "RENAME TABLE techBook TO TechBook, literaryBook TO LiteraryBook",
+			Statement: "CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO TechBook, literary_book TO LiteraryBook",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
@@ -104,7 +104,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "RENAME TABLE techBook TO tech_book, literaryBook TO literary_book",
+			Statement: "CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
