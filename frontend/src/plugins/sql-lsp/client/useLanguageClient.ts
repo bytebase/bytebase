@@ -1,7 +1,7 @@
 import type { ExecuteCommandParams } from "monaco-languageclient";
 import { MonacoLanguageClient, MonacoServices } from "monaco-languageclient";
-import { StandaloneServices } from "vscode/services";
-import getMessageServiceOverride from "vscode/service-override/messages";
+import { StandaloneServices } from "@codingame/monaco-vscode-api/services";
+import getMessageServiceOverride from "@codingame/monaco-vscode-api/service-override/messages";
 import { createLanguageServerWorker } from "@sql-lsp/server";
 import { Schema, SQLDialect } from "@sql-lsp/types";
 import { createLanguageClient } from "./createLanguageClient";
