@@ -48,6 +48,7 @@ import SQLEditor from "./SQLEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
 import ConnectionHolder from "./ConnectionHolder.vue";
 import SaveSheetModal from "./SaveSheetModal.vue";
+import { UNKNOWN_ID } from "@/types";
 
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
@@ -62,6 +63,22 @@ const isProtectedEnvironment = computed(() => {
   return instance.environment.tier === "PROTECTED";
 });
 
+const allowSave = computed((): boolean => {
+  const tab = tabStore.currentTab;
+  if (tab.statement === "") {
+    return false;
+  }
+  if (tab.isSaved) {
+    return false;
+  }
+  // Temporarily disable saving and sharing if we are connected to an instance
+  // but not a database.
+  if (tab.connection.databaseId === UNKNOWN_ID) {
+    return false;
+  }
+  return true;
+});
+
 const handleClose = () => {
   sqlEditorStore.setSQLEditorState({
     isShowExecutingHint: false,
@@ -69,6 +86,10 @@ const handleClose = () => {
 };
 
 const handleSaveSheet = async (sheetName?: string) => {
+  if (!allowSave.value) {
+    return;
+  }
+
   if (tabStore.currentTab.name === defaultTabName.value && !sheetName) {
     isShowSaveSheetModal.value = true;
     return;
