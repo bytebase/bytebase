@@ -141,9 +141,12 @@ export default defineComponent({
           title = checkResult.title;
           break;
         // SchemaSQLPolicyErrorCode
+        case SQLReviewPolicyErrorCode.STATEMENT_SYNTAX_ERROR:
         case SQLReviewPolicyErrorCode.STATEMENT_NO_WHERE:
         case SQLReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
         case SQLReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
+        case SQLReviewPolicyErrorCode.STATEMENT_CREATE_TABLE_AS:
+        case SQLReviewPolicyErrorCode.STATEMENT_DISALLOW_COMMIT:
         case SQLReviewPolicyErrorCode.TABLE_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.COLUMN_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.INDEX_NAMING_MISMATCH:

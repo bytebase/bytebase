@@ -154,6 +154,10 @@
       "title": "Disallow leading wildcard like",
       "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
     },
+    "statement-disallow-commit": {
+      "title": "Disallow commit",
+      "description": "Disallow using commit in the issue."
+    },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
       "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
