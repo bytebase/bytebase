@@ -57,6 +57,12 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
+  - type: statement.disallow-commit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:

@@ -55,6 +55,8 @@ const (
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
 	// SchemaRuleStatementNoCreateTableAs disallow 'CREATE TABLE ... [AS] SELECT.
 	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
+	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
+	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -750,6 +752,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowCreateTableAs, nil
+		}
+	case SchemaRuleStatementDisallowCommit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLStatementDisallowCommit, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
