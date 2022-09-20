@@ -9,6 +9,7 @@
           id="project"
           class="mt-1"
           name="project"
+          required
           :disabled="!allowEditProject"
           :selected-id="state.projectId"
           @select-project-id="selectProject"
@@ -97,6 +98,7 @@
         <label for="environment" class="textlabel">
           {{ $t("common.environment") }} <span style="color: red">*</span>
         </label>
+        <!-- It's default selected to the first env, so we don't need to set `required` here -->
         <EnvironmentSelect
           id="environment"
           class="mt-1 w-full"
@@ -123,6 +125,7 @@
             id="instance"
             class="mt-1"
             name="instance"
+            required
             :disabled="!allowEditInstance"
             :selectedId="state.instanceId"
             :environmentId="state.environmentId"

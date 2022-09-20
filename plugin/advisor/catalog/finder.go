@@ -1,5 +1,7 @@
 package catalog
 
+import "github.com/bytebase/bytebase/plugin/advisor/db"
+
 // FinderContext is the context for finder.
 type FinderContext struct {
 	// CheckIntegrity defines the policy for integrity checking.
@@ -37,8 +39,8 @@ func NewFinder(database *Database, context *FinderContext) *Finder {
 }
 
 // NewEmptyFinder creates a finder with empty databse.
-func NewEmptyFinder(ctx *FinderContext) *Finder {
-	return &Finder{Origin: newDatabaseState(&Database{}, ctx)}
+func NewEmptyFinder(ctx *FinderContext, dbType db.Type) *Finder {
+	return &Finder{Origin: newDatabaseState(&Database{DbType: dbType}, ctx)}
 }
 
 // WalkThrough does the walk through.

@@ -9,13 +9,18 @@
   >
     <template #menuItem="{ item: database }">
       <div class="flex items-center">
-        {{ database.name }}
+        <InstanceEngineIcon
+          v-if="showEngineIcon"
+          :instance="database.instance"
+        />
+        <span :class="showEngineIcon ? 'ml-2' : ''">{{ database.name }}</span>
       </div>
     </template>
   </BBSelect>
 </template>
 
 <script lang="ts">
+import { isNullOrUndefined } from "@/plugins/demo/utils";
 import { useCurrentUser, useDatabaseStore } from "@/store";
 import {
   computed,
@@ -31,6 +36,7 @@ import {
   ProjectId,
   InstanceId,
   EnvironmentId,
+  EngineType,
 } from "../types";
 
 interface LocalState {
@@ -60,6 +66,14 @@ export default defineComponent({
     projectId: {
       default: UNKNOWN_ID,
       type: Number as PropType<ProjectId>,
+    },
+    engineType: {
+      default: undefined,
+      type: String as PropType<EngineType>,
+    },
+    showEngineIcon: {
+      type: Boolean,
+      default: false,
     },
     disabled: {
       default: false,
@@ -113,6 +127,13 @@ export default defineComponent({
           });
         }
       }
+
+      if (!isNullOrUndefined(props.engineType)) {
+        list = list.filter((database: Database) => {
+          return database.instance.engine === props.engineType;
+        });
+      }
+
       return list;
     });
 

@@ -29,6 +29,141 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				INSERT INTO test values (1);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeTableNotExists,
+				Content: "Table `test` does not exist",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				INSERT INTO t(a, b, c, d) values (1, 2, 3, 4);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				CREATE INDEX idx_c on t(c);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				ALTER TABLE t MODIFY COLUMN c int;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				ALTER TABLE t CHANGE COLUMN c aa int;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				ALTER TABLE t DROP COLUMN c;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				ALTER TABLE t RENAME COLUMN c TO cc;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				ALTER TABLE t RENAME COLUMN c TO cc;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int, b int); 
+				ALTER TABLE t ALTER COLUMN c DROP DEFAULT;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `c` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				ALTER DATABASE CHARACTER SET = utf8mb4;
 				ALTER DATABASE test COLLATE utf8mb4_polish_ci;
 			`,
@@ -834,15 +969,23 @@ func TestWalkThroughForNoCatalog(t *testing.T) {
 				DROP TABLE t1, t2
 			`,
 			want: &Database{
+				Name:       "test",
+				DbType:     db.MySQL,
+				SchemaList: []*Schema{{}},
+			},
+		},
+		{
+			origin: &Database{
 				Name:   "test",
 				DbType: db.MySQL,
-				SchemaList: []*Schema{
-					{
-						TableList:     []*Table{},
-						ViewList:      []*View{},
-						ExtensionList: []*Extension{},
-					},
-				},
+			},
+			statement: `
+				INSERT INTO test values (1);
+			`,
+			want: &Database{
+				Name:       "test",
+				DbType:     db.MySQL,
+				SchemaList: []*Schema{{}},
 			},
 		},
 	}
