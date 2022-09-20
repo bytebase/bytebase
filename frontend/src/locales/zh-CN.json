@@ -208,7 +208,8 @@
     "sync-now": "现在同步",
     "show-help": "查看帮助",
     "success": "成功",
-    "load-more": "加载更多"
+    "load-more": "加载更多",
+    "access-denied": "拒绝访问"
   },
   "error-page": {
     "go-back-home": "回到主页"
