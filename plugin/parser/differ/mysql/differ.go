@@ -104,13 +104,24 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 	return oldTableMap
 }
 
-// isTwoColumnsSame returns true if the two columns are the same.
+// isTwoColumnsSame returns true if definitions of two columns with the same name are the same.
 func isTwoColumnsSame(old, new *ast.ColumnDef) bool {
-	if old.Tp.String() != new.Tp.String() {
+	if !isSameColumnTypes(old, new) {
 		return false
 	}
-	oldNormalizeOptions := normalizeColumnOptions(old.Options)
-	newNormalizeOptions := normalizeColumnOptions(new.Options)
+	if !isSameColumnOptions(old.Options, new.Options) {
+		return false
+	}
+	return true
+}
+
+func isSameColumnTypes(old, new *ast.ColumnDef) bool {
+	return old.Tp.String() == new.Tp.String()
+}
+
+func isSameColumnOptions(old, new []*ast.ColumnOption) bool {
+	oldNormalizeOptions := normalizeColumnOptions(old)
+	newNormalizeOptions := normalizeColumnOptions(new)
 	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
 		return false
 	}
