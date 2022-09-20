@@ -95,7 +95,7 @@ func (checker *namingIndexConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingIndexConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", indexData.tableName, regex, indexData.indexName),
-				Line:    node.Line(),
+				Line:    node.LastLine(),
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -104,7 +104,7 @@ func (checker *namingIndexConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingIndexConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
-				Line:    node.Line(),
+				Line:    node.LastLine(),
 			})
 		}
 	}

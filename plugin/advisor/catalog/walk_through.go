@@ -1115,7 +1115,7 @@ func (d *databaseState) parse(stmts string) ([]tidbast.StmtNode, *WalkThroughErr
 
 	for i, node := range nodeList {
 		node.SetText(nil, strings.TrimSpace(node.Text()))
-		node.SetOriginTextPosition(sqlList[i].Line)
+		node.SetOriginTextPosition(sqlList[i].LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, NewParseError(err.Error())

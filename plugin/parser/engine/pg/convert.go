@@ -15,14 +15,14 @@ import (
 func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err error) {
 	defer func() {
 		if err == nil && res != nil {
-			res.SetText(statement.Text)
-			res.SetLine(statement.Line)
+			res.SetText(strings.TrimSpace(statement.Text))
+			res.SetLastLine(statement.LastLine)
 			switch n := res.(type) {
 			case *ast.CreateTableStmt:
 				err = parser.SetLineForCreateTableStmt(parser.Postgres, n)
 			case *ast.AlterTableStmt:
 				for _, item := range n.AlterItemList {
-					item.SetLine(n.Line())
+					item.SetLastLine(n.LastLine())
 				}
 			}
 		}
