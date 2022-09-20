@@ -227,23 +227,25 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		for _, commit := range pushEvent.Commits {
 			// The Distinct is false if the commit is superseded by a later commit.
 			// TODO(dragonly): Check and fix the potential issue that distinct commits contains overlapping files.
-			if commit.Distinct {
-				for _, added := range commit.Added {
-					fileItemList = append(fileItemList,
-						fileItem{
-							name:     added,
-							itemType: fileItemTypeAdded,
-						},
-					)
-				}
-				for _, modified := range commit.Modified {
-					fileItemList = append(fileItemList,
-						fileItem{
-							name:     modified,
-							itemType: fileItemTypeModified,
-						},
-					)
-				}
+			if !commit.Distinct {
+				continue
+			}
+
+			for _, added := range commit.Added {
+				fileItemList = append(fileItemList,
+					fileItem{
+						name:     added,
+						itemType: fileItemTypeAdded,
+					},
+				)
+			}
+			for _, modified := range commit.Modified {
+				fileItemList = append(fileItemList,
+					fileItem{
+						name:     modified,
+						itemType: fileItemTypeModified,
+					},
+				)
 			}
 		}
 
