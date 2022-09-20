@@ -22,7 +22,6 @@
         :default-expanded-keys="defaultExpandedKeys"
         :selected-keys="selectedKeys"
         :render-label="renderLabel"
-        :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :on-load="loadSubTree"
       />
@@ -63,7 +62,6 @@ import {
   getHighlightHTMLByKeyWords,
   mapConnectionAtom,
 } from "@/utils";
-import OpenConnectionIcon from "@/components/SQLEditor/OpenConnectionIcon.vue";
 import { generateInstanceNode, generateTableItem } from "./utils";
 
 type Position = {
@@ -197,19 +195,6 @@ const renderLabel = ({ option }: { option: ConnectionAtom }) => {
   return renderLabelHTML;
 };
 
-// render the suffix icon
-const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
-  const renderSuffixHTML = h(OpenConnectionIcon, {
-    id: "tree-node-suffix",
-    class: "n-tree-node-content__suffix-icon",
-    onClick: function () {
-      setConnection(option);
-    },
-  });
-
-  return renderSuffixHTML;
-};
-
 const loadSubTree = async (item: ConnectionAtom) => {
   const mapper = mapConnectionAtom("table", item.id);
   if (item.type === "database") {
@@ -274,6 +259,8 @@ const nodeProps = (info: { option: ConnectionAtom }) => {
           option,
         });
       }
+
+      setConnection(option);
     },
     onContextmenu(e: MouseEvent) {
       e.preventDefault();
