@@ -43,7 +43,7 @@ type LocalState = {
 
 /**
  * It's complex and dangerous to cache the issue list.
- * So we just memoize how many times the user clicks the "load more" button.
+ * So we just memorize how many times the user clicks the "load more" button.
  * And load the first N pages in the first fetch.
  * E.g., the user clicked "load more" 4 times, then the first time will set limit
  *   to `pageSize * 5`.
