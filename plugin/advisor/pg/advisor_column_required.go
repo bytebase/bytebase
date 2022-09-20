@@ -111,7 +111,7 @@ func (checker *columnRequirementChecker) Visit(node ast.Node) ast.Visitor {
 			Code:    advisor.NoRequiredColumn,
 			Title:   checker.title,
 			Content: fmt.Sprintf("Table %q requires columns: %s", table.Name, strings.Join(missingColumns, ", ")),
-			Line:    node.Line(),
+			Line:    node.LastLine(),
 		})
 	}
 
