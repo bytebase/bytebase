@@ -665,7 +665,7 @@ func (driver *Driver) getBinlogMetaFileListToDownload(ctx context.Context, clien
 		return nil, errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", driver.binlogDir)
 	}
 	var downloadList []string
-	for _, item := range listOutput.Contents {
+	for _, item := range listOutput {
 		binlogPathOnCloud := *item.Key
 		if !strings.HasSuffix(binlogPathOnCloud, binlogMetaSuffix) {
 			continue

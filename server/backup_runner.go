@@ -161,7 +161,7 @@ func (r *BackupRunner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir st
 		return errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", binlogDirOnCloud)
 	}
 	var purgeBinlogPathList []string
-	for _, item := range listOutput.Contents {
+	for _, item := range listOutput {
 		expireTime := item.LastModified.Add(time.Duration(retentionPeriodTs) * time.Second)
 		if time.Now().After(expireTime) {
 			purgeBinlogPathList = append(purgeBinlogPathList, *item.Key)
