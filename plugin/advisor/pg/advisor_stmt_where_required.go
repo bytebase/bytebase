@@ -39,7 +39,7 @@ func (*WhereRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]
 
 	for _, stmt := range stmts {
 		checker.text = stmt.Text()
-		checker.line = stmt.Line()
+		checker.line = stmt.LastLine()
 		ast.Walk(checker, stmt)
 	}
 

@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"strings"
 	"testing"
 
 	tidbparser "github.com/pingcap/tidb/parser"
@@ -36,10 +37,14 @@ func TestPGCreateTableSetLine(t *testing.T) {
 
 				-- it's a comment.
 				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
+				
+
+
+				
 			)
 			`,
 			columnLineList:     []int{3, 3, 4, 5},
-			constraintLineList: []int{6, 7, 8, 8, 10},
+			constraintLineList: []int{6, 7, 8, 8, 11},
 		},
 		{
 			// test for Windows.
@@ -90,13 +95,13 @@ func TestPGCreateTableSetLine(t *testing.T) {
 		require.Equal(t, len(test.columnLineList), len(node.ColumnList))
 		require.Equal(t, len(test.constraintLineList), len(node.ConstraintList))
 		for i, col := range node.ColumnList {
-			require.Equal(t, col.Line(), test.columnLineList[i], i)
+			require.Equal(t, col.LastLine(), test.columnLineList[i], i)
 			for _, inlineCons := range col.ConstraintList {
-				require.Equal(t, test.columnLineList[i], inlineCons.Line())
+				require.Equal(t, test.columnLineList[i], inlineCons.LastLine())
 			}
 		}
 		for i, cons := range node.ConstraintList {
-			require.Equal(t, cons.Line(), test.constraintLineList[i], i)
+			require.Equal(t, cons.LastLine(), test.constraintLineList[i], i)
 		}
 	}
 }
@@ -127,10 +132,14 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 
 				-- it's a comment.
 				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
+				
+
+
+
 			)
 			`,
 			columnLineList:     []int{3, 3, 4, 5},
-			constraintLineList: []int{6, 7, 8, 9, 10, 10, 12},
+			constraintLineList: []int{6, 7, 8, 9, 10, 10, 13},
 		},
 		{
 			// test for Windows.
@@ -182,7 +191,7 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, len(test.columnLineList), len(node.Cols))
 		require.Equal(t, len(test.constraintLineList), len(node.Constraints))
-		node.SetOriginTextPosition(1)
+		node.SetOriginTextPosition(strings.Count(test.statement, "\n") + 1)
 		err = parser.SetLineForMySQLCreateTableStmt(node)
 		require.NoError(t, err)
 		for i, col := range node.Cols {
