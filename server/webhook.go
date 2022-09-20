@@ -223,7 +223,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		var createdMessages []string
-		var fileItemList []fileItem
+		var files []fileItem
 		for _, commit := range pushEvent.Commits {
 			// The Distinct is false if the commit is superseded by a later commit.
 			// TODO(dragonly): Check and fix the potential issue that distinct commits contains overlapping files.
@@ -232,7 +232,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			for _, added := range commit.Added {
-				fileItemList = append(fileItemList,
+				files = append(files,
 					fileItem{
 						name:     added,
 						itemType: fileItemTypeAdded,
@@ -240,7 +240,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				)
 			}
 			for _, modified := range commit.Modified {
-				fileItemList = append(fileItemList,
+				files = append(files,
 					fileItem{
 						name:     modified,
 						itemType: fileItemTypeModified,
@@ -273,7 +273,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					URL:         lastCommit.URL,
 					AuthorName:  lastCommit.Author.Name,
 					AuthorEmail: lastCommit.Author.Email,
-					Added:       common.EscapeForLogging(fileItemList[0].name),
+					Added:       common.EscapeForLogging(files[0].name),
 				},
 			}
 			createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
@@ -281,7 +281,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				pushEvent,
 				repo,
 				webhookEndpointID,
-				fileItemList,
+				files,
 			)
 			if httpErr != nil {
 				return httpErr
@@ -292,7 +292,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
 		}
 		if len(createdMessageList) == 0 {
-			log.Debug("Ignored push event file because no applicable file found in the commit list", zap.String("fileName", common.EscapeForLogging(fileItemList[0].name)), zap.Any("repos", handleRepos))
+			log.Debug("Ignored push event file because no applicable file found in the commit list", zap.String("fileName", common.EscapeForLogging(files[0].name)), zap.Any("repos", handleRepos))
 			for _, repo := range handleRepos {
 				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
 					for _, activityCreate := range activityCreateList {
