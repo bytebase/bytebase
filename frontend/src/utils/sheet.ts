@@ -29,7 +29,7 @@ export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
 export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
   // writable to
   // PRIVATE: the creator only
-  // PROJECT: the creator the OWNER of project
+  // PROJECT: the creator and the OWNER of project
   // PUBLIC: no one but the creator
 
   if (sheet.creator.id === currentUser.id) {
