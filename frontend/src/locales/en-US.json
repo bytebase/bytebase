@@ -755,7 +755,7 @@
   },
   "migration-history": {
     "self": "Migration History",
-    "select": "Select a version",
+    "select": "Select version",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
@@ -898,7 +898,7 @@
       "target-database": "Target database",
       "synchronize-statements": "The statements to synchronize",
       "schema-comparison-result": "The schema comparison result",
-      "check-generated-ddl-statement": "Please check the following generated DDL statement."
+      "no-different-tip": "There is no different between these base and target database schemas."
     }
   },
   "repository": {

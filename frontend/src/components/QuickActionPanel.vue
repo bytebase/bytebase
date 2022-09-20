@@ -91,10 +91,11 @@
         class="flex flex-col items-center w-28 py-1"
       >
         <button
-          class="btn-icon-primary p-3"
+          class="btn-icon-primary p-3 relative"
           @click.prevent="syncDatabaseSchema"
         >
           <heroicons-outline:refresh class="w-6 h-6" />
+          <BBBetaBadge :corner="true" class="top-full -mt-1" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
           {{ $t("quick-action.sync-schema") }}
@@ -232,7 +233,6 @@
       v-else-if="state.quickActionType == 'quickaction.bb.database.schema.sync'"
     >
       <SyncDatabaseSchemaPrepForm
-        v-if="projectId"
         :project-id="projectId"
         @dismiss="state.showModal = false"
       />
@@ -259,6 +259,7 @@ import {
   useSubscriptionStore,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
@@ -284,6 +285,7 @@ export default defineComponent({
     RequestDatabasePrepForm,
     TransferDatabaseForm,
     SyncDatabaseSchemaPrepForm,
+    BBBetaBadge,
   },
   props: {
     quickActionList: {
