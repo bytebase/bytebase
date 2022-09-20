@@ -170,7 +170,8 @@ CREATE TABLE project (
     db_name_template TEXT NOT NULL,
     role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
     schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP',
-    schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL'
+    schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
+    lgtm_check TEXT NOT NULL CHECK (lgtm_check IN ('DISABLED', 'PROJECT_OWNER', 'PROJECT_MEMBER')) DEFAULT 'DISABLED'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -206,31 +207,6 @@ CREATE TRIGGER update_project_updated_ts
 BEFORE
 UPDATE
     ON project FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- Project setting
-CREATE TABLE project_setting (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    project_id INTEGER NOT NULL REFERENCES project (id),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.project.setting.%'),
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_project_setting_project_id ON project_setting(project_id);
-
-CREATE UNIQUE INDEX idx_project_setting_unique_project_id_type ON project_setting(project_id, type);
-
-ALTER SEQUENCE project_setting_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_project_setting_updated_ts
-BEFORE
-UPDATE
-    ON project_setting FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project member
