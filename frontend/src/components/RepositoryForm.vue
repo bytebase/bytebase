@@ -291,12 +291,14 @@ export default defineComponent({
   emits: ["change-repository", "change-schema-change-type"],
   setup(props) {
     const state = reactive<LocalState>({});
+
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
     });
     const isProjectSchemaChangeTypeDDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "DDL";
     });
+
     const sampleFilePath = (
       baseDirectory: string,
       filePathTemplate: string,
@@ -338,6 +340,7 @@ export default defineComponent({
       }
       return result;
     };
+
     const sampleSchemaPath = (
       baseDirectory: string,
       schemaPathTemplate: string
@@ -359,6 +362,7 @@ export default defineComponent({
       }
       return result;
     };
+
     const fileOptionalPlaceholder = computed(() => {
       const tags = [] as string[];
       // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
@@ -366,12 +370,14 @@ export default defineComponent({
       tags.push("{{DESCRIPTION}}");
       return tags;
     });
+
     const schemaOptionalTagPlaceholder = computed(() => {
       const tags = [] as string[];
       // Only allows {{ENV_NAME}} to be an optional placeholder for non-tenant mode projects
       if (!isTenantProject.value) tags.push("{{ENV_NAME}}");
       return tags;
     });
+
     return {
       FILE_REQUIRED_PLACEHOLDER,
       SCHEMA_REQUIRED_PLACEHOLDER,
