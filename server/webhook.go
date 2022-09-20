@@ -754,7 +754,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			return "", false, nil, nil
 		}
 
-		fileListSorted, migrationInfoList, err := s.sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
+		fileListSorted, migrationInfoList, err := sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
 		if err != nil {
 			return "", false, nil, errors.Wrap(err, "failed to sort files by schema version group by database")
 		}
@@ -790,7 +790,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 		}
 
-		fileListSorted, migrationInfoList, err := s.sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
+		fileListSorted, migrationInfoList, err := sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
 		if err != nil {
 			return "", false, nil, errors.Wrap(err, "failed to sort files by schema version group by database")
 		}
@@ -885,10 +885,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
-	return fmt.Sprintf("Created issue %q by commit ", issue.Name, pushEvent.FileCommit.ID), true, activityCreateList, nil
+	return fmt.Sprintf("Created issue %q by commit %s", issue.Name, pushEvent.FileCommit.ID), true, activityCreateList, nil
 }
 
-func (s *Server) sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []fileItem) ([]fileItem, []*db.MigrationInfo, error) {
+func sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []fileItem) ([]fileItem, []*db.MigrationInfo, error) {
 	var fileListNew []fileItem
 	var migrationInfoList []*db.MigrationInfo
 	fileListNew = append(fileListNew, fileList...)
