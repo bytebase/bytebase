@@ -38,16 +38,6 @@ func TestExcludeSchemaAutoIncrementValue(t *testing.T) {
 				PRIMARY KEY (id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
 		},
-		{
-			`CREATE TABLE world (
-				id int NOT NULL AUTO_INCREMENT,
-				PRIMARY KEY (id)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci AUTO_INCREMENT=-12345;`,
-			`CREATE TABLE world (
-				id int NOT NULL AUTO_INCREMENT,
-				PRIMARY KEY (id)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`,
-		},
 	}
 
 	for _, test := range tests {
