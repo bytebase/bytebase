@@ -1,7 +1,7 @@
 import { Principal, Sheet } from "@/types";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
-  // writable to
+  // readable to
   // PRIVATE: the creator only
   // PROJECT: the creator and members in the project
   // PUBLIC: everyone
