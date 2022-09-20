@@ -208,7 +208,8 @@
     "sync-now": "Sync Now",
     "show-help": "Show help",
     "success": "Succeed",
-    "load-more": "Load more"
+    "load-more": "Load more",
+    "access-denied": "Access denied"
   },
   "error-page": {
     "go-back-home": "Go back home"

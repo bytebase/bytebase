@@ -14,6 +14,7 @@ import {
   useSheetStore,
   useDebugStore,
   useInstanceStore,
+  pushNotification,
 } from "@/store";
 import {
   Instance,
@@ -28,7 +29,9 @@ import {
   mapConnectionAtom,
   sheetSlug as makeSheetSlug,
   connectionSlug as makeConnectionSlug,
+  isSheetReadable,
 } from "@/utils";
+import { useI18n } from "vue-i18n";
 
 type LocalState = {
   instanceList: Instance[];
@@ -37,6 +40,7 @@ type LocalState = {
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 
 const state = reactive<LocalState>({
   instanceList: [],
@@ -59,9 +63,11 @@ const prepareAccessibleConnectionByProject = async () => {
 
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
-  const databaseList = await databaseStore.fetchDatabaseList({
-    syncStatus: "OK",
-  });
+  const databaseList = (
+    await databaseStore.fetchDatabaseList({
+      syncStatus: "OK",
+    })
+  ).filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
   state.instanceList = uniqBy(
     databaseList.map((db) => db.instance),
     (instance) => instance.id
@@ -101,6 +107,14 @@ const prepareSheet = async () => {
   const sheet = await sheetStore.getOrFetchSheetById(sheetId);
   sqlEditorStore.isFetchingSheet = false;
   if (sheet.id === UNKNOWN_ID) {
+    return false;
+  }
+  if (!isSheetReadable(sheet, currentUser.value)) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.access-denied"),
+    });
     return false;
   }
 
