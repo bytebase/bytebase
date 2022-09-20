@@ -81,7 +81,7 @@ const (
 )
 
 var (
-	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
+	excludeAutoIncrement = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
 )
 
 // Dump dumps the database.
@@ -416,11 +416,6 @@ type triggerSchema struct {
 	statement string
 }
 
-// getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
-	return getTablesImpl(txn, dbName)
-}
-
 // getTables gets all tables of a database.
 func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
 	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -428,10 +423,11 @@ func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSche
 		return nil, err
 	}
 	defer txn.Rollback()
-	return getTablesImpl(txn, dbName)
+	return getTablesTx(txn, dbName)
 }
 
-func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+// getTablesTx gets all tables of a database using the provided transaction.
+func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
