@@ -61,35 +61,6 @@
     </div>
     <div>
       <div class="flex items-center space-x-3">
-        <div
-          v-if="isDevFeatures"
-          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
-        >
-          <span class="hidden lg:block font-normal text-accent">
-            {{ $t("subscription.plan.title") }}
-          </span>
-          <div
-            class="bar-link"
-            :class="currentPlan == 0 ? 'underline' : ''"
-            @click.prevent="switchToFree"
-          >
-            {{ $t("subscription.plan.free.title") }}
-          </div>
-          <div
-            class="bar-link"
-            :class="currentPlan == 1 ? 'underline' : ''"
-            @click.prevent="switchToTeam"
-          >
-            {{ $t("subscription.plan.team.title") }}
-          </div>
-          <div
-            class="bar-link"
-            :class="currentPlan == 2 ? 'underline' : ''"
-            @click.prevent="switchToEnterprise"
-          >
-            {{ $t("subscription.plan.enterprise.title") }}
-          </div>
-        </div>
         <router-link to="/inbox" exact-active-class>
           <span
             v-if="inboxSummary.hasUnread"
@@ -97,22 +68,6 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleLocales">
-          <heroicons-outline:translate class="w-6 h-6" />
-        </div>
-        <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleDebug">
-          <svg
-            class="w-6 h-6"
-            :class="isDebug ? `text-accent` : `text-gray-400`"
-            fill="currentColor"
-            viewBox="0 0 32 32"
-          >
-            <path
-              d="M29,15h-5.1c-0.1-1.2-0.5-2.4-1-3.5c1.9-1.5,3.1-3.7,3.1-6.1V5c0-0.6-0.4-1-1-1s-1,0.4-1,1v0.4c0,1.8-0.8,3.4-2.2,4.5  c-0.5-0.7-1.2-1.2-1.9-1.7c0-0.1,0-0.1,0-0.2c0-2.2-1.8-4-4-4s-4,1.8-4,4c0,0.1,0,0.1,0,0.2c-0.7,0.5-1.3,1-1.9,1.7  C8.8,8.8,8,7.2,8,5.4V5c0-0.6-0.4-1-1-1S6,4.4,6,5v0.4c0,2.4,1.1,4.7,3.1,6.1c-0.5,1-0.9,2.2-1,3.5H3c-0.6,0-1,0.4-1,1s0.4,1,1,1  h5.1c0.1,1.2,0.5,2.4,1,3.5C7.1,21.9,6,24.2,6,26.6V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-1.8,0.8-3.4,2.2-4.5  c1.5,1.8,3.5,2.9,5.8,2.9s4.4-1.1,5.8-2.9c1.4,1.1,2.2,2.7,2.2,4.5V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-2.4-1.1-4.7-3.1-6.1  c0.5-1,0.9-2.2,1-3.5H29c0.6,0,1-0.4,1-1S29.6,15,29,15z"
-              stroke-width="1"
-            />
-          </svg>
-        </div>
         <div class="ml-2">
           <div
             class="flex justify-center items-center bg-gray-100 rounded-3xl"
@@ -198,7 +153,6 @@ import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
   useCurrentUser,
-  useDebugStore,
   useSettingStore,
   useSubscriptionStore,
   useInboxStore,
@@ -214,13 +168,12 @@ export default defineComponent({
   components: { ProfileDropdown },
   setup() {
     const { t, availableLocales } = useI18n();
-    const debugStore = useDebugStore();
     const inboxStore = useInboxStore();
     const settingStore = useSettingStore();
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const route = useRoute();
-    const { setLocale, toggleLocales } = useLanguage();
+    const { setLocale } = useLanguage();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
@@ -273,30 +226,6 @@ export default defineComponent({
     const inboxSummary = computed(() => {
       return inboxStore.getInboxSummaryByUser(currentUser.value.id);
     });
-
-    const switchToFree = () => {
-      subscriptionStore.patchSubscription("");
-    };
-
-    const switchToTeam = () => {
-      subscriptionStore.patchSubscription(
-        import.meta.env.BB_DEV_TEAM_LICENSE as string
-      );
-    };
-
-    const switchToEnterprise = () => {
-      subscriptionStore.patchSubscription(
-        import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
-      );
-    };
-
-    const { isDebug } = storeToRefs(debugStore);
-
-    const toggleDebug = () => {
-      debugStore.patchDebug({
-        isDebug: !isDebug.value,
-      });
-    };
 
     const kbarActions = computed(() => [
       defineAction({
@@ -383,13 +312,7 @@ export default defineComponent({
       currentPlan,
       showDBAItem,
       isDevFeatures,
-      isDebug,
       inboxSummary,
-      switchToFree,
-      switchToTeam,
-      switchToEnterprise,
-      toggleLocales,
-      toggleDebug,
     };
   },
 });
