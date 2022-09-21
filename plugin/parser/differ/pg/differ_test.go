@@ -1,4 +1,4 @@
-package parser_test
+package pg
 
 import (
 	"testing"
@@ -50,7 +50,7 @@ CREATE TABLE repositories (
 		newSchemaNodes, err := parser.Parse(test.engineType, parser.ParseContext{}, test.newSchema)
 		require.NoError(t, err)
 
-		diff, err := parser.SchemaDiff(oldSchemaNodes, newSchemaNodes)
+		diff, err := SchemaDiff(oldSchemaNodes, newSchemaNodes)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {

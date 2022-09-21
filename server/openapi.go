@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/differ/pg"
 )
 
 var (
@@ -234,7 +235,7 @@ func (s *Server) schemaDiff(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse target schema into AST nodes").SetInternal(err)
 	}
 
-	diff, err := parser.SchemaDiff(sourceSchemaNodes, targetSchemaNodes)
+	diff, err := pg.SchemaDiff(sourceSchemaNodes, targetSchemaNodes)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compute diff between source and target schemas").SetInternal(err)
 	}
