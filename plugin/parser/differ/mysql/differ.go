@@ -136,6 +136,10 @@ func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
 			if oldOption.Expr.(ast.ValueExpr).GetString() != newOption.Expr.(ast.ValueExpr).GetString() {
 				return false
 			}
+		case ast.ColumnOptionDefaultValue:
+			if oldOption.Expr.(ast.ValueExpr).GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
+				return false
+			}
 		default:
 		}
 	}
