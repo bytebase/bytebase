@@ -39,6 +39,7 @@ const (
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
+
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
@@ -153,6 +154,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
+
 	g.POST("/github/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
@@ -188,8 +190,15 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
+		baseVCSPushEvent := vcs.PushEvent{
+			Ref:                pushEvent.Ref,
+			RepositoryID:       strconv.Itoa(pushEvent.Repository.ID),
+			RepositoryURL:      pushEvent.Repository.HTMLURL,
+			RepositoryFullPath: pushEvent.Repository.FullName,
+			AuthorName:         pushEvent.Sender.Login,
+		}
 
-		branch, err := parseBranchNameFromRefs(pushEvent.Ref)
+		branch, err := parseBranchNameFromRefs(baseVCSPushEvent.Ref)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref").SetInternal(err)
 		}
@@ -212,8 +221,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				log.Debug("Skipping repo due to mismatched  payload signature", zap.Int("repoID", repo.ID))
 				continue
 			}
-			if pushEvent.Repository.FullName != repo.ExternalID {
-				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", pushEvent.Repository.FullName), zap.String("repoExternalID", repo.ExternalID))
+			if baseVCSPushEvent.RepositoryFullPath != repo.ExternalID {
+				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", baseVCSPushEvent.RepositoryFullPath), zap.String("repoExternalID", repo.ExternalID))
 				continue
 			}
 			handleRepos = append(handleRepos, repo)
@@ -252,28 +261,23 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				var createdMessageList []string
 				repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
 				for _, repo := range repos {
-					pushEvent := &vcs.PushEvent{
-						VCSType:            repo.VCS.Type,
-						BaseDirectory:      repo.BaseDirectory,
-						Ref:                pushEvent.Ref,
-						RepositoryID:       strconv.Itoa(pushEvent.Repository.ID),
-						RepositoryURL:      pushEvent.Repository.HTMLURL,
-						RepositoryFullPath: pushEvent.Repository.FullName,
-						AuthorName:         pushEvent.Sender.Login,
-						FileCommit: vcs.FileCommit{
-							ID:          commit.ID,
-							Title:       messageTitle,
-							Message:     commit.Message,
-							CreatedTs:   commit.Timestamp.Unix(),
-							URL:         commit.URL,
-							AuthorName:  commit.Author.Name,
-							AuthorEmail: commit.Author.Email,
-							Added:       common.EscapeForLogging(file.name),
-						},
+					pushEvent := baseVCSPushEvent
+					pushEvent.VCSType = repo.VCS.Type
+					pushEvent.BaseDirectory = repo.BaseDirectory
+					pushEvent.FileCommit = vcs.FileCommit{
+						ID:          commit.ID,
+						Title:       messageTitle,
+						Message:     commit.Message,
+						CreatedTs:   commit.Timestamp.Unix(),
+						URL:         commit.URL,
+						AuthorName:  commit.Author.Name,
+						AuthorEmail: commit.Author.Email,
+						Added:       common.EscapeForLogging(file.name),
 					}
+
 					createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
 						ctx,
-						pushEvent,
+						&pushEvent,
 						repo,
 						webhookEndpointID,
 						file.name,
