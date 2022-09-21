@@ -1105,6 +1105,12 @@ func (d *databaseState) parse(stmts string) ([]tidbast.StmtNode, *WalkThroughErr
 	if err != nil {
 		return nil, NewParseError(err.Error())
 	}
+
+	// sikp the setting line stage
+	if len(nodeList) == 0 {
+		return nodeList, nil
+	}
+
 	sqlList, err := parser.SplitMultiSQL(parser.MySQL, stmts)
 	if err != nil {
 		return nil, NewParseError(err.Error())

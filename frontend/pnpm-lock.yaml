@@ -2,6 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@bytebase/vue-kbar': 0.1.8
+  '@codingame/monaco-vscode-api': 1.69.11
   '@iconify/json': 2.1.108
   '@intlify/vite-plugin-vue-i18n': 6.0.1
   '@markdoc/markdoc': 0.1.7
@@ -74,7 +75,6 @@ specifiers:
   v-code-diff: 0.3.12
   vite: 3.1.0
   vitest: 0.23.1
-  vscode: npm:@codingame/monaco-vscode-api@1.67.20
   vscode-languageserver: 8.0.2
   vscode-languageserver-protocol: 3.17.2
   vscode-languageserver-textdocument: 1.0.7
@@ -89,6 +89,7 @@ specifiers:
 
 dependencies:
   '@bytebase/vue-kbar': 0.1.8_vue@3.2.39
+  '@codingame/monaco-vscode-api': 1.69.11_2dqbcwnoiqa4sunjfnse34uode
   '@markdoc/markdoc': 0.1.7
   '@soerenmartius/vue3-clipboard': 0.1.2
   '@tanstack/table-core': 8.5.13
@@ -120,7 +121,6 @@ dependencies:
   sql-formatter: 10.6.0
   uuid: 9.0.0
   v-code-diff: 0.3.12_vue@3.2.39
-  vscode: /@codingame/monaco-vscode-api/1.67.20
   vscode-languageserver: 8.0.2
   vscode-languageserver-protocol: 3.17.2
   vscode-languageserver-textdocument: 1.0.7
@@ -166,7 +166,7 @@ devDependencies:
   popper.js: 1.16.1
   postcss: 8.4.16
   prettier: 2.7.1
-  tailwindcss: 3.1.8_postcss@8.4.16
+  tailwindcss: 3.1.8
   typescript: 4.8.3
   unplugin-icons: 0.14.9_b5qhthmr2npzumir7idjn655wu
   unplugin-vue-components: 0.22.4_2rkqk3fjdl56jlkjdcck35zto4
@@ -232,14 +232,8 @@ packages:
       - '@vue/composition-api'
     dev: false
 
-  /@codingame/monaco-vscode-api/1.67.20:
-    resolution: {integrity: sha512-3+swJLtpNWmn2hsnVFv/qbLuQLt+FlaDLgcK0PgYwWVIJn2FjO48a0+ke8ZYS/tiqZxJgJSk+y6hdohgZo7n0g==}
-    dependencies:
-      monaco-editor: 0.33.0
-    dev: false
-
-  /@codingame/monaco-vscode-api/1.69.10_2dqbcwnoiqa4sunjfnse34uode:
-    resolution: {integrity: sha512-FHiuKdu+iE9MsFdzz9IYXsYU3IvoTL+NmXuyXUkOenpdSBpVk9yK5EDUQUAmzlzInUBzbgkIfKO5WRytQYLK8g==}
+  /@codingame/monaco-vscode-api/1.69.11_2dqbcwnoiqa4sunjfnse34uode:
+    resolution: {integrity: sha512-+WE/vYHZcrNos/ZADTt0bKfDI07hixfsu3Y0eCF2kxwWWNYbKWIbBWupOmFCy7oU8AggYWO/dFWlAYsGDwqKLQ==}
     peerDependencies:
       vscode-oniguruma: ^1.6.2
       vscode-textmate: ^7.0.1
@@ -391,8 +385,8 @@ packages:
       - supports-color
     dev: true
 
-  /@intlify/bundle-utils/3.1.0_vue-i18n@9.2.2:
-    resolution: {integrity: sha512-ghlJ0kR2cCQ8D+poKknC0Xx0ncOt3J3os7CcIAqqIWVF7k6AtGoCDnIru+YzlZcvFRNmP9wEZ7jKliojCdAWNg==}
+  /@intlify/bundle-utils/3.1.2_vue-i18n@9.2.2:
+    resolution: {integrity: sha512-amgSo0NN5OKWYdcgFmfJqo2tcUcZ6C66Bxm5ALQnB0m3MUQtS9aJzKoIo+EU9XQiOVmlBFxRtNoZm+psHa5FNA==}
     engines: {node: '>= 12'}
     peerDependencies:
       petite-vue-i18n: '*'
@@ -465,7 +459,7 @@ packages:
       vue-i18n:
         optional: true
     dependencies:
-      '@intlify/bundle-utils': 3.1.0_vue-i18n@9.2.2
+      '@intlify/bundle-utils': 3.1.2_vue-i18n@9.2.2
       '@intlify/shared': 9.3.0-beta.3
       '@rollup/pluginutils': 4.2.1
       debug: 4.3.4
@@ -561,7 +555,7 @@ packages:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.1.8_postcss@8.4.16
+      tailwindcss: 3.1.8
     dev: true
 
   /@tailwindcss/line-clamp/0.4.2_tailwindcss@3.1.8:
@@ -569,7 +563,7 @@ packages:
     peerDependencies:
       tailwindcss: '>=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1'
     dependencies:
-      tailwindcss: 3.1.8_postcss@8.4.16
+      tailwindcss: 3.1.8
     dev: true
 
   /@tailwindcss/typography/0.5.7_tailwindcss@3.1.8:
@@ -581,7 +575,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.1.8_postcss@8.4.16
+      tailwindcss: 3.1.8
     dev: true
 
   /@tanstack/table-core/8.5.13:
@@ -2852,10 +2846,6 @@ packages:
     deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
     dev: false
 
-  /monaco-editor/0.33.0:
-    resolution: {integrity: sha512-VcRWPSLIUEgQJQIE0pVT8FcGBIgFoxz7jtqctE+IiCxWugD0DwgyQBcZBhdSrdMC84eumoqMZsGl2GTreOzwqw==}
-    dev: false
-
   /monaco-editor/0.34.0:
     resolution: {integrity: sha512-VF+S5zG8wxfinLKLrWcl4WUizMx+LeJrG4PM/M78OhcwocpV0jiyhX/pG6Q9jIOhrb/ckYi6nHnaR5OojlOZCQ==}
     dev: false
@@ -2864,7 +2854,7 @@ packages:
     resolution: {integrity: sha512-IRQag1btvne1Hwb97l5B+aitf6zCp7Pp1aj5JYYW2zSWz5Q5rS73l+0RuY5UknwVNX/6YkpGO6KZygAahzAs8A==}
     engines: {node: '>=16.11.0', npm: '>=8.0.0'}
     dependencies:
-      vscode: /@codingame/monaco-vscode-api/1.69.10_2dqbcwnoiqa4sunjfnse34uode
+      vscode: /@codingame/monaco-vscode-api/1.69.11_2dqbcwnoiqa4sunjfnse34uode
       vscode-jsonrpc: 8.0.2
       vscode-languageclient: 8.0.2
     transitivePeerDependencies:
@@ -3449,12 +3439,10 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /tailwindcss/3.1.8_postcss@8.4.16:
+  /tailwindcss/3.1.8:
     resolution: {integrity: sha512-YSneUCZSFDYMwk+TGq8qYFdCA3yfBRdBlS7txSq0LUmzyeqRe3a8fBQzbz9M3WS/iFT4BNf/nmw9mEzrnSaC0g==}
     engines: {node: '>=12.13.0'}
     hasBin: true
-    peerDependencies:
-      postcss: ^8.0.9
     dependencies:
       arg: 5.0.2
       chokidar: 3.5.3

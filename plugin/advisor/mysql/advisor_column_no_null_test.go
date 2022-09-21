@@ -65,19 +65,25 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			Statement: "ALTER TABLE book ADD COLUMN (id int, name varchar(255) NOT NULL)",
+			Statement: `
+				CREATE TABLE book(a int NOT NULL);
+				ALTER TABLE book ADD COLUMN (id int, name varchar(255) NOT NULL);
+				`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`id` can not have NULL value",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: "ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL)",
+			Statement: `
+				CREATE TABLE book(a int NOT NULL);
+				ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL);
+			`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -88,19 +94,24 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			Statement: "ALTER TABLE book CHANGE COLUMN id name varchar(255)",
+			Statement: `
+				CREATE TABLE book(id int NOT NULL);
+				ALTER TABLE book CHANGE COLUMN id name varchar(255);
+				`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`name` can not have NULL value",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: "ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL",
+			Statement: `
+				CREATE TABLE book(id int NOT NULL);
+				ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL;`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,

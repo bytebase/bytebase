@@ -94,9 +94,6 @@ const (
 	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
 	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-change"
 
-	// MySQLColumnExists is an advisor type for MySQL column existence.
-	MySQLColumnExists Type = "bb.plugin.advisor.mysql.column.exists"
-
 	// MySQLColumnDisallowChangingOrder is an advisor type for MySQL disallow changing column order.
 	MySQLColumnDisallowChangingOrder Type = "bb.plugin.advisor.mysql.column.disallow-changing-order"
 
@@ -121,17 +118,11 @@ const (
 	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
 	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
 
-	// MySQLTableExists is an advisor type for MySQL table existence.
-	MySQLTableExists Type = "bb.plugin.advisor.mysql.table.exists"
-
 	// MySQLTableCommentConvention is an advisor for MySQL table comment convention.
 	MySQLTableCommentConvention Type = "bb.plugin.advisor.mysql.table.comment"
 
 	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
 	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
-
-	// MySQLTableNotExists is an advisor for MySQL table name conflict check.
-	MySQLTableNotExists Type = "bb.plugin.advisor.mysql.table.not-exists"
 
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
@@ -144,9 +135,6 @@ const (
 
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
-
-	// MySQLIndexNotExists is an advisor type for MySQL index name conflict check.
-	MySQLIndexNotExists Type = "bb.plugin.advisor.mysql.index.not-exists"
 
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"

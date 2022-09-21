@@ -4,7 +4,10 @@ import sqlFormatter from "./sqlFormatter";
 import { ExtractPromiseType } from "@/utils";
 
 export const useMonaco = async () => {
-  const monaco = await import("monaco-editor");
+  const [monaco, { default: EditorWorker }] = await Promise.all([
+    import("monaco-editor"),
+    import("monaco-editor/esm/vs/editor/editor.worker?worker"),
+  ]);
 
   monaco.editor.defineTheme("bb-sql-editor-theme", {
     base: "vs",
@@ -18,21 +21,12 @@ export const useMonaco = async () => {
   });
   monaco.editor.setTheme("bb-sql-editor-theme");
 
-  await Promise.all([
-    // load workers
-    (async () => {
-      const [{ default: EditorWorker }] = await Promise.all([
-        import("monaco-editor/esm/vs/editor/editor.worker.js?worker"),
-      ]);
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      window.MonacoEnvironment = {
-        getWorker(_: any, label: string) {
-          return new EditorWorker();
-        },
-      };
-    })(),
-  ]);
+  self.MonacoEnvironment = {
+    getWorker: (workerId, label) => {
+      console.debug("MonacoEnvironment.getWorker", workerId, label);
+      return new EditorWorker();
+    },
+  };
 
   const dispose = () => {
     // Nothing todo

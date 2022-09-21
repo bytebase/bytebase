@@ -517,26 +517,26 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM t",
+				statement: "DELETE FROM tech_book",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementNoWhere.Int(),
 						Title:     "statement.where.require",
-						Content:   "\"DELETE FROM t\" requires WHERE clause",
+						Content:   "\"DELETE FROM tech_book\" requires WHERE clause",
 					},
 				},
 			},
 			{
-				statement: "DELETE FROM t WHERE a like `%abc`",
+				statement: "DELETE FROM tech_book WHERE name like `%abc`",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementLeadingWildcardLike.Int(),
 						Title:     "statement.where.no-leading-wildcard-like",
-						Content:   "\"DELETE FROM t WHERE a like `%abc`\" uses leading wildcard LIKE",
+						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" uses leading wildcard LIKE",
 					},
 				},
 			},
@@ -598,7 +598,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM t WHERE a = (SELECT max(id) FROM user WHERE name = 'bytebase')",
+				statement: "DELETE FROM tech_book WHERE a = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,

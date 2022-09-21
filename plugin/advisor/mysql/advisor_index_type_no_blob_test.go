@@ -114,71 +114,79 @@ func TestIndexTypeNoBlob(t *testing.T) {
 		},
 		// ALTER TABLE ADD COLUMN ADD CONSTRAINT
 		{
-			Statement: `ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexTypeNoBlob,
 					Title:   "index.type-no-blob",
 					Content: "Columns in index must not be BLOB but `t`.`b` is blob",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD UNIQUE INDEX(b(1), mb(2), lb(3), id)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD UNIQUE INDEX(b(1), mb(2), lb(3), id)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexTypeNoBlob,
 					Title:   "index.type-no-blob",
 					Content: "Columns in index must not be BLOB but `t`.`b` is blob",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexTypeNoBlob,
 					Title:   "index.type-no-blob",
 					Content: "Columns in index must not be BLOB but `t`.`mb` is mediumblob",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexTypeNoBlob,
 					Title:   "index.type-no-blob",
 					Content: "Columns in index must not be BLOB but `t`.`lb` is longblob",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(b(1), mb(2), lb(3), id)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(b(1), mb(2), lb(3), id)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexTypeNoBlob,
 					Title:   "index.type-no-blob",
 					Content: "Columns in index must not be BLOB but `t`.`b` is blob",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexTypeNoBlob,
 					Title:   "index.type-no-blob",
 					Content: "Columns in index must not be BLOB but `t`.`mb` is mediumblob",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexTypeNoBlob,
 					Title:   "index.type-no-blob",
 					Content: "Columns in index must not be BLOB but `t`.`lb` is longblob",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
