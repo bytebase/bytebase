@@ -19,8 +19,8 @@ var (
 	differs  = make(map[parser.EngineType]SchemaDiffer)
 )
 
-// Register makes a parser available by the provided id.
-// If Register is called twice with the same name or if advisor is nil,
+// Register makes a differ available by the provided id.
+// If Register is called twice with the same name or if differ is nil,
 // it panics.
 func Register(engineType parser.EngineType, d SchemaDiffer) {
 	if d == nil {
@@ -29,7 +29,7 @@ func Register(engineType parser.EngineType, d SchemaDiffer) {
 	differMu.Lock()
 	defer differMu.Unlock()
 	if _, dup := differs[engineType]; dup {
-		panic("parser: Register called twice for parser " + engineType)
+		panic("parser: Register called twice for differ " + engineType)
 	}
 	differs[engineType] = d
 }
