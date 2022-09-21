@@ -96,7 +96,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", handleRepos))
 
-		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList)
+		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
+		}
+		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 		var createdMessages []string
 		for _, item := range distinctFileList {
 			var createdMessageList []string
@@ -109,10 +113,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					ID:          item.commit.ID,
 					Title:       item.commit.Title,
 					Message:     item.commit.Message,
-					CreatedTs:   item.createdTime.Unix(),
+					CreatedTs:   item.createdTs,
 					URL:         item.commit.URL,
-					AuthorName:  item.commit.Author.Name,
-					AuthorEmail: item.commit.Author.Email,
+					AuthorName:  item.commit.AuthorName,
+					AuthorEmail: item.commit.AuthorEmail,
 					Added:       common.EscapeForLogging(item.fileName),
 				}
 
@@ -342,6 +346,27 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 	return ref[len(expectedPrefix):], nil
 }
 
+func convertGitLabCommitList(commitList []gitlab.WebhookCommit) ([]vcs.Commit, error) {
+	var ret []vcs.Commit
+	for _, commit := range commitList {
+		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
+		}
+		ret = append(ret, vcs.Commit{
+			ID:          commit.ID,
+			Title:       commit.Title,
+			Message:     commit.Message,
+			CreatedTs:   createdTime.Unix(),
+			URL:         commit.URL,
+			AuthorName:  commit.Author.Name,
+			AuthorEmail: commit.Author.Email,
+			AddedList:   commit.AddedList,
+		})
+	}
+	return ret, nil
+}
+
 // fileItemType is the type of a file item.
 type fileItemType string
 
@@ -378,13 +403,13 @@ type fileItem struct {
 //  2. Maintain the relative commit order between different migration files. If migration file A happens before migration file B,
 //     then we should create an issue for migration file A first.
 type distinctFileItem struct {
-	createdTime time.Time
-	commit      gitlab.WebhookCommit
-	fileName    string
-	itemType    fileItemType
+	createdTs int64
+	commit    vcs.Commit
+	fileName  string
+	itemType  fileItemType
 }
 
-func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
+func dedupMigrationFilesFromCommitList(commitList []vcs.Commit) []distinctFileItem {
 	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []distinctFileItem
 	for _, commit := range commitList {
@@ -393,22 +418,17 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 			zap.String("title", common.EscapeForLogging(commit.Title)),
 		)
 
-		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
-		if err != nil {
-			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", common.EscapeForLogging(commit.ID)), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
-		}
-
 		addDistinctFile := func(fileName string, itemType fileItemType) {
 			item := distinctFileItem{
-				createdTime: createdTime,
-				commit:      commit,
-				fileName:    fileName,
-				itemType:    itemType,
+				createdTs: commit.CreatedTs,
+				commit:    commit,
+				fileName:  fileName,
+				itemType:  itemType,
 			}
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
 				if item.fileName == file.fileName {
-					if file.createdTime.Before(createdTime) {
+					if file.createdTs < commit.CreatedTs {
 						distinctFileList[i] = item
 					}
 					return

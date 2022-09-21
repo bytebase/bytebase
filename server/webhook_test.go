@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 func TestDedupMigrationFiles(t *testing.T) {
@@ -17,29 +17,30 @@ func TestDedupMigrationFiles(t *testing.T) {
 	time1, _ := time.Parse(time.RFC3339, timestamp1)
 	time2, _ := time.Parse(time.RFC3339, timestamp2)
 	time3, _ := time.Parse(time.RFC3339, timestamp3)
+	ts1 := time1.Unix()
+	ts2 := time2.Unix()
+	ts3 := time3.Unix()
 
 	tests := []struct {
 		name       string
-		commitList []gitlab.WebhookCommit
+		commitList []vcs.Commit
 		want       []distinctFileItem
 	}{
 		{
 			name:       "Empty",
-			commitList: []gitlab.WebhookCommit{},
+			commitList: []vcs.Commit{},
 			want:       nil,
 		},
 		{
 			name: "Single commit, single file",
-			commitList: []gitlab.WebhookCommit{
+			commitList: []vcs.Commit{
 				{
-					ID:        "1",
-					Title:     "Commit 1",
-					Message:   "Update 1",
-					Timestamp: timestamp1,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "1",
+					Title:      "Commit 1",
+					Message:    "Update 1",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 					},
@@ -47,16 +48,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 			},
 			want: []distinctFileItem{
 				{
-					createdTime: time1,
-					commit: gitlab.WebhookCommit{
-						ID:        "1",
-						Title:     "Commit 1",
-						Message:   "Update 1",
-						Timestamp: timestamp1,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts1,
+					commit: vcs.Commit{
+						ID:         "1",
+						Title:      "Commit 1",
+						Message:    "Update 1",
+						CreatedTs:  ts1,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 						},
@@ -68,16 +67,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 		},
 		{
 			name: "Single commit, multiple files",
-			commitList: []gitlab.WebhookCommit{
+			commitList: []vcs.Commit{
 				{
-					ID:        "1",
-					Title:     "Commit 1",
-					Message:   "Update 1",
-					Timestamp: timestamp1,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "1",
+					Title:      "Commit 1",
+					Message:    "Update 1",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 						"v2.sql",
@@ -86,16 +83,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 			},
 			want: []distinctFileItem{
 				{
-					createdTime: time1,
-					commit: gitlab.WebhookCommit{
-						ID:        "1",
-						Title:     "Commit 1",
-						Message:   "Update 1",
-						Timestamp: timestamp1,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts1,
+					commit: vcs.Commit{
+						ID:         "1",
+						Title:      "Commit 1",
+						Message:    "Update 1",
+						CreatedTs:  ts1,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -105,16 +100,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 					itemType: fileItemTypeAdded,
 				},
 				{
-					createdTime: time1,
-					commit: gitlab.WebhookCommit{
-						ID:        "1",
-						Title:     "Commit 1",
-						Message:   "Update 1",
-						Timestamp: timestamp1,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts1,
+					commit: vcs.Commit{
+						ID:         "1",
+						Title:      "Commit 1",
+						Message:    "Update 1",
+						CreatedTs:  ts1,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -127,29 +120,25 @@ func TestDedupMigrationFiles(t *testing.T) {
 		},
 		{
 			name: "Multi commits, single file",
-			commitList: []gitlab.WebhookCommit{
+			commitList: []vcs.Commit{
 				{
-					ID:        "1",
-					Title:     "Commit 1",
-					Message:   "Update 1",
-					Timestamp: timestamp1,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "1",
+					Title:      "Commit 1",
+					Message:    "Update 1",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 					},
 				},
 				{
-					ID:        "2",
-					Title:     "Merge branch",
-					Message:   "Merge update",
-					Timestamp: timestamp2,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "2",
+					Title:      "Merge branch",
+					Message:    "Merge update",
+					CreatedTs:  ts2,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 					},
@@ -157,16 +146,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 			},
 			want: []distinctFileItem{
 				{
-					createdTime: time2,
-					commit: gitlab.WebhookCommit{
-						ID:        "2",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp2,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts2,
+					commit: vcs.Commit{
+						ID:         "2",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts2,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 						},
@@ -178,43 +165,37 @@ func TestDedupMigrationFiles(t *testing.T) {
 		},
 		{
 			name: "Multi commits, multi files",
-			commitList: []gitlab.WebhookCommit{
+			commitList: []vcs.Commit{
 				{
-					ID:        "1",
-					Title:     "Commit 1",
-					Message:   "Update 1",
-					Timestamp: timestamp1,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "1",
+					Title:      "Commit 1",
+					Message:    "Update 1",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 						"v2.sql",
 					},
 				},
 				{
-					ID:        "2",
-					Title:     "Commit 2",
-					Message:   "Update 2",
-					Timestamp: timestamp1,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "2",
+					Title:      "Commit 2",
+					Message:    "Update 2",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v3.sql",
 					},
 				},
 				{
-					ID:        "3",
-					Title:     "Merge branch",
-					Message:   "Merge update",
-					Timestamp: timestamp3,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "3",
+					Title:      "Merge branch",
+					Message:    "Merge update",
+					CreatedTs:  ts3,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 						"v2.sql",
@@ -224,16 +205,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 			},
 			want: []distinctFileItem{
 				{
-					createdTime: time3,
-					commit: gitlab.WebhookCommit{
-						ID:        "3",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp3,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts3,
+					commit: vcs.Commit{
+						ID:         "3",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts3,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -244,16 +223,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 					itemType: fileItemTypeAdded,
 				},
 				{
-					createdTime: time3,
-					commit: gitlab.WebhookCommit{
-						ID:        "3",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp3,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts3,
+					commit: vcs.Commit{
+						ID:         "3",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts3,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -264,16 +241,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 					itemType: fileItemTypeAdded,
 				},
 				{
-					createdTime: time3,
-					commit: gitlab.WebhookCommit{
-						ID:        "3",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp3,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts3,
+					commit: vcs.Commit{
+						ID:         "3",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts3,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -287,57 +262,49 @@ func TestDedupMigrationFiles(t *testing.T) {
 		},
 		{
 			name: "Multi commits, multi files, include modified",
-			commitList: []gitlab.WebhookCommit{
+			commitList: []vcs.Commit{
 				{
-					ID:        "1",
-					Title:     "Commit 1",
-					Message:   "Update 1",
-					Timestamp: timestamp1,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "1",
+					Title:      "Commit 1",
+					Message:    "Update 1",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 						"v2.sql",
 					},
 				},
 				{
-					ID:        "2",
-					Title:     "Commit 2",
-					Message:   "Update 2",
-					Timestamp: timestamp1,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "2",
+					Title:      "Commit 2",
+					Message:    "Update 2",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v3.sql",
 					},
 				},
 				{
-					ID:        "3",
-					Title:     "Commit 3",
-					Message:   "Update 3",
-					Timestamp: timestamp2,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "3",
+					Title:      "Commit 3",
+					Message:    "Update 3",
+					CreatedTs:  ts2,
+					URL:        "example.com",
+					AuthorName: "bob",
 					ModifiedList: []string{
 						"v3.sql",
 						"v4.sql",
 					},
 				},
 				{
-					ID:        "4",
-					Title:     "Merge branch",
-					Message:   "Merge update",
-					Timestamp: timestamp3,
-					URL:       "example.com",
-					Author: gitlab.WebhookCommitAuthor{
-						Name: "bob",
-					},
+					ID:         "4",
+					Title:      "Merge branch",
+					Message:    "Merge update",
+					CreatedTs:  ts3,
+					URL:        "example.com",
+					AuthorName: "bob",
 					AddedList: []string{
 						"v1.sql",
 						"v2.sql",
@@ -350,16 +317,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 			},
 			want: []distinctFileItem{
 				{
-					createdTime: time3,
-					commit: gitlab.WebhookCommit{
-						ID:        "4",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp3,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts3,
+					commit: vcs.Commit{
+						ID:         "4",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts3,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -371,16 +336,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 					itemType: fileItemTypeAdded,
 				},
 				{
-					createdTime: time3,
-					commit: gitlab.WebhookCommit{
-						ID:        "4",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp3,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts3,
+					commit: vcs.Commit{
+						ID:         "4",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts3,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -392,16 +355,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 					itemType: fileItemTypeAdded,
 				},
 				{
-					createdTime: time3,
-					commit: gitlab.WebhookCommit{
-						ID:        "4",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp3,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts3,
+					commit: vcs.Commit{
+						ID:         "4",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts3,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
@@ -413,16 +374,14 @@ func TestDedupMigrationFiles(t *testing.T) {
 					itemType: fileItemTypeAdded,
 				},
 				{
-					createdTime: time3,
-					commit: gitlab.WebhookCommit{
-						ID:        "4",
-						Title:     "Merge branch",
-						Message:   "Merge update",
-						Timestamp: timestamp3,
-						URL:       "example.com",
-						Author: gitlab.WebhookCommitAuthor{
-							Name: "bob",
-						},
+					createdTs: ts3,
+					commit: vcs.Commit{
+						ID:         "4",
+						Title:      "Merge branch",
+						Message:    "Merge update",
+						CreatedTs:  ts3,
+						URL:        "example.com",
+						AuthorName: "bob",
 						AddedList: []string{
 							"v1.sql",
 							"v2.sql",
