@@ -101,6 +101,17 @@
           {{ $t("quick-action.sync-schema") }}
         </h3>
       </div>
+      <div
+        v-if="quickAction === 'quickaction.bb.database.troubleshoot'"
+        class="flex flex-col items-center w-28 py-1"
+      >
+        <router-link to="/issue/new" class="btn-icon-primary p-3">
+          <heroicons-outline:hand class="w-6 h-6" />
+        </router-link>
+        <h3 class="mt-1 text-center text-base font-normal text-main">
+          {{ $t("quick-action.troubleshoot") }}
+        </h3>
+      </div>
 
       <div
         v-if="quickAction === 'quickaction.bb.environment.create'"
@@ -397,6 +408,10 @@ export default defineComponent({
       "quickaction.bb.database.schema.update": {
         name: t("database.alter-schema"),
         perform: () => alterSchema(),
+      },
+      "quickaction.bb.database.troubleshoot": {
+        name: t("quick-action.troubleshoot"),
+        perform: () => router.push({ path: "/issue/new" }),
       },
       "quickaction.bb.database.schema.sync": {
         name: t("quick-action.sync-schema"),
