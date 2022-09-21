@@ -36,13 +36,6 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <div
-          v-if="showSwitchPlan"
-          class="cursor-pointer"
-          @click="toggleLocales"
-        >
-          <heroicons-outline:translate class="w-6 h-6" />
-        </div>
         <div class="ml-2">
           <ProfileDropdown />
         </div>
@@ -108,7 +101,7 @@ import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
-import { isDBAOrOwner, isDev } from "@/utils";
+import { isDBAOrOwner } from "@/utils";
 import { hasFeature, useCurrentUser, useInboxStore } from "@/store";
 
 interface LocalState {
@@ -134,10 +127,6 @@ export default defineComponent({
         !hasFeature("bb.feature.dba-workflow") ||
         isDBAOrOwner(currentUser.value.role)
       );
-    });
-
-    const showSwitchPlan = computed((): boolean => {
-      return isDev();
     });
 
     const prepareInboxSummary = () => {
@@ -216,14 +205,6 @@ export default defineComponent({
       };
     };
 
-    const toggleLocales = () => {
-      // TODO change to some real logic
-      const locales = availableLocales;
-      const nextLocale =
-        locales[(locales.indexOf(locale.value) + 1) % locales.length];
-      setLocale(nextLocale);
-    };
-
     const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
     const i18nChangeAction = computed(() =>
       defineAction({
@@ -260,9 +241,7 @@ export default defineComponent({
     return {
       state,
       showDBAItem,
-      showSwitchPlan,
       inboxSummary,
-      toggleLocales,
       goBack,
     };
   },
