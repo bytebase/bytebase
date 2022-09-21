@@ -126,6 +126,7 @@ const routes: Array<RouteRecordRaw> = [
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.instance.create",
@@ -135,6 +136,7 @@ const routes: Array<RouteRecordRaw> = [
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
@@ -144,6 +146,7 @@ const routes: Array<RouteRecordRaw> = [
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.instance.create",
@@ -152,6 +155,7 @@ const routes: Array<RouteRecordRaw> = [
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
@@ -160,11 +164,13 @@ const routes: Array<RouteRecordRaw> = [
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.schema.sync",
                       "quickaction.bb.project.create",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
+                      "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
                       "quickaction.bb.project.create",
                     ];

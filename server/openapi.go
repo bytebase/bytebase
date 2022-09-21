@@ -40,7 +40,7 @@ func (c *catalogService) GetFinder() *catalog.Finder {
 
 func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 	g.POST("/sql/advise", s.sqlCheckController)
-	g.POST("/sql/schema/diff", schemaDiff)
+	g.POST("/sql/schema/diff", s.schemaDiff)
 }
 
 type sqlCheckRequestBody struct {
@@ -200,7 +200,11 @@ type schemaDiffRequestBody struct {
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/schema/diff  [post].
-func schemaDiff(c echo.Context) error {
+func (s *Server) schemaDiff(c echo.Context) error {
+	if !s.feature(api.FeatureSyncSchema) {
+		return echo.NewHTTPError(http.StatusForbidden, api.FeatureSyncSchema.AccessErrorMessage())
+	}
+
 	request := &schemaDiffRequestBody{}
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {

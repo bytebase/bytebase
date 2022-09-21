@@ -756,7 +756,7 @@
   },
   "migration-history": {
     "self": "Migration History",
-    "select": "Select a version",
+    "select": "Select version",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
@@ -894,12 +894,13 @@
     "restore-database": "Restore database",
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
+      "title": "Synchronize Schema",
       "description": "Synchronize schema from the base database to the target database with the selected migration version.",
       "base-database": "Base database",
       "target-database": "Target database",
       "synchronize-statements": "The statements to synchronize",
       "schema-comparison-result": "The schema comparison result",
-      "check-generated-ddl-statement": "Please check the following generated DDL statement."
+      "no-different-tip": "There is no different between these base and target database schemas."
     }
   },
   "repository": {
@@ -1387,6 +1388,10 @@
       "bb-feature-disaster-recovery-pitr": {
         "title": "Point-in-Time-Recovery (PITR)",
         "desc": "Restore the database state to a point in time."
+      },
+      "bb-feature-sync-schema": {
+        "title": "Synchronize Schema",
+        "desc": "Synchronize schema from the base database to the target database with the selected migration version."
       }
     }
   },
