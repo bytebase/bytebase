@@ -296,6 +296,11 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 
 	for _, backupSetting := range backupSettingList {
 		mu.Lock()
+		// Only allow one running backup task.
+		if len(runningTasks) > 0 {
+			mu.Unlock()
+			continue
+		}
 		if _, ok := runningTasks[backupSetting.ID]; ok {
 			mu.Unlock()
 			continue
@@ -338,6 +343,8 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 			}
 		}(db, backupSetting.ID, backupName, backupSetting.HookURL)
 		r.backupWg.Add(1)
+		// Since we only allow on running backup task, we should break after a successful schedule.
+		break
 	}
 }
 
