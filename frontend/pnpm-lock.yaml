@@ -56,7 +56,7 @@ specifiers:
   naive-ui: 2.33.2
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
-  pev2: 1.4.0
+  pev2: 1.5.0
   pinia: 2.0.22
   popper.js: 1.16.1
   postcss: 8.4.16
@@ -111,7 +111,7 @@ dependencies:
   naive-ui: 2.33.2_vue@3.2.39
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
-  pev2: 1.4.0_47tpum6wtjtozdoo6t4hr5iro4
+  pev2: 1.5.0_47tpum6wtjtozdoo6t4hr5iro4
   pinia: 2.0.22_arz4dztosvwy2ghjrlh2wdhejm
   qs: 6.11.0
   rollup: 2.79.0
@@ -166,7 +166,7 @@ devDependencies:
   popper.js: 1.16.1
   postcss: 8.4.16
   prettier: 2.7.1
-  tailwindcss: 3.1.8
+  tailwindcss: 3.1.8_postcss@8.4.16
   typescript: 4.8.3
   unplugin-icons: 0.14.9_b5qhthmr2npzumir7idjn655wu
   unplugin-vue-components: 0.22.4_2rkqk3fjdl56jlkjdcck35zto4
@@ -555,7 +555,7 @@ packages:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.1.8
+      tailwindcss: 3.1.8_postcss@8.4.16
     dev: true
 
   /@tailwindcss/line-clamp/0.4.2_tailwindcss@3.1.8:
@@ -563,7 +563,7 @@ packages:
     peerDependencies:
       tailwindcss: '>=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1'
     dependencies:
-      tailwindcss: 3.1.8
+      tailwindcss: 3.1.8_postcss@8.4.16
     dev: true
 
   /@tailwindcss/typography/0.5.7_tailwindcss@3.1.8:
@@ -575,7 +575,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.1.8
+      tailwindcss: 3.1.8_postcss@8.4.16
     dev: true
 
   /@tanstack/table-core/8.5.13:
@@ -1639,6 +1639,12 @@ packages:
       d3-dsv: 3.0.1
     dev: false
 
+  /d3-flextree/2.1.2:
+    resolution: {integrity: sha512-gJiHrx5uTTHq44bjyIb3xpbmmdZcWLYPKeO9EPVOq8EylMFOiH2+9sWqKAiQ4DcFuOZTAxPOQyv0Rnmji/g15A==}
+    dependencies:
+      d3-hierarchy: 1.1.9
+    dev: false
+
   /d3-force/3.0.0:
     resolution: {integrity: sha512-zxV/SsA+U4yte8051P4ECydjD/S+qeYtnaIyAs9tgHCqfguma/aAQDjo85A9Z6EKhBirHRJHXIgJUlffT4wdLg==}
     engines: {node: '>=12'}
@@ -1658,6 +1664,10 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       d3-array: 3.2.0
+    dev: false
+
+  /d3-hierarchy/1.1.9:
+    resolution: {integrity: sha512-j8tPxlqh1srJHAtxfvOUwKNYJkQuBFdM1+JAUfq6xqH5eAqf93L7oG1NVqDa4CpFZNvnNKtCYEUC8KY9yEn9lQ==}
     dev: false
 
   /d3-hierarchy/3.1.2:
@@ -3045,8 +3055,8 @@ packages:
     resolution: {integrity: sha512-Dp6zGqpTdETdR63lehJYPeIOqpiNBNtc7BpWSLrOje7UaIsE5aY92r/AunQA7rsXvet3lrJ3JnZX29UPTKXyKQ==}
     dev: true
 
-  /pev2/1.4.0_47tpum6wtjtozdoo6t4hr5iro4:
-    resolution: {integrity: sha512-N4lNYllFRV2pTc7aiw5tCTPKTwc3Ztw7C9Xf7xXKA5eeyHqHAAqPKmHdpM74/e1ZFvybvMG9hhultnKuAet2Sw==}
+  /pev2/1.5.0_47tpum6wtjtozdoo6t4hr5iro4:
+    resolution: {integrity: sha512-bWgxM3s87927aLfcJtW17nTLsVpBgxyL50lwI7ZHd2vNqSnPbhY4pEw0ZPpI+Uori600lxEceE8MB6qoC1bBBw==}
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.2.0
       '@fortawesome/free-brands-svg-icons': 6.2.0
@@ -3058,6 +3068,7 @@ packages:
       bootstrap: 4.6.2_47tpum6wtjtozdoo6t4hr5iro4
       clarinet: 0.12.5
       d3: 7.6.1
+      d3-flextree: 2.1.2
       highlight.js: 11.6.0
       humanize-duration: 3.27.3
       lodash: 4.17.21
@@ -3439,10 +3450,12 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /tailwindcss/3.1.8:
+  /tailwindcss/3.1.8_postcss@8.4.16:
     resolution: {integrity: sha512-YSneUCZSFDYMwk+TGq8qYFdCA3yfBRdBlS7txSq0LUmzyeqRe3a8fBQzbz9M3WS/iFT4BNf/nmw9mEzrnSaC0g==}
     engines: {node: '>=12.13.0'}
     hasBin: true
+    peerDependencies:
+      postcss: ^8.0.9
     dependencies:
       arg: 5.0.2
       chokidar: 3.5.3
