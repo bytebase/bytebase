@@ -356,7 +356,7 @@ export default defineComponent({
     };
 
     const syncDatabaseSchema = () => {
-      state.modalTitle = t("quick-action.sync-schema");
+      state.modalTitle = t("database.sync-schema.title");
       state.quickActionType = "quickaction.bb.database.schema.sync";
       state.showModal = true;
     };

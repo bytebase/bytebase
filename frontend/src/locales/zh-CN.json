@@ -536,7 +536,7 @@
     "create-project": "@:common.create@:common.project",
     "edit-data": "编辑数据",
     "troubleshoot": "问题排查",
-    "sync-schema": "同步 Schema",
+    "sync-schema": "库表同步",
     "transfer-in-db": "转移数据库",
     "request-db": "申请数据库",
     "from-unassigned-databases": "从未分配的数据库",
@@ -894,9 +894,10 @@
     "restore-database": "恢复数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
+      "title": "库表同步",
       "description": "将选定的源数据库 Schema 版本同步到目标数据库。",
-      "base-database": "源数据库",
-      "target-database": "目标数据库",
+      "base-database": "来源库",
+      "target-database": "目标库",
       "synchronize-statements": "生成的 Schema DDL 语句",
       "schema-comparison-result": "Schema 比较结果",
       "no-different-tip": "源数据库与目标数据库之间之间没有 Schema 区别。"

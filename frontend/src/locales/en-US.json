@@ -894,6 +894,7 @@
     "restore-database": "Restore database",
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
+      "title": "Synchronize Schema",
       "description": "Synchronize schema from the base database to the target database with the selected migration version.",
       "base-database": "Base database",
       "target-database": "Target database",
