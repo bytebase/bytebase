@@ -201,7 +201,7 @@ type schemaDiffRequestBody struct {
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/schema/diff  [post].
 func (s *Server) schemaDiff(c echo.Context) error {
-	if s.subscription.Plan != api.ENTERPRISE {
+	if !s.feature(api.FeatureSyncSchema) {
 		return echo.NewHTTPError(http.StatusForbidden, api.FeatureSyncSchema.AccessErrorMessage())
 	}
 
