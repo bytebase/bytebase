@@ -349,7 +349,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 			} else {
 				err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 					DatabaseID: &database.ID,
-					Type:       api.AnomalyDatabaseSchemaDrift,
+					Type:       api.AnomalyDatabaseConnection,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
 					log.Error("Failed to close anomaly",
