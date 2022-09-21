@@ -143,6 +143,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
+		// After syncing schema, we should remove schema drift anomalies.
+		err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			DatabaseID: sync.DatabaseID,
+			Type:       api.AnomalyDatabaseSchemaDrift,
+		})
+		if err != nil && common.ErrorCode(err) != common.NotFound {
+			log.Error("Failed to close anomaly",
+				zap.String("database", api.Database{ID: *sync.DatabaseID}.Name),
+				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+				zap.Error(err))
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &resultSet); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
