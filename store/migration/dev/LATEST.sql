@@ -186,7 +186,8 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template
+        db_name_template,
+        lgtm_check
     )
 VALUES
     (
@@ -198,7 +199,8 @@ VALUES
         'UI',
         'PUBLIC',
         'DISABLED',
-        ''
+        '',
+        '{"value":"DISABLED"}'
     );
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
