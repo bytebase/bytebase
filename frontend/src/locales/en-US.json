@@ -1388,6 +1388,10 @@
       "bb-feature-disaster-recovery-pitr": {
         "title": "Point-in-Time-Recovery (PITR)",
         "desc": "Restore the database state to a point in time."
+      },
+      "bb-feature-sync-schema": {
+        "title": "Synchronize Schema",
+        "desc": "Synchronize schema from the base database to the target database with the selected migration version."
       }
     }
   },

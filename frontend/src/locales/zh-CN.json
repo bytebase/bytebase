@@ -1388,6 +1388,10 @@
       "bb-feature-disaster-recovery-pitr": {
         "title": "恢复到指定时间点 (PITR)",
         "desc": "将数据库的状态恢复到一个时间点。"
+      },
+      "bb-feature-sync-schema": {
+        "title": "库表同步",
+        "desc": "将选定的源数据库 Schema 版本同步到目标数据库。请通过@:{'subscription.upgrade'}来完全开启该功能。"
       }
     }
   },

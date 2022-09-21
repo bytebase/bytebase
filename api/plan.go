@@ -73,6 +73,9 @@ const (
 	// FeaturePITR allows user to perform point-in-time recovery for databases.
 	FeaturePITR FeatureType = "bb.feature.pitr"
 
+	// FeatureSyncSchema allows user to sync the base database schema into target database.
+	FeatureSyncSchema FeatureType = "bb.feature.sync-schema"
+
 	// Policy Control.
 
 	// FeatureApprovalPolicy allows user to specify approval policy for the environment
@@ -132,6 +135,8 @@ func (e FeatureType) Name() string {
 		return "gh-ost integration"
 	case FeaturePITR:
 		return "Point-in-time Recovery"
+	case FeatureSyncSchema:
+		return "Synchronize Schema"
 	case FeatureApprovalPolicy:
 		return "Approval policy"
 	case FeatureBackupPolicy:
@@ -176,6 +181,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureDataSource:            {false, false, false},
 	FeatureGhost:                 {false, true, true},
 	FeaturePITR:                  {false, true, true},
+	FeatureSyncSchema:            {false, false, true},
 	FeatureApprovalPolicy:        {false, true, true},
 	FeatureBackupPolicy:          {false, true, true},
 	FeatureSQLReviewPolicy:       {false, true, true},

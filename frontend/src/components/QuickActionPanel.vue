@@ -240,8 +240,8 @@
     </template>
   </BBModal>
   <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
+    v-if="state.showFeatureModal && state.featureName !== ''"
+    :feature="state.featureName"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -255,6 +255,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import {
+  hasFeature,
   useCommandStore,
   useInstanceStore,
   useSubscriptionStore,
@@ -270,6 +271,7 @@ import SyncDatabaseSchemaPrepForm from "./SyncDatabaseSchemaPrepForm.vue";
 
 interface LocalState {
   showModal: boolean;
+  featureName: string;
   showFeatureModal: boolean;
   modalTitle: string;
   modalSubtitle: string;
@@ -303,6 +305,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showModal: false,
+      featureName: "",
       showFeatureModal: false,
       modalTitle: "",
       modalSubtitle: "",
@@ -339,6 +342,7 @@ export default defineComponent({
       const { subscription } = subscriptionStore;
       const instanceList = useInstanceStore().getInstanceList();
       if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
+        state.featureName = "bb.feature.instance-count";
         state.showFeatureModal = true;
         return;
       }
@@ -356,6 +360,12 @@ export default defineComponent({
     };
 
     const syncDatabaseSchema = () => {
+      if (!hasFeature("bb.feature.sync-schema")) {
+        state.featureName = "bb.feature.sync-schema";
+        state.showFeatureModal = true;
+        return;
+      }
+
       state.modalTitle = t("database.sync-schema.title");
       state.quickActionType = "quickaction.bb.database.schema.sync";
       state.showModal = true;
