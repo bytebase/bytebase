@@ -40,6 +40,10 @@ import (
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
 
+	// Register mysql differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/mysql"
+	// Register postgres differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/pg"
 	// Register postgres parser driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )

@@ -5,24 +5,21 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/plugin/parser"
 	// Register PostgreSQL parser engine.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
 func TestComputeDiff(t *testing.T) {
 	tests := []struct {
-		name       string
-		engineType parser.EngineType
-		oldSchema  string
-		newSchema  string
-		want       string
-		errPart    string
+		name      string
+		oldSchema string
+		newSchema string
+		want      string
+		errPart   string
 	}{
 		{
-			name:       "diffCreateTableInPostgres",
-			engineType: parser.Postgres,
-			oldSchema:  `CREATE TABLE projects ();`,
+			name:      "diffCreateTableInPostgres",
+			oldSchema: `CREATE TABLE projects ();`,
 			newSchema: `CREATE TABLE users (
 	id serial PRIMARY KEY,
 	username TEXT NOT NULL
@@ -43,14 +40,9 @@ CREATE TABLE repositories (
 		},
 	}
 
+	pgDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		oldSchemaNodes, err := parser.Parse(test.engineType, parser.ParseContext{}, test.oldSchema)
-		// This is an unrelated error and should always be nil.
-		require.NoError(t, err)
-		newSchemaNodes, err := parser.Parse(test.engineType, parser.ParseContext{}, test.newSchema)
-		require.NoError(t, err)
-
-		diff, err := SchemaDiff(oldSchemaNodes, newSchemaNodes)
+		diff, err := pgDiffer.SchemaDiff(test.oldSchema, test.newSchema)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {

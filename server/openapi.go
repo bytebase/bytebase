@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/differ/pg"
+	"github.com/bytebase/bytebase/plugin/parser/differ"
 )
 
 var (
@@ -225,17 +225,7 @@ func (s *Server) schemaDiff(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database engine %s", request.EngineType))
 	}
 
-	sourceSchemaNodes, err := parser.Parse(engine, parser.ParseContext{}, request.SourceSchema)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse source schema into AST nodes").SetInternal(err)
-	}
-
-	targetSchemaNodes, err := parser.Parse(engine, parser.ParseContext{}, request.TargetSchema)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse target schema into AST nodes").SetInternal(err)
-	}
-
-	diff, err := pg.SchemaDiff(sourceSchemaNodes, targetSchemaNodes)
+	diff, err := differ.SchemaDiff(engine, request.SourceSchema, request.TargetSchema)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compute diff between source and target schemas").SetInternal(err)
 	}
