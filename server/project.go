@@ -164,6 +164,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if v := projectPatch.Key; v != nil && *v == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
 		}
+		if v := projectPatch.LGTMCheckSetting; v != nil {
+			if v.Value != api.LGTMValueDisabled && v.Value != api.LGTMValueProjectMember && v.Value != api.LGTMValueProjectOwner {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid LGTM check setting value: %v", v.Value))
+			}
+		}
 
 		// Verify before archiving the project:
 		// 1. the project has no database.
