@@ -32,6 +32,11 @@ func GetDefaultLGTMCheckSetting() LGTMCheckSetting {
 // Scan implements database/sql Scanner interface, converts JSONB to LGTMCheckSetting struct.
 func (s *LGTMCheckSetting) Scan(src interface{}) error {
 	if bs, ok := src.([]byte); ok {
+		if string(bs) == "{}" {
+			// handle '{}', return default values
+			*s = GetDefaultLGTMCheckSetting()
+			return nil
+		}
 		return json.Unmarshal(bs, s)
 	}
 	return errors.New("failed to scan lgtm_check")
