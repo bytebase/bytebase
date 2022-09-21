@@ -214,7 +214,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			handleRepos = append(handleRepos, repo)
 		}
 
-		var files []fileItem
+		var fileItemList []fileItem
 		for _, commit := range pushEvent.Commits {
 			// The Distinct is false if the commit is superseded by a later commit.
 			// TODO(dragonly): Check and fix the potential issue that distinct commits contains overlapping files.
@@ -223,7 +223,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			for _, added := range commit.Added {
-				files = append(files,
+				fileItemList = append(fileItemList,
 					fileItem{
 						name:     added,
 						itemType: fileItemTypeAdded,
@@ -231,7 +231,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				)
 			}
 			for _, modified := range commit.Modified {
-				files = append(files,
+				fileItemList = append(fileItemList,
 					fileItem{
 						name:     modified,
 						itemType: fileItemTypeModified,
@@ -239,7 +239,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				)
 			}
 		}
-		if len(files) == 0 {
+		if len(fileItemList) == 0 {
 			log.Debug("No file found in the GitHub push event. Skip.")
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
@@ -249,7 +249,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		// Per Git convention, the message title and body are separated by two new line characters.
 		messageTitle := strings.SplitN(firstCommit.Message, "\n\n", 2)[0]
 		var fileNameList []string
-		for _, file := range files {
+		for _, file := range fileItemList {
 			fileNameList = append(fileNameList, common.EscapeForLogging(file.name))
 		}
 
@@ -276,7 +276,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			})
 		}
 
-		createdMessageList, httpErr := s.createIssueForRepos(ctx, handleRepos, pushEventList, webhookEndpointID, files)
+		createdMessageList, httpErr := s.createIssueForRepos(ctx, handleRepos, pushEventList, webhookEndpointID, fileItemList)
 		if httpErr != nil {
 			return httpErr
 		}
