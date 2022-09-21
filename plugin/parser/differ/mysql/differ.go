@@ -76,9 +76,10 @@ func SchemaDiff(old, new []ast.StmtNode) (string, error) {
 	}
 
 	deparse := func(nodes []ast.Node) (string, error) {
+		restoreFlags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
 		var buf bytes.Buffer
 		for _, node := range nodes {
-			if err := node.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)); err != nil {
+			if err := node.Restore(format.NewRestoreCtx(restoreFlags, &buf)); err != nil {
 				return "", err
 			}
 			if _, err := buf.Write([]byte(";\n")); err != nil {
