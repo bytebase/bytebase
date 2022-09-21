@@ -153,11 +153,10 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		backupSettingUpsert := &api.BackupSettingUpsert{}
+		backupSettingUpsert := &api.BackupSettingUpsert{EnvironmentID: envID}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupSettingUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set backup setting request").SetInternal(err)
 		}
-		backupSettingUpsert.EnvironmentID = envID
 		backupSettingUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
 		if err := s.store.UpdateBackupSettingsInEnvironment(ctx, backupSettingUpsert); err != nil {
