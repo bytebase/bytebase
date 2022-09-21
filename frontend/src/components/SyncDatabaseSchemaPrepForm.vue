@@ -13,7 +13,7 @@
         <div class="w-full mt-4 mb-2">
           <span class="text-gray-600">{{ $t("common.project") }}</span>
         </div>
-        <div class="w-full flex flex-row justify-start items-center">
+        <div class="w-full flex flex-row justify-start items-center px-px">
           <ProjectSelect
             class="!w-48 mr-2 shrink-0"
             :disabled="!allowSelectProject"
@@ -40,7 +40,7 @@
               $t("database.sync-schema.base-database")
             }}</span>
           </div>
-          <div class="w-full flex flex-row justify-start items-center">
+          <div class="w-full flex flex-row justify-start items-center px-px">
             <EnvironmentSelect
               class="!w-48 mr-2 shrink-0"
               name="environment"
@@ -106,7 +106,7 @@
               >
             </div>
           </div>
-          <div class="w-full flex flex-row justify-start items-center">
+          <div class="w-full flex flex-row justify-start items-center px-px">
             <EnvironmentSelect
               class="!w-48 mr-2 shrink-0"
               name="environment"
