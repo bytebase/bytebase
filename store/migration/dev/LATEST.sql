@@ -187,7 +187,6 @@ INSERT INTO
         visibility,
         tenant_mode,
         db_name_template,
-        lgtm_check
     )
 VALUES
     (
