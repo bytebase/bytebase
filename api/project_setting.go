@@ -1,38 +1,38 @@
 package api
 
-type projectSettingType string
-
-type LGTMValue string
-
-const (
-	projectSettingTypeLGTM projectSettingType = "bb.project.setting.lgtm"
+import (
+	"encoding/json"
+	"errors"
 )
 
-type ProjectSetting struct {
-	ID int `jsonapi:"primary,policy"`
+// LGTMCheckValue is the type of the LGTM check value.
+type LGTMCheckValue string
 
-	// Standard fields
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+const (
+	// LGTMValueDisabled means no LGTM check.
+	LGTMValueDisabled LGTMCheckValue = "DISABLED"
+	// LGTMValueProjectOwner means check LGTM from project owners.
+	LGTMValueProjectOwner LGTMCheckValue = "PROJECT_OWNER"
+	// LGTMValueProjectMember means check LGTM from project members.
+	LGTMValueProjectMember LGTMCheckValue = "PROJECT_MEMBER"
+)
 
-	// Related fields
-	ProjectID int
-	Project   *Project `jsonapi:"relation,environment"`
-
-	// Domain specific fields
-	Type    projectSettingType `jsonapi:"attr,type"`
-	Payload string             `jsonapi:"attr,payload"`
+// LGTMCheckSetting is the setting of LGTM check.
+type LGTMCheckSetting struct {
+	Value LGTMCheckValue `json:"value" jsonapi:"attr,value"`
 }
 
-type ProjectSettingFind struct {
-	ProjectID *int
-	Type      *projectSettingType
+// GetDefaultLGTMCheckSetting returns the default LGTM check setting.
+func GetDefaultLGTMCheckSetting() LGTMCheckSetting {
+	return LGTMCheckSetting{
+		Value: LGTMValueDisabled,
+	}
 }
 
-type ProjectSettingUpsert struct {
+// Scan implements database/sql Scanner interface, converts JSONB to LGTMCheckSetting struct.
+func (s *LGTMCheckSetting) Scan(src interface{}) error {
+	if bs, ok := src.([]byte); ok {
+		return json.Unmarshal(bs, s)
+	}
+	return errors.New("failed to scan lgtm_check")
 }

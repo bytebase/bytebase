@@ -34,6 +34,7 @@ type projectRaw struct {
 	DBNameTemplate   string
 	RoleProvider     api.ProjectRoleProvider
 	SchemaChangeType api.ProjectSchemaChangeType
+	LGTMCheckSetting api.LGTMCheckSetting
 }
 
 // toProject creates an instance of Project based on the projectRaw.
@@ -56,6 +57,7 @@ func (raw *projectRaw) toProject() *api.Project {
 		DBNameTemplate:   raw.DBNameTemplate,
 		RoleProvider:     raw.RoleProvider,
 		SchemaChangeType: raw.SchemaChangeType,
+		LGTMCheckSetting: raw.LGTMCheckSetting,
 	}
 }
 
@@ -326,10 +328,11 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 			tenant_mode,
 			db_name_template,
 			role_provider,
-			schema_change_type
+			schema_change_type,
+			lgtm_check
 		)
-		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type
+		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8, $9)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
 	`
 	var project projectRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -341,6 +344,7 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 		create.DBNameTemplate,
 		create.RoleProvider,
 		create.SchemaChangeType,
+		api.GetDefaultLGTMCheckSetting(),
 	).Scan(
 		&project.ID,
 		&project.RowStatus,
@@ -356,6 +360,7 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 		&project.DBNameTemplate,
 		&project.RoleProvider,
 		&project.SchemaChangeType,
+		&project.LGTMCheckSetting,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -393,7 +398,8 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*pro
 			tenant_mode,
 			db_name_template,
 			role_provider,
-			schema_change_type
+			schema_change_type,
+			lgtm_check
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -422,6 +428,7 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*pro
 			&project.DBNameTemplate,
 			&project.RoleProvider,
 			&project.SchemaChangeType,
+			&project.LGTMCheckSetting,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -457,6 +464,9 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 	if v := patch.SchemaChangeType; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.LGTMCheckSetting; v != nil {
+		set, args = append(set, fmt.Sprintf("lgtm_check = $%d", len(args)+1)), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
@@ -465,7 +475,7 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
 	`, len(args)),
 		args...,
 	).Scan(
@@ -483,6 +493,7 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 		&project.DBNameTemplate,
 		&project.RoleProvider,
 		&project.SchemaChangeType,
+		&project.LGTMCheckSetting,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
