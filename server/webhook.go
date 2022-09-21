@@ -40,6 +40,15 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
+		webhookEndpointID := c.Param("id")
+		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+		}
+		if len(repos) == 0 {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+		}
+
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
@@ -61,17 +70,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.AuthorName,
 		}
 
-		webhookEndpointID := c.Param("id")
-		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
-			WebhookEndpointID: &webhookEndpointID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
-		}
-		if len(repos) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
-		}
-
 		branch, err := parseBranchNameFromRefs(baseVCSPushEvent.Ref)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", baseVCSPushEvent.Ref).SetInternal(err)
@@ -86,12 +84,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 				continue
 			}
-			if secretToken := c.Request().Header.Get("X-Gitlab-Token"); secretToken != repo.WebhookSecretToken {
-				log.Debug("Skipping repo due to secret token mismatch", zap.Int("repoID", repo.ID), zap.String("headerSecretToken", secretToken), zap.String("repoSecretToken", repo.WebhookSecretToken))
-				continue
-			}
 			if baseVCSPushEvent.RepositoryID != repo.ExternalID {
 				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", baseVCSPushEvent.RepositoryID), zap.String("repoExternalID", repo.ExternalID))
+				continue
+			}
+			if secretToken := c.Request().Header.Get("X-Gitlab-Token"); secretToken != repo.WebhookSecretToken {
+				log.Debug("Skipping repo due to secret token mismatch", zap.Int("repoID", repo.ID), zap.String("headerSecretToken", secretToken), zap.String("repoSecretToken", repo.WebhookSecretToken))
 				continue
 			}
 			handleRepos = append(handleRepos, repo)
@@ -202,7 +200,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", baseVCSPushEvent.Ref).SetInternal(err)
 		}
-
 		var handleRepos []*api.Repository
 		for _, repo := range repos {
 			if repo.BranchFilter != branch {
@@ -213,6 +210,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 				continue
 			}
+			if baseVCSPushEvent.RepositoryID != repo.ExternalID {
+				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", baseVCSPushEvent.RepositoryID), zap.String("repoExternalID", repo.ExternalID))
+				continue
+			}
 			validated, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
@@ -221,12 +222,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				log.Debug("Skipping repo due to mismatched  payload signature", zap.Int("repoID", repo.ID))
 				continue
 			}
-			if baseVCSPushEvent.RepositoryID != repo.ExternalID {
-				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", baseVCSPushEvent.RepositoryID), zap.String("repoExternalID", repo.ExternalID))
-				continue
-			}
 			handleRepos = append(handleRepos, repo)
 		}
+		log.Debug("Process push event in repos", zap.Any("repos", handleRepos))
 
 		var createdMessages []string
 		for _, commit := range pushEvent.Commits {
