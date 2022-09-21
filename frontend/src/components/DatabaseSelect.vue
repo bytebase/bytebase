@@ -8,7 +8,12 @@
     @select-item="(database: Database) => $emit('select-database-id', database.id)"
   >
     <template #menuItem="{ item: database }">
-      <div class="flex items-center">
+      <slot
+        v-if="customizeItem"
+        name="customizeItem"
+        :database="database"
+      ></slot>
+      <div v-else class="flex items-center">
         <InstanceEngineIcon
           v-if="showEngineIcon"
           :instance="database.instance"
@@ -56,28 +61,32 @@ export default defineComponent({
       type: String as PropType<"INSTANCE" | "ENVIRONMENT" | "USER">,
     },
     environmentId: {
-      default: UNKNOWN_ID,
       type: Number as PropType<EnvironmentId>,
+      default: UNKNOWN_ID,
     },
     instanceId: {
-      default: UNKNOWN_ID,
       type: Number as PropType<InstanceId>,
+      default: UNKNOWN_ID,
     },
     projectId: {
-      default: UNKNOWN_ID,
       type: Number as PropType<ProjectId>,
+      default: UNKNOWN_ID,
     },
     engineType: {
-      default: undefined,
       type: String as PropType<EngineType>,
+      default: undefined,
     },
     showEngineIcon: {
       type: Boolean,
       default: false,
     },
     disabled: {
-      default: false,
       type: Boolean,
+      default: false,
+    },
+    customizeItem: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ["select-database-id"],

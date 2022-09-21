@@ -5,6 +5,7 @@ import (
 
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -100,12 +101,12 @@ func TestColumnOption(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');`,
 			new:  `CREATE TABLE book(name VARCHAR(50) NULL DEFAULT 'Harry Potter');`,
-			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NULL DEFAULT _UTF8MB4'Harry Potter';\n",
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NULL DEFAULT 'Harry Potter';\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');`,
 			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter');`,
-			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT _UTF8MB4'Harry Potter';\n",
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT 'Harry Potter';\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NULL);`,
@@ -199,12 +200,12 @@ func TestColumnDefaultValue(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
 			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);`,
-			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT _UTF8MB4'Harry Potter' NOT NULL;\n",
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL;\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,
 			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);`,
-			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT _UTF8MB4'Harry Potter' NOT NULL;\n",
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL;\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,

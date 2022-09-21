@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/pingcap/tidb/parser"
-	_ "github.com/pingcap/tidb/parser/test_driver"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/stretchr/testify/require"
 )
 
