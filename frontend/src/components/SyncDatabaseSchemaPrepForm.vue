@@ -59,10 +59,10 @@
               :project-id="state.projectId"
               :show-engine-icon="true"
               @select-database-id="
-              (databaseId: DatabaseId) => {
-                state.baseSchemaInfo.databaseId = databaseId;
-              }
-            "
+                (databaseId: DatabaseId) => {
+                  state.baseSchemaInfo.databaseId = databaseId;
+                }
+              "
             />
             <BBSelect
               class=""
@@ -125,12 +125,23 @@
               :project-id="state.projectId"
               :engine-type="state.engineType"
               :show-engine-icon="true"
+              :customize-item="true"
               @select-database-id="
-              (databaseId: DatabaseId) => {
-                state.targetSchemaInfo.databaseId = databaseId;
-              }
-            "
-            />
+                (databaseId: DatabaseId) => {
+                  state.targetSchemaInfo.databaseId = databaseId;
+                }
+              "
+            >
+              <template #customizeItem="{ database }">
+                <div class="flex items-center">
+                  <InstanceEngineIcon :instance="database.instance" />
+                  <span class="mx-2">{{ database.name }}</span>
+                  <span class="text-gray-500">{{
+                    head(databaseMigrationHistoryList(database.id))?.version
+                  }}</span>
+                </div>
+              </template>
+            </DatabaseSelect>
           </div>
         </div>
       </div>
@@ -219,8 +230,9 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import axios from "axios";
+import dayjs from "dayjs";
+import { head } from "lodash-es";
 import { computed, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { useRouter } from "vue-router";
@@ -353,7 +365,6 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
 const gotoTargetDatabaseMigrationHistoryDetailPageWithId = (
   databaseId: DatabaseId
 ) => {
-  targetDatabaseLatestMigrationHistory.value.database;
   const database = databaseStore.getDatabaseById(databaseId);
   const url = `/db/${databaseSlug(database)}/history/${migrationHistorySlug(
     targetDatabaseLatestMigrationHistory.value.id,
@@ -470,6 +481,29 @@ const copyStatement = () => {
     });
   });
 };
+
+// Pre-fetch all migration history for database with project id.
+watch(
+  () => [state.projectId],
+  async () => {
+    if (!isValidId(state.projectId)) {
+      return;
+    }
+
+    const databaseList = await databaseStore.fetchDatabaseListByProjectId(
+      state.projectId as ProjectId
+    );
+    for (const database of databaseList) {
+      await instanceStore.fetchMigrationHistory({
+        instanceId: database.instance.id,
+        databaseName: database.name,
+      });
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 
 watch(
   () => [state.baseSchemaInfo.environmentId, state.baseSchemaInfo.databaseId],
