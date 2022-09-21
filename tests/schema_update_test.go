@@ -1274,7 +1274,11 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				payload, err := json.Marshal(test.newWebhookPushEvent(commitFileName))
 				a.NoError(err)
 				err = ctl.vcsProvider.SendWebhookPush(externalID, payload)
-				a.NoError(err)
+				if test.expect[idx] {
+					a.NoError(err)
+				} else {
+					a.Error(err)
+				}
 
 				// Check for newly generated issues.
 				openStatus := []api.IssueStatus{api.IssueOpen}
