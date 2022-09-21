@@ -182,7 +182,10 @@
     />
     <div class="py-6 px-6">
       <template v-if="state.selectedIndex == OVERVIEW_TAB">
-        <DatabaseOverviewPanel :database="database" />
+        <DatabaseOverviewPanel
+          :key="String(state.syncingSchema)"
+          :database="database"
+        />
       </template>
       <template v-if="state.selectedIndex == MIGRATION_HISTORY_TAB">
         <DatabaseMigrationHistoryPanel
