@@ -185,6 +185,63 @@ func TestColumnComment(t *testing.T) {
 	}
 }
 
+func TestColumnDefaultValue(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT _UTF8MB4'Harry Potter' NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT _UTF8MB4'Harry Potter' NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(id INT DEFAULT 0 NOT NULL);`,
+			new:  `CREATE TABLE book(id INT NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `id` INT NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(id INT NOT NULL);`,
+			new:  `CREATE TABLE book(id INT DEFAULT 0 NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `id` INT DEFAULT 0 NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(id INT DEFAULT 0 NOT NULL);`,
+			new:  `CREATE TABLE book(id INT DEFAULT 1 NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `id` INT DEFAULT 1 NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(id INT DEFAULT 0 NOT NULL);`,
+			new:  `CREATE TABLE book(id INT DEFAULT 0 NOT NULL);`,
+			want: "",
+		},
+	}
+	a := require.New(t)
+	for _, test := range tests {
+		oldNodes := getStmtNodes(t, test.old)
+		newNodes := getStmtNodes(t, test.new)
+		out, err := SchemaDiff(oldNodes, newNodes)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
+
 func getStmtNodes(t *testing.T, sql string) []ast.StmtNode {
 	nodes, _, err := parser.New().Parse(sql, "", "")
 	require.NoError(t, err)
