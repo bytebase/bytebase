@@ -82,34 +82,12 @@
           >
             {{ $t("subscription.plan.team.title") }}
           </div>
-        </div>
-        <div
-          v-if="!isRelease"
-          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
-        >
-          <span class="hidden lg:block font-normal text-accent">
-            {{ $t("settings.profile.role") }}
-          </span>
           <div
             class="bar-link"
-            :class="currentUser.role == 'OWNER' ? 'underline' : ''"
-            @click.prevent="switchToOwner"
+            :class="currentPlan == 2 ? 'underline' : ''"
+            @click.prevent="switchToEnterprise"
           >
-            {{ $t("common.role.owner") }}
-          </div>
-          <div
-            class="bar-link"
-            :class="currentUser.role == 'DBA' ? 'underline' : ''"
-            @click.prevent="switchToDBA"
-          >
-            {{ $t("common.role.dba") }}
-          </div>
-          <div
-            class="bar-link"
-            :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
-            @click.prevent="switchToDeveloper"
-          >
-            {{ $t("common.role.developer") }}
+            {{ $t("subscription.plan.enterprise.title") }}
           </div>
         </div>
         <router-link to="/inbox" exact-active-class>
@@ -220,7 +198,6 @@ import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
   useCurrentUser,
-  useAuthStore,
   useDebugStore,
   useSettingStore,
   useSubscriptionStore,
@@ -237,7 +214,6 @@ export default defineComponent({
   components: { ProfileDropdown },
   setup() {
     const { t, availableLocales } = useI18n();
-    const authStore = useAuthStore();
     const debugStore = useDebugStore();
     const inboxStore = useInboxStore();
     const settingStore = useSettingStore();
@@ -298,43 +274,19 @@ export default defineComponent({
       return inboxStore.getInboxSummaryByUser(currentUser.value.id);
     });
 
-    const switchToOwner = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "demo@example.com",
-          password: "1024",
-        },
-      });
-    };
-
-    const switchToDBA = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "jerry@example.com",
-          password: "2048",
-        },
-      });
-    };
-
-    const switchToDeveloper = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "tom@example.com",
-          password: "4096",
-        },
-      });
-    };
-
     const switchToFree = () => {
       subscriptionStore.patchSubscription("");
     };
 
     const switchToTeam = () => {
       subscriptionStore.patchSubscription(
-        import.meta.env.BB_DEV_LICENSE as string
+        import.meta.env.BB_DEV_TEAM_LICENSE as string
+      );
+    };
+
+    const switchToEnterprise = () => {
+      subscriptionStore.patchSubscription(
+        import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
       );
     };
 
@@ -433,11 +385,9 @@ export default defineComponent({
       isDevFeatures,
       isDebug,
       inboxSummary,
-      switchToOwner,
-      switchToDBA,
-      switchToDeveloper,
       switchToFree,
       switchToTeam,
+      switchToEnterprise,
       toggleLocales,
       toggleDebug,
     };
