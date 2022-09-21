@@ -25,27 +25,6 @@
         </p>
       </router-link>
       <div class="border-t border-gray-100"></div>
-      <div v-if="!isRelease" class="md:hidden py-1">
-        <div v-if="currentUser.role != 'OWNER'" class="py-1">
-          <a class="menu-item" role="menuitem" @click.prevent="switchToOwner">
-            {{ $t("common.role-switch.owner") }}
-          </a>
-        </div>
-        <div v-if="currentUser.role != 'DBA'" class="py-1">
-          <a class="menu-item" role="menuitem" @click.prevent="switchToDBA">
-            {{ $t("common.role-switch.dba") }}
-          </a>
-        </div>
-        <div v-if="currentUser.email != 'DEVELOPER'" class="py-1">
-          <a
-            class="menu-item"
-            role="menuitem"
-            @click.prevent="switchToDeveloper"
-          >
-            {{ $t("common.role-switch.developer") }}
-          </a>
-        </div>
-      </div>
       <div
         v-if="!isRelease"
         class="py-1 menu-item"
@@ -192,36 +171,6 @@ export default defineComponent({
       });
     };
 
-    const switchToOwner = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "demo@example.com",
-          password: "1024",
-        },
-      });
-    };
-
-    const switchToDBA = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "jerry@example.com",
-          password: "aaa",
-        },
-      });
-    };
-
-    const switchToDeveloper = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "tom@example.com",
-          password: "aaa",
-        },
-      });
-    };
-
     const { isDebug } = storeToRefs(debugStore);
 
     const switchDebug = () => {
@@ -251,9 +200,6 @@ export default defineComponent({
       showQuickstart,
       resetQuickstart,
       logout,
-      switchToOwner,
-      switchToDBA,
-      switchToDeveloper,
       isDebug,
       switchDebug,
       ping,
