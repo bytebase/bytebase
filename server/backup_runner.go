@@ -343,7 +343,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 			}
 		}(db, backupSetting.ID, backupName, backupSetting.HookURL)
 		r.backupWg.Add(1)
-		// Since we only allow on running backup task, we should break after a successful schedule.
+		// Since we only allow one running backup task, we should break after a successful schedule.
 		break
 	}
 }
