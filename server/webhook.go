@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/differ/pg"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -932,7 +933,7 @@ func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Da
 		return "", errors.Wrap(err, "parse new schema")
 	}
 
-	diff, err := parser.SchemaDiff(oldSchema, newSchema)
+	diff, err := pg.SchemaDiff(oldSchema, newSchema)
 	if err != nil {
 		return "", errors.New("compute schema diff")
 	}

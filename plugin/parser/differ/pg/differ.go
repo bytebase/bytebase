@@ -1,4 +1,5 @@
-package parser
+// Package pg provides the PostgreSQL differ plugin.
+package pg
 
 import (
 	"bytes"
