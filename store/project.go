@@ -110,7 +110,7 @@ func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*
 
 // PatchProject patches an instance of Project.
 func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
-	projectRaw, err := s.patchProjectRaw(ctx, patch)
+	projectRaw, err := s.patchProjectRaw(ctx, patch, s.db.mode)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Project with ProjectPatch %#v", patch)
 	}
@@ -191,7 +191,7 @@ func (s *Store) createProjectRaw(ctx context.Context, create *api.ProjectCreate)
 	}
 	defer tx.Rollback()
 
-	projectRaw, err := createProjectImpl(ctx, tx, create)
+	projectRaw, err := createProjectImpl(ctx, tx, create, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *Store) findProjectRaw(ctx context.Context, find *api.ProjectFind) ([]*p
 	}
 	defer tx.Rollback()
 
-	list, err := findProjectImpl(ctx, tx, find)
+	list, err := findProjectImpl(ctx, tx, find, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 	}
 	defer tx.Rollback()
 
-	list, err := findProjectImpl(ctx, tx, find)
+	list, err := findProjectImpl(ctx, tx, find, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -269,14 +269,14 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 
 // patchProjectRaw updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*projectRaw, error) {
+func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	project, err := patchProjectImpl(ctx, tx, patch)
+	project, err := patchProjectImpl(ctx, tx, patch, mode)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -294,8 +294,8 @@ func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*
 
 // patchProjectRawTx updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*projectRaw, error) {
-	project, err := patchProjectImpl(ctx, tx, patch)
+func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
+	project, err := patchProjectImpl(ctx, tx, patch, mode)
 
 	if err != nil {
 		return nil, FormatError(err)
@@ -309,7 +309,7 @@ func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.Projec
 }
 
 // createProjectImpl creates a new project.
-func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*projectRaw, error) {
+func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate, mode common.ReleaseMode) (*projectRaw, error) {
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
@@ -317,7 +317,8 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
 	}
 
-	query := `
+	if mode == common.ReleaseModeDev {
+		query := `
 		INSERT INTO project (
 			creator_id,
 			updater_id,
@@ -334,6 +335,57 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8, $9)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
 	`
+		var project projectRaw
+		if err := tx.QueryRowContext(ctx, query,
+			create.CreatorID,
+			create.CreatorID,
+			create.Name,
+			strings.ToUpper(create.Key),
+			create.TenantMode,
+			create.DBNameTemplate,
+			create.RoleProvider,
+			create.SchemaChangeType,
+			api.GetDefaultLGTMCheckSetting(),
+		).Scan(
+			&project.ID,
+			&project.RowStatus,
+			&project.CreatorID,
+			&project.CreatedTs,
+			&project.UpdaterID,
+			&project.UpdatedTs,
+			&project.Name,
+			&project.Key,
+			&project.WorkflowType,
+			&project.Visibility,
+			&project.TenantMode,
+			&project.DBNameTemplate,
+			&project.RoleProvider,
+			&project.SchemaChangeType,
+			&project.LGTMCheckSetting,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return nil, FormatError(err)
+		}
+		return &project, nil
+	}
+	query := `
+		INSERT INTO project (
+			creator_id,
+			updater_id,
+			name,
+			key,
+			workflow_type,
+			visibility,
+			tenant_mode,
+			db_name_template,
+			role_provider,
+			schema_change_type
+		)
+		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type
+	`
 	var project projectRaw
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
@@ -344,7 +396,6 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 		create.DBNameTemplate,
 		create.RoleProvider,
 		create.SchemaChangeType,
-		api.GetDefaultLGTMCheckSetting(),
 	).Scan(
 		&project.ID,
 		&project.RowStatus,
@@ -360,7 +411,6 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 		&project.DBNameTemplate,
 		&project.RoleProvider,
 		&project.SchemaChangeType,
-		&project.LGTMCheckSetting,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -370,7 +420,7 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 	return &project, nil
 }
 
-func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*projectRaw, error) {
+func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind, mode common.ReleaseMode) ([]*projectRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -383,7 +433,8 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*pro
 		where, args = append(where, fmt.Sprintf("id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	if mode == common.ReleaseModeDev {
+		rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			row_status,
@@ -402,6 +453,63 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*pro
 			lgtm_check
 		FROM project
 		WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into projectRawList.
+		var projectRawList []*projectRaw
+		for rows.Next() {
+			var project projectRaw
+			if err := rows.Scan(
+				&project.ID,
+				&project.RowStatus,
+				&project.CreatorID,
+				&project.CreatedTs,
+				&project.UpdaterID,
+				&project.UpdatedTs,
+				&project.Name,
+				&project.Key,
+				&project.WorkflowType,
+				&project.Visibility,
+				&project.TenantMode,
+				&project.DBNameTemplate,
+				&project.RoleProvider,
+				&project.SchemaChangeType,
+				&project.LGTMCheckSetting,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			projectRawList = append(projectRawList, &project)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return projectRawList, nil
+	}
+	rows, err := tx.QueryContext(ctx, `
+	SELECT
+		id,
+		row_status,
+		creator_id,
+		created_ts,
+		updater_id,
+		updated_ts,
+		name,
+		key,
+		workflow_type,
+		visibility,
+		tenant_mode,
+		db_name_template,
+		role_provider,
+		schema_change_type
+	FROM project
+	WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {
@@ -428,7 +536,6 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*pro
 			&project.DBNameTemplate,
 			&project.RoleProvider,
 			&project.SchemaChangeType,
-			&project.LGTMCheckSetting,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -443,7 +550,7 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*pro
 }
 
 // patchProjectImpl updates a project by ID. Returns the new state of the project after update.
-func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*projectRaw, error) {
+func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -464,18 +571,54 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 	if v := patch.SchemaChangeType; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.LGTMCheckSetting; v != nil {
-		set, args = append(set, fmt.Sprintf("lgtm_check = $%d", len(args)+1)), append(args, *v)
+	if mode == common.ReleaseModeDev {
+		if v := patch.LGTMCheckSetting; v != nil {
+			set, args = append(set, fmt.Sprintf("lgtm_check = $%d", len(args)+1)), append(args, *v)
+		}
 	}
 	args = append(args, patch.ID)
 
+	if mode == common.ReleaseModeDev {
+		// Execute update query with RETURNING.
+		var project projectRaw
+		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+		UPDATE project
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
+	`, len(args)),
+			args...,
+		).Scan(
+			&project.ID,
+			&project.RowStatus,
+			&project.CreatorID,
+			&project.CreatedTs,
+			&project.UpdaterID,
+			&project.UpdatedTs,
+			&project.Name,
+			&project.Key,
+			&project.WorkflowType,
+			&project.Visibility,
+			&project.TenantMode,
+			&project.DBNameTemplate,
+			&project.RoleProvider,
+			&project.SchemaChangeType,
+			&project.LGTMCheckSetting,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
+			}
+			return nil, FormatError(err)
+		}
+		return &project, nil
+	}
 	// Execute update query with RETURNING.
 	var project projectRaw
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type
 	`, len(args)),
 		args...,
 	).Scan(
@@ -493,7 +636,6 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 		&project.DBNameTemplate,
 		&project.RoleProvider,
 		&project.SchemaChangeType,
-		&project.LGTMCheckSetting,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
