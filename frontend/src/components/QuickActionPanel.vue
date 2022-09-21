@@ -86,6 +86,7 @@
           {{ $t("database.change-data") }}
         </h3>
       </div>
+
       <div
         v-if="isDev && quickAction === 'quickaction.bb.database.schema.sync'"
         class="flex flex-col items-center w-28 py-1"
