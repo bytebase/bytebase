@@ -63,7 +63,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE book RENAME COLUMN creatorId TO creator_id;`,
+			Statement: `ALTER TABLE tech_book RENAME COLUMN id TO creator_id;`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -92,7 +92,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE book CHANGE COLUMN creatorId creator_id int;`,
+			Statement: `ALTER TABLE tech_book CHANGE COLUMN id creator_id int;`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -103,7 +103,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE book DROP COLUMN contentString;`,
+			Statement: `ALTER TABLE tech_book DROP COLUMN id;`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,

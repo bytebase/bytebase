@@ -111,7 +111,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), INDEX idx_tech_book_name (name))",
+			Statement: "CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX idx_tech_book_copy_name (name))",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -122,7 +122,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name))",
+			Statement: "CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name))",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,

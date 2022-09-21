@@ -91,6 +91,7 @@ export type RuleType =
   | "statement.select.no-select-all"
   | "statement.where.require"
   | "statement.where.no-leading-wildcard-like"
+  | "statement.disallow-commit"
   | "schema.backward-compatibility"
   | "database.drop-empty-database";
 

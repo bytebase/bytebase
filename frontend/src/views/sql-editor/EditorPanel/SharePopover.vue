@@ -25,10 +25,8 @@
             :key="option.label"
             class="p-2 rounded-sm flex justify-between"
             :class="[
-              creatorAccessStyle,
-              {
-                'bg-accent text-white': option.value === currentAccess.value,
-              },
+              isCreator && 'cursor-pointer hover:bg-gray-200',
+              option.value === currentAccess.value && 'bg-gray-200',
             ]"
             @click="handleChangeAccess(option)"
           >
@@ -46,7 +44,7 @@
                 <h2 class="text-md flex">
                   {{ option.label }}
                 </h2>
-                <h3 class="text-xs" :class="creatorAccessDescStyle">
+                <h3 class="text-xs">
                   {{ option.description }}
                 </h3>
               </section>
@@ -116,19 +114,10 @@ const accessOptions = computed<AccessOption[]>(() => {
 });
 
 const sheet = computed(() => sheetStore.currentSheet);
-const creator = computed(() => sheetStore.isCreator);
+const isCreator = computed(() => sheetStore.isCreator);
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
-
-const creatorAccessStyle = computed(() => {
-  return creator.value
-    ? "cursor-pointer hover:bg-accent hover:text-white"
-    : "bg-transparent text-gray-300 cursor-not-allowed";
-});
-const creatorAccessDescStyle = computed(() => {
-  return creator.value ? "text-gray-400" : "text-gray-300 cursor-not-allowed";
-});
 
 const updateSheet = () => {
   if (tabStore.currentTab.sheetId) {
@@ -141,7 +130,7 @@ const updateSheet = () => {
 
 const handleChangeAccess = (option: AccessOption) => {
   // only creator can change access
-  if (creator.value) {
+  if (isCreator.value) {
     currentAccess.value = option;
     updateSheet();
   }

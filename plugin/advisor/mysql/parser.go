@@ -67,7 +67,7 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 
 	for i, node := range root {
 		node.SetText(nil, strings.TrimSpace(node.Text()))
-		node.SetOriginTextPosition(sqlList[i].Line)
+		node.SetOriginTextPosition(sqlList[i].LastLine)
 		if n, ok := node.(*ast.CreateTableStmt); ok {
 			if err := parser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, []advisor.Advice{

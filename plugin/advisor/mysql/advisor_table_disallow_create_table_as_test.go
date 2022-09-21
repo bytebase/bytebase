@@ -13,7 +13,7 @@ func TestTableDisallowCreateTableAs(t *testing.T) {
 		{
 			Statement: `CREATE TABLE t AS 
 				(
-					SELECT * FROM tbl
+					SELECT * FROM tech_book
 				)
 			`,
 			Want: []advisor.Advice{
@@ -22,7 +22,7 @@ func TestTableDisallowCreateTableAs(t *testing.T) {
 					Code:    advisor.StatementCreateTableAs,
 					Title:   "statement.create-table.no-create-table-as",
 					Content: "cannot create table `t` by using CREATE TABLE ... [AS] SELECT ...",
-					Line:    1,
+					Line:    4,
 				},
 			},
 		},
@@ -39,7 +39,7 @@ func TestTableDisallowCreateTableAs(t *testing.T) {
 			},
 		},
 		{
-			Statement: `CREATE TABLE t LIKE tbl`,
+			Statement: `CREATE TABLE t LIKE tech_book`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,

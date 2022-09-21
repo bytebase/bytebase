@@ -112,7 +112,6 @@ import {
 } from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
 import { onClickOutside, useElementBounding } from "@vueuse/core";
-import { isEmpty } from "lodash-es";
 
 interface LocalState {
   showMenu: boolean;
@@ -183,7 +182,11 @@ export default defineComponent({
     });
 
     const isSelected = computed(() => {
-      return !isEmpty(state.selectedItem);
+      return (
+        state.selectedItem !== null &&
+        state.selectedItem !== undefined &&
+        state.selectedItem !== ""
+      );
     });
 
     watch(

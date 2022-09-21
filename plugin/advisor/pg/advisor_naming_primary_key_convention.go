@@ -119,26 +119,26 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.ConstraintList {
-			if metadata := checker.getPrimaryKeyMetadata(node.Name.Schema, node.Name.Name, constraint, constraint.Line()); metadata != nil {
+			if metadata := checker.getPrimaryKeyMetadata(node.Name.Schema, node.Name.Name, constraint, constraint.LastLine()); metadata != nil {
 				res = append(res, metadata)
 			}
 		}
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getPrimaryKeyMetadata(node.Name.Schema, node.Name.Name, constraint, column.Line()); metadata != nil {
+				if metadata := checker.getPrimaryKeyMetadata(node.Name.Schema, node.Name.Name, constraint, column.LastLine()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
 		}
 	case *ast.AddConstraintStmt:
 		constraint := node.Constraint
-		if metadata := checker.getPrimaryKeyMetadata(node.Table.Schema, node.Table.Name, constraint, in.Line()); metadata != nil {
+		if metadata := checker.getPrimaryKeyMetadata(node.Table.Schema, node.Table.Name, constraint, in.LastLine()); metadata != nil {
 			res = append(res, metadata)
 		}
 	case *ast.AddColumnListStmt:
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getPrimaryKeyMetadata(node.Table.Schema, node.Table.Name, constraint, in.Line()); metadata != nil {
+				if metadata := checker.getPrimaryKeyMetadata(node.Table.Schema, node.Table.Name, constraint, in.LastLine()); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
@@ -153,7 +153,7 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
 				tableName: node.Table.Name,
-				line:      in.Line(),
+				line:      in.LastLine(),
 				metaData:  metaData,
 			})
 		}
@@ -168,7 +168,7 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
 				tableName: tableName,
-				line:      in.Line(),
+				line:      in.LastLine(),
 				metaData:  metaData,
 			})
 		}

@@ -95,9 +95,7 @@
               `project.settings.select-schema-change-type-${item.toLowerCase()}`
             )
           }}
-          <span v-if="item === 'SDL'" class="text-xs border px-1 rounded ml-1"
-            >Beta</span
-          >
+          <BBBetaBadge v-if="item === 'SDL'" />
         </template>
       </BBSelect>
     </div>
@@ -242,6 +240,7 @@ import {
   SchemaChangeType,
   VCSType,
 } from "@/types";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -254,6 +253,7 @@ interface LocalState {}
 
 export default defineComponent({
   name: "RepositoryForm",
+  components: { BBBetaBadge },
   props: {
     allowEdit: {
       default: true,
@@ -295,7 +295,6 @@ export default defineComponent({
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
     });
-
     const isProjectSchemaChangeTypeDDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "DDL";
     });
@@ -309,7 +308,6 @@ export default defineComponent({
         placeholder: string;
         sampleText: string;
       };
-
       const placeholderList: Item[] = [
         {
           placeholder: "{{VERSION}}",
@@ -332,13 +330,10 @@ export default defineComponent({
           sampleText: "create_tablefoo_for_bar",
         },
       ];
-
       let result = `${baseDirectory}/${filePathTemplate}`;
-
       // To replace the wildcard.
       result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
       result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
-
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);
@@ -354,14 +349,12 @@ export default defineComponent({
         placeholder: string;
         sampleText: string;
       };
-
       const placeholderList: Item[] = [
         {
           placeholder: "{{DB_NAME}}",
           sampleText: "db1",
         },
       ];
-
       let result = `${baseDirectory}/${schemaPathTemplate}`;
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");

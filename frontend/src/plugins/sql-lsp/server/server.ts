@@ -25,7 +25,7 @@ const state: LocalState = {
 };
 
 connection.onInitialize((params): InitializeResult => {
-  console.debug(`onInitialize`);
+  console.debug(`onInitialize`, params);
 
   return {
     capabilities: {
@@ -66,6 +66,7 @@ connection.onCompletion((params: CompletionParams): CompletionItem[] => {
 });
 
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  console.debug("onCompletionResolve", item);
   return item;
 });
 
@@ -102,3 +103,4 @@ connection.onExecuteCommand((request) => {
 });
 
 connection.listen();
+console.debug("language server start listening");

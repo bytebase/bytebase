@@ -64,8 +64,6 @@ const (
 	SchemaRuleTableNoFK SQLReviewRuleType = "table.no-foreign-key"
 	// SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
 	SchemaRuleTableDropNamingConvention SQLReviewRuleType = "table.drop-naming-convention"
-	// SchemaRuleTableExists require the table existence.
-	SchemaRuleTableExists SQLReviewRuleType = "table.exists"
 	// SchemaRuleTableCommentConvention enforce the table comment convention.
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
 	// SchemaRuleTableNotExists check the table name conflict.
@@ -81,8 +79,6 @@ const (
 	SchemaRuleColumnSetDefaultForNotNull SQLReviewRuleType = "column.set-default-for-not-null"
 	// SchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
 	SchemaRuleColumnDisallowChange SQLReviewRuleType = "column.disallow-change"
-	// SchemaRuleColumnExists require the column existence.
-	SchemaRuleColumnExists SQLReviewRuleType = "column.exists"
 	// SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 	SchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "column.disallow-changing-order"
 	// SchemaRuleColumnCommentConvention enforce the column comment convention.
@@ -106,8 +102,6 @@ const (
 	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
 	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
 	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
-	// SchemaRuleIndexNotExists check the index name conflict.
-	SchemaRuleIndexNotExists SQLReviewRuleType = "index.not-exists"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
@@ -675,11 +669,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLColumnDisallowChanging, nil
 		}
-	case SchemaRuleColumnExists:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLColumnExists, nil
-		}
 	case SchemaRuleColumnDisallowChangingOrder:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -718,11 +707,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDropNamingConvention, nil
-		}
-	case SchemaRuleTableExists:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLTableExists, nil
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {
@@ -772,11 +756,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTypeNoBlob, nil
-		}
-	case SchemaRuleIndexNotExists:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLIndexNotExists, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
