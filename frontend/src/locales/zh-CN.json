@@ -536,7 +536,7 @@
     "create-project": "@:common.create@:common.project",
     "edit-data": "编辑数据",
     "troubleshoot": "问题排查",
-    "sync-schema": "同步 Schema",
+    "sync-schema": "库表同步",
     "transfer-in-db": "转移数据库",
     "request-db": "申请数据库",
     "from-unassigned-databases": "从未分配的数据库",
@@ -756,7 +756,7 @@
   },
   "migration-history": {
     "self": "变更历史",
-    "select": "选择一个版本",
+    "select": "选择版本",
     "workflow": "工作流",
     "commit-info": "由 {author} 于 {time}",
     "no-schema-change": "本次变更没有任何 Schema 的改动",
@@ -894,12 +894,13 @@
     "restore-database": "恢复数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
-      "description": "使用选定的迁移版本将架构从基础数据库同步到目标数据库。",
-      "base-database": "基础数据库",
-      "target-database": "目标数据库",
+      "title": "库表同步",
+      "description": "将选定的源数据库 Schema 版本同步到目标数据库。",
+      "base-database": "来源库",
+      "target-database": "目标库",
       "synchronize-statements": "生成的 Schema DDL 语句",
       "schema-comparison-result": "Schema 比较结果",
-      "check-generated-ddl-statement": "请检查下面的自动生成的 DDL 语句。"
+      "no-different-tip": "源数据库与目标数据库之间之间没有 Schema 区别。"
     }
   },
   "repository": {
@@ -1387,6 +1388,10 @@
       "bb-feature-disaster-recovery-pitr": {
         "title": "恢复到指定时间点 (PITR)",
         "desc": "将数据库的状态恢复到一个时间点。"
+      },
+      "bb-feature-sync-schema": {
+        "title": "库表同步",
+        "desc": "将选定的源数据库 Schema 版本同步到目标数据库。请通过@:{'subscription.upgrade'}来完全开启该功能。"
       }
     }
   },
