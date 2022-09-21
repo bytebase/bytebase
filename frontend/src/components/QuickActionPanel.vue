@@ -92,10 +92,11 @@
         class="flex flex-col items-center w-28 py-1"
       >
         <button
-          class="btn-icon-primary p-3"
+          class="btn-icon-primary p-3 relative"
           @click.prevent="syncDatabaseSchema"
         >
           <heroicons-outline:refresh class="w-6 h-6" />
+          <BBBetaBadge :corner="true" class="top-full -mt-1" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
           {{ $t("quick-action.sync-schema") }}
@@ -233,15 +234,14 @@
       v-else-if="state.quickActionType == 'quickaction.bb.database.schema.sync'"
     >
       <SyncDatabaseSchemaPrepForm
-        v-if="projectId"
         :project-id="projectId"
         @dismiss="state.showModal = false"
       />
     </template>
   </BBModal>
   <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
+    v-if="state.showFeatureModal && state.featureName !== ''"
+    :feature="state.featureName"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -255,11 +255,13 @@ import { useRoute, useRouter } from "vue-router";
 import { ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import {
+  hasFeature,
   useCommandStore,
   useInstanceStore,
   useSubscriptionStore,
 } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
@@ -269,6 +271,7 @@ import SyncDatabaseSchemaPrepForm from "./SyncDatabaseSchemaPrepForm.vue";
 
 interface LocalState {
   showModal: boolean;
+  featureName: string;
   showFeatureModal: boolean;
   modalTitle: string;
   modalSubtitle: string;
@@ -285,6 +288,7 @@ export default defineComponent({
     RequestDatabasePrepForm,
     TransferDatabaseForm,
     SyncDatabaseSchemaPrepForm,
+    BBBetaBadge,
   },
   props: {
     quickActionList: {
@@ -301,6 +305,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showModal: false,
+      featureName: "",
       showFeatureModal: false,
       modalTitle: "",
       modalSubtitle: "",
@@ -337,6 +342,7 @@ export default defineComponent({
       const { subscription } = subscriptionStore;
       const instanceList = useInstanceStore().getInstanceList();
       if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
+        state.featureName = "bb.feature.instance-count";
         state.showFeatureModal = true;
         return;
       }
@@ -354,7 +360,13 @@ export default defineComponent({
     };
 
     const syncDatabaseSchema = () => {
-      state.modalTitle = t("quick-action.sync-schema");
+      if (!hasFeature("bb.feature.sync-schema")) {
+        state.featureName = "bb.feature.sync-schema";
+        state.showFeatureModal = true;
+        return;
+      }
+
+      state.modalTitle = t("database.sync-schema.title");
       state.quickActionType = "quickaction.bb.database.schema.sync";
       state.showModal = true;
     };

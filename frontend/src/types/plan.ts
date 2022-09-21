@@ -5,6 +5,7 @@ import planData from "./plan.yaml";
 export type FeatureType =
   // Database management
   | "bb.feature.disaster-recovery-pitr"
+  | "bb.feature.sync-schema"
   // Change Workflow
   | "bb.feature.sql-review"
   | "bb.feature.schema-drift"
@@ -71,6 +72,7 @@ export interface Plan {
 export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Database management
   ["bb.feature.disaster-recovery-pitr", [false, true, true]],
+  ["bb.feature.sync-schema", [false, false, true]],
   // Change Workflow
   ["bb.feature.sql-review", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],

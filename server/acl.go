@@ -74,7 +74,7 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 
 		role := member.Role
 		// If admin feature is not enabled, then we treat all user as OWNER.
-		if !s.feature("bb.feature.rbac") {
+		if !s.feature(api.FeatureRBAC) {
 			role = api.Owner
 		}
 		// Performs the ACL check.
