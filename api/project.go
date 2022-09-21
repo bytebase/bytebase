@@ -83,6 +83,8 @@ type Project struct {
 	RoleProvider   ProjectRoleProvider `jsonapi:"attr,roleProvider"`
 	// SchemaChangeType is the type of the schema migration script.
 	SchemaChangeType ProjectSchemaChangeType `jsonapi:"attr,schemaChangeType"`
+	// LGTMCheckSetting is the setting of the LGTM check.
+	LGTMCheckSetting LGTMCheckSetting `jsonapi:"attr,lgtmCheckSetting"`
 }
 
 // ProjectCreate is the API message for creating a project.
@@ -130,11 +132,12 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name             *string `jsonapi:"attr,name"`
-	Key              *string `jsonapi:"attr,key"`
-	WorkflowType     *string `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
-	RoleProvider     *string `jsonapi:"attr,roleProvider"`
-	SchemaChangeType *string `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
+	Name             *string           `jsonapi:"attr,name"`
+	Key              *string           `jsonapi:"attr,key"`
+	WorkflowType     *string           `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
+	RoleProvider     *string           `jsonapi:"attr,roleProvider"`
+	SchemaChangeType *string           `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
+	LGTMCheckSetting *LGTMCheckSetting `jsonapi:"attr,lgtmCheckSetting"`
 }
 
 var (
