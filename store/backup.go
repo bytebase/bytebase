@@ -220,6 +220,38 @@ func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSetti
 	return backup, nil
 }
 
+// UpdateBackupSettingsInEnvironment upserts an instance of backup setting.
+func (s *Store) UpdateBackupSettingsInEnvironment(ctx context.Context, upsert *api.BackupSettingUpsert) error {
+	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	stmt := `
+		UPDATE backup_setting
+		SET enabled = $1
+		WHERE id IN (
+			SELECT backup_setting.id
+			FROM backup_setting
+			INNER JOIN db ON backup_setting.database_id = db.id
+			INNER JOIN instance ON db.instance_id = instance.id
+			INNER JOIN environment ON instance.environment_id = environment.id
+			WHERE environment.id = $2
+		);
+	`
+	if _, err := tx.ExecContext(ctx, stmt, upsert.Enabled, upsert.EnvironmentID); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
 // FindBackupSettingsMatch finds a list of backup setting instances with match conditions.
 func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
