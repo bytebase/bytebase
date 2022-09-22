@@ -59,10 +59,10 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	if backup.StorageBackend == api.BackupStorageBackendLocal {
-		backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
-		availableBytes, err := getAvailableFSSpace(backupFilePathLocal)
+		backupFileDir := filepath.Dir(filepath.Join(server.profile.DataDir, backup.Path))
+		availableBytes, err := getAvailableFSSpace(backupFileDir)
 		if err != nil {
-			return true, nil, errors.Wrap(err, "failed to get available file system space")
+			return true, nil, errors.Wrapf(err, "failed to get available file system space, backup file dir is %s", backupFileDir)
 		}
 		if availableBytes < minAvailableFSBytes {
 			return true, nil, errors.Errorf("The available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSBytes/1024/1024)
