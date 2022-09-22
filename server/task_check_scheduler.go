@@ -447,6 +447,9 @@ func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *
 }
 
 func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+	if !s.server.feature(api.FeatureLGTM) {
+		return nil
+	}
 	issue, err := s.server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return err
