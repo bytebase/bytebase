@@ -169,19 +169,17 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		}
 	}
 
-	// After establishing a new baseline, we should remove schema drift anomalies.
-	if mi.Type == db.Baseline {
-		err := server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-			DatabaseID: task.DatabaseID,
-			Type:       api.AnomalyDatabaseSchemaDrift,
-		})
-		if err != nil && common.ErrorCode(err) != common.NotFound {
-			log.Error("Failed to close anomaly",
-				zap.String("instance", api.Instance{ID: task.InstanceID}.Name),
-				zap.String("database", api.Database{ID: *task.DatabaseID}.Name),
-				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-				zap.Error(err))
-		}
+	// Remove schema drift anomalies.
+	err = server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+		DatabaseID: task.DatabaseID,
+		Type:       api.AnomalyDatabaseSchemaDrift,
+	})
+	if err != nil && common.ErrorCode(err) != common.NotFound {
+		log.Error("Failed to close anomaly",
+			zap.String("instance", api.Instance{ID: task.InstanceID}.Name),
+			zap.String("database", api.Database{ID: *task.DatabaseID}.Name),
+			zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+			zap.Error(err))
 	}
 
 	// We write back the latest schema after migration for VCS-based projects if the
