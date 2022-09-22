@@ -77,6 +77,8 @@ const (
 	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
 	// TaskCheckGeneralEarliestAllowedTime is the task check type for earliest allowed time.
 	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
+	// TaskCheckIssueLGTM is the task check type for LGTM comments.
+	TaskCheckIssueLGTM TaskCheckType = "bb.task-check.issue.lgtm"
 )
 
 // TaskCheckEarliestAllowedTimePayload is the task check payload for earliest allowed time.

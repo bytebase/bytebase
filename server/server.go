@@ -269,6 +269,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		timingExecutor := NewTaskCheckTimingExecutor()
 		taskCheckScheduler.Register(api.TaskCheckGeneralEarliestAllowedTime, timingExecutor)
 
+		checkLGTMExecutor := NewTaskCheckLGTMExecutor()
+		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
+
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer
