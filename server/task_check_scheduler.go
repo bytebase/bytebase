@@ -225,6 +225,9 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	if err := s.scheduleTimingTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule timing task check")
 	}
+	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
+	}
 
 	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return task, nil
@@ -434,6 +437,30 @@ func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *
 		Type:                    api.TaskCheckGeneralEarliestAllowedTime,
 		Payload:                 string(taskCheckPayload),
 		SkipIfAlreadyTerminated: false,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+	issue, err := s.server.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	if err != nil {
+		return err
+	}
+	if issue == nil {
+		// skip if no containing issue.
+		return nil
+	}
+	if issue.Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
+		// don't schedule LGTM check if it's disabled.
+		return nil
+	}
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckIssueLGTM,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 	}); err != nil {
 		return err
 	}
