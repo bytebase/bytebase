@@ -116,6 +116,7 @@ func newIndexState(i *Index) *IndexState {
 	return index
 }
 
+// DatabaseState is the state for walk-through.
 type DatabaseState struct {
 	complete     bool
 	name         string
@@ -149,6 +150,7 @@ type IndexFind struct {
 	IndexName  string
 }
 
+// FindIndex finds the index.
 func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	// There are two cases to find a index:
 	// 1. find an index in specific table. e.g. MySQL and TiDB.
@@ -269,6 +271,7 @@ func (d *DatabaseState) copy() *DatabaseState {
 	}
 }
 
+// SchemaState is the state for walk-through.
 type SchemaState struct {
 	complete     bool
 	name         string
@@ -297,6 +300,7 @@ func (m schemaStateMap) copy() schemaStateMap {
 	return res
 }
 
+// TableState is the state for walk-through.
 type TableState struct {
 	complete bool
 
@@ -336,6 +340,7 @@ func (m tableStateMap) copy() tableStateMap {
 	return res
 }
 
+// IndexState is the state for walk-through.
 type IndexState struct {
 	complete bool
 
@@ -365,14 +370,17 @@ func (idx *IndexState) copy() *IndexState {
 	}
 }
 
+// Unique returns the unique for the index.
 func (idx *IndexState) Unique() bool {
 	return idx.unique.isTrue()
 }
 
+// Primary returns the priamry for the index.
 func (idx *IndexState) Primary() bool {
 	return idx.primary.isTrue()
 }
 
+// ExpressionList returns the expression list for the index.
 func (idx *IndexState) ExpressionList() []string {
 	if idx.expressionList.defined {
 		return idx.expressionList.value
@@ -390,6 +398,7 @@ func (m indexStateMap) copy() indexStateMap {
 	return res
 }
 
+// ColumnState is the state for walk-through.
 type ColumnState struct {
 	complete bool
 
@@ -421,10 +430,12 @@ func (col *ColumnState) copy() *ColumnState {
 	}
 }
 
+// Nullable returns nullable for the column.
 func (col *ColumnState) Nullable() bool {
 	return col.nullable.defined && col.nullable.value
 }
 
+// Type returns type for the column.
 func (col *ColumnState) Type() string {
 	return col.columnType.String()
 }
@@ -439,6 +450,7 @@ func (m columnStateMap) copy() columnStateMap {
 	return res
 }
 
+// ViewState is the state for walk-through.
 type ViewState struct {
 	name       string
 	definition stateString
@@ -463,6 +475,7 @@ func (m viewStateMap) copy() viewStateMap {
 	return res
 }
 
+// ExtensionState is the state for walk-through.
 type ExtensionState struct {
 	name        string
 	version     stateString
