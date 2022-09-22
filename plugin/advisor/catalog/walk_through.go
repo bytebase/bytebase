@@ -583,17 +583,20 @@ func (t *TableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThrough
 	return nil
 }
 
-func (s *SchemaState) completeSchemaRenameTable(oldName string, newName string) *WalkThroughError {
+func (s *SchemaState) renameTable(oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
 
 	table, exists := s.tableSet[oldName]
 	if !exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeTableNotExists,
-			Content: fmt.Sprintf("Table `%s` does not exist", oldName),
+		if s.complete {
+			return &WalkThroughError{
+				Type:    ErrorTypeTableNotExists,
+				Content: fmt.Sprintf("Table `%s` does not exist", oldName),
+			}
 		}
+		table = s.createIncompleteTable(oldName)
 	}
 
 	if _, exists := s.tableSet[newName]; exists {
@@ -609,30 +612,6 @@ func (s *SchemaState) completeSchemaRenameTable(oldName string, newName string) 
 	return nil
 }
 
-func (s *SchemaState) incompleteSchemaRenameTable(oldName string, newName string) *WalkThroughError {
-	if oldName == newName {
-		return nil
-	}
-
-	if _, exists := s.tableSet[newName]; exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeTableExists,
-			Content: fmt.Sprintf("Table `%s` already exists", newName),
-		}
-	}
-
-	table, exists := s.tableSet[oldName]
-	if exists {
-		table.name = newName
-		delete(s.tableSet, oldName)
-		s.tableSet[newName] = table
-	} else {
-		s.createIncompleteTable(newName)
-	}
-
-	return nil
-}
-
 func (s *SchemaState) createIncompleteTable(name string) *TableState {
 	table := &TableState{
 		complete:  false,
@@ -644,24 +623,20 @@ func (s *SchemaState) createIncompleteTable(name string) *TableState {
 	return table
 }
 
-func (s *SchemaState) renameTable(oldName string, newName string) *WalkThroughError {
-	if s.complete {
-		return s.completeSchemaRenameTable(oldName, newName)
-	}
-	return s.incompleteSchemaRenameTable(oldName, newName)
-}
-
-func (t *TableState) completeTableRenameColumn(oldName string, newName string) *WalkThroughError {
+func (t *TableState) renameColumn(oldName string, newName string) *WalkThroughError {
 	if oldName == newName {
 		return nil
 	}
 
 	column, exists := t.columnSet[oldName]
 	if !exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeColumnNotExists,
-			Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name),
+		if t.complete {
+			return &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name),
+			}
 		}
+		column = t.createIncompleteColumn(oldName)
 	}
 
 	if _, exists := t.columnSet[newName]; exists {
@@ -679,31 +654,6 @@ func (t *TableState) completeTableRenameColumn(oldName string, newName string) *
 	return nil
 }
 
-func (t *TableState) incompleteTableRenameColumn(oldName string, newName string) *WalkThroughError {
-	if oldName == newName {
-		return nil
-	}
-
-	if _, exists := t.columnSet[newName]; exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeColumnExists,
-			Content: fmt.Sprintf("Column `%s` already exists in table `%s", newName, t.name),
-		}
-	}
-
-	column, exists := t.columnSet[oldName]
-	if exists {
-		column.name = newName
-		delete(t.columnSet, oldName)
-		t.columnSet[newName] = column
-	} else {
-		t.createIncompleteColumn(newName)
-	}
-
-	t.renameColumnInIndexKey(oldName, newName)
-	return nil
-}
-
 func (t *TableState) createIncompleteColumn(name string) *ColumnState {
 	column := &ColumnState{
 		complete: false,
@@ -711,13 +661,6 @@ func (t *TableState) createIncompleteColumn(name string) *ColumnState {
 	}
 	t.columnSet[name] = column
 	return column
-}
-
-func (t *TableState) renameColumn(oldName string, newName string) *WalkThroughError {
-	if t.complete {
-		return t.completeTableRenameColumn(oldName, newName)
-	}
-	return t.incompleteTableRenameColumn(oldName, newName)
 }
 
 func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
@@ -817,14 +760,14 @@ func (t *TableState) dropIndex(indexName string) *WalkThroughError {
 	return nil
 }
 
-func (t *TableState) dropColumn(columnName string) *WalkThroughError {
+func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughError {
 	column, exists := t.columnSet[columnName]
-	if !exists && t.complete {
+	if !exists {
 		return NewColumnNotExistsError(t.name, columnName)
 	}
 
 	// Can not drop all columns in a table using ALTER TABLE DROP COLUMN.
-	if t.complete && len(t.columnSet) == 1 {
+	if len(t.columnSet) == 1 {
 		return &WalkThroughError{
 			Type: ErrorTypeDropAllColumns,
 			// Error content comes from MySQL error content.
@@ -842,16 +785,36 @@ func (t *TableState) dropColumn(columnName string) *WalkThroughError {
 	}
 
 	// modify the column position
-	if t.complete {
-		for _, col := range t.columnSet {
-			if col.position.value > column.position.value {
-				col.position.value--
-			}
+	for _, col := range t.columnSet {
+		if col.position.value > column.position.value {
+			col.position.value--
 		}
 	}
 
 	delete(t.columnSet, columnName)
 	return nil
+
+}
+
+func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughError {
+	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
+	for _, index := range t.indexSet {
+		index.dropColumn(columnName)
+		// If all columns that make up an index are dropped, the index is dropped as well.
+		if index.expressionList.defined && index.expressionList.len() == 0 {
+			delete(t.indexSet, index.name)
+		}
+	}
+
+	delete(t.columnSet, columnName)
+	return nil
+}
+
+func (t *TableState) dropColumn(columnName string) *WalkThroughError {
+	if t.complete {
+		return t.completeTableDropColumn(columnName)
+	}
+	return t.incompleteTableDropColumn(columnName)
 }
 
 func (idx *IndexState) dropColumn(columnName string) {

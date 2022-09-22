@@ -43,7 +43,7 @@ func (s stateStringSlice) len() int {
 	if s.defined {
 		return len(s.value)
 	}
-	return 0
+	return -1
 }
 
 func newStateStringSlice(value []string) stateStringSlice {
