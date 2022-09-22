@@ -247,7 +247,7 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 func (d *DatabaseState) checkInsert(node *tidbast.InsertStmt) *WalkThroughError {
 	tableName, ok := getTableSourceName(node.Table)
 	if ok {
-		table, err := d.findTableState(tableName)
+		table, err := d.findTableState(tableName, false /* createIncompleteTable */)
 		if err != nil {
 			return err
 		}
@@ -342,7 +342,7 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 	return nil
 }
 
-func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableState, *WalkThroughError) {
+func (d *DatabaseState) findTableState(tableName *tidbast.TableName, createIncompleteTable bool) (*TableState, *WalkThroughError) {
 	if tableName.Schema.O != "" && d.name != "" && tableName.Schema.O != d.name {
 		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
@@ -357,31 +357,29 @@ func (d *DatabaseState) findTableState(tableName *tidbast.TableName) (*TableStat
 		if schema.complete {
 			return nil, NewTableNotExistsError(tableName.Name.O)
 		}
-		table = schema.createIncompleteTable(tableName.Name.O)
+		if createIncompleteTable {
+			table = schema.createIncompleteTable(tableName.Name.O)
+		} else {
+			return nil, nil
+		}
 	}
 
 	return table, nil
 }
 
 func (d *DatabaseState) dropIndex(node *tidbast.DropIndexStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table)
+	table, err := d.findTableState(node.Table, true /* createIncompleteTable */)
 	if err != nil {
 		return err
-	}
-	if table == nil {
-		return nil
 	}
 
 	return table.dropIndex(node.IndexName)
 }
 
 func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table)
+	table, err := d.findTableState(node.Table, true /* createIncompleteTable */)
 	if err != nil {
 		return err
-	}
-	if table == nil {
-		return nil
 	}
 
 	unique := false
@@ -408,7 +406,7 @@ func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 }
 
 func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughError {
-	table, err := d.findTableState(node.Table)
+	table, err := d.findTableState(node.Table, true /* createIncompleteTable */)
 	if err != nil {
 		return err
 	}
@@ -922,13 +920,9 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 }
 
 func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	targetTable, err := d.findTableState(node.ReferTable)
+	targetTable, err := d.findTableState(node.ReferTable, true /* createIncompleteTable */)
 	if err != nil {
 		return err
-	}
-	if targetTable == nil {
-		// For CREATE TABLE ... LIKE ... statements, we can not walk-through if target table dese not exist in catalog.
-		return NewTableNotExistsError(node.ReferTable.Name.O)
 	}
 
 	schema := d.schemaSet[""]

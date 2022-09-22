@@ -958,47 +958,61 @@ func TestWalkThrough(t *testing.T) {
 	}
 }
 
-func TestWalkThroughForNoCatalog(t *testing.T) {
-	tests := []testData{
+type testDataForIncomplete struct {
+	statement string
+	want      *DatabaseState
+	err       error
+}
+
+func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
+	tests := []testDataForIncomplete{
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-			},
-			statement: `
-				DROP TABLE t1, t2
-			`,
-			want: &Database{
-				Name:       "test",
-				DbType:     db.MySQL,
-				SchemaList: []*Schema{{}},
+			statement: `DROP TABLE t1, t2`,
+			want: &DatabaseState{
+				complete:     false,
+				name:         "",
+				characterSet: newStateString(""),
+				collation:    newStateString(""),
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						complete:     false,
+						name:         "",
+						tableSet:     tableStateMap{},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-			},
-			statement: `
-				INSERT INTO test values (1);
-			`,
-			want: &Database{
-				Name:       "test",
-				DbType:     db.MySQL,
-				SchemaList: []*Schema{{}},
+			statement: `INSERT INTO test values (1)`,
+			want: &DatabaseState{
+				complete:     false,
+				name:         "",
+				characterSet: newStateString(""),
+				collation:    newStateString(""),
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						complete:     false,
+						name:         "",
+						tableSet:     tableStateMap{},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
 			},
 		},
 	}
-
 	for _, test := range tests {
-		state := newDatabaseState(test.origin, &FinderContext{CheckIntegrity: false})
-		err := state.WalkThrough(test.statement)
+		finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false}, db.MySQL)
+		err := finder.WalkThrough(test.statement)
 		if test.err != nil {
 			require.Equal(t, err, test.err)
 			continue
 		}
 		require.NoError(t, err)
-		want := newDatabaseState(test.want, &FinderContext{CheckIntegrity: false})
-		require.Equal(t, want, state, test.statement)
+		require.Equal(t, test.want, finder.Final, test.statement)
 	}
 }
