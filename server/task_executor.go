@@ -175,9 +175,9 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		Type:       api.AnomalyDatabaseSchemaDrift,
 	})
 	if err != nil && common.ErrorCode(err) != common.NotFound {
-		log.Error("Failed to close anomaly",
-			zap.String("instance", api.Instance{ID: task.InstanceID}.Name),
-			zap.String("database", api.Database{ID: *task.DatabaseID}.Name),
+		log.Error("Failed to archive anomaly",
+			zap.String("instance", task.Instance.Name),
+			zap.String("database", task.Database.Name),
 			zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 			zap.Error(err))
 	}
