@@ -14,7 +14,7 @@ import (
 )
 
 // Type is the type of a VCS.
-//nolint
+// nolint
 type Type string
 
 const (
@@ -41,9 +41,15 @@ type OAuthToken struct {
 
 // Commit records the commit data.
 type Commit struct {
-	ID         string
-	AuthorName string
-	CreatedTs  int64
+	ID           string
+	Title        string
+	Message      string
+	CreatedTs    int64
+	URL          string
+	AuthorName   string
+	AuthorEmail  string
+	AddedList    []string
+	ModifiedList []string
 }
 
 // FileCommit is the API message for a VCS file commit.
