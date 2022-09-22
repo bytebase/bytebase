@@ -127,7 +127,7 @@ func RunSQLReviewRuleTests(
 		Rule:      rule,
 	}
 	for _, tc := range tests {
-		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true})
+		finder := catalog.NewFinder(database, &catalog.FinderContext{Complete: true})
 		if database.DbType == db.MySQL || database.DbType == db.TiDB {
 			err := finder.WalkThrough(tc.Statement)
 			require.NoError(t, err, tc.Statement)
