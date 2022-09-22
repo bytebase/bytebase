@@ -40,9 +40,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		webhookEndpointID, body, repos, httpErr := s.validateWebhookRequest(ctx, c)
+		webhookEndpointID, repos, httpErr := s.validateWebhookRequest(ctx, c)
 		if httpErr != nil {
 			return httpErr
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
 		}
 
 		var pushEvent gitlab.WebhookPushEvent
@@ -61,7 +66,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.AuthorName,
 		}
 
-		filteredRepos, httpErr := filterReposCommon(&baseVCSPushEvent, repos)
+		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
 		if httpErr != nil {
 			return httpErr
 		}
@@ -100,9 +105,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 		}
 
-		webhookEndpointID, body, repos, httpErr := s.validateWebhookRequest(ctx, c)
+		webhookEndpointID, repos, httpErr := s.validateWebhookRequest(ctx, c)
 		if httpErr != nil {
 			return httpErr
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
 		}
 
 		var pushEvent github.WebhookPushEvent
@@ -117,7 +127,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.Sender.Login,
 		}
 
-		filteredRepos, httpErr := filterReposCommon(&baseVCSPushEvent, repos)
+		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
 		if httpErr != nil {
 			return httpErr
 		}
@@ -198,23 +208,19 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 	return createdMessages, nil
 }
 
-func (s *Server) validateWebhookRequest(ctx context.Context, c echo.Context) (string, []byte, []*api.Repository, *echo.HTTPError) {
+func (s *Server) validateWebhookRequest(ctx context.Context, c echo.Context) (string, []*api.Repository, *echo.HTTPError) {
 	webhookEndpointID := c.Param("id")
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
-		return "", nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+		return "", nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 	}
 	if len(repos) == 0 {
-		return "", nil, nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+		return "", nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
 	}
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return "", nil, nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
-	}
-	return webhookEndpointID, body, repos, nil
+	return webhookEndpointID, repos, nil
 }
 
-func filterReposCommon(pushEvent *vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
+func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
 	branch, err := parseBranchNameFromRefs(pushEvent.Ref)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEvent.Ref).SetInternal(err)
@@ -258,7 +264,7 @@ func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Rep
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
 		}
 		if !validated {
-			log.Debug("Skipping repo due to mismatched  payload signature", zap.Int("repoID", repo.ID))
+			log.Debug("Skipping repo due to mismatched payload signature", zap.Int("repoID", repo.ID))
 			continue
 		}
 		filteredRepos = append(filteredRepos, repo)
