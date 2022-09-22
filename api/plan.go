@@ -41,6 +41,8 @@ const (
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
 	// FeatureTaskScheduleTime allows user to run task at a scheduled time.
 	FeatureTaskScheduleTime FeatureType = "bb.feature.task-schedule-time"
+	// FeatureLGTM checks LGTM comments.
+	FeatureLGTM FeatureType = "bb.feature.lgtm"
 	// FeatureMultiTenancy allows user to enable tenant mode for the project.
 	//
 	// Tenant mode allows user to track a group of homogeneous database changes together.
@@ -125,6 +127,8 @@ func (e FeatureType) Name() string {
 		return "Schema drift"
 	case FeatureTaskScheduleTime:
 		return "Task schedule time"
+	case FeatureLGTM:
+		return "LGTM"
 	case FeatureMultiTenancy:
 		return "Multi-tenancy"
 	case FeatureDBAWorkflow:
@@ -176,6 +180,7 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSchemaDrift:           {false, true, true},
 	FeatureTaskScheduleTime:      {false, true, true},
+	FeatureLGTM:                  {false, false, true},
 	FeatureMultiTenancy:          {false, true, true},
 	FeatureDBAWorkflow:           {false, false, true},
 	FeatureDataSource:            {false, false, false},
