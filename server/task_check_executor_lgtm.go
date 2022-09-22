@@ -33,14 +33,13 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 				Namespace: api.BBNamespace,
 				Code:      common.Internal.Int(),
 				Title:     fmt.Sprintf("Failed to find task %d", taskCheckRun.TaskID),
-				Content:   err.Error(),
 			},
 		}, nil
 	}
 
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
+		return nil, common.Wrap(err, common.Internal)
 	}
 	if issue == nil {
 		return []api.TaskCheckResult{
@@ -49,7 +48,6 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 				Namespace: api.BBNamespace,
 				Code:      common.Internal.Int(),
 				Title:     fmt.Sprintf("Failed to find issue by pipelineID %d", task.PipelineID),
-				Content:   err.Error(),
 			},
 		}, nil
 	}
@@ -72,12 +70,12 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 		ContainerID: &issue.ID,
 	})
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
+		return nil, common.Wrap(err, common.Internal)
 	}
 
 	ok, err := checkLGTMcomments(ctx, server.store, activityList, issue)
 	if err != nil {
-		return []api.TaskCheckResult{}, errors.Wrap(err, "failed to check LGTM comments")
+		return nil, errors.Wrap(err, "failed to check LGTM comments")
 	}
 	if ok {
 		return []api.TaskCheckResult{
