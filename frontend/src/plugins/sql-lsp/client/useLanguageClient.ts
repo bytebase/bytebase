@@ -10,6 +10,13 @@ type LocalStage = {
   worker: Promise<Worker>;
   client: Promise<MonacoLanguageClient>;
   stopped: boolean;
+
+  // Store pending commands when the client is not connected yet.
+  // Execute them at the first time when the connection starts.
+  // Only keep the latest command for each type and drops the outdated ones.
+  // So we don't need to know the perfect timing to call `executeCommand`
+  // in <MonacoEditor> and wherever, just call it.
+  pendingCommands: Map<string, ExecuteCommandParams>;
 };
 
 // Working as a singleton
@@ -17,6 +24,7 @@ const state: LocalStage = {
   worker: undefined as any,
   client: undefined as any,
   stopped: true,
+  pendingCommands: new Map(),
 };
 
 const getWorker = (): Promise<Worker> => {
@@ -52,11 +60,13 @@ const getLanguageClient = () => {
 const executeCommand = (params: ExecuteCommandParams) => {
   // Don't go further if we are not connected.
   if (state.stopped) {
+    state.pendingCommands.set(params.command, params);
     return;
   }
   getLanguageClient().then((client) => {
     // Double check the status since we are in an async callback
     if (state.stopped) {
+      state.pendingCommands.set(params.command, params);
       return;
     }
     client.sendRequest("workspace/executeCommand", params);
@@ -77,6 +87,18 @@ const changeDialect = (dialect: SQLDialect) => {
   });
 };
 
+const resolvePendingCommands = (client: MonacoLanguageClient) => {
+  if (state.stopped) {
+    return;
+  }
+
+  for (const params of state.pendingCommands.values()) {
+    client.sendRequest("workspace/executeCommand", params);
+  }
+
+  state.pendingCommands.clear();
+};
+
 const start = () => {
   if (!state.stopped) {
     // Don't start twice
@@ -90,6 +112,7 @@ const start = () => {
     try {
       client.start();
       state.stopped = false;
+      resolvePendingCommands(client);
     } catch {
       // nothing todo
     }
@@ -104,6 +127,7 @@ const stop = () => {
   }
 
   state.client.then((client) => {
+    state.pendingCommands.clear();
     client.stop();
   });
 };
