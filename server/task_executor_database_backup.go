@@ -10,10 +10,16 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"golang.org/x/sys/unix"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+)
+
+const (
+	// Do not dump backup file when the available file system space is less than 500MB.
+	minAvailableFSBytes = 500 * 1024 * 1024
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
@@ -51,12 +57,19 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if backup == nil {
 		return true, nil, errors.Errorf("backup %v not found", payload.BackupID)
 	}
-	log.Debug("Start database backup...",
-		zap.String("instance", task.Instance.Name),
-		zap.String("database", task.Database.Name),
-		zap.String("backup", backup.Name),
-	)
 
+	if backup.StorageBackend == api.BackupStorageBackendLocal {
+		backupFileDir := filepath.Dir(filepath.Join(server.profile.DataDir, backup.Path))
+		availableBytes, err := getAvailableFSSpace(backupFileDir)
+		if err != nil {
+			return true, nil, errors.Wrapf(err, "failed to get available file system space, backup file dir is %s", backupFileDir)
+		}
+		if availableBytes < minAvailableFSBytes {
+			return true, nil, errors.Errorf("the available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSBytes/1024/1024)
+		}
+	}
+
+	log.Debug("Start database backup.", zap.String("instance", task.Instance.Name), zap.String("database", task.Database.Name), zap.String("backup", backup.Name))
 	backupPayload, backupErr := exec.backupDatabase(ctx, server, task.Instance, task.Database.Name, backup)
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
@@ -83,6 +96,21 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Backup database %q", task.Database.Name),
 	}, nil
+}
+
+// getAvailableFSSpace gets the free space of the mounted filesystem.
+// path is the pathname of any file within the mounted filesystem.
+// It calls syscall statfs under the hood.
+// Returns available space in bytes.
+func getAvailableFSSpace(path string) (uint64, error) {
+	var stat unix.Statfs_t
+	if err := unix.Statfs(path, &stat); err != nil {
+		return 0, errors.Wrap(err, "failed to call syscall statfs")
+	}
+	// Ref: https://man7.org/linux/man-pages/man2/statfs.2.html
+	// Bavail: Free blocks available to unprivileged user.
+	// Bsize: Optimal transfer block size.
+	return stat.Bavail * uint64(stat.Bsize), nil
 }
 
 func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupFilePath string) (string, error) {
