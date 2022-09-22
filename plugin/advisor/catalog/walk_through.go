@@ -1207,6 +1207,7 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 	}
 
 	pk := &IndexState{
+		complete:       true,
 		name:           PrimaryKeyName,
 		expressionList: newStateStringSlice(keys),
 		indextype:      newStateString(tp),
