@@ -269,20 +269,28 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 		if !exists {
 			schema = d.createSchema("")
 		}
+		oldTableName := tableToTable.OldTable.Name.O
+		newTableName := tableToTable.NewTable.Name.O
 		if d.theCurrentDatabase(tableToTable) {
-			table, exists := schema.tableSet[tableToTable.OldTable.Name.O]
-			if !exists {
-				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
+			if oldTableName == newTableName {
+				return nil
 			}
-			if _, exists := schema.tableSet[tableToTable.NewTable.Name.O]; exists {
-				return NewTableExistsError(tableToTable.NewTable.Name.O)
+			table, exists := schema.tableSet[oldTableName]
+			if !exists {
+				if schema.complete {
+					return NewTableNotExistsError(oldTableName)
+				}
+				table = schema.createIncompleteTable(oldTableName)
+			}
+			if _, exists := schema.tableSet[newTableName]; exists {
+				return NewTableExistsError(newTableName)
 			}
 			delete(schema.tableSet, table.name)
-			table.name = tableToTable.NewTable.Name.O
+			table.name = newTableName
 			schema.tableSet[table.name] = table
 		} else if d.moveToOtherDatabase(tableToTable) {
 			_, exists := schema.tableSet[tableToTable.OldTable.Name.O]
-			if !exists {
+			if !exists && schema.complete {
 				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
 			}
 			delete(schema.tableSet, tableToTable.OldTable.Name.O)
@@ -318,7 +326,7 @@ func (d *DatabaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
 }
 
 func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroughError {
-	if d.name != "" && node.Name != d.name {
+	if node.Name != d.name {
 		return NewAccessOtherDatabaseError(d.name, node.Name)
 	}
 
@@ -327,7 +335,7 @@ func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroug
 }
 
 func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThroughError {
-	if !node.AlterDefaultDatabase && d.name != "" && node.Name != d.name {
+	if !node.AlterDefaultDatabase && node.Name != d.name {
 		return NewAccessOtherDatabaseError(d.name, node.Name)
 	}
 
@@ -343,7 +351,7 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 }
 
 func (d *DatabaseState) findTableState(tableName *tidbast.TableName, createIncompleteTable bool) (*TableState, *WalkThroughError) {
-	if tableName.Schema.O != "" && d.name != "" && tableName.Schema.O != d.name {
+	if tableName.Schema.O != "" && tableName.Schema.O != d.name {
 		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
 
@@ -627,8 +635,10 @@ func (s *SchemaState) incompleteSchemaRenameTable(oldName string, newName string
 
 func (s *SchemaState) createIncompleteTable(name string) *TableState {
 	table := &TableState{
-		complete: false,
-		name:     name,
+		complete:  false,
+		name:      name,
+		columnSet: make(columnStateMap),
+		indexSet:  make(indexStateMap),
 	}
 	s.tableSet[name] = table
 	return table
@@ -891,7 +901,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 	// TODO(rebelice): deal with DROP VIEW statement.
 	if !node.IsView {
 		for _, name := range node.Tables {
-			if name.Schema.O != "" && d.name != "" && d.name != name.Schema.O {
+			if name.Schema.O != "" && d.name != name.Schema.O {
 				return &WalkThroughError{
 					Type:    ErrorTypeAccessOtherDatabase,
 					Content: fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.name),
@@ -933,7 +943,7 @@ func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughErr
 }
 
 func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	if node.Table.Schema.O != "" && d.name != "" && d.name != node.Table.Schema.O {
+	if node.Table.Schema.O != "" && d.name != node.Table.Schema.O {
 		return &WalkThroughError{
 			Type:    ErrorTypeAccessOtherDatabase,
 			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),

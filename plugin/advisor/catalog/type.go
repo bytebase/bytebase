@@ -32,9 +32,7 @@ type stateStringSlice struct {
 
 func (s stateStringSlice) copy() stateStringSlice {
 	var list []string
-	for _, v := range s.value {
-		list = append(list, v)
-	}
+	list = append(list, s.value...)
 	return stateStringSlice{
 		defined: s.defined,
 		value:   list,
