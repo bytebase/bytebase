@@ -3,8 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/stretchr/testify/require"
 )
@@ -38,10 +36,9 @@ func TestColumnExist(t *testing.T) {
 		},
 	}
 	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		oldNodes := getStmtNodes(t, test.old)
-		newNodes := getStmtNodes(t, test.new)
-		out, err := SchemaDiff(oldNodes, newNodes)
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
@@ -72,10 +69,9 @@ func TestColumnType(t *testing.T) {
 		},
 	}
 	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		oldNodes := getStmtNodes(t, test.old)
-		newNodes := getStmtNodes(t, test.new)
-		out, err := SchemaDiff(oldNodes, newNodes)
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
@@ -130,10 +126,9 @@ func TestColumnOption(t *testing.T) {
 		},
 	}
 	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		oldNodes := getStmtNodes(t, test.old)
-		newNodes := getStmtNodes(t, test.new)
-		out, err := SchemaDiff(oldNodes, newNodes)
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
@@ -177,10 +172,9 @@ func TestColumnComment(t *testing.T) {
 		},
 	}
 	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		oldNodes := getStmtNodes(t, test.old)
-		newNodes := getStmtNodes(t, test.new)
-		out, err := SchemaDiff(oldNodes, newNodes)
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
@@ -234,17 +228,10 @@ func TestColumnDefaultValue(t *testing.T) {
 		},
 	}
 	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		oldNodes := getStmtNodes(t, test.old)
-		newNodes := getStmtNodes(t, test.new)
-		out, err := SchemaDiff(oldNodes, newNodes)
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
-}
-
-func getStmtNodes(t *testing.T, sql string) []ast.StmtNode {
-	nodes, _, err := parser.New().Parse(sql, "", "")
-	require.NoError(t, err)
-	return nodes
 }
