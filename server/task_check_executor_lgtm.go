@@ -86,7 +86,7 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 				Namespace: api.BBNamespace,
 				Code:      common.Ok.Int(),
 				Title:     "OK",
-				Content:   "Valid LGTM found!",
+				Content:   "Valid LGTM found",
 			},
 		}, nil
 	}
@@ -97,7 +97,7 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 			Namespace: api.BBNamespace,
 			Code:      common.NotFound.Int(),
 			Title:     "Not Found",
-			Content:   "Valid LGTM NOT found!",
+			Content:   "Valid LGTM NOT found",
 		},
 	}, nil
 }
@@ -117,6 +117,10 @@ func checkLGTMcomments(ctx context.Context, store *store.Store, activityList []*
 
 func isCommentLGTM(ctx context.Context, store *store.Store, activity *api.Activity, issue *api.Issue) (bool, error) {
 	if activity.Comment != "LGTM" {
+		return false, nil
+	}
+	// LGTM by oneself doesn't count.
+	if activity.CreatorID == issue.CreatorID {
 		return false, nil
 	}
 	member, err := store.GetProjectMember(ctx, &api.ProjectMemberFind{
