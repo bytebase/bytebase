@@ -24,7 +24,7 @@ type TaskCheckLGTMExecutor struct {
 func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
+		return nil, common.Wrap(err, common.Internal)
 	}
 	if task == nil {
 		return []api.TaskCheckResult{
@@ -32,7 +32,7 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 				Status:    api.TaskCheckStatusError,
 				Namespace: api.BBNamespace,
 				Code:      common.Internal.Int(),
-				Title:     fmt.Sprintf("Failed to find task %v", taskCheckRun.TaskID),
+				Title:     fmt.Sprintf("Failed to find task %d", taskCheckRun.TaskID),
 				Content:   err.Error(),
 			},
 		}, nil
@@ -48,7 +48,7 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 				Status:    api.TaskCheckStatusError,
 				Namespace: api.BBNamespace,
 				Code:      common.Internal.Int(),
-				Title:     fmt.Sprintf("Failed to find issue by pipelineID %v", task.PipelineID),
+				Title:     fmt.Sprintf("Failed to find issue by pipelineID %d", task.PipelineID),
 				Content:   err.Error(),
 			},
 		}, nil
@@ -139,5 +139,5 @@ func isCommentLGTM(ctx context.Context, store *store.Store, activity *api.Activi
 	case api.LGTMValueProjectOwner:
 		return member.Role == string(api.Owner), nil
 	}
-	return false, errors.Errorf("unexpected LGTM setting value: %v", issue.Project.LGTMCheckSetting.Value)
+	return false, errors.Errorf("unexpected LGTM setting value: %s", issue.Project.LGTMCheckSetting.Value)
 }
