@@ -276,12 +276,23 @@ type SchemaState struct {
 	viewSet      viewStateMap
 	extensionSet extensionStateMap
 }
+
+func (schema *SchemaState) copy() *SchemaState {
+	return &SchemaState{
+		complete:     schema.complete,
+		name:         schema.name,
+		tableSet:     schema.tableSet.copy(),
+		viewSet:      schema.viewSet.copy(),
+		extensionSet: schema.extensionSet.copy(),
+	}
+}
+
 type schemaStateMap map[string]*SchemaState
 
 func (m schemaStateMap) copy() schemaStateMap {
 	res := make(schemaStateMap)
 	for k, v := range m {
-		res[k] = v
+		res[k] = v.copy()
 	}
 	return res
 }
@@ -301,26 +312,28 @@ type TableState struct {
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
 }
-type tableStateMap map[string]*TableState
-
-func (m tableStateMap) copy() tableStateMap {
-	res := make(tableStateMap)
-	for k, v := range m {
-		res[k] = v
-	}
-	return res
-}
 
 func (table *TableState) copy() *TableState {
 	return &TableState{
 		complete:  table.complete,
 		name:      table.name,
 		tableType: table.tableType,
+		engine:    table.engine,
 		collation: table.collation,
 		comment:   table.comment,
 		columnSet: table.columnSet.copy(),
 		indexSet:  table.indexSet.copy(),
 	}
+}
+
+type tableStateMap map[string]*TableState
+
+func (m tableStateMap) copy() tableStateMap {
+	res := make(tableStateMap)
+	for k, v := range m {
+		res[k] = v.copy()
+	}
+	return res
 }
 
 type IndexState struct {
@@ -337,6 +350,19 @@ type IndexState struct {
 	visible stateBool
 	// Comment isn't supported for SQLite.
 	comment stateString
+}
+
+func (idx *IndexState) copy() *IndexState {
+	return &IndexState{
+		complete:       idx.complete,
+		name:           idx.name,
+		expressionList: idx.expressionList.copy(),
+		indextype:      idx.indextype,
+		unique:         idx.unique,
+		primary:        idx.primary,
+		visible:        idx.visible,
+		comment:        idx.comment,
+	}
 }
 
 func (idx *IndexState) Unique() bool {
@@ -359,7 +385,7 @@ type indexStateMap map[string]*IndexState
 func (m indexStateMap) copy() indexStateMap {
 	res := make(indexStateMap)
 	for k, v := range m {
-		res[k] = v
+		res[k] = v.copy()
 	}
 	return res
 }
@@ -381,6 +407,20 @@ type ColumnState struct {
 	comment stateString
 }
 
+func (col *ColumnState) copy() *ColumnState {
+	return &ColumnState{
+		complete:     col.complete,
+		name:         col.name,
+		position:     col.position,
+		defaultValue: col.defaultValue.copy(),
+		nullable:     col.nullable,
+		columnType:   col.columnType,
+		characterSet: col.characterSet,
+		collation:    col.collation,
+		comment:      col.comment,
+	}
+}
+
 func (col *ColumnState) Nullable() bool {
 	return col.nullable.defined && col.nullable.value
 }
@@ -394,7 +434,7 @@ type columnStateMap map[string]*ColumnState
 func (m columnStateMap) copy() columnStateMap {
 	res := make(columnStateMap)
 	for k, v := range m {
-		res[k] = v
+		res[k] = v.copy()
 	}
 	return res
 }
@@ -404,11 +444,45 @@ type ViewState struct {
 	definition stateString
 	comment    stateString
 }
+
+func (view *ViewState) copy() *ViewState {
+	return &ViewState{
+		name:       view.name,
+		definition: view.definition,
+		comment:    view.comment,
+	}
+}
+
 type viewStateMap map[string]*ViewState
+
+func (m viewStateMap) copy() viewStateMap {
+	res := make(viewStateMap)
+	for k, v := range m {
+		res[k] = v.copy()
+	}
+	return res
+}
 
 type ExtensionState struct {
 	name        string
 	version     stateString
 	description stateString
 }
+
+func (extension *ExtensionState) copy() *ExtensionState {
+	return &ExtensionState{
+		name:        extension.name,
+		version:     extension.version,
+		description: extension.description,
+	}
+}
+
 type extensionStateMap map[string]*ExtensionState
+
+func (m extensionStateMap) copy() extensionStateMap {
+	res := make(extensionStateMap)
+	for k, v := range m {
+		res[k] = v.copy()
+	}
+	return res
+}

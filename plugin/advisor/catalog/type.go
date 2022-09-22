@@ -30,6 +30,17 @@ type stateStringSlice struct {
 	value   []string
 }
 
+func (s stateStringSlice) copy() stateStringSlice {
+	var list []string
+	for _, v := range s.value {
+		list = append(list, v)
+	}
+	return stateStringSlice{
+		defined: s.defined,
+		value:   list,
+	}
+}
+
 func (s stateStringSlice) len() int {
 	if s.defined {
 		return len(s.value)
@@ -44,6 +55,20 @@ func newStateStringSlice(value []string) stateStringSlice {
 type stateStringPointer struct {
 	defined bool
 	value   *string
+}
+
+func (p stateStringPointer) copy() stateStringPointer {
+	if p.value != nil {
+		s := *p.value
+		return stateStringPointer{
+			defined: p.defined,
+			value:   &s,
+		}
+	}
+	return stateStringPointer{
+		defined: p.defined,
+		value:   nil,
+	}
 }
 
 func newStateStringPointer(value *string) stateStringPointer {
