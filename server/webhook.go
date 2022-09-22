@@ -70,47 +70,29 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.AuthorName,
 		}
 
-		branch, err := parseBranchNameFromRefs(baseVCSPushEvent.Ref)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", baseVCSPushEvent.Ref).SetInternal(err)
+		filteredRepos, httpErr := filterReposCommon(&baseVCSPushEvent, repos)
+		if httpErr != nil {
+			return httpErr
 		}
-		var handleRepos []*api.Repository
-		for _, repo := range repos {
-			if repo.BranchFilter != branch {
-				log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
-				continue
-			}
-			if repo.VCS == nil {
-				log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
-				continue
-			}
-			if baseVCSPushEvent.RepositoryID != repo.ExternalID {
-				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", baseVCSPushEvent.RepositoryID), zap.String("repoExternalID", repo.ExternalID))
-				continue
-			}
-			if secretToken := c.Request().Header.Get("X-Gitlab-Token"); secretToken != repo.WebhookSecretToken {
-				log.Debug("Skipping repo due to secret token mismatch", zap.Int("repoID", repo.ID), zap.String("headerSecretToken", secretToken), zap.String("repoSecretToken", repo.WebhookSecretToken))
-				continue
-			}
-			handleRepos = append(handleRepos, repo)
-		}
-		if len(handleRepos) == 0 {
+		filteredRepos = filterReposGitLab(c.Request().Header, filteredRepos)
+		if len(filteredRepos) == 0 {
 			log.Debug("Empty handle repo list. Skip this push event.")
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", handleRepos))
+		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
+
 		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 		var createdMessages []string
 		for _, item := range distinctFileList {
 			var createdMessageList []string
 			repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-			for _, repo := range handleRepos {
+			for _, repo := range filteredRepos {
 				pushEvent := baseVCSPushEvent
 				pushEvent.VCSType = repo.VCS.Type
 				pushEvent.BaseDirectory = repo.BaseDirectory
@@ -142,7 +124,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
 			}
 			if len(createdMessageList) == 0 {
-				for _, repo := range handleRepos {
+				for _, repo := range filteredRepos {
 					if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
 						for _, activityCreate := range activityCreateList {
 							if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
@@ -157,7 +139,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			createdMessages = append(createdMessages, createdMessageList...)
 		}
 		if len(createdMessages) == 0 {
-			log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", handleRepos))
+			log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
@@ -205,48 +187,29 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.Sender.Login,
 		}
 
-		branch, err := parseBranchNameFromRefs(baseVCSPushEvent.Ref)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", baseVCSPushEvent.Ref).SetInternal(err)
+		filteredRepos, httpErr := filterReposCommon(&baseVCSPushEvent, repos)
+		if httpErr != nil {
+			return httpErr
 		}
-		var handleRepos []*api.Repository
-		for _, repo := range repos {
-			if repo.BranchFilter != branch {
-				log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
-				continue
-			}
-			if repo.VCS == nil {
-				log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
-				continue
-			}
-			if baseVCSPushEvent.RepositoryID != repo.ExternalID {
-				log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", baseVCSPushEvent.RepositoryID), zap.String("repoExternalID", repo.ExternalID))
-				continue
-			}
-			validated, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
-			}
-			if !validated {
-				log.Debug("Skipping repo due to mismatched  payload signature", zap.Int("repoID", repo.ID))
-				continue
-			}
-			handleRepos = append(handleRepos, repo)
+		filteredRepos, httpErr = filterReposGitHub(c.Request().Header, body, filteredRepos)
+		if httpErr != nil {
+			return httpErr
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", handleRepos))
-		if len(handleRepos) == 0 {
+		if len(filteredRepos) == 0 {
 			log.Debug("Empty handle repo list. Skip this push event.")
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
+		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
 		commitList := convertGitHubCommitList(pushEvent.Commits)
+
 		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 		var createdMessages []string
 		for _, item := range distinctFileList {
 			var createdMessageList []string
 			repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-			for _, repo := range handleRepos {
+			for _, repo := range filteredRepos {
 				pushEvent := baseVCSPushEvent
 				pushEvent.VCSType = repo.VCS.Type
 				pushEvent.BaseDirectory = repo.BaseDirectory
@@ -278,7 +241,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
 			}
 			if len(createdMessageList) == 0 {
-				for _, repo := range handleRepos {
+				for _, repo := range filteredRepos {
 					if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
 						for _, activityCreate := range activityCreateList {
 							if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
@@ -293,10 +256,62 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			createdMessages = append(createdMessages, createdMessageList...)
 		}
 		if len(createdMessages) == 0 {
-			log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", handleRepos))
+			log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
+}
+
+func filterReposCommon(pushEvent *vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
+	branch, err := parseBranchNameFromRefs(pushEvent.Ref)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEvent.Ref).SetInternal(err)
+	}
+	var filteredRepos []*api.Repository
+	for _, repo := range repos {
+		if repo.BranchFilter != branch {
+			log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
+			continue
+		}
+		if repo.VCS == nil {
+			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
+			continue
+		}
+		if pushEvent.RepositoryID != repo.ExternalID {
+			log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", pushEvent.RepositoryID), zap.String("repoExternalID", repo.ExternalID))
+			continue
+		}
+		filteredRepos = append(filteredRepos, repo)
+	}
+	return filteredRepos, nil
+}
+
+func filterReposGitLab(httpHeader http.Header, repos []*api.Repository) []*api.Repository {
+	var filteredRepos []*api.Repository
+	for _, repo := range repos {
+		if secretToken := httpHeader.Get("X-Gitlab-Token"); secretToken != repo.WebhookSecretToken {
+			log.Debug("Skipping repo due to secret token mismatch", zap.Int("repoID", repo.ID), zap.String("headerSecretToken", secretToken), zap.String("repoSecretToken", repo.WebhookSecretToken))
+			continue
+		}
+		filteredRepos = append(filteredRepos, repo)
+	}
+	return filteredRepos
+}
+
+func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
+	var filteredRepos []*api.Repository
+	for _, repo := range repos {
+		validated, err := validateGitHubWebhookSignature256(httpHeader.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, httpBody)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
+		}
+		if !validated {
+			log.Debug("Skipping repo due to mismatched  payload signature", zap.Int("repoID", repo.ID))
+			continue
+		}
+		filteredRepos = append(filteredRepos, repo)
+	}
+	return filteredRepos, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
