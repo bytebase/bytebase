@@ -40,18 +40,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		webhookEndpointID := c.Param("id")
-		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
-		}
-		if len(repos) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
-		}
-
-		body, err := io.ReadAll(c.Request().Body)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+		webhookEndpointID, body, repos, httpErr := s.validateWebhookRequest(ctx, c)
+		if httpErr != nil {
+			return httpErr
 		}
 
 		var pushEvent gitlab.WebhookPushEvent
@@ -77,8 +68,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		filteredRepos = filterReposGitLab(c.Request().Header, filteredRepos)
 		if len(filteredRepos) == 0 {
 			log.Debug("Empty handle repo list. Skip this push event.")
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
+			return c.String(http.StatusOK, "OK")
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
@@ -86,7 +76,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
-
 		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
@@ -111,18 +100,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 		}
 
-		webhookEndpointID := c.Param("id")
-		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
-		}
-		if len(repos) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
-		}
-
-		body, err := io.ReadAll(c.Request().Body)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+		webhookEndpointID, body, repos, httpErr := s.validateWebhookRequest(ctx, c)
+		if httpErr != nil {
+			return httpErr
 		}
 
 		var pushEvent github.WebhookPushEvent
@@ -147,13 +127,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		if len(filteredRepos) == 0 {
 			log.Debug("Empty handle repo list. Skip this push event.")
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
+			return c.String(http.StatusOK, "OK")
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
 		commitList := convertGitHubCommitList(pushEvent.Commits)
-
 		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
@@ -218,6 +196,22 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
 	}
 	return createdMessages, nil
+}
+
+func (s *Server) validateWebhookRequest(ctx context.Context, c echo.Context) (string, []byte, []*api.Repository, *echo.HTTPError) {
+	webhookEndpointID := c.Param("id")
+	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+	if err != nil {
+		return "", nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+	}
+	if len(repos) == 0 {
+		return "", nil, nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+	}
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return "", nil, nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+	}
+	return webhookEndpointID, body, repos, nil
 }
 
 func filterReposCommon(pushEvent *vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
@@ -356,12 +350,6 @@ const (
 	fileItemTypeAdded    fileItemType = "added"
 	fileItemTypeModified fileItemType = "modified"
 )
-
-// fileItem is a file with its item type.
-type fileItem struct {
-	name     string
-	itemType fileItemType
-}
 
 // We are observing the push webhook event so that we will receive the event either when:
 // 1. A commit is directly pushed to a branch.
