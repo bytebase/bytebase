@@ -94,6 +94,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 			handleRepos = append(handleRepos, repo)
 		}
+		if len(handleRepos) == 0 {
+			log.Debug("Empty handle repo list. Skip this push event.")
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
 		log.Debug("Process push event in repos", zap.Any("repos", handleRepos))
 
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
@@ -113,7 +118,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					ID:          item.commit.ID,
 					Title:       item.commit.Title,
 					Message:     item.commit.Message,
-					CreatedTs:   item.createdTs,
+					CreatedTs:   item.commit.CreatedTs,
 					URL:         item.commit.URL,
 					AuthorName:  item.commit.AuthorName,
 					AuthorEmail: item.commit.AuthorEmail,
@@ -129,7 +134,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					item.itemType,
 				)
 				if httpErr != nil {
-					continue
+					return httpErr
 				}
 				if created {
 					createdMessageList = append(createdMessageList, createdMessage)
@@ -194,7 +199,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
-			RepositoryID:       strconv.Itoa(pushEvent.Repository.ID),
+			RepositoryID:       pushEvent.Repository.FullName,
 			RepositoryURL:      pushEvent.Repository.HTMLURL,
 			RepositoryFullPath: pushEvent.Repository.FullName,
 			AuthorName:         pushEvent.Sender.Login,
@@ -229,88 +234,64 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			handleRepos = append(handleRepos, repo)
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", handleRepos))
+		if len(handleRepos) == 0 {
+			log.Debug("Empty handle repo list. Skip this push event.")
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
 
+		commitList := convertGitHubCommitList(pushEvent.Commits)
+		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 		var createdMessages []string
-		for _, commit := range pushEvent.Commits {
-			// The Distinct is false if the commit is superseded by a later commit.
-			if !commit.Distinct {
-				continue
-			}
-
-			// Per Git convention, the message title and body are separated by two new line characters.
-			messages := strings.SplitN(commit.Message, "\n\n", 2)
-			messageTitle := messages[0]
-
-			var files []fileItem
-			for _, added := range commit.Added {
-				files = append(files,
-					fileItem{
-						name:     added,
-						itemType: fileItemTypeAdded,
-					},
-				)
-			}
-			for _, modified := range commit.Modified {
-				files = append(files,
-					fileItem{
-						name:     modified,
-						itemType: fileItemTypeModified,
-					},
-				)
-			}
-
-			for _, file := range files {
-				var createdMessageList []string
-				repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-				for _, repo := range repos {
-					pushEvent := baseVCSPushEvent
-					pushEvent.VCSType = repo.VCS.Type
-					pushEvent.BaseDirectory = repo.BaseDirectory
-					pushEvent.FileCommit = vcs.FileCommit{
-						ID:          commit.ID,
-						Title:       messageTitle,
-						Message:     commit.Message,
-						CreatedTs:   commit.Timestamp.Unix(),
-						URL:         commit.URL,
-						AuthorName:  commit.Author.Name,
-						AuthorEmail: commit.Author.Email,
-						Added:       common.EscapeForLogging(file.name),
-					}
-
-					createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
-						ctx,
-						&pushEvent,
-						repo,
-						webhookEndpointID,
-						file.name,
-						file.itemType,
-					)
-					if httpErr != nil {
-						return httpErr
-					}
-					if created {
-						createdMessageList = append(createdMessageList, createdMessage)
-					}
-					repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
+		for _, item := range distinctFileList {
+			var createdMessageList []string
+			repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
+			for _, repo := range handleRepos {
+				pushEvent := baseVCSPushEvent
+				pushEvent.VCSType = repo.VCS.Type
+				pushEvent.BaseDirectory = repo.BaseDirectory
+				pushEvent.FileCommit = vcs.FileCommit{
+					ID:          item.commit.ID,
+					Title:       item.commit.Title,
+					Message:     item.commit.Message,
+					CreatedTs:   item.commit.CreatedTs,
+					URL:         item.commit.URL,
+					AuthorName:  item.commit.AuthorName,
+					AuthorEmail: item.commit.AuthorEmail,
+					Added:       common.EscapeForLogging(item.fileName),
 				}
-				if len(createdMessageList) == 0 {
-					log.Debug("Ignored push event file because no applicable file found in the commit list", zap.String("fileName", file.name), zap.Any("repos", handleRepos))
-					for _, repo := range handleRepos {
-						if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
-							for _, activityCreate := range activityCreateList {
-								if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-									log.Warn("Failed to create project activity for the ignored repository file",
-										zap.Error(err),
-									)
-								}
+
+				createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
+					ctx,
+					&pushEvent,
+					repo,
+					webhookEndpointID,
+					item.fileName,
+					item.itemType,
+				)
+				if httpErr != nil {
+					return httpErr
+				}
+				if created {
+					createdMessageList = append(createdMessageList, createdMessage)
+				}
+				repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
+			}
+			if len(createdMessageList) == 0 {
+				for _, repo := range handleRepos {
+					if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
+						for _, activityCreate := range activityCreateList {
+							if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+								log.Warn("Failed to create project activity for the ignored repository file",
+									zap.Error(err),
+								)
 							}
 						}
 					}
 				}
-				createdMessages = append(createdMessages, createdMessageList...)
 			}
+			createdMessages = append(createdMessages, createdMessageList...)
 		}
-
 		if len(createdMessages) == 0 {
 			log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", handleRepos))
 		}
@@ -354,17 +335,44 @@ func convertGitLabCommitList(commitList []gitlab.WebhookCommit) ([]vcs.Commit, e
 			return nil, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
 		}
 		ret = append(ret, vcs.Commit{
-			ID:          commit.ID,
-			Title:       commit.Title,
-			Message:     commit.Message,
-			CreatedTs:   createdTime.Unix(),
-			URL:         commit.URL,
-			AuthorName:  commit.Author.Name,
-			AuthorEmail: commit.Author.Email,
-			AddedList:   commit.AddedList,
+			ID:           commit.ID,
+			Title:        commit.Title,
+			Message:      commit.Message,
+			CreatedTs:    createdTime.Unix(),
+			URL:          commit.URL,
+			AuthorName:   commit.Author.Name,
+			AuthorEmail:  commit.Author.Email,
+			AddedList:    commit.AddedList,
+			ModifiedList: commit.ModifiedList,
 		})
 	}
 	return ret, nil
+}
+
+func convertGitHubCommitList(commitList []github.WebhookCommit) []vcs.Commit {
+	var ret []vcs.Commit
+	for _, commit := range commitList {
+		// The Distinct is false if the commit has not been pushed before.
+		if !commit.Distinct {
+			continue
+		}
+		// Per Git convention, the message title and body are separated by two new line characters.
+		messages := strings.SplitN(commit.Message, "\n\n", 2)
+		messageTitle := messages[0]
+
+		ret = append(ret, vcs.Commit{
+			ID:           commit.ID,
+			Title:        messageTitle,
+			Message:      commit.Message,
+			CreatedTs:    commit.Timestamp.Unix(),
+			URL:          commit.URL,
+			AuthorName:   commit.Author.Name,
+			AuthorEmail:  commit.Author.Email,
+			AddedList:    commit.Added,
+			ModifiedList: commit.Modified,
+		})
+	}
+	return ret
 }
 
 // fileItemType is the type of a file item.
@@ -729,7 +737,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (message string, created bool, activityCreateList []*api.ActivityCreate, err error) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -761,6 +769,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	var migrationInfo *db.MigrationInfo
 	var migrationDetailList []*api.MigrationDetail
+	var activityCreateList []*api.ActivityCreate
 
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && schemaInfo != nil {
 		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
