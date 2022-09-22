@@ -26,7 +26,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/differ/pg"
+	"github.com/bytebase/bytebase/plugin/parser/differ"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -923,17 +923,8 @@ func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Da
 	default:
 		return "", errors.Errorf("unsupported database engine %q", database.Instance.Engine)
 	}
-	oldSchema, err := parser.Parse(engine, parser.ParseContext{}, schema.String())
-	if err != nil {
-		return "", errors.Wrap(err, "parse old schema")
-	}
 
-	newSchema, err := parser.Parse(engine, parser.ParseContext{}, newSchemaStr)
-	if err != nil {
-		return "", errors.Wrap(err, "parse new schema")
-	}
-
-	diff, err := pg.SchemaDiff(oldSchema, newSchema)
+	diff, err := differ.SchemaDiff(engine, schema.String(), newSchemaStr)
 	if err != nil {
 		return "", errors.New("compute schema diff")
 	}
