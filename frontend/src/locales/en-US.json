@@ -675,7 +675,7 @@
     "protected": "Protected",
     "disable-auto-backup": {
       "self": "Disable database automatic backup",
-      "content": "Disabling auto backup policy is not applied retroactively.\nAre you applying to all existing databases in this environment?"
+      "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
     }
   },
   "quick-start": {
