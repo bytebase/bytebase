@@ -5,17 +5,48 @@ import (
 	"bytes"
 	"sort"
 
+	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pkg/errors"
+
+	bbparser "github.com/bytebase/bytebase/plugin/parser"
+
+	"github.com/bytebase/bytebase/plugin/parser/differ"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
-// SchemaDiff returns the schema diff.
-func SchemaDiff(old, new []ast.StmtNode) (string, error) {
-	var diff []ast.Node
-	oldTableMap := buildTableMap(old)
+var (
+	_ differ.SchemaDiffer = (*SchemaDiffer)(nil)
+)
 
-	for _, node := range new {
+func init() {
+	differ.Register(bbparser.MySQL, &SchemaDiffer{})
+	differ.Register(bbparser.TiDB, &SchemaDiffer{})
+}
+
+// SchemaDiffer it the parser for MySQL dialect.
+type SchemaDiffer struct {
+}
+
+// SchemaDiff returns the schema diff.
+func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
+	oldNodes, _, err := parser.New().Parse(oldStmt, "", "")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
+	}
+	newNodes, _, err := parser.New().Parse(newStmt, "", "")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
+	}
+
+	var diff []ast.Node
+	oldTableMap := buildTableMap(oldNodes)
+
+	for _, node := range newNodes {
 		switch newStmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := newStmt.Table.Name.String()
