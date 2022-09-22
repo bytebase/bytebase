@@ -169,19 +169,6 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		}
 	}
 
-	// Remove schema drift anomalies.
-	err = server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-		DatabaseID: task.DatabaseID,
-		Type:       api.AnomalyDatabaseSchemaDrift,
-	})
-	if err != nil && common.ErrorCode(err) != common.NotFound {
-		log.Error("Failed to archive anomaly",
-			zap.String("instance", task.Instance.Name),
-			zap.String("database", task.Database.Name),
-			zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-			zap.Error(err))
-	}
-
 	// We write back the latest schema after migration for VCS-based projects if the
 	// schema path template is specified and the schema migration type is not SDL.
 	writeBack := (vcsPushEvent != nil) && (repo.Project.SchemaChangeType != api.ProjectSchemaChangeTypeSDL) && (repo.SchemaPathTemplate != "")
@@ -288,6 +275,19 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 				)
 			}
 		}
+	}
+
+	// Remove schema drift anomalies.
+
+	if err := server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+		DatabaseID: task.DatabaseID,
+		Type:       api.AnomalyDatabaseSchemaDrift,
+	}); err != nil && common.ErrorCode(err) != common.NotFound {
+		log.Error("Failed to archive anomaly",
+			zap.String("instance", task.Instance.Name),
+			zap.String("database", task.Database.Name),
+			zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+			zap.Error(err))
 	}
 
 	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, databaseName)
