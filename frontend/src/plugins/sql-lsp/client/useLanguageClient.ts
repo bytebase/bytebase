@@ -95,6 +95,8 @@ const resolvePendingCommands = (client: MonacoLanguageClient) => {
   for (const params of state.pendingCommands.values()) {
     client.sendRequest("workspace/executeCommand", params);
   }
+
+  state.pendingCommands.clear();
 };
 
 const start = () => {
