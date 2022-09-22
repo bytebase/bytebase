@@ -245,16 +245,6 @@ export const useProjectStore = defineStore("project", {
       projectId: ProjectId;
       projectPatch: ProjectPatch;
     }) {
-      // const attributes: {
-      //   [key in keyof ProjectPatch]: ProjectPatch[key] | string;
-      // } = {
-      //   ...projectPatch,
-      // };
-      // if (typeof attributes.lgtmCheckSetting === "object") {
-      //   attributes.lgtmCheckSetting = JSON.stringify(
-      //     attributes.lgtmCheckSetting
-      //   );
-      // }
       const data = (
         await axios.patch(`/api/project/${projectId}`, {
           data: {
