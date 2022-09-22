@@ -195,8 +195,8 @@
       <code-diff
         v-else
         class="w-full"
-        :old-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
-        :new-string="targetDatabaseLatestMigrationHistory?.schema"
+        :old-string="targetDatabaseLatestMigrationHistory?.schema"
+        :new-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
         output-format="side-by-side"
         data-label="bb-migration-history-code-diff-block"
       />
@@ -388,8 +388,10 @@ const handleNextButtonClick = async () => {
     state.currentStep = 1;
     const schema = await getSchemaDiff(
       state.engineType as EngineType,
-      state.baseSchemaInfo.migrationHistory?.schema ?? "",
-      targetDatabaseLatestMigrationHistory.value?.schema ?? ""
+      targetDatabaseLatestMigrationHistory.value?.schema ??
+        "" /* the current schema of the database to be updated */,
+      state.baseSchemaInfo.migrationHistory?.schema ??
+        "" /* the schema to be updated to */
     );
     state.recommandStatement = schema;
     state.editStatement = schema;
