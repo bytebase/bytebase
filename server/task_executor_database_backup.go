@@ -10,16 +10,16 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"golang.org/x/sys/unix"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
 const (
 	// Do not dump backup file when the available file system space is less than 500MB.
-	minAvailableFSSpace = 500 * 1024 * 1024
+	minAvailableFSBytes = 500 * 1024 * 1024
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
@@ -60,12 +60,12 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 	if backup.StorageBackend == api.BackupStorageBackendLocal {
 		backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
-		availableBytes, err := common.GetAvailableFSSpace(backupFilePathLocal)
+		availableBytes, err := getAvailableFSSpace(backupFilePathLocal)
 		if err != nil {
 			return true, nil, errors.Wrap(err, "failed to get available file system space")
 		}
-		if availableBytes < minAvailableFSSpace {
-			return true, nil, errors.Errorf("The available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSSpace/1024/1024)
+		if availableBytes < minAvailableFSBytes {
+			return true, nil, errors.Errorf("The available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSBytes/1024/1024)
 		}
 	}
 
@@ -96,6 +96,21 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Backup database %q", task.Database.Name),
 	}, nil
+}
+
+// getAvailableFSSpace gets the free space of the mounted filesystem.
+// path is the pathname of any file within the mounted filesystem.
+// It calls syscall statfs under the hood.
+// Returns available space in bytes.
+func getAvailableFSSpace(path string) (uint64, error) {
+	var stat unix.Statfs_t
+	if err := unix.Statfs(path, &stat); err != nil {
+		return 0, errors.Wrap(err, "failed to call syscall statfs")
+	}
+	// Ref: https://man7.org/linux/man-pages/man2/statfs.2.html
+	// Bavail: Free blocks available to unprivileged user.
+	// Bsize: Optimal transfer block size.
+	return stat.Bavail * uint64(stat.Bsize), nil
 }
 
 func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupFilePath string) (string, error) {

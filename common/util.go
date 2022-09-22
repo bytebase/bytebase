@@ -10,9 +10,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
-	"golang.org/x/sys/unix"
 )
 
 // FindString returns the search index of sorted strings.
@@ -117,19 +114,4 @@ func GetFileSizeSum(fileNameList []string) (int64, error) {
 func GetBinlogRelativeDir(binlogDir string) string {
 	instanceID := filepath.Base(binlogDir)
 	return filepath.Join("backup", "instance", instanceID)
-}
-
-// GetAvailableFSSpace gets the free space of the mounted filesystem.
-// path is the pathname of any file within the mounted filesystem.
-// It calls syscall statfs under the hood.
-// Returns available space in bytes.
-func GetAvailableFSSpace(path string) (uint64, error) {
-	var stat unix.Statfs_t
-	if err := unix.Statfs(path, &stat); err != nil {
-		return 0, errors.Wrap(err, "failed to call syscall statfs")
-	}
-	// Ref: https://man7.org/linux/man-pages/man2/statfs.2.html
-	// Bavail: Free blocks available to unprivileged user.
-	// Bsize: Optimal transfer block size.
-	return stat.Bavail * uint64(stat.Bsize), nil
 }
