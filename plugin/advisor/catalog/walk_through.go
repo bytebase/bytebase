@@ -793,7 +793,6 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 
 	delete(t.columnSet, columnName)
 	return nil
-
 }
 
 func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughError {
