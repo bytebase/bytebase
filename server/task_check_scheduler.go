@@ -449,6 +449,7 @@ func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *ap
 		return err
 	}
 	if issue == nil {
+		// skip if no containing issue.
 		return nil
 	}
 	if issue.Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
