@@ -117,10 +117,6 @@ func isCommentLGTM(ctx context.Context, store *store.Store, activity *api.Activi
 	if activity.Comment != "LGTM" {
 		return false, nil
 	}
-	// LGTM by oneself doesn't count.
-	if activity.CreatorID == issue.CreatorID {
-		return false, nil
-	}
 	member, err := store.GetProjectMember(ctx, &api.ProjectMemberFind{
 		PrincipalID: &activity.CreatorID,
 		ProjectID:   &issue.ProjectID,
