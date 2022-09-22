@@ -60,6 +60,19 @@ export const useSubscriptionStore = defineStore("subscription", {
     hasFeature(type: FeatureType) {
       return FEATURE_MATRIX.get(type)![this.currentPlan];
     },
+    getMinimumRequiredPlan(type: FeatureType): PlanType {
+      const matrix = FEATURE_MATRIX.get(type);
+      if (!Array.isArray(matrix)) {
+        return PlanType.FREE;
+      }
+
+      for (let i = 0; i < matrix.length; i++) {
+        if (matrix[i]) {
+          return i as PlanType;
+        }
+      }
+      return PlanType.FREE;
+    },
     setSubscription(subscription: Subscription) {
       this.subscription = subscription;
     },
