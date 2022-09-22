@@ -1004,6 +1004,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1049,6 +1050,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1090,6 +1092,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1132,6 +1135,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1171,6 +1175,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1274,7 +1279,11 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				payload, err := json.Marshal(test.newWebhookPushEvent(commitFileName))
 				a.NoError(err)
 				err = ctl.vcsProvider.SendWebhookPush(externalID, payload)
-				a.NoError(err)
+				if test.expect[idx] {
+					a.NoError(err)
+				} else {
+					a.Error(err)
+				}
 
 				// Check for newly generated issues.
 				openStatus := []api.IssueStatus{api.IssueOpen}

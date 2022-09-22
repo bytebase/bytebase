@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"path"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -64,12 +65,17 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
+		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
+		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
 			RepositoryURL:      pushEvent.Project.WebURL,
 			RepositoryFullPath: pushEvent.Project.FullPath,
 			AuthorName:         pushEvent.AuthorName,
+			CommitList:         commitList,
 		}
 
 		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
@@ -83,10 +89,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
-		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
-		}
 		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 		if len(distinctFileList) == 0 {
 			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
@@ -136,12 +138,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
+		commitList := convertGitHubCommitList(pushEvent.Commits)
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       pushEvent.Repository.FullName,
 			RepositoryURL:      pushEvent.Repository.HTMLURL,
 			RepositoryFullPath: pushEvent.Repository.FullName,
 			AuthorName:         pushEvent.Sender.Login,
+			CommitList:         commitList,
 		}
 
 		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
@@ -158,7 +162,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
-		commitList := convertGitHubCommitList(pushEvent.Commits)
 		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 		if len(distinctFileList) == 0 {
 			log.Debug("No commit in the GitHub push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
@@ -175,55 +178,43 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, distinctFileList []distinctFileItem, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
 	var createdMessages []string
-	for _, item := range distinctFileList {
-		var createdMessageList []string
-		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-		for _, repo := range filteredRepos {
-			pushEvent := baseVCSPushEvent
-			pushEvent.VCSType = repo.VCS.Type
-			pushEvent.BaseDirectory = repo.BaseDirectory
-			pushEvent.FileCommit = vcs.FileCommit{
-				ID:          item.commit.ID,
-				Title:       item.commit.Title,
-				Message:     item.commit.Message,
-				CreatedTs:   item.commit.CreatedTs,
-				URL:         item.commit.URL,
-				AuthorName:  item.commit.AuthorName,
-				AuthorEmail: item.commit.AuthorEmail,
-				Added:       common.EscapeForLogging(item.fileName),
-			}
+	var createdMessageList []string
+	repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
+	for _, repo := range filteredRepos {
+		pushEvent := baseVCSPushEvent
+		pushEvent.VCSType = repo.VCS.Type
+		pushEvent.BaseDirectory = repo.BaseDirectory
 
-			createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
-				ctx,
-				&pushEvent,
-				repo,
-				webhookEndpointID,
-				item.fileName,
-				item.itemType,
-			)
-			if httpErr != nil {
-				return nil, httpErr
-			}
-			if created {
-				createdMessageList = append(createdMessageList, createdMessage)
-			}
-			repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
+		createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
+			ctx,
+			&pushEvent,
+			repo,
+			webhookEndpointID,
+			distinctFileList,
+		)
+		if httpErr != nil {
+			return nil, httpErr
 		}
-		if len(createdMessageList) == 0 {
-			for _, repo := range filteredRepos {
-				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
-					for _, activityCreate := range activityCreateList {
-						if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-							log.Warn("Failed to create project activity for the ignored repository file",
-								zap.Error(err),
-							)
-						}
+		if created {
+			createdMessageList = append(createdMessageList, createdMessage)
+		}
+		repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
+	}
+	if len(createdMessageList) == 0 {
+		for _, repo := range filteredRepos {
+			if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
+				for _, activityCreate := range activityCreateList {
+					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+						log.Warn("Failed to create project activity for the ignored repository file",
+							zap.Error(err),
+						)
 					}
 				}
 			}
 		}
-		createdMessages = append(createdMessages, createdMessageList...)
 	}
+	createdMessages = append(createdMessages, createdMessageList...)
+
 	if len(createdMessages) == 0 {
 		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
 	}
@@ -568,19 +559,19 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, webhookEndpointID string) (*db.MigrationInfo, []*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, webhookEndpointID string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo["DB_NAME"]
 	if dbName == "" {
 		log.Debug("Ignored schema file without a database name",
 			zap.String("file", file),
 		)
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
-		return nil, nil, []*api.ActivityCreate{activityCreate}
+		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	activityCreateList := []*api.ActivityCreate{}
@@ -597,7 +588,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
 		if err != nil {
 			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
-			return nil, nil, []*api.ActivityCreate{activityCreate}
+			return nil, []*api.ActivityCreate{activityCreate}
 		}
 
 		for _, database := range databases {
@@ -617,26 +608,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 		}
 	}
 
-	migrationInfo := &db.MigrationInfo{
-		Version:     common.DefaultMigrationVersion(),
-		Namespace:   dbName,
-		Database:    dbName,
-		Environment: envName,
-		Source:      db.VCS,
-		Type:        db.Migrate,
-		Description: "Apply schema diff",
-	}
-
-	added := strings.NewReplacer(
-		"{{ENV_NAME}}", envName,
-		"{{DB_NAME}}", dbName,
-		"{{VERSION}}", migrationInfo.Version,
-		"{{TYPE}}", strings.ToLower(string(migrationInfo.Type)),
-		"{{DESCRIPTION}}", strings.ReplaceAll(migrationInfo.Description, " ", "_"),
-	).Replace(repo.FilePathTemplate)
-	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
-	return migrationInfo, migrationDetailList, activityCreateList
+	return migrationDetailList, activityCreateList
 }
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
@@ -726,74 +698,108 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID string, fileList []distinctFileItem) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 	}
-
-	fileEscaped := common.EscapeForLogging(file)
-	log.Debug("Processing file",
-		zap.String("file", fileEscaped),
-		zap.String("commit", common.EscapeForLogging(pushEvent.FileCommit.ID)),
-	)
-
-	if !strings.HasPrefix(fileEscaped, repo.BaseDirectory) {
-		log.Debug("Ignored file outside the base directory",
-			zap.String("file", fileEscaped),
-			zap.String("base_directory", repo.BaseDirectory),
-		)
+	var filesEscaped []string
+	var filesToProcess []distinctFileItem
+	for _, file := range fileList {
+		fileEscaped := common.EscapeForLogging(file.fileName)
+		if !strings.HasPrefix(file.fileName, repo.BaseDirectory) {
+			log.Debug("Ignored file outside the base directory", zap.String("file", fileEscaped), zap.String("base_directory", repo.BaseDirectory))
+			continue
+		}
+		filesToProcess = append(filesToProcess, file)
+		filesEscaped = append(filesEscaped, fileEscaped)
+	}
+	if len(filesToProcess) == 0 {
 		return "", false, nil, nil
 	}
+	log.Debug("Processing files", zap.Strings("files", filesEscaped))
 
-	schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, fileEscaped)
-	if err != nil {
-		log.Debug("Failed to parse schema file info",
-			zap.String("file", fileEscaped),
-			zap.Error(err),
-		)
-		return "", false, nil, nil
+	var schemaInfoList []map[string]string
+	for _, file := range filesEscaped {
+		schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, file)
+		if err != nil {
+			log.Debug("Failed to parse schema file info", zap.String("file", file), zap.Error(err))
+			return "", false, nil, nil
+		}
+		schemaInfoList = append(schemaInfoList, schemaInfo)
 	}
 
-	var migrationInfo *db.MigrationInfo
 	var migrationDetailList []*api.MigrationDetail
 	var activityCreateList []*api.ActivityCreate
+	migrationType := db.Data
 
-	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && schemaInfo != nil {
-		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
-		return "", false, nil, nil
-	}
-
-	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && schemaInfo != nil {
-		// Having no schema info indicates that the file is not a schema file (e.g.
-		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
-		migrationInfo, migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, webhookEndpointID)
-	} else {
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		migrationInfo, err = db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-		if err != nil {
-			log.Error("Failed to parse migration info",
-				zap.Int("project", repo.ProjectID),
-				zap.Any("pushEvent", pushEvent),
-				zap.String("file", file),
-				zap.Error(err),
-			)
+	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL {
+		var nonSchemaFileList []distinctFileItem
+		for i, si := range schemaInfoList {
+			if si != nil {
+				log.Debug("Ignored schema file for non-SDL", zap.String("file", filesEscaped[i]), zap.String("type", string(filesToProcess[i].itemType)))
+			} else {
+				nonSchemaFileList = append(nonSchemaFileList, filesToProcess[i])
+			}
+		}
+		if len(nonSchemaFileList) == 0 {
 			return "", false, nil, nil
 		}
 
-		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && migrationInfo.Type != db.Data {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type))
-			return "", false, []*api.ActivityCreate{activityCreate}, nil
+		fileListSorted, migrationInfoList, err := sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
+		if err != nil {
+			return "", false, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sort files by schema version group by database").SetInternal(err)
+		}
+		for i, file := range fileListSorted {
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file.fileName, file.itemType, webhookEndpointID, migrationInfoList[i])
+			activityCreateList = append(activityCreateList, activityCreateListForFile...)
+			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+			// If there's one DDL file, we set the issue type as DDL.
+			if migrationInfoList[i].Type == db.Migrate {
+				migrationType = db.Migrate
+			}
+		}
+	} else {
+		var schemaFileList []distinctFileItem
+		var schemaInfoListForSDL []map[string]string
+		var nonSchemaFileList []distinctFileItem
+		for i, si := range schemaInfoList {
+			if si != nil {
+				schemaFileList = append(schemaFileList, filesToProcess[i])
+				schemaInfoListForSDL = append(schemaInfoListForSDL, si)
+			} else {
+				nonSchemaFileList = append(nonSchemaFileList, filesToProcess[i])
+			}
+		}
+		// If there's one schema state fil, we set the issue type as DDL.
+		if len(schemaFileList) != 0 {
+			migrationType = db.Migrate
 		}
 
-		// We are here dealing with:
-		// 1. data update in SDL/DDL
-		// 2. schema update in DDL
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, webhookEndpointID, migrationInfo)
+		for i, file := range schemaFileList {
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfoListForSDL[i], file.fileName, webhookEndpointID)
+			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+			activityCreateList = append(activityCreateList, activityCreateListForFile...)
+		}
+
+		fileListSorted, migrationInfoList, err := sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
+		if err != nil {
+			return "", false, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sort files by schema version group by database").SetInternal(err)
+		}
+		for i, file := range fileListSorted {
+			if migrationInfoList[i].Type != db.Data {
+				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file.fileName, errors.Errorf("skip %s type migration script %s. Only allow DATA type migration in state-based migration project", migrationInfoList[i].Type, common.EscapeForLogging(file.fileName)))
+				activityCreateList = append(activityCreateList, activityCreate)
+				continue
+			}
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file.fileName, file.itemType, webhookEndpointID, migrationInfoList[i])
+			activityCreateList = append(activityCreateList, activityCreateListForFile...)
+			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+		}
 	}
 
-	if migrationInfo == nil || len(migrationDetailList) == 0 {
+	if len(migrationDetailList) == 0 {
 		return "", false, activityCreateList, nil
 	}
 
@@ -818,7 +824,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
-			MigrationType: migrationInfo.Type,
+			MigrationType: migrationType,
 			VCSPushEvent:  pushEvent,
 			DetailList:    migrationDetailList,
 		},
@@ -828,12 +834,20 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	}
 
 	issueType := api.IssueDatabaseSchemaUpdate
-	if migrationInfo.Type == db.Data {
+	if migrationType == db.Data {
 		issueType = api.IssueDatabaseDataUpdate
+	}
+	var commitsMsg string
+	if len(pushEvent.CommitList) == 1 {
+		commitsMsg = fmt.Sprintf("commit %s", pushEvent.CommitList[0].ID[:7])
+	} else {
+		firstCommit := pushEvent.CommitList[0]
+		lastCommit := pushEvent.CommitList[len(pushEvent.CommitList)-1]
+		commitsMsg = fmt.Sprintf("commits %s...%s", firstCommit.ID[:7], lastCommit.ID[:7])
 	}
 	issueCreate := &api.IssueCreate{
 		ProjectID:     repo.ProjectID,
-		Name:          fmt.Sprintf("%s by %s", migrationInfo.Description, strings.TrimPrefix(fileEscaped, repo.BaseDirectory+"/")),
+		Name:          fmt.Sprintf("%s by %s", migrationType, commitsMsg),
 		Type:          issueType,
 		Description:   pushEvent.FileCommit.Message,
 		AssigneeID:    api.SystemBotID,
@@ -872,7 +886,40 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
-	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, activityCreateList, nil
+	return fmt.Sprintf("Created issue %q by %s", issue.Name, commitsMsg), true, activityCreateList, nil
+}
+
+func sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []distinctFileItem) ([]distinctFileItem, []*db.MigrationInfo, error) {
+	type sortItem struct {
+		file distinctFileItem
+		mi   *db.MigrationInfo
+	}
+	var sortItemList []sortItem
+	for _, file := range fileList {
+		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+		template := path.Join(repo.BaseDirectory, repo.FilePathTemplate)
+		mi, err := db.ParseMigrationInfo(file.fileName, template)
+		if err != nil {
+			fileNameEscaped := common.EscapeForLogging(file.fileName)
+			log.Error("Failed to parse migration info", zap.String("file", fileNameEscaped), zap.String("template", template), zap.Error(err))
+			return nil, nil, errors.Wrapf(err, "failed to parse migration info with file name %s and template %s", fileNameEscaped, template)
+		}
+		sortItemList = append(sortItemList, sortItem{file: file, mi: mi})
+	}
+	sort.Slice(sortItemList, func(i, j int) bool {
+		mi := sortItemList[i].mi
+		mj := sortItemList[j].mi
+		return mi.Database < mj.Database || (mi.Database == mj.Database && mi.Version < mj.Version)
+	})
+
+	var fileListSorted []distinctFileItem
+	var miListSorted []*db.MigrationInfo
+	for _, item := range sortItemList {
+		fileListSorted = append(fileListSorted, item.file)
+		miListSorted = append(miListSorted, item.mi)
+	}
+
+	return fileListSorted, miListSorted, nil
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract

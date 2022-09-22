@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -533,6 +534,74 @@ func TestParseSchemaFileInfo(t *testing.T) {
 			got, err := parseSchemaFileInfo(test.baseDirectory, test.schemaPathTemplate, test.file)
 			require.NoError(t, err)
 			assert.Equal(t, test.schemaInfo, got)
+		})
+	}
+}
+
+func TestSortFilesBySchemaVersionGroupByDatabase(t *testing.T) {
+	tests := []struct {
+		name     string
+		fileList []distinctFileItem
+		want     []distinctFileItem
+		err      bool
+	}{
+		{
+			name: "empty",
+		},
+		{
+			name: "single db, single version",
+			fileList: []distinctFileItem{
+				{fileName: "env1/db1__ver1__ddl__description.sql"},
+			},
+			want: []distinctFileItem{
+				{fileName: "env1/db1__ver1__ddl__description.sql"},
+			},
+			err: false,
+		},
+		{
+			name: "single db, multiple versions",
+			fileList: []distinctFileItem{
+				{fileName: "env1/db1__ver2__ddl__description.sql"},
+				{fileName: "env1/db1__ver1__ddl__description.sql"},
+				{fileName: "env1/db1__ver3__dml__description.sql"},
+			},
+			want: []distinctFileItem{
+				{fileName: "env1/db1__ver1__ddl__description.sql"},
+				{fileName: "env1/db1__ver2__ddl__description.sql"},
+				{fileName: "env1/db1__ver3__dml__description.sql"},
+			},
+			err: false,
+		},
+		{
+			name: "multiple dbs, multiple versions",
+			fileList: []distinctFileItem{
+				{fileName: "env1/db1__ver2__ddl__description.sql"},
+				{fileName: "env1/db2__ver2__ddl__description.sql"},
+				{fileName: "env1/db1__ver1__ddl__description.sql"},
+				{fileName: "env1/db1__ver3__dml__description.sql"},
+				{fileName: "env1/db2__ver1__ddl__description.sql"},
+			},
+			want: []distinctFileItem{
+				{fileName: "env1/db1__ver1__ddl__description.sql"},
+				{fileName: "env1/db1__ver2__ddl__description.sql"},
+				{fileName: "env1/db1__ver3__dml__description.sql"},
+				{fileName: "env1/db2__ver1__ddl__description.sql"},
+				{fileName: "env1/db2__ver2__ddl__description.sql"},
+			},
+			err: false,
+		},
+	}
+	repo := &api.Repository{FilePathTemplate: "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql"}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			a := require.New(t)
+			got, _, err := sortFilesBySchemaVersionGroupByDatabase(repo, test.fileList)
+			if test.err {
+				a.Error(err)
+			} else {
+				a.NoError(err)
+				a.Equal(test.want, got)
+			}
 		})
 	}
 }
