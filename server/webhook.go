@@ -87,59 +87,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
 
-		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
-		var createdMessages []string
-		for _, item := range distinctFileList {
-			var createdMessageList []string
-			repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-			for _, repo := range filteredRepos {
-				pushEvent := baseVCSPushEvent
-				pushEvent.VCSType = repo.VCS.Type
-				pushEvent.BaseDirectory = repo.BaseDirectory
-				pushEvent.FileCommit = vcs.FileCommit{
-					ID:          item.commit.ID,
-					Title:       item.commit.Title,
-					Message:     item.commit.Message,
-					CreatedTs:   item.commit.CreatedTs,
-					URL:         item.commit.URL,
-					AuthorName:  item.commit.AuthorName,
-					AuthorEmail: item.commit.AuthorEmail,
-					Added:       common.EscapeForLogging(item.fileName),
-				}
-
-				createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
-					ctx,
-					&pushEvent,
-					repo,
-					webhookEndpointID,
-					item.fileName,
-					item.itemType,
-				)
-				if httpErr != nil {
-					return httpErr
-				}
-				if created {
-					createdMessageList = append(createdMessageList, createdMessage)
-				}
-				repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
-			}
-			if len(createdMessageList) == 0 {
-				for _, repo := range filteredRepos {
-					if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
-						for _, activityCreate := range activityCreateList {
-							if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-								log.Warn("Failed to create project activity for the ignored repository file",
-									zap.Error(err),
-								)
-							}
-						}
-					}
-				}
-			}
-			createdMessages = append(createdMessages, createdMessageList...)
-		}
-		if len(createdMessages) == 0 {
-			log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
+		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
+		if httpErr != nil {
+			return httpErr
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
@@ -204,62 +154,70 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		commitList := convertGitHubCommitList(pushEvent.Commits)
 
-		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
-		var createdMessages []string
-		for _, item := range distinctFileList {
-			var createdMessageList []string
-			repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-			for _, repo := range filteredRepos {
-				pushEvent := baseVCSPushEvent
-				pushEvent.VCSType = repo.VCS.Type
-				pushEvent.BaseDirectory = repo.BaseDirectory
-				pushEvent.FileCommit = vcs.FileCommit{
-					ID:          item.commit.ID,
-					Title:       item.commit.Title,
-					Message:     item.commit.Message,
-					CreatedTs:   item.commit.CreatedTs,
-					URL:         item.commit.URL,
-					AuthorName:  item.commit.AuthorName,
-					AuthorEmail: item.commit.AuthorEmail,
-					Added:       common.EscapeForLogging(item.fileName),
-				}
+		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
+		if httpErr != nil {
+			return httpErr
+		}
+		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
+	})
+}
 
-				createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
-					ctx,
-					&pushEvent,
-					repo,
-					webhookEndpointID,
-					item.fileName,
-					item.itemType,
-				)
-				if httpErr != nil {
-					return httpErr
-				}
-				if created {
-					createdMessageList = append(createdMessageList, createdMessage)
-				}
-				repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
+func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
+	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
+	var createdMessages []string
+	for _, item := range distinctFileList {
+		var createdMessageList []string
+		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
+		for _, repo := range filteredRepos {
+			pushEvent := baseVCSPushEvent
+			pushEvent.VCSType = repo.VCS.Type
+			pushEvent.BaseDirectory = repo.BaseDirectory
+			pushEvent.FileCommit = vcs.FileCommit{
+				ID:          item.commit.ID,
+				Title:       item.commit.Title,
+				Message:     item.commit.Message,
+				CreatedTs:   item.commit.CreatedTs,
+				URL:         item.commit.URL,
+				AuthorName:  item.commit.AuthorName,
+				AuthorEmail: item.commit.AuthorEmail,
+				Added:       common.EscapeForLogging(item.fileName),
 			}
-			if len(createdMessageList) == 0 {
-				for _, repo := range filteredRepos {
-					if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
-						for _, activityCreate := range activityCreateList {
-							if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-								log.Warn("Failed to create project activity for the ignored repository file",
-									zap.Error(err),
-								)
-							}
+
+			createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
+				ctx,
+				&pushEvent,
+				repo,
+				webhookEndpointID,
+				item.fileName,
+				item.itemType,
+			)
+			if httpErr != nil {
+				return nil, httpErr
+			}
+			if created {
+				createdMessageList = append(createdMessageList, createdMessage)
+			}
+			repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
+		}
+		if len(createdMessageList) == 0 {
+			for _, repo := range filteredRepos {
+				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
+					for _, activityCreate := range activityCreateList {
+						if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+							log.Warn("Failed to create project activity for the ignored repository file",
+								zap.Error(err),
+							)
 						}
 					}
 				}
 			}
-			createdMessages = append(createdMessages, createdMessageList...)
 		}
-		if len(createdMessages) == 0 {
-			log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
-		}
-		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
-	})
+		createdMessages = append(createdMessages, createdMessageList...)
+	}
+	if len(createdMessages) == 0 {
+		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
+	}
+	return createdMessages, nil
 }
 
 func filterReposCommon(pushEvent *vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
