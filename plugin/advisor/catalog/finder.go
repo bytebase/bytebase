@@ -29,8 +29,8 @@ func (ctx *FinderContext) Copy() *FinderContext {
 
 // Finder is the service for finding schema information in database.
 type Finder struct {
-	Origin *databaseState
-	Final  *databaseState
+	Origin *DatabaseState
+	Final  *DatabaseState
 }
 
 // NewFinder creates a new finder.

@@ -75,7 +75,7 @@ func (checker columnNoNullChecker) generateAdvice() []advisor.Advice {
 			TableName:  column.tableName,
 			ColumnName: column.columnName,
 		})
-		if col != nil && col.Nullable {
+		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.ColumnCanNotNull,

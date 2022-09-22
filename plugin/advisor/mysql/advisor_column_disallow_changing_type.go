@@ -132,5 +132,5 @@ func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName str
 		return false
 	}
 
-	return !strings.EqualFold(column.Type, newType)
+	return !strings.EqualFold(column.Type(), newType)
 }

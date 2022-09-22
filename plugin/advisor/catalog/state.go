@@ -8,30 +8,30 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-func newDatabaseState(d *Database, context *FinderContext) *databaseState {
-	database := &databaseState{
+func newDatabaseState(d *Database, context *FinderContext) *DatabaseState {
+	database := &DatabaseState{
+		complete:     context.CheckIntegrity,
 		name:         d.Name,
-		characterSet: d.CharacterSet,
-		collation:    d.Collation,
+		characterSet: newStateString(d.CharacterSet),
+		collation:    newStateString(d.Collation),
 		dbType:       d.DbType,
 		schemaSet:    make(schemaStateMap),
-		context:      context.Copy(),
 	}
 
 	for _, schema := range d.SchemaList {
-		database.schemaSet[schema.Name] = newSchemaState(schema, context)
+		database.schemaSet[schema.Name] = newSchemaState(schema, database.complete)
 	}
 
 	return database
 }
 
-func newSchemaState(s *Schema, context *FinderContext) *schemaState {
-	schema := &schemaState{
+func newSchemaState(s *Schema, complete bool) *SchemaState {
+	schema := &SchemaState{
+		complete:     complete,
 		name:         s.Name,
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
 		extensionSet: make(extensionStateMap),
-		context:      context.Copy(),
 	}
 
 	for _, table := range s.TableList {
@@ -49,36 +49,32 @@ func newSchemaState(s *Schema, context *FinderContext) *schemaState {
 	return schema
 }
 
-func newViewState(v *View) *viewState {
-	return &viewState{
+func newViewState(v *View) *ViewState {
+	return &ViewState{
 		name:       v.Name,
-		definition: v.Definition,
-		comment:    v.Comment,
+		definition: newStateString(v.Definition),
+		comment:    newStateString(v.Comment),
 	}
 }
 
-func newExtensionState(e *Extension) *extensionState {
-	return &extensionState{
+func newExtensionState(e *Extension) *ExtensionState {
+	return &ExtensionState{
 		name:        e.Name,
-		version:     e.Version,
-		description: e.Description,
+		version:     newStateString(e.Version),
+		description: newStateString(e.Description),
 	}
 }
 
-func newTableState(t *Table) *tableState {
-	table := &tableState{
-		name:          t.Name,
-		tableType:     t.Type,
-		engine:        t.Engine,
-		collation:     t.Collation,
-		rowCount:      t.RowCount,
-		dataSize:      t.DataSize,
-		indexSize:     t.IndexSize,
-		dataFree:      t.DataFree,
-		createOptions: t.CreateOptions,
-		comment:       t.Comment,
-		columnSet:     make(columnStateMap),
-		indexSet:      make(indexStateMap),
+func newTableState(t *Table) *TableState {
+	table := &TableState{
+		complete:  true,
+		name:      t.Name,
+		tableType: newStateString(t.Type),
+		engine:    newStateString(t.Engine),
+		collation: newStateString(t.Collation),
+		comment:   newStateString(t.Comment),
+		columnSet: make(columnStateMap),
+		indexSet:  make(indexStateMap),
 	}
 
 	for _, column := range t.ColumnList {
@@ -92,45 +88,46 @@ func newTableState(t *Table) *tableState {
 	return table
 }
 
-func newColumnState(c *Column) *columnState {
-	return &columnState{
+func newColumnState(c *Column) *ColumnState {
+	return &ColumnState{
+		complete:     true,
 		name:         c.Name,
-		position:     c.Position,
-		defaultValue: c.Default,
-		nullable:     c.Nullable,
-		columnType:   c.Type,
-		characterSet: c.CharacterSet,
-		collation:    c.Collation,
-		comment:      c.Comment,
+		position:     newStateInt(int64(c.Position)),
+		defaultValue: newStateStringPointer(c.Default),
+		nullable:     newStateBool(c.Nullable),
+		columnType:   newStateString(c.Type),
+		characterSet: newStateString(c.CharacterSet),
+		collation:    newStateString(c.Collation),
+		comment:      newStateString(c.Comment),
 	}
 }
 
-func newIndexState(i *Index) *indexState {
-	index := &indexState{
-		name:      i.Name,
-		indextype: i.Type,
-		unique:    i.Unique,
-		primary:   i.Primary,
-		visible:   i.Visible,
-		comment:   i.Comment,
+func newIndexState(i *Index) *IndexState {
+	index := &IndexState{
+		complete:       true,
+		name:           i.Name,
+		indextype:      newStateString(i.Type),
+		unique:         newStateBool(i.Unique),
+		primary:        newStateBool(i.Primary),
+		visible:        newStateBool(i.Visible),
+		comment:        newStateString(i.Comment),
+		expressionList: newStateStringSlice(i.ExpressionList),
 	}
-	index.expressionList = append(index.expressionList, i.ExpressionList...)
 	return index
 }
 
-type databaseState struct {
+type DatabaseState struct {
+	complete     bool
 	name         string
-	characterSet string
-	collation    string
+	characterSet stateString
+	collation    stateString
 	dbType       db.Type
 	schemaSet    schemaStateMap
 	deleted      bool
-
-	context *FinderContext
 }
 
 // HasNoTable returns true if the current database has no table.
-func (d *databaseState) HasNoTable() bool {
+func (d *DatabaseState) HasNoTable() bool {
 	for _, schema := range d.schemaSet {
 		if len(schema.tableSet) != 0 {
 			return false
@@ -141,7 +138,7 @@ func (d *databaseState) HasNoTable() bool {
 }
 
 // DatabaseName returns the database name.
-func (d *databaseState) DatabaseName() string {
+func (d *DatabaseState) DatabaseName() string {
 	return d.name
 }
 
@@ -152,7 +149,7 @@ type IndexFind struct {
 	IndexName  string
 }
 
-func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
+func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	// There are two cases to find a index:
 	// 1. find an index in specific table. e.g. MySQL and TiDB.
 	// 2. find an index in the schema. e.g. PostgreSQL.
@@ -173,7 +170,7 @@ func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
 		if !exists {
 			return "", nil
 		}
-		return table.name, index.convertToCatalog()
+		return table.name, index
 	}
 	for _, schema := range d.schemaSet {
 		if schema.name != find.SchemaName {
@@ -185,7 +182,7 @@ func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
 			if !exists {
 				return "", nil
 			}
-			return table.name, index.convertToCatalog()
+			return table.name, index
 		}
 	}
 	return "", nil
@@ -198,7 +195,7 @@ type PrimaryKeyFind struct {
 }
 
 // FindPrimaryKey finds the primary key.
-func (d *databaseState) FindPrimaryKey(find *PrimaryKeyFind) *Index {
+func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 	for _, schema := range d.schemaSet {
 		if schema.name != find.SchemaName {
 			continue
@@ -208,8 +205,8 @@ func (d *databaseState) FindPrimaryKey(find *PrimaryKeyFind) *Index {
 				continue
 			}
 			for _, index := range table.indexSet {
-				if index.primary {
-					return index.convertToCatalog()
+				if index.primary.isTrue() {
+					return index
 				}
 			}
 		}
@@ -225,7 +222,7 @@ type ColumnFind struct {
 }
 
 // FindColumn finds the column.
-func (d *databaseState) FindColumn(find *ColumnFind) *Column {
+func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
 	schema, exists := d.schemaSet[find.SchemaName]
 	if !exists {
 		return nil
@@ -238,7 +235,7 @@ func (d *databaseState) FindColumn(find *ColumnFind) *Column {
 	if !exists {
 		return nil
 	}
-	return column.convertToCatalog()
+	return column
 }
 
 // TableFind is for find table.
@@ -248,7 +245,7 @@ type TableFind struct {
 }
 
 // FindTable finds the table.
-func (d *databaseState) FindTable(find *TableFind) *Table {
+func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 	schema, exists := d.schemaSet[find.SchemaName]
 	if !exists {
 		return nil
@@ -257,219 +254,161 @@ func (d *databaseState) FindTable(find *TableFind) *Table {
 	if !exists {
 		return nil
 	}
-	return table.convertToCatalog()
+	return table
 }
 
-func (d *databaseState) copy() *databaseState {
-	newDb := newDatabaseState(d.convertToCatalog(), &FinderContext{CheckIntegrity: d.context.CheckIntegrity})
-	newDb.deleted = d.deleted
-	return newDb
-}
-
-func (d *databaseState) convertToCatalog() *Database {
-	return &Database{
-		Name:         d.name,
-		CharacterSet: d.characterSet,
-		Collation:    d.collation,
-		DbType:       d.dbType,
-		SchemaList:   d.schemaSet.convertToCatalog(),
+func (d *DatabaseState) copy() *DatabaseState {
+	return &DatabaseState{
+		complete:     d.complete,
+		name:         d.name,
+		characterSet: d.characterSet,
+		collation:    d.collation,
+		dbType:       d.dbType,
+		schemaSet:    d.schemaSet.copy(),
+		deleted:      d.deleted,
 	}
 }
 
-type schemaState struct {
+type SchemaState struct {
+	complete     bool
 	name         string
 	tableSet     tableStateMap
 	viewSet      viewStateMap
 	extensionSet extensionStateMap
-
-	context *FinderContext
 }
-type schemaStateMap map[string]*schemaState
+type schemaStateMap map[string]*SchemaState
 
-func (m schemaStateMap) convertToCatalog() []*Schema {
-	var res []*Schema
-	for _, schema := range m {
-		res = append(res, schema.convertToCatalog())
+func (m schemaStateMap) copy() schemaStateMap {
+	res := make(schemaStateMap)
+	for k, v := range m {
+		res[k] = v
 	}
 	return res
 }
 
-func (schema *schemaState) convertToCatalog() *Schema {
-	return &Schema{
-		Name:          schema.name,
-		TableList:     schema.tableSet.convertToCatalog(),
-		ViewList:      schema.viewSet.convertToCatalog(),
-		ExtensionList: schema.extensionSet.convertToCatalog(),
-	}
-}
+type TableState struct {
+	complete bool
 
-type tableState struct {
 	name      string
-	tableType string
+	tableType stateString
 	// engine isn't supported for Postgres, Snowflake, SQLite.
-	engine string
+	engine stateString
 	// collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	collation string
-	rowCount  int64
-	// dataSize isn't supported for SQLite.
-	dataSize int64
-	// indexSize isn't supported for ClickHouse, Snowflake, SQLite.
-	indexSize int64
-	// dataFree isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	dataFree int64
-	// createOptions isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	createOptions string
+	collation stateString
 	// comment isn't supported for SQLite.
-	comment   string
+	comment   stateString
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
 }
-type tableStateMap map[string]*tableState
+type tableStateMap map[string]*TableState
 
-func (m tableStateMap) convertToCatalog() []*Table {
-	var res []*Table
-	for _, table := range m {
-		res = append(res, table.convertToCatalog())
+func (m tableStateMap) copy() tableStateMap {
+	res := make(tableStateMap)
+	for k, v := range m {
+		res[k] = v
 	}
 	return res
 }
 
-func (table *tableState) convertToCatalog() *Table {
-	return &Table{
-		Name:          table.name,
-		Type:          table.tableType,
-		Engine:        table.engine,
-		Collation:     table.collation,
-		RowCount:      table.rowCount,
-		DataSize:      table.dataSize,
-		IndexSize:     table.indexSize,
-		DataFree:      table.dataFree,
-		CreateOptions: table.createOptions,
-		Comment:       table.comment,
-		ColumnList:    table.columnSet.convertToCatalog(),
-		IndexList:     table.indexSet.convertToCatalog(),
+func (table *TableState) copy() *TableState {
+	return &TableState{
+		complete:  table.complete,
+		name:      table.name,
+		tableType: table.tableType,
+		collation: table.collation,
+		comment:   table.comment,
+		columnSet: table.columnSet.copy(),
+		indexSet:  table.indexSet.copy(),
 	}
 }
 
-func (table *tableState) copy() *tableState {
-	return newTableState(table.convertToCatalog())
-}
+type IndexState struct {
+	complete bool
 
-type indexState struct {
 	name string
 	// This could refer to a column or an expression.
-	expressionList []string
+	expressionList stateStringSlice
 	// Type isn't supported for SQLite.
-	indextype string
-	unique    bool
-	primary   bool
+	indextype stateString
+	unique    stateBool
+	primary   stateBool
 	// Visible isn't supported for Postgres, SQLite.
-	visible bool
+	visible stateBool
 	// Comment isn't supported for SQLite.
-	comment string
+	comment stateString
 }
-type indexStateMap map[string]*indexState
 
-func (m indexStateMap) convertToCatalog() []*Index {
-	var res []*Index
-	for _, index := range m {
-		res = append(res, index.convertToCatalog())
+func (idx *IndexState) Unique() bool {
+	return idx.unique.isTrue()
+}
+
+func (idx *IndexState) Primary() bool {
+	return idx.primary.isTrue()
+}
+
+func (idx *IndexState) ExpressionList() []string {
+	if idx.expressionList.defined {
+		return idx.expressionList.value
+	}
+	return nil
+}
+
+type indexStateMap map[string]*IndexState
+
+func (m indexStateMap) copy() indexStateMap {
+	res := make(indexStateMap)
+	for k, v := range m {
+		res[k] = v
 	}
 	return res
 }
 
-func (index *indexState) convertToCatalog() *Index {
-	return &Index{
-		Name:           index.name,
-		ExpressionList: index.expressionList,
-		Type:           index.indextype,
-		Unique:         index.unique,
-		Primary:        index.primary,
-		Visible:        index.visible,
-		Comment:        index.comment,
-	}
-}
+type ColumnState struct {
+	complete bool
 
-type columnState struct {
 	name         string
-	position     int
-	defaultValue *string
+	position     stateInt
+	defaultValue stateStringPointer
 	// nullable isn't supported for ClickHouse.
-	nullable   bool
-	columnType string
+	nullable   stateBool
+	columnType stateString
 	// characterSet isn't supported for Postgres, ClickHouse, SQLite.
-	characterSet string
+	characterSet stateString
 	// collation isn't supported for ClickHouse, SQLite.
-	collation string
+	collation stateString
 	// comment isn't supported for SQLite.
-	comment string
+	comment stateString
 }
-type columnStateMap map[string]*columnState
 
-func (m columnStateMap) convertToCatalog() []*Column {
-	var res []*Column
-	for _, column := range m {
-		res = append(res, column.convertToCatalog())
+func (col *ColumnState) Nullable() bool {
+	return col.nullable.defined && col.nullable.value
+}
+
+func (col *ColumnState) Type() string {
+	return col.columnType.String()
+}
+
+type columnStateMap map[string]*ColumnState
+
+func (m columnStateMap) copy() columnStateMap {
+	res := make(columnStateMap)
+	for k, v := range m {
+		res[k] = v
 	}
 	return res
 }
 
-func (column *columnState) convertToCatalog() *Column {
-	return &Column{
-		Name:         column.name,
-		Position:     column.position,
-		Default:      column.defaultValue,
-		Nullable:     column.nullable,
-		Type:         column.columnType,
-		CharacterSet: column.characterSet,
-		Collation:    column.collation,
-		Comment:      column.comment,
-	}
-}
-
-type viewState struct {
+type ViewState struct {
 	name       string
-	definition string
-	comment    string
+	definition stateString
+	comment    stateString
 }
-type viewStateMap map[string]*viewState
+type viewStateMap map[string]*ViewState
 
-func (m viewStateMap) convertToCatalog() []*View {
-	var res []*View
-	for _, view := range m {
-		res = append(res, view.convertToCatalog())
-	}
-	return res
-}
-
-func (view *viewState) convertToCatalog() *View {
-	return &View{
-		Name:       view.name,
-		Definition: view.definition,
-		Comment:    view.comment,
-	}
-}
-
-type extensionState struct {
+type ExtensionState struct {
 	name        string
-	version     string
-	description string
+	version     stateString
+	description stateString
 }
-type extensionStateMap map[string]*extensionState
-
-func (m extensionStateMap) convertToCatalog() []*Extension {
-	var res []*Extension
-	for _, extension := range m {
-		res = append(res, extension.convertToCatalog())
-	}
-	return res
-}
-
-func (extension *extensionState) convertToCatalog() *Extension {
-	return &Extension{
-		Name:        extension.name,
-		Version:     extension.version,
-		Description: extension.description,
-	}
-}
+type extensionStateMap map[string]*ExtensionState

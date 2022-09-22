@@ -137,9 +137,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 			TableName:  "",
 			IndexName:  node.IndexName,
 		})
-		if index != nil && !index.Unique {
+		if index != nil && !index.Unique() {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{
