@@ -12,8 +12,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+)
+
+const (
+	// Do not dump backup file when the available file system space is less than 500MB.
+	minAvailableFSSpace = 500 * 1024 * 1024
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
@@ -51,12 +57,19 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if backup == nil {
 		return true, nil, errors.Errorf("backup %v not found", payload.BackupID)
 	}
-	log.Debug("Start database backup...",
-		zap.String("instance", task.Instance.Name),
-		zap.String("database", task.Database.Name),
-		zap.String("backup", backup.Name),
-	)
 
+	if backup.StorageBackend == api.BackupStorageBackendLocal {
+		backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+		availableBytes, err := common.GetAvailableFSSpace(backupFilePathLocal)
+		if err != nil {
+			return true, nil, errors.Wrap(err, "failed to get available file system space")
+		}
+		if availableBytes < minAvailableFSSpace {
+			return true, nil, errors.Errorf("The available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSSpace/1024/1024)
+		}
+	}
+
+	log.Debug("Start database backup.", zap.String("instance", task.Instance.Name), zap.String("database", task.Database.Name), zap.String("backup", backup.Name))
 	backupPayload, backupErr := exec.backupDatabase(ctx, server, task.Instance, task.Database.Name, backup)
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
