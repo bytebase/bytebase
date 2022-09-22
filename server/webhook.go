@@ -59,6 +59,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if pushEvent.ObjectKind != gitlab.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
 		}
+		if len(pushEvent.CommitList) == 0 {
+			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
@@ -73,7 +78,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		filteredRepos = filterReposGitLab(c.Request().Header, filteredRepos)
 		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Skip this push event.")
+			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
@@ -82,7 +87,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
+		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
+		if len(distinctFileList) == 0 {
+			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
+		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, distinctFileList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
 		}
@@ -120,6 +131,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
+		if len(pushEvent.Commits) == 0 {
+			log.Debug("No commit in the GitHub push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       pushEvent.Repository.FullName,
@@ -137,13 +153,19 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return httpErr
 		}
 		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Skip this push event.")
+			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
 		commitList := convertGitHubCommitList(pushEvent.Commits)
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
+		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
+		if len(distinctFileList) == 0 {
+			log.Debug("No commit in the GitHub push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
+		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, distinctFileList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
 		}
@@ -151,8 +173,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
-	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
+func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, distinctFileList []distinctFileItem, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
 	var createdMessages []string
 	for _, item := range distinctFileList {
 		var createdMessageList []string
