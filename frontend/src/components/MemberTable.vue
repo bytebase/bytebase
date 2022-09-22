@@ -66,7 +66,7 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap tooltip-wrapper">
+      <BBTableCell class="whitespace-nowrap tooltip-wrapper w-36">
         <span v-if="changeRoleTooltip(member)" class="tooltip">{{
           changeRoleTooltip(member)
         }}</span>

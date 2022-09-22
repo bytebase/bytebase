@@ -68,7 +68,7 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="hasRBACFeature" class="whitespace-nowrap">
+      <BBTableCell v-if="hasRBACFeature" class="whitespace-nowrap w-36">
         <ProjectRoleSelect
           :selected-role="member.role"
           :disabled="!allowChangeRole(member.role)"
