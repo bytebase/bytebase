@@ -2,6 +2,12 @@
   <div class="max-w-3xl mx-auto space-y-4">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
+      <ProjectAdvancedSettingPanel
+        v-if="isDev"
+        :project="project"
+        :allow-edit="allowEdit"
+        class="pt-4"
+      />
       <div class="pt-4">
         <ProjectMemberPanel :project="project" />
       </div>
@@ -41,6 +47,7 @@
 import { computed, defineComponent, PropType } from "vue";
 import { isProjectOwner } from "../utils";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
+import { ProjectAdvancedSettingPanel } from "../components/Project/ProjectSetting";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
 import { ProjectPatch, Project } from "../types";
 import { useCurrentUser, useProjectStore } from "@/store";
@@ -49,6 +56,7 @@ export default defineComponent({
   name: "ProjectSettingPanel",
   components: {
     ProjectGeneralSettingPanel,
+    ProjectAdvancedSettingPanel,
     ProjectMemberPanel,
   },
   props: {

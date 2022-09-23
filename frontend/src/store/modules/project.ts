@@ -52,6 +52,7 @@ function convert(
     dbNameTemplate: attrs.dbNameTemplate,
     roleProvider: attrs.roleProvider,
     schemaChangeType: attrs.schemaChangeType,
+    lgtmCheckSetting: attrs.lgtmCheckSetting,
   };
 
   const memberList: ProjectMember[] = [];

@@ -16,6 +16,7 @@ import {
   Project,
   ProjectMember,
   EmptyProjectRoleProviderPayload,
+  getDefaultLGTMCheckSetting,
 } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
@@ -203,6 +204,7 @@ const makeUnknown = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
+    tier: "UNPROTECTED",
   };
 
   const UNKNOWN_PROJECT: Project = {
@@ -220,6 +222,8 @@ const makeUnknown = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     roleProvider: "BYTEBASE",
+    schemaChangeType: "DDL",
+    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
 
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
@@ -628,6 +632,7 @@ const makeEmpty = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "",
     order: 0,
+    tier: "UNPROTECTED",
   };
 
   const EMPTY_PROJECT: Project = {
@@ -645,6 +650,8 @@ const makeEmpty = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     roleProvider: "BYTEBASE",
+    schemaChangeType: "DDL",
+    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {

@@ -18,6 +18,7 @@ export type FeatureType =
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
   | "bb.feature.environment-tier-policy"
+  | "bb.feature.lgtm"
   // Admin & Security
   | "bb.feature.rbac"
   | "bb.feature.3rd-party-auth"
@@ -85,6 +86,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],
   ["bb.feature.environment-tier-policy", [false, false, true]],
+  ["bb.feature.lgtm", [false, false, true]],
   // Admin & Security
   ["bb.feature.rbac", [false, true, true]],
   ["bb.feature.3rd-party-auth", [false, true, true]],
