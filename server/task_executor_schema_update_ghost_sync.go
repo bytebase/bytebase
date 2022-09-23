@@ -92,6 +92,9 @@ type ghostConfig struct {
 	socketFilename       string
 	postponeFlagFilename string
 	noop                 bool
+
+	// vendor related
+	isAWS bool
 }
 
 func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
@@ -130,6 +133,9 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AlterStatement = statement
 	migrationContext.Noop = config.noop
 	migrationContext.ReplicaServerId = config.serverID
+	if config.isAWS {
+		migrationContext.AssumeRBR = true
+	}
 	// set defaults
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
@@ -175,7 +181,14 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func getGhostConfig(task *api.Task, dataSource *api.DataSource, tableName string, statement string, noop bool, serverIDOffset uint) ghostConfig {
+func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.InstanceUser, tableName string, statement string, noop bool, serverIDOffset uint) ghostConfig {
+	var isAWS bool
+	for _, user := range userList {
+		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
+			isAWS = true
+			break
+		}
+	}
 	return ghostConfig{
 		host:                 task.Instance.Host,
 		port:                 task.Instance.Port,
@@ -191,10 +204,12 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, tableName string
 		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
 		// Here we use serverID = offset + task.ID to avoid potential conflicts.
 		serverID: serverIDOffset + uint(task.ID),
+		// https://github.com/github/gh-ost/blob/master/doc/rds.md
+		isAWS: isAWS,
 	}
 }
 
-func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	migrationError := make(chan error)
 
@@ -210,7 +225,12 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.Instance.ID)
 	}
 
-	config := getGhostConfig(task, adminDataSource, tableName, statement, false, 10000000)
+	instanceUserList, err := server.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	if err != nil {
+		return true, nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
+	}
+
+	config := getGhostConfig(task, adminDataSource, instanceUserList, tableName, statement, false, 10000000)
 
 	migrationContext, err := newMigrationContext(config)
 	if err != nil {

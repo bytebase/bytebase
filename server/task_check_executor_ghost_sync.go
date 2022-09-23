@@ -64,6 +64,11 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.InstanceID)
 	}
 
+	instanceUserList, err := server.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	if err != nil {
+		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
+	}
+
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, common.Wrapf(err, common.Internal, "invalid database schema update gh-ost sync payload")
@@ -74,7 +79,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
-	config := getGhostConfig(task, adminDataSource, tableName, payload.Statement, true, 20000000)
+	config := getGhostConfig(task, adminDataSource, instanceUserList, tableName, payload.Statement, true, 20000000)
 
 	migrationContext, err := newMigrationContext(config)
 	if err != nil {
