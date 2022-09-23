@@ -79,6 +79,8 @@ const (
 	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
 	// TaskCheckIssueLGTM is the task check type for LGTM comments.
 	TaskCheckIssueLGTM TaskCheckType = "bb.task-check.issue.lgtm"
+	// TaskCheckPITRMySQL is the task check type for MySQL PITR.
+	TaskCheckPITRMySQL TaskCheckType = "bb.task-check.pitr.mysql"
 )
 
 // TaskCheckEarliestAllowedTimePayload is the task check payload for earliest allowed time.
