@@ -278,7 +278,6 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}
 
 	// Remove schema drift anomalies.
-
 	if err := server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		DatabaseID: task.DatabaseID,
 		Type:       api.AnomalyDatabaseSchemaDrift,
