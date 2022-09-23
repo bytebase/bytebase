@@ -141,7 +141,7 @@ func isColumnEqual(old, new *ast.ColumnDef) bool {
 	if !isColumnTypesEqual(old, new) {
 		return false
 	}
-	if !isColumnOptionsEqaul(old.Options, new.Options) {
+	if !isColumnOptionsEqual(old.Options, new.Options) {
 		return false
 	}
 	return true
@@ -151,7 +151,7 @@ func isColumnTypesEqual(old, new *ast.ColumnDef) bool {
 	return old.Tp.String() == new.Tp.String()
 }
 
-func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
+func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 	oldNormalizeOptions := normalizeColumnOptions(old)
 	newNormalizeOptions := normalizeColumnOptions(new)
 	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
@@ -164,12 +164,12 @@ func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
 		}
 		// TODO(zp): it's not enough to compare the type for some options.
 		switch oldOption.Tp {
-		case ast.ColumnOptionComment:
-			if oldOption.Expr.(ast.ValueExpr).GetString() != newOption.Expr.(ast.ValueExpr).GetString() {
+		case ast.ColumnOptionComment, ast.ColumnOptionDefaultValue:
+			if oldOption.Expr.(ast.ValueExpr).GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
 				return false
 			}
-		case ast.ColumnOptionDefaultValue:
-			if oldOption.Expr.(ast.ValueExpr).GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
+		case ast.ColumnOptionCollate:
+			if oldOption.StrValue != newOption.StrValue {
 				return false
 			}
 		default:
