@@ -4,10 +4,11 @@
       {{ $t("common.advanced") }}
     </p>
     <div class="space-y-4">
-      <div class="flex items-center">
+      <div class="flex items-center space-x-1">
         <label class="textlabel">
           {{ $t("project.lgtm-check.self") }}
         </label>
+        <FeatureBadge feature="bb.feature.lgtm" class="text-accent" />
       </div>
 
       <label class="flex items-center space-x-4">
@@ -26,7 +27,7 @@
         </div>
       </label>
 
-      <div class="flex items-center space-x-4">
+      <label class="flex items-center space-x-4">
         <input
           v-model="state.lgtmCheckValue"
           tabindex="-1"
@@ -40,9 +41,9 @@
             {{ $t("project.lgtm-check.project-member") }}
           </div>
         </div>
-      </div>
+      </label>
 
-      <div class="flex items-center space-x-4">
+      <label class="flex items-center space-x-4">
         <input
           v-model="state.lgtmCheckValue"
           tabindex="-1"
@@ -56,7 +57,7 @@
             {{ $t("project.lgtm-check.project-owner") }}
           </div>
         </div>
-      </div>
+      </label>
     </div>
 
     <div v-if="allowEdit" class="flex justify-end">
@@ -69,17 +70,25 @@
         {{ $t("common.save") }}
       </button>
     </div>
+
+    <FeatureModal
+      v-if="state.missingFeature !== undefined"
+      :feature="state.missingFeature"
+      @cancel="state.missingFeature = undefined"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { LGTMCheckValue, Project, ProjectPatch } from "@/types";
-import { pushNotification, useProjectStore } from "@/store";
+import { FeatureType, LGTMCheckValue, Project, ProjectPatch } from "@/types";
+import { featureToRef, pushNotification, useProjectStore } from "@/store";
+import FeatureBadge from "@/components/FeatureBadge.vue";
 
 interface LocalState {
   lgtmCheckValue: LGTMCheckValue;
+  missingFeature: FeatureType | undefined;
 }
 
 const props = defineProps({
@@ -94,9 +103,11 @@ const props = defineProps({
 });
 const { t } = useI18n();
 const projectStore = useProjectStore();
+const hasLGTMFeature = featureToRef("bb.feature.lgtm");
 
 const state = reactive<LocalState>({
   lgtmCheckValue: props.project.lgtmCheckSetting.value,
+  missingFeature: undefined,
 });
 
 const allowSave = computed((): boolean => {
@@ -104,6 +115,11 @@ const allowSave = computed((): boolean => {
 });
 
 const save = () => {
+  if (!hasLGTMFeature.value) {
+    state.missingFeature = "bb.feature.lgtm";
+    return;
+  }
+
   const projectPatch: ProjectPatch = {
     lgtmCheckSetting: {
       value: state.lgtmCheckValue,

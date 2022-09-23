@@ -211,7 +211,8 @@
     "load-more": "Load more",
     "access-denied": "Access denied",
     "no": "No",
-    "yes": "Yes"
+    "yes": "Yes",
+    "advanced": "Advanced"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1094,7 +1095,13 @@
       "tenant": "Tenant"
     },
     "db-name-template": "@:common.database @:common.name @:common.template",
-    "select": "Select project"
+    "select": "Select project",
+    "lgtm-check": {
+      "self": "LGTM check",
+      "disabled": "Skip LGTM check",
+      "project-member": "Require LGTM from project members",
+      "project-owner": "Require LGTM from project owner"
+    }
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -1366,6 +1373,10 @@
       "bb-feature-environment-tier-policy": {
         "title": "Environment tier",
         "desc": "Mark environment as protected."
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM check",
+        "desc": "Check if the issue has an \"LGTM\" comment."
       },
       "bb-feature-sql-review": {
         "title": "SQL review policy",
