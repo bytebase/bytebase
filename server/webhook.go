@@ -747,7 +747,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file.fileName, file.itemType, webhookEndpointID, migrationInfoList[i])
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
-			// If there's one DDL file, we set the issue type as DDL.
+			// If there's one schema migration file, we set the issue type as MIGRATE.
 			if migrationInfoList[i].Type == db.Migrate {
 				migrationType = db.Migrate
 			}
@@ -764,7 +764,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 				nonSchemaFileList = append(nonSchemaFileList, filesToProcess[i])
 			}
 		}
-		// If there's one schema state fil, we set the issue type as DDL.
+		// If there's one schema state fil, we set the issue type as MIGRATE.
 		if len(schemaFileList) != 0 {
 			migrationType = db.Migrate
 		}
@@ -781,8 +781,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		}
 		for i, file := range fileListSorted {
 			if migrationInfoList[i].Type != db.Data {
-				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file.fileName, errors.Errorf("skip %s type migration script %s. Only allow DATA type migration in state-based migration project", migrationInfoList[i].Type, common.EscapeForLogging(file.fileName)))
+				err := errors.Errorf("skip %s type migration script %s. Only allow DATA type migration in state-based migration project", migrationInfoList[i].Type, common.EscapeForLogging(file.fileName))
+				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file.fileName, err)
 				activityCreateList = append(activityCreateList, activityCreate)
+				log.Debug("Skip file in state-based migration", zap.Error(err))
 				continue
 			}
 			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file.fileName, file.itemType, webhookEndpointID, migrationInfoList[i])
