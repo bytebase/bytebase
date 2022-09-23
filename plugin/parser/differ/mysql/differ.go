@@ -141,7 +141,7 @@ func isColumnEqual(old, new *ast.ColumnDef) bool {
 	if !isColumnTypesEqual(old, new) {
 		return false
 	}
-	if !isColumnOptionsEqaul(old.Options, new.Options) {
+	if !isColumnOptionsEqual(old.Options, new.Options) {
 		return false
 	}
 	return true
@@ -151,7 +151,7 @@ func isColumnTypesEqual(old, new *ast.ColumnDef) bool {
 	return old.Tp.String() == new.Tp.String()
 }
 
-func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
+func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 	oldNormalizeOptions := normalizeColumnOptions(old)
 	newNormalizeOptions := normalizeColumnOptions(new)
 	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
