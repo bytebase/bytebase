@@ -101,14 +101,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
-
 		// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
 		// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
 		// We respond to this event so as not to mislead users.
 		if eventType == github.WebhookPing {
 			return c.String(http.StatusOK, "OK")
 		}
-
 		if eventType != github.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 		}
@@ -170,6 +168,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 		log.Warn("No files found from the push event", zap.String("repoURL", baseVCSPushEvent.RepositoryURL), zap.String("repoName", baseVCSPushEvent.RepositoryFullPath), zap.String("commits", getCommitsMessage(commitList)))
 		return nil, nil
 	}
+
 	var createdMessageList []string
 	repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
 	for _, repo := range filteredRepos {
@@ -177,13 +176,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 		pushEvent.VCSType = repo.VCS.Type
 		pushEvent.BaseDirectory = repo.BaseDirectory
 
-		createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
-			ctx,
-			&pushEvent,
-			repo,
-			webhookEndpointID,
-			distinctFileList,
-		)
+		createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(ctx, &pushEvent, repo, webhookEndpointID, distinctFileList)
 		if httpErr != nil {
 			return nil, httpErr
 		}
@@ -197,9 +190,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 			if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
 				for _, activityCreate := range activityCreateList {
 					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-						log.Warn("Failed to create project activity for the ignored repository file",
-							zap.Error(err),
-						)
+						log.Warn("Failed to create project activity for the ignored repository file", zap.Error(err))
 					}
 				}
 			}
@@ -684,16 +675,16 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 	return nil, nil
 }
 
-// createIssueFromPushEvent attempts to create a new issue for the given file of
-// the push event. It returns "created=true" when a new issue has been created,
-// along with the creation message to be presented in the UI. An *echo.HTTPError
-// is returned in case of the error during the process.
+// createIssueFromPushEvent attempts to create a new issue for the given files of the push event. It returns "created=true" when a new issue has been created,
+// along with the creation message to be presented in the UI. An *echo.HTTPError is returned in case of the error during the process.
 func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID string, fileList []distinctFileItem) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 	}
+
+	// Filter files that are in the repo's base directory.
 	var filesEscaped []string
 	var filesToProcess []distinctFileItem
 	for _, file := range fileList {
@@ -710,6 +701,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	}
 	log.Debug("Processing files", zap.Strings("files", filesEscaped))
 
+	// Parse schema info from each file name. It's used to tell whether each file is a schema file or normal migration file.
 	var schemaInfoList []map[string]string
 	for _, file := range filesEscaped {
 		schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, file)
@@ -722,8 +714,8 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	var migrationDetailList []*api.MigrationDetail
 	var activityCreateList []*api.ActivityCreate
+	// Default to DATA migration. If later we found any MIGRATE migration file, we set migrationType to MIGRATE.
 	migrationType := db.Data
-
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL {
 		var nonSchemaFileList []distinctFileItem
 		for i, si := range schemaInfoList {
@@ -737,6 +729,9 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			return "", false, nil, nil
 		}
 
+		// There are possibly multiple files in the push event.
+		// Each file corresponds to a (database name, schema version) pair.
+		// We want the migration statements are sorted by the file's schema version, and grouped by the database name.
 		fileListSorted, migrationInfoList, err := sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
 		if err != nil {
 			return "", false, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sort files by schema version group by database").SetInternal(err)
@@ -762,7 +757,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 				nonSchemaFileList = append(nonSchemaFileList, filesToProcess[i])
 			}
 		}
-		// If there's one schema state fil, we set the issue type as MIGRATE.
+		// If there's one schema state file, we set the issue type as MIGRATE.
 		if len(schemaFileList) != 0 {
 			migrationType = db.Migrate
 		}
@@ -795,25 +790,20 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		return "", false, activityCreateList, nil
 	}
 
-	// Create schema update issue
+	// Find out the creator principal.
 	creatorID := api.SystemBotID
-	if pushEvent.FileCommit.AuthorEmail != "" {
-		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
+	if authorEmail := pushEvent.FileCommit.AuthorEmail; authorEmail != "" {
+		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, authorEmail)
 		if err != nil {
-			log.Error("Failed to find the principal with committer email",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
-				zap.Error(err),
-			)
-		}
-		if committerPrincipal == nil {
-			log.Debug("Failed to find the principal with committer email, use system bot instead",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
-			)
+			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", common.EscapeForLogging(authorEmail)), zap.Error(err))
+		} else if committerPrincipal == nil {
+			log.Debug("Failed to find the principal with committer email, use system bot instead", zap.String("email", common.EscapeForLogging(authorEmail)))
 		} else {
 			creatorID = committerPrincipal.ID
 		}
 	}
 
+	// Create the issue.
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			MigrationType: migrationType,
@@ -847,8 +837,8 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
 	}
 
-	// Create a project activity after successfully creating the issue as the result of the push event
-	payload, err := json.Marshal(
+	// Create a project activity after successfully creating the issue from the push event.
+	activityPayload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: *pushEvent,
 			IssueID:      issue.ID,
@@ -865,7 +855,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		Type:        api.ActivityProjectRepositoryPush,
 		Level:       api.ActivityInfo,
 		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
-		Payload:     string(payload),
+		Payload:     string(activityPayload),
 	}
 	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
