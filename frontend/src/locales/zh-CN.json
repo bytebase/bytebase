@@ -209,7 +209,9 @@
     "show-help": "查看帮助",
     "success": "成功",
     "load-more": "加载更多",
-    "access-denied": "拒绝访问"
+    "access-denied": "拒绝访问",
+    "no": "否",
+    "yes": "是"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -670,7 +672,11 @@
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{0}'更新成功",
-    "protected": "受保护的"
+    "protected": "受保护的",
+    "disable-auto-backup": {
+      "self": "禁用数据库自动备份",
+      "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
+    }
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",

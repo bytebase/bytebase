@@ -209,7 +209,9 @@
     "show-help": "Show help",
     "success": "Succeed",
     "load-more": "Load more",
-    "access-denied": "Access denied"
+    "access-denied": "Access denied",
+    "no": "No",
+    "yes": "Yes"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -670,7 +672,11 @@
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
-    "protected": "Protected"
+    "protected": "Protected",
+    "disable-auto-backup": {
+      "self": "Disable database automatic backup",
+      "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
+    }
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",

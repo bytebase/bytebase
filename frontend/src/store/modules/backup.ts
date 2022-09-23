@@ -9,6 +9,7 @@ import {
   BackupSettingUpsert,
   BackupState,
   DatabaseId,
+  EnvironmentId,
   ResourceObject,
   unknown,
 } from "@/types";
@@ -192,6 +193,19 @@ export const useBackupStore = defineStore("backup", {
       });
 
       return updatedBackupSetting;
+    },
+
+    async upsertBackupSettingByEnvironmentId(
+      environmentId: EnvironmentId,
+      backupSettingUpsert: Omit<BackupSettingUpsert, "databaseId">
+    ) {
+      const url = `/api/environment/${environmentId}/backup-setting`;
+      await axios.patch(url, {
+        data: {
+          type: "backupSettingUpsert",
+          attributes: backupSettingUpsert,
+        },
+      });
     },
   },
 });

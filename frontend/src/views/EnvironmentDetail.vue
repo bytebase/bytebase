@@ -20,10 +20,38 @@
     :feature="state.missingRequiredFeature"
     @cancel="state.missingRequiredFeature = undefined"
   />
+  <BBModal
+    v-if="state.showDisableAutoBackupModal"
+    :title="$t('environment.disable-auto-backup.self')"
+    @close="state.showDisableAutoBackupModal = false"
+  >
+    <div class="space-y-2 textinfolabel pr-16">
+      <p v-for="(line, i) in disableAutoBackupContent.split('\n')" :key="i">
+        {{ line }}
+      </p>
+    </div>
+
+    <div class="flex items-center justify-end pt-4 mt-4 border-t">
+      <button
+        type="button"
+        class="btn-normal py-2 px-4"
+        @click="state.showDisableAutoBackupModal = false"
+      >
+        {{ $t("common.no") }}
+      </button>
+      <button
+        type="submit"
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        @click="disableEnvironmentAutoBackup"
+      >
+        {{ $t("common.yes") }}
+      </button>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, watchEffect } from "vue";
+import { computed, defineComponent, reactive, watchEffect } from "vue";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
@@ -43,10 +71,12 @@ import { idFromSlug } from "../utils";
 import {
   hasFeature,
   pushNotification,
+  useBackupStore,
   useEnvironmentStore,
   usePolicyStore,
 } from "@/store";
 import { useI18n } from "vue-i18n";
+import BBModal from "@/bbkit/BBModal.vue";
 
 interface LocalState {
   environment: Environment;
@@ -58,6 +88,7 @@ interface LocalState {
     | "bb.feature.approval-policy"
     | "bb.feature.backup-policy"
     | "bb.feature.environment-tier-policy";
+  showDisableAutoBackupModal: boolean;
 }
 
 export default defineComponent({
@@ -65,6 +96,7 @@ export default defineComponent({
   components: {
     ArchiveBanner,
     EnvironmentForm,
+    BBModal,
   },
   props: {
     environmentSlug: {
@@ -76,6 +108,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const environmentStore = useEnvironmentStore();
     const policyStore = usePolicyStore();
+    const backupStore = useBackupStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -83,6 +116,7 @@ export default defineComponent({
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
+      showDisableAutoBackupModal: false,
     });
 
     const preparePolicy = () => {
@@ -168,6 +202,16 @@ export default defineComponent({
         });
     };
 
+    const success = () => {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("environment.successfully-updated-environment", {
+          name: state.environment.name,
+        }),
+      });
+    };
+
     const updatePolicy = (
       environmentId: EnvironmentId,
       type: PolicyType,
@@ -221,15 +265,36 @@ export default defineComponent({
               policy.payload as EnvironmentTierPolicyPayload
             ).environmentTier;
           }
+          success();
 
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("environment.successfully-updated-environment", {
-              name: state.environment.name,
-            }),
-          });
+          if (type === "bb.policy.backup-plan") {
+            const payload = state.backupPolicy!
+              .payload as BackupPlanPolicyPayload;
+            if (payload.schedule === "UNSET") {
+              // Changing backup policy from "DAILY"|"WEEKLY" to "UNSET"
+              state.showDisableAutoBackupModal = true;
+            }
+          }
         });
+    };
+
+    const disableAutoBackupContent = computed(() => {
+      return t("environment.disable-auto-backup.content");
+    });
+
+    const disableEnvironmentAutoBackup = async () => {
+      await backupStore.upsertBackupSettingByEnvironmentId(
+        state.environment.id,
+        {
+          enabled: false,
+          hour: 0,
+          dayOfWeek: 0,
+          retentionPeriodTs: 0,
+          hookUrl: "",
+        }
+      );
+      success();
+      state.showDisableAutoBackupModal = false;
     };
 
     return {
@@ -238,6 +303,8 @@ export default defineComponent({
       doArchive,
       doRestore,
       updatePolicy,
+      disableAutoBackupContent,
+      disableEnvironmentAutoBackup,
     };
   },
 });
