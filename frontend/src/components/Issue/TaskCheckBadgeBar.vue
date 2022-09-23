@@ -234,6 +234,7 @@ const TaskCheckTypeOrderList: TaskCheckType[] = [
   "bb.task-check.database.connect",
   "bb.task-check.instance.migration-schema",
   "bb.task-check.database.statement.advise",
+  "bb.task-check.issue.lgtm",
 ];
 const TaskCheckTypeOrderDict = new Map<TaskCheckType, number>(
   TaskCheckTypeOrderList.map((type, index) => [type, index])
@@ -264,5 +265,6 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
     "task.check-type.earliest-allowed-time",
   ],
   ["bb.task-check.database.ghost.sync", "task.check-type.ghost-sync"],
+  ["bb.task-check.issue.lgtm", "task.check-type.lgtm"],
 ]);
 </script>

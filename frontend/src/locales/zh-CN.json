@@ -211,7 +211,8 @@
     "load-more": "加载更多",
     "access-denied": "拒绝访问",
     "no": "否",
-    "yes": "是"
+    "yes": "是",
+    "advanced": "高级"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -249,7 +250,8 @@
       "sql-review": "SQL 审查",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
-      "statement-type": "语句类型"
+      "statement-type": "语句类型",
+      "lgtm": "LGTM"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
     "comment": "评论",
@@ -1094,7 +1096,13 @@
       "tenant": "多租户"
     },
     "db-name-template": "数据库名称模板",
-    "select": "选择项目"
+    "select": "选择项目",
+    "lgtm-check": {
+      "self": "LGTM 检查",
+      "disabled": "跳过 LGTM 检查",
+      "project-member": "需要来自项目成员的 LGTM",
+      "project-owner": "需要来自项目所有者的 LGTM"
+    }
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
@@ -1366,6 +1374,10 @@
       "bb-feature-environment-tier-policy": {
         "title": "环境级别",
         "desc": "「环境级别」可以将环境标记为受保护的"
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM 检查",
+        "desc": "检查工单是否有 \"LGTM\" 评论。"
       },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",

@@ -211,7 +211,8 @@
     "load-more": "Load more",
     "access-denied": "Access denied",
     "no": "No",
-    "yes": "Yes"
+    "yes": "Yes",
+    "advanced": "Advanced"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -249,7 +250,8 @@
       "sql-review": "SQL review",
       "earliest-allowed-time": "Earliest allowed time",
       "ghost-sync": "gh-ost sync",
-      "statement-type": "Statement type"
+      "statement-type": "Statement type",
+      "lgtm": "LGTM"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
@@ -1094,7 +1096,13 @@
       "tenant": "Tenant"
     },
     "db-name-template": "@:common.database @:common.name @:common.template",
-    "select": "Select project"
+    "select": "Select project",
+    "lgtm-check": {
+      "self": "LGTM check",
+      "disabled": "Skip LGTM check",
+      "project-member": "Require LGTM from project members",
+      "project-owner": "Require LGTM from project owner"
+    }
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -1366,6 +1374,10 @@
       "bb-feature-environment-tier-policy": {
         "title": "Environment tier",
         "desc": "Mark environment as protected."
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM check",
+        "desc": "Check if the issue has an \"LGTM\" comment."
       },
       "bb-feature-sql-review": {
         "title": "SQL review policy",
