@@ -127,7 +127,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		commitList := convertGitHubCommitList(pushEvent.Commits)
 		if len(pushEvent.Commits) == 0 {
-			log.Debug("No commit in the GitHub push event. Ignore this push event.", zap.String("repoURL", pushEvent.Repository.HTMLURL), zap.String("repoName", pushEvent.Repository.FullName), zap.String("commits", getCommitsMessage(commitList)))
+			log.Debug("No commit in the GitHub push event. Ignore this push event.",
+				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
+				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
+				zap.String("commits", getCommitsMessage(commitList)))
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
@@ -165,7 +168,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
 	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 	if len(distinctFileList) == 0 {
-		log.Warn("No files found from the push event", zap.String("repoURL", baseVCSPushEvent.RepositoryURL), zap.String("repoName", baseVCSPushEvent.RepositoryFullPath), zap.String("commits", getCommitsMessage(commitList)))
+		log.Warn("No files found from the push event",
+			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
+			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			zap.String("commits", getCommitsMessage(commitList)))
 		return nil, nil
 	}
 
@@ -197,7 +203,10 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 		}
 	}
 	if len(createdMessageList) == 0 {
-		log.Warn("No issue created from the push event", zap.String("repoURL", baseVCSPushEvent.RepositoryURL), zap.String("repoName", baseVCSPushEvent.RepositoryFullPath), zap.String("commits", getCommitsMessage(commitList)))
+		log.Warn("No issue created from the push event",
+			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
+			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			zap.String("commits", getCommitsMessage(commitList)))
 	}
 	return createdMessageList, nil
 }
