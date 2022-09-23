@@ -225,8 +225,11 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 	if err := s.scheduleTimingTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule timing task check")
 	}
-	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
-		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
+
+	if s.server.profile.Mode == common.ReleaseModeDev {
+		if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+			return nil, errors.Wrap(err, "failed to schedule LGTM task check")
+		}
 	}
 
 	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
@@ -444,6 +447,9 @@ func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *
 }
 
 func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+	if !s.server.feature(api.FeatureLGTM) {
+		return nil
+	}
 	issue, err := s.server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return err

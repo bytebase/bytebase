@@ -6,7 +6,6 @@
     <div class="min-w-0 md:min-w-400">
       <div class="flex items-start space-x-2">
         <div class="flex items-center">
-          <!-- Heroicons name: outline/exclamation -->
           <heroicons-solid:sparkles class="h-6 w-6 text-accent" />
         </div>
         <h3
@@ -22,7 +21,9 @@
         </p>
       </div>
       <div class="mt-3">
-        <p class="whitespace-pre-wrap">{{ $t("subscription.trial") }}*</p>
+        <p class="whitespace-pre-wrap">
+          {{ $t("subscription.trial", { plan: requiredPlan }) }}*
+        </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
         <button
@@ -42,9 +43,10 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
-import { FeatureType } from "../types";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { useSubscriptionStore } from "@/store";
+import { FeatureType, planTypeToString } from "@/types";
 
 export default defineComponent({
   props: {
@@ -62,10 +64,17 @@ export default defineComponent({
       router.push({ name: "setting.workspace.subscription" });
     };
 
+    const requiredPlan = useSubscriptionStore().getMinimumRequiredPlan(
+      props.feature
+    );
+
     const featureKey = props.feature.split(".").join("-");
 
     return {
       ok,
+      requiredPlan: t(
+        `subscription.plan.${planTypeToString(requiredPlan)}.title`
+      ),
       featureDesc: t(`subscription.features.${featureKey}.desc`),
       featureTitle: t(`subscription.features.${featureKey}.title`),
     };
