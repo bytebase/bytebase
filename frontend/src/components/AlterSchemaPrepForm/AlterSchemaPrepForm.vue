@@ -1,7 +1,7 @@
 <template>
-  <div class="mx-4 space-y-4 max-w-min overflow-x-hidden">
+  <div class="space-y-4 max-w-min overflow-x-hidden">
     <div class="overflow-x-auto">
-      <div class="mx-1 w-192">
+      <div class="w-192">
         <template v-if="projectId">
           <template v-if="isTenantProject">
             <!-- tenant mode project -->

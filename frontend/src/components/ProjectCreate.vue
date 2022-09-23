@@ -1,8 +1,8 @@
 <template>
-  <form class="w-144 px-4 py-2 space-y-6 divide-y divide-block-border">
+  <form class="w-96 py-2 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-1">
       <div class="col-span-1">
-        <label for="name" class="text-lg leading-6 font-medium text-control">
+        <label for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("project.create-modal.project-name") }}
           <span class="text-red-600">*</span>
         </label>
@@ -17,7 +17,7 @@
         />
       </div>
       <div class="col-span-1">
-        <label for="name" class="text-lg leading-6 font-medium text-control">
+        <label for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("project.create-modal.key") }}
           <span class="text-red-600">*</span>
           <span class="ml-1 text-sm font-normal">
@@ -32,7 +32,7 @@
         />
       </div>
       <div class="col-span-1">
-        <div for="name" class="text-lg leading-6 font-medium text-control">
+        <div for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("common.mode") }}
           <span class="text-red-600">*</span>
         </div>
@@ -63,7 +63,7 @@
       </div>
       <div v-if="state.project.tenantMode === 'TENANT'" class="col-span-1">
         <label
-          class="text-lg leading-6 font-medium text-control select-none flex items-center"
+          class="text-base leading-6 font-medium text-control select-none flex items-center"
         >
           {{ $t("project.db-name-template") }}
           <BBCheckbox
@@ -144,7 +144,7 @@ import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
 import { generateDefaultSchedule, projectSlug, randomString } from "@/utils";
-import { ProjectCreate } from "@/types";
+import { Project, ProjectCreate } from "@/types";
 import {
   hasFeature,
   pushNotification,
@@ -176,7 +176,7 @@ export default defineComponent({
         tenantMode: "DISABLED",
         dbNameTemplate: "",
         roleProvider: "BYTEBASE",
-      },
+      } as Project,
       showFeatureModal: false,
       enableDbNameTemplate: false,
       isCreating: false,
