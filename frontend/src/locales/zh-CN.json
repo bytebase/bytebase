@@ -1376,7 +1376,7 @@
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",
-        "desc": "检查工单是否有「LGTM」评论。"
+        "desc": "检查工单是否有 \"LGTM\" 评论。"
       },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",
