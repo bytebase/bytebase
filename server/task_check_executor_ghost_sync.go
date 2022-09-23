@@ -66,7 +66,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 
 	instanceUserList, err := server.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
 	if err != nil {
-		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %v", task.InstanceID)
+		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}
 
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
