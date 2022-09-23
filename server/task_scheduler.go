@@ -292,6 +292,45 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() Ta
 	s.executorGetters[taskType] = executorGetter
 }
 
+// ClearRunningTasks changes all RUNNING tasks to CANCELED.
+// When there are running tasks and Bytebase server is shutdown, these task executors are stopped, but the tasks' status are still RUNNING.
+// When Bytebase is restarted, the task scheduler will re-schedule those RUNNING tasks, which should be CANCELED instead.
+// So we change their status to CANCELED before starting the scheduler.
+func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
+	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
+	runningTasks, err := s.server.store.FindTask(ctx, taskFind, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to get running tasks")
+	}
+	for _, task := range runningTasks {
+		if _, err := s.server.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+			ID:        task.ID,
+			UpdaterID: api.SystemBotID,
+			Status:    api.TaskCanceled,
+		}); err != nil {
+			return errors.Wrapf(err, "failed to change task %d's status to %s", task.ID, api.TaskFailed)
+		}
+		log.Debug(fmt.Sprintf("Changed task %d's status from RUNNING to %s", task.ID, api.TaskFailed))
+		// If it's a backup task, we also change the corresponding backup's status to FAILED, because the task is canceled just now.
+		if task.Type == api.TaskDatabaseBackup {
+			var payload api.TaskDatabaseBackupPayload
+			if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+				return errors.Wrapf(err, "failed to parse the payload of backup task %d", task.ID)
+			}
+			statusFailed := string(api.BackupStatusFailed)
+			if _, err := s.server.store.PatchBackup(ctx, &api.BackupPatch{
+				ID:        payload.BackupID,
+				UpdaterID: api.SystemBotID,
+				Status:    &statusFailed,
+			}); err != nil {
+				return errors.Wrapf(err, "failed to patch backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed)
+			}
+			log.Debug(fmt.Sprintf("Changed backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed))
+		}
+	}
+	return nil
+}
+
 func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
