@@ -382,7 +382,7 @@ func (idx *IndexState) Primary() bool {
 
 // ExpressionList returns the expression list for the index.
 func (idx *IndexState) ExpressionList() []string {
-	if idx.expressionList.defined {
+	if idx.expressionList.valid {
 		return idx.expressionList.value
 	}
 	return nil
@@ -432,7 +432,7 @@ func (col *ColumnState) copy() *ColumnState {
 
 // Nullable returns nullable for the column.
 func (col *ColumnState) Nullable() bool {
-	return col.nullable.defined && col.nullable.value
+	return col.nullable.valid && col.nullable.value
 }
 
 // Type returns type for the column.

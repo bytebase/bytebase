@@ -668,7 +668,7 @@ func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
 		return
 	}
 	for _, index := range t.indexSet {
-		if index.expressionList.defined {
+		if index.expressionList.valid {
 			for i, key := range index.expressionList.value {
 				if key == oldName {
 					index.expressionList.value[i] = newName
@@ -800,7 +800,7 @@ func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughEr
 	for _, index := range t.indexSet {
 		index.dropColumn(columnName)
 		// If all columns that make up an index are dropped, the index is dropped as well.
-		if index.expressionList.defined && index.expressionList.len() == 0 {
+		if index.expressionList.valid && index.expressionList.len() == 0 {
 			delete(t.indexSet, index.name)
 		}
 	}
@@ -817,7 +817,7 @@ func (t *TableState) dropColumn(columnName string) *WalkThroughError {
 }
 
 func (idx *IndexState) dropColumn(columnName string) {
-	if !idx.expressionList.defined {
+	if !idx.expressionList.valid {
 		return
 	}
 	var newKeyList []string
@@ -1023,7 +1023,7 @@ func (t *TableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 				if primary {
 					column.nullable = newStateBool(false)
 				}
-				if isSpatial && column.nullable.defined && column.nullable.value {
+				if isSpatial && column.nullable.valid && column.nullable.value {
 					return nil, &WalkThroughError{
 						Type: ErrorTypeSpatialIndexKeyNullable,
 						// The error content comes from MySQL.
