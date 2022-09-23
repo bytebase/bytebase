@@ -14,11 +14,7 @@
         :database="database"
       ></slot>
       <div v-else class="flex items-center">
-        <InstanceEngineIcon
-          v-if="showEngineIcon"
-          :instance="database.instance"
-        />
-        <span :class="showEngineIcon ? 'ml-2' : ''">{{ database.name }}</span>
+        <span>{{ database.name }}</span>
       </div>
     </template>
   </BBSelect>
@@ -75,10 +71,6 @@ export default defineComponent({
     engineType: {
       type: String as PropType<EngineType>,
       default: undefined,
-    },
-    showEngineIcon: {
-      type: Boolean,
-      default: false,
     },
     disabled: {
       type: Boolean,

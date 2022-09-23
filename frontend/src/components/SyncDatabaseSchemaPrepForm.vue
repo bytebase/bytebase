@@ -50,13 +50,20 @@
               :mode="'USER'"
               :environment-id="state.baseSchemaInfo.environmentId"
               :project-id="state.projectId"
-              :show-engine-icon="true"
+              :customize-item="true"
               @select-database-id="
                 (databaseId: DatabaseId) => {
                   state.baseSchemaInfo.databaseId = databaseId;
                 }
               "
-            />
+            >
+              <template #customizeItem="{ database }">
+                <div class="flex items-center">
+                  <InstanceEngineIcon :instance="database.instance" />
+                  <span class="ml-2">{{ database.name }}</span>
+                </div>
+              </template>
+            </DatabaseSelect>
             <BBSelect
               class=""
               :selected-item="state.baseSchemaInfo.migrationHistory"
@@ -122,7 +129,6 @@
               :environment-id="state.targetSchemaInfo.environmentId"
               :project-id="state.projectId"
               :engine-type="state.engineType"
-              :show-engine-icon="true"
               :customize-item="true"
               @select-database-id="
                 (databaseId: DatabaseId) => {
