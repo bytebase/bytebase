@@ -188,9 +188,8 @@
         state.quickActionType == 'quickaction.bb.database.schema.update'
       "
     >
-      <!-- eslint-disable vue/attribute-hyphenation -->
       <AlterSchemaPrepForm
-        :projectId="projectId"
+        :project-id="projectId"
         :type="'bb.issue.database.schema.update'"
         @dismiss="state.showModal = false"
       />
@@ -198,9 +197,8 @@
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.database.data.update'"
     >
-      <!-- eslint-disable vue/attribute-hyphenation -->
       <AlterSchemaPrepForm
-        :projectId="projectId"
+        :project-id="projectId"
         :type="'bb.issue.database.data.update'"
         @dismiss="state.showModal = false"
       />
@@ -208,9 +206,8 @@
     <template
       v-else-if="state.quickActionType == 'quickaction.bb.database.create'"
     >
-      <!-- eslint-disable vue/attribute-hyphenation -->
       <CreateDatabasePrepForm
-        :projectId="projectId"
+        :project-id="projectId"
         @dismiss="state.showModal = false"
       />
     </template>
