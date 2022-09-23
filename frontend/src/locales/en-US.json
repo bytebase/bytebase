@@ -901,12 +901,13 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Synchronize Schema",
-      "description": "Synchronize schema from the base database to the target database with the selected migration version.",
+      "description": "Synchronize schema from the base database to target database with selected migration version.",
       "base-database": "Base database",
       "target-database": "Target database",
-      "synchronize-statements": "The statements to synchronize",
+      "synchronize-statements": "The SQL statements to synchronize",
       "schema-comparison-result": "The schema comparison result",
-      "no-different-tip": "There is no different between these base and target database schemas."
+      "select-base-and-target-database-tip": "Please select the base and target database firstly",
+      "no-difference-tip": "There is no different between these base and target database schemas."
     }
   },
   "repository": {
