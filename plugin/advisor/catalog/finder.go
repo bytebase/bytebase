@@ -48,3 +48,7 @@ func (f *Finder) WalkThrough(statements string) error {
 	f.Final = f.Origin.copy()
 	return f.Final.WalkThrough(statements)
 }
+
+func (f *Finder) Exists() bool {
+	return f.Final != nil && f.Final.context.CheckIntegrity
+}
