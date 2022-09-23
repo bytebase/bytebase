@@ -232,6 +232,10 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 	}
 
+	if err := s.schedulePITRTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
+	}
+
 	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return task, nil
 	}
@@ -412,6 +416,21 @@ func (s *TaskCheckScheduler) scheduleGhostTaskCheck(ctx context.Context, task *a
 		CreatorID:               creatorID,
 		TaskID:                  task.ID,
 		Type:                    api.TaskCheckGhostSync,
+		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *TaskCheckScheduler) schedulePITRTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+	if task.Type != api.TaskDatabaseRestorePITRRestore {
+		return nil
+	}
+	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               creatorID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckPITRMySQL,
 		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 	}); err != nil {
 		return err

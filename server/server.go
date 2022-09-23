@@ -272,6 +272,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		checkLGTMExecutor := NewTaskCheckLGTMExecutor()
 		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
 
+		pitrMySQLExecutor := NewTaskCheckPITRMySQLExecutor()
+		taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
+
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer
