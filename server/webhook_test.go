@@ -164,6 +164,51 @@ func TestDedupMigrationFiles(t *testing.T) {
 			},
 		},
 		{
+			name: "Multi commits, single file, direct push",
+			commitList: []vcs.Commit{
+				{
+					ID:         "1",
+					Title:      "Commit 1",
+					Message:    "Update 1",
+					CreatedTs:  ts1,
+					URL:        "example.com",
+					AuthorName: "bob",
+					AddedList: []string{
+						"v1.sql",
+					},
+				},
+				{
+					ID:         "2",
+					Title:      "Commit 2",
+					Message:    "Update 2",
+					CreatedTs:  ts2,
+					URL:        "example.com",
+					AuthorName: "bob",
+					ModifiedList: []string{
+						"v1.sql",
+					},
+				},
+			},
+			want: []distinctFileItem{
+				{
+					createdTs: ts2,
+					commit: vcs.Commit{
+						ID:         "2",
+						Title:      "Commit 2",
+						Message:    "Update 2",
+						CreatedTs:  ts2,
+						URL:        "example.com",
+						AuthorName: "bob",
+						ModifiedList: []string{
+							"v1.sql",
+						},
+					},
+					fileName: "v1.sql",
+					itemType: fileItemTypeAdded,
+				},
+			},
+		},
+		{
 			name: "Multi commits, multi files",
 			commitList: []vcs.Commit{
 				{
