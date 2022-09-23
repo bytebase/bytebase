@@ -902,11 +902,12 @@
     "sync-schema": {
       "title": "库表同步",
       "description": "将选定的源数据库 Schema 版本同步到目标数据库。",
-      "base-database": "来源库",
-      "target-database": "目标库",
+      "base-database": "源数据库",
+      "target-database": "目标数据库",
       "synchronize-statements": "生成的 Schema DDL 语句",
       "schema-comparison-result": "Schema 比较结果",
-      "no-different-tip": "源数据库与目标数据库之间之间没有 Schema 区别。"
+      "select-base-and-target-database-tip": "请先选择源数据库和目标数据库",
+      "no-difference-tip": "源数据库与目标数据库之间之间没有 Schema 区别。"
     }
   },
   "repository": {

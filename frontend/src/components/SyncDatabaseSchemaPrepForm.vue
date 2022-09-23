@@ -1,17 +1,12 @@
 <template>
-  <div
-    class="space-y-4 overflow-x-hidden w-144 max-w-full transition-all"
-    :class="state.currentStep === 1 ? 'w-208' : ''"
-  >
+  <div class="space-y-4 overflow-x-hidden w-208 max-w-full transition-all">
+    <p class="w-full">{{ $t("database.sync-schema.description") }}</p>
+
     <!-- Project and base, target database selectors -->
-    <div
-      v-show="state.currentStep === 0"
-      class="w-full flex flex-col justify-start items-start"
-    >
-      <p class="mb-2">{{ $t("database.sync-schema.description") }}</p>
+    <div class="w-144 flex flex-col justify-start items-start">
       <div class="w-full">
-        <div class="w-full mt-4 mb-2">
-          <span class="text-gray-600">{{ $t("common.project") }}</span>
+        <div class="w-full mb-2">
+          <span>{{ $t("common.project") }}</span>
         </div>
         <div class="w-full flex flex-row justify-start items-center px-px">
           <ProjectSelect
@@ -24,23 +19,21 @@
           />
         </div>
       </div>
-      <div
-        class="w-full relative"
-        :class="isValidId(state.projectId) ? '' : 'opacity-30'"
-      >
-        <div
-          class="absolute top-0 left-0 w-full h-full z-10 cursor-not-allowed"
-          :class="isValidId(state.projectId) ? 'hidden' : ''"
-        ></div>
+      <div class="w-full">
         <div class="w-full">
           <div
             class="w-full mt-4 mb-2 flex flex-row justify-start items-center"
           >
-            <span class="text-gray-600">{{
-              $t("database.sync-schema.base-database")
-            }}</span>
+            <span>{{ $t("database.sync-schema.base-database") }}</span>
           </div>
-          <div class="w-full flex flex-row justify-start items-center px-px">
+          <div
+            class="w-full flex flex-row justify-start items-center px-px relative"
+            :class="isValidId(state.projectId) ? '' : 'opacity-50'"
+          >
+            <div
+              class="absolute top-0 left-0 w-full h-full z-10 cursor-not-allowed"
+              :class="isValidId(state.projectId) ? 'hidden' : ''"
+            ></div>
             <EnvironmentSelect
               class="!w-48 mr-2 shrink-0"
               name="environment"
@@ -86,9 +79,7 @@
           <div
             class="w-full mt-4 mb-2 leading-6 flex flex-row justify-start items-center"
           >
-            <span class="text-gray-600">{{
-              $t("database.sync-schema.target-database")
-            }}</span>
+            <span>{{ $t("database.sync-schema.target-database") }}</span>
             <div
               v-if="state.targetSchemaInfo.hasDrift"
               class="flex flex-row justify-start items-center ml-2 text-red-600 text-sm"
@@ -106,7 +97,14 @@
               >
             </div>
           </div>
-          <div class="w-full flex flex-row justify-start items-center px-px">
+          <div
+            class="w-full flex flex-row justify-start items-center px-px relative"
+            :class="isValidId(state.projectId) ? '' : 'opacity-50'"
+          >
+            <div
+              class="absolute top-0 left-0 w-full h-full z-10 cursor-not-allowed"
+              :class="isValidId(state.projectId) ? 'hidden' : ''"
+            ></div>
             <EnvironmentSelect
               class="!w-48 mr-2 shrink-0"
               name="environment"
@@ -148,12 +146,38 @@
     </div>
 
     <!-- Schema diff statement editor container -->
-    <div
-      v-show="state.currentStep === 1"
-      class="w-full flex flex-col justify-start items-start"
-    >
+    <div class="w-full flex flex-col justify-start items-start">
+      <div class="w-full flex flex-row justify-start items-center mb-2">
+        <span>{{ $t("database.sync-schema.schema-comparison-result") }}</span>
+      </div>
+      <div v-if="!shouldShowDiff" class="w-full border px-4 py-4">
+        <p class="w-full text-left py-2">
+          {{ $t("database.sync-schema.select-base-and-target-database-tip") }}
+        </p>
+      </div>
+      <template v-else>
+        <div
+          v-if="
+            state.baseSchemaInfo.migrationHistory?.schema ===
+            targetDatabaseLatestMigrationHistory?.schema
+          "
+          class="w-full border px-4 py-4"
+        >
+          <p class="w-full text-left py-2">
+            {{ $t("database.sync-schema.no-difference-tip") }}
+          </p>
+        </div>
+        <code-diff
+          v-else
+          class="w-full"
+          :old-string="targetDatabaseLatestMigrationHistory?.schema"
+          :new-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
+          output-format="side-by-side"
+          data-label="bb-migration-history-code-diff-block"
+        />
+      </template>
       <div
-        class="w-full flex flex-row justify-start items-center mb-2 leading-8"
+        class="w-full flex flex-row justify-start items-center mt-4 mb-2 leading-8"
       >
         <div class="flex flex-row justify-start items-center">
           <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
@@ -166,7 +190,14 @@
           </button>
         </div>
       </div>
-      <div class="whitespace-pre-wrap w-full overflow-hidden border">
+      <div
+        class="whitespace-pre-wrap w-full overflow-hidden border relative"
+        :class="shouldShowDiff ? '' : 'opacity-50'"
+      >
+        <div
+          class="absolute top-0 left-0 w-full h-full z-10 cursor-not-allowed"
+          :class="shouldShowDiff ? 'hidden' : ''"
+        ></div>
         <MonacoEditor
           ref="editorRef"
           class="w-full h-auto max-h-[300px]"
@@ -178,28 +209,6 @@
           @ready="updateEditorHeight"
         />
       </div>
-      <div class="w-full flex flex-row justify-start items-center mt-4 mb-2">
-        <span>{{ $t("database.sync-schema.schema-comparison-result") }}</span>
-      </div>
-      <div
-        v-if="
-          state.baseSchemaInfo.migrationHistory?.schema ===
-          targetDatabaseLatestMigrationHistory?.schema
-        "
-        class="w-full border px-4 py-4"
-      >
-        <p class="w-full text-left py-2">
-          {{ $t("database.sync-schema.no-different-tip") }}
-        </p>
-      </div>
-      <code-diff
-        v-else
-        class="w-full"
-        :old-string="targetDatabaseLatestMigrationHistory?.schema"
-        :new-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
-        output-format="side-by-side"
-        data-label="bb-migration-history-code-diff-block"
-      />
     </div>
 
     <!-- Buttons group -->
@@ -211,18 +220,14 @@
           class="btn-normal py-2 px-4"
           @click.prevent="handleCancelButtonClick"
         >
-          {{
-            state.currentStep === 0 ? $t("common.cancel") : $t("common.back")
-          }}
+          {{ $t("common.cancel") }}
         </button>
         <button
-          :disabled="!allowNext"
+          :disabled="!allowCreate"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          @click="handleNextButtonClick"
+          @click="handleConfirmButtonClick"
         >
-          {{
-            state.currentStep === 0 ? $t("common.next") : $t("common.confirm")
-          }}
+          {{ $t("common.confirm") }}
         </button>
       </div>
     </div>
@@ -264,7 +269,6 @@ import MonacoEditor from "./MonacoEditor/MonacoEditor.vue";
 import ProjectSelect from "./ProjectSelect.vue";
 
 type LocalState = {
-  currentStep: 0 | 1;
   projectId?: ProjectId;
   baseSchemaInfo: {
     environmentId?: EnvironmentId;
@@ -304,7 +308,6 @@ useEventListener(window, "keydown", (e) => {
 });
 
 const state = reactive<LocalState>({
-  currentStep: 0,
   projectId: props.projectId,
   baseSchemaInfo: {},
   targetSchemaInfo: {},
@@ -336,20 +339,20 @@ const isValidId = (id: any) => {
   return true;
 };
 
-const allowNext = computed(() => {
-  if (state.currentStep === 0) {
-    return (
-      isValidId(state.projectId) &&
-      isValidId(state.baseSchemaInfo.environmentId) &&
-      isValidId(state.baseSchemaInfo.databaseId) &&
-      !isNullOrUndefined(state.baseSchemaInfo.migrationHistory) &&
-      isValidId(state.targetSchemaInfo.environmentId) &&
-      isValidId(state.targetSchemaInfo.databaseId) &&
-      !state.targetSchemaInfo.hasDrift
-    );
-  } else {
-    return state.editStatement !== "";
-  }
+const shouldShowDiff = computed(() => {
+  return (
+    isValidId(state.projectId) &&
+    isValidId(state.baseSchemaInfo.environmentId) &&
+    isValidId(state.baseSchemaInfo.databaseId) &&
+    !isNullOrUndefined(state.baseSchemaInfo.migrationHistory) &&
+    isValidId(state.targetSchemaInfo.environmentId) &&
+    isValidId(state.targetSchemaInfo.databaseId) &&
+    !state.targetSchemaInfo.hasDrift
+  );
+});
+
+const allowCreate = computed(() => {
+  return shouldShowDiff.value && state.editStatement !== "";
 });
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
@@ -374,79 +377,55 @@ const gotoTargetDatabaseMigrationHistoryDetailPageWithId = (
 };
 
 const handleCancelButtonClick = () => {
-  if (state.currentStep === 0) {
-    emit("dismiss");
-  } else {
-    state.currentStep = 0;
-    state.recommandStatement = "";
-    state.editStatement = "";
-  }
+  emit("dismiss");
 };
 
-const handleNextButtonClick = async () => {
-  if (state.currentStep === 0 && allowNext.value) {
-    state.currentStep = 1;
-    const schema = await getSchemaDiff(
-      state.engineType as EngineType,
-      targetDatabaseLatestMigrationHistory.value?.schema ??
-        "" /* the current schema of the database to be updated */,
-      state.baseSchemaInfo.migrationHistory?.schema ??
-        "" /* the schema to be updated to */
-    );
-    state.recommandStatement = schema;
-    state.editStatement = schema;
-  } else if (state.currentStep === 1) {
-    if (state.editStatement === "") {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Statements shouldn't be empty",
-      });
-      return;
-    }
-
-    const sourceDatabase = databaseStore.getDatabaseById(
-      state.baseSchemaInfo.databaseId as DatabaseId
-    );
-    const targetDatabase = databaseStore.getDatabaseById(
-      state.targetSchemaInfo.databaseId as DatabaseId
-    );
-
-    const migrationContext: MigrationContext = {
-      migrationType: "MIGRATE",
-      detailList: [
-        {
-          databaseId: targetDatabase.id,
-          databaseName: targetDatabase.name,
-          statement: state.editStatement,
-          earliestAllowedTs: 0,
-        },
-      ],
-    };
-
-    const databaseName = targetDatabase.name;
-    const newIssue: IssueCreate = {
-      name: `[${databaseName}] Sync Schema from ${
-        sourceDatabase.name
-      } @ ${dayjs().format("MM-DD HH:mm")}`,
-      type: "bb.issue.database.schema.update",
-      description: "",
-      assigneeId: SYSTEM_BOT_ID,
-      projectId: targetDatabase.projectId,
-      pipeline: {
-        stageList: [],
-        name: "",
-      },
-      createContext: migrationContext,
-      payload: {},
-    };
-
-    useIssueStore()
-      .createIssue(newIssue)
-      .then((createdIssue) => {
-        router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-      });
+const handleConfirmButtonClick = async () => {
+  if (state.editStatement === "") {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Statements shouldn't be empty",
+    });
+    return;
   }
+
+  const sourceDatabase = databaseStore.getDatabaseById(
+    state.baseSchemaInfo.databaseId as DatabaseId
+  );
+  const targetDatabase = databaseStore.getDatabaseById(
+    state.targetSchemaInfo.databaseId as DatabaseId
+  );
+  const migrationContext: MigrationContext = {
+    migrationType: "MIGRATE",
+    detailList: [
+      {
+        databaseId: targetDatabase.id,
+        databaseName: targetDatabase.name,
+        statement: state.editStatement,
+        earliestAllowedTs: 0,
+      },
+    ],
+  };
+
+  const newIssue: IssueCreate = {
+    name: `[${targetDatabase.name}] Sync Schema from ${
+      sourceDatabase.name
+    } @ ${dayjs().format("MM-DD HH:mm")}`,
+    type: "bb.issue.database.schema.update",
+    description: "",
+    assigneeId: SYSTEM_BOT_ID,
+    projectId: targetDatabase.projectId,
+    pipeline: {
+      stageList: [],
+      name: "",
+    },
+    createContext: migrationContext,
+    payload: {},
+  };
+  const createdIssue = await useIssueStore().createIssue(newIssue);
+
+  router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
 };
 
 const getSchemaDiff = async (
@@ -475,6 +454,10 @@ const updateEditorHeight = () => {
 };
 
 const copyStatement = () => {
+  if (!state.editStatement) {
+    return;
+  }
+
   toClipboard(state.editStatement).then(() => {
     pushNotification({
       module: "bytebase",
@@ -551,6 +534,26 @@ watch(
           migrationHistoryList[0].type !== "BASELINE" &&
           migrationHistoryList[0].schemaPrev !== migrationHistoryList[1].schema;
       }
+    }
+  }
+);
+
+watch(
+  () => [shouldShowDiff.value],
+  async () => {
+    if (shouldShowDiff.value) {
+      const statement = await getSchemaDiff(
+        state.engineType as EngineType,
+        /* the current schema of the database to be updated */
+        targetDatabaseLatestMigrationHistory.value?.schema ?? "",
+        /* the schema to be updated to */
+        state.baseSchemaInfo.migrationHistory?.schema ?? ""
+      );
+      state.recommandStatement = statement;
+      state.editStatement = statement;
+    } else {
+      state.recommandStatement = "";
+      state.editStatement = "";
     }
   }
 );
