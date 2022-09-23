@@ -59,13 +59,19 @@ const checkShouldShowCreateDatabaseGuide = async () => {
 };
 
 watch(currentUser, async () => {
-  // Check should show guide only when user is logged in.
-  if (currentUser.value.id !== UNKNOWN_ID) {
-    shouldShowCreateDatabaseGuide.value =
-      await checkShouldShowCreateDatabaseGuide();
-    if (shouldShowCreateDatabaseGuide.value) {
-      guideStore.setGuideName("create-database");
+  try {
+    // Check should show guide only when user is logged in.
+    if (currentUser.value.id !== UNKNOWN_ID) {
+      shouldShowCreateDatabaseGuide.value =
+        await checkShouldShowCreateDatabaseGuide();
+      if (shouldShowCreateDatabaseGuide.value) {
+        guideStore.setGuideName("create-database");
+      }
     }
+  } catch (error) {
+    // When the data requests failed in onboarding guide checking,
+    // we just need to log it instead of notify.
+    console.error(error);
   }
 });
 
