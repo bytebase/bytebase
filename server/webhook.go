@@ -405,6 +405,10 @@ func dedupMigrationFilesFromCommitList(commitList []vcs.Commit) []distinctFileIt
 				// For the migration file with the same name, keep the one from the latest commit
 				if item.fileName == file.fileName {
 					if file.createdTs < commit.CreatedTs {
+						// A file can be added and then modified in a later commit. We should consider the item as added.
+						if file.itemType == fileItemTypeAdded {
+							item.itemType = fileItemTypeAdded
+						}
 						distinctFileList[i] = item
 					}
 					return
