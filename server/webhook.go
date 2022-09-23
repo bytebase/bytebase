@@ -60,14 +60,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if pushEvent.ObjectKind != gitlab.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
 		}
-		if len(pushEvent.CommitList) == 0 {
-			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
-		}
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
+		}
+		if len(pushEvent.CommitList) == 0 {
+			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.String("repoURL", pushEvent.Project.WebURL), zap.String("repoName", pushEvent.Project.FullPath), zap.String("commits", getCommitsMessage(commitList)))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
@@ -92,9 +92,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
-		}
-		if len(createdMessages) == 0 {
-			log.Warn("No issue created from the push event", zap.Any("pushEvent", pushEvent))
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
@@ -130,12 +127,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
+		commitList := convertGitHubCommitList(pushEvent.Commits)
 		if len(pushEvent.Commits) == 0 {
-			log.Debug("No commit in the GitHub push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
+			log.Debug("No commit in the GitHub push event. Ignore this push event.", zap.String("repoURL", pushEvent.Repository.HTMLURL), zap.String("repoName", pushEvent.Repository.FullName), zap.String("commits", getCommitsMessage(commitList)))
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
-		commitList := convertGitHubCommitList(pushEvent.Commits)
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       pushEvent.Repository.FullName,
@@ -163,9 +160,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if httpErr != nil {
 			return httpErr
 		}
-		if len(createdMessages) == 0 {
-			log.Warn("No issue created from the push event", zap.Any("pushEvent", pushEvent))
-		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
 }
@@ -173,6 +167,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
 	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 	if len(distinctFileList) == 0 {
+		log.Warn("No files found from the push event", zap.String("repoURL", baseVCSPushEvent.RepositoryURL), zap.String("repoName", baseVCSPushEvent.RepositoryFullPath), zap.String("commits", getCommitsMessage(commitList)))
 		return nil, nil
 	}
 	var createdMessageList []string
@@ -209,6 +204,9 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 				}
 			}
 		}
+	}
+	if len(createdMessageList) == 0 {
+		log.Warn("No issue created from the push event", zap.String("repoURL", baseVCSPushEvent.RepositoryURL), zap.String("repoName", baseVCSPushEvent.RepositoryFullPath), zap.String("commits", getCommitsMessage(commitList)))
 	}
 	return createdMessageList, nil
 }
@@ -831,14 +829,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	if migrationType == db.Data {
 		issueType = api.IssueDatabaseDataUpdate
 	}
-	var commitsMsg string
-	if len(pushEvent.CommitList) == 1 {
-		commitsMsg = fmt.Sprintf("commit %s", pushEvent.CommitList[0].ID[:7])
-	} else {
-		firstCommit := pushEvent.CommitList[0]
-		lastCommit := pushEvent.CommitList[len(pushEvent.CommitList)-1]
-		commitsMsg = fmt.Sprintf("commits %s...%s", firstCommit.ID[:7], lastCommit.ID[:7])
-	}
+	commitsMsg := getCommitsMessage(pushEvent.CommitList)
 	issueCreate := &api.IssueCreate{
 		ProjectID:     repo.ProjectID,
 		Name:          fmt.Sprintf("%s by %s", migrationType, commitsMsg),
@@ -881,6 +872,19 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	}
 
 	return fmt.Sprintf("Created issue %q by %s", issue.Name, commitsMsg), true, activityCreateList, nil
+}
+
+func getCommitsMessage(commitList []vcs.Commit) string {
+	switch len(commitList) {
+	case 0:
+		return ""
+	case 1:
+		return fmt.Sprintf("commit %s", commitList[0].ID[:7])
+	default:
+		firstCommit := commitList[0]
+		lastCommit := commitList[len(commitList)-1]
+		return fmt.Sprintf("commits %s...%s", firstCommit.ID[:7], lastCommit.ID[:7])
+	}
 }
 
 func sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []distinctFileItem) ([]distinctFileItem, []*db.MigrationInfo, error) {
