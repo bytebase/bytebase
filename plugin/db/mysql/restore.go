@@ -250,7 +250,7 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
 	// If there's already a PITR database, it means there's a failed trial before this task execution.
 	// We need to clean up the dirty state and start clean for idempotent task execution.
-	stmt := fmt.Sprintf("DROP DATABASE IF EXISTS %s; CREATE DATABASE `%s`;", pitrDatabaseName, pitrDatabaseName)
+	stmt := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`; CREATE DATABASE `%s`;", pitrDatabaseName, pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return errors.Wrapf(err, "failed to get connection to restore backup")
@@ -459,7 +459,7 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 		return pitrDatabaseName, pitrOldDatabase, nil
 	}
 
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`; CREATE DATABASE `%s`;", pitrOldDatabase, pitrOldDatabase)); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
