@@ -48,15 +48,15 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 		return nil, common.Wrap(err, common.Internal)
 	}
 	if task == nil {
-		return nil, common.Errorf(common.Internal, "failed to find task %v", taskCheckRun.TaskID)
+		return nil, common.Errorf(common.Internal, "failed to find task %d", taskCheckRun.TaskID)
 	}
 
 	if task.Instance == nil {
-		return nil, common.Errorf(common.Internal, "instance ID not found %v", task.InstanceID)
+		return nil, common.Errorf(common.Internal, "failed to find instance %d", task.InstanceID)
 	}
 
 	if task.Database == nil {
-		return nil, common.Errorf(common.Internal, "database ID not found %v", task.DatabaseID)
+		return nil, common.Errorf(common.Internal, "failed to find database %d", task.DatabaseID)
 	}
 
 	adminDataSource := api.DataSourceFromInstanceWithType(task.Instance, api.Admin)
