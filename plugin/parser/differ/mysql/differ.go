@@ -164,12 +164,12 @@ func isColumnOptionsEqaul(old, new []*ast.ColumnOption) bool {
 		}
 		// TODO(zp): it's not enough to compare the type for some options.
 		switch oldOption.Tp {
-		case ast.ColumnOptionComment:
-			if oldOption.Expr.(ast.ValueExpr).GetString() != newOption.Expr.(ast.ValueExpr).GetString() {
+		case ast.ColumnOptionComment, ast.ColumnOptionDefaultValue:
+			if oldOption.Expr.(ast.ValueExpr).GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
 				return false
 			}
-		case ast.ColumnOptionDefaultValue:
-			if oldOption.Expr.(ast.ValueExpr).GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
+		case ast.ColumnOptionCollate:
+			if oldOption.StrValue != newOption.StrValue {
 				return false
 			}
 		default:

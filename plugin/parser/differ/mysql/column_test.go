@@ -235,3 +235,39 @@ func TestColumnDefaultValue(t *testing.T) {
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
 }
+
+func TestColumnCollate(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Harry Potter' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL;\n",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Holmes' NOT NULL);`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Holmes' NOT NULL);`,
+			new:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Holmes' NOT NULL);`,
+			want: "",
+		},
+	}
+	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
+	for _, test := range tests {
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
