@@ -175,11 +175,28 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
+func getGhostConfig(task *api.Task, dataSource *api.DataSource, tableName string, statement string, noop bool, serverIDOffset uint) ghostConfig {
+	return ghostConfig{
+		host:                 task.Instance.Host,
+		port:                 task.Instance.Port,
+		user:                 dataSource.Username,
+		password:             dataSource.Password,
+		database:             task.Database.Name,
+		table:                tableName,
+		alterStatement:       statement,
+		socketFilename:       getSocketFilename(task.ID, task.Database.ID, task.Database.Name, tableName),
+		postponeFlagFilename: getPostponeFlagFilename(task.ID, task.Database.ID, task.Database.Name, tableName),
+		noop:                 noop,
+		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
+		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
+		// Here we use serverID = offset + task.ID to avoid potential conflicts.
+		serverID: serverIDOffset + uint(task.ID),
+	}
+}
+
 func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	migrationError := make(chan error)
-	instance := task.Instance
-	databaseName := task.Database.Name
 
 	statement = strings.TrimSpace(statement)
 
@@ -188,27 +205,14 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 		return true, nil, err
 	}
 
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+	adminDataSource := api.DataSourceFromInstanceWithType(task.Instance, api.Admin)
 	if adminDataSource == nil {
-		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.Instance.ID)
 	}
 
-	migrationContext, err := newMigrationContext(ghostConfig{
-		host:                 instance.Host,
-		port:                 instance.Port,
-		user:                 adminDataSource.Username,
-		password:             adminDataSource.Password,
-		database:             databaseName,
-		table:                tableName,
-		alterStatement:       statement,
-		socketFilename:       getSocketFilename(task.ID, task.Database.ID, databaseName, tableName),
-		postponeFlagFilename: getPostponeFlagFilename(task.ID, task.Database.ID, databaseName, tableName),
-		noop:                 false,
-		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
-		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
-		// Here we use serverID = offset + task.ID to avoid potential conflicts.
-		serverID: 10000000 + uint(task.ID),
-	})
+	config := getGhostConfig(task, adminDataSource, tableName, statement, false, 10000000)
+
+	migrationContext, err := newMigrationContext(config)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
