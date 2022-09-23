@@ -89,15 +89,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
-		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
-		if len(distinctFileList) == 0 {
-			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
-		}
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, distinctFileList, baseVCSPushEvent)
+		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
+		}
+		if len(createdMessages) == 0 {
+			var filteredRepoURLs []string
+			for _, repo := range filteredRepos {
+				filteredRepoURLs = append(filteredRepoURLs, repo.WebURL)
+			}
+			log.Warn("No issue created from the push event", zap.Strings("filteredRepositories", filteredRepoURLs), zap.Any("pushEvent", pushEvent))
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
@@ -162,22 +163,26 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
-		distinctFileList := dedupMigrationFilesFromCommitList(commitList)
-		if len(distinctFileList) == 0 {
-			log.Debug("No commit in the GitHub push event. Ignore this push event.", zap.Any("pushEvent", pushEvent))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
-		}
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, distinctFileList, baseVCSPushEvent)
+		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
+		}
+		if len(createdMessages) == 0 {
+			var filteredRepoURLs []string
+			for _, repo := range filteredRepos {
+				filteredRepoURLs = append(filteredRepoURLs, repo.WebURL)
+			}
+			log.Warn("No issue created from the push event", zap.Strings("filteredRepositories", filteredRepoURLs), zap.Any("pushEvent", pushEvent))
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
 }
 
-func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, distinctFileList []distinctFileItem, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
-	var createdMessages []string
+func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
+	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
+	if len(distinctFileList) == 0 {
+		return nil, nil
+	}
 	var createdMessageList []string
 	repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
 	for _, repo := range filteredRepos {
@@ -213,12 +218,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 			}
 		}
 	}
-	createdMessages = append(createdMessages, createdMessageList...)
-
-	if len(createdMessages) == 0 {
-		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
-	}
-	return createdMessages, nil
+	return createdMessageList, nil
 }
 
 func (s *Server) validateWebhookRequest(ctx context.Context, c echo.Context) (string, []*api.Repository, *echo.HTTPError) {
