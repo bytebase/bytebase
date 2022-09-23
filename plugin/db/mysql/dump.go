@@ -237,8 +237,10 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		// Disable foreign key check.
 		// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 		// the unique and foreign key check so that the restoring will not fail.
-		if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
-			return err
+		if !schemaOnly {
+			if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
+				return err
+			}
 		}
 
 		// Table and view statement.
@@ -333,8 +335,10 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Restore foreign key check.
-		if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
-			return err
+		if !schemaOnly {
+			if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
+				return err
+			}
 		}
 	}
 
