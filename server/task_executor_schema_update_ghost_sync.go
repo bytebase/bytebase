@@ -186,6 +186,7 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.
 	for _, user := range userList {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
 			isAWS = true
+			break
 		}
 	}
 	return ghostConfig{
@@ -203,7 +204,8 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.
 		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
 		// Here we use serverID = offset + task.ID to avoid potential conflicts.
 		serverID: serverIDOffset + uint(task.ID),
-		isAWS:    isAWS,
+		// https://github.com/github/gh-ost/blob/master/doc/rds.md
+		isAWS: isAWS,
 	}
 }
 
