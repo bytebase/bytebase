@@ -29,7 +29,7 @@
           <div class="flex space-x-4">
             <BBCheckbox
               :value="(state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier === 'PROTECTED'"
-              @toggle="on => {
+              @toggle="(on: boolean) => {
                 (state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier = on ? 'PROTECTED' : 'UNPROTECTED'
               }"
             />
