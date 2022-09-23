@@ -94,11 +94,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return httpErr
 		}
 		if len(createdMessages) == 0 {
-			var filteredRepoURLs []string
-			for _, repo := range filteredRepos {
-				filteredRepoURLs = append(filteredRepoURLs, repo.WebURL)
-			}
-			log.Warn("No issue created from the push event", zap.Strings("filteredRepositories", filteredRepoURLs), zap.Any("pushEvent", pushEvent))
+			log.Warn("No issue created from the push event", zap.Any("pushEvent", pushEvent))
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
@@ -168,11 +164,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return httpErr
 		}
 		if len(createdMessages) == 0 {
-			var filteredRepoURLs []string
-			for _, repo := range filteredRepos {
-				filteredRepoURLs = append(filteredRepoURLs, repo.WebURL)
-			}
-			log.Warn("No issue created from the push event", zap.Strings("filteredRepositories", filteredRepoURLs), zap.Any("pushEvent", pushEvent))
+			log.Warn("No issue created from the push event", zap.Any("pushEvent", pushEvent))
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
