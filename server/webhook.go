@@ -65,16 +65,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
 		if len(pushEvent.CommitList) == 0 {
-			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.String("repoURL", pushEvent.Project.WebURL), zap.String("repoName", pushEvent.Project.FullPath), zap.String("commits", getCommitsMessage(commitList)))
+			log.Debug("No commit in the GitLab push event. Ignore this push event.", zap.String("repoURL", common.EscapeForLogging(pushEvent.Project.WebURL)), zap.String("repoName", pushEvent.Project.FullPath), zap.String("commits", getCommitsMessage(commitList)))
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
 		baseVCSPushEvent := vcs.PushEvent{
-			Ref:                pushEvent.Ref,
+			Ref:                common.EscapeForLogging(pushEvent.Ref),
 			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-			RepositoryURL:      pushEvent.Project.WebURL,
-			RepositoryFullPath: pushEvent.Project.FullPath,
-			AuthorName:         pushEvent.AuthorName,
+			RepositoryURL:      common.EscapeForLogging(pushEvent.Project.WebURL),
+			RepositoryFullPath: common.EscapeForLogging(pushEvent.Project.FullPath),
+			AuthorName:         common.EscapeForLogging(pushEvent.AuthorName),
 			CommitList:         commitList,
 		}
 
@@ -132,11 +132,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return nil
 		}
 		baseVCSPushEvent := vcs.PushEvent{
-			Ref:                pushEvent.Ref,
-			RepositoryID:       pushEvent.Repository.FullName,
-			RepositoryURL:      pushEvent.Repository.HTMLURL,
-			RepositoryFullPath: pushEvent.Repository.FullName,
-			AuthorName:         pushEvent.Sender.Login,
+			Ref:                common.EscapeForLogging(pushEvent.Ref),
+			RepositoryID:       common.EscapeForLogging(pushEvent.Repository.FullName),
+			RepositoryURL:      common.EscapeForLogging(pushEvent.Repository.HTMLURL),
+			RepositoryFullPath: common.EscapeForLogging(pushEvent.Repository.FullName),
+			AuthorName:         common.EscapeForLogging(pushEvent.Sender.Login),
 			CommitList:         commitList,
 		}
 
