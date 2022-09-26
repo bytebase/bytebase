@@ -601,9 +601,6 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &vcs.FileMeta{
-		Name:         "key.rb",
-		Path:         "app/models/key.rb",
-		Size:         3,
 		LastCommitID: "27329d3afac51fbf2762428e12f2635d1137c549",
 	}
 	assert.Equal(t, want, got)

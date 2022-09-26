@@ -120,10 +120,7 @@ type RepositoryTreeNode struct {
 
 // File represents a GitLab API response for a repository file.
 type File struct {
-	FileName     string
-	FilePath     string
 	Content      string
-	Size         int64
 	LastCommitID string
 }
 
@@ -747,9 +744,6 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 	}
 
 	return &vcs.FileMeta{
-		Name:         file.FileName,
-		Path:         file.FilePath,
-		Size:         file.Size,
 		LastCommitID: file.LastCommitID,
 	}, nil
 }
@@ -927,16 +921,8 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 			)
 	}
 
-	fileSize, err := strconv.ParseInt(header.Get("x-gitlab-size"), 0, 32)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot parse file size from header x-gitlab-size %q", header.Get("x-gitlab-size"))
-	}
-
 	return &File{
-		FileName:     header.Get("x-gitlab-file-name"),
-		FilePath:     header.Get("x-gitlab-file-path"),
 		Content:      body,
-		Size:         fileSize,
 		LastCommitID: header.Get("x-gitlab-last-commit-id"),
 	}, nil
 }
