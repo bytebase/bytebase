@@ -708,8 +708,10 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 	return nil, nil
 }
 
-// createIssueFromPushEvent attempts to create a new issue for the given files of the push event. It returns "created=true" when a new issue has been created,
-// along with the creation message to be presented in the UI. An *echo.HTTPError is returned in case of the error during the process.
+// createIssueFromPushEvent attempts to create a new issue for the given files of
+// the push event. It returns "created=true" when a new issue has been created,
+// along with the creation message to be presented in the UI. An *echo.HTTPError
+// is returned in case of the error during the process.
 func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID string, fileList []distinctFileItem) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
