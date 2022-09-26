@@ -84,7 +84,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		}
 	} else {
 		mi.Source = db.VCS
-		mi.Creator = vcsPushEvent.FileCommit.AuthorName
+		mi.Creator = vcsPushEvent.AuthorName
 		miPayload := &db.MigrationInfoPayload{
 			VCSPushEvent: vcsPushEvent,
 		}
@@ -373,10 +373,17 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		commitBody += "\n\n" + bytebaseURL
 	}
 	commitBody += "\n\n--------Original migration change--------\n\n"
-	commitBody += fmt.Sprintf("%s\n\n%s",
-		pushEvent.FileCommit.URL,
-		pushEvent.FileCommit.Message,
-	)
+	if len(pushEvent.CommitList) == 0 {
+		commitBody += fmt.Sprintf("%s\n\n%s",
+			pushEvent.FileCommit.URL,
+			pushEvent.FileCommit.Message,
+		)
+	} else {
+		commitBody += fmt.Sprintf("%s\n\n%s",
+			pushEvent.CommitList[0].URL,
+			pushEvent.CommitList[0].Message,
+		)
+	}
 
 	// Retrieve the latest AccessToken and RefreshToken as the previous VCS call may have
 	// updated the stored token pair. VCS will fetch and store the new token pair if the
