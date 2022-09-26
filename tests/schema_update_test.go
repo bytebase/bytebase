@@ -1004,6 +1004,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1049,6 +1050,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1090,6 +1092,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1132,6 +1135,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
@@ -1171,6 +1175,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
+							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
 							AddedList: []string{gitFile},
 						},
