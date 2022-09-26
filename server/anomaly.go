@@ -14,9 +14,9 @@ import (
 func (s *Server) registerAnomalyRoutes(g *echo.Group) {
 	g.GET("/anomaly", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		rowStatus := api.Normal
+		normalRowStatus := api.Normal
 		anomalyFind := &api.AnomalyFind{
-			RowStatus: &rowStatus,
+			RowStatus: &normalRowStatus,
 		}
 		if instanceIDStr := c.QueryParam("instance"); instanceIDStr != "" {
 			instanceID, err := strconv.Atoi(instanceIDStr)
@@ -33,6 +33,13 @@ func (s *Server) registerAnomalyRoutes(g *echo.Group) {
 			}
 			anomalyFind.DatabaseID = &databaseID
 		}
+		if rowStatus := c.QueryParam("rowStatus"); rowStatus != "" {
+			anomalyFind.RowStatus = (*api.RowStatus)(&rowStatus)
+		}
+		if anomalyType := c.QueryParam("type"); anomalyType != "" {
+			anomalyFind.Type = (*api.AnomalyType)(&anomalyType)
+		}
+
 		anomalyList, err := s.store.FindAnomaly(ctx, anomalyFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch anomaly list").SetInternal(err)
