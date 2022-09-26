@@ -103,7 +103,7 @@
         </h3>
       </div>
       <div
-        v-if="quickAction === 'quickaction.bb.database.troubleshoot'"
+        v-if="isDev && quickAction === 'quickaction.bb.database.troubleshoot'"
         class="flex flex-col items-center w-28 py-1"
       >
         <router-link to="/issue/new" class="btn-icon-primary p-3">
