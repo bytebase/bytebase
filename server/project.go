@@ -484,7 +484,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					ClientSecret: vcs.Secret,
 					AccessToken:  repo.AccessToken,
 					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.WebURL),
+					Refresher:    refreshTokenNoop(),
 				},
 				vcs.InstanceURL,
 				repo.ExternalID,
