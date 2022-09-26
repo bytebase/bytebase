@@ -4,7 +4,6 @@ package gitlab
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -121,12 +120,8 @@ type RepositoryTreeNode struct {
 
 // File represents a GitLab API response for a repository file.
 type File struct {
-	FileName     string `json:"file_name"`
-	FilePath     string `json:"file_path"`
-	Encoding     string `json:"encoding"`
-	Content      string `json:"content"`
-	Size         int64  `json:"size"`
-	LastCommitID string `json:"last_commit_id"`
+	Content      string
+	LastCommitID string
 }
 
 // ProjectRole is the role of the project member.
@@ -292,7 +287,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
 	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -337,7 +332,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 // should be either "user" or "users/{userID}".
 func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -381,7 +376,7 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -521,7 +516,7 @@ func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context,
 	// The "state" filter only available in GitLab Premium self-managed, GitLab
 	// Premium SaaS, and higher tiers, but worth a try for less abandoned results.
 	url := fmt.Sprintf("%s/projects/%s/members/all?state=active&page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, page, apiPageSize)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -601,7 +596,7 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 // boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (treeNodes []RepositoryTreeNode, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s&page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, ref, filePath, page, apiPageSize)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -658,7 +653,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
-	code, _, err := oauth.Post(
+	code, _, _, err := oauth.Post(
 		ctx,
 		p.client,
 		url,
@@ -707,7 +702,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
-	code, _, err := oauth.Put(
+	code, _, _, err := oauth.Put(
 		ctx,
 		p.client,
 		url,
@@ -749,9 +744,6 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 	}
 
 	return &vcs.FileMeta{
-		Name:         file.FileName,
-		Path:         file.FilePath,
-		Size:         file.Size,
 		LastCommitID: file.LastCommitID,
 	}, nil
 }
@@ -772,7 +764,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/projects/%s/hooks", p.APIURL(instanceURL), repositoryID)
-	code, body, err := oauth.Post(
+	code, _, body, err := oauth.Post(
 		ctx,
 		p.client,
 		url,
@@ -823,7 +815,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 // Docs: https://docs.gitlab.com/ee/api/projects.html#edit-project-hook
 func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, body, err := oauth.Put(
+	code, _, body, err := oauth.Put(
 		ctx,
 		p.client,
 		url,
@@ -860,7 +852,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 // Docs: https://docs.gitlab.com/ee/api/projects.html#delete-project-hook
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, body, err := oauth.Delete(
+	code, _, body, err := oauth.Delete(
 		ctx,
 		p.client,
 		url,
@@ -896,8 +888,10 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 // TODO: The same GitLab API endpoint supports using the HEAD request to only
 // get the file metadata.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
-	url := fmt.Sprintf("%s/projects/%s/repository/files/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
-	code, body, err := oauth.Get(
+	// Since GitLab of stale version doesn't support get large file content well, we move to use the raw api.
+	// See https://gitlab.com/gitlab-org/gitlab-pages/-/issues/315 for more details.
+	url := fmt.Sprintf("%s/projects/%s/repository/files/%s/raw?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
+	code, header, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -927,19 +921,10 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 			)
 	}
 
-	var file File
-	if err = json.Unmarshal([]byte(body), &file); err != nil {
-		return nil, errors.Wrap(err, "unmarshal body")
-	}
-
-	if file.Encoding == "base64" {
-		decodedContent, err := base64.StdEncoding.DecodeString(file.Content)
-		if err != nil {
-			return nil, errors.Wrap(err, "decode file content")
-		}
-		file.Content = string(decodedContent)
-	}
-	return &file, nil
+	return &File{
+		Content:      body,
+		LastCommitID: header.Get("x-gitlab-last-commit-id"),
+	}, nil
 }
 
 // oauthContext is the request context for refreshing oauth token.

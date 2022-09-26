@@ -578,25 +578,17 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 			Client: &http.Client{
 				Transport: &common.MockRoundTripper{
 					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+						assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
+						header := http.Header{}
+						header.Set("x-gitlab-file-name", "key.rb")
+						header.Set("x-gitlab-file-path", "app/models/key.rb")
+						header.Set("x-gitlab-size", "3")
+						header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
 						return &http.Response{
 							StatusCode: http.StatusOK,
 							// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-							Body: io.NopCloser(strings.NewReader(`
-{
-  "file_name": "key.rb",
-  "file_path": "app/models/key.rb",
-  "size": 442,
-  "encoding": "base64",
-  "content": "IyBTYW1wbGUgR2l0TGFiIFByb2plY3QKClRoaXMgc2FtcGxlIHByb2plY3Qgc2hvd3MgaG93IGEgcHJvamVjdCBpbiBHaXRMYWIgbG9va3MgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMuIEl0IGNvbnRhaW5zIGlzc3VlcywgbWVyZ2UgcmVxdWVzdHMgYW5kIE1hcmtkb3duIGZpbGVzIGluIG1hbnkgYnJhbmNoZXMsCm5hbWVkIGFuZCBmaWxsZWQgd2l0aCBsb3JlbSBpcHN1bS4KCllvdSBjYW4gbG9vayBhcm91bmQgdG8gZ2V0IGFuIGlkZWEgaG93IHRvIHN0cnVjdHVyZSB5b3VyIHByb2plY3QgYW5kLCB3aGVuIGRvbmUsIHlvdSBjYW4gc2FmZWx5IGRlbGV0ZSB0aGlzIHByb2plY3QuCgpbTGVhcm4gbW9yZSBhYm91dCBjcmVhdGluZyBHaXRMYWIgcHJvamVjdHMuXShodHRwczovL2RvY3MuZ2l0bGFiLmNvbS9lZS9naXRsYWItYmFzaWNzL2NyZWF0ZS1wcm9qZWN0Lmh0bWwpCg==",
-  "content_sha256": "71dd06da8f5915544335e547e4447de6377ef369d67b6a5214c8a780d336b2e2",
-  "ref": "master",
-  "blob_id": "79f7bbd25901e8334750839545a9bd021f0e4c83",
-  "commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "last_commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "execute_filemode": false
-}
-`)),
+							Body:   io.NopCloser(strings.NewReader(`key`)),
+							Header: header,
 						}, nil
 					},
 				},
@@ -605,13 +597,10 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, "", "1", "lib/class.rb", "master")
+	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, "", "1", "app/models/key.rb", "master")
 	require.NoError(t, err)
 
 	want := &vcs.FileMeta{
-		Name:         "key.rb",
-		Path:         "app/models/key.rb",
-		Size:         442,
 		LastCommitID: "27329d3afac51fbf2762428e12f2635d1137c549",
 	}
 	assert.Equal(t, want, got)
@@ -623,25 +612,25 @@ func TestProvider_ReadFileContent(t *testing.T) {
 			Client: &http.Client{
 				Transport: &common.MockRoundTripper{
 					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+						assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
+						header := http.Header{}
+						header.Set("x-gitlab-file-name", "key.rb")
+						header.Set("x-gitlab-file-path", "app/models/key.rb")
+						header.Set("x-gitlab-size", "3")
+						header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
 						return &http.Response{
 							StatusCode: http.StatusOK,
 							// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-							Body: io.NopCloser(strings.NewReader(`
-{
-  "file_name": "key.rb",
-  "file_path": "app/models/key.rb",
-  "size": 442,
-  "encoding": "base64",
-  "content": "IyBTYW1wbGUgR2l0TGFiIFByb2plY3QKClRoaXMgc2FtcGxlIHByb2plY3Qgc2hvd3MgaG93IGEgcHJvamVjdCBpbiBHaXRMYWIgbG9va3MgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMuIEl0IGNvbnRhaW5zIGlzc3VlcywgbWVyZ2UgcmVxdWVzdHMgYW5kIE1hcmtkb3duIGZpbGVzIGluIG1hbnkgYnJhbmNoZXMsCm5hbWVkIGFuZCBmaWxsZWQgd2l0aCBsb3JlbSBpcHN1bS4KCllvdSBjYW4gbG9vayBhcm91bmQgdG8gZ2V0IGFuIGlkZWEgaG93IHRvIHN0cnVjdHVyZSB5b3VyIHByb2plY3QgYW5kLCB3aGVuIGRvbmUsIHlvdSBjYW4gc2FmZWx5IGRlbGV0ZSB0aGlzIHByb2plY3QuCgpbTGVhcm4gbW9yZSBhYm91dCBjcmVhdGluZyBHaXRMYWIgcHJvamVjdHMuXShodHRwczovL2RvY3MuZ2l0bGFiLmNvbS9lZS9naXRsYWItYmFzaWNzL2NyZWF0ZS1wcm9qZWN0Lmh0bWwpCg==",
-  "content_sha256": "71dd06da8f5915544335e547e4447de6377ef369d67b6a5214c8a780d336b2e2",
-  "ref": "master",
-  "blob_id": "79f7bbd25901e8334750839545a9bd021f0e4c83",
-  "commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "last_commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "execute_filemode": false
-}
+							Body: io.NopCloser(strings.NewReader(`# Sample GitLab Project
+
+This sample project shows how a project in GitLab looks for demonstration purposes. It contains issues, merge requests and Markdown files in many branches,
+named and filled with lorem ipsum.
+
+You can look around to get an idea how to structure your project and, when done, you can safely delete this project.
+
+[Learn more about creating GitLab projects.](https://docs.gitlab.com/ee/gitlab-basics/create-project.html)
 `)),
+							Header: header,
 						}, nil
 					},
 				},
@@ -650,7 +639,7 @@ func TestProvider_ReadFileContent(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, "", "1", "lib/class.rb", "master")
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, "", "1", "app/models/key.rb", "master")
 	require.NoError(t, err)
 
 	want := `# Sample GitLab Project
@@ -793,7 +782,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 		return nil
 	}
 
-	_, _, err := oauth.Get(
+	_, _, _, err := oauth.Get(
 		ctx,
 		client,
 		"https://gitlab.example.com/api/v4/users/octocat",
