@@ -88,6 +88,12 @@ const buildQueryByAnomalyFind = (find: AnomalyFind): string => {
   if (find.databaseId && find.databaseId !== UNKNOWN_ID) {
     query.database = find.databaseId;
   }
+  if (find.rowStatus) {
+    query.rowStatus = find.rowStatus;
+  }
+  if (find.type) {
+    query.type = find.type;
+  }
   return QueryString.stringify(query);
 };
 

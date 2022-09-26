@@ -7,6 +7,7 @@ import {
   Instance,
   InstanceId,
   Principal,
+  RowStatus,
 } from ".";
 
 export type AnomalyType =
@@ -73,8 +74,6 @@ export type Anomaly = {
 export type AnomalyFind = {
   instanceId?: InstanceId;
   databaseId?: DatabaseId;
-
-  // Not supported by server-side yet.
-  // rowStatus?: RowStatus;
-  // type?: AnomalyType;
+  rowStatus?: RowStatus;
+  type?: AnomalyType;
 };
