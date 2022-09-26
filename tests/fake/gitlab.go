@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -59,7 +60,6 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup.GET("/projects/:id/repository/commits/:commitID", gl.getFakeCommit)
 	projectGroup.GET("/projects/:id/repository/tree", gl.readProjectTree)
 	projectGroup.GET("/projects/:id/repository/files/:filePath/raw", gl.readProjectFile)
-	projectGroup.GET("/projects/:id/repository/files/:filePath", gl.readProjectFileMetadata)
 	projectGroup.POST("/projects/:id/repository/files/:filePath", gl.createProjectFile)
 	projectGroup.PUT("/projects/:id/repository/files/:filePath", gl.createProjectFile)
 
@@ -160,46 +160,19 @@ func (gl *GitLab) readProjectFile(c echo.Context) error {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", projectID))
 	}
 
+	fileName := filepath.Base(filePath)
+
 	content, ok := pd.files[filePath]
 	if !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", filePath))
 	}
 
+	c.Response().Header().Set("x-gitlab-file-name", fileName)
+	c.Response().Header().Set("x-gitlab-file-path", filePath)
+	c.Response().Header().Set("x-gitlab-size", strconv.Itoa(len([]byte(content))))
+	c.Response().Header().Set("x-gitlab-last-commit-id", "fake_gitlab_commit_id")
+
 	return c.String(http.StatusOK, content)
-}
-
-// readProjectFileMetadata reads a project file metadata.
-func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
-	projectID := c.Param("id")
-	filePathEscaped := c.Param("filePath")
-	filePath, err := url.QueryUnescape(filePathEscaped)
-	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", filePathEscaped, err))
-	}
-
-	pd, ok := gl.projects[projectID]
-	if !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", projectID))
-	}
-
-	if _, ok := pd.files[filePath]; !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", filePath))
-	}
-
-	fileName := filepath.Base(filePath)
-	content := pd.files[filePath]
-
-	buf, err := json.Marshal(&gitlab.File{
-		FileName:     fileName,
-		FilePath:     filePath,
-		Content:      content,
-		LastCommitID: "fake_gitlab_commit_id",
-	})
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal FileMeta, error %v", err))
-	}
-
-	return c.String(http.StatusOK, string(buf))
 }
 
 // getFakeCommit get a fake commit data.
