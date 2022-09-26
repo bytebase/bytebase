@@ -10,7 +10,7 @@ import (
 
 func newDatabaseState(d *Database, context *FinderContext) *DatabaseState {
 	database := &DatabaseState{
-		complete:     context.CheckIntegrity,
+		ctx:          context.Copy(),
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
@@ -19,15 +19,15 @@ func newDatabaseState(d *Database, context *FinderContext) *DatabaseState {
 	}
 
 	for _, schema := range d.SchemaList {
-		database.schemaSet[schema.Name] = newSchemaState(schema, database.complete)
+		database.schemaSet[schema.Name] = newSchemaState(schema, database.ctx)
 	}
 
 	return database
 }
 
-func newSchemaState(s *Schema, complete bool) *SchemaState {
+func newSchemaState(s *Schema, context *FinderContext) *SchemaState {
 	schema := &SchemaState{
-		complete:     complete,
+		ctx:          context.Copy(),
 		name:         s.Name,
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
@@ -67,7 +67,6 @@ func newExtensionState(e *Extension) *ExtensionState {
 
 func newTableState(t *Table) *TableState {
 	table := &TableState{
-		complete:  true,
 		name:      t.Name,
 		tableType: copyStringPointer(&t.Type),
 		engine:    copyStringPointer(&t.Engine),
@@ -90,7 +89,6 @@ func newTableState(t *Table) *TableState {
 
 func newColumnState(c *Column) *ColumnState {
 	return &ColumnState{
-		complete:     true,
 		name:         c.Name,
 		position:     copyIntPointer(&c.Position),
 		defaultValue: copyStringPointer(c.Default),
@@ -104,7 +102,6 @@ func newColumnState(c *Column) *ColumnState {
 
 func newIndexState(i *Index) *IndexState {
 	index := &IndexState{
-		complete:       true,
 		name:           i.Name,
 		indextype:      copyStringPointer(&i.Type),
 		unique:         copyBoolPointer(&i.Unique),
@@ -118,7 +115,7 @@ func newIndexState(i *Index) *IndexState {
 
 // DatabaseState is the state for walk-through.
 type DatabaseState struct {
-	complete     bool
+	ctx          *FinderContext
 	name         string
 	characterSet string
 	collation    string
@@ -261,7 +258,7 @@ func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 
 func (d *DatabaseState) copy() *DatabaseState {
 	return &DatabaseState{
-		complete:     d.complete,
+		ctx:          d.ctx.Copy(),
 		name:         d.name,
 		characterSet: d.characterSet,
 		collation:    d.collation,
@@ -273,7 +270,7 @@ func (d *DatabaseState) copy() *DatabaseState {
 
 // SchemaState is the state for walk-through.
 type SchemaState struct {
-	complete     bool
+	ctx          *FinderContext
 	name         string
 	tableSet     tableStateMap
 	viewSet      viewStateMap
@@ -282,7 +279,7 @@ type SchemaState struct {
 
 func (schema *SchemaState) copy() *SchemaState {
 	return &SchemaState{
-		complete:     schema.complete,
+		ctx:          schema.ctx.Copy(),
 		name:         schema.name,
 		tableSet:     schema.tableSet.copy(),
 		viewSet:      schema.viewSet.copy(),
@@ -302,8 +299,6 @@ func (m schemaStateMap) copy() schemaStateMap {
 
 // TableState is the state for walk-through.
 type TableState struct {
-	complete bool
-
 	name      string
 	tableType *string
 	// engine isn't supported for Postgres, Snowflake, SQLite.
@@ -319,7 +314,6 @@ type TableState struct {
 
 func (table *TableState) copy() *TableState {
 	return &TableState{
-		complete:  table.complete,
 		name:      table.name,
 		tableType: copyStringPointer(table.tableType),
 		engine:    copyStringPointer(table.engine),
@@ -342,8 +336,6 @@ func (m tableStateMap) copy() tableStateMap {
 
 // IndexState is the state for walk-through.
 type IndexState struct {
-	complete bool
-
 	name string
 	// This could refer to a column or an expression.
 	expressionList []string
@@ -359,7 +351,6 @@ type IndexState struct {
 
 func (idx *IndexState) copy() *IndexState {
 	return &IndexState{
-		complete:       idx.complete,
 		name:           idx.name,
 		expressionList: copyStringSlice(idx.expressionList),
 		indextype:      copyStringPointer(idx.indextype),
@@ -403,8 +394,6 @@ func (m indexStateMap) copy() indexStateMap {
 
 // ColumnState is the state for walk-through.
 type ColumnState struct {
-	complete bool
-
 	name         string
 	position     *int
 	defaultValue *string
@@ -421,7 +410,6 @@ type ColumnState struct {
 
 func (col *ColumnState) copy() *ColumnState {
 	return &ColumnState{
-		complete:     col.complete,
 		name:         col.name,
 		position:     copyIntPointer(col.position),
 		defaultValue: copyStringPointer(col.defaultValue),

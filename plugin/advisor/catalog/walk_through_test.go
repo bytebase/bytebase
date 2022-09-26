@@ -969,18 +969,17 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 		{
 			statement: `CREATE INDEX idx_a on t(a)`,
 			want: &DatabaseState{
-				complete:     false,
+				ctx:          &FinderContext{CheckIntegrity: false},
 				name:         "",
 				characterSet: "",
 				collation:    "",
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						complete: false,
-						name:     "",
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
 						tableSet: tableStateMap{
 							"t": {
-								complete:  false,
 								name:      "t",
 								tableType: nil,
 								engine:    nil,
@@ -989,7 +988,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								columnSet: columnStateMap{},
 								indexSet: indexStateMap{
 									"idx_a": {
-										complete:       true,
 										name:           "idx_a",
 										expressionList: []string{"a"},
 										indextype:      newStringPointer("BTREE"),
@@ -1010,18 +1008,17 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 		{
 			statement: `ALTER TABLE t RENAME COLUMN a TO a_copy`,
 			want: &DatabaseState{
-				complete:     false,
+				ctx:          &FinderContext{CheckIntegrity: false},
 				name:         "",
 				characterSet: *newEmptyStringPointer(),
 				collation:    *newEmptyStringPointer(),
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						complete: false,
-						name:     "",
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
 						tableSet: tableStateMap{
 							"t": {
-								complete:  false,
 								name:      "t",
 								tableType: nil,
 								engine:    nil,
@@ -1029,8 +1026,7 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								comment:   nil,
 								columnSet: columnStateMap{
 									"a_copy": {
-										complete: false,
-										name:     "a_copy",
+										name: "a_copy",
 									},
 								},
 								indexSet: indexStateMap{},
@@ -1045,18 +1041,17 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 		{
 			statement: `ALTER TABLE t RENAME TO t1`,
 			want: &DatabaseState{
-				complete:     false,
+				ctx:          &FinderContext{CheckIntegrity: false},
 				name:         "",
 				characterSet: "",
 				collation:    "",
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						complete: false,
-						name:     "",
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
 						tableSet: tableStateMap{
 							"t1": {
-								complete:  false,
 								name:      "t1",
 								tableType: nil,
 								engine:    nil,
@@ -1082,18 +1077,17 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 				CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
 			`,
 			want: &DatabaseState{
-				complete:     false,
+				ctx:          &FinderContext{CheckIntegrity: false},
 				name:         "",
 				characterSet: "",
 				collation:    "",
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						complete: false,
-						name:     "",
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
 						tableSet: tableStateMap{
 							"t": {
-								complete:  false,
 								name:      "t",
 								tableType: nil,
 								engine:    nil,
@@ -1102,7 +1096,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								columnSet: columnStateMap{},
 								indexSet: indexStateMap{
 									"PRIMARY": {
-										complete:       true,
 										name:           "PRIMARY",
 										expressionList: []string{"a"},
 										indextype:      newStringPointer("BTREE"),
@@ -1112,7 +1105,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b": {
-										complete:       true,
 										name:           "b",
 										expressionList: []string{"b"},
 										indextype:      newStringPointer("BTREE"),
@@ -1122,7 +1114,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"idx_a": {
-										complete:       true,
 										name:           "idx_a",
 										expressionList: []string{"a"},
 										indextype:      newStringPointer("BTREE"),
@@ -1132,7 +1123,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b_2": {
-										complete:       true,
 										name:           "b_2",
 										expressionList: []string{"b", "a"},
 										indextype:      newStringPointer("BTREE"),
@@ -1142,7 +1132,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b_3": {
-										complete:       true,
 										name:           "b_3",
 										expressionList: []string{"b", "c", "d"},
 										indextype:      newStringPointer("BTREE"),
@@ -1152,7 +1141,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b_4": {
-										complete:       true,
 										name:           "b_4",
 										expressionList: []string{"b", "d"},
 										indextype:      newStringPointer("FULLTEXT"),
@@ -1184,18 +1172,17 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 				)
 			`,
 			want: &DatabaseState{
-				complete:     false,
+				ctx:          &FinderContext{CheckIntegrity: false},
 				name:         "",
 				characterSet: "",
 				collation:    "",
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						complete: false,
-						name:     "",
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
 						tableSet: tableStateMap{
 							"t": {
-								complete:  true,
 								name:      "t",
 								tableType: newEmptyStringPointer(),
 								engine:    newEmptyStringPointer(),
@@ -1203,7 +1190,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								comment:   newEmptyStringPointer(),
 								columnSet: columnStateMap{
 									"a": {
-										complete:     true,
 										name:         "a",
 										position:     newIntPointer(1),
 										defaultValue: &one,
@@ -1214,7 +1200,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:      newEmptyStringPointer(),
 									},
 									"b": {
-										complete:     true,
 										name:         "b",
 										position:     newIntPointer(2),
 										defaultValue: nil,
@@ -1225,7 +1210,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:      newEmptyStringPointer(),
 									},
 									"c": {
-										complete:     true,
 										name:         "c",
 										position:     newIntPointer(3),
 										defaultValue: nil,
@@ -1236,7 +1220,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:      newStringPointer("This is a comment"),
 									},
 									"d": {
-										complete:     true,
 										name:         "d",
 										position:     newIntPointer(4),
 										defaultValue: nil,
@@ -1249,7 +1232,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								},
 								indexSet: indexStateMap{
 									"PRIMARY": {
-										complete:       true,
 										name:           "PRIMARY",
 										expressionList: []string{"a"},
 										indextype:      newStringPointer("BTREE"),
@@ -1259,7 +1241,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b": {
-										complete:       true,
 										name:           "b",
 										expressionList: []string{"b"},
 										indextype:      newStringPointer("BTREE"),
@@ -1269,7 +1250,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"idx_a": {
-										complete:       true,
 										name:           "idx_a",
 										expressionList: []string{"a"},
 										indextype:      newStringPointer("BTREE"),
@@ -1279,7 +1259,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b_2": {
-										complete:       true,
 										name:           "b_2",
 										expressionList: []string{"b", "a"},
 										indextype:      newStringPointer("BTREE"),
@@ -1289,7 +1268,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b_3": {
-										complete:       true,
 										name:           "b_3",
 										expressionList: []string{"b", "c", "d"},
 										indextype:      newStringPointer("BTREE"),
@@ -1299,7 +1277,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 										comment:        newEmptyStringPointer(),
 									},
 									"b_4": {
-										complete:       true,
 										name:           "b_4",
 										expressionList: []string{"b", "d"},
 										indextype:      newStringPointer("FULLTEXT"),
@@ -1320,14 +1297,14 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 		{
 			statement: `DROP TABLE t1, t2`,
 			want: &DatabaseState{
-				complete:     false,
+				ctx:          &FinderContext{CheckIntegrity: false},
 				name:         "",
 				characterSet: "",
 				collation:    "",
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						complete:     false,
+						ctx:          &FinderContext{CheckIntegrity: false},
 						name:         "",
 						tableSet:     tableStateMap{},
 						viewSet:      viewStateMap{},
@@ -1339,14 +1316,14 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 		{
 			statement: `INSERT INTO test values (1)`,
 			want: &DatabaseState{
-				complete:     false,
+				ctx:          &FinderContext{CheckIntegrity: false},
 				name:         "",
 				characterSet: "",
 				collation:    "",
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						complete:     false,
+						ctx:          &FinderContext{CheckIntegrity: false},
 						name:         "",
 						tableSet:     tableStateMap{},
 						viewSet:      viewStateMap{},
