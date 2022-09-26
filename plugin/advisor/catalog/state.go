@@ -532,9 +532,7 @@ func copyIntPointer(p *int) *int {
 
 func copyStringSlice(in []string) []string {
 	var res []string
-	for _, v := range in {
-		res = append(res, v)
-	}
+	res = append(res, in...)
 	return res
 }
 
