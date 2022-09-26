@@ -33,13 +33,12 @@
         </template>
         <p class="py-1">
           {{ $t("instance.no-read-only-data-source-warn") }}
-          <NButton
-            class="text-base underline text-accent"
-            text
+          <span
+            class="underline text-accent cursor-pointer hover:opacity-80"
             @click="gotoInstanceDetailPage"
           >
             {{ $t("sql-editor.create-read-only-data-source") }}
-          </NButton>
+          </span>
         </p>
       </NPopover>
 
@@ -216,12 +215,13 @@ const handleExplainQuery = () => {
 };
 
 const gotoInstanceDetailPage = () => {
-  router.push({
+  const route = router.resolve({
     name: "workspace.instance.detail",
     params: {
       instanceSlug: instanceSlug(selectedInstance.value),
     },
   });
+  window.open(route.href);
 };
 
 const handleFormatSQL = () => {
