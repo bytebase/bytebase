@@ -209,7 +209,10 @@
     "show-help": "Show help",
     "success": "Succeed",
     "load-more": "Load more",
-    "access-denied": "Access denied"
+    "access-denied": "Access denied",
+    "no": "No",
+    "yes": "Yes",
+    "advanced": "Advanced"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -247,7 +250,8 @@
       "sql-review": "SQL review",
       "earliest-allowed-time": "Earliest allowed time",
       "ghost-sync": "gh-ost sync",
-      "statement-type": "Statement type"
+      "statement-type": "Statement type",
+      "lgtm": "LGTM"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
@@ -670,7 +674,11 @@
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
-    "protected": "Protected"
+    "protected": "Protected",
+    "disable-auto-backup": {
+      "self": "Disable database automatic backup",
+      "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
+    }
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",
@@ -895,12 +903,13 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Synchronize Schema",
-      "description": "Synchronize schema from the base database to the target database with the selected migration version.",
+      "description": "Synchronize schema from the base database to target database with selected migration version.",
       "base-database": "Base database",
       "target-database": "Target database",
-      "synchronize-statements": "The statements to synchronize",
+      "synchronize-statements": "The SQL statements to synchronize",
       "schema-comparison-result": "The schema comparison result",
-      "no-different-tip": "There is no different between these base and target database schemas."
+      "select-base-and-target-database-tip": "Please select the base and target database firstly",
+      "no-difference-tip": "There is no different between these base and target database schemas."
     }
   },
   "repository": {
@@ -1087,7 +1096,13 @@
       "tenant": "Tenant"
     },
     "db-name-template": "@:common.database @:common.name @:common.template",
-    "select": "Select project"
+    "select": "Select project",
+    "lgtm-check": {
+      "self": "LGTM check",
+      "disabled": "Skip LGTM check",
+      "project-member": "Require LGTM from project members",
+      "project-owner": "Require LGTM from project owner"
+    }
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -1359,6 +1374,10 @@
       "bb-feature-environment-tier-policy": {
         "title": "Environment tier",
         "desc": "Mark environment as protected."
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM check",
+        "desc": "Check if the issue has an \"LGTM\" comment."
       },
       "bb-feature-sql-review": {
         "title": "SQL review policy",

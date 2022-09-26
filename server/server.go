@@ -272,6 +272,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		checkLGTMExecutor := NewTaskCheckLGTMExecutor()
 		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
 
+		pitrMySQLExecutor := NewTaskCheckPITRMySQLExecutor()
+		taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
+
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer
@@ -465,6 +468,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 	if !s.profile.Readonly {
+		if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
+			return errors.Wrap(err, "failed to clear existing RUNNING tasks before start the task scheduler")
+		}
 		// runnerWG waits for all goroutines to complete.
 		s.runnerWG.Add(1)
 		go s.TaskScheduler.Run(ctx, &s.runnerWG)

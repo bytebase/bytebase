@@ -412,6 +412,10 @@ func dedupMigrationFilesFromCommitList(commitList []vcs.Commit) []distinctFileIt
 				// For the migration file with the same name, keep the one from the latest commit
 				if item.fileName == file.fileName {
 					if file.createdTs < commit.CreatedTs {
+						// A file can be added and then modified in a later commit. We should consider the item as added.
+						if file.itemType == fileItemTypeAdded {
+							item.itemType = fileItemTypeAdded
+						}
 						distinctFileList[i] = item
 					}
 					return
@@ -899,19 +903,6 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	return fmt.Sprintf("Created issue %q by %s", issue.Name, commitsMsg), true, activityCreateList, nil
 }
 
-func getCommitsMessage(commitList []vcs.Commit) string {
-	switch len(commitList) {
-	case 0:
-		return ""
-	case 1:
-		return fmt.Sprintf("commit %s", commitList[0].ID[:7])
-	default:
-		firstCommit := commitList[0]
-		lastCommit := commitList[len(commitList)-1]
-		return fmt.Sprintf("commits %s...%s", firstCommit.ID[:7], lastCommit.ID[:7])
-	}
-}
-
 func sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []distinctFileItem) ([]distinctFileItem, []*db.MigrationInfo, error) {
 	type sortItem struct {
 		file distinctFileItem
@@ -943,6 +934,19 @@ func sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []di
 	}
 
 	return fileListSorted, miListSorted, nil
+}
+
+func getCommitsMessage(commitList []vcs.Commit) string {
+	switch len(commitList) {
+	case 0:
+		return ""
+	case 1:
+		return fmt.Sprintf("commit %s", commitList[0].ID)
+	default:
+		firstCommit := commitList[0]
+		lastCommit := commitList[len(commitList)-1]
+		return fmt.Sprintf("commits %s...%s", firstCommit.ID, lastCommit.ID)
+	}
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract

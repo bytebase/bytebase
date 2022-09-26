@@ -7,7 +7,7 @@
   "sensitive-placeholder": "粘贴您的证书 - 仅写入",
   "plan-compare": "比较不同版本的功能，寻找适合您的方案",
   "disabled-feature": "这是一个订阅版高级功能",
-  "trial": "您可以免费试用 14 天",
+  "trial": "您可以免费试用 14 天（{plan}）",
   "upgrade": "升级订阅",
   "per-month": "/ 月",
   "price-unit-for-enterprise": "/ 月起",

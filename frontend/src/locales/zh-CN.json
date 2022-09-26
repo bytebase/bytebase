@@ -209,7 +209,10 @@
     "show-help": "查看帮助",
     "success": "成功",
     "load-more": "加载更多",
-    "access-denied": "拒绝访问"
+    "access-denied": "拒绝访问",
+    "no": "否",
+    "yes": "是",
+    "advanced": "高级"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -247,7 +250,8 @@
       "sql-review": "SQL 审查",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
-      "statement-type": "语句类型"
+      "statement-type": "语句类型",
+      "lgtm": "LGTM"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
     "comment": "评论",
@@ -670,7 +674,11 @@
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{0}'更新成功",
-    "protected": "受保护的"
+    "protected": "受保护的",
+    "disable-auto-backup": {
+      "self": "禁用数据库自动备份",
+      "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
+    }
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",
@@ -896,11 +904,12 @@
     "sync-schema": {
       "title": "库表同步",
       "description": "将选定的源数据库 Schema 版本同步到目标数据库。",
-      "base-database": "来源库",
-      "target-database": "目标库",
+      "base-database": "源数据库",
+      "target-database": "目标数据库",
       "synchronize-statements": "生成的 Schema DDL 语句",
       "schema-comparison-result": "Schema 比较结果",
-      "no-different-tip": "源数据库与目标数据库之间之间没有 Schema 区别。"
+      "select-base-and-target-database-tip": "请先选择源数据库和目标数据库",
+      "no-difference-tip": "源数据库与目标数据库之间之间没有 Schema 区别。"
     }
   },
   "repository": {
@@ -1087,7 +1096,13 @@
       "tenant": "多租户"
     },
     "db-name-template": "数据库名称模板",
-    "select": "选择项目"
+    "select": "选择项目",
+    "lgtm-check": {
+      "self": "LGTM 检查",
+      "disabled": "跳过 LGTM 检查",
+      "project-member": "需要来自项目成员的 LGTM",
+      "project-owner": "需要来自项目所有者的 LGTM"
+    }
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
@@ -1359,6 +1374,10 @@
       "bb-feature-environment-tier-policy": {
         "title": "环境级别",
         "desc": "「环境级别」可以将环境标记为受保护的"
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM 检查",
+        "desc": "检查工单是否有 \"LGTM\" 评论。"
       },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",

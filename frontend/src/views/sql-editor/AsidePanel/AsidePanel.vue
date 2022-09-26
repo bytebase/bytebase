@@ -9,10 +9,7 @@
           @resized="handleResized"
         >
           <Pane :size="databasePaneSize"><DatabaseTree /></Pane>
-          <Pane
-            :size="FULL_HEIGHT - databasePaneSize"
-            :max-size="TABLE_SCHEMA_PANE_SIZE"
-          >
+          <Pane :size="FULL_HEIGHT - databasePaneSize">
             <TableSchema @close-pane="handleCloseTableSchemaPane" />
           </Pane>
         </Splitpanes>
@@ -34,7 +31,6 @@ import { Splitpanes, Pane } from "splitpanes";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
-const TABLE_SCHEMA_PANE_SIZE = FULL_HEIGHT - DATABASE_PANE_SIZE;
 
 const sqlEditorStore = useSQLEditorStore();
 const databasePaneSize = ref(FULL_HEIGHT);

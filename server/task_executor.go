@@ -277,6 +277,18 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		}
 	}
 
+	// Remove schema drift anomalies.
+	if err := server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+		DatabaseID: task.DatabaseID,
+		Type:       api.AnomalyDatabaseSchemaDrift,
+	}); err != nil && common.ErrorCode(err) != common.NotFound {
+		log.Error("Failed to archive anomaly",
+			zap.String("instance", task.Instance.Name),
+			zap.String("database", task.Database.Name),
+			zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+			zap.Error(err))
+	}
+
 	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, databaseName)
 	if mi.Type == db.Baseline {
 		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version, databaseName)

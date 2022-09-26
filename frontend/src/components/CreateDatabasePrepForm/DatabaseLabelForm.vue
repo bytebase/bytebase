@@ -2,7 +2,7 @@
   <div
     v-for="item in filteredFormItemList"
     :key="item.label.key"
-    class="col-span-2 col-start-2 w-64"
+    class="w-full"
   >
     <div class="flex flex-row items-center space-x-1">
       <label for="instance" class="textlabel capitalize">
