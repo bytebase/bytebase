@@ -888,11 +888,11 @@ func getCommitsMessage(commitList []vcs.Commit) string {
 	case 0:
 		return ""
 	case 1:
-		return fmt.Sprintf("commit %s", commitList[0].ID[:7])
+		return fmt.Sprintf("commit %s", commitList[0].ID)
 	default:
 		firstCommit := commitList[0]
 		lastCommit := commitList[len(commitList)-1]
-		return fmt.Sprintf("commits %s...%s", firstCommit.ID[:7], lastCommit.ID[:7])
+		return fmt.Sprintf("commits %s...%s", firstCommit.ID, lastCommit.ID)
 	}
 }
 
