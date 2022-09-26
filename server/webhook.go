@@ -558,7 +558,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 		return nil, nil
 	}
 
-	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
+	statement, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -571,31 +571,32 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				DatabaseName: dbName,
-				Statement:    content,
+				Statement:    statement,
 			},
 		)
-	} else {
-		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+		return migrationDetailList, nil
+	}
+
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+	if err != nil {
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+		return nil, []*api.ActivityCreate{activityCreate}
+	}
+
+	for _, database := range databases {
+		diff, err := s.computeDatabaseSchemaDiff(ctx, database, statement)
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
-			return nil, []*api.ActivityCreate{activityCreate}
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
+			activityCreateList = append(activityCreateList, activityCreate)
+			continue
 		}
 
-		for _, database := range databases {
-			diff, err := s.computeDatabaseSchemaDiff(ctx, database, content)
-			if err != nil {
-				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
-				activityCreateList = append(activityCreateList, activityCreate)
-				continue
-			}
-
-			migrationDetailList = append(migrationDetailList,
-				&api.MigrationDetail{
-					DatabaseID: database.ID,
-					Statement:  diff,
-				},
-			)
-		}
+		migrationDetailList = append(migrationDetailList,
+			&api.MigrationDetail{
+				DatabaseID: database.ID,
+				Statement:  diff,
+			},
+		)
 	}
 
 	return migrationDetailList, activityCreateList
