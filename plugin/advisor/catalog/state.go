@@ -10,7 +10,7 @@ import (
 
 func newDatabaseState(d *Database, context *FinderContext) *DatabaseState {
 	database := &DatabaseState{
-		complete:     context.Complete,
+		complete:     context.CheckIntegrity,
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,

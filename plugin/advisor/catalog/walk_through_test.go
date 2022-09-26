@@ -946,14 +946,14 @@ func TestWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		state := newDatabaseState(test.origin, &FinderContext{Complete: true})
+		state := newDatabaseState(test.origin, &FinderContext{CheckIntegrity: true})
 		err := state.WalkThrough(test.statement)
 		if test.err != nil {
 			require.Equal(t, err, test.err)
 			continue
 		}
 		require.NoError(t, err)
-		want := newDatabaseState(test.want, &FinderContext{Complete: true})
+		want := newDatabaseState(test.want, &FinderContext{CheckIntegrity: true})
 		require.Equal(t, want, state, test.statement)
 	}
 }
@@ -1357,7 +1357,7 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		finder := NewEmptyFinder(&FinderContext{Complete: false}, db.MySQL)
+		finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false}, db.MySQL)
 		err := finder.WalkThrough(test.statement)
 		if test.err != nil {
 			require.Equal(t, err, test.err)

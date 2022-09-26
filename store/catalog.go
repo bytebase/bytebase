@@ -51,7 +51,7 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Ty
 		return nil, err
 	}
 	c := &Catalog{Database: databaseData}
-	c.Finder = catalog.NewFinder(c.Database, &catalog.FinderContext{Complete: true})
+	c.Finder = catalog.NewFinder(c.Database, &catalog.FinderContext{CheckIntegrity: true})
 	return c, nil
 }
 
