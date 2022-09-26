@@ -73,7 +73,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		filteredRepos = filterReposGitLab(c.Request().Header, filteredRepos)
 		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Skip this push event.")
+			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
@@ -82,6 +82,15 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
+		if len(commitList) == 0 {
+			log.Debug("No commit in the GitLab push event. Ignore this push event.",
+				zap.String("repoURL", common.EscapeForLogging(pushEvent.Project.WebURL)),
+				zap.String("repoName", pushEvent.Project.FullPath),
+				zap.String("commits", getCommitsMessage(commitList)))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
+		baseVCSPushEvent.CommitList = commitList
 		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
@@ -137,12 +146,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return httpErr
 		}
 		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Skip this push event.")
+			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
 		commitList := convertGitHubCommitList(pushEvent.Commits)
+		if len(pushEvent.Commits) == 0 {
+			log.Debug("No commit in the GitHub push event. Ignore this push event.",
+				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
+				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
+				zap.String("commits", getCommitsMessage(commitList)))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
+		baseVCSPushEvent.CommitList = commitList
 		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
 		if httpErr != nil {
 			return httpErr
@@ -153,6 +171,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
 	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
+	if len(distinctFileList) == 0 {
+		log.Warn("No files found from the push event",
+			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
+			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			zap.String("commits", getCommitsMessage(commitList)))
+		return nil, nil
+	}
 	var createdMessages []string
 	for _, item := range distinctFileList {
 		var createdMessageList []string
@@ -831,8 +856,8 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
 	}
 
-	// Create a project activity after successfully creating the issue as the result of the push event
-	payload, err := json.Marshal(
+	// Create a project activity after successfully creating the issue from the push event.
+	activityPayload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: *pushEvent,
 			IssueID:      issue.ID,
@@ -849,13 +874,21 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		Type:        api.ActivityProjectRepositoryPush,
 		Level:       api.ActivityInfo,
 		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
-		Payload:     string(payload),
+		Payload:     string(activityPayload),
 	}
 	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
 	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, activityCreateList, nil
+}
+
+func getCommitsMessage(commitList []vcs.Commit) string {
+	var commitIDs []string
+	for _, c := range commitList {
+		commitIDs = append(commitIDs, c.ID)
+	}
+	return strings.Join(commitIDs, ", ")
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract
