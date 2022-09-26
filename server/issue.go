@@ -837,9 +837,9 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
 	switch migrationType {
 	case db.Migrate:
-		taskName = fmt.Sprintf("Update %q schema", database.Name)
+		taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)
 	case db.Data:
-		taskName = fmt.Sprintf("Update %q data", database.Name)
+		taskName = fmt.Sprintf("DML(data) for %q", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
 	payload.MigrationType = migrationType
