@@ -206,7 +206,7 @@ type WebhookPushEvent struct {
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -272,7 +272,7 @@ type FileCommit struct {
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -389,7 +389,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 // indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, page int) (collaborators []RepositoryCollaborator, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, page, apiPageSize)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -535,7 +535,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -586,7 +586,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 // maximum limit and requires making non-recursive request to each sub-tree.
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/trees/%s?recursive=true", p.APIURL(instanceURL), repositoryID, ref)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -658,7 +658,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	}
 
 	url := fmt.Sprintf("%s/repos/%s/contents/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
-	code, _, err := oauth.Put(
+	code, _, _, err := oauth.Put(
 		ctx,
 		p.client,
 		url,
@@ -728,7 +728,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 // readFile reads the given file in the repository.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
 	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), ref)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -784,7 +784,7 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/hooks", p.APIURL(instanceURL), repositoryID)
-	code, body, err := oauth.Post(
+	code, _, body, err := oauth.Post(
 		ctx,
 		p.client,
 		url,
@@ -830,7 +830,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 // Docs: https://docs.github.com/en/rest/webhooks/repos#update-a-repository-webhook
 func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
 	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, body, err := oauth.Patch(
+	code, _, body, err := oauth.Patch(
 		ctx,
 		p.client,
 		url,
@@ -867,7 +867,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 // Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, body, err := oauth.Delete(
+	code, _, body, err := oauth.Delete(
 		ctx,
 		p.client,
 		url,
