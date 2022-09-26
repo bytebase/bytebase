@@ -884,16 +884,11 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 }
 
 func getCommitsMessage(commitList []vcs.Commit) string {
-	switch len(commitList) {
-	case 0:
-		return ""
-	case 1:
-		return fmt.Sprintf("commit %s", commitList[0].ID)
-	default:
-		firstCommit := commitList[0]
-		lastCommit := commitList[len(commitList)-1]
-		return fmt.Sprintf("commits %s...%s", firstCommit.ID, lastCommit.ID)
+	var commitIDs []string
+	for _, c := range commitList {
+		commitIDs = append(commitIDs, c.ID)
 	}
+	return strings.Join(commitIDs, ", ")
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract
