@@ -283,7 +283,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 		UpdaterID:    create.CreatorID,
 		WorkflowType: &workflowType,
 	}
-	if _, err := s.patchProjectRawTx(ctx, tx, &projectPatch, s.db.mode); err != nil {
+	if _, err := s.patchProjectRawTx(ctx, tx, &projectPatch); err != nil {
 		return nil, err
 	}
 
@@ -630,7 +630,7 @@ func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *Tx, delete *api.Re
 		UpdaterID:    delete.DeleterID,
 		WorkflowType: &workflowType,
 	}
-	if _, err := s.patchProjectRawTx(ctx, tx, &projectPatch, s.db.mode); err != nil {
+	if _, err := s.patchProjectRawTx(ctx, tx, &projectPatch); err != nil {
 		return err
 	}
 
