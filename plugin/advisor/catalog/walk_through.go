@@ -342,9 +342,9 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 	for _, option := range node.Options {
 		switch option.Tp {
 		case tidbast.DatabaseOptionCharset:
-			d.characterSet = newStateString(option.Value)
+			d.characterSet = option.Value
 		case tidbast.DatabaseOptionCollate:
-			d.collation = newStateString(option.Value)
+			d.collation = option.Value
 		}
 	}
 	return nil
@@ -425,11 +425,11 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 			for _, option := range spec.Options {
 				switch option.Tp {
 				case tidbast.TableOptionCollate:
-					table.collation = newStateString(option.StrValue)
+					table.collation = copyStringPointer(&option.StrValue)
 				case tidbast.TableOptionComment:
-					table.comment = newStateString(option.StrValue)
+					table.comment = copyStringPointer(&option.StrValue)
 				case tidbast.TableOptionEngine:
-					table.engine = newStateString(option.StrValue)
+					table.engine = copyStringPointer(&option.StrValue)
 				}
 			}
 		case tidbast.AlterTableAddColumns:
@@ -511,9 +511,9 @@ func (t *TableState) changeIndexVisibility(indexName string, visibility tidbast.
 	}
 	switch visibility {
 	case tidbast.IndexVisibilityVisible:
-		index.visible = newStateBool(true)
+		index.visible = newTruePointer()
 	case tidbast.IndexVisibilityInvisible:
-		index.visible = newStateBool(false)
+		index.visible = newFalsePointer()
 	}
 	return nil
 }
@@ -575,10 +575,10 @@ func (t *TableState) changeColumnDefault(column *tidbast.ColumnDef) *WalkThrough
 		if err != nil {
 			return err
 		}
-		colState.defaultValue = newStateStringPointer(&defaultValue)
+		colState.defaultValue = &defaultValue
 	} else {
 		// DROP DEFAULT
-		colState.defaultValue = newStateStringPointer(nil)
+		colState.defaultValue = nil
 	}
 	return nil
 }
@@ -668,11 +668,9 @@ func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
 		return
 	}
 	for _, index := range t.indexSet {
-		if index.expressionList.valid {
-			for i, key := range index.expressionList.value {
-				if key == oldName {
-					index.expressionList.value[i] = newName
-				}
+		for i, key := range index.expressionList {
+			if key == oldName {
+				index.expressionList[i] = newName
 			}
 		}
 	}
@@ -689,18 +687,18 @@ func (t *TableState) completeTableChangeColumn(oldName string, newColumn *tidbas
 		return NewColumnNotExistsError(t.name, oldName)
 	}
 
-	pos := column.position
+	pos := *column.position
 
 	// generate Position struct for creating new column
 	if position == nil {
 		position = &tidbast.ColumnPosition{Tp: tidbast.ColumnPositionNone}
 	}
 	if position.Tp == tidbast.ColumnPositionNone {
-		if pos.value == 1 {
+		if pos == 1 {
 			position.Tp = tidbast.ColumnPositionFirst
 		} else {
 			for _, col := range t.columnSet {
-				if col.position.value == pos.value-1 {
+				if *col.position == pos-1 {
 					position.Tp = tidbast.ColumnPositionAfter
 					position.RelativeColumn = &tidbast.ColumnName{Name: model.NewCIStr(col.name)}
 					break
@@ -711,8 +709,8 @@ func (t *TableState) completeTableChangeColumn(oldName string, newColumn *tidbas
 
 	// drop column from columnSet
 	for _, col := range t.columnSet {
-		if col.position.value > pos.value {
-			col.position.value--
+		if *col.position > pos {
+			*col.position--
 		}
 	}
 	delete(t.columnSet, column.name)
@@ -779,15 +777,15 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 	for _, index := range t.indexSet {
 		index.dropColumn(columnName)
 		// If all columns that make up an index are dropped, the index is dropped as well.
-		if index.expressionList.len() == 0 {
+		if len(index.expressionList) == 0 {
 			delete(t.indexSet, index.name)
 		}
 	}
 
 	// modify the column position
 	for _, col := range t.columnSet {
-		if col.position.value > column.position.value {
-			col.position.value--
+		if *col.position > *column.position {
+			*col.position--
 		}
 	}
 
@@ -798,9 +796,12 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughError {
 	// If columns are dropped from a table, the columns are also removed from any index of which they are a part.
 	for _, index := range t.indexSet {
+		if len(index.expressionList) == 0 {
+			continue
+		}
 		index.dropColumn(columnName)
 		// If all columns that make up an index are dropped, the index is dropped as well.
-		if index.expressionList.valid && index.expressionList.len() == 0 {
+		if len(index.expressionList) == 0 {
 			delete(t.indexSet, index.name)
 		}
 	}
@@ -817,27 +818,27 @@ func (t *TableState) dropColumn(columnName string) *WalkThroughError {
 }
 
 func (idx *IndexState) dropColumn(columnName string) {
-	if !idx.expressionList.valid {
+	if len(idx.expressionList) == 0 {
 		return
 	}
 	var newKeyList []string
-	for _, key := range idx.expressionList.value {
+	for _, key := range idx.expressionList {
 		if key != columnName {
 			newKeyList = append(newKeyList, key)
 		}
 	}
 
-	idx.expressionList = newStateStringSlice(newKeyList)
+	idx.expressionList = newKeyList
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
-func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int64, *WalkThroughError) {
+func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *WalkThroughError) {
 	switch position.Tp {
 	case tidbast.ColumnPositionNone:
-		return int64(len(t.columnSet) + 1), nil
+		return len(t.columnSet) + 1, nil
 	case tidbast.ColumnPositionFirst:
 		for _, column := range t.columnSet {
-			column.position.value++
+			*column.position++
 		}
 		return 1, nil
 	case tidbast.ColumnPositionAfter:
@@ -847,11 +848,11 @@ func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int64, *Wa
 			return 0, NewColumnNotExistsError(t.name, columnName)
 		}
 		for _, col := range t.columnSet {
-			if col.position.value > column.position.value {
-				col.position.value++
+			if *col.position > *column.position {
+				*col.position++
 			}
 		}
-		return column.position.value + 1, nil
+		return *column.position + 1, nil
 	}
 	return 0, &WalkThroughError{
 		Type:    ErrorTypeUnsupported,
@@ -934,10 +935,10 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 	table := &TableState{
 		complete:  true,
 		name:      node.Table.Name.O,
-		tableType: newStateString(""),
-		engine:    newStateString(""),
-		collation: newStateString(""),
-		comment:   newStateString(""),
+		tableType: newEmptyStringPointer(),
+		engine:    newEmptyStringPointer(),
+		collation: newEmptyStringPointer(),
+		comment:   newEmptyStringPointer(),
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
 	}
@@ -1021,9 +1022,9 @@ func (t *TableState) validateAndGetKeyStringList(keyList []*tidbast.IndexPartSpe
 				}
 			} else {
 				if primary {
-					column.nullable = newStateBool(false)
+					column.nullable = newFalsePointer()
 				}
-				if isSpatial && column.nullable.valid && column.nullable.value {
+				if isSpatial && column.nullable != nil && *column.nullable {
 					return nil, &WalkThroughError{
 						Type: ErrorTypeSpatialIndexKeyNullable,
 						// The error content comes from MySQL.
@@ -1046,7 +1047,7 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 		}
 	}
 
-	pos := int64(len(t.columnSet) + 1)
+	pos := len(t.columnSet) + 1
 	if position != nil && t.complete {
 		var err *WalkThroughError
 		pos, err = t.reorderColumn(position)
@@ -1055,27 +1056,28 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 		}
 	}
 
+	vTrue := true
 	col := &ColumnState{
 		complete:     true,
 		name:         column.Name.Name.O,
-		position:     newStateInt(pos),
-		defaultValue: newStateStringPointer(nil),
-		nullable:     newStateBool(true),
-		columnType:   newStateString(column.Tp.CompactStr()),
-		characterSet: newStateString(column.Tp.GetCharset()),
-		collation:    newStateString(column.Tp.GetCollate()),
-		comment:      newStateString(""),
+		position:     copyIntPointer(&pos),
+		defaultValue: nil,
+		nullable:     &vTrue,
+		columnType:   newStringPointer(column.Tp.CompactStr()),
+		characterSet: newStringPointer(column.Tp.GetCharset()),
+		collation:    newStringPointer(column.Tp.GetCollate()),
+		comment:      newEmptyStringPointer(),
 	}
 
 	for _, option := range column.Options {
 		switch option.Tp {
 		case tidbast.ColumnOptionPrimaryKey:
-			col.nullable = newStateBool(false)
+			col.nullable = newFalsePointer()
 			if err := t.createPrimaryKey([]string{col.name}, model.IndexTypeBtree.String()); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNotNull:
-			col.nullable = newStateBool(false)
+			col.nullable = newFalsePointer()
 		case tidbast.ColumnOptionAutoIncrement:
 			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
@@ -1083,13 +1085,13 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 			if err != nil {
 				return err
 			}
-			col.defaultValue = newStateStringPointer(&defaultValue)
+			col.defaultValue = &defaultValue
 		case tidbast.ColumnOptionUniqKey:
 			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
 				return err
 			}
 		case tidbast.ColumnOptionNull:
-			col.nullable = newStateBool(true)
+			col.nullable = newTruePointer()
 		case tidbast.ColumnOptionOnUpdate:
 			// we do not deal with ON UPDATE
 		case tidbast.ColumnOptionComment:
@@ -1097,14 +1099,14 @@ func (t *TableState) createColumn(column *tidbast.ColumnDef, position *tidbast.C
 			if err != nil {
 				return err
 			}
-			col.comment = newStateString(comment)
+			col.comment = &comment
 		case tidbast.ColumnOptionGenerated:
 			// we do not deal with GENERATED ALWAYS AS
 		case tidbast.ColumnOptionReference:
 			// MySQL will ignore the inline REFERENCE
 			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 		case tidbast.ColumnOptionCollate:
-			col.collation = newStateString(option.StrValue)
+			col.collation = copyStringPointer(&option.StrValue)
 		case tidbast.ColumnOptionCheck:
 			// we do not deal with CHECK constraint
 		case tidbast.ColumnOptionColumnFormat:
@@ -1148,16 +1150,16 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 	index := &IndexState{
 		complete:       true,
 		name:           name,
-		expressionList: newStateStringSlice(keyList),
-		indextype:      newStateString(tp),
-		unique:         newStateBool(unique),
-		primary:        newStateBool(false),
-		visible:        newStateBool(true),
-		comment:        newStateString(""),
+		expressionList: keyList,
+		indextype:      copyStringPointer(&tp),
+		unique:         copyBoolPointer(&unique),
+		primary:        newFalsePointer(),
+		visible:        newTruePointer(),
+		comment:        newEmptyStringPointer(),
 	}
 
 	if option != nil && option.Visibility == tidbast.IndexVisibilityInvisible {
-		index.visible = newStateBool(false)
+		index.visible = newFalsePointer()
 	}
 
 	t.indexSet[name] = index
@@ -1175,12 +1177,12 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 	pk := &IndexState{
 		complete:       true,
 		name:           PrimaryKeyName,
-		expressionList: newStateStringSlice(keys),
-		indextype:      newStateString(tp),
-		unique:         newStateBool(true),
-		primary:        newStateBool(true),
-		visible:        newStateBool(true),
-		comment:        newStateString(""),
+		expressionList: keys,
+		indextype:      &tp,
+		unique:         newTruePointer(),
+		primary:        newTruePointer(),
+		visible:        newTruePointer(),
+		comment:        newEmptyStringPointer(),
 	}
 	t.indexSet[pk.name] = pk
 	return nil
@@ -1205,7 +1207,7 @@ func (d *DatabaseState) parse(stmts string) ([]tidbast.StmtNode, *WalkThroughErr
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	nodeList, _, err := p.Parse(stmts, d.characterSet.value, d.collation.value)
+	nodeList, _, err := p.Parse(stmts, d.characterSet, d.collation)
 	if err != nil {
 		return nil, NewParseError(err.Error())
 	}

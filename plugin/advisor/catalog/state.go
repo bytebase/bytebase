@@ -12,8 +12,8 @@ func newDatabaseState(d *Database, context *FinderContext) *DatabaseState {
 	database := &DatabaseState{
 		complete:     context.Complete,
 		name:         d.Name,
-		characterSet: newStateString(d.CharacterSet),
-		collation:    newStateString(d.Collation),
+		characterSet: d.CharacterSet,
+		collation:    d.Collation,
 		dbType:       d.DbType,
 		schemaSet:    make(schemaStateMap),
 	}
@@ -52,16 +52,16 @@ func newSchemaState(s *Schema, complete bool) *SchemaState {
 func newViewState(v *View) *ViewState {
 	return &ViewState{
 		name:       v.Name,
-		definition: newStateString(v.Definition),
-		comment:    newStateString(v.Comment),
+		definition: copyStringPointer(&v.Definition),
+		comment:    copyStringPointer(&v.Comment),
 	}
 }
 
 func newExtensionState(e *Extension) *ExtensionState {
 	return &ExtensionState{
 		name:        e.Name,
-		version:     newStateString(e.Version),
-		description: newStateString(e.Description),
+		version:     copyStringPointer(&e.Version),
+		description: copyStringPointer(&e.Description),
 	}
 }
 
@@ -69,10 +69,10 @@ func newTableState(t *Table) *TableState {
 	table := &TableState{
 		complete:  true,
 		name:      t.Name,
-		tableType: newStateString(t.Type),
-		engine:    newStateString(t.Engine),
-		collation: newStateString(t.Collation),
-		comment:   newStateString(t.Comment),
+		tableType: copyStringPointer(&t.Type),
+		engine:    copyStringPointer(&t.Engine),
+		collation: copyStringPointer(&t.Collation),
+		comment:   copyStringPointer(&t.Comment),
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
 	}
@@ -92,13 +92,13 @@ func newColumnState(c *Column) *ColumnState {
 	return &ColumnState{
 		complete:     true,
 		name:         c.Name,
-		position:     newStateInt(int64(c.Position)),
-		defaultValue: newStateStringPointer(c.Default),
-		nullable:     newStateBool(c.Nullable),
-		columnType:   newStateString(c.Type),
-		characterSet: newStateString(c.CharacterSet),
-		collation:    newStateString(c.Collation),
-		comment:      newStateString(c.Comment),
+		position:     copyIntPointer(&c.Position),
+		defaultValue: copyStringPointer(c.Default),
+		nullable:     copyBoolPointer(&c.Nullable),
+		columnType:   copyStringPointer(&c.Type),
+		characterSet: copyStringPointer(&c.CharacterSet),
+		collation:    copyStringPointer(&c.Collation),
+		comment:      copyStringPointer(&c.Comment),
 	}
 }
 
@@ -106,12 +106,12 @@ func newIndexState(i *Index) *IndexState {
 	index := &IndexState{
 		complete:       true,
 		name:           i.Name,
-		indextype:      newStateString(i.Type),
-		unique:         newStateBool(i.Unique),
-		primary:        newStateBool(i.Primary),
-		visible:        newStateBool(i.Visible),
-		comment:        newStateString(i.Comment),
-		expressionList: newStateStringSlice(i.ExpressionList),
+		indextype:      copyStringPointer(&i.Type),
+		unique:         copyBoolPointer(&i.Unique),
+		primary:        copyBoolPointer(&i.Primary),
+		visible:        copyBoolPointer(&i.Visible),
+		comment:        copyStringPointer(&i.Comment),
+		expressionList: copyStringSlice(i.ExpressionList),
 	}
 	return index
 }
@@ -120,8 +120,8 @@ func newIndexState(i *Index) *IndexState {
 type DatabaseState struct {
 	complete     bool
 	name         string
-	characterSet stateString
-	collation    stateString
+	characterSet string
+	collation    string
 	dbType       db.Type
 	schemaSet    schemaStateMap
 	deleted      bool
@@ -207,7 +207,7 @@ func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 				continue
 			}
 			for _, index := range table.indexSet {
-				if index.primary.isTrue() {
+				if index.primary != nil && *index.primary {
 					return index
 				}
 			}
@@ -305,13 +305,13 @@ type TableState struct {
 	complete bool
 
 	name      string
-	tableType stateString
+	tableType *string
 	// engine isn't supported for Postgres, Snowflake, SQLite.
-	engine stateString
+	engine *string
 	// collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	collation stateString
+	collation *string
 	// comment isn't supported for SQLite.
-	comment   stateString
+	comment   *string
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
@@ -321,10 +321,10 @@ func (table *TableState) copy() *TableState {
 	return &TableState{
 		complete:  table.complete,
 		name:      table.name,
-		tableType: table.tableType,
-		engine:    table.engine,
-		collation: table.collation,
-		comment:   table.comment,
+		tableType: copyStringPointer(table.tableType),
+		engine:    copyStringPointer(table.engine),
+		collation: copyStringPointer(table.collation),
+		comment:   copyStringPointer(table.comment),
 		columnSet: table.columnSet.copy(),
 		indexSet:  table.indexSet.copy(),
 	}
@@ -346,46 +346,49 @@ type IndexState struct {
 
 	name string
 	// This could refer to a column or an expression.
-	expressionList stateStringSlice
+	expressionList []string
 	// Type isn't supported for SQLite.
-	indextype stateString
-	unique    stateBool
-	primary   stateBool
+	indextype *string
+	unique    *bool
+	primary   *bool
 	// Visible isn't supported for Postgres, SQLite.
-	visible stateBool
+	visible *bool
 	// Comment isn't supported for SQLite.
-	comment stateString
+	comment *string
 }
 
 func (idx *IndexState) copy() *IndexState {
 	return &IndexState{
 		complete:       idx.complete,
 		name:           idx.name,
-		expressionList: idx.expressionList.copy(),
-		indextype:      idx.indextype,
-		unique:         idx.unique,
-		primary:        idx.primary,
-		visible:        idx.visible,
-		comment:        idx.comment,
+		expressionList: copyStringSlice(idx.expressionList),
+		indextype:      copyStringPointer(idx.indextype),
+		unique:         copyBoolPointer(idx.unique),
+		primary:        copyBoolPointer(idx.primary),
+		visible:        copyBoolPointer(idx.visible),
+		comment:        copyStringPointer(idx.comment),
 	}
 }
 
 // Unique returns the unique for the index.
 func (idx *IndexState) Unique() bool {
-	return idx.unique.isTrue()
+	if idx.unique != nil {
+		return *idx.unique
+	}
+	return false
 }
 
 // Primary returns the priamry for the index.
 func (idx *IndexState) Primary() bool {
-	return idx.primary.isTrue()
+	if idx.primary != nil {
+		return *idx.primary
+	}
+	return false
 }
 
 // ExpressionList returns the expression list for the index.
 func (idx *IndexState) ExpressionList() []string {
-	if idx.expressionList.valid {
-		return idx.expressionList.value
-	}
-	return nil
+	return idx.expressionList
 }
 
 type indexStateMap map[string]*IndexState
@@ -403,41 +406,44 @@ type ColumnState struct {
 	complete bool
 
 	name         string
-	position     stateInt
-	defaultValue stateStringPointer
+	position     *int
+	defaultValue *string
 	// nullable isn't supported for ClickHouse.
-	nullable   stateBool
-	columnType stateString
+	nullable   *bool
+	columnType *string
 	// characterSet isn't supported for Postgres, ClickHouse, SQLite.
-	characterSet stateString
+	characterSet *string
 	// collation isn't supported for ClickHouse, SQLite.
-	collation stateString
+	collation *string
 	// comment isn't supported for SQLite.
-	comment stateString
+	comment *string
 }
 
 func (col *ColumnState) copy() *ColumnState {
 	return &ColumnState{
 		complete:     col.complete,
 		name:         col.name,
-		position:     col.position,
-		defaultValue: col.defaultValue.copy(),
-		nullable:     col.nullable,
-		columnType:   col.columnType,
-		characterSet: col.characterSet,
-		collation:    col.collation,
-		comment:      col.comment,
+		position:     copyIntPointer(col.position),
+		defaultValue: copyStringPointer(col.defaultValue),
+		nullable:     copyBoolPointer(col.nullable),
+		columnType:   copyStringPointer(col.columnType),
+		characterSet: copyStringPointer(col.characterSet),
+		collation:    copyStringPointer(col.collation),
+		comment:      copyStringPointer(col.comment),
 	}
 }
 
 // Nullable returns nullable for the column.
 func (col *ColumnState) Nullable() bool {
-	return col.nullable.valid && col.nullable.value
+	return col.nullable != nil && *col.nullable
 }
 
 // Type returns type for the column.
 func (col *ColumnState) Type() string {
-	return col.columnType.String()
+	if col.columnType != nil {
+		return *col.columnType
+	}
+	return ""
 }
 
 type columnStateMap map[string]*ColumnState
@@ -453,15 +459,15 @@ func (m columnStateMap) copy() columnStateMap {
 // ViewState is the state for walk-through.
 type ViewState struct {
 	name       string
-	definition stateString
-	comment    stateString
+	definition *string
+	comment    *string
 }
 
 func (view *ViewState) copy() *ViewState {
 	return &ViewState{
 		name:       view.name,
-		definition: view.definition,
-		comment:    view.comment,
+		definition: copyStringPointer(view.definition),
+		comment:    copyStringPointer(view.comment),
 	}
 }
 
@@ -478,15 +484,15 @@ func (m viewStateMap) copy() viewStateMap {
 // ExtensionState is the state for walk-through.
 type ExtensionState struct {
 	name        string
-	version     stateString
-	description stateString
+	version     *string
+	description *string
 }
 
 func (extension *ExtensionState) copy() *ExtensionState {
 	return &ExtensionState{
 		name:        extension.name,
-		version:     extension.version,
-		description: extension.description,
+		version:     copyStringPointer(extension.version),
+		description: copyStringPointer(extension.description),
 	}
 }
 
@@ -498,4 +504,59 @@ func (m extensionStateMap) copy() extensionStateMap {
 		res[k] = v.copy()
 	}
 	return res
+}
+
+func copyStringPointer(p *string) *string {
+	if p != nil {
+		v := *p
+		return &v
+	}
+	return nil
+}
+
+func copyBoolPointer(p *bool) *bool {
+	if p != nil {
+		v := *p
+		return &v
+	}
+	return nil
+}
+
+func copyIntPointer(p *int) *int {
+	if p != nil {
+		v := *p
+		return &v
+	}
+	return nil
+}
+
+func copyStringSlice(in []string) []string {
+	var res []string
+	for _, v := range in {
+		res = append(res, v)
+	}
+	return res
+}
+
+func newEmptyStringPointer() *string {
+	res := ""
+	return &res
+}
+
+func newStringPointer(v string) *string {
+	return &v
+}
+
+func newIntPointer(v int) *int {
+	return &v
+}
+
+func newTruePointer() *bool {
+	v := true
+	return &v
+}
+
+func newFalsePointer() *bool {
+	v := false
+	return &v
 }
