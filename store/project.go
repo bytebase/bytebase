@@ -110,7 +110,7 @@ func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*
 
 // PatchProject patches an instance of Project.
 func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
-	projectRaw, err := s.patchProjectRaw(ctx, patch, s.db.mode)
+	projectRaw, err := s.patchProjectRaw(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Project with ProjectPatch %#v", patch)
 	}
@@ -191,7 +191,7 @@ func (s *Store) createProjectRaw(ctx context.Context, create *api.ProjectCreate)
 	}
 	defer tx.Rollback()
 
-	projectRaw, err := createProjectImpl(ctx, tx, create, s.db.mode)
+	projectRaw, err := createProjectImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *Store) findProjectRaw(ctx context.Context, find *api.ProjectFind) ([]*p
 	}
 	defer tx.Rollback()
 
-	list, err := findProjectImpl(ctx, tx, find, s.db.mode)
+	list, err := findProjectImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 	}
 	defer tx.Rollback()
 
-	list, err := findProjectImpl(ctx, tx, find, s.db.mode)
+	list, err := findProjectImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -269,14 +269,14 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 
 // patchProjectRaw updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
+func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*projectRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	project, err := patchProjectImpl(ctx, tx, patch, mode)
+	project, err := patchProjectImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -294,8 +294,8 @@ func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch, mo
 
 // patchProjectRawTx updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
-func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
-	project, err := patchProjectImpl(ctx, tx, patch, mode)
+func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*projectRaw, error) {
+	project, err := patchProjectImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -308,7 +308,7 @@ func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.Projec
 }
 
 // createProjectImpl creates a new project.
-func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate, mode common.ReleaseMode) (*projectRaw, error) {
+func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*projectRaw, error) {
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
@@ -368,7 +368,7 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate, m
 	return &project, nil
 }
 
-func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind, mode common.ReleaseMode) ([]*projectRaw, error) {
+func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*projectRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -440,7 +440,7 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind, mode co
 }
 
 // patchProjectImpl updates a project by ID. Returns the new state of the project after update.
-func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch, mode common.ReleaseMode) (*projectRaw, error) {
+func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*projectRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
