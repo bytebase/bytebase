@@ -38,6 +38,7 @@
           >
 
           <router-link
+            v-if="shouldShowInstanceEntry"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
             :class="getRouteLinkClass('/instance')"
@@ -156,6 +157,7 @@ import {
   useSettingStore,
   useSubscriptionStore,
   useInboxStore,
+  hasFeature,
 } from "@/store";
 import { storeToRefs } from "pinia";
 
@@ -195,6 +197,14 @@ export default defineComponent({
 
     const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
+    });
+
+    const shouldShowInstanceEntry = computed(() => {
+      // In enterprise version, we don't allow developers to view instance.
+      return (
+        !hasFeature("bb.feature.dba-workflow") ||
+        isDBAOrOwner(currentUser.value.role)
+      );
     });
 
     const isDevFeatures = computed((): boolean => {
@@ -307,6 +317,7 @@ export default defineComponent({
     return {
       state,
       getRouteLinkClass,
+      shouldShowInstanceEntry,
       logoUrl,
       currentUser,
       currentPlan,
