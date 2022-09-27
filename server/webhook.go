@@ -810,12 +810,14 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			migrationType = db.Migrate
 		}
 
+		// State based migration.
 		for i, file := range schemaFileList {
 			_, migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfoListForSDL[i], file.fileName, webhookEndpointID)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 		}
 
+		// For non-schema files, we execute those DATA migration ones.
 		fileListSorted, migrationInfoList, err := sortFilesBySchemaVersionGroupByDatabase(repo, nonSchemaFileList)
 		if err != nil {
 			return "", false, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sort files by schema version group by database").SetInternal(err)
