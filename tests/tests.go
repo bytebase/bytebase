@@ -1297,7 +1297,7 @@ func (ctl *controller) listBackups(databaseID int) ([]*api.Backup, error) {
 }
 
 // waitBackup waits for a backup to be done.
-func (ctl *controller) waitBackup(databaseID, backupID int, condition func(*api.Backup) bool) error {
+func (ctl *controller) waitBackup(databaseID, backupID int, shouldWait func(*api.Backup) bool) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -1317,8 +1317,8 @@ func (ctl *controller) waitBackup(databaseID, backupID int, condition func(*api.
 		if backup == nil {
 			return errors.Errorf("backup %v for database %v not found", backupID, databaseID)
 		}
-		if condition != nil {
-			if condition(backup) {
+		if shouldWait != nil {
+			if shouldWait(backup) {
 				return nil
 			}
 		} else {
