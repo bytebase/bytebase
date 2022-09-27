@@ -425,11 +425,11 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 			for _, option := range spec.Options {
 				switch option.Tp {
 				case tidbast.TableOptionCollate:
-					table.collation = &option.StrValue
+					table.collation = newStringPointer(option.StrValue)
 				case tidbast.TableOptionComment:
-					table.comment = &option.StrValue
+					table.comment = newStringPointer(option.StrValue)
 				case tidbast.TableOptionEngine:
-					table.engine = &option.StrValue
+					table.engine = newStringPointer(option.StrValue)
 				}
 			}
 		case tidbast.AlterTableAddColumns:
@@ -1101,7 +1101,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			// MySQL will ignore the inline REFERENCE
 			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 		case tidbast.ColumnOptionCollate:
-			col.collation = &option.StrValue
+			col.collation = newStringPointer(option.StrValue)
 		case tidbast.ColumnOptionCheck:
 			// we do not deal with CHECK constraint
 		case tidbast.ColumnOptionColumnFormat:
