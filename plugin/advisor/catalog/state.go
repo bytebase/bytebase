@@ -52,26 +52,26 @@ func newSchemaState(s *Schema, context *FinderContext) *SchemaState {
 func newViewState(v *View) *ViewState {
 	return &ViewState{
 		name:       v.Name,
-		definition: copyStringPointer(&v.Definition),
-		comment:    copyStringPointer(&v.Comment),
+		definition: newStringPointer(v.Definition),
+		comment:    newStringPointer(v.Comment),
 	}
 }
 
 func newExtensionState(e *Extension) *ExtensionState {
 	return &ExtensionState{
 		name:        e.Name,
-		version:     copyStringPointer(&e.Version),
-		description: copyStringPointer(&e.Description),
+		version:     newStringPointer(e.Version),
+		description: newStringPointer(e.Description),
 	}
 }
 
 func newTableState(t *Table) *TableState {
 	table := &TableState{
 		name:      t.Name,
-		tableType: copyStringPointer(&t.Type),
-		engine:    copyStringPointer(&t.Engine),
-		collation: copyStringPointer(&t.Collation),
-		comment:   copyStringPointer(&t.Comment),
+		tableType: newStringPointer(t.Type),
+		engine:    newStringPointer(t.Engine),
+		collation: newStringPointer(t.Collation),
+		comment:   newStringPointer(t.Comment),
 		columnSet: make(columnStateMap),
 		indexSet:  make(indexStateMap),
 	}
@@ -90,24 +90,24 @@ func newTableState(t *Table) *TableState {
 func newColumnState(c *Column) *ColumnState {
 	return &ColumnState{
 		name:         c.Name,
-		position:     copyIntPointer(&c.Position),
+		position:     newIntPointer(c.Position),
 		defaultValue: copyStringPointer(c.Default),
-		nullable:     copyBoolPointer(&c.Nullable),
-		columnType:   copyStringPointer(&c.Type),
-		characterSet: copyStringPointer(&c.CharacterSet),
-		collation:    copyStringPointer(&c.Collation),
-		comment:      copyStringPointer(&c.Comment),
+		nullable:     newBoolPointer(c.Nullable),
+		columnType:   newStringPointer(c.Type),
+		characterSet: newStringPointer(c.CharacterSet),
+		collation:    newStringPointer(c.Collation),
+		comment:      newStringPointer(c.Comment),
 	}
 }
 
 func newIndexState(i *Index) *IndexState {
 	index := &IndexState{
 		name:           i.Name,
-		indextype:      copyStringPointer(&i.Type),
-		unique:         copyBoolPointer(&i.Unique),
-		primary:        copyBoolPointer(&i.Primary),
-		visible:        copyBoolPointer(&i.Visible),
-		comment:        copyStringPointer(&i.Comment),
+		indextype:      newStringPointer(i.Type),
+		unique:         newBoolPointer(i.Unique),
+		primary:        newBoolPointer(i.Primary),
+		visible:        newBoolPointer(i.Visible),
+		comment:        newStringPointer(i.Comment),
 		expressionList: copyStringSlice(i.ExpressionList),
 	}
 	return index
@@ -256,18 +256,6 @@ func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 	return table
 }
 
-func (d *DatabaseState) copy() *DatabaseState {
-	return &DatabaseState{
-		ctx:          d.ctx.Copy(),
-		name:         d.name,
-		characterSet: d.characterSet,
-		collation:    d.collation,
-		dbType:       d.dbType,
-		schemaSet:    d.schemaSet.copy(),
-		deleted:      d.deleted,
-	}
-}
-
 // SchemaState is the state for walk-through.
 type SchemaState struct {
 	ctx          *FinderContext
@@ -276,26 +264,7 @@ type SchemaState struct {
 	viewSet      viewStateMap
 	extensionSet extensionStateMap
 }
-
-func (schema *SchemaState) copy() *SchemaState {
-	return &SchemaState{
-		ctx:          schema.ctx.Copy(),
-		name:         schema.name,
-		tableSet:     schema.tableSet.copy(),
-		viewSet:      schema.viewSet.copy(),
-		extensionSet: schema.extensionSet.copy(),
-	}
-}
-
 type schemaStateMap map[string]*SchemaState
-
-func (m schemaStateMap) copy() schemaStateMap {
-	res := make(schemaStateMap)
-	for k, v := range m {
-		res[k] = v.copy()
-	}
-	return res
-}
 
 // TableState is the state for walk-through.
 type TableState struct {
@@ -325,14 +294,6 @@ func (table *TableState) copy() *TableState {
 }
 
 type tableStateMap map[string]*TableState
-
-func (m tableStateMap) copy() tableStateMap {
-	res := make(tableStateMap)
-	for k, v := range m {
-		res[k] = v.copy()
-	}
-	return res
-}
 
 // IndexState is the state for walk-through.
 type IndexState struct {
@@ -450,24 +411,7 @@ type ViewState struct {
 	definition *string
 	comment    *string
 }
-
-func (view *ViewState) copy() *ViewState {
-	return &ViewState{
-		name:       view.name,
-		definition: copyStringPointer(view.definition),
-		comment:    copyStringPointer(view.comment),
-	}
-}
-
 type viewStateMap map[string]*ViewState
-
-func (m viewStateMap) copy() viewStateMap {
-	res := make(viewStateMap)
-	for k, v := range m {
-		res[k] = v.copy()
-	}
-	return res
-}
 
 // ExtensionState is the state for walk-through.
 type ExtensionState struct {
@@ -475,24 +419,7 @@ type ExtensionState struct {
 	version     *string
 	description *string
 }
-
-func (extension *ExtensionState) copy() *ExtensionState {
-	return &ExtensionState{
-		name:        extension.name,
-		version:     copyStringPointer(extension.version),
-		description: copyStringPointer(extension.description),
-	}
-}
-
 type extensionStateMap map[string]*ExtensionState
-
-func (m extensionStateMap) copy() extensionStateMap {
-	res := make(extensionStateMap)
-	for k, v := range m {
-		res[k] = v.copy()
-	}
-	return res
-}
 
 func copyStringPointer(p *string) *string {
 	if p != nil {
@@ -544,5 +471,9 @@ func newTruePointer() *bool {
 
 func newFalsePointer() *bool {
 	v := false
+	return &v
+}
+
+func newBoolPointer(v bool) *bool {
 	return &v
 }

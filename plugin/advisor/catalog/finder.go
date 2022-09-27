@@ -34,17 +34,16 @@ type Finder struct {
 }
 
 // NewFinder creates a new finder.
-func NewFinder(database *Database, context *FinderContext) *Finder {
-	return &Finder{Origin: newDatabaseState(database, context)}
+func NewFinder(database *Database, ctx *FinderContext) *Finder {
+	return &Finder{Origin: newDatabaseState(database, ctx), Final: newDatabaseState(database, ctx)}
 }
 
 // NewEmptyFinder creates a finder with empty databse.
 func NewEmptyFinder(ctx *FinderContext, dbType db.Type) *Finder {
-	return &Finder{Origin: newDatabaseState(&Database{DbType: dbType}, ctx)}
+	return &Finder{Origin: newDatabaseState(&Database{DbType: dbType}, ctx), Final: newDatabaseState(&Database{DbType: dbType}, ctx)}
 }
 
 // WalkThrough does the walk through.
 func (f *Finder) WalkThrough(statements string) error {
-	f.Final = f.Origin.copy()
 	return f.Final.WalkThrough(statements)
 }

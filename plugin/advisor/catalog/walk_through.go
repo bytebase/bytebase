@@ -425,11 +425,11 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 			for _, option := range spec.Options {
 				switch option.Tp {
 				case tidbast.TableOptionCollate:
-					table.collation = copyStringPointer(&option.StrValue)
+					table.collation = &option.StrValue
 				case tidbast.TableOptionComment:
-					table.comment = copyStringPointer(&option.StrValue)
+					table.comment = &option.StrValue
 				case tidbast.TableOptionEngine:
-					table.engine = copyStringPointer(&option.StrValue)
+					table.engine = &option.StrValue
 				}
 			}
 		case tidbast.AlterTableAddColumns:
@@ -1055,7 +1055,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 	vTrue := true
 	col := &ColumnState{
 		name:         column.Name.Name.O,
-		position:     copyIntPointer(&pos),
+		position:     &pos,
 		defaultValue: nil,
 		nullable:     &vTrue,
 		columnType:   newStringPointer(column.Tp.CompactStr()),
@@ -1101,7 +1101,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			// MySQL will ignore the inline REFERENCE
 			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 		case tidbast.ColumnOptionCollate:
-			col.collation = copyStringPointer(&option.StrValue)
+			col.collation = &option.StrValue
 		case tidbast.ColumnOptionCheck:
 			// we do not deal with CHECK constraint
 		case tidbast.ColumnOptionColumnFormat:
@@ -1144,9 +1144,9 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 
 	index := &IndexState{
 		name:           name,
-		expressionList: copyStringSlice(keyList),
-		indextype:      copyStringPointer(&tp),
-		unique:         copyBoolPointer(&unique),
+		expressionList: keyList,
+		indextype:      &tp,
+		unique:         &unique,
 		primary:        newFalsePointer(),
 		visible:        newTruePointer(),
 		comment:        newEmptyStringPointer(),
@@ -1170,7 +1170,7 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 
 	pk := &IndexState{
 		name:           PrimaryKeyName,
-		expressionList: copyStringSlice(keys),
+		expressionList: keys,
 		indextype:      &tp,
 		unique:         newTruePointer(),
 		primary:        newTruePointer(),
