@@ -1317,14 +1317,17 @@ func (ctl *controller) waitBackup(databaseID, backupID int, condition func(*api.
 		if backup == nil {
 			return errors.Errorf("backup %v for database %v not found", backupID, databaseID)
 		}
-		if condition != nil && condition(backup) {
-			return nil
-		}
-		switch backup.Status {
-		case api.BackupStatusDone:
-			return nil
-		case api.BackupStatusFailed:
-			return errors.Errorf("backup %v for database %v failed", backupID, databaseID)
+		if condition != nil {
+			if condition(backup) {
+				return nil
+			}
+		} else {
+			switch backup.Status {
+			case api.BackupStatusDone:
+				return nil
+			case api.BackupStatusFailed:
+				return errors.Errorf("backup %v for database %v failed", backupID, databaseID)
+			}
 		}
 	}
 	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
