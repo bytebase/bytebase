@@ -82,7 +82,7 @@ func (checker *insertRowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    advisor.InsertTooManyRows,
 				Title:   checker.title,
-				Content: fmt.Sprintf("The value rows in one INSERT statement should be less than %d, but found %d", checker.maxRow, len(node.Lists)),
+				Content: fmt.Sprintf("The value rows in one INSERT statement should be no more than %d, but found %d", checker.maxRow, len(node.Lists)),
 				Line:    checker.line,
 			})
 		}
