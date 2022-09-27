@@ -3,7 +3,6 @@
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
       <ProjectAdvancedSettingPanel
-        v-if="isDev"
         :project="project"
         :allow-edit="allowEdit"
         class="pt-4"
