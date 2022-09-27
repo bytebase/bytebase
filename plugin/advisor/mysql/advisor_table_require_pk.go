@@ -176,7 +176,7 @@ func (v *tableRequirePKChecker) dropColumn(table string, column string) bool {
 		if pk == nil {
 			return false
 		}
-		v.tables[table] = newColumnSet(pk.ExpressionList)
+		v.tables[table] = newColumnSet(pk.ExpressionList())
 	}
 
 	pk := v.tables[table]
