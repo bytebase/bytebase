@@ -87,6 +87,8 @@ const (
 	SchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "column.auto-increment-must-integer"
 	// SchemaRuleColumnTypeRestriction enforce the column type restriction.
 	SchemaRuleColumnTypeRestriction SQLReviewRuleType = "column.type-restriction"
+	// SchemaRuleColumnDisallowSetCharset disallow set column charset.
+	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -688,6 +690,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnTypeRestriction, nil
+		}
+	case SchemaRuleColumnDisallowSetCharset:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLDisallowSetColumnCharset, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {

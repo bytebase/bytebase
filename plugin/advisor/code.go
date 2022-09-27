@@ -59,6 +59,7 @@ const (
 	DisabledColumnType            Code = 411
 	ColumnExists                  Code = 412
 	DropAllColumns                Code = 413
+	SetColumnCharset              Code = 414
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
