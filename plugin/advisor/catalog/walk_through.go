@@ -1144,7 +1144,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 
 	index := &IndexState{
 		name:           name,
-		expressionList: keyList,
+		expressionList: copyStringSlice(keyList),
 		indextype:      copyStringPointer(&tp),
 		unique:         copyBoolPointer(&unique),
 		primary:        newFalsePointer(),
@@ -1170,7 +1170,7 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 
 	pk := &IndexState{
 		name:           PrimaryKeyName,
-		expressionList: keys,
+		expressionList: copyStringSlice(keys),
 		indextype:      &tp,
 		unique:         newTruePointer(),
 		primary:        newTruePointer(),
