@@ -1296,19 +1296,6 @@ func (ctl *controller) listBackups(databaseID int) ([]*api.Backup, error) {
 	return backups, nil
 }
 
-func (ctl *controller) getBackup(databaseID, backupID int) (*api.Backup, error) {
-	backupList, err := ctl.listBackups(databaseID)
-	if err != nil {
-		return nil, err
-	}
-	for _, backup := range backupList {
-		if backup.ID == backupID {
-			return backup, nil
-		}
-	}
-	return nil, errors.Errorf("Failed to find backup with ID %d", backupID)
-}
-
 // waitBackup waits for a backup to be done.
 func (ctl *controller) waitBackup(databaseID, backupID int, cond func(*api.Backup) bool) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
