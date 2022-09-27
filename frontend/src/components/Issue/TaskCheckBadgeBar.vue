@@ -226,6 +226,7 @@ export default defineComponent({
 
 // Defines the order of TaskCheckType
 const TaskCheckTypeOrderList: TaskCheckType[] = [
+  "bb.task-check.pitr.mysql",
   "bb.task-check.database.ghost.sync",
   "bb.task-check.general.earliest-allowed-time",
   "bb.task-check.database.statement.compatibility",
@@ -266,5 +267,6 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
   ],
   ["bb.task-check.database.ghost.sync", "task.check-type.ghost-sync"],
   ["bb.task-check.issue.lgtm", "task.check-type.lgtm"],
+  ["bb.task-check.pitr.mysql", "task.check-type.pitr"],
 ]);
 </script>
