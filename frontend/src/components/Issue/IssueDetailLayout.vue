@@ -73,13 +73,13 @@
             </div>
             <div class="lg:hidden border-t border-block-border" />
             <div class="w-full lg:w-auto lg:flex-1 py-4 pr-4 overflow-x-hidden">
+              <div v-if="!create" class="mb-4">
+                <TaskCheckBar
+                  :task="(selectedTask as Task)"
+                  @run-checks="runTaskChecks"
+                />
+              </div>
               <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
-                <div v-if="!create" class="mb-4">
-                  <TaskCheckBar
-                    :task="(selectedTask as Task)"
-                    @run-checks="runTaskChecks"
-                  />
-                </div>
                 <IssueTaskStatementPanel :sql-hint="sqlHint()" />
               </section>
 
