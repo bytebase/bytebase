@@ -147,7 +147,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       this.setIsFetchingQueryHistory(true);
       const activityList =
         await useActivityStore().fetchActivityListForQueryHistory({
-          limit: 50,
+          limit: 20,
         });
       const queryHistoryList: QueryHistory[] = activityList.map(
         (history: any) => {
@@ -172,13 +172,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         queryHistoryList.sort((a, b) => b.createdTs - a.createdTs)
       );
       this.setIsFetchingQueryHistory(false);
-    },
-    async deleteQueryHistory(id: number) {
-      await useActivityStore().deleteActivityById(id);
-
-      this.setQueryHistoryList(
-        this.queryHistoryList.filter((t: QueryHistory) => t.id !== id)
-      );
     },
   },
 });
