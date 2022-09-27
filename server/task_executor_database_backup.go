@@ -76,6 +76,9 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if backupErr != nil {
 		backupStatus = string(api.BackupStatusFailed)
 		comment = backupErr.Error()
+		if err := removeLocalBackupFile(server.profile.DataDir, backup); err != nil {
+			log.Warn(err.Error())
+		}
 	}
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
@@ -96,6 +99,17 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Backup database %q", task.Database.Name),
 	}, nil
+}
+
+func removeLocalBackupFile(dataDir string, backup *api.Backup) error {
+	if backup.StorageBackend != api.BackupStorageBackendLocal {
+		return nil
+	}
+	backupFilePath := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
+	if err := os.Remove(backupFilePath); err != nil {
+		return errors.Wrapf(err, "failed to delete the local backup file %s", backupFilePath)
+	}
+	return nil
 }
 
 // getAvailableFSSpace gets the free space of the mounted filesystem.

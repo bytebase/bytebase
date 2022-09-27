@@ -318,14 +318,18 @@ func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 				return errors.Wrapf(err, "failed to parse the payload of backup task %d", task.ID)
 			}
 			statusFailed := string(api.BackupStatusFailed)
-			if _, err := s.server.store.PatchBackup(ctx, &api.BackupPatch{
+			backup, err := s.server.store.PatchBackup(ctx, &api.BackupPatch{
 				ID:        payload.BackupID,
 				UpdaterID: api.SystemBotID,
 				Status:    &statusFailed,
-			}); err != nil {
+			})
+			if err != nil {
 				return errors.Wrapf(err, "failed to patch backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed)
 			}
 			log.Debug(fmt.Sprintf("Changed backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed))
+			if err := removeLocalBackupFile(s.server.profile.DataDir, backup); err != nil {
+				log.Warn(err.Error())
+			}
 		}
 	}
 	return nil
