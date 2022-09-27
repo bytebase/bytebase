@@ -122,9 +122,13 @@ const useExecuteSQL = () => {
           adviceNotifyMessage
         );
       }
+
+      // use `markRaw` to prevent vue from monitoring the object change deeply
+      const queryResult = sqlResultSet.data
+        ? markRaw(sqlResultSet.data)
+        : undefined;
       Object.assign(tab, {
-        // use `markRaw` to prevent vue from monitoring the object change deeply
-        queryResult: markRaw(sqlResultSet.data) as any,
+        queryResult,
         adviceList: sqlResultSet.adviceList,
         executeParams: {
           query,
@@ -132,7 +136,11 @@ const useExecuteSQL = () => {
           option,
         },
       });
-      sqlEditorStore.fetchQueryHistoryList();
+      if (queryResult) {
+        // Refresh the query history list when the query executed successfully
+        // (with or without warnings).
+        sqlEditorStore.fetchQueryHistoryList();
+      }
     } catch (error) {
       Object.assign(tab, {
         queryResult: undefined,
