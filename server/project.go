@@ -8,6 +8,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -277,8 +278,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
 			repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
 		} else {
-			// We use workspace id as webhook endpoint id
-			repositoryCreate.WebhookEndpointID = s.workspaceID
+			repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s/%d", s.workspaceID, time.Now().Unix())
 			secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random secret token for VCS").SetInternal(err)
