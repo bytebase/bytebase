@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -66,6 +68,37 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	validateTbl0(t, mysqlDB, database.Name, numRowsTime0)
 	validateTbl1(t, mysqlDB, database.Name, numRowsTime0)
 	validateTableUpdateRow(t, mysqlDB, database.Name)
+}
+
+func TestRetentionPolicy(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	port := getTestPort(t.Name())
+	ctl := &controller{}
+	_, _, database, backup, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
+	defer cleanFn()
+
+	metaDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=bbtest database=bbtest", port+2))
+	a.NoError(err)
+	a.NoError(metaDB.Ping())
+
+	// Check that the backup file exist
+	backupFilePath := filepath.Join(ctl.server.GetProfile().DataDir, "backup", "db", fmt.Sprintf("%d", database.ID), fmt.Sprintf("%s.sql", backup.Name))
+	_, err = os.Stat(backupFilePath)
+	a.NoError(err)
+
+	// Change retention period to 1s, and the backup should be quickly removed.
+	_, err = metaDB.ExecContext(ctx, fmt.Sprintf("UPDATE backup_setting SET enabled=true, retention_period_ts=1 WHERE database_id=%d;", database.ID))
+	a.NoError(err)
+	err = ctl.waitBackup(database.ID, backup.ID, func(backup *api.Backup) bool {
+		return backup.RowStatus == api.Archived
+	})
+	a.NoError(err)
+	// Wait for 1s to delete the file.
+	time.Sleep(1 * time.Second)
+	_, err = os.Stat(backupFilePath)
+	a.Equal(true, os.IsNotExist(err))
 }
 
 // TestPITRGeneral tests for the general PITR cases:
@@ -214,7 +247,7 @@ func TestPITRTwice(t *testing.T) {
 	sort.Slice(backups, func(i int, j int) bool {
 		return backups[i].CreatedTs > backups[j].CreatedTs
 	})
-	err = ctl.waitBackup(database.ID, backups[0].ID)
+	err = ctl.waitBackup(database.ID, backups[0].ID, nil)
 	a.NoError(err)
 
 	log.Debug("Creating issue for the second PITR.")
@@ -445,7 +478,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller, port i
 		StorageBackend: api.BackupStorageBackendLocal,
 	})
 	a.NoError(err)
-	err = ctl.waitBackup(database.ID, backup.ID)
+	err = ctl.waitBackup(database.ID, backup.ID, nil)
 	a.NoError(err)
 
 	return project, mysqlDB, database, backup, func() {

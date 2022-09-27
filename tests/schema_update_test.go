@@ -199,7 +199,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		StorageBackend: api.BackupStorageBackendLocal,
 	})
 	a.NoError(err)
-	err = ctl.waitBackup(backup.DatabaseID, backup.ID)
+	err = ctl.waitBackup(backup.DatabaseID, backup.ID, nil)
 	a.NoError(err)
 
 	backupPath := path.Join(dataDir, backup.Path)

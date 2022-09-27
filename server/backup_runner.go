@@ -86,7 +86,11 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 		if bs.RetentionPeriodTs == api.BackupRetentionPeriodUnset {
 			continue // next database
 		}
-		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: &bs.DatabaseID})
+		statusNormal := api.Normal
+		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{
+			DatabaseID: &bs.DatabaseID,
+			RowStatus:  &statusNormal,
+		})
 		if err != nil {
 			log.Error("Failed to get backups for database.", zap.Int("databaseID", bs.DatabaseID), zap.String("database", bs.Database.Name))
 			return
@@ -215,6 +219,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
 		return errors.Wrapf(err, "failed to update status for deleted backup %q for database with ID %d", backup.Name, backup.DatabaseID)
 	}
+	log.Debug("Archived expired backup record", zap.String("name", backup.Name), zap.Int("id", backup.ID))
 
 	switch backup.StorageBackend {
 	case api.BackupStorageBackendLocal:
@@ -222,13 +227,13 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 		if err := os.Remove(backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete an expired backup file %q", backupFilePath)
 		}
-		log.Info(fmt.Sprintf("Deleted expired local backup file %s", backupFilePath))
+		log.Debug(fmt.Sprintf("Deleted expired local backup file %s", backupFilePath))
 	case api.BackupStorageBackendS3:
 		backupFilePath := getBackupRelativeFilePath(backup.DatabaseID, backup.Name)
 		if _, err := r.server.s3Client.DeleteObjects(ctx, backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete backup file %s in the cloud storage", backupFilePath)
 		}
-		log.Info(fmt.Sprintf("Deleted expired backup file %s in the cloud storage", backupFilePath))
+		log.Debug(fmt.Sprintf("Deleted expired backup file %s in the cloud storage", backupFilePath))
 	}
 
 	return nil
