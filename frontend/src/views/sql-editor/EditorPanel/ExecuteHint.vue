@@ -1,5 +1,5 @@
 <template>
-  <div class="execute-hint w-160">
+  <div class="execute-hint w-112">
     <NAlert type="info">
       <section class="space-y-2">
         <p>
@@ -10,17 +10,15 @@
           </i18n-t>
         </p>
         <p>
-          <i18n-t keypath="sql-editor.want-to-change-schema">
-            <template #changeschema>
-              <NButton text :href="docLink" type="primary" target="_blank">
-                {{ $t("sql-editor.change-schema") }}
-              </NButton>
+          <i18n-t keypath="sql-editor.want-to-action">
+            <template #want>
+              {{
+                isDDLSQLStatement
+                  ? $t("database.alter-schema").toLowerCase()
+                  : $t("database.change-data").toLowerCase()
+              }}
             </template>
-          </i18n-t>
-        </p>
-        <p>
-          <i18n-t keypath="sql-editor.go-to-alter-schema">
-            <template #alterschema>
+            <template #action>
               <strong>
                 {{
                   isDDLSQLStatement
@@ -35,7 +33,7 @@
     </NAlert>
 
     <div class="execute-hint-content mt-4 flex justify-end space-x-2">
-      <NButton @click="handleColse">{{ $t("common.close") }}</NButton>
+      <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
       <NButton type="primary" @click="gotoAlterSchema">
         {{
           isDDLSQLStatement
@@ -86,10 +84,7 @@ const isDDLSQLStatement = computed(() => {
   return data !== null ? isDDLStatement(data) : false;
 });
 
-const docLink =
-  "https://bytebase.com/docs/concepts/schema-change-workflow#ui-workflow?source=console";
-
-const handleColse = () => {
+const handleClose = () => {
   emit("close");
 };
 
@@ -125,5 +120,3 @@ const gotoAlterSchema = () => {
   });
 };
 </script>
-
-<style scoped></style>
