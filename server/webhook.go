@@ -187,7 +187,13 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 		pushEvent.VCSType = repo.VCS.Type
 		pushEvent.BaseDirectory = repo.BaseDirectory
 
-		createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(ctx, &pushEvent, repo, webhookEndpointID, distinctFileList)
+		createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
+			ctx,
+			&pushEvent,
+			repo,
+			webhookEndpointID,
+			distinctFileList,
+		)
 		if httpErr != nil {
 			return nil, httpErr
 		}
@@ -729,7 +735,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	for _, file := range fileList {
 		fileEscaped := common.EscapeForLogging(file.fileName)
 		if !strings.HasPrefix(file.fileName, repo.BaseDirectory) {
-			log.Debug("Ignored file outside the base directory", zap.String("file", fileEscaped), zap.String("base_directory", repo.BaseDirectory))
+			log.Debug("Ignored file outside the base directory",
+				zap.String("file", fileEscaped),
+				zap.String("base_directory", repo.BaseDirectory),
+			)
 			continue
 		}
 		filesToProcess = append(filesToProcess, file)
@@ -832,11 +841,14 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	// Find out the creator principal.
 	creatorID := api.SystemBotID
 	if authorEmail := pushEvent.FileCommit.AuthorEmail; authorEmail != "" {
-		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, authorEmail)
+		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
 		if err != nil {
-			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", common.EscapeForLogging(authorEmail)), zap.Error(err))
+			log.Warn("Failed to find the principal with committer email, use system bot instead",
+				zap.String("email", common.EscapeForLogging(authorEmail)),
+				zap.Error(err))
 		} else if committerPrincipal == nil {
-			log.Debug("Failed to find the principal with committer email, use system bot instead", zap.String("email", common.EscapeForLogging(authorEmail)))
+			log.Debug("Principal with committer email does not exist, use system bot instead",
+				zap.String("email", common.EscapeForLogging(authorEmail)))
 		} else {
 			creatorID = committerPrincipal.ID
 		}
@@ -858,7 +870,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	if migrationType == db.Data {
 		issueType = api.IssueDatabaseDataUpdate
 	}
-	commitsMsg := getCommitsMessage(pushEvent.CommitList)
+	commitsMsg := getCommitsMessageShort(pushEvent.CommitList)
 	issueCreate := &api.IssueCreate{
 		ProjectID:     repo.ProjectID,
 		Name:          fmt.Sprintf("%s by %s", migrationType, commitsMsg),
@@ -942,6 +954,16 @@ func getCommitsMessage(commitList []vcs.Commit) string {
 		commitIDs = append(commitIDs, c.ID)
 	}
 	return strings.Join(commitIDs, ", ")
+}
+
+func getCommitsMessageShort(commitList []vcs.Commit) string {
+	if len(commitList) == 0 {
+		return ""
+	}
+	if len(commitList) == 1 {
+		return "commit " + commitList[0].ID
+	}
+	return fmt.Sprintf("commits %s...%s", commitList[0].ID, commitList[len(commitList)-1].ID)
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract
