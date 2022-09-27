@@ -89,7 +89,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 			TableName:  n.Table.Name,
 			IndexName:  n.ConstraintName,
 		})
-		if index != nil && index.Primary {
+		if index != nil && index.Primary() {
 			missingPK = n.Table
 		}
 	// DROP COLUMN
@@ -99,7 +99,7 @@ func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
 			TableName:  n.Table.Name,
 		})
 		if pk != nil {
-			for _, column := range pk.ExpressionList {
+			for _, column := range pk.ExpressionList() {
 				if column == n.ColumnName {
 					missingPK = n.Table
 				}

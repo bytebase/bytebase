@@ -8,30 +8,30 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
-func newDatabaseState(d *Database, context *FinderContext) *databaseState {
-	database := &databaseState{
+func newDatabaseState(d *Database, context *FinderContext) *DatabaseState {
+	database := &DatabaseState{
+		ctx:          context.Copy(),
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
 		dbType:       d.DbType,
 		schemaSet:    make(schemaStateMap),
-		context:      context.Copy(),
 	}
 
 	for _, schema := range d.SchemaList {
-		database.schemaSet[schema.Name] = newSchemaState(schema, context)
+		database.schemaSet[schema.Name] = newSchemaState(schema, database.ctx)
 	}
 
 	return database
 }
 
-func newSchemaState(s *Schema, context *FinderContext) *schemaState {
-	schema := &schemaState{
+func newSchemaState(s *Schema, context *FinderContext) *SchemaState {
+	schema := &SchemaState{
+		ctx:          context.Copy(),
 		name:         s.Name,
 		tableSet:     make(tableStateMap),
 		viewSet:      make(viewStateMap),
 		extensionSet: make(extensionStateMap),
-		context:      context.Copy(),
 	}
 
 	for _, table := range s.TableList {
@@ -49,36 +49,31 @@ func newSchemaState(s *Schema, context *FinderContext) *schemaState {
 	return schema
 }
 
-func newViewState(v *View) *viewState {
-	return &viewState{
+func newViewState(v *View) *ViewState {
+	return &ViewState{
 		name:       v.Name,
-		definition: v.Definition,
-		comment:    v.Comment,
+		definition: newStringPointer(v.Definition),
+		comment:    newStringPointer(v.Comment),
 	}
 }
 
-func newExtensionState(e *Extension) *extensionState {
-	return &extensionState{
+func newExtensionState(e *Extension) *ExtensionState {
+	return &ExtensionState{
 		name:        e.Name,
-		version:     e.Version,
-		description: e.Description,
+		version:     newStringPointer(e.Version),
+		description: newStringPointer(e.Description),
 	}
 }
 
-func newTableState(t *Table) *tableState {
-	table := &tableState{
-		name:          t.Name,
-		tableType:     t.Type,
-		engine:        t.Engine,
-		collation:     t.Collation,
-		rowCount:      t.RowCount,
-		dataSize:      t.DataSize,
-		indexSize:     t.IndexSize,
-		dataFree:      t.DataFree,
-		createOptions: t.CreateOptions,
-		comment:       t.Comment,
-		columnSet:     make(columnStateMap),
-		indexSet:      make(indexStateMap),
+func newTableState(t *Table) *TableState {
+	table := &TableState{
+		name:      t.Name,
+		tableType: newStringPointer(t.Type),
+		engine:    newStringPointer(t.Engine),
+		collation: newStringPointer(t.Collation),
+		comment:   newStringPointer(t.Comment),
+		columnSet: make(columnStateMap),
+		indexSet:  make(indexStateMap),
 	}
 
 	for _, column := range t.ColumnList {
@@ -92,45 +87,45 @@ func newTableState(t *Table) *tableState {
 	return table
 }
 
-func newColumnState(c *Column) *columnState {
-	return &columnState{
+func newColumnState(c *Column) *ColumnState {
+	return &ColumnState{
 		name:         c.Name,
-		position:     c.Position,
-		defaultValue: c.Default,
-		nullable:     c.Nullable,
-		columnType:   c.Type,
-		characterSet: c.CharacterSet,
-		collation:    c.Collation,
-		comment:      c.Comment,
+		position:     newIntPointer(c.Position),
+		defaultValue: copyStringPointer(c.Default),
+		nullable:     newBoolPointer(c.Nullable),
+		columnType:   newStringPointer(c.Type),
+		characterSet: newStringPointer(c.CharacterSet),
+		collation:    newStringPointer(c.Collation),
+		comment:      newStringPointer(c.Comment),
 	}
 }
 
-func newIndexState(i *Index) *indexState {
-	index := &indexState{
-		name:      i.Name,
-		indextype: i.Type,
-		unique:    i.Unique,
-		primary:   i.Primary,
-		visible:   i.Visible,
-		comment:   i.Comment,
+func newIndexState(i *Index) *IndexState {
+	index := &IndexState{
+		name:           i.Name,
+		indextype:      newStringPointer(i.Type),
+		unique:         newBoolPointer(i.Unique),
+		primary:        newBoolPointer(i.Primary),
+		visible:        newBoolPointer(i.Visible),
+		comment:        newStringPointer(i.Comment),
+		expressionList: copyStringSlice(i.ExpressionList),
 	}
-	index.expressionList = append(index.expressionList, i.ExpressionList...)
 	return index
 }
 
-type databaseState struct {
+// DatabaseState is the state for walk-through.
+type DatabaseState struct {
+	ctx          *FinderContext
 	name         string
 	characterSet string
 	collation    string
 	dbType       db.Type
 	schemaSet    schemaStateMap
 	deleted      bool
-
-	context *FinderContext
 }
 
 // HasNoTable returns true if the current database has no table.
-func (d *databaseState) HasNoTable() bool {
+func (d *DatabaseState) HasNoTable() bool {
 	for _, schema := range d.schemaSet {
 		if len(schema.tableSet) != 0 {
 			return false
@@ -141,7 +136,7 @@ func (d *databaseState) HasNoTable() bool {
 }
 
 // DatabaseName returns the database name.
-func (d *databaseState) DatabaseName() string {
+func (d *DatabaseState) DatabaseName() string {
 	return d.name
 }
 
@@ -152,7 +147,8 @@ type IndexFind struct {
 	IndexName  string
 }
 
-func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
+// FindIndex finds the index.
+func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	// There are two cases to find a index:
 	// 1. find an index in specific table. e.g. MySQL and TiDB.
 	// 2. find an index in the schema. e.g. PostgreSQL.
@@ -173,7 +169,7 @@ func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
 		if !exists {
 			return "", nil
 		}
-		return table.name, index.convertToCatalog()
+		return table.name, index
 	}
 	for _, schema := range d.schemaSet {
 		if schema.name != find.SchemaName {
@@ -185,7 +181,7 @@ func (d *databaseState) FindIndex(find *IndexFind) (string, *Index) {
 			if !exists {
 				return "", nil
 			}
-			return table.name, index.convertToCatalog()
+			return table.name, index
 		}
 	}
 	return "", nil
@@ -198,7 +194,7 @@ type PrimaryKeyFind struct {
 }
 
 // FindPrimaryKey finds the primary key.
-func (d *databaseState) FindPrimaryKey(find *PrimaryKeyFind) *Index {
+func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 	for _, schema := range d.schemaSet {
 		if schema.name != find.SchemaName {
 			continue
@@ -208,8 +204,8 @@ func (d *databaseState) FindPrimaryKey(find *PrimaryKeyFind) *Index {
 				continue
 			}
 			for _, index := range table.indexSet {
-				if index.primary {
-					return index.convertToCatalog()
+				if index.primary != nil && *index.primary {
+					return index
 				}
 			}
 		}
@@ -225,7 +221,7 @@ type ColumnFind struct {
 }
 
 // FindColumn finds the column.
-func (d *databaseState) FindColumn(find *ColumnFind) *Column {
+func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
 	schema, exists := d.schemaSet[find.SchemaName]
 	if !exists {
 		return nil
@@ -238,7 +234,7 @@ func (d *databaseState) FindColumn(find *ColumnFind) *Column {
 	if !exists {
 		return nil
 	}
-	return column.convertToCatalog()
+	return column
 }
 
 // TableFind is for find table.
@@ -248,7 +244,7 @@ type TableFind struct {
 }
 
 // FindTable finds the table.
-func (d *databaseState) FindTable(find *TableFind) *Table {
+func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 	schema, exists := d.schemaSet[find.SchemaName]
 	if !exists {
 		return nil
@@ -257,219 +253,227 @@ func (d *databaseState) FindTable(find *TableFind) *Table {
 	if !exists {
 		return nil
 	}
-	return table.convertToCatalog()
+	return table
 }
 
-func (d *databaseState) copy() *databaseState {
-	newDb := newDatabaseState(d.convertToCatalog(), &FinderContext{CheckIntegrity: d.context.CheckIntegrity})
-	newDb.deleted = d.deleted
-	return newDb
-}
-
-func (d *databaseState) convertToCatalog() *Database {
-	return &Database{
-		Name:         d.name,
-		CharacterSet: d.characterSet,
-		Collation:    d.collation,
-		DbType:       d.dbType,
-		SchemaList:   d.schemaSet.convertToCatalog(),
-	}
-}
-
-type schemaState struct {
+// SchemaState is the state for walk-through.
+type SchemaState struct {
+	ctx          *FinderContext
 	name         string
 	tableSet     tableStateMap
 	viewSet      viewStateMap
 	extensionSet extensionStateMap
-
-	context *FinderContext
 }
-type schemaStateMap map[string]*schemaState
+type schemaStateMap map[string]*SchemaState
 
-func (m schemaStateMap) convertToCatalog() []*Schema {
-	var res []*Schema
-	for _, schema := range m {
-		res = append(res, schema.convertToCatalog())
-	}
-	return res
-}
-
-func (schema *schemaState) convertToCatalog() *Schema {
-	return &Schema{
-		Name:          schema.name,
-		TableList:     schema.tableSet.convertToCatalog(),
-		ViewList:      schema.viewSet.convertToCatalog(),
-		ExtensionList: schema.extensionSet.convertToCatalog(),
-	}
-}
-
-type tableState struct {
+// TableState is the state for walk-through.
+type TableState struct {
 	name      string
-	tableType string
+	tableType *string
 	// engine isn't supported for Postgres, Snowflake, SQLite.
-	engine string
+	engine *string
 	// collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	collation string
-	rowCount  int64
-	// dataSize isn't supported for SQLite.
-	dataSize int64
-	// indexSize isn't supported for ClickHouse, Snowflake, SQLite.
-	indexSize int64
-	// dataFree isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	dataFree int64
-	// createOptions isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
-	createOptions string
+	collation *string
 	// comment isn't supported for SQLite.
-	comment   string
+	comment   *string
 	columnSet columnStateMap
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet indexStateMap
 }
-type tableStateMap map[string]*tableState
 
-func (m tableStateMap) convertToCatalog() []*Table {
-	var res []*Table
-	for _, table := range m {
-		res = append(res, table.convertToCatalog())
-	}
-	return res
-}
-
-func (table *tableState) convertToCatalog() *Table {
-	return &Table{
-		Name:          table.name,
-		Type:          table.tableType,
-		Engine:        table.engine,
-		Collation:     table.collation,
-		RowCount:      table.rowCount,
-		DataSize:      table.dataSize,
-		IndexSize:     table.indexSize,
-		DataFree:      table.dataFree,
-		CreateOptions: table.createOptions,
-		Comment:       table.comment,
-		ColumnList:    table.columnSet.convertToCatalog(),
-		IndexList:     table.indexSet.convertToCatalog(),
+func (table *TableState) copy() *TableState {
+	return &TableState{
+		name:      table.name,
+		tableType: copyStringPointer(table.tableType),
+		engine:    copyStringPointer(table.engine),
+		collation: copyStringPointer(table.collation),
+		comment:   copyStringPointer(table.comment),
+		columnSet: table.columnSet.copy(),
+		indexSet:  table.indexSet.copy(),
 	}
 }
 
-func (table *tableState) copy() *tableState {
-	return newTableState(table.convertToCatalog())
-}
+type tableStateMap map[string]*TableState
 
-type indexState struct {
+// IndexState is the state for walk-through.
+type IndexState struct {
 	name string
 	// This could refer to a column or an expression.
 	expressionList []string
 	// Type isn't supported for SQLite.
-	indextype string
-	unique    bool
-	primary   bool
+	indextype *string
+	unique    *bool
+	primary   *bool
 	// Visible isn't supported for Postgres, SQLite.
-	visible bool
+	visible *bool
 	// Comment isn't supported for SQLite.
-	comment string
+	comment *string
 }
-type indexStateMap map[string]*indexState
 
-func (m indexStateMap) convertToCatalog() []*Index {
-	var res []*Index
-	for _, index := range m {
-		res = append(res, index.convertToCatalog())
+func (idx *IndexState) copy() *IndexState {
+	return &IndexState{
+		name:           idx.name,
+		expressionList: copyStringSlice(idx.expressionList),
+		indextype:      copyStringPointer(idx.indextype),
+		unique:         copyBoolPointer(idx.unique),
+		primary:        copyBoolPointer(idx.primary),
+		visible:        copyBoolPointer(idx.visible),
+		comment:        copyStringPointer(idx.comment),
+	}
+}
+
+// Unique returns the unique for the index.
+func (idx *IndexState) Unique() bool {
+	if idx.unique != nil {
+		return *idx.unique
+	}
+	return false
+}
+
+// Primary returns the priamry for the index.
+func (idx *IndexState) Primary() bool {
+	if idx.primary != nil {
+		return *idx.primary
+	}
+	return false
+}
+
+// ExpressionList returns the expression list for the index.
+func (idx *IndexState) ExpressionList() []string {
+	return idx.expressionList
+}
+
+type indexStateMap map[string]*IndexState
+
+func (m indexStateMap) copy() indexStateMap {
+	res := make(indexStateMap)
+	for k, v := range m {
+		res[k] = v.copy()
 	}
 	return res
 }
 
-func (index *indexState) convertToCatalog() *Index {
-	return &Index{
-		Name:           index.name,
-		ExpressionList: index.expressionList,
-		Type:           index.indextype,
-		Unique:         index.unique,
-		Primary:        index.primary,
-		Visible:        index.visible,
-		Comment:        index.comment,
-	}
-}
-
-type columnState struct {
+// ColumnState is the state for walk-through.
+type ColumnState struct {
 	name         string
-	position     int
+	position     *int
 	defaultValue *string
 	// nullable isn't supported for ClickHouse.
-	nullable   bool
-	columnType string
+	nullable   *bool
+	columnType *string
 	// characterSet isn't supported for Postgres, ClickHouse, SQLite.
-	characterSet string
+	characterSet *string
 	// collation isn't supported for ClickHouse, SQLite.
-	collation string
+	collation *string
 	// comment isn't supported for SQLite.
-	comment string
+	comment *string
 }
-type columnStateMap map[string]*columnState
 
-func (m columnStateMap) convertToCatalog() []*Column {
-	var res []*Column
-	for _, column := range m {
-		res = append(res, column.convertToCatalog())
+func (col *ColumnState) copy() *ColumnState {
+	return &ColumnState{
+		name:         col.name,
+		position:     copyIntPointer(col.position),
+		defaultValue: copyStringPointer(col.defaultValue),
+		nullable:     copyBoolPointer(col.nullable),
+		columnType:   copyStringPointer(col.columnType),
+		characterSet: copyStringPointer(col.characterSet),
+		collation:    copyStringPointer(col.collation),
+		comment:      copyStringPointer(col.comment),
+	}
+}
+
+// Nullable returns nullable for the column.
+func (col *ColumnState) Nullable() bool {
+	return col.nullable != nil && *col.nullable
+}
+
+// Type returns type for the column.
+func (col *ColumnState) Type() string {
+	if col.columnType != nil {
+		return *col.columnType
+	}
+	return ""
+}
+
+type columnStateMap map[string]*ColumnState
+
+func (m columnStateMap) copy() columnStateMap {
+	res := make(columnStateMap)
+	for k, v := range m {
+		res[k] = v.copy()
 	}
 	return res
 }
 
-func (column *columnState) convertToCatalog() *Column {
-	return &Column{
-		Name:         column.name,
-		Position:     column.position,
-		Default:      column.defaultValue,
-		Nullable:     column.nullable,
-		Type:         column.columnType,
-		CharacterSet: column.characterSet,
-		Collation:    column.collation,
-		Comment:      column.comment,
-	}
-}
-
-type viewState struct {
+// ViewState is the state for walk-through.
+type ViewState struct {
 	name       string
-	definition string
-	comment    string
+	definition *string
+	comment    *string
 }
-type viewStateMap map[string]*viewState
+type viewStateMap map[string]*ViewState
 
-func (m viewStateMap) convertToCatalog() []*View {
-	var res []*View
-	for _, view := range m {
-		res = append(res, view.convertToCatalog())
-	}
-	return res
-}
-
-func (view *viewState) convertToCatalog() *View {
-	return &View{
-		Name:       view.name,
-		Definition: view.definition,
-		Comment:    view.comment,
-	}
-}
-
-type extensionState struct {
+// ExtensionState is the state for walk-through.
+type ExtensionState struct {
 	name        string
-	version     string
-	description string
+	version     *string
+	description *string
 }
-type extensionStateMap map[string]*extensionState
+type extensionStateMap map[string]*ExtensionState
 
-func (m extensionStateMap) convertToCatalog() []*Extension {
-	var res []*Extension
-	for _, extension := range m {
-		res = append(res, extension.convertToCatalog())
+func copyStringPointer(p *string) *string {
+	if p != nil {
+		v := *p
+		return &v
 	}
+	return nil
+}
+
+func copyBoolPointer(p *bool) *bool {
+	if p != nil {
+		v := *p
+		return &v
+	}
+	return nil
+}
+
+func copyIntPointer(p *int) *int {
+	if p != nil {
+		v := *p
+		return &v
+	}
+	return nil
+}
+
+func copyStringSlice(in []string) []string {
+	var res []string
+	res = append(res, in...)
 	return res
 }
 
-func (extension *extensionState) convertToCatalog() *Extension {
-	return &Extension{
-		Name:        extension.name,
-		Version:     extension.version,
-		Description: extension.description,
-	}
+func newEmptyStringPointer() *string {
+	res := ""
+	return &res
+}
+
+func newStringPointer(v string) *string {
+	return &v
+}
+
+func newIntPointer(v int) *int {
+	return &v
+}
+
+func newTruePointer() *bool {
+	v := true
+	return &v
+}
+
+func newFalsePointer() *bool {
+	v := false
+	return &v
+}
+
+func newBoolPointer(v bool) *bool {
+	return &v
 }

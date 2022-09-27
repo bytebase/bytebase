@@ -229,7 +229,7 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 		ColumnName: columnName,
 	})
 	if column != nil {
-		return column.Type, nil
+		return column.Type(), nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

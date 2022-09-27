@@ -155,7 +155,7 @@ func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.Tabl
 			if index == nil {
 				continue
 			}
-			for _, expression := range index.ExpressionList {
+			for _, expression := range index.ExpressionList() {
 				checker.removeColumn(table, expression)
 			}
 		}
