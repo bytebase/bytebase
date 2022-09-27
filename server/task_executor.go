@@ -68,6 +68,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		// TODO(d): support semantic versioning.
 		Version:     schemaVersion,
 		Description: task.Name,
+		Environment: task.Instance.Environment.Name,
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
