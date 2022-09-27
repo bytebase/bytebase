@@ -106,6 +106,9 @@ const (
 	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
 	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
 
+	// MySQLDisallowSetColumnCharset is an advisor type for MySQL disallow set column charset.
+	MySQLDisallowSetColumnCharset Type = "bb.plugin.advisor.mysql.column.disallow-set-charset"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
