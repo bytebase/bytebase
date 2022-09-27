@@ -307,7 +307,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 			`"status":${status},"error":"${error}"}` + "\n",
 	}))
 	e.Use(recoverMiddleware)
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	swaggerGroup := e.Group("/swagger")
+	swaggerGroup.GET("/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)

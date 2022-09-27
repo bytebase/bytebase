@@ -1,0 +1,13 @@
+on: [pull_request]
+jobs:
+  sql-review:
+    runs-on: ubuntu-latest
+    name: SQL Review
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check SQL
+        uses: bytebase/sql-review-action@fbd9301d97454e83abbc64597d82ce321c8f0342
+        with:
+          database-type: POSTGRES
+          external-url: "%s"
+          file-pattern: .*\.sql$
