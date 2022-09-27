@@ -730,10 +730,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	var migrationDetailList []*api.MigrationDetail
 	var activityCreateList []*api.ActivityCreate
 	var migrationDescription string
-	migrationType := db.Migrate
-	if schemaInfo == nil {
-		migrationType = db.Data
-	}
+	var migrationType db.MigrationType
 
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && schemaInfo != nil {
 		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
@@ -745,6 +742,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, webhookEndpointID)
 		migrationDescription = "Apply_schema_diff"
+		migrationType = db.Migrate
 	} else {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
 		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
@@ -758,6 +756,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			return "", false, nil, nil
 		}
 		migrationDescription = migrationInfo.Description
+		migrationType = migrationInfo.Type
 
 		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && migrationInfo.Type != db.Data {
 			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type))
