@@ -106,6 +106,9 @@ const (
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
 
+	// SchemaRuleInsertRowLimit enforce the insert row limit.
+	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
+
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list.
@@ -198,7 +201,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit:
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit:
 		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -756,6 +759,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTypeNoBlob, nil
+		}
+	case SchemaRuleInsertRowLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertRowLimit, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
