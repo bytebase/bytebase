@@ -958,47 +958,389 @@ func TestWalkThrough(t *testing.T) {
 	}
 }
 
-func TestWalkThroughForNoCatalog(t *testing.T) {
-	tests := []testData{
+type testDataForIncomplete struct {
+	statement string
+	want      *DatabaseState
+	err       error
+}
+
+func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
+	tests := []testDataForIncomplete{
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-			},
-			statement: `
-				DROP TABLE t1, t2
-			`,
-			want: &Database{
-				Name:       "test",
-				DbType:     db.MySQL,
-				SchemaList: []*Schema{{}},
+			statement: `CREATE INDEX idx_a on t(a)`,
+			want: &DatabaseState{
+				ctx:          &FinderContext{CheckIntegrity: false},
+				name:         "",
+				characterSet: "",
+				collation:    "",
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
+						tableSet: tableStateMap{
+							"t": {
+								name:      "t",
+								tableType: nil,
+								engine:    nil,
+								collation: nil,
+								comment:   nil,
+								columnSet: columnStateMap{},
+								indexSet: indexStateMap{
+									"idx_a": {
+										name:           "idx_a",
+										expressionList: []string{"a"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newFalsePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+								},
+							},
+						},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			statement: `ALTER TABLE t RENAME COLUMN a TO a_copy`,
+			want: &DatabaseState{
+				ctx:          &FinderContext{CheckIntegrity: false},
+				name:         "",
+				characterSet: *newEmptyStringPointer(),
+				collation:    *newEmptyStringPointer(),
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
+						tableSet: tableStateMap{
+							"t": {
+								name:      "t",
+								tableType: nil,
+								engine:    nil,
+								collation: nil,
+								comment:   nil,
+								columnSet: columnStateMap{
+									"a_copy": {
+										name: "a_copy",
+									},
+								},
+								indexSet: indexStateMap{},
+							},
+						},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
 			},
+		},
+		{
+			statement: `ALTER TABLE t RENAME TO t1`,
+			want: &DatabaseState{
+				ctx:          &FinderContext{CheckIntegrity: false},
+				name:         "",
+				characterSet: "",
+				collation:    "",
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
+						tableSet: tableStateMap{
+							"t1": {
+								name:      "t1",
+								tableType: nil,
+								engine:    nil,
+								collation: nil,
+								comment:   nil,
+								columnSet: columnStateMap{},
+								indexSet:  indexStateMap{},
+							},
+						},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
+			},
+		},
+		{
 			statement: `
-				INSERT INTO test values (1);
+				ALTER TABLE t ADD PRIMARY KEY (a);
+				ALTER TABLE t ADD UNIQUE (b);
+				CREATE INDEX idx_a on t(a);
+				CREATE INDEX b_2 on t(b, a);
+				CREATE UNIQUE INDEX b_3 on t(b, c, d);
+				CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
 			`,
-			want: &Database{
-				Name:       "test",
-				DbType:     db.MySQL,
-				SchemaList: []*Schema{{}},
+			want: &DatabaseState{
+				ctx:          &FinderContext{CheckIntegrity: false},
+				name:         "",
+				characterSet: "",
+				collation:    "",
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
+						tableSet: tableStateMap{
+							"t": {
+								name:      "t",
+								tableType: nil,
+								engine:    nil,
+								collation: nil,
+								comment:   nil,
+								columnSet: columnStateMap{},
+								indexSet: indexStateMap{
+									"PRIMARY": {
+										name:           "PRIMARY",
+										expressionList: []string{"a"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newTruePointer(),
+										primary:        newTruePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b": {
+										name:           "b",
+										expressionList: []string{"b"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newTruePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"idx_a": {
+										name:           "idx_a",
+										expressionList: []string{"a"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newFalsePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b_2": {
+										name:           "b_2",
+										expressionList: []string{"b", "a"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newFalsePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b_3": {
+										name:           "b_3",
+										expressionList: []string{"b", "c", "d"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newTruePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b_4": {
+										name:           "b_4",
+										expressionList: []string{"b", "d"},
+										indextype:      newStringPointer("FULLTEXT"),
+										unique:         newFalsePointer(),
+										primary:        newFalsePointer(),
+										visible:        newFalsePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+								},
+							},
+						},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
+			},
+		},
+		{
+			statement: `
+				CREATE TABLE t(
+					a int PRIMARY KEY DEFAULT 1,
+					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+					c int auto_increment NULL COMMENT 'This is a comment',
+					d varchar(10) COLLATE utf8mb4_polish_ci,
+					KEY idx_a (a),
+					INDEX (b, a),
+					UNIQUE (b, c, d),
+					FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+				)
+			`,
+			want: &DatabaseState{
+				ctx:          &FinderContext{CheckIntegrity: false},
+				name:         "",
+				characterSet: "",
+				collation:    "",
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						ctx:  &FinderContext{CheckIntegrity: false},
+						name: "",
+						tableSet: tableStateMap{
+							"t": {
+								name:      "t",
+								tableType: newEmptyStringPointer(),
+								engine:    newEmptyStringPointer(),
+								collation: newEmptyStringPointer(),
+								comment:   newEmptyStringPointer(),
+								columnSet: columnStateMap{
+									"a": {
+										name:         "a",
+										position:     newIntPointer(1),
+										defaultValue: &one,
+										nullable:     newFalsePointer(),
+										columnType:   newStringPointer("int(11)"),
+										characterSet: newEmptyStringPointer(),
+										collation:    newEmptyStringPointer(),
+										comment:      newEmptyStringPointer(),
+									},
+									"b": {
+										name:         "b",
+										position:     newIntPointer(2),
+										defaultValue: nil,
+										nullable:     newFalsePointer(),
+										columnType:   newStringPointer("varchar(200)"),
+										characterSet: newStringPointer("utf8mb4"),
+										collation:    newEmptyStringPointer(),
+										comment:      newEmptyStringPointer(),
+									},
+									"c": {
+										name:         "c",
+										position:     newIntPointer(3),
+										defaultValue: nil,
+										nullable:     newTruePointer(),
+										columnType:   newStringPointer("int(11)"),
+										characterSet: newEmptyStringPointer(),
+										collation:    newEmptyStringPointer(),
+										comment:      newStringPointer("This is a comment"),
+									},
+									"d": {
+										name:         "d",
+										position:     newIntPointer(4),
+										defaultValue: nil,
+										nullable:     newTruePointer(),
+										columnType:   newStringPointer("varchar(10)"),
+										characterSet: newEmptyStringPointer(),
+										collation:    newStringPointer("utf8mb4_polish_ci"),
+										comment:      newEmptyStringPointer(),
+									},
+								},
+								indexSet: indexStateMap{
+									"PRIMARY": {
+										name:           "PRIMARY",
+										expressionList: []string{"a"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newTruePointer(),
+										primary:        newTruePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b": {
+										name:           "b",
+										expressionList: []string{"b"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newTruePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"idx_a": {
+										name:           "idx_a",
+										expressionList: []string{"a"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newFalsePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b_2": {
+										name:           "b_2",
+										expressionList: []string{"b", "a"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newFalsePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b_3": {
+										name:           "b_3",
+										expressionList: []string{"b", "c", "d"},
+										indextype:      newStringPointer("BTREE"),
+										unique:         newTruePointer(),
+										primary:        newFalsePointer(),
+										visible:        newTruePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+									"b_4": {
+										name:           "b_4",
+										expressionList: []string{"b", "d"},
+										indextype:      newStringPointer("FULLTEXT"),
+										unique:         newFalsePointer(),
+										primary:        newFalsePointer(),
+										visible:        newFalsePointer(),
+										comment:        newEmptyStringPointer(),
+									},
+								},
+							},
+						},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
+			},
+		},
+		{
+			statement: `DROP TABLE t1, t2`,
+			want: &DatabaseState{
+				ctx:          &FinderContext{CheckIntegrity: false},
+				name:         "",
+				characterSet: "",
+				collation:    "",
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						ctx:          &FinderContext{CheckIntegrity: false},
+						name:         "",
+						tableSet:     tableStateMap{},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
+			},
+		},
+		{
+			statement: `INSERT INTO test values (1)`,
+			want: &DatabaseState{
+				ctx:          &FinderContext{CheckIntegrity: false},
+				name:         "",
+				characterSet: "",
+				collation:    "",
+				dbType:       db.MySQL,
+				schemaSet: schemaStateMap{
+					"": {
+						ctx:          &FinderContext{CheckIntegrity: false},
+						name:         "",
+						tableSet:     tableStateMap{},
+						viewSet:      viewStateMap{},
+						extensionSet: extensionStateMap{},
+					},
+				},
 			},
 		},
 	}
-
 	for _, test := range tests {
-		state := newDatabaseState(test.origin, &FinderContext{CheckIntegrity: false})
-		err := state.WalkThrough(test.statement)
+		finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false}, db.MySQL)
+		err := finder.WalkThrough(test.statement)
 		if test.err != nil {
 			require.Equal(t, err, test.err)
 			continue
 		}
 		require.NoError(t, err)
-		want := newDatabaseState(test.want, &FinderContext{CheckIntegrity: false})
-		require.Equal(t, want, state, test.statement)
+		require.Equal(t, test.want, finder.Final, test.statement)
 	}
 }
