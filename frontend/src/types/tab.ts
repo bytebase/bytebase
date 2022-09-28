@@ -1,11 +1,4 @@
-import {
-  Advice,
-  DatabaseId,
-  InstanceId,
-  ProjectId,
-  SheetId,
-  TableId,
-} from "../types";
+import { Advice, DatabaseId, InstanceId, ProjectId, SheetId } from "../types";
 
 export type ExecuteConfig = {
   databaseType: string;
@@ -19,7 +12,6 @@ export type Connection = {
   projectId: ProjectId;
   instanceId: InstanceId;
   databaseId: DatabaseId;
-  tableId: TableId;
 };
 
 export interface TabInfo {

@@ -1,9 +1,9 @@
 <template>
-  <div v-if="tableInfo" class="table-schema">
+  <div v-if="table.id !== UNKNOWN_ID" class="table-schema">
     <div class="table-schema--header">
       <div class="table-schema--header-title mr-1 flex items-center">
         <heroicons-outline:table class="h-4 w-4 mr-1" />
-        <span class="font-semibold">{{ tableInfo.name }}</span>
+        <span class="font-semibold">{{ table.name }}</span>
       </div>
       <div
         class="table-schema--header-actions flex-1 flex justify-end space-x-2"
@@ -32,7 +32,7 @@
     </div>
     <div class="table-schema--meta text-gray-500 text-sm">
       <div class="pb-1">
-        <span>{{ tableInfo.rowCount }} rows</span>
+        <span>{{ table.rowCount }} rows</span>
       </div>
       <div class="flex justify-between items-center w-full text-xs py-2">
         <div class="table-schema--content-column">
@@ -45,7 +45,7 @@
     </div>
     <div class="table-schema--content text-sm text-gray-400 overflow-y-auto">
       <div
-        v-for="(column, index) in tableInfo.columnList"
+        v-for="(column, index) in table.columnList"
         :key="index"
         class="flex justify-between items-center w-full p-1 hover:bg-link-hover"
       >
@@ -64,30 +64,25 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
+import { computed } from "vue";
 import { stringify } from "qs";
 
-import { Database } from "@/types";
-import { useSQLEditorStore, useTableStore } from "@/store";
+import { Database, UNKNOWN_ID } from "@/types";
+import { useSQLEditorStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;
 }>();
 
-const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
-
-const tableInfo = ref();
+const table = computed(() => sqlEditorStore.selectedTable);
 
 const gotoAlterSchema = () => {
-  // TODO(Jim): Remove the dependency of `sqlEditorStore.connectionContext.option`
-  // after refactoring <DatabaseTree>
-  const { option } = sqlEditorStore.connectionContext;
-  if (option.type !== "table") {
+  if (table.value.id === UNKNOWN_ID) {
     return;
   }
-  const tableName = option.label;
-  const databaseId = option.parentId;
+  const tableName = table.value.name;
+  const databaseId = table.value.database.id;
 
   const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
   const databaseList =
@@ -109,23 +104,6 @@ const gotoAlterSchema = () => {
 const handleClosePane = () => {
   emit("close-pane");
 };
-
-watch(
-  () => sqlEditorStore.connectionContext.option,
-  async (option) => {
-    if (option && option.type === "table") {
-      const res = await tableStore.fetchTableByDatabaseIdAndTableName({
-        databaseId: option.parentId as number,
-        tableName: option.label as string,
-      });
-
-      tableInfo.value = res;
-    } else {
-      tableInfo.value = null;
-    }
-  },
-  { deep: true }
-);
 </script>
 
 <style scoped>

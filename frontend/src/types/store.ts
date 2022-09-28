@@ -46,7 +46,7 @@ import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
-import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
+import { ConnectionAtom } from "./sqlEditor";
 import { TabInfo } from "./tab";
 import type { DebugLog } from "@/types/debug";
 
@@ -193,7 +193,7 @@ export interface LabelState {
 
 export interface SQLEditorState {
   connectionTree: ConnectionAtom[];
-  connectionContext: ConnectionContext;
+  selectedTable: Table;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
