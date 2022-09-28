@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { computed } from "vue";
 import { v1 as uuidv1 } from "uuid";
+import { isEqual, omit } from "lodash-es";
 import { t } from "../plugins/i18n";
 import { Connection, DEFAULT_PROJECT_ID, TabInfo, UNKNOWN_ID } from "@/types";
 
@@ -35,4 +36,8 @@ export const isTempTab = (tab: TabInfo): boolean => {
   if (!tab.isSaved) return false;
   if (tab.statement) return false;
   return true;
+};
+
+export const isSameConnection = (a: Connection, b: Connection) => {
+  return isEqual(omit(a, "tableId"), omit(b, "tableId"));
 };
