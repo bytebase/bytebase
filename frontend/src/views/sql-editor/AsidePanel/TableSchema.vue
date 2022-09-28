@@ -65,7 +65,7 @@
 
 <script lang="ts" setup>
 import { ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { stringify } from "qs";
 
 import { Database } from "@/types";
 import { useSQLEditorStore, useTableStore } from "@/store";
@@ -78,7 +78,6 @@ const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
 
 const tableInfo = ref();
-const router = useRouter();
 
 const gotoAlterSchema = () => {
   // TODO(Jim): Remove the dependency of `sqlEditorStore.connectionContext.option`
@@ -96,19 +95,15 @@ const gotoAlterSchema = () => {
   const databaseName = databaseList.find(
     (database: Database) => database.id === databaseId
   ).name;
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.database.schema.update",
-      name: `[${databaseName}] Alter schema`,
-      project: projectId,
-      databaseList: databaseId,
-      sql: `ALTER TABLE ${tableName}`,
-    },
-  });
+  const query = {
+    template: "bb.issue.database.schema.update",
+    name: `[${databaseName}] Alter schema`,
+    project: projectId,
+    databaseList: databaseId,
+    sql: `ALTER TABLE ${tableName}`,
+  };
+  const url = `/issue/new?${stringify(query)}`;
+  window.open(url, "_blank");
 };
 
 const handleClosePane = () => {
