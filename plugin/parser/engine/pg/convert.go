@@ -366,6 +366,12 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &copyStmt, nil
+	case *pgquery.Node_CommentStmt:
+		commentStmt := ast.CommentStmt{
+			Comment: in.CommentStmt.Comment,
+		}
+
+		return &commentStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
