@@ -1733,3 +1733,22 @@ func TestUnconvertStmt(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCommentStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "COMMENT ON TABLE tech_book IS 'This is a comment.'",
+			want: []ast.Node{&ast.CommentStmt{
+				Comment: "This is a comment.",
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "COMMENT ON TABLE tech_book IS 'This is a comment.'",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
