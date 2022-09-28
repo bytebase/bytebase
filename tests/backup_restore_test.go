@@ -91,8 +91,8 @@ func TestRetentionPolicy(t *testing.T) {
 	// Change retention period to 1s, and the backup should be quickly removed.
 	_, err = metaDB.ExecContext(ctx, fmt.Sprintf("UPDATE backup_setting SET enabled=true, retention_period_ts=1 WHERE database_id=%d;", database.ID))
 	a.NoError(err)
-	err = ctl.waitBackup(database.ID, backup.ID, func(backup *api.Backup) bool {
-		return backup.RowStatus == api.Archived
+	err = ctl.waitBackupImpl(database.ID, backup.ID, func(backup *api.Backup) (bool, error) {
+		return backup.RowStatus == api.Archived, nil
 	})
 	a.NoError(err)
 	// Wait for 1s to delete the file.
@@ -247,7 +247,7 @@ func TestPITRTwice(t *testing.T) {
 	sort.Slice(backups, func(i int, j int) bool {
 		return backups[i].CreatedTs > backups[j].CreatedTs
 	})
-	err = ctl.waitBackup(database.ID, backups[0].ID, nil)
+	err = ctl.waitBackup(database.ID, backups[0].ID)
 	a.NoError(err)
 
 	log.Debug("Creating issue for the second PITR.")
@@ -478,7 +478,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller, port i
 		StorageBackend: api.BackupStorageBackendLocal,
 	})
 	a.NoError(err)
-	err = ctl.waitBackup(database.ID, backup.ID, nil)
+	err = ctl.waitBackup(database.ID, backup.ID)
 	a.NoError(err)
 
 	return project, mysqlDB, database, backup, func() {
