@@ -229,7 +229,11 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 		createdMessages = append(createdMessages, createdMessageList...)
 	}
 	if len(createdMessages) == 0 {
-		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", filteredRepos))
+		var repoURLs []string
+		for _, repo := range filteredRepos {
+			repoURLs = append(repoURLs, repo.WebURL)
+		}
+		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", repoURLs))
 	}
 	return createdMessages, nil
 }
