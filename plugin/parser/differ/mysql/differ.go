@@ -246,6 +246,7 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 			var oldExpr bytes.Buffer
 			var newExpr bytes.Buffer
 			if err := oldKeyPart.Expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &oldExpr)); err != nil {
+				// Return error will cause the logic to be more complicated, so we just return false here.
 				return false
 			}
 			if err := newKeyPart.Expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &newExpr)); err != nil {
