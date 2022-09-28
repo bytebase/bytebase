@@ -190,7 +190,7 @@ import {
   OAuthWindowEventPayload,
   openWindowForOAuth,
 } from "../../types";
-import { isDev, isValidEmail } from "../../utils";
+import { isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
 import { featureToRef, useActuatorStore, useAuthStore } from "@/store";
 import { storeToRefs } from "pinia";
