@@ -559,7 +559,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
 		file,
-		pushEvent.FileCommit.ID,
+		pushEvent.CommitList[0].ID,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "read content")
@@ -805,8 +805,11 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 		// State based migration.
 		for i, file := range schemaFileList {
+			issueName := file.commit.Title
 			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfoListForSDL[i], file.fileName, webhookEndpointID)
-			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+			if err := s.createIssueFromPushEventImpl(ctx, issueName, pushEvent, repo, migrationType, migrationDetailListForFile); err != nil {
+				return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SDL issue from webhook push event").SetInternal(err)
+			}
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 		}
 
@@ -833,18 +836,27 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		return "", false, activityCreateList, nil
 	}
 
+	issueName := pushEvent.CommitList[0].Title
+	if err := s.createIssueFromPushEventImpl(ctx, issueName, pushEvent, repo, migrationType, migrationDetailList); err != nil {
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create DDL issue from webhook push event").SetInternal(err)
+	}
+
+	return fmt.Sprintf("Created issue %s from push event", issueName), true, activityCreateList, nil
+}
+
+func (s *Server) createIssueFromPushEventImpl(ctx context.Context, issueName string, pushEvent *vcs.PushEvent, repo *api.Repository, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
 	// Find out the creator principal.
 	creatorID := api.SystemBotID
-	if pushEvent.FileCommit.AuthorEmail != "" {
-		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
+	if email := pushEvent.CommitList[0].AuthorEmail; email != "" {
+		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, email)
 		if err != nil {
 			log.Warn("Failed to find the principal with committer email, use system bot instead",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+				zap.String("email", common.EscapeForLogging(email)),
 				zap.Error(err),
 			)
 		} else if committerPrincipal == nil {
 			log.Debug("Principal with committer email does not exist, use system bot instead",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+				zap.String("email", common.EscapeForLogging(email)),
 			)
 		} else {
 			creatorID = committerPrincipal.ID
@@ -860,19 +872,18 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		},
 	)
 	if err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
+		return errors.Wrap(err, "failed to marshal update schema context")
 	}
 
 	issueType := api.IssueDatabaseSchemaUpdate
 	if migrationType == db.Data {
 		issueType = api.IssueDatabaseDataUpdate
 	}
-	commitsMsg := getCommitsMessageShort(pushEvent.CommitList)
 	issueCreate := &api.IssueCreate{
 		ProjectID:     repo.ProjectID,
-		Name:          fmt.Sprintf("%s by %s", migrationType, commitsMsg),
+		Name:          issueName,
 		Type:          issueType,
-		Description:   pushEvent.FileCommit.Message,
+		Description:   pushEvent.CommitList[0].Message,
 		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	}
@@ -882,7 +893,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		if issueType == api.IssueDatabaseDataUpdate {
 			errMsg = "Failed to create data update issue"
 		}
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+		return errors.Wrap(err, errMsg)
 	}
 
 	// Create a project activity after successfully creating the issue from the push event.
@@ -894,7 +905,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		},
 	)
 	if err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+		return errors.Wrap(err, "failed to construct activity payload")
 	}
 
 	activityCreate := &api.ActivityCreate{
@@ -906,10 +917,10 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		Payload:     string(activityPayload),
 	}
 	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+		return errors.Wrapf(err, "failed to create project activity after creating issue from repository push event: %d", issue.ID)
 	}
 
-	return fmt.Sprintf("Created issue %q by %s", issue.Name, commitsMsg), true, activityCreateList, nil
+	return nil
 }
 
 func sortFilesBySchemaVersionGroupByDatabase(repo *api.Repository, fileList []distinctFileItem) ([]distinctFileItem, []*db.MigrationInfo, error) {
@@ -951,16 +962,6 @@ func getCommitsMessage(commitList []vcs.Commit) string {
 		commitIDs = append(commitIDs, c.ID)
 	}
 	return strings.Join(commitIDs, ", ")
-}
-
-func getCommitsMessageShort(commitList []vcs.Commit) string {
-	if len(commitList) == 0 {
-		return ""
-	}
-	if len(commitList) == 1 {
-		return "commit " + commitList[0].ID
-	}
-	return fmt.Sprintf("commits %s...%s", commitList[0].ID, commitList[len(commitList)-1].ID)
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract
