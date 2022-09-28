@@ -157,6 +157,9 @@ const (
 	// MySQLInsertUpdateNoLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE statement.
 	MySQLInsertUpdateNoLimit Type = "bb.plugin.advisor.mysql.insert-update.no-limit"
 
+	// MySQLInsertUpdateNoOrderBy is an advisor type for MySQL no ORDER BY clause in INSERT/UPDATE statement.
+	MySQLInsertUpdateNoOrderBy Type = "bb.plugin.advisor.mysql.insert-update.no-order-by"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
