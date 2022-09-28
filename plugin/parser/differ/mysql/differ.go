@@ -118,16 +118,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 // buildTableMap returns a map of table name to create table statements.
 func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
-	oldTableMap := make(map[string]*ast.CreateTableStmt)
+	tableMap := make(map[string]*ast.CreateTableStmt)
 	for _, node := range nodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := stmt.Table.Name.String()
-			oldTableMap[tableName] = stmt
+			tableMap[tableName] = stmt
 		default:
 		}
 	}
-	return oldTableMap
+	return tableMap
 }
 
 // buildColumnMap returns a map of column name to column definition on a given table.
@@ -204,4 +204,62 @@ func normalizeColumnOptions(options []*ast.ColumnOption) []*ast.ColumnOption {
 		return retOptions[i].Tp < retOptions[j].Tp
 	})
 	return retOptions
+}
+
+// isIndexEqual returns true if definitions of two indexes are the same.
+func isIndexEqual(old, new *ast.Constraint) bool {
+	// {INDEX | KEY} [index_name] [index_type] (key_part,...) [index_option] ...
+	if old.Name != new.Name {
+		return false
+	}
+	if old.Option.Tp != new.Option.Tp {
+		return false
+	}
+	if !isKeyPartEqual(old.Keys, new.Keys) {
+		return false
+	}
+	if !isIndexOptionEqual(old.Option, new.Option) {
+		return false
+	}
+	return true
+}
+
+// isKeyPartEqual returns true if two key parts are the same.
+func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
+	if len(old) != len(new) {
+		return false
+	}
+	// key_part: {col_name [(length)] | (expr)} [ASC | DESC]
+	for idx, oldKeyPart := range old {
+		newKeyPart := new[idx]
+		if oldKeyPart.Column.Name.String() != newKeyPart.Column.Name.String() {
+			return false
+		}
+		if oldKeyPart.Length != newKeyPart.Length {
+			return false
+		}
+		// TODO(zp): handle the expr and order.
+	}
+	return true
+}
+
+// isIndexOptionEqual returns true if two index options are the same.
+func isIndexOptionEqual(old, new *ast.IndexOption) bool {
+	if old.KeyBlockSize != new.KeyBlockSize {
+		return false
+	}
+	if old.Tp != new.Tp {
+		return false
+	}
+	if old.ParserName.O != new.ParserName.O {
+		return false
+	}
+	if old.Comment != new.Comment {
+		return false
+	}
+	if old.Visibility != new.Visibility {
+		return false
+	}
+	// TODO(zp): support ENGINE_ATTRIBUTE and SECONDARY_ENGINE_ATTRIBUTE.
+	return true
 }
