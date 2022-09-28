@@ -26,11 +26,6 @@ export enum SortText {
   KEYWORD = "3",
 }
 
-// TODO(Jim): refactor <TableSchema> to get rid of this structure totally.
-export type ConnectionContext = {
-  option: ConnectionAtom;
-};
-
 export interface QueryHistory {
   id: ActivityId;
 
