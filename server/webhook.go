@@ -805,7 +805,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 		// State based migration.
 		for i, file := range schemaFileList {
-			_, migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfoListForSDL[i], file.fileName, webhookEndpointID)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfoListForSDL[i], file.fileName, webhookEndpointID)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 		}
