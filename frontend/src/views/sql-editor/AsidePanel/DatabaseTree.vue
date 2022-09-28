@@ -60,6 +60,7 @@ import {
 import {
   emptyConnection,
   getHighlightHTMLByKeyWords,
+  isSameConnection,
   mapConnectionAtom,
 } from "@/utils";
 import { generateInstanceNode, generateTableItem } from "./utils";
@@ -78,6 +79,7 @@ const { t } = useI18n();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const sqlEditorStore = useSQLEditorStore();
+const tableStore = useTableStore();
 const tabStore = useTabStore();
 
 const defaultExpandedKeys = ref<string[]>([]);
@@ -143,6 +145,20 @@ watch(
 const setConnection = (option: ConnectionAtom) => {
   if (option) {
     const conn = emptyConnection();
+    const connect = () => {
+      if (isSameConnection(tabStore.currentTab.connection, conn)) {
+        // Don't go further if the connection doesn't change.
+        return;
+      }
+      if (tabStore.currentTab.sheetId) {
+        // We won't mutate a saved sheet's connection.
+        // So we'll set connection in a temp or new tab.
+        tabStore.selectOrAddTempTab();
+      }
+      tabStore.updateCurrentTab({
+        connection: conn,
+      });
+    };
 
     // If selected item is instance node
     if (option.type === "instance") {
@@ -157,25 +173,17 @@ const setConnection = (option: ConnectionAtom) => {
       const databaseId = option.parentId;
       const databaseInfo = databaseStore.getDatabaseById(databaseId);
       const instanceId = databaseInfo.instance.id;
+      const tableId = option.id;
       conn.instanceId = instanceId;
       conn.databaseId = databaseId;
-      conn.tableId = option.id;
+      tableStore
+        .getOrFetchTableByDatabaseIdAndTableId(databaseId, tableId)
+        .then((table) => {
+          sqlEditorStore.selectedTable = table;
+        });
     }
 
-    if (tabStore.currentTab.sheetId) {
-      // We won't mutate a saved sheet's connection.
-      // So we'll set connection in a temp or new tab.
-      tabStore.selectOrAddTempTab();
-    }
-    tabStore.updateCurrentTab({
-      connection: conn,
-    });
-
-    // TODO(Jim): This part is for <TableSchema> only
-    // and should be removed after upcoming refactor.
-    sqlEditorStore.setConnectionContext({
-      option,
-    });
+    connect();
   }
 };
 
@@ -246,15 +254,6 @@ const nodeProps = (info: { option: ConnectionAtom }) => {
 
   return {
     onClick(e: MouseEvent) {
-      // TODO(Jim): This part is for <TableSchema> only
-      // and should be removed after upcoming refactor.
-      const targetEl = e.target as HTMLElement;
-      if (option && targetEl.className === "n-tree-node-content__text") {
-        sqlEditorStore.setConnectionContext({
-          option,
-        });
-      }
-
       setConnection(option);
     },
     onContextmenu(e: MouseEvent) {
