@@ -258,6 +258,7 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 		}
 		// TODO(zp): TiDB MySQL parser doesn't record the index order field in go struct, but it can parse correctly.
 		// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/parser.y?L3688
+		// We can support the index order until we implement the parser by ourself or https://github.com/pingcap/tidb/pull/38137 is merged.
 	}
 	return true
 }
