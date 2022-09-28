@@ -91,9 +91,7 @@ func TestRetentionPolicy(t *testing.T) {
 	// Change retention period to 1s, and the backup should be quickly removed.
 	_, err = metaDB.ExecContext(ctx, fmt.Sprintf("UPDATE backup_setting SET enabled=true, retention_period_ts=1 WHERE database_id=%d;", database.ID))
 	a.NoError(err)
-	err = ctl.waitBackupImpl(database.ID, backup.ID, func(backup *api.Backup) (bool, error) {
-		return backup.RowStatus == api.Archived, nil
-	})
+	err = ctl.waitBackupArchived(database.ID, backup.ID)
 	a.NoError(err)
 	// Wait for 1s to delete the file.
 	time.Sleep(1 * time.Second)

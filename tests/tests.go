@@ -1298,12 +1298,8 @@ func (ctl *controller) listBackups(databaseID int) ([]*api.Backup, error) {
 	return backups, nil
 }
 
-func (ctl *controller) waitBackup(databaseID, backupID int) error {
-	return ctl.waitBackupImpl(databaseID, backupID, waitForBackupStatus)
-}
-
 // waitBackup waits for a backup to be done.
-func (ctl *controller) waitBackupImpl(databaseID, backupID int, shouldWait func(*api.Backup) (bool, error)) error {
+func (ctl *controller) waitBackup(databaseID, backupID int) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -1323,26 +1319,44 @@ func (ctl *controller) waitBackupImpl(databaseID, backupID int, shouldWait func(
 		if backup == nil {
 			return errors.Errorf("backup %v for database %v not found", backupID, databaseID)
 		}
-		stop, err := shouldWait(backup)
-		if err != nil {
-			return err
-		}
-		if stop {
+		switch backup.Status {
+		case api.BackupStatusDone:
 			return nil
+		case api.BackupStatusFailed:
+			return errors.Errorf("backup %v for database %v failed", backupID, databaseID)
 		}
 	}
 	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
 	return errors.Errorf("failed to wait for backup as this condition should never be reached")
 }
 
-func waitForBackupStatus(backup *api.Backup) (stopWait bool, err error) {
-	switch backup.Status {
-	case api.BackupStatusDone:
-		return true, nil
-	case api.BackupStatusFailed:
-		return true, errors.Errorf("backup %d for database %d failed", backup.ID, backup.DatabaseID)
+// waitBackupArchived waits for a backup to be archived.
+func (ctl *controller) waitBackupArchived(databaseID, backupID int) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	log.Debug("Waiting for backup.", zap.Int("id", backupID))
+	for range ticker.C {
+		backups, err := ctl.listBackups(databaseID)
+		if err != nil {
+			return err
+		}
+		var backup *api.Backup
+		for _, b := range backups {
+			if b.ID == backupID {
+				backup = b
+				break
+			}
+		}
+		if backup == nil {
+			return errors.Errorf("backup %d for database %d not found", backupID, databaseID)
+		}
+		if backup.RowStatus == api.Archived {
+			return nil
+		}
 	}
-	return false, nil
+	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
+	return errors.Errorf("failed to wait for backup as this condition should never be reached")
 }
 
 // createSheet creates a sheet.
