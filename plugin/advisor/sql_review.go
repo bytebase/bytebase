@@ -114,6 +114,8 @@ const (
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
 	// SchemaRuleInsertUpdateNoLimit disallow the LIMIT clause in INSERT and UPDATE statement.
 	SchemaRuleInsertUpdateNoLimit SQLReviewRuleType = "insert-update.no-limit"
+	// SchemaRuleInsertUpdateNoOrderBy disallow the ORDER BY clause in INSERT and UPDATE statement.
+	SchemaRuleInsertUpdateNoOrderBy SQLReviewRuleType = "insert-update.no-order-by"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -785,6 +787,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertUpdateNoLimit, nil
+		}
+	case SchemaRuleInsertUpdateNoOrderBy:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertUpdateNoOrderBy, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

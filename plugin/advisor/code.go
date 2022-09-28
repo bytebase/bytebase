@@ -102,6 +102,8 @@ const (
 	InsertTooManyRows Code = 1101
 	UpdateUseLimit    Code = 1102
 	InsertUseLimit    Code = 1103
+	UpdateUseOrderBy  Code = 1104
+	InsertUseOrderBy  Code = 1105
 )
 
 // Int returns the int type of code.
