@@ -40,7 +40,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 	newNodes, _, err := parser.New().Parse(newStmt, "", "")
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
+		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
 	var diff []ast.Node
