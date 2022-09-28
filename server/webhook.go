@@ -215,8 +215,8 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 	}
 	if len(createdMessageList) == 0 {
 		log.Warn("No issue created from the push event",
-			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
-			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			zap.String("vcsRepoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
+			zap.String("vcsRepoName", baseVCSPushEvent.RepositoryFullPath),
 			zap.String("commits", getCommitsMessage(commitList)))
 	}
 	return createdMessageList, nil
