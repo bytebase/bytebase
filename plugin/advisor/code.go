@@ -72,6 +72,7 @@ const (
 	NoTableComment                    Code = 605
 	TableCommentTooLong               Code = 606
 	TableExists                       Code = 607
+	CreateTablePartition              Code = 608
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
