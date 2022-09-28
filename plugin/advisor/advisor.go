@@ -154,6 +154,9 @@ const (
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
 
+	// MySQLInsertUpdateNoLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE statement.
+	MySQLInsertUpdateNoLimit Type = "bb.plugin.advisor.mysql.insert-update.no-limit"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
