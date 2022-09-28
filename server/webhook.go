@@ -844,7 +844,8 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 			)
 		} else if committerPrincipal == nil {
 			log.Debug("Principal with committer email does not exist, use system bot instead",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)))
+				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+			)
 		} else {
 			creatorID = committerPrincipal.ID
 		}
