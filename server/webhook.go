@@ -564,19 +564,17 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, webhookEndpointID string) (*db.MigrationInfo, []*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, webhookEndpointID string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo["DB_NAME"]
 	if dbName == "" {
-		log.Debug("Ignored schema file without a database name",
-			zap.String("file", file),
-		)
-		return nil, nil, nil
+		log.Debug("Ignored schema file without a database name", zap.String("file", file))
+		return nil, nil
 	}
 
-	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
+	statement, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
-		return nil, nil, []*api.ActivityCreate{activityCreate}
+		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	activityCreateList := []*api.ActivityCreate{}
@@ -586,61 +584,43 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				DatabaseName: dbName,
-				Statement:    content,
+				Statement:    statement,
 			},
 		)
-	} else {
-		databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+		return migrationDetailList, nil
+	}
+
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+	if err != nil {
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+		return nil, []*api.ActivityCreate{activityCreate}
+	}
+
+	for _, database := range databases {
+		diff, err := s.computeDatabaseSchemaDiff(ctx, database, statement)
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
-			return nil, nil, []*api.ActivityCreate{activityCreate}
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
+			activityCreateList = append(activityCreateList, activityCreate)
+			continue
 		}
 
-		for _, database := range databases {
-			diff, err := s.computeDatabaseSchemaDiff(ctx, database, content)
-			if err != nil {
-				activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
-				activityCreateList = append(activityCreateList, activityCreate)
-				continue
-			}
-
-			migrationDetailList = append(migrationDetailList,
-				&api.MigrationDetail{
-					DatabaseID: database.ID,
-					Statement:  diff,
-				},
-			)
-		}
+		migrationDetailList = append(migrationDetailList,
+			&api.MigrationDetail{
+				DatabaseID: database.ID,
+				Statement:  diff,
+			},
+		)
 	}
 
-	migrationInfo := &db.MigrationInfo{
-		Version:     common.DefaultMigrationVersion(),
-		Namespace:   dbName,
-		Database:    dbName,
-		Environment: envName,
-		Source:      db.VCS,
-		Type:        db.Migrate,
-		Description: "Apply schema diff",
-	}
-
-	added := strings.NewReplacer(
-		"{{ENV_NAME}}", envName,
-		"{{DB_NAME}}", dbName,
-		"{{VERSION}}", migrationInfo.Version,
-		"{{TYPE}}", strings.ToLower(string(migrationInfo.Type)),
-		"{{DESCRIPTION}}", strings.ReplaceAll(migrationInfo.Description, " ", "_"),
-	).Replace(repo.FilePathTemplate)
-	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-	pushEvent.FileCommit.Added = path.Join(repo.BaseDirectory, added)
-	return migrationInfo, migrationDetailList, activityCreateList
+	return migrationDetailList, activityCreateList
 }
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, file string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
-	content, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, fileName string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+	statement, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, fileName)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
@@ -651,7 +631,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				DatabaseName:  migrationInfo.Database,
-				Statement:     content,
+				Statement:     statement,
 				SchemaVersion: migrationInfo.Version,
 			},
 		)
@@ -660,7 +640,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 
 	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
@@ -669,7 +649,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 			migrationDetailList = append(migrationDetailList,
 				&api.MigrationDetail{
 					DatabaseID:    database.ID,
-					Statement:     content,
+					Statement:     statement,
 					SchemaVersion: migrationInfo.Version,
 				},
 			)
@@ -677,45 +657,53 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		return migrationDetailList, nil
 	}
 
+	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileName, migrationInfo.Version, statement); err != nil {
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project task"))
+		return nil, []*api.ActivityCreate{activityCreate}
+	}
+
+	return nil, nil
+}
+
+func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*api.Database, fileName, schemaVersion, statement string) error {
 	// For modified files, we try to update the existing issue's statement.
 	for _, database := range databases {
 		find := &api.TaskFind{
 			DatabaseID: &database.ID,
 			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
 			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
-			Payload:    fmt.Sprintf("payload->>'schemaVersion' = '%s'", migrationInfo.Version),
+			Payload:    fmt.Sprintf("payload->>'schemaVersion' = '%s'", schemaVersion),
 		}
 		taskList, err := s.store.FindTask(ctx, find, true)
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project task"))
-			return nil, []*api.ActivityCreate{activityCreate}
+			return err
 		}
 		if len(taskList) == 0 {
 			continue
 		}
 		if len(taskList) > 1 {
-			log.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", zap.Int("databaseID", database.ID), zap.String("schemaVersion", migrationInfo.Version))
-			return nil, nil
+			log.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", zap.Int("databaseID", database.ID), zap.String("schemaVersion", schemaVersion))
+			return nil
 		}
 		task := taskList[0]
 		taskPatch := api.TaskPatch{
 			ID:        task.ID,
-			Statement: &content,
+			Statement: &statement,
 			UpdaterID: api.SystemBotID,
 		}
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
 			log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
-			return nil, nil
+			return nil
 		}
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
-		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", file), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
+		log.Debug("Patching task for modified file VCS push event", zap.String("fileName", fileName), zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID))
 		if _, err := s.patchTask(ctx, task, &taskPatch, issue); err != nil {
 			log.Error("Failed to patch task with the same migration version", zap.Int("issueID", issue.ID), zap.Int("taskID", task.ID), zap.Error(err))
-			return nil, nil
+			return nil
 		}
 	}
-	return nil, nil
+	return nil
 }
 
 // createIssueFromPushEvent attempts to create a new issue for the given files of

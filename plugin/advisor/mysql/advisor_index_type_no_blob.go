@@ -225,7 +225,7 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 		ColumnName: columnName,
 	})
 	if column != nil {
-		return column.Type, nil
+		return column.Type(), nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }

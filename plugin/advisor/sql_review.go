@@ -87,6 +87,8 @@ const (
 	SchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "column.auto-increment-must-integer"
 	// SchemaRuleColumnTypeRestriction enforce the column type restriction.
 	SchemaRuleColumnTypeRestriction SQLReviewRuleType = "column.type-restriction"
+	// SchemaRuleColumnDisallowSetCharset disallow set column charset.
+	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -105,6 +107,9 @@ const (
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
+
+	// SchemaRuleInsertRowLimit enforce the insert row limit.
+	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -198,7 +203,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit:
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit:
 		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -689,6 +694,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLColumnTypeRestriction, nil
 		}
+	case SchemaRuleColumnDisallowSetCharset:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLDisallowSetColumnCharset, nil
+		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -756,6 +766,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTypeNoBlob, nil
+		}
+	case SchemaRuleInsertRowLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertRowLimit, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

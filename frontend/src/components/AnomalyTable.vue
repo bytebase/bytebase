@@ -230,7 +230,7 @@ export default defineComponent({
                 params: {
                   databaseSlug: databaseSlug(anomaly.database!),
                 },
-                hash: "#backup",
+                hash: "#backup-and-restore",
               });
             },
             title: t("anomaly.action.configure-backup"),
@@ -244,7 +244,7 @@ export default defineComponent({
                 params: {
                   databaseSlug: databaseSlug(anomaly.database!),
                 },
-                hash: "#backup",
+                hash: "#backup-and-restore",
               });
             },
             title: t("anomaly.action.view-backup"),

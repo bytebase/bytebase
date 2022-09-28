@@ -106,6 +106,9 @@ const (
 	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
 	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
 
+	// MySQLDisallowSetColumnCharset is an advisor type for MySQL disallow set column charset.
+	MySQLDisallowSetColumnCharset Type = "bb.plugin.advisor.mysql.column.disallow-set-charset"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
@@ -144,6 +147,9 @@ const (
 
 	// MySQLStatementDisallowCommit is an advisor type for MySQL to disallow commit.
 	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
+
+	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
+	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
 
 	// PostgreSQL Advisor.
 

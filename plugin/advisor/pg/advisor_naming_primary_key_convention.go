@@ -145,9 +145,9 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		}
 	case *ast.RenameConstraintStmt:
 		tableName, index := checker.findIndex(node.Table.Schema, node.Table.Name, node.ConstraintName)
-		if index != nil && index.Primary {
+		if index != nil && index.Primary() {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{
@@ -160,9 +160,9 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	case *ast.RenameIndexStmt:
 		// "ALTER INDEX name RENAME TO new_name" doesn't take a table name
 		tableName, index := checker.findIndex(node.Table.Schema, "", node.IndexName)
-		if index != nil && index.Primary {
+		if index != nil && index.Primary() {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{
@@ -194,7 +194,7 @@ func (checker *namingPKConventionChecker) getPrimaryKeyMetadata(schemaName strin
 		tableName, index := checker.findIndex(schemaName, tableName, constraint.IndexName)
 		if index != nil {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			return &indexMetaData{
@@ -209,7 +209,7 @@ func (checker *namingPKConventionChecker) getPrimaryKeyMetadata(schemaName strin
 }
 
 // findIndex returns index found in catalogs, nil if not found.
-func (checker *namingPKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.Index) {
+func (checker *namingPKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, *catalog.IndexState) {
 	return checker.catalog.Origin.FindIndex(&catalog.IndexFind{
 		SchemaName: normalizeSchemaName(schemaName),
 		TableName:  tableName,
