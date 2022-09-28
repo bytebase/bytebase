@@ -174,8 +174,8 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 	if len(distinctFileList) == 0 {
 		log.Warn("No files found from the push event",
-			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
-			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			zap.String("vcsRepoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
+			zap.String("vcsRepoName", baseVCSPushEvent.RepositoryFullPath),
 			zap.String("commits", getCommitsMessage(commitList)))
 		return nil, nil
 	}
@@ -541,6 +541,9 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", webhookEndpointID)
 	}
 
+	// In mono-repository settings, one GitLab Project/GitHub Repository may correspond to multiple Bytebase Project/Repository.
+	// In this case, they are the same except for the record ID in database.
+	// So we can just use the first one in the list.
 	repo := repos[0]
 	content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
