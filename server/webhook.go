@@ -77,7 +77,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
 		if err != nil {
@@ -150,7 +149,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
 		commitList := convertGitHubCommitList(pushEvent.Commits)
 		if len(pushEvent.Commits) == 0 {
@@ -547,6 +545,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 	// In this case, they are the same except for the record ID in database.
 	// So we can just use the first one in the list.
 	repo := repos[0]
+	lastCommitID := pushEvent.CommitList[len(pushEvent.CommitList)-1].ID
 	content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
 		common.OauthContext{
@@ -559,7 +558,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
 		file,
-		pushEvent.CommitList[0].ID,
+		lastCommitID,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "read content")
