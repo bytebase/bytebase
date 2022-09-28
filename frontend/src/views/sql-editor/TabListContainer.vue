@@ -291,7 +291,6 @@ onUnmounted(() => {
 
 <style scoped>
 .tab-list-container {
-  height: var(--tab-height);
   @apply flex box-border;
   @apply text-gray-500 text-sm;
   @apply border-b;
