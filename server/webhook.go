@@ -835,15 +835,16 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 
 	// Find out the creator principal.
 	creatorID := api.SystemBotID
-	if authorEmail := pushEvent.FileCommit.AuthorEmail; authorEmail != "" {
+	if pushEvent.FileCommit.AuthorEmail != "" {
 		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
 		if err != nil {
 			log.Warn("Failed to find the principal with committer email, use system bot instead",
-				zap.String("email", common.EscapeForLogging(authorEmail)),
-				zap.Error(err))
+				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+				zap.Error(err),
+			)
 		} else if committerPrincipal == nil {
 			log.Debug("Principal with committer email does not exist, use system bot instead",
-				zap.String("email", common.EscapeForLogging(authorEmail)))
+				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)))
 		} else {
 			creatorID = committerPrincipal.ID
 		}
