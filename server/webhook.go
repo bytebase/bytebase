@@ -224,6 +224,8 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 
 func (s *Server) validateWebhookRequest(ctx context.Context, c echo.Context) (string, []*api.Repository, *echo.HTTPError) {
 	webhookEndpointID := c.Param("id")
+	// In mono-repository settings, one GitLab Project/GitHub Repository may correspond to multiple Bytebase Project/Repository.
+	// We need to further filter out the repositories for this webhook push event.
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return "", nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
