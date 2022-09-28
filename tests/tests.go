@@ -104,6 +104,7 @@ var (
 
 type controller struct {
 	server      *server.Server
+	profile     server.Profile
 	client      *http.Client
 	cookie      string
 	vcsProvider fake.VCSProvider
@@ -191,6 +192,7 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProvi
 		return err
 	}
 	ctl.server = server
+	ctl.profile = profile
 
 	return ctl.start(ctx, vcsProviderCreator, port)
 }

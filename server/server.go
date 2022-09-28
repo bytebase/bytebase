@@ -543,8 +543,3 @@ func (s *Server) Shutdown(ctx context.Context) error {
 func (s *Server) GetEcho() *echo.Echo {
 	return s.e
 }
-
-// GetProfile returns the server's profile.
-func (s *Server) GetProfile() Profile {
-	return s.profile
-}
