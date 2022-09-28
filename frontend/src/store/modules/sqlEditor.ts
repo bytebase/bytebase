@@ -12,6 +12,7 @@ import {
   UNKNOWN_ID,
   InstanceId,
   Connection,
+  ActivitySQLEditorQueryPayload,
 } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -149,24 +150,23 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         await useActivityStore().fetchActivityListForQueryHistory({
           limit: 20,
         });
-      const queryHistoryList: QueryHistory[] = activityList.map(
-        (history: any) => {
-          return {
-            id: history.id,
-            creator: history.creator,
-            createdTs: history.createdTs,
-            updatedTs: history.updatedTs,
-            statement: history.payload.statement,
-            durationNs: history.payload.durationNs,
-            instanceName: history.payload.instanceName,
-            databaseName: history.payload.databaseName,
-            error: history.payload.error,
-            createdAt: dayjs(history.createdTs * 1000).format(
-              "YYYY-MM-DD HH:mm:ss"
-            ),
-          };
-        }
-      );
+      const queryHistoryList: QueryHistory[] = activityList.map((history) => {
+        const payload = history.payload as ActivitySQLEditorQueryPayload;
+        return {
+          id: history.id,
+          creator: history.creator,
+          createdTs: history.createdTs,
+          updatedTs: history.updatedTs,
+          statement: payload.statement,
+          durationNs: payload.durationNs,
+          instanceName: payload.instanceName,
+          databaseName: payload.databaseName,
+          error: payload.error,
+          createdAt: dayjs(history.createdTs * 1000).format(
+            "YYYY-MM-DD HH:mm:ss"
+          ),
+        };
+      });
 
       this.setQueryHistoryList(
         queryHistoryList.sort((a, b) => b.createdTs - a.createdTs)
