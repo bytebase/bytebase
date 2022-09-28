@@ -47,7 +47,7 @@ import { escape } from "lodash-es";
 import { DropdownOption } from "naive-ui";
 import { ref, computed, h, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { stringify } from "qs";
 
 import { ConnectionAtom, UNKNOWN_ID } from "@/types";
 import {
@@ -75,7 +75,6 @@ type DropdownOptionWithConnectionAtom = DropdownOption & {
 
 const { t } = useI18n();
 
-const router = useRouter();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const sqlEditorStore = useSQLEditorStore();
@@ -212,19 +211,15 @@ const gotoAlterSchema = (option: ConnectionAtom) => {
     return;
   }
 
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.database.schema.update",
-      name: `[${database.name}] Alter schema`,
-      project: database.project.id,
-      databaseList: databaseId,
-      sql: `ALTER TABLE ${option.label}`,
-    },
-  });
+  const query = {
+    template: "bb.issue.database.schema.update",
+    name: `[${database.name}] Alter schema`,
+    project: database.project.id,
+    databaseList: databaseId,
+    sql: `ALTER TABLE ${option.label}`,
+  };
+  const url = `/issue/new?${stringify(query)}`;
+  window.open(url, "_blank");
 };
 
 const handleSelect = (key: string) => {
