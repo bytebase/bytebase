@@ -226,10 +226,8 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Wrap(err, "failed to schedule timing task check")
 	}
 
-	if s.server.profile.Mode == common.ReleaseModeDev {
-		if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
-			return nil, errors.Wrap(err, "failed to schedule LGTM task check")
-		}
+	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
 
 	if err := s.schedulePITRTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
