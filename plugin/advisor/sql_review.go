@@ -68,6 +68,8 @@ const (
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
 	// SchemaRuleTableNotExists check the table name conflict.
 	SchemaRuleTableNotExists SQLReviewRuleType = "table.not-exists"
+	// SchemaRuleTableDisallowPartition disallow the table partition.
+	SchemaRuleTableDisallowPartition SQLReviewRuleType = "table.disallow-partition"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -722,6 +724,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableCommentConvention, nil
+		}
+	case SchemaRuleTableDisallowPartition:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableDisallowPartition, nil
 		}
 	case SchemaRuleMySQLEngine:
 		if engine == db.MySQL {
