@@ -238,7 +238,25 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 		if oldKeyPart.Length != newKeyPart.Length {
 			return false
 		}
-		// TODO(zp): handle the expr and order.
+		if (oldKeyPart.Expr == nil) != (newKeyPart.Expr == nil) {
+			// if the key part uses expression instead of column name, the expression node is nil.
+			return false
+		}
+		if oldKeyPart.Expr != nil && newKeyPart.Expr != nil {
+			var oldExpr bytes.Buffer
+			var newExpr bytes.Buffer
+			if err := oldKeyPart.Expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &oldExpr)); err != nil {
+				return false
+			}
+			if err := newKeyPart.Expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &newExpr)); err != nil {
+				return false
+			}
+			if oldExpr.String() != newExpr.String() {
+				return false
+			}
+		}
+		// TODO(zp): TiDB MySQL parser doesn't record the index order field in go struct, but it can parse correctly.
+		// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/parser.y?L3688
 	}
 	return true
 }
