@@ -11,7 +11,6 @@ export const emptyConnection = (): Connection => {
     projectId: DEFAULT_PROJECT_ID,
     instanceId: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
-    tableId: UNKNOWN_ID,
   };
 };
 
@@ -35,4 +34,8 @@ export const isTempTab = (tab: TabInfo): boolean => {
   if (!tab.isSaved) return false;
   if (tab.statement) return false;
   return true;
+};
+
+export const isSameConnection = (a: Connection, b: Connection): boolean => {
+  return a.instanceId === b.instanceId && a.databaseId === b.databaseId;
 };

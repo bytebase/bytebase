@@ -4,7 +4,6 @@ import {
   SQLEditorState,
   ConnectionAtom,
   QueryInfo,
-  ConnectionContext,
   Database,
   DatabaseId,
   ProjectId,
@@ -12,6 +11,7 @@ import {
   UNKNOWN_ID,
   InstanceId,
   Connection,
+  unknown,
 } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -22,14 +22,10 @@ import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
 import { emptyConnection } from "@/utils";
 
-export const getDefaultConnectionContext = () => ({
-  option: {} as any,
-});
-
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
     connectionTree: [],
-    connectionContext: getDefaultConnectionContext(),
+    selectedTable: unknown("TABLE"),
     isLoadingTree: false,
     isShowExecutingHint: false,
     shouldFormatContent: false,
@@ -80,9 +76,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
     setConnectionTree(payload: ConnectionAtom[]) {
       this.connectionTree = payload;
-    },
-    setConnectionContext(payload: Partial<ConnectionContext>) {
-      Object.assign(this.connectionContext, payload);
     },
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;
