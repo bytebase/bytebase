@@ -572,21 +572,6 @@ const updateInstanceDataSource = () => {
 };
 
 const handleCreateDataSource = (type: DataSourceType) => {
-  // Don't allow creating RO in UI for SNOWFLAKE/POSTGRES till we figure out the grant.
-  if (
-    state.instance.engine === "SNOWFLAKE" ||
-    state.instance.engine === "POSTGRES"
-  ) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: t("instance.no-read-only-data-source-support", {
-        database: state.instance.engine,
-      }),
-    });
-    return;
-  }
-
   const tempDataSource = {
     id: UNKNOWN_ID,
     instanceId: state.instance.id,
