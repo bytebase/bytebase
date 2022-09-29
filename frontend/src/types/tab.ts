@@ -1,4 +1,4 @@
-import { Advice, DatabaseId, InstanceId, ProjectId, SheetId } from "../types";
+import { Advice, DatabaseId, InstanceId, SheetId } from "../types";
 
 export type ExecuteConfig = {
   databaseType: string;
@@ -9,7 +9,6 @@ export type ExecuteOption = {
 };
 
 export type Connection = {
-  projectId: ProjectId;
   instanceId: InstanceId;
   databaseId: DatabaseId;
 };

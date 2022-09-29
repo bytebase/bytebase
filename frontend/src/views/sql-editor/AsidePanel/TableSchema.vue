@@ -67,7 +67,7 @@
 import { computed } from "vue";
 import { stringify } from "qs";
 
-import { Database, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { useSQLEditorStore } from "@/store";
 
 const emit = defineEmits<{
@@ -81,21 +81,14 @@ const gotoAlterSchema = () => {
   if (table.value.id === UNKNOWN_ID) {
     return;
   }
-  const tableName = table.value.name;
-  const databaseId = table.value.database.id;
 
-  const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
-  const databaseList =
-    sqlEditorStore.connectionInfo.databaseListByProjectId.get(projectId) as any;
-  const databaseName = databaseList.find(
-    (database: Database) => database.id === databaseId
-  ).name;
+  const { database } = table.value;
   const query = {
     template: "bb.issue.database.schema.update",
-    name: `[${databaseName}] Alter schema`,
-    project: projectId,
-    databaseList: databaseId,
-    sql: `ALTER TABLE ${tableName}`,
+    name: `[${database.name}] Alter schema`,
+    project: database.project.id,
+    databaseList: database.id,
+    sql: `ALTER TABLE ${table.value.name}`,
   };
   const url = `/issue/new?${stringify(query)}`;
   window.open(url, "_blank");
