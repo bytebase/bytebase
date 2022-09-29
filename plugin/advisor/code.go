@@ -79,7 +79,7 @@ const (
 	NotCurrentDatabase Code = 702
 	DatabaseIsDeleted  Code = 703
 
-	// 801 miss index error code.
+	// 801 ~ 899 index error code.
 	NotUseIndex                Code = 801
 	IndexKeyNumberExceedsLimit Code = 802
 	IndexPKType                Code = 803
@@ -91,9 +91,8 @@ const (
 	IndexNotExists             Code = 809
 	IncorrectIndexName         Code = 810
 	SpatialIndexKeyNullable    Code = 811
-
-	// 901 ~ 999 index error code.
-	DuplicateColumnInIndex Code = 901
+	DuplicateColumnInIndex     Code = 812
+	IndexCountExceedsLimit     Code = 813
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
