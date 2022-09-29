@@ -4,14 +4,22 @@
       <p class="text-lg font-medium leading-7 text-main">
         {{ $t("project.overview.recent-activity") }}
       </p>
-      <ActivityTable :activity-list="state.activityList" />
-      <router-link
-        :to="`#activity`"
-        class="mt-2 flex justify-end normal-link"
-        exact-active-class=""
-      >
-        {{ $t("project.overview.view-all") }}
-      </router-link>
+      <div class="relative">
+        <ActivityTable :activity-list="state.activityList" />
+        <div
+          v-if="state.isFetchingActivityList"
+          class="absolute inset-0 flex flex-col items-center justify-center bg-white/70"
+        >
+          <BBSpin />
+        </div>
+        <router-link
+          :to="`#activity`"
+          class="mt-2 flex justify-end normal-link"
+          exact-active-class=""
+        >
+          {{ $t("project.overview.view-all") }}
+        </router-link>
+      </div>
     </div>
 
     <div class="space-y-2">
@@ -149,7 +157,7 @@ import {
   PropType,
   computed,
   defineComponent,
-  onBeforeMount,
+  watch,
 } from "vue";
 import { NSpin } from "naive-ui";
 import ActivityTable from "../components/ActivityTable.vue";
@@ -166,6 +174,7 @@ const ACTIVITY_LIMIT = 5;
 
 interface LocalState {
   activityList: Activity[];
+  isFetchingActivityList: boolean;
   progressIssueList: Issue[];
   closedIssueList: Issue[];
   databaseNameFilter: string;
@@ -197,6 +206,7 @@ export default defineComponent({
   setup(props) {
     const state = reactive<LocalState>({
       activityList: [],
+      isFetchingActivityList: false,
       progressIssueList: [],
       closedIssueList: [],
       databaseNameFilter: "",
@@ -206,6 +216,8 @@ export default defineComponent({
     const activityStore = useActivityStore();
 
     const prepareActivityList = () => {
+      state.isFetchingActivityList = true;
+      state.activityList = [];
       const requests = [
         activityStore.fetchActivityListForDatabaseByProjectId({
           projectId: props.project.id,
@@ -221,6 +233,8 @@ export default defineComponent({
         const flattenList = lists.flatMap((list) => list);
         flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
         state.activityList = flattenList.slice(0, ACTIVITY_LIMIT);
+
+        state.isFetchingActivityList = false;
       });
     };
 
@@ -232,7 +246,7 @@ export default defineComponent({
       prepareActivityList();
     };
 
-    onBeforeMount(prepare);
+    watch(() => props.project.id, prepare, { immediate: true });
 
     const labelList = useLabelList();
 
