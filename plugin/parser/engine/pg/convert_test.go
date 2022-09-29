@@ -1645,6 +1645,37 @@ func TestAlterColumnType(t *testing.T) {
 func TestInsertStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: "INSERT INTO tech_book VALUES (1, 'a'), (2, 'b')",
+			want: []ast.Node{
+				&ast.InsertStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ValueList: [][]ast.ExpressionNode{
+						{
+							&ast.UnconvertedExpressionDef{},
+							&ast.StringDef{
+								Value: "a",
+							},
+						},
+						{
+							&ast.UnconvertedExpressionDef{},
+							&ast.StringDef{
+								Value: "b",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "INSERT INTO tech_book VALUES (1, 'a'), (2, 'b')",
+					LastLine: 1,
+				},
+			},
+		},
+		{
 			stmt: "INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
 			want: []ast.Node{
 				&ast.InsertStmt{
@@ -1677,6 +1708,15 @@ func TestInsertStmt(t *testing.T) {
 					Table: &ast.TableDef{
 						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
+					},
+					ValueList: [][]ast.ExpressionNode{
+						{
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+						},
 					},
 				},
 			},
