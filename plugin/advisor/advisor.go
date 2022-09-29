@@ -154,11 +154,11 @@ const (
 	// MySQLStatementDisallowCommit is an advisor type for MySQL to disallow commit.
 	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
 
+	// MySQLDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
+	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.disallow.disallow-limit"
+
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
-
-	// MySQLInsertUpdateNoLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE statement.
-	MySQLInsertUpdateNoLimit Type = "bb.plugin.advisor.mysql.insert-update.no-limit"
 
 	// MySQLInsertUpdateNoOrderBy is an advisor type for MySQL no ORDER BY clause in INSERT/UPDATE statement.
 	MySQLInsertUpdateNoOrderBy Type = "bb.plugin.advisor.mysql.insert-update.no-order-by"
