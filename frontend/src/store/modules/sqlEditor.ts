@@ -4,9 +4,7 @@ import type {
   SQLEditorState,
   ConnectionAtom,
   QueryInfo,
-  Database,
   DatabaseId,
-  ProjectId,
   QueryHistory,
   InstanceId,
   Connection,
@@ -18,9 +16,7 @@ import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
-import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { emptyConnection } from "@/utils";
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
@@ -34,41 +30,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     isFetchingQueryHistory: false,
     isFetchingSheet: false,
   }),
-
-  getters: {
-    // TODO: remove this after a refactor to <TableSchema>
-    connectionInfo() {
-      const projectStore = useProjectStore();
-      const instanceStore = useInstanceStore();
-      const databaseStore = useDatabaseStore();
-      const tableStore = useTableStore();
-
-      return {
-        projectListById: projectStore.projectById,
-        instanceListById: instanceStore.instanceById,
-        databaseListByInstanceId: databaseStore.databaseListByInstanceId,
-        databaseListByProjectId: databaseStore.databaseListByProjectId,
-        tableListByDatabaseId: tableStore.tableListByDatabaseId,
-      };
-    },
-    findProjectIdByDatabaseId:
-      (state) =>
-      (databaseId: DatabaseId): ProjectId => {
-        const databaseStore = useDatabaseStore();
-        let projectId = UNKNOWN_ID;
-        const databaseListByProjectId = databaseStore.databaseListByProjectId;
-        for (const [id, databaseList] of databaseListByProjectId) {
-          const idx = databaseList.findIndex(
-            (database: Database) => database.id === databaseId
-          );
-          if (idx !== -1) {
-            projectId = id;
-            break;
-          }
-        }
-        return projectId;
-      },
-  },
 
   actions: {
     setSQLEditorState(payload: Partial<SQLEditorState>) {
@@ -104,15 +65,13 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       instanceId: InstanceId,
       databaseId: DatabaseId
     ): Promise<Connection> {
-      const [database] = await Promise.all([
+      await Promise.all([
         useDatabaseStore().getOrFetchDatabaseById(databaseId),
         useInstanceStore().getOrFetchInstanceById(instanceId),
         useTableStore().getOrFetchTableListByDatabaseId(databaseId),
       ]);
 
       return {
-        ...emptyConnection(),
-        projectId: database.project.id,
         instanceId,
         databaseId,
       };
@@ -132,8 +91,8 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       );
 
       return {
-        ...emptyConnection(),
         instanceId,
+        databaseId: UNKNOWN_ID,
       };
     },
     async fetchQueryHistoryList() {
