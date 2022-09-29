@@ -515,7 +515,10 @@ CREATE TABLE data_source (
     password TEXT NOT NULL,
     ssl_key TEXT NOT NULL DEFAULT '',
     ssl_cert TEXT NOT NULL DEFAULT '',
-    ssl_ca TEXT NOT NULL DEFAULT ''
+    ssl_ca TEXT NOT NULL DEFAULT '',
+    -- host_override and port_override are used for read-replicas that have different connection addresses.
+    host_override TEXT NOT NULL DEFAULT '',
+    port_override TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);

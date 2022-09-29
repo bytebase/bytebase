@@ -678,6 +678,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
 
+		if dataSourceCreate.Type == api.Admin && (dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "") {
+			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
+		}
+
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
 
@@ -751,6 +755,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {
 			password := ""
 			dataSourcePatch.Password = &password
+		}
+		if dataSourceOld.Type == api.Admin && (dataSourcePatch.HostOverride != nil || dataSourcePatch.PortOverride != nil) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
 		}
 
 		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
@@ -888,6 +895,10 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.ID)
 	}
 
+	host, port := instance.Host, instance.Port
+	if dataSource.HostOverride != "" || dataSource.PortOverride != "" {
+		host, port = dataSource.HostOverride, dataSource.PortOverride
+	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
@@ -896,8 +907,8 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 		db.ConnectionConfig{
 			Username: dataSource.Username,
 			Password: dataSource.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
+			Host:     host,
+			Port:     port,
 			Database: databaseName,
 			TLSConfig: db.TLSConfig{
 				SslCA:   dataSource.SslCa,
