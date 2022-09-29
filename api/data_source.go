@@ -62,11 +62,10 @@ type DataSource struct {
 	Type     DataSourceType `jsonapi:"attr,type"`
 	Username string         `jsonapi:"attr,username"`
 	// Do not return the password to client
-	Password string
-	SslCa    string
-	SslCert  string
-	SslKey   string
-	// HostOverride and PortOverride are only used for read-only data sources for user's read-replica instances.
+	Password     string
+	SslCa        string
+	SslCert      string
+	SslKey       string
 	HostOverride string
 	PortOverride string
 }
