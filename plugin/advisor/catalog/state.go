@@ -281,6 +281,11 @@ type TableState struct {
 	indexSet indexStateMap
 }
 
+// CountIndex return the index total number.
+func (table *TableState) CountIndex() int {
+	return len(table.indexSet)
+}
+
 func (table *TableState) copy() *TableState {
 	return &TableState{
 		name:      table.name,

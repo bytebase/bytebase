@@ -1,35 +1,27 @@
 import { defineStore } from "pinia";
 import dayjs from "dayjs";
-import {
+import type {
   SQLEditorState,
   ConnectionAtom,
   QueryInfo,
-  ConnectionContext,
-  Database,
   DatabaseId,
-  ProjectId,
   QueryHistory,
-  UNKNOWN_ID,
   InstanceId,
   Connection,
+  ActivitySQLEditorQueryPayload,
 } from "@/types";
+import { UNKNOWN_ID, unknown } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
-import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { emptyConnection } from "@/utils";
-
-export const getDefaultConnectionContext = () => ({
-  option: {} as any,
-});
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
     connectionTree: [],
-    connectionContext: getDefaultConnectionContext(),
+    selectedTable: unknown("TABLE"),
     isLoadingTree: false,
     isShowExecutingHint: false,
     shouldFormatContent: false,
@@ -39,50 +31,12 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     isFetchingSheet: false,
   }),
 
-  getters: {
-    // TODO: remove this after a refactor to <TableSchema>
-    connectionInfo() {
-      const projectStore = useProjectStore();
-      const instanceStore = useInstanceStore();
-      const databaseStore = useDatabaseStore();
-      const tableStore = useTableStore();
-
-      return {
-        projectListById: projectStore.projectById,
-        instanceListById: instanceStore.instanceById,
-        databaseListByInstanceId: databaseStore.databaseListByInstanceId,
-        databaseListByProjectId: databaseStore.databaseListByProjectId,
-        tableListByDatabaseId: tableStore.tableListByDatabaseId,
-      };
-    },
-    findProjectIdByDatabaseId:
-      (state) =>
-      (databaseId: DatabaseId): ProjectId => {
-        const databaseStore = useDatabaseStore();
-        let projectId = UNKNOWN_ID;
-        const databaseListByProjectId = databaseStore.databaseListByProjectId;
-        for (const [id, databaseList] of databaseListByProjectId) {
-          const idx = databaseList.findIndex(
-            (database: Database) => database.id === databaseId
-          );
-          if (idx !== -1) {
-            projectId = id;
-            break;
-          }
-        }
-        return projectId;
-      },
-  },
-
   actions: {
     setSQLEditorState(payload: Partial<SQLEditorState>) {
       Object.assign(this, payload);
     },
     setConnectionTree(payload: ConnectionAtom[]) {
       this.connectionTree = payload;
-    },
-    setConnectionContext(payload: Partial<ConnectionContext>) {
-      Object.assign(this.connectionContext, payload);
     },
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;
@@ -111,15 +65,13 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       instanceId: InstanceId,
       databaseId: DatabaseId
     ): Promise<Connection> {
-      const [database] = await Promise.all([
+      await Promise.all([
         useDatabaseStore().getOrFetchDatabaseById(databaseId),
         useInstanceStore().getOrFetchInstanceById(instanceId),
         useTableStore().getOrFetchTableListByDatabaseId(databaseId),
       ]);
 
       return {
-        ...emptyConnection(),
-        projectId: database.project.id,
         instanceId,
         databaseId,
       };
@@ -139,8 +91,8 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       );
 
       return {
-        ...emptyConnection(),
         instanceId,
+        databaseId: UNKNOWN_ID,
       };
     },
     async fetchQueryHistoryList() {
@@ -149,24 +101,23 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         await useActivityStore().fetchActivityListForQueryHistory({
           limit: 20,
         });
-      const queryHistoryList: QueryHistory[] = activityList.map(
-        (history: any) => {
-          return {
-            id: history.id,
-            creator: history.creator,
-            createdTs: history.createdTs,
-            updatedTs: history.updatedTs,
-            statement: history.payload.statement,
-            durationNs: history.payload.durationNs,
-            instanceName: history.payload.instanceName,
-            databaseName: history.payload.databaseName,
-            error: history.payload.error,
-            createdAt: dayjs(history.createdTs * 1000).format(
-              "YYYY-MM-DD HH:mm:ss"
-            ),
-          };
-        }
-      );
+      const queryHistoryList: QueryHistory[] = activityList.map((history) => {
+        const payload = history.payload as ActivitySQLEditorQueryPayload;
+        return {
+          id: history.id,
+          creator: history.creator,
+          createdTs: history.createdTs,
+          updatedTs: history.updatedTs,
+          statement: payload.statement,
+          durationNs: payload.durationNs,
+          instanceName: payload.instanceName,
+          databaseName: payload.databaseName,
+          error: payload.error,
+          createdAt: dayjs(history.createdTs * 1000).format(
+            "YYYY-MM-DD HH:mm:ss"
+          ),
+        };
+      });
 
       this.setQueryHistoryList(
         queryHistoryList.sort((a, b) => b.createdTs - a.createdTs)

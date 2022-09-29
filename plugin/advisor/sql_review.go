@@ -68,6 +68,8 @@ const (
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
 	// SchemaRuleTableNotExists check the table name conflict.
 	SchemaRuleTableNotExists SQLReviewRuleType = "table.not-exists"
+	// SchemaRuleTableDisallowPartition disallow the table partition.
+	SchemaRuleTableDisallowPartition SQLReviewRuleType = "table.disallow-partition"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -104,12 +106,18 @@ const (
 	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
 	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
 	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
+	// SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
 
 	// SchemaRuleInsertRowLimit enforce the insert row limit.
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
+	// SchemaRuleInsertUpdateNoLimit disallow the LIMIT clause in INSERT and UPDATE statement.
+	SchemaRuleInsertUpdateNoLimit SQLReviewRuleType = "insert-update.no-limit"
+	// SchemaRuleInsertUpdateNoOrderBy disallow the ORDER BY clause in INSERT and UPDATE statement.
+	SchemaRuleInsertUpdateNoOrderBy SQLReviewRuleType = "insert-update.no-order-by"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -203,7 +211,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit:
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit:
 		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -723,6 +731,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLTableCommentConvention, nil
 		}
+	case SchemaRuleTableDisallowPartition:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableDisallowPartition, nil
+		}
 	case SchemaRuleMySQLEngine:
 		if engine == db.MySQL {
 			return MySQLUseInnoDB, nil
@@ -741,6 +754,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexKeyNumberLimit, nil
+		}
+	case SchemaRuleIndexTotalNumberLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexTotalNumberLimit, nil
 		}
 	case SchemaRuleStatementNoCreateTableAs:
 		switch engine {
@@ -771,6 +789,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertRowLimit, nil
+		}
+	case SchemaRuleInsertUpdateNoLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertUpdateNoLimit, nil
+		}
+	case SchemaRuleInsertUpdateNoOrderBy:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertUpdateNoOrderBy, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

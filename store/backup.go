@@ -19,6 +19,7 @@ type backupRaw struct {
 	ID int
 
 	// Standard fields
+	RowStatus api.RowStatus
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
@@ -47,6 +48,7 @@ func (raw *backupRaw) toBackup() *api.Backup {
 		ID: raw.ID,
 
 		// Standard fields
+		RowStatus: raw.RowStatus,
 		CreatorID: raw.CreatorID,
 		CreatedTs: raw.CreatedTs,
 		UpdaterID: raw.UpdaterID,
@@ -463,7 +465,7 @@ func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCr
 			path
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`
 	var backupRaw backupRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -478,6 +480,7 @@ func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCr
 		create.Path,
 	).Scan(
 		&backupRaw.ID,
+		&backupRaw.RowStatus,
 		&backupRaw.CreatorID,
 		&backupRaw.CreatedTs,
 		&backupRaw.UpdaterID,
@@ -505,6 +508,9 @@ func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) 
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -518,6 +524,7 @@ func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			row_status,
 			creator_id,
 			created_ts,
 			updater_id,
@@ -547,6 +554,7 @@ func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) 
 		var payload []byte
 		if err := rows.Scan(
 			&backupRaw.ID,
+			&backupRaw.RowStatus,
 			&backupRaw.CreatorID,
 			&backupRaw.CreatedTs,
 			&backupRaw.UpdaterID,
@@ -604,11 +612,12 @@ func (*Store) patchBackupImpl(ctx context.Context, tx *Tx, patch *api.BackupPatc
 			UPDATE backup
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
+			RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
 		`, len(args)),
 		args...,
 	).Scan(
 		&backupRaw.ID,
+		&backupRaw.RowStatus,
 		&backupRaw.CreatorID,
 		&backupRaw.CreatedTs,
 		&backupRaw.UpdaterID,

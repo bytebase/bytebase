@@ -41,6 +41,7 @@ import {
   useSQLEditorStore,
   useSheetStore,
   useInstanceStore,
+  useDatabaseStore,
 } from "@/store";
 import { defaultTabName } from "@/utils/tab";
 import EditorAction from "./EditorAction.vue";
@@ -54,6 +55,7 @@ const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
 const instanceStore = useInstanceStore();
+const databaseStore = useDatabaseStore();
 
 const isShowSaveSheetModal = ref(false);
 
@@ -100,14 +102,14 @@ const handleSaveSheet = async (sheetName?: string) => {
   sheetName = sheetName ? sheetName : name;
 
   const conn = tabStore.currentTab.connection;
+  const database = await databaseStore.getOrFetchDatabaseById(conn.databaseId);
   const sheetUpsert = {
     id: sheetId,
-    projectId: conn.projectId,
+    projectId: database.project.id,
     databaseId: conn.databaseId,
     name: sheetName,
     statement: statement,
   };
-
   const sheet = await sheetStore.upsertSheet(sheetUpsert);
 
   tabStore.updateCurrentTab({

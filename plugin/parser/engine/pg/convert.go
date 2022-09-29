@@ -353,6 +353,22 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					if insertStmt.Select, err = convertSelectStmt(selectNode.SelectStmt); err != nil {
 						return nil, err
 					}
+				} else {
+					for _, list := range selectNode.SelectStmt.ValuesLists {
+						var valueList []ast.ExpressionNode
+						listNode, ok := list.Node.(*pgquery.Node_List)
+						if !ok {
+							return nil, parser.NewConvertErrorf("expected Node_List but found %t", list.Node)
+						}
+						for _, item := range listNode.List.Items {
+							value, _, _, err := convertExpressionNode(item)
+							if err != nil {
+								return nil, err
+							}
+							valueList = append(valueList, value)
+						}
+						insertStmt.ValueList = append(insertStmt.ValueList, valueList)
+					}
 				}
 			} else {
 				return nil, parser.NewConvertErrorf("expected SelectStmt but found %t", in.InsertStmt.SelectStmt.Node)
@@ -366,6 +382,12 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &copyStmt, nil
+	case *pgquery.Node_CommentStmt:
+		commentStmt := ast.CommentStmt{
+			Comment: in.CommentStmt.Comment,
+		}
+
+		return &commentStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
