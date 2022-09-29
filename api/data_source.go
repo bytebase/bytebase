@@ -62,12 +62,10 @@ type DataSource struct {
 	Type     DataSourceType `jsonapi:"attr,type"`
 	Username string         `jsonapi:"attr,username"`
 	// Do not return the password to client
-	Password     string
-	SslCa        string
-	SslCert      string
-	SslKey       string
-	HostOverride string
-	PortOverride string
+	Password string
+	SslCa    string
+	SslCert  string
+	SslKey   string
 }
 
 // DataSourceCreate is the API message for creating a data source.
@@ -81,15 +79,13 @@ type DataSourceCreate struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name         string         `jsonapi:"attr,name"`
-	Type         DataSourceType `jsonapi:"attr,type"`
-	Username     string         `jsonapi:"attr,username"`
-	Password     string         `jsonapi:"attr,password"`
-	SslCa        string         `jsonapi:"attr,sslCa"`
-	SslCert      string         `jsonapi:"attr,sslCert"`
-	SslKey       string         `jsonapi:"attr,sslKey"`
-	HostOverride string         `jsonapi:"attr,hostOverride"`
-	PortOverride string         `jsonapi:"attr,portOverride"`
+	Name     string         `jsonapi:"attr,name"`
+	Type     DataSourceType `jsonapi:"attr,type"`
+	Username string         `jsonapi:"attr,username"`
+	Password string         `jsonapi:"attr,password"`
+	SslCa    string         `jsonapi:"attr,sslCa"`
+	SslCert  string         `jsonapi:"attr,sslCert"`
+	SslKey   string         `jsonapi:"attr,sslKey"`
 	// If true, syncs the schema after creating the data source. The client
 	// may set to false if the target data source's instance contains too many databases
 	// to avoid the request timeout.
@@ -131,8 +127,6 @@ type DataSourcePatch struct {
 	SslCa            *string `jsonapi:"attr,sslCa"`
 	SslCert          *string `jsonapi:"attr,sslCert"`
 	SslKey           *string `jsonapi:"attr,sslKey"`
-	HostOverride     *string `jsonapi:"attr,hostOverride"`
-	PortOverride     *string `jsonapi:"attr,portOverride"`
 	// If true, syncs the schema after patching the data source. The client
 	// may set to false if the target data source's instance contains too many databases
 	// to avoid the request timeout.
