@@ -2,7 +2,8 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import { v1 as uuidv1 } from "uuid";
 import { t } from "../plugins/i18n";
-import { Connection, TabInfo, UNKNOWN_ID } from "@/types";
+import type { Connection, TabInfo } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 
 export const defaultTabName = computed(() => t("sql-editor.untitled-sheet"));
 
