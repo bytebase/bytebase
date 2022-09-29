@@ -2,7 +2,8 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  full_bin = 'BB_REDIRECT_URL=http:\/\/localhost:3000 ./.air/bytebase --port 8080 --external-url http:\/\/localhost:3000 --data . --debug'  ## Use --tags "store.db" to enable SQL query logging against our metadata db.
+  full_bin = 'BB_REDIRECT_URL=http:\/\/localhost:3000 ./.air/bytebase --port 8080 --external-url http:\/\/localhost:3000 --data . --debug'
+  ## Use --tags "store.db" to enable SQL query logging against our metadata db.
   cmd = """
   go build \
   --tags "" \
