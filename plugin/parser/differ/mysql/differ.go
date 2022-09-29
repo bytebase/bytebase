@@ -35,32 +35,6 @@ type SchemaDiffer struct {
 // constraintMap returns a map of constraint name to constraint.
 type constraintMap map[string]*ast.Constraint
 
-// indexMap returns a map of index name to index.
-type indexMap map[string]constraintMap
-
-func (i indexMap) set(tableName, indexName string, constraint *ast.Constraint) {
-	if _, ok := i[tableName]; !ok {
-		i[tableName] = make(constraintMap)
-	}
-	i[tableName][indexName] = constraint
-}
-
-func (i indexMap) get(tableName, indexName string) (*ast.Constraint, bool) {
-	if _, ok := i[tableName]; !ok {
-		return nil, false
-	}
-	constraint, ok := i[tableName][indexName]
-	return constraint, ok
-}
-
-func (i indexMap) forEach(fn func(tableName, indexName string, constraint *ast.Constraint)) {
-	for tableName, indexMap := range i {
-		for indexName, constraint := range indexMap {
-			fn(tableName, indexName, constraint)
-		}
-	}
-}
-
 // SchemaDiff returns the schema diff.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldNodes, _, err := parser.New().Parse(oldStmt, "", "")
@@ -77,7 +51,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var addIndex []ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
-	indexMap := buildIndexMap(oldNodes)
 
 	for _, node := range newNodes {
 		switch newStmt := node.(type) {
@@ -89,7 +62,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				diff = append(diff, &stmt)
 				continue
 			}
-
+			indexMap := buildIndexMap(oldNodes, newStmt.Table.Name)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var createIndexStmts []*ast.CreateIndexStmt
@@ -118,9 +91,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
 					constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
 					constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
-					if oldConstraint, ok := indexMap.get(tableName, constraint.Name); ok {
+					indexName := getIndexName(constraint)
+					if oldConstraint, ok := indexMap[indexName]; ok {
 						if isIndexEqual(constraint, oldConstraint) {
-							delete(indexMap[tableName], oldConstraint.Name)
+							delete(indexMap, indexName)
 							continue
 						}
 					}
@@ -149,23 +123,23 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Specs: alterTableModifyColumnSpecs,
 				})
 			}
+			for indexName := range indexMap {
+				dropIndex = append(dropIndex, &ast.DropIndexStmt{
+					IndexName: indexName,
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+				})
+			}
+			// We should drop the remaining indices in the indexMap.
 			for _, createIndexStmt := range createIndexStmts {
 				addIndex = append(addIndex, createIndexStmt)
 			}
+			diff = append(diff, dropIndex...)
+			diff = append(diff, addIndex...)
 		default:
 		}
 	}
-	// We should drop the remaining indices in the indexMap.
-	indexMap.forEach(func(tableName, indexName string, _ *ast.Constraint) {
-		dropIndex = append(dropIndex, &ast.DropIndexStmt{
-			IndexName: indexName,
-			Table: &ast.TableName{
-				Name: model.NewCIStr(tableName),
-			},
-		})
-	})
-	diff = append(diff, dropIndex...)
-	diff = append(diff, addIndex...)
 
 	deparse := func(nodes []ast.Node) (string, error) {
 		restoreFlags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
@@ -215,19 +189,21 @@ func buildColumnMap(nodes []ast.StmtNode, tableName model.CIStr) map[string]*ast
 	return oldColumnMap
 }
 
-// buildIndexMap build a map of table name to index name to constraint.
-func buildIndexMap(nodes []ast.StmtNode) indexMap {
-	indexMap := make(indexMap)
+// buildIndexMap build a map of index name to constraint on given table name.
+func buildIndexMap(nodes []ast.StmtNode, tableName model.CIStr) constraintMap {
+	indexMap := make(constraintMap)
 	for _, node := range nodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
-			tableName := stmt.Table.Name.O
+			if tableName.O != stmt.Table.Name.O {
+				continue
+			}
 			for _, constraint := range stmt.Constraints {
 				if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
 					constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
 					constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
 					indexName := getIndexName(constraint)
-					indexMap.set(tableName, indexName, constraint)
+					indexMap[indexName] = constraint
 				}
 			}
 		default:
@@ -411,20 +387,4 @@ func getKeyTpFromConstraintTp(tp ast.ConstraintType) ast.IndexKeyType {
 		return ast.IndexKeyTypeNone
 	}
 	return ast.IndexKeyTypeNone
-}
-
-// getConstraintTpFromIndexTp converts the index type to constraint type.
-func getConstraintTpFromIndexKeyTp(tp ast.IndexKeyType) ast.ConstraintType {
-	switch tp {
-	case ast.IndexKeyTypeNone:
-		return ast.ConstraintNoConstraint
-	case ast.IndexKeyTypeUnique:
-		return ast.ConstraintUniqKey
-	case ast.IndexKeyTypeSpatial:
-		// TODO(zp): TiDB parser doesn't support spatial index now.
-		return ast.ConstraintNoConstraint
-	case ast.IndexKeyTypeFullText:
-		return ast.ConstraintFulltext
-	}
-	return ast.ConstraintNoConstraint
 }
