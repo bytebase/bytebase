@@ -57,6 +57,8 @@ const (
 	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
+	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT and UPDATE statement.
+	SchemaRuleStatementDisallowLimit SQLReviewRuleType = "statement.disallow-limit"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -114,8 +116,6 @@ const (
 
 	// SchemaRuleInsertRowLimit enforce the insert row limit.
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
-	// SchemaRuleInsertUpdateNoLimit disallow the LIMIT clause in INSERT and UPDATE statement.
-	SchemaRuleInsertUpdateNoLimit SQLReviewRuleType = "insert-update.no-limit"
 	// SchemaRuleInsertUpdateNoOrderBy disallow the ORDER BY clause in INSERT and UPDATE statement.
 	SchemaRuleInsertUpdateNoOrderBy SQLReviewRuleType = "insert-update.no-order-by"
 
@@ -790,10 +790,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLInsertRowLimit, nil
 		}
-	case SchemaRuleInsertUpdateNoLimit:
+	case SchemaRuleStatementDisallowLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLInsertUpdateNoLimit, nil
+			return MySQLDisallowLimit, nil
 		}
 	case SchemaRuleInsertUpdateNoOrderBy:
 		switch engine {
