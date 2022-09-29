@@ -90,7 +90,7 @@
                 aria-labelledby="activity-title"
                 class="mt-4"
               >
-                <IssueActivityPanel />
+                <IssueActivityPanel @run-checks="runTaskChecks" />
               </section>
             </div>
           </div>
