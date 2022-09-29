@@ -252,7 +252,7 @@ func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}
-	dataSourceRawList, err := s.FindDataSource(ctx, dataSourceFind)
+	dataSourceRawList, err := s.findDataSource(ctx, dataSourceFind)
 	if err != nil {
 		return "", err
 	}
@@ -269,7 +269,7 @@ func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}
-	dataSourceRawList, err := s.FindDataSource(ctx, dataSourceFind)
+	dataSourceRawList, err := s.findDataSource(ctx, dataSourceFind)
 	if err != nil {
 		return db.TLSConfig{}, err
 	}
@@ -308,7 +308,7 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 	}
 	instance.Environment = env
 
-	dataSourceList, err := s.FindDataSource(ctx, &api.DataSourceFind{
+	dataSourceList, err := s.findDataSource(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
