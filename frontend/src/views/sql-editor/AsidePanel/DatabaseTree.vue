@@ -55,7 +55,6 @@ import type { ConnectionAtom, DatabaseId, InstanceId } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import {
   useDatabaseStore,
-  useInstanceStore,
   useIsLoggedIn,
   useSQLEditorStore,
   useTableStore,
@@ -68,7 +67,7 @@ import {
   isSameConnection,
   mapConnectionAtom,
 } from "@/utils";
-import { generateInstanceNode, generateTableItem } from "./utils";
+import { generateTableItem } from "./utils";
 import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
 
 type Position = {
@@ -82,7 +81,6 @@ type DropdownOptionWithConnectionAtom = DropdownOption & {
 
 const { t } = useI18n();
 
-const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const sqlEditorStore = useSQLEditorStore();
 const tableStore = useTableStore();
@@ -130,21 +128,7 @@ const selectedKeys = computed(() => {
   return [];
 });
 
-const generateTreeData = () => {
-  return sqlEditorStore.connectionTree.data.map((item) =>
-    generateInstanceNode(item, instanceStore)
-  );
-};
-
-const treeData = ref<ConnectionAtom[]>([]);
-
-watch(
-  () => sqlEditorStore.connectionTree.data,
-  () => {
-    treeData.value = generateTreeData();
-  },
-  { immediate: true }
-);
+const treeData = computed(() => sqlEditorStore.connectionTree.data);
 
 const setConnection = (option: ConnectionAtom) => {
   if (option) {
