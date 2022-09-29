@@ -288,7 +288,13 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advice, error) {
+func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			err = errors.Errorf("panic in advisor check: %v", panicErr)
+		}
+	}()
+
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
