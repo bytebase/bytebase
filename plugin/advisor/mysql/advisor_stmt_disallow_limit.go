@@ -12,21 +12,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*InsertUpdateNoLimitAdvisor)(nil)
-	_ ast.Visitor     = (*insertUpdateNoLimitChecker)(nil)
+	_ advisor.Advisor = (*DisallowLimitAdvisor)(nil)
+	_ ast.Visitor     = (*disallowLimitChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLInsertUpdateNoLimit, &InsertUpdateNoLimitAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLInsertUpdateNoLimit, &InsertUpdateNoLimitAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
 }
 
-// InsertUpdateNoLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
-type InsertUpdateNoLimitAdvisor struct {
+// DisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
+type DisallowLimitAdvisor struct {
 }
 
 // Check checks for no LIMIT clause in INSERT/UPDATE statement.
-func (*InsertUpdateNoLimitAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*DisallowLimitAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -36,7 +36,7 @@ func (*InsertUpdateNoLimitAdvisor) Check(ctx advisor.Context, statement string) 
 	if err != nil {
 		return nil, err
 	}
-	checker := &insertUpdateNoLimitChecker{
+	checker := &disallowLimitChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -58,7 +58,7 @@ func (*InsertUpdateNoLimitAdvisor) Check(ctx advisor.Context, statement string) 
 	return checker.adviceList, nil
 }
 
-type insertUpdateNoLimitChecker struct {
+type disallowLimitChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -67,12 +67,16 @@ type insertUpdateNoLimitChecker struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (checker *insertUpdateNoLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *disallowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
 	case *ast.UpdateStmt:
 		if node.Limit != nil {
 			code = advisor.UpdateUseLimit
+		}
+	case *ast.DeleteStmt:
+		if node.Limit != nil {
+			code = advisor.DeleteUseLimit
 		}
 	case *ast.InsertStmt:
 		if useLimit(node) {
@@ -85,7 +89,7 @@ func (checker *insertUpdateNoLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  checker.level,
 			Code:    code,
 			Title:   checker.title,
-			Content: fmt.Sprintf("LIMIT clause is forbidden in INSERT and UPDATE statement, but \"%s\" uses", checker.text),
+			Content: fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
 			Line:    checker.line,
 		})
 	}
@@ -94,7 +98,7 @@ func (checker *insertUpdateNoLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*insertUpdateNoLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*disallowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
