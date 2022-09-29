@@ -191,12 +191,15 @@ export interface LabelState {
 }
 
 export interface SQLEditorState {
-  connectionTree: ConnectionAtom[];
+  connectionTree: {
+    data: ConnectionAtom[];
+    state: "unset" | "loading" | "loaded";
+  };
+  expandedTreeNodeKeys: string[];
   selectedTable: Table;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
-  isLoadingTree: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
 }
