@@ -9,10 +9,8 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -72,7 +70,6 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 
-	loggedDSN := fmt.Sprintf("%s:<<redacted password>>@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	if connCfg.Password != "" {
 		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
@@ -86,11 +83,6 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 		defer mysql.DeregisterTLSConfig(tlsKey)
 		dsn += fmt.Sprintf("?tls=%s", tlsKey)
 	}
-	log.Debug("Opening MySQL driver",
-		zap.String("dsn", loggedDSN),
-		zap.String("environment", connCtx.EnvironmentName),
-		zap.String("database", connCtx.InstanceName),
-	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
