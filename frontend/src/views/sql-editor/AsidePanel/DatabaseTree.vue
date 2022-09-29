@@ -360,11 +360,14 @@ watch(
 </script>
 
 <style>
-.n-tree-node-content__prefix {
+.databases-tree .n-tree-node-content__prefix {
   @apply shrink-0;
 }
-.n-tree-node-content__text {
+.databases-tree .n-tree-node-content__text {
   @apply truncate mr-1;
+}
+.databases-tree .n-tree-node--pending {
+  background-color: transparent !important;
 }
 </style>
 
