@@ -47,7 +47,6 @@ import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom } from "./sqlEditor";
-import { TabInfo } from "./tab";
 import type { DebugLog } from "@/types/debug";
 
 export interface ActuatorState {
@@ -200,11 +199,6 @@ export interface SQLEditorState {
   isLoadingTree: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-}
-
-export interface TabState {
-  tabList: TabInfo[];
-  currentTabId: string;
 }
 
 export interface DeploymentState {
