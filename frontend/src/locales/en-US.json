@@ -1199,7 +1199,7 @@
     "preview-deployment-pipeline": "Preview Deployment Pipeline",
     "select-database-group": "Select database group"
   },
-  "datasource": {
+  "data-source": {
     "role-type": "Role Type",
     "successfully-deleted-data-source-name": "Successfully deleted data source '{0}'.",
     "create-data-source": "Create data source",
@@ -1225,8 +1225,8 @@
     "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} ",
     "ssl-type": {
-      "ca": "@:{'datasource.ssl.ca-cert'}",
-      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "ca": "@:{'data-source.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
       "none": "None"
     },
     "ssl": {
@@ -1234,7 +1234,9 @@
       "client-key": "Client Key",
       "client-cert": "Client Certificate"
     },
-    "ssl-connection": "SSL Connection"
+    "ssl-connection": "SSL Connection",
+    "read-replica-host": "Read-replica Host",
+    "read-replica-port": "Read-replica Port"
   },
   "setting": {
     "project": {

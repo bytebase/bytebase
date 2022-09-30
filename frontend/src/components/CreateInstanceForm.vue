@@ -169,7 +169,7 @@
         <div v-if="showSSL" class="sm:col-span-3 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label class="textlabel block">{{
-              $t("datasource.ssl-connection")
+              $t("data-source.ssl-connection")
             }}</label>
           </div>
           <SslCertificateForm
