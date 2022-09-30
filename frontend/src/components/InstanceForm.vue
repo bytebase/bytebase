@@ -6,9 +6,8 @@
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
-            &nbsp;
-            <span style="color: red">*</span>
-            <InstanceEngineIcon class="ml-1" :instance="state.instance" />
+            <span class="text-red-600 mr-2">*</span>
+            <InstanceEngineIcon :instance="state.instance" />
             <span class="ml-1">{{ state.instance.engineVersion }}</span>
           </label>
           <input
@@ -47,11 +46,11 @@
           <label for="host" class="textlabel block">
             <template v-if="state.instance.engine == 'SNOWFLAKE'">
               {{ $t("instance.account-name") }}
-              <span style="color: red">*</span>
+              <span class="text-red-600 mr-2">*</span>
             </template>
             <template v-else>
               {{ $t("instance.host-or-socket") }}
-              <span style="color: red">*</span>
+              <span class="text-red-600 mr-2">*</span>
             </template>
           </label>
           <input
@@ -186,9 +185,10 @@
           :dataSourceType="state.currentDataSourceType"
         />
         <div class="mt-2 sm:col-span-1 sm:col-start-1">
-          <label for="username" class="textlabel block">{{
-            $t("common.username")
-          }}</label>
+          <label for="username" class="textlabel block">
+            {{ $t("common.username") }}
+            <span class="text-red-600">*</span>
+          </label>
           <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
           thus we make it REQUIRED here.-->
@@ -210,6 +210,7 @@
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
               {{ $t("common.password") }}
+              <span class="text-red-600">*</span>
             </label>
             <BBCheckbox
               :title="$t('common.empty')"
