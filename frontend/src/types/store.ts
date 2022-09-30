@@ -190,10 +190,16 @@ export interface LabelState {
   labelList: Label[];
 }
 
+export enum ConnectionTreeState {
+  UNSET,
+  LOADING,
+  LOADED,
+}
+
 export interface SQLEditorState {
   connectionTree: {
     data: ConnectionAtom[];
-    state: "unset" | "loading" | "loaded";
+    state: ConnectionTreeState;
   };
   expandedTreeNodeKeys: string[];
   selectedTable: Table;

@@ -17,7 +17,7 @@ import {
   pushNotification,
 } from "@/store";
 import type { Instance, Database, ConnectionAtom } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
   emptyConnection,
   idFromSlug,
@@ -232,17 +232,17 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
-  if (sqlEditorStore.connectionTree.state === "unset") {
-    sqlEditorStore.connectionTree.state = "loading";
+  if (sqlEditorStore.connectionTree.state === ConnectionTreeState.UNSET) {
+    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADING;
     await prepareAccessibleConnectionByProject();
     await prepareSQLEditorContext();
-    sqlEditorStore.connectionTree.state = "loaded";
+    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADED;
   }
 
   watch(currentUser, (user) => {
     if (user.id === UNKNOWN_ID) {
       sqlEditorStore.connectionTree.data = [];
-      sqlEditorStore.connectionTree.state = "unset";
+      sqlEditorStore.connectionTree.state = ConnectionTreeState.UNSET;
     }
   });
 

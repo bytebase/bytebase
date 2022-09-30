@@ -9,6 +9,7 @@ import type {
   Connection,
   ActivitySQLEditorQueryPayload,
 } from "@/types";
+import { ConnectionTreeState } from "@/types";
 import { UNKNOWN_ID, unknown } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -21,7 +22,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
     connectionTree: {
       data: [],
-      state: "unset",
+      state: ConnectionTreeState.UNSET,
     },
     expandedTreeNodeKeys: [],
     selectedTable: unknown("TABLE"),

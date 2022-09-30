@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="sqlEditorStore.connectionTree.state === 'loaded'"
+    v-if="sqlEditorStore.connectionTree.state === ConnectionTreeState.LOADED"
     class="databases-tree p-2 space-y-2 h-full"
   >
     <div class="databases-tree--input">
@@ -52,7 +52,7 @@ import { stringify } from "qs";
 import ConnectedIcon from "~icons/heroicons-outline/lightning-bolt";
 
 import type { ConnectionAtom, DatabaseId, InstanceId } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import {
   useDatabaseStore,
   useIsLoggedIn,
