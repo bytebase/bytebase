@@ -230,7 +230,7 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 
 // ValidateProjectDBNameTemplate validates the project database name template.
 func ValidateProjectDBNameTemplate(template string) error {
-	if template == "" {
+	if template == "" || template == "*" {
 		return nil
 	}
 	tokens, _ := common.ParseTemplateTokens(template)
@@ -285,7 +285,8 @@ func formatTemplateRegexp(template string, tokens map[string]string) (string, er
 
 // GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate, labelsJSON.
 func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (string, error) {
-	if dbNameTemplate == "" {
+	// There is no need to check database name if the template is empty or a wildcard.
+	if dbNameTemplate == "" || dbNameTemplate == "*" {
 		return databaseName, nil
 	}
 	var labels []*DatabaseLabel

@@ -77,14 +77,18 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 		// Loop over databaseList instead of idToLabels to get determinant results.
 		for _, database := range databaseList {
 			labels := idToLabels[database.ID]
-			// The tenant database should match the database name.
-			name, err := formatDatabaseName(baseDatabaseName, dbNameTemplate, labels)
-			if err != nil {
-				continue
+
+			if dbNameTemplate != "*" {
+				// The tenant database should match the database name if the template is not a wildcard.
+				name, err := formatDatabaseName(baseDatabaseName, dbNameTemplate, labels)
+				if err != nil {
+					continue
+				}
+				if database.Name != name {
+					continue
+				}
 			}
-			if database.Name != name {
-				continue
-			}
+
 			// Skip if the database is already in a stage.
 			if _, ok := idsSeen[database.ID]; ok {
 				continue
