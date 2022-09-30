@@ -458,7 +458,7 @@ func dedupMigrationFilesFromCommitList(commitList []vcs.Commit) []distinctFileIt
 
 // findProjectDatabasesWithDifferentEnvironment finds the list of databases with given name in the project.
 // If the `envName` is not empty, it will be used as a filter condition for the result list.
-// It will ensure each database has a different environment
+// It will ensure each database has a different environment.
 func (s *Server) findProjectDatabasesWithDifferentEnvironment(ctx context.Context, projectID int, tenantMode api.ProjectTenantMode, dbName, envName string) ([]*api.Database, error) {
 	databases, err := s.findProjectDatabases(ctx, projectID, tenantMode, dbName, envName)
 	if err != nil {
