@@ -101,7 +101,7 @@ export const useTabStore = defineStore("tab", () => {
     }
     const tempTab = tabList.value.find(isTempTab);
     if (tempTab) {
-      currentTabId.value = tempTab.id;
+      setCurrentTabId(tempTab.id);
     } else {
       addTab();
     }
