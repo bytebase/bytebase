@@ -35,6 +35,7 @@ type PersistentTaskInfo = Pick<TabInfo, typeof PERSISTENT_TASK_FIELDS[number]>;
 
 export const useTabStore = defineStore("tab", () => {
   const storage = new WebStorageHelper("bb.sql-editor.tab-list", localStorage);
+  const instanceStore = useInstanceStore();
 
   // states
   // We store the tabIdList and the tabs separately.
@@ -57,7 +58,7 @@ export const useTabStore = defineStore("tab", () => {
     if (instanceId === UNKNOWN_ID) {
       return true;
     }
-    const instance = useInstanceStore().getInstanceById(instanceId);
+    const instance = instanceStore.getInstanceById(instanceId);
     if (instance.engine === "MYSQL" || instance.engine === "TIDB") {
       // Connecting to instance directly.
       return false;
