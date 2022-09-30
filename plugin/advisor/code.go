@@ -79,7 +79,7 @@ const (
 	NotCurrentDatabase Code = 702
 	DatabaseIsDeleted  Code = 703
 
-	// 801 miss index error code.
+	// 801 ~ 899 index error code.
 	NotUseIndex                Code = 801
 	IndexKeyNumberExceedsLimit Code = 802
 	IndexPKType                Code = 803
@@ -91,15 +91,19 @@ const (
 	IndexNotExists             Code = 809
 	IncorrectIndexName         Code = 810
 	SpatialIndexKeyNullable    Code = 811
-
-	// 901 ~ 999 index error code.
-	DuplicateColumnInIndex Code = 901
+	DuplicateColumnInIndex     Code = 812
+	IndexCountExceedsLimit     Code = 813
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
 
-	// 1101 ~ 1199 insert error code.
+	// 1101 ~ 1199 insert/update error code.
 	InsertTooManyRows Code = 1101
+	UpdateUseLimit    Code = 1102
+	InsertUseLimit    Code = 1103
+	UpdateUseOrderBy  Code = 1104
+	InsertUseOrderBy  Code = 1105
+	DeleteUseLimit    Code = 1106
 )
 
 // Int returns the int type of code.

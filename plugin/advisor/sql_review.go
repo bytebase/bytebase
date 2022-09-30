@@ -57,6 +57,8 @@ const (
 	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
+	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT and UPDATE statement.
+	SchemaRuleStatementDisallowLimit SQLReviewRuleType = "statement.disallow-limit"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -106,12 +108,16 @@ const (
 	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
 	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
 	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
+	// SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
 
 	// SchemaRuleInsertRowLimit enforce the insert row limit.
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
+	// SchemaRuleInsertUpdateNoOrderBy disallow the ORDER BY clause in INSERT and UPDATE statement.
+	SchemaRuleInsertUpdateNoOrderBy SQLReviewRuleType = "insert-update.no-order-by"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -205,7 +211,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit:
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit:
 		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -749,6 +755,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLIndexKeyNumberLimit, nil
 		}
+	case SchemaRuleIndexTotalNumberLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLIndexTotalNumberLimit, nil
+		}
 	case SchemaRuleStatementNoCreateTableAs:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -778,6 +789,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertRowLimit, nil
+		}
+	case SchemaRuleStatementDisallowLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLDisallowLimit, nil
+		}
+	case SchemaRuleInsertUpdateNoOrderBy:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertUpdateNoOrderBy, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

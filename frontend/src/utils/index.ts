@@ -20,3 +20,4 @@ export * from "./sql-editor";
 export * from "./sheet";
 export * from "./pev2";
 export * from "./web-storage";
+export * from "./dom";

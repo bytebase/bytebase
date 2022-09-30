@@ -2,7 +2,8 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import { pick } from "lodash-es";
 import { watchThrottled } from "@vueuse/core";
-import { TabInfo, AnyTabInfo, UNKNOWN_ID } from "@/types";
+import type { TabInfo, AnyTabInfo } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import {
   getDefaultTab,
   INITIAL_TAB,
@@ -193,9 +194,11 @@ export const useTabStore = defineStore("tab", () => {
   };
   init();
 
+  // exposure
   return {
-    currentTabId,
+    tabIdList,
     tabList,
+    currentTabId,
     currentTab,
     isDisconnected,
     addTab,

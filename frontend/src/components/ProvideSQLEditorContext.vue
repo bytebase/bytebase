@@ -16,14 +16,8 @@ import {
   useInstanceStore,
   pushNotification,
 } from "@/store";
-import {
-  Instance,
-  Database,
-  ConnectionAtom,
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
-  Connection,
-} from "@/types";
+import type { Instance, Database, Connection, ConnectionAtom } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
   emptyConnection,
   idFromSlug,
@@ -93,7 +87,7 @@ const prepareSQLEditorContext = async () => {
       .filter((db) => db.instance.id === instance.id)
       .map(mapConnectionAtom("database", instance.id));
 
-    sqlEditorStore.setConnectionTree(connectionTree);
+    sqlEditorStore.connectionTree.data = connectionTree;
   }
 
   // Won't fetch tableList for every database here.
@@ -137,7 +131,6 @@ const prepareSheet = async () => {
       isSaved: true,
       connection: {
         ...emptyConnection(),
-        projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
         instanceId: sheet.database?.instanceId || UNKNOWN_ID,
         databaseId: sheet.databaseId || UNKNOWN_ID,
       },
@@ -261,10 +254,19 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
-  sqlEditorStore.isLoadingTree = true;
-  await prepareAccessibleConnectionByProject();
-  await prepareSQLEditorContext();
-  sqlEditorStore.isLoadingTree = false;
+  if (sqlEditorStore.connectionTree.state === ConnectionTreeState.UNSET) {
+    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADING;
+    await prepareAccessibleConnectionByProject();
+    await prepareSQLEditorContext();
+    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADED;
+  }
+
+  watch(currentUser, (user) => {
+    if (user.id === UNKNOWN_ID) {
+      sqlEditorStore.connectionTree.data = [];
+      sqlEditorStore.connectionTree.state = ConnectionTreeState.UNSET;
+    }
+  });
 
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
