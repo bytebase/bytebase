@@ -3,8 +3,58 @@ package mysql
 import (
 	"testing"
 
+	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pingcap/tidb/parser/model"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetIndexName(t *testing.T) {
+	tests := []struct {
+		constraint *ast.Constraint
+		want       string
+	}{
+		{
+			constraint: &ast.Constraint{
+				Name: "id_idx",
+				Keys: []*ast.IndexPartSpecification{
+					{
+						Column: &ast.ColumnName{
+							Name: model.NewCIStr("id"),
+						},
+					},
+					{
+						Column: &ast.ColumnName{
+							Name: model.NewCIStr("name"),
+						},
+					},
+				},
+			},
+			want: "id_idx",
+		},
+		{
+			constraint: &ast.Constraint{
+				Keys: []*ast.IndexPartSpecification{
+					{
+						Column: &ast.ColumnName{
+							Name: model.NewCIStr("id"),
+						},
+					},
+					{
+						Column: &ast.ColumnName{
+							Name: model.NewCIStr("name"),
+						},
+					},
+				},
+			},
+			want: "id",
+		},
+	}
+	a := require.New(t)
+	for _, test := range tests {
+		got := getIndexName(test.constraint)
+		a.Equalf(test.want, got, "constraint: %v", test.constraint)
+	}
+}
 
 func TestIndexType(t *testing.T) {
 	tests := []struct {
