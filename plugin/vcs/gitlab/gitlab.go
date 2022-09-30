@@ -767,11 +767,6 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
-// GetSQLReviewCIFile returns the SQL review file path and content in GitLab action.
-func (*Provider) GetSQLReviewCIFile() (string, string) {
-	return "", ""
-}
-
 // GetBranch gets the given branch in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch

@@ -229,8 +229,6 @@ type Provider interface {
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
 	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
-	// GetSQLReviewCIFile returns the file path and content for SQL review CI in repository.
-	GetSQLReviewCIFile() (string, string)
 	// GetBranch gets the given branch in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook

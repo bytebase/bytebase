@@ -23,8 +23,10 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
 
+// SQLReviewAction is the GitHub action for SQL review in VCS workflow.
+//
 //go:embed sql-review-action.yml
-var sqlReviewAction string
+var SQLReviewAction string
 
 const (
 	// githubComURL is URL for the GitHub.com.
@@ -32,6 +34,9 @@ const (
 
 	// apiPageSize is the default page size when making API requests.
 	apiPageSize = 100
+
+	// SQLReviewActionFilePath is the SQL review action file path.
+	SQLReviewActionFilePath = ".github/workflows/sql-review.yml"
 )
 
 func init() {
@@ -796,11 +801,6 @@ type gitHubBranch struct {
 
 type referenceObject struct {
 	SHA string `json:"sha"`
-}
-
-// GetSQLReviewCIFile returns the SQL review file path and content in GitHub action.
-func (*Provider) GetSQLReviewCIFile() (string, string) {
-	return ".github/workflows/sql-review.yml", sqlReviewAction
 }
 
 // GetBranch gets the given branch in the repository.
