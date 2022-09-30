@@ -122,9 +122,7 @@ export const useTabStore = defineStore("tab", () => {
     watchThrottled(
       () => pick(tab, ...PERSISTENT_TASK_FIELDS),
       (tabPartial: PersistentTaskInfo) => {
-        console.time("save tab");
         storage.save(KEYS.tab(tabPartial.id), tabPartial);
-        console.timeEnd("save tab");
       },
       { deep: true, immediate, throttle: 100, trailing: true }
     );
@@ -133,8 +131,6 @@ export const useTabStore = defineStore("tab", () => {
   // Load session from local storage.
   // Reset if failed.
   const init = () => {
-    console.time("init tab store");
-
     // Load tabIdList and currentTabId
     tabIdList.value = storage.load(KEYS.tabIdList, []);
     currentTabId.value = storage.load(KEYS.currentTabId, INITIAL_TAB.id);
@@ -190,8 +186,6 @@ export const useTabStore = defineStore("tab", () => {
       },
       { deep: true, immediate: true }
     );
-
-    console.timeEnd("init tab store");
   };
   init();
 
