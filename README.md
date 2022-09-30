@@ -93,9 +93,13 @@ Database-as-Code, login with VCS account, project membership sync.
 
 ## 📕 Docs
 
-### [Installation](https://www.bytebase.com/docs/get-started/install/overview?source=github)
+### Installation
 
-### [User doc](https://bytebase.com/docs?source=github)
+https://bytebase.com/docs/get-started/install/overview
+
+### User doc
+
+https://bytebase.com/docs
 
 In particular, get familiar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
 
