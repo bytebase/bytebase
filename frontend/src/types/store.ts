@@ -190,13 +190,22 @@ export interface LabelState {
   labelList: Label[];
 }
 
+export enum ConnectionTreeState {
+  UNSET,
+  LOADING,
+  LOADED,
+}
+
 export interface SQLEditorState {
-  connectionTree: ConnectionAtom[];
+  connectionTree: {
+    data: ConnectionAtom[];
+    state: ConnectionTreeState;
+  };
+  expandedTreeNodeKeys: string[];
   selectedTable: Table;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
-  isLoadingTree: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
 }

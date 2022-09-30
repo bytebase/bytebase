@@ -156,6 +156,7 @@ export function getStringCookie(name: string): string {
 }
 
 export function getHighlightHTMLByKeyWords(s: string, k: string) {
+  if (!k) return s;
   return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
 }
 
