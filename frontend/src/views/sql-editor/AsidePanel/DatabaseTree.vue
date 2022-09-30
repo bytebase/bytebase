@@ -372,6 +372,10 @@ watch(
 .databases-tree .n-tree-node--pending:hover {
   background-color: var(--n-node-color-hover) !important;
 }
+.databases-tree .n-tree-node--selected,
+.databases-tree .n-tree-node--selected:hover {
+  background-color: var(--n-node-color-active) !important;
+}
 </style>
 
 <style scoped>
