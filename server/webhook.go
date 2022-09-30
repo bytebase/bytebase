@@ -603,7 +603,6 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 				Statement:    statement,
 			},
 		)
-
 		return migrationDetailList, nil
 	}
 
