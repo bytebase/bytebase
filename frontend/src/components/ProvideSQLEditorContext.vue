@@ -162,7 +162,7 @@ const prepareConnectionSlug = async () => {
       return;
     }
     if (isSameConnection(tab.connection, connection)) {
-      // Override current tab if its connection and target connection are equal.
+      // Stay on current tab if its connection and target connection are equal.
       return;
     }
     // Select or add a temp tab otherwise.
