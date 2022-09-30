@@ -97,7 +97,7 @@ Database-as-Code, login with VCS account, project membership sync.
 
 ### [User doc](https://bytebase.com/docs?source=github)
 
-In particular, get familar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
+In particular, get familiar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
 
 ### Design doc
 

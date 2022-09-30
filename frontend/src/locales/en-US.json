@@ -251,7 +251,8 @@
       "earliest-allowed-time": "Earliest allowed time",
       "ghost-sync": "gh-ost sync",
       "statement-type": "Statement type",
-      "lgtm": "LGTM"
+      "lgtm": "LGTM",
+      "pitr": "PITR"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
@@ -664,7 +665,6 @@
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "Failed to connect instance.\nIf you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
     "search-instance-name": "Search instance name",
-    "no-read-only-data-source-support": "The {database} does not currently support creating read-only connections",
     "grants": "Grants"
   },
   "environment": {
@@ -1199,7 +1199,7 @@
     "preview-deployment-pipeline": "Preview Deployment Pipeline",
     "select-database-group": "Select database group"
   },
-  "datasource": {
+  "data-source": {
     "role-type": "Role Type",
     "successfully-deleted-data-source-name": "Successfully deleted data source '{0}'.",
     "create-data-source": "Create data source",
@@ -1225,8 +1225,8 @@
     "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} ",
     "ssl-type": {
-      "ca": "@:{'datasource.ssl.ca-cert'}",
-      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "ca": "@:{'data-source.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
       "none": "None"
     },
     "ssl": {
@@ -1234,7 +1234,9 @@
       "client-key": "Client Key",
       "client-cert": "Client Certificate"
     },
-    "ssl-connection": "SSL Connection"
+    "ssl-connection": "SSL Connection",
+    "read-replica-host": "Read-replica Host",
+    "read-replica-port": "Read-replica Port"
   },
   "setting": {
     "project": {
@@ -1259,9 +1261,7 @@
     "download-as-csv": "Download as CSV",
     "download-as-json": "Download as JSON",
     "only-select-allowed": "Only {select} statements are allowed to execute.",
-    "want-to-change-schema": "If you want to {changeschema}.",
-    "change-schema": "change schema",
-    "go-to-alter-schema": "You can click the {alterschema} button, and submit an issue.",
+    "want-to-action": "If you want to {want}, click the {action} button and submit an issue.",
     "table-schema-placeholder": "Select a table to see its schema",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "notify-multiple-statements": "Multiple SQL statements detected. SQL Editor only executes the first statement. You can select another statement and execute it individually.",

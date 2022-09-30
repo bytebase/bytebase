@@ -161,12 +161,12 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				if index == nil {
 					continue
 				}
-				if index.Unique {
+				if index.Unique() {
 					// Unique index naming convention should in advisor_naming_unique_key_convention.go
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

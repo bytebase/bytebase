@@ -96,14 +96,14 @@ export const useDataSourceStore = defineStore("dataSource", {
       return dataSource;
     },
 
-    async createDataSource(newDataSource: DataSourceCreate) {
+    async createDataSource(dataSourceCreate: DataSourceCreate) {
       const data = (
         await axios.post(
-          `/api/database/${newDataSource.databaseId}/data-source`,
+          `/api/database/${dataSourceCreate.databaseId}/data-source`,
           {
             data: {
               type: "DataSourceCreate",
-              attributes: newDataSource,
+              attributes: dataSourceCreate,
             },
           }
         )

@@ -1,7 +1,7 @@
 <template>
   <div class="sqleditor--wrapper">
     <TabListContainer />
-    <Splitpanes class="default-theme splitpanes-wrap">
+    <Splitpanes class="default-theme flex flex-col flex-1 overflow-hidden">
       <Pane size="20">
         <AsidePanel />
       </Pane>
@@ -73,15 +73,10 @@ const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
 .sqleditor--wrapper {
   color: var(--base);
   --base: #444;
-  --nav-height: 64px;
-  --tab-height: 36px;
   --font-code: "Source Code Pro", monospace;
   --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
-  height: calc(100vh - var(--nav-height));
-}
 
-.splitpanes.default-theme.splitpanes-wrap {
-  height: calc(100% - var(--tab-height));
+  @apply flex-1 overflow-hidden flex flex-col;
 }
 </style>

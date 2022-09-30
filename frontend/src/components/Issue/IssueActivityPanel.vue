@@ -341,6 +341,7 @@ import type {
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
+  Task,
 } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
 import { findTaskById, issueSlug, sizeToFit, taskSlug } from "@/utils";
@@ -378,6 +379,10 @@ type ActionIconType =
   | "fail"
   | "complete"
   | "commit";
+
+const emit = defineEmits<{
+  (event: "run-checks", task: Task): void;
+}>();
 
 const { t } = useI18n();
 const activityStore = useActivityStore();
@@ -478,6 +483,10 @@ const doCreateComment = (comment: string, clear = true) => {
     }
     if (!isSubscribed) {
       addSubscriberId(currentUser.value.id);
+    }
+
+    if (comment === "LGTM") {
+      emit("run-checks", logic.selectedTask.value as Task);
     }
   });
 };

@@ -104,6 +104,7 @@ var (
 
 type controller struct {
 	server      *server.Server
+	profile     server.Profile
 	client      *http.Client
 	cookie      string
 	vcsProvider fake.VCSProvider
@@ -142,6 +143,7 @@ func getTestPort(testName string) int {
 
 		// PITR related cases
 		"TestRestoreToNewDatabase",
+		"TestRetentionPolicy",
 		"TestPITRGeneral",
 		"TestPITRDropDatabase",
 		"TestPITRInvalidTimePoint",
@@ -190,6 +192,7 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProvi
 		return err
 	}
 	ctl.server = server
+	ctl.profile = profile
 
 	return ctl.start(ctx, vcsProviderCreator, port)
 }
@@ -1321,6 +1324,35 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 			return nil
 		case api.BackupStatusFailed:
 			return errors.Errorf("backup %v for database %v failed", backupID, databaseID)
+		}
+	}
+	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
+	return errors.Errorf("failed to wait for backup as this condition should never be reached")
+}
+
+// waitBackupArchived waits for a backup to be archived.
+func (ctl *controller) waitBackupArchived(databaseID, backupID int) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	log.Debug("Waiting for backup.", zap.Int("id", backupID))
+	for range ticker.C {
+		backups, err := ctl.listBackups(databaseID)
+		if err != nil {
+			return err
+		}
+		var backup *api.Backup
+		for _, b := range backups {
+			if b.ID == backupID {
+				backup = b
+				break
+			}
+		}
+		if backup == nil {
+			return errors.Errorf("backup %d for database %d not found", backupID, databaseID)
+		}
+		if backup.RowStatus == api.Archived {
+			return nil
 		}
 	}
 	// Ideally, this should never happen because the ticker will not stop till the backup is finished.

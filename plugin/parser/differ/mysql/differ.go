@@ -49,9 +49,8 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	for _, node := range newNodes {
 		switch newStmt := node.(type) {
 		case *ast.CreateTableStmt:
-			tableName := newStmt.Table.Name.String()
-			oldStmt, ok := oldTableMap[tableName]
-			if !ok {
+			tableName := newStmt.Table.Name.O
+			if _, ok := oldTableMap[tableName]; !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
 				diff = append(diff, &stmt)
@@ -60,14 +59,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
-			var oldColumnMap = make(map[string]*ast.ColumnDef)
-			for _, oldColumnDef := range oldStmt.Cols {
-				oldColumnName := oldColumnDef.Name.Name.String()
-				oldColumnMap[oldColumnName] = oldColumnDef
-			}
-
+			oldColumnMap := buildColumnMap(oldNodes, newStmt.Table.Name)
 			for _, columnDef := range newStmt.Cols {
-				newColumnName := columnDef.Name.Name.String()
+				newColumnName := columnDef.Name.Name.O
 				oldColumnDef, ok := oldColumnMap[newColumnName]
 				if !ok {
 					alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
@@ -134,6 +128,24 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 		}
 	}
 	return oldTableMap
+}
+
+// buildColumnMap returns a map of column name to column definition on a given table.
+func buildColumnMap(nodes []ast.StmtNode, tableName model.CIStr) map[string]*ast.ColumnDef {
+	oldColumnMap := make(map[string]*ast.ColumnDef)
+	for _, node := range nodes {
+		switch stmt := node.(type) {
+		case *ast.CreateTableStmt:
+			if stmt.Table.Name.O != tableName.O {
+				continue
+			}
+			for _, columnDef := range stmt.Cols {
+				oldColumnMap[columnDef.Name.Name.O] = columnDef
+			}
+		default:
+		}
+	}
+	return oldColumnMap
 }
 
 // isColumnEqual returns true if definitions of two columns with the same name are the same.

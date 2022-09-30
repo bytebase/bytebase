@@ -106,6 +106,9 @@ const (
 	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
 	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
 
+	// MySQLDisallowSetColumnCharset is an advisor type for MySQL disallow set column charset.
+	MySQLDisallowSetColumnCharset Type = "bb.plugin.advisor.mysql.column.disallow-set-charset"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
@@ -124,6 +127,9 @@ const (
 	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
 	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
 
+	// MySQLTableDisallowPartition is an advisor type for MySQL disallow table partition.
+	MySQLTableDisallowPartition Type = "bb.plugin.advisor.mysql.table.disallow-partition"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
@@ -136,6 +142,9 @@ const (
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 
+	// MySQLIndexTotalNumberLimit is an advisor type for MySQL index total number limit.
+	MySQLIndexTotalNumberLimit Type = "bb.plugin.advisor.mysql.index.total-number-limit"
+
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 
@@ -144,6 +153,15 @@ const (
 
 	// MySQLStatementDisallowCommit is an advisor type for MySQL to disallow commit.
 	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
+
+	// MySQLDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
+	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.disallow.disallow-limit"
+
+	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
+	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
+
+	// MySQLInsertUpdateNoOrderBy is an advisor type for MySQL no ORDER BY clause in INSERT/UPDATE statement.
+	MySQLInsertUpdateNoOrderBy Type = "bb.plugin.advisor.mysql.insert-update.no-order-by"
 
 	// PostgreSQL Advisor.
 
@@ -270,7 +288,13 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advice, error) {
+func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			err = errors.Errorf("panic in advisor check: %v", panicErr)
+		}
+	}()
+
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()

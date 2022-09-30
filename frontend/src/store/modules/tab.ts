@@ -1,66 +1,78 @@
 import { defineStore } from "pinia";
-import { TabInfo, AnyTabInfo, TabState, UNKNOWN_ID } from "@/types";
+import { computed, ref } from "vue";
+import type { TabInfo, AnyTabInfo } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { getDefaultTab, INITIAL_TAB, isTempTab } from "@/utils";
 import { useInstanceStore } from "./instance";
 
-export const useTabStore = defineStore("tab", {
-  state: (): TabState => ({
-    tabList: [INITIAL_TAB],
-    currentTabId: INITIAL_TAB.id,
-  }),
+export const useTabStore = defineStore("tab", () => {
+  const instanceStore = useInstanceStore();
 
-  getters: {
-    currentTab(state): TabInfo {
-      const tab = state.tabList.find((tab) => tab.id === state.currentTabId);
-      return tab ?? getDefaultTab();
-    },
-    isDisconnected(): boolean {
-      const { instanceId, databaseId } = this.currentTab.connection;
-      if (instanceId === UNKNOWN_ID) {
-        return true;
-      }
-      const instance = useInstanceStore().getInstanceById(instanceId);
-      if (instance.engine === "MYSQL" || instance.engine === "TIDB") {
-        // Connecting to instance directly.
-        return false;
-      }
-      return databaseId === UNKNOWN_ID;
-    },
-  },
+  // states
+  const tabList = ref<TabInfo[]>([INITIAL_TAB]);
+  const currentTabId = ref(INITIAL_TAB.id);
 
-  actions: {
-    setTabState(payload: Partial<TabState>) {
-      Object.assign(this, payload);
-    },
-    addTab(payload?: AnyTabInfo) {
-      const defaultTab = getDefaultTab();
+  // getters
+  const currentTab = computed((): TabInfo => {
+    const tab = tabList.value.find((tab) => tab.id === currentTabId.value);
+    return tab ?? getDefaultTab();
+  });
+  const isDisconnected = computed((): boolean => {
+    const { instanceId, databaseId } = currentTab.value.connection;
+    if (instanceId === UNKNOWN_ID) {
+      return true;
+    }
+    const instance = instanceStore.getInstanceById(instanceId);
+    if (instance.engine === "MYSQL" || instance.engine === "TIDB") {
+      // Connecting to instance directly.
+      return false;
+    }
+    return databaseId === UNKNOWN_ID;
+  });
 
-      const newTab = {
-        ...defaultTab,
-        ...payload,
-      };
+  // actions
+  const addTab = (payload?: AnyTabInfo) => {
+    const defaultTab = getDefaultTab();
 
-      this.setTabState({
-        currentTabId: newTab.id,
-      });
-      this.tabList.push(newTab);
-    },
-    removeTab(payload: TabInfo) {
-      this.tabList.splice(this.tabList.indexOf(payload), 1);
-    },
-    updateCurrentTab(payload: AnyTabInfo) {
-      Object.assign(this.currentTab, payload);
-    },
-    setCurrentTabId(payload: string) {
-      this.currentTabId = payload;
-    },
-    selectOrAddTempTab() {
-      const tempTab = this.tabList.find(isTempTab);
-      if (tempTab) {
-        this.setCurrentTabId(tempTab.id);
-      } else {
-        this.addTab();
-      }
-    },
-  },
+    const newTab = {
+      ...defaultTab,
+      ...payload,
+    };
+
+    currentTabId.value = newTab.id;
+    tabList.value.push(newTab);
+  };
+  const removeTab = (payload: TabInfo) => {
+    const index = tabList.value.indexOf(payload);
+    if (index >= 0) {
+      tabList.value.splice(index, 1);
+    }
+  };
+  const updateCurrentTab = (payload: AnyTabInfo) => {
+    Object.assign(currentTab.value, payload);
+  };
+  const setCurrentTabId = (id: string) => {
+    currentTabId.value = id;
+  };
+  const selectOrAddTempTab = () => {
+    const tempTab = tabList.value.find(isTempTab);
+    if (tempTab) {
+      setCurrentTabId(tempTab.id);
+    } else {
+      addTab();
+    }
+  };
+
+  // exposure
+  return {
+    tabList,
+    currentTabId,
+    currentTab,
+    isDisconnected,
+    addTab,
+    removeTab,
+    updateCurrentTab,
+    setCurrentTabId,
+    selectOrAddTempTab,
+  };
 });

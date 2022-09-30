@@ -153,12 +153,12 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				if index == nil {
 					continue
 				}
-				if !index.Unique {
+				if !index.Unique() {
 					// Index naming convention should in advisor_naming_index_convention.go
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
+					advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
