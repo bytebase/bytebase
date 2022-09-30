@@ -340,6 +340,15 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 
 // isIndexOptionEqual returns true if two index options are the same.
 func isIndexOptionEqual(old, new *ast.IndexOption) bool {
+	// index_option: {
+	// 	KEY_BLOCK_SIZE [=] value
+	//   | index_type
+	//   | WITH PARSER parser_name
+	//   | COMMENT 'string'
+	//   | {VISIBLE | INVISIBLE}
+	//   |ENGINE_ATTRIBUTE [=] 'string'
+	//   |SECONDARY_ENGINE_ATTRIBUTE [=] 'string'
+	// }
 	if (old == nil) != (new == nil) {
 		return false
 	}

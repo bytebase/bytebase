@@ -5,8 +5,232 @@ import (
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pingcap/tidb/parser/opcode"
+	"github.com/pingcap/tidb/types"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/stretchr/testify/require"
 )
+
+func TestIsKeyPartEqual(t *testing.T) {
+	tests := []struct {
+		old []*ast.IndexPartSpecification
+		new []*ast.IndexPartSpecification
+		eq  bool
+	}{
+		{
+			old: []*ast.IndexPartSpecification{
+				// `id` + 1
+				{
+					Expr: &ast.BinaryOperationExpr{
+						Op: opcode.Plus,
+						L: &ast.ColumnNameExpr{
+							Name: &ast.ColumnName{
+								Name: model.NewCIStr("id"),
+							},
+						},
+						R: &driver.ValueExpr{
+							Datum: types.NewDatum(1),
+						},
+					},
+					Column: &ast.ColumnName{
+						Name: model.NewCIStr("id"),
+					},
+				},
+			},
+			new: []*ast.IndexPartSpecification{
+				// `id` * 2
+				{
+					Expr: &ast.BinaryOperationExpr{
+						Op: opcode.Mul,
+						L: &ast.ColumnNameExpr{
+							Name: &ast.ColumnName{
+								Name: model.NewCIStr("id"),
+							},
+						},
+						R: &driver.ValueExpr{
+							Datum: types.NewDatum(2),
+						},
+					},
+					Column: &ast.ColumnName{
+						Name: model.NewCIStr("id"),
+					},
+				},
+			},
+			eq: false,
+		},
+		{
+			old: []*ast.IndexPartSpecification{
+				// `id` + 1
+				{
+					Expr: &ast.BinaryOperationExpr{
+						Op: opcode.Plus,
+						L: &ast.ColumnNameExpr{
+							Name: &ast.ColumnName{
+								Name: model.NewCIStr("id"),
+							},
+						},
+						R: &driver.ValueExpr{
+							Datum: types.NewDatum(1),
+						},
+					},
+					Column: &ast.ColumnName{
+						Name: model.NewCIStr("id"),
+					},
+				},
+			},
+			new: []*ast.IndexPartSpecification{
+				// `id` + 1
+				{
+					Expr: &ast.BinaryOperationExpr{
+						Op: opcode.Plus,
+						L: &ast.ColumnNameExpr{
+							Name: &ast.ColumnName{
+								Name: model.NewCIStr("id"),
+							},
+						},
+						R: &driver.ValueExpr{
+							Datum: types.NewDatum(1),
+						},
+					},
+					Column: &ast.ColumnName{
+						Name: model.NewCIStr("id"),
+					},
+				},
+				// `id` * 2
+				{
+					Expr: &ast.BinaryOperationExpr{
+						Op: opcode.Mul,
+						L: &ast.ColumnNameExpr{
+							Name: &ast.ColumnName{
+								Name: model.NewCIStr("id"),
+							},
+						},
+						R: &driver.ValueExpr{
+							Datum: types.NewDatum(2),
+						},
+					},
+					Column: &ast.ColumnName{
+						Name: model.NewCIStr("id"),
+					},
+				},
+			},
+			eq: false,
+		},
+		{
+			old: []*ast.IndexPartSpecification{
+				// `id` + 1
+				{
+					Expr: &ast.BinaryOperationExpr{
+						Op: opcode.Plus,
+						L: &ast.ColumnNameExpr{
+							Name: &ast.ColumnName{
+								Name: model.NewCIStr("id"),
+							},
+						},
+						R: &driver.ValueExpr{
+							Datum: types.NewDatum(1),
+						},
+					},
+					Column: &ast.ColumnName{
+						Name: model.NewCIStr("id"),
+					},
+				},
+			},
+			new: []*ast.IndexPartSpecification{
+				// `id` + 1
+				{
+					Expr: &ast.BinaryOperationExpr{
+						Op: opcode.Plus,
+						L: &ast.ColumnNameExpr{
+							Name: &ast.ColumnName{
+								Name: model.NewCIStr("id"),
+							},
+						},
+						R: &driver.ValueExpr{
+							Datum: types.NewDatum(1),
+						},
+					},
+					Column: &ast.ColumnName{
+						Name: model.NewCIStr("id"),
+					},
+				},
+			},
+			eq: true,
+		},
+	}
+	a := require.New(t)
+	for _, test := range tests {
+		got := isKeyPartEqual(test.old, test.new)
+		a.Equalf(test.eq, got, "old: %v, new: %v", test.old, test.new)
+	}
+}
+func TestIsIndexOptionEqual(t *testing.T) {
+	tests := []struct {
+		old *ast.IndexOption
+		new *ast.IndexOption
+		eq  bool
+	}{
+		{
+			old: nil,
+			new: nil,
+			eq:  true,
+		},
+		{
+			old: &ast.IndexOption{
+				KeyBlockSize: 1024,
+			},
+			new: nil,
+			eq:  false,
+		},
+		{
+			old: &ast.IndexOption{
+				KeyBlockSize: 1024,
+			},
+			new: nil,
+			eq:  false,
+		},
+		{
+			old: &ast.IndexOption{
+				KeyBlockSize: 1024,
+				Tp:           model.IndexTypeBtree,
+				ParserName:   model.NewCIStr("parser"),
+				Comment:      "comment",
+				Visibility:   ast.IndexVisibilityVisible,
+			},
+			new: &ast.IndexOption{
+				KeyBlockSize: 1024,
+				Tp:           model.IndexTypeHash,
+				ParserName:   model.NewCIStr("parser"),
+				Comment:      "commen_idx",
+				Visibility:   ast.IndexVisibilityInvisible,
+			},
+			eq: false,
+		},
+		{
+			old: &ast.IndexOption{
+				KeyBlockSize: 1024,
+				Tp:           model.IndexTypeBtree,
+				ParserName:   model.NewCIStr("parser"),
+				Comment:      "comment",
+				Visibility:   ast.IndexVisibilityVisible,
+			},
+			new: &ast.IndexOption{
+				KeyBlockSize: 1024,
+				Tp:           model.IndexTypeBtree,
+				ParserName:   model.NewCIStr("parser"),
+				Comment:      "comment",
+				Visibility:   ast.IndexVisibilityVisible,
+			},
+			eq: true,
+		},
+	}
+
+	a := require.New(t)
+	for _, test := range tests {
+		got := isIndexOptionEqual(test.old, test.new)
+		a.Equalf(test.eq, got, "old: %v, new: %v", test.old, test.new)
+	}
+}
 
 func TestGetIndexName(t *testing.T) {
 	tests := []struct {
