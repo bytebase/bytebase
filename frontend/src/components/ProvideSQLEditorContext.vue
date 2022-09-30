@@ -263,8 +263,11 @@ onMounted(async () => {
 
   watch(currentUser, (user) => {
     if (user.id === UNKNOWN_ID) {
+      // Cleanup when user signed out
       sqlEditorStore.connectionTree.data = [];
       sqlEditorStore.connectionTree.state = ConnectionTreeState.UNSET;
+
+      tabStore.reset();
     }
   });
 

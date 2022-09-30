@@ -47,4 +47,11 @@ export class WebStorageHelper {
     }
     return keys;
   }
+
+  clear() {
+    const keys = this.keys();
+    keys.forEach((key) => {
+      localStorage.removeItem(key);
+    });
+  }
 }

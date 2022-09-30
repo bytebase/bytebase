@@ -194,6 +194,11 @@ export const useTabStore = defineStore("tab", () => {
   };
   init();
 
+  const reset = () => {
+    storage.clear();
+    init();
+  };
+
   // exposure
   return {
     tabIdList,
@@ -206,5 +211,6 @@ export const useTabStore = defineStore("tab", () => {
     updateCurrentTab,
     setCurrentTabId,
     selectOrAddTempTab,
+    reset,
   };
 });
