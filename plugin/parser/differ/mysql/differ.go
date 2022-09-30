@@ -62,7 +62,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				diff = append(diff, &stmt)
 				continue
 			}
-			indexMap := buildIndexMap(oldNodes, newStmt.Table.Name)
+			indexMap := buildIndexMap(newStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var createIndexStmts []*ast.CreateIndexStmt
@@ -190,23 +190,14 @@ func buildColumnMap(nodes []ast.StmtNode, tableName model.CIStr) map[string]*ast
 }
 
 // buildIndexMap build a map of index name to constraint on given table name.
-func buildIndexMap(nodes []ast.StmtNode, tableName model.CIStr) constraintMap {
+func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
 	indexMap := make(constraintMap)
-	for _, node := range nodes {
-		switch stmt := node.(type) {
-		case *ast.CreateTableStmt:
-			if tableName.O != stmt.Table.Name.O {
-				continue
-			}
-			for _, constraint := range stmt.Constraints {
-				if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
-					constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
-					constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
-					indexName := getIndexName(constraint)
-					indexMap[indexName] = constraint
-				}
-			}
-		default:
+	for _, constraint := range stmt.Constraints {
+		if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
+			constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
+			constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
+			indexName := getIndexName(constraint)
+			indexMap[indexName] = constraint
 		}
 	}
 	return indexMap
