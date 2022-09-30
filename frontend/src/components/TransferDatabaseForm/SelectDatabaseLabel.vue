@@ -130,7 +130,7 @@ const requiredLabelList = computed((): Label[] => {
 
 const dbNameMatchesTemplate = computed((): boolean => {
   const project = targetProject.value;
-  if (!project.dbNameTemplate) {
+  if (!project.dbNameTemplate || project.dbNameTemplate == "*") {
     // no restrictions, because no template
     return true;
   }
