@@ -5,8 +5,8 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900">
           {{
             database
-              ? $t("datasource.data-source-list")
-              : $t("datasource.all-data-source")
+              ? $t("data-source.data-source-list")
+              : $t("data-source.all-data-source")
           }}
         </h3>
         <!-- Hide add button for now, as we don't allow adding new data source after creating the database. -->
@@ -28,8 +28,8 @@
           class="w-56"
           :placeholder="
             database
-              ? $t('datasource.search-name')
-              : $t('datasource.search-name-database')
+              ? $t('data-source.search-name')
+              : $t('data-source.search-name-database')
           "
           @change-text="(text) => changeSearchText(text)"
         />
@@ -78,7 +78,7 @@
   </div>
   <BBModal
     v-if="state.showCreateModal"
-    :title="$t('datasource.create-data-source')"
+    :title="$t('data-source.create-data-source')"
     @close="state.showCreateModal = false"
   >
     <DataSourceCreateForm
@@ -214,7 +214,7 @@ export default defineComponent({
           module: "bytebase",
           style: "SUCCESS",
           title: t(
-            "datasource.successfully-created-data-source-datasource-name",
+            "data-source.successfully-created-data-source-datasource-name",
             [dataSource.name]
           ),
         });

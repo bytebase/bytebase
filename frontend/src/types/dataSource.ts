@@ -36,6 +36,10 @@ export type DataSource = {
   sslCert?: string;
   sslKey?: string;
 
+  // hostOverride and portOverride are only used for read-only data sources for user's read-replica instances.
+  hostOverride: string;
+  portOverride: string;
+
   // UI-only fields
   updateSsl?: boolean;
 };
@@ -53,7 +57,8 @@ export type DataSourceCreate = {
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
-
+  hostOverride: string;
+  portOverride: string;
   syncSchema: boolean;
 };
 
@@ -66,7 +71,8 @@ export type DataSourcePatch = {
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
-
+  hostOverride: string;
+  portOverride: string;
   syncSchema: boolean;
 };
 

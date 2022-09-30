@@ -1199,7 +1199,7 @@
     "preview-deployment-pipeline": "预览部署流水线",
     "select-database-group": "选择数据库分组"
   },
-  "datasource": {
+  "data-source": {
     "role-type": "权限类型",
     "successfully-deleted-data-source-name": "成功删除数据源'{0}'。",
     "create-data-source": "创建数据源",
@@ -1225,8 +1225,8 @@
     "connection-name-string-copied-to-clipboard": "{0} 字符串已复制到剪贴板。",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} ",
     "ssl-type": {
-      "ca": "@:{'datasource.ssl.ca-cert'}",
-      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "ca": "@:{'data-source.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
       "none": "不使用"
     },
     "ssl": {
@@ -1234,7 +1234,9 @@
       "client-key": "客户端密钥",
       "client-cert": "客户端证书"
     },
-    "ssl-connection": "SSL 连接"
+    "ssl-connection": "SSL 连接",
+    "read-replica-host": "只读副本 Host",
+    "read-replica-port": "只读副本端口"
   },
   "setting": {
     "project": {
