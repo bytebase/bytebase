@@ -44,7 +44,7 @@ export function openWindowForOAuth(
   const stateQueryParameter = `${type}-${randomString(20)}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
- if (vcsType == "GITHUB_COM") {
+  if (vcsType == "GITHUB_COM") {
     // GitHub OAuth App scopes: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
     // We need the workflow scope to update GitHub action files.
     return window.open(
