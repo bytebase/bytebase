@@ -456,26 +456,6 @@ func dedupMigrationFilesFromCommitList(commitList []vcs.Commit) []distinctFileIt
 	return distinctFileList
 }
 
-// findProjectDatabasesWithDifferentEnvironment finds the list of databases with given name in the project.
-// If the `envName` is not empty, it will be used as a filter condition for the result list.
-// It will ensure each database has a different environment
-func (s *Server) findProjectDatabasesWithDifferentEnvironment(ctx context.Context, projectID int, tenantMode api.ProjectTenantMode, dbName, envName string) ([]*api.Database, error) {
-	databases, err := s.findProjectDatabases(ctx, projectID, tenantMode, dbName, envName)
-	if err != nil {
-		return nil, err
-	}
-
-	// In case there are databases with identical name in a project for the same environment.
-	marked := make(map[int]struct{})
-	for _, database := range databases {
-		if _, ok := marked[database.Instance.EnvironmentID]; ok {
-			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, envName)
-		}
-		marked[database.Instance.EnvironmentID] = struct{}{}
-	}
-	return databases, nil
-}
-
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the `envName` is not empty, it will be used as a filter condition
 // for the result list.
@@ -627,7 +607,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabasesWithDifferentEnvironment(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -675,7 +655,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabasesWithDifferentEnvironment(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}

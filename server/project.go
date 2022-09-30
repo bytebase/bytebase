@@ -302,12 +302,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		// TODO: ed - enable the code
-		// Init SQL review action for GitHub
-		// For now we only support GitHub SQL review in VCS through GitHub action.
-		// if vcs.Type == vcsPlugin.GitHubCom {
-		// 	if err := s.upsertVCSSQLReviewCI(ctx, repository); err != nil {
-		// 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
-		// 	}
+		// Init SQL review CI for VCS
+		// if err := s.setupVCSSQLReviewCI(ctx, repository); err != nil {
+		// 	return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
 		// }
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -645,7 +642,7 @@ func refreshTokenNoop() common.TokenRefresher {
 	}
 }
 
-func (s *Server) upsertVCSSQLReviewCI(ctx context.Context, repository *api.Repository) error {
+func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) error {
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
 		return err
@@ -657,8 +654,8 @@ func (s *Server) upsertVCSSQLReviewCI(ctx context.Context, repository *api.Repos
 			return err
 		}
 	case vcsPlugin.GitLabSelfHost:
-		// TODO: support GitLab
-		break
+		// TODO: ed - support GitLab
+		return nil
 	}
 
 	return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreatePullRequest(
