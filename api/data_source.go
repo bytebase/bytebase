@@ -67,8 +67,8 @@ type DataSource struct {
 	SslCert  string
 	SslKey   string
 	// HostOverride and PortOverride are only used for read-only data sources for user's read-replica instances.
-	HostOverride string
-	PortOverride string
+	HostOverride string `jsonapi:"attr,hostOverride"`
+	PortOverride string `jsonapi:"attr,portOverride"`
 }
 
 // DataSourceCreate is the API message for creating a data source.
