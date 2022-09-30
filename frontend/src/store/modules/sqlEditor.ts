@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import dayjs from "dayjs";
 import type {
   SQLEditorState,
-  ConnectionAtom,
   QueryInfo,
   DatabaseId,
   QueryHistory,
@@ -10,6 +9,7 @@ import type {
   Connection,
   ActivitySQLEditorQueryPayload,
 } from "@/types";
+import { ConnectionTreeState } from "@/types";
 import { UNKNOWN_ID, unknown } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
@@ -20,9 +20,12 @@ import { useTabStore } from "./tab";
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
-    connectionTree: [],
+    connectionTree: {
+      data: [],
+      state: ConnectionTreeState.UNSET,
+    },
+    expandedTreeNodeKeys: [],
     selectedTable: unknown("TABLE"),
-    isLoadingTree: false,
     isShowExecutingHint: false,
     shouldFormatContent: false,
     // Related data and status
@@ -34,9 +37,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
   actions: {
     setSQLEditorState(payload: Partial<SQLEditorState>) {
       Object.assign(this, payload);
-    },
-    setConnectionTree(payload: ConnectionAtom[]) {
-      this.connectionTree = payload;
     },
     setShouldFormatContent(payload: boolean) {
       this.shouldFormatContent = payload;
