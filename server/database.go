@@ -809,8 +809,9 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 	}
 
-	// Validate labels can match database name template on the project.
-	if project.DBNameTemplate != "" {
+	// Validate labels can match database name template on the project if the
+	// template is not a wildcard.
+	if project.DBNameTemplate != "" && project.DBNameTemplate != "*" {
 		tokens := make(map[string]string)
 		for _, label := range labels {
 			tokens[label.Key] = tokens[label.Value]
