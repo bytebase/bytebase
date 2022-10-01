@@ -70,6 +70,9 @@ export default defineComponent({
     const environmentList = useEnvironmentList();
 
     const databaseListGroupByName = computed((): DatabaseGroupByName[] => {
+      if (props.project.dbNameTemplate === "") {
+        return [{ name: "", databaseList: props.databaseList }];
+      }
       if (props.project.dbNameTemplate) {
         if (props.labelList.length === 0) return [];
       }
