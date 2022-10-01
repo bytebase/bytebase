@@ -181,7 +181,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSchemaDrift:           {false, true, true},
 	FeatureTaskScheduleTime:      {false, true, true},
 	FeatureLGTM:                  {false, false, true},
-	FeatureMultiTenancy:          {false, true, true},
+	FeatureMultiTenancy:          {false, false, true},
 	FeatureDBAWorkflow:           {false, false, true},
 	FeatureDataSource:            {false, false, false},
 	FeatureGhost:                 {false, true, true},
@@ -192,7 +192,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSQLReviewPolicy:       {false, true, true},
 	FeatureRBAC:                  {false, true, true},
 	Feature3rdPartyAuth:          {false, true, true},
-	FeatureBranding:              {false, true, true},
+	FeatureBranding:              {false, false, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
 }
 

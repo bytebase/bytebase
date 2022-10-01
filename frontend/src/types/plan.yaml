@@ -102,7 +102,6 @@ planList:
       - type: rbac
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
-      - type: branding-logo
     mainFeatureList:
       - email-support
       - everything-in-free-plan
