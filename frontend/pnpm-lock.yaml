@@ -4,7 +4,7 @@ specifiers:
   '@bytebase/vue-kbar': 0.1.8
   '@codingame/monaco-vscode-api': 1.69.11
   '@iconify/json': 2.1.115
-  '@intlify/vite-plugin-vue-i18n': 6.0.1
+  '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@markdoc/markdoc': 0.1.7
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 3.1.0
@@ -132,7 +132,7 @@ dependencies:
 
 devDependencies:
   '@iconify/json': 2.1.115
-  '@intlify/vite-plugin-vue-i18n': 6.0.1_vite@3.1.0+vue-i18n@9.2.2
+  '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.1.0+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 3.1.0_rollup@2.79.0
   '@tailwindcss/forms': 0.5.3_tailwindcss@3.1.8
@@ -444,8 +444,8 @@ packages:
     engines: {node: '>= 14'}
     dev: true
 
-  /@intlify/vite-plugin-vue-i18n/6.0.1_vite@3.1.0+vue-i18n@9.2.2:
-    resolution: {integrity: sha512-FFVcxVU4bR9vdDLNbltM5mrhndnXMErO01i0RrpdyMegEt3Nu/YLoH0sFdjRun7/RY4vaEnhTnFvVf9uO0dQvg==}
+  /@intlify/vite-plugin-vue-i18n/6.0.3_vite@3.1.0+vue-i18n@9.2.2:
+    resolution: {integrity: sha512-6SgNzPAOCR90wvt368lKzi7f/5ZEWJn22UCGvhFsP3XvKqlF3cVzojahgQ6o+LTdCkExeM6wPgd+haFf28E9VQ==}
     engines: {node: '>= 14.6'}
     peerDependencies:
       petite-vue-i18n: '*'
