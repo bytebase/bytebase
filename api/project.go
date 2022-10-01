@@ -77,8 +77,12 @@ type Project struct {
 	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
 	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
 	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
-	// DBNameTemplate is only used when a project is in tenant mode.
-	// Empty value means {{DB_NAME}}.
+	// DBNameTemplate is only used when a project is in tenant mode and the name of tenant databases follows a format.
+	// {{DB_NAME}} is used for each tenant belonging to an individual database instance and all tenant databases have the same database name.
+	// The template can include label keys such as {{DB_NAME}}_{{TENANT}}. It allows all tenant databases to belong to one or a few database instances.
+	// All database with the same {{DB_NAME}} (base database name) belong to one group.
+	//
+	// Empty value means all tenant databases in the project belonging to the same group.
 	DBNameTemplate string              `jsonapi:"attr,dbNameTemplate"`
 	RoleProvider   ProjectRoleProvider `jsonapi:"attr,roleProvider"`
 	// SchemaChangeType is the type of the schema migration script.
@@ -230,7 +234,7 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 
 // ValidateProjectDBNameTemplate validates the project database name template.
 func ValidateProjectDBNameTemplate(template string) error {
-	if template == "" || template == "*" {
+	if template == "" {
 		return nil
 	}
 	tokens, _ := common.ParseTemplateTokens(template)
@@ -286,7 +290,7 @@ func formatTemplateRegexp(template string, tokens map[string]string) (string, er
 // GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate, labelsJSON.
 func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (string, error) {
 	// There is no need to check database name if the template is empty or a wildcard.
-	if dbNameTemplate == "" || dbNameTemplate == "*" {
+	if dbNameTemplate == "" {
 		return databaseName, nil
 	}
 	var labels []*DatabaseLabel
