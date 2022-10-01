@@ -78,8 +78,8 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 		for _, database := range databaseList {
 			labels := idToLabels[database.ID]
 
-			if dbNameTemplate != "*" {
-				// The tenant database should match the database name if the template is not a wildcard.
+			if dbNameTemplate != "" {
+				// The tenant database should match the database name if the template is not empty.
 				name, err := formatDatabaseName(baseDatabaseName, dbNameTemplate, labels)
 				if err != nil {
 					continue

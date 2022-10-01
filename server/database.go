@@ -811,7 +811,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 	// Validate labels can match database name template on the project if the
 	// template is not a wildcard.
-	if project.DBNameTemplate != "" && project.DBNameTemplate != "*" {
+	if project.DBNameTemplate != "" {
 		tokens := make(map[string]string)
 		for _, label := range labels {
 			tokens[label.Key] = tokens[label.Value]

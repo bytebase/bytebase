@@ -244,8 +244,8 @@ type MigrationInfo struct {
 }
 
 // placeholderRegexp is the regexp for placeholder.
-// Refer to https://stackoverflow.com/a/6222235/19075342, but we support "." and "*" for now.
-const placeholderRegexp = `[^\\/?%:|"<>]+`
+// Refer to https://stackoverflow.com/a/6222235/19075342, but we support "." for now.
+const placeholderRegexp = `[^\\/?%*:|"<>]+`
 
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.

@@ -174,7 +174,7 @@ export default defineComponent({
         name: "New Project",
         key: randomString(3).toUpperCase(),
         tenantMode: "DISABLED",
-        dbNameTemplate: "",
+        dbNameTemplate: "{{DB_NAME}}_{{TENANT}}",
         roleProvider: "BYTEBASE",
       } as Project,
       showFeatureModal: false,

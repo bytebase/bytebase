@@ -1339,8 +1339,8 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	// If there are existing databases with the same name, we will disallow the database creation.
 	// Otherwise, we will create a blank new database.
 	if similarDB == nil {
-		// Ignore the database name conflict if the template is a wildcard.
-		if project.DBNameTemplate == "*" {
+		// Ignore the database name conflict if the template is empty.
+		if project.DBNameTemplate == "" {
 			return "", "", nil
 		}
 

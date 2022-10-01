@@ -90,7 +90,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 				},
 			},
 			"hello",
-			"",
+			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[0], dbs[1],
 			},
@@ -132,7 +132,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 				},
 			},
 			"hello",
-			"",
+			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[0], dbs[1], dbs[2],
 			},
@@ -175,7 +175,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 				},
 			},
 			"hello",
-			"",
+			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[0], dbs[2], dbs[3],
 			},
@@ -204,7 +204,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 				},
 			},
 			"world",
-			"",
+			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[3], dbs[4],
 			},
