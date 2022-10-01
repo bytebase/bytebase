@@ -13,12 +13,19 @@ import (
 	"strings"
 	"time"
 
+	_ "embed"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
+
+// CIFileContent is the GitLab CI for SQL review in VCS workflow.
+//
+//go:embed .gitlab-ci.yml
+var CIFileContent string
 
 const (
 	// SecretTokenLength is the length of secret token.
@@ -28,6 +35,15 @@ const (
 	apiPath = "api/v4"
 	// apiPageSize is the default page size when making API requests.
 	apiPageSize = 100
+
+	// SQLReviewCIFilePath is the remote file path for GitLab SQL review CI.
+	// We can include the remote file path in the GitLab CI.
+	// So we can store the script in our own GitHub repo.
+	// TODO: ed - change this to official repo.
+	// TODO: ed - and we'd better using version to control it, just like the GitHub action.
+	SQLReviewCIFilePath = "https://raw.githubusercontent.com/ed-bytebase/sql-review-gitlab-ci/main/sql-review.yml"
+	// CIFilePath is the local path for GitLab ci file.
+	CIFilePath = ".gitlab-ci.yml"
 )
 
 var _ vcs.Provider = (*Provider)(nil)
