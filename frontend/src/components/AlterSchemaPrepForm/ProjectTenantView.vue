@@ -180,7 +180,7 @@ const deployment = computed(() => {
 const databaseListGroupByName = computed(
   (): { name: string; list: Database[] }[] => {
     if (!props.project) return [];
-    // All databases will be the same group of dbNameTemplate is empty.
+    // All databases will be in the same group if dbNameTemplate is empty.
     if (props.project.dbNameTemplate === "") {
       return [{ name: "", list: props.databaseList }];
     }
