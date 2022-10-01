@@ -759,6 +759,166 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
+type gitLabBranch struct {
+	Name   string `json:"name"`
+	Commit Commit `json:"commit"`
+}
+
+type gitLabBranchCreate struct {
+	Branch string `json:"branch"`
+	Ref    string `json:"ref"`
+}
+
+type gitLabMergeRequestCreate struct {
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	SourceBranch string `json:"source_branch"`
+	TargetBranch string `json:"target_branch"`
+}
+
+// GetBranch gets the given branch in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+	url := fmt.Sprintf("%s/projects/%s/repository/branches/%s", p.APIURL(instanceURL), repositoryID, branchName)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	branch := new(gitLabBranch)
+	if err := json.Unmarshal([]byte(body), branch); err != nil {
+		return nil, err
+	}
+
+	return &vcs.BranchInfo{
+		Name:         branch.Name,
+		LastCommitID: branch.Commit.ID,
+	}, nil
+}
+
+// CreateBranch creates the branch in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
+func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
+	body, err := json.Marshal(
+		gitLabBranchCreate{
+			Branch: branch.Name,
+			Ref:    branch.LastCommitID,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal branch create")
+	}
+
+	url := fmt.Sprintf("%s/projects/%s/repository/branches", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+// CreatePullRequest creates the pull request in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
+	body, err := json.Marshal(
+		gitLabMergeRequestCreate{
+			Title:        pullRequestCreate.Title,
+			Description:  pullRequestCreate.Body,
+			SourceBranch: pullRequestCreate.Head,
+			TargetBranch: pullRequestCreate.Base,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal pull request create")
+	}
+
+	url := fmt.Sprintf("%s/projects/%s/merge_requests", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook
