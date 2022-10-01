@@ -78,7 +78,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.sql-review", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
   ["bb.feature.task-schedule-time", [false, true, true]],
-  ["bb.feature.multi-tenancy", [false, true, true]],
+  ["bb.feature.multi-tenancy", [false, false, true]],
   ["bb.feature.dba-workflow", [false, false, true]],
   ["bb.feature.data-source", [false, false, false]],
   ["bb.feature.online-migration", [false, true, true]],
@@ -91,7 +91,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.rbac", [false, true, true]],
   ["bb.feature.3rd-party-auth", [false, true, true]],
   // Branding
-  ["bb.feature.branding", [false, true, true]],
+  ["bb.feature.branding", [false, false, true]],
 ]);
 
 export const FEATURE_SECTIONS: { type: string; featureList: string[] }[] =
