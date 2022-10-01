@@ -203,7 +203,9 @@ export default defineComponent({
     watch(
       () => state.enableDbNameTemplate,
       (on) => {
-        if (!on) {
+        if (on) {
+          state.project.dbNameTemplate = "{{DB_NAME}}_{{TENANT}}";
+        } else {
           state.project.dbNameTemplate = "";
         }
       }

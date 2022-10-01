@@ -355,6 +355,9 @@ export default defineComponent({
     });
 
     const allowGenerateTenant = computed(() => {
+      // All databases will be in the same group if dbNameTemplate is empty.
+      if (isTenantProject.value && state.project?.dbNameTemplate === "")
+        return true;
       if (!state.selectedDatabaseName) return false;
 
       // not allowed when database list filtered by deployment config is empty
