@@ -79,7 +79,7 @@ type Project struct {
 	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
 	// DBNameTemplate is only used when a project is in tenant mode and the name of tenant databases follows a format.
 	// {{DB_NAME}} is used for each tenant belonging to an individual database instance and all tenant databases have the same database name.
-	// The template can include label keys such as {{DB_NAME}}_{{TENANT}}. It allows to all tenant databases belonging to one or a few database instances.
+	// The template can include label keys such as {{DB_NAME}}_{{TENANT}}. It allows all tenant databases to belong to one or a few database instances.
 	// All database with the same {{DB_NAME}} (base database name) belong to one group.
 	//
 	// Empty value means all tenant databases in the project belonging to the same group.
