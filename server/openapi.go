@@ -123,12 +123,6 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 				},
 			})
 		}
-		log.Debug(
-			"Parse the migration info",
-			zap.String("file", request.FilePath),
-			zap.String("database", migrationInfo.Database),
-			zap.String("environment", migrationInfo.Environment),
-		)
 		if migrationInfo.Database == "" {
 			return c.JSON(http.StatusOK, []advisor.Advice{})
 		}
