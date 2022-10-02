@@ -56,13 +56,14 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		switch newStmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := newStmt.Table.Name.O
-			if _, ok := oldTableMap[tableName]; !ok {
+			oldStmt, ok := oldTableMap[tableName]
+			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
 				diff = append(diff, &stmt)
 				continue
 			}
-			indexMap := buildIndexMap(newStmt)
+			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var createIndexStmts []*ast.CreateIndexStmt
