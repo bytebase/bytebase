@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -125,15 +126,16 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 	if database == nil {
 		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     payload.ProjectID,
-			InstanceID:    task.InstanceID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          payload.DatabaseName,
-			CharacterSet:  payload.CharacterSet,
-			Collation:     payload.Collation,
-			Labels:        &payload.Labels,
-			SchemaVersion: payload.SchemaVersion,
+			CreatorID:            api.SystemBotID,
+			ProjectID:            payload.ProjectID,
+			InstanceID:           task.InstanceID,
+			EnvironmentID:        instance.EnvironmentID,
+			Name:                 payload.DatabaseName,
+			CharacterSet:         payload.CharacterSet,
+			Collation:            payload.Collation,
+			LastSuccessfulSyncTs: time.Now().Unix(),
+			Labels:               &payload.Labels,
+			SchemaVersion:        payload.SchemaVersion,
 		}
 		createdDatabase, err := server.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {

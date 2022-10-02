@@ -194,14 +194,9 @@
     </div>
 
     <!-- Action Button Group -->
-    <div class="pt-4 px-2">
+    <div class="pt-4">
       <!-- Create button group -->
-      <div class="flex justify-between items-center">
-        <BBCheckbox
-          :title="$t('instance.sync-schema-now')"
-          :value="state.instance.syncSchema"
-          @toggle="state.instance.syncSchema = !state.instance.syncSchema"
-        />
+      <div class="flex justify-end items-center">
         <div class="flex justify-end items-center">
           <BBSpin
             v-if="state.isCreatingInstance"
@@ -305,7 +300,6 @@ const state = reactive<LocalState>({
     // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
     host: isDev() ? "127.0.0.1" : "host.docker.internal",
     username: "",
-    syncSchema: true,
   },
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",

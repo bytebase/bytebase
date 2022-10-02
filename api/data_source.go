@@ -91,10 +91,6 @@ type DataSourceCreate struct {
 	SslKey       string         `jsonapi:"attr,sslKey"`
 	HostOverride string         `jsonapi:"attr,hostOverride"`
 	PortOverride string         `jsonapi:"attr,portOverride"`
-	// If true, syncs the schema after creating the data source. The client
-	// may set to false if the target data source's instance contains too many databases
-	// to avoid the request timeout.
-	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }
 
 // DataSourceFind is the API message for finding data sources.
@@ -134,8 +130,4 @@ type DataSourcePatch struct {
 	SslKey           *string `jsonapi:"attr,sslKey"`
 	HostOverride     *string `jsonapi:"attr,hostOverride"`
 	PortOverride     *string `jsonapi:"attr,portOverride"`
-	// If true, syncs the schema after patching the data source. The client
-	// may set to false if the target data source's instance contains too many databases
-	// to avoid the request timeout.
-	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }

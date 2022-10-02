@@ -126,9 +126,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if instance == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
 			}
-			if err := s.syncEngineVersionAndSchema(ctx, instance); err != nil {
+			if _, err := s.syncInstance(ctx, instance); err != nil {
 				resultSet.Error = err.Error()
 			}
+			// Sync all databases in the instance asynchronously.
+			instanceSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
@@ -344,30 +346,14 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) error {
+func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
 	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer driver.Close(ctx)
 
-	databaseList, err := s.syncInstanceSchema(ctx, instance, driver)
-	if err != nil {
-		return err
-	}
-
-	var errorList []string
-	for _, databaseName := range databaseList {
-		// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-		if err := s.syncDatabaseSchema(ctx, instance, databaseName); err != nil {
-			errorList = append(errorList, err.Error())
-		}
-	}
-	if len(errorList) > 0 {
-		return errors.Errorf("sync database schema errors, %s", strings.Join(errorList, ", "))
-	}
-
-	return nil
+	return s.syncInstanceSchema(ctx, instance, driver)
 }
 
 // syncInstanceSchema syncs the instance and all database metadata first without diving into the deep structure of each database.
@@ -463,13 +449,14 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		}
 		// Case 2, only appear in the synced db schema.
 		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     api.DefaultProjectID,
-			InstanceID:    instance.ID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          databaseName,
-			CharacterSet:  databaseMetadata.CharacterSet,
-			Collation:     databaseMetadata.Collation,
+			CreatorID:            api.SystemBotID,
+			ProjectID:            api.DefaultProjectID,
+			InstanceID:           instance.ID,
+			EnvironmentID:        instance.EnvironmentID,
+			Name:                 databaseName,
+			CharacterSet:         databaseMetadata.CharacterSet,
+			Collation:            databaseMetadata.Collation,
+			LastSuccessfulSyncTs: 0,
 		}
 		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
 			if common.ErrorCode(err) == common.Conflict {
@@ -566,14 +553,15 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		database = dbPatched
 	} else {
 		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     api.DefaultProjectID,
-			InstanceID:    instance.ID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          schema.Name,
-			CharacterSet:  schema.CharacterSet,
-			Collation:     schema.Collation,
-			SchemaVersion: schemaVersion,
+			CreatorID:            api.SystemBotID,
+			ProjectID:            api.DefaultProjectID,
+			InstanceID:           instance.ID,
+			EnvironmentID:        instance.EnvironmentID,
+			Name:                 schema.Name,
+			CharacterSet:         schema.CharacterSet,
+			Collation:            schema.Collation,
+			SchemaVersion:        schemaVersion,
+			LastSuccessfulSyncTs: time.Now().Unix(),
 		}
 		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
