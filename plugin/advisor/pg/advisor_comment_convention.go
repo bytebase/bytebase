@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.

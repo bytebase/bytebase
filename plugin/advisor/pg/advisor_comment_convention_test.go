@@ -36,6 +36,29 @@ func TestColumnCommentConvention(t *testing.T) {
 				},
 			},
 		},
+		{
+			Statement: `comment on table public is 'is a table name'`,
+			Want: []advisor.Advice{
+				{
+					Status: advisor.Success,
+					Code:   advisor.Ok,
+					Title:  "OK",
+					Line:   0,
+				},
+			},
+		},
+		{
+			Statement: `comment on table public is 'is a  to long table name'`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.ColumnCommentTooLong,
+					Title:   "column.comment",
+					Content: "The length of comment should be within 20 characters",
+					Line:    1,
+				},
+			},
+		},
 	}
 
 	payload, err := json.Marshal(advisor.CommentConventionRulePayload{
