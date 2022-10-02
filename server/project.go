@@ -173,6 +173,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid LGTM check setting value: %v", v.Value))
 			}
 		}
+		if v := projectPatch.TenantMode; v != nil {
+			if *v == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			}
+		}
+		if v := projectPatch.DBNameTemplate; v != nil {
+			if err := api.ValidateProjectDBNameTemplate(*v); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed patch project request: %s", err.Error()))
+			}
+		}
 
 		// Verify before archiving the project:
 		// 1. the project has no database.
