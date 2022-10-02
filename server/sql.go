@@ -449,13 +449,14 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		}
 		// Case 2, only appear in the synced db schema.
 		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     api.DefaultProjectID,
-			InstanceID:    instance.ID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          databaseName,
-			CharacterSet:  databaseMetadata.CharacterSet,
-			Collation:     databaseMetadata.Collation,
+			CreatorID:            api.SystemBotID,
+			ProjectID:            api.DefaultProjectID,
+			InstanceID:           instance.ID,
+			EnvironmentID:        instance.EnvironmentID,
+			Name:                 databaseName,
+			CharacterSet:         databaseMetadata.CharacterSet,
+			Collation:            databaseMetadata.Collation,
+			LastSuccessfulSyncTs: 0,
 		}
 		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
 			if common.ErrorCode(err) == common.Conflict {
@@ -552,14 +553,15 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		database = dbPatched
 	} else {
 		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     api.DefaultProjectID,
-			InstanceID:    instance.ID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          schema.Name,
-			CharacterSet:  schema.CharacterSet,
-			Collation:     schema.Collation,
-			SchemaVersion: schemaVersion,
+			CreatorID:            api.SystemBotID,
+			ProjectID:            api.DefaultProjectID,
+			InstanceID:           instance.ID,
+			EnvironmentID:        instance.EnvironmentID,
+			Name:                 schema.Name,
+			CharacterSet:         schema.CharacterSet,
+			Collation:            schema.Collation,
+			SchemaVersion:        schemaVersion,
+			LastSuccessfulSyncTs: time.Now().Unix(),
 		}
 		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {

@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	instanceSyncChan chan *api.Instance = make(chan *api.Instance, 100)
+	instanceSyncChan chan *api.Instance = make(chan *api.Instance)
 )
 
 // NewSchemaSyncer creates a schema syncer.
@@ -104,7 +104,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 			}()
 		case instance := <-instanceSyncChan:
-			func() {
+			go func(instance *api.Instance) {
 				defer func() {
 					if r := recover(); r != nil {
 						err, ok := r.(error)
@@ -137,7 +137,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 							zap.String("error", err.Error()))
 					}
 				}
-			}()
+			}(instance)
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
