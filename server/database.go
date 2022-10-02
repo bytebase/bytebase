@@ -690,18 +690,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
-		if dataSourceCreate.SyncSchema {
-			// Refetch the instance to get the updated data source.
-			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
-			}
-			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
-				log.Warn("Failed to sync instance schema",
-					zap.Int("instance_id", updatedInstance.ID),
-					zap.Error(err))
-			}
+		// Refetch the instance to get the updated data source.
+		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
+		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", updatedInstance.ID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		instanceSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -765,18 +765,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
-		if dataSourcePatch.SyncSchema {
-			// Refetch the instance to get the updated data source.
-			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
-			}
-			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
-				log.Warn("Failed to sync instance schema",
-					zap.Int("instance_id", updatedInstance.ID),
-					zap.Error(err))
-			}
+		// Refetch the instance to get the updated data source.
+		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
+		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", updatedInstance.ID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		instanceSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {

@@ -64,13 +64,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					zap.String("engine", string(instance.Engine)),
 					zap.Error(err))
 			}
-			if instanceCreate.SyncSchema {
-				if err := s.syncEngineVersionAndSchema(ctx, instance); err != nil {
-					log.Warn("Failed to sync instance schema",
-						zap.Int("instance_id", instance.ID),
-						zap.Error(err))
-				}
+			if _, err := s.syncInstance(ctx, instance); err != nil {
+				log.Warn("Failed to sync instance",
+					zap.Int("instance_id", instance.ID),
+					zap.Error(err))
 			}
+			// Sync all databases in the instance asynchronously.
+			instanceSyncChan <- instance
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -202,13 +202,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 						zap.String("engine", string(instancePatched.Engine)),
 						zap.Error(err))
 				}
-				if instancePatch.SyncSchema {
-					if err := s.syncEngineVersionAndSchema(ctx, instancePatched); err != nil {
-						log.Warn("Failed to sync instance schema",
-							zap.Int("instance_id", instancePatched.ID),
-							zap.Error(err))
-					}
+				if _, err := s.syncInstance(ctx, instancePatched); err != nil {
+					log.Warn("Failed to sync instance",
+						zap.Int("instance_id", instancePatched.ID),
+						zap.Error(err))
 				}
+				// Sync all databases in the instance asynchronously.
+				instanceSyncChan <- instancePatched
 			}
 		}
 

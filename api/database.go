@@ -70,10 +70,11 @@ type DatabaseCreate struct {
 	EnvironmentID int
 
 	// Domain specific fields
-	Name         string `jsonapi:"attr,name"`
-	CharacterSet string `jsonapi:"attr,characterSet"`
-	Collation    string `jsonapi:"attr,collation"`
-	IssueID      int    `jsonapi:"attr,issueId"`
+	Name                 string `jsonapi:"attr,name"`
+	CharacterSet         string `jsonapi:"attr,characterSet"`
+	Collation            string `jsonapi:"attr,collation"`
+	IssueID              int    `jsonapi:"attr,issueId"`
+	LastSuccessfulSyncTs int64
 	// Labels is a json-encoded string from a list of DatabaseLabel,
 	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
 	Labels        *string `jsonapi:"attr,labels"`
