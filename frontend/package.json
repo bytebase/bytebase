@@ -70,7 +70,7 @@
     "@types/lodash-es": "4.17.6",
     "@types/node": "16.11.62",
     "@types/papaparse": "5.3.5",
-    "@types/prettier": "2.7.0",
+    "@types/prettier": "2.7.1",
     "@types/qs": "6.9.7",
     "@types/semver": "7.3.12",
     "@types/slug": "5.0.3",
