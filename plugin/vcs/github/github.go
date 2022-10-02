@@ -781,21 +781,21 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 
 // GetBranch gets the given branch in the repository.
 //
-// Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
+// Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
 func (*Provider) GetBranch(_ context.Context, _ common.OauthContext, _, _, _ string) (*vcs.BranchInfo, error) {
 	return nil, errors.Errorf("GetBranch for GitHub is not implemented yet")
 }
 
 // CreateBranch creates the branch in the repository.
 //
-// Docs: https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
+// Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
 func (*Provider) CreateBranch(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.BranchInfo) error {
 	return errors.Errorf("CreateBranch for GitHub is not implemented yet")
 }
 
 // CreatePullRequest creates the pull request in the repository.
 //
-// Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
+// Docs: https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
 func (*Provider) CreatePullRequest(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.PullRequestCreate) error {
 	return errors.Errorf("CreatePullRequest for GitHub is not implemented yet")
 }
