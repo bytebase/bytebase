@@ -1,40 +1,38 @@
 <template>
   <div class="max-w-[60rem] mx-auto">
-    <template v-if="project.dbNameTemplate">
-      <div class="text-lg font-medium leading-7 text-main">
-        {{ $t("project.db-name-template") }}
-      </div>
-      <div class="textinfolabel">
-        <i18n-t keypath="label.db-name-template-tips">
-          <template #placeholder>
-            <!-- prettier-ignore -->
-            <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
-          </template>
-          <template #link>
-            <a
-              class="normal-link inline-flex items-center"
-              href="https://bytebase.com/docs/tenant-database-management#database-name-template?source=console"
-              target="__BLANK"
-            >
-              {{ $t("common.learn-more") }}
-              <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-            </a>
-          </template>
-        </i18n-t>
-      </div>
-      <div class="mt-3">
-        <input
-          disabled
-          type="text"
-          class="textfield w-full"
-          :value="project.dbNameTemplate"
-        />
-      </div>
+    <div class="text-lg font-medium leading-7 text-main">
+      {{ $t("project.db-name-template") }}
+    </div>
+    <div class="textinfolabel">
+      <i18n-t keypath="label.db-name-template-tips">
+        <template #placeholder>
+          <!-- prettier-ignore -->
+          <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
+        </template>
+        <template #link>
+          <a
+            class="normal-link inline-flex items-center"
+            href="https://bytebase.com/docs/tenant-database-management#database-name-template?source=console"
+            target="__BLANK"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+          </a>
+        </template>
+      </i18n-t>
+    </div>
+    <div class="mt-3">
+      <input
+        disabled
+        type="text"
+        class="textfield w-full"
+        :value="project.dbNameTemplate"
+      />
+    </div>
 
-      <div class="text-lg font-medium leading-7 text-main mt-6 border-t pt-4">
-        {{ $t("common.deployment-config") }}
-      </div>
-    </template>
+    <div class="text-lg font-medium leading-7 text-main mt-6 border-t pt-4">
+      {{ $t("common.deployment-config") }}
+    </div>
 
     <BBAttention
       v-if="state.deployment?.id === EMPTY_ID"
