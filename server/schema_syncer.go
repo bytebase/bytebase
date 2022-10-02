@@ -104,17 +104,17 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 			}()
 		case instance := <-instanceSyncChan:
-			defer func() {
-				if r := recover(); r != nil {
-					err, ok := r.(error)
-					if !ok {
-						err = errors.Errorf("%v", r)
-					}
-					log.Error("Schema syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
-				}
-			}()
-
 			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err, ok := r.(error)
+						if !ok {
+							err = errors.Errorf("%v", r)
+						}
+						log.Error("Schema syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+					}
+				}()
+
 				databaseList, err := s.server.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &instance.ID})
 				if err != nil {
 					log.Debug("Failed to find databases for the syncing instance",
