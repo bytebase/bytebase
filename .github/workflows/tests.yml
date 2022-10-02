@@ -1,11 +1,10 @@
 name: Test
 
 on:
-  push:
+  pull_request:
     branches:
       - main
       - "release/*.*.*"
-  pull_request:
 
 jobs:
   eslint-checks:
