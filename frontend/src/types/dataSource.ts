@@ -59,7 +59,6 @@ export type DataSourceCreate = {
   sslKey?: string;
   hostOverride: string;
   portOverride: string;
-  syncSchema: boolean;
 };
 
 export type DataSourcePatch = {
@@ -73,7 +72,6 @@ export type DataSourcePatch = {
   sslKey?: string;
   hostOverride: string;
   portOverride: string;
-  syncSchema: boolean;
 };
 
 export type DataSourceMember = {

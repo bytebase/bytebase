@@ -328,14 +328,6 @@
     <!-- Action Button Group -->
     <div class="pt-4 px-2">
       <div class="flex justify-between items-center">
-        <div>
-          <BBCheckbox
-            v-if="connectionInfoChanged"
-            :title="$t('instance.sync-schema-now')"
-            :value="state.syncSchema"
-            @toggle="state.syncSchema = !state.syncSchema"
-          />
-        </div>
         <div class="flex justify-end items-center">
           <div>
             <BBSpin v-if="state.isUpdating" :title="$t('common.updating')" />
@@ -395,7 +387,6 @@ interface State {
   originalInstance: Instance;
   instance: Instance;
   isUpdating: boolean;
-  syncSchema: boolean;
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
 }
@@ -427,7 +418,6 @@ const state = reactive<State>({
   // Make hard copy since we are going to make equal comparison to determine the update button enable state.
   instance: cloneDeep(props.instance),
   isUpdating: false,
-  syncSchema: true,
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
 });
@@ -655,7 +645,7 @@ const updateInstance = (field: string, value: string) => {
 };
 
 const doUpdate = () => {
-  const patchedInstance: InstancePatch = { syncSchema: state.syncSchema };
+  const patchedInstance: InstancePatch = {};
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
   const reloadDatabaseAndUser = connectionInfoChanged.value;
@@ -705,7 +695,6 @@ const doUpdate = () => {
               password: dataSource.password,
               hostOverride: dataSource.hostOverride,
               portOverride: dataSource.portOverride,
-              syncSchema: state.syncSchema,
             };
             if (typeof dataSource.sslCa !== "undefined") {
               dataSourceCreate.sslCa = dataSource.sslCa;
@@ -725,7 +714,7 @@ const doUpdate = () => {
             dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
-              dataSource: { ...dataSource, syncSchema: state.syncSchema },
+              dataSource: { ...dataSource },
             })
           );
         }
@@ -770,7 +759,6 @@ const doUpdate = () => {
         })
         .finally(() => {
           state.isUpdating = false;
-          state.syncSchema = true;
         });
     });
   }

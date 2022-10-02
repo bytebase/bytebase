@@ -17,6 +17,10 @@ const (
 	schemaSyncInterval = time.Duration(30) * time.Minute
 )
 
+var (
+	instanceSyncChan chan *api.Instance = make(chan *api.Instance)
+)
+
 // NewSchemaSyncer creates a schema syncer.
 func NewSchemaSyncer(server *Server) *SchemaSyncer {
 	return &SchemaSyncer{
@@ -52,8 +56,6 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 				}()
 
-				ctx := context.Background()
-
 				rowStatus := api.Normal
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
@@ -80,15 +82,62 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 							delete(runningTasks, instance.ID)
 							mu.Unlock()
 						}()
-						if err := s.server.syncEngineVersionAndSchema(ctx, instance); err != nil {
+						databaseList, err := s.server.syncInstance(ctx, instance)
+						if err != nil {
 							log.Debug("Failed to sync instance",
 								zap.Int("id", instance.ID),
 								zap.String("name", instance.Name),
 								zap.String("error", err.Error()))
+							return
+						}
+						for _, databaseName := range databaseList {
+							// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
+							if err := s.server.syncDatabaseSchema(ctx, instance, databaseName); err != nil {
+								log.Debug("Failed to sync database schema",
+									zap.Int("instanceID", instance.ID),
+									zap.String("instanceName", instance.Name),
+									zap.String("databaseName", databaseName),
+									zap.String("error", err.Error()))
+							}
 						}
 					}(instance)
 				}
 			}()
+		case instance := <-instanceSyncChan:
+			go func(instance *api.Instance) {
+				defer func() {
+					if r := recover(); r != nil {
+						err, ok := r.(error)
+						if !ok {
+							err = errors.Errorf("%v", r)
+						}
+						log.Error("Schema syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+					}
+				}()
+
+				databaseList, err := s.server.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &instance.ID})
+				if err != nil {
+					log.Debug("Failed to find databases for the syncing instance",
+						zap.Int("id", instance.ID),
+						zap.String("name", instance.Name),
+						zap.String("error", err.Error()))
+					return
+				}
+				for _, database := range databaseList {
+					if database.SyncStatus != api.OK {
+						continue
+					}
+
+					// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
+					if err := s.server.syncDatabaseSchema(ctx, instance, database.Name); err != nil {
+						log.Debug("Failed to sync database schema",
+							zap.Int("instanceID", instance.ID),
+							zap.String("instanceName", instance.Name),
+							zap.String("databaseName", database.Name),
+							zap.String("error", err.Error()))
+					}
+				}
+			}(instance)
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
