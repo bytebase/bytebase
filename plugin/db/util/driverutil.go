@@ -306,6 +306,9 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 
 // Query will execute a readonly / SELECT query.
 func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
+	// Limit SQL query result size.
+	statement = getStatementWithResultLimit(statement, limit)
+
 	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
 	readOnly := true
 	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
@@ -405,6 +408,14 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	}
 
 	return []interface{}{columnNames, columnTypeNames, data}, nil
+}
+
+func getStatementWithResultLimit(stmt string, limit int) string {
+	stmt = strings.TrimRight(stmt, " \n\t;")
+	if !strings.HasPrefix(stmt, "EXPLAIN") {
+		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	}
+	return stmt
 }
 
 // FindMigrationHistoryList will find the list of migration history.

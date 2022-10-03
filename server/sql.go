@@ -256,9 +256,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer driver.Close(ctx)
 
-			// Limit SQL query result size.
-			stmt := getStatementWithResultLimit(exec.Statement, exec.Limit)
-			rowSet, err := driver.Query(ctx, stmt, exec.Limit)
+			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit)
 			if err != nil {
 				return nil, err
 			}
@@ -345,14 +343,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRight(stmt, " \n\t;")
-	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
-	}
-	return stmt
 }
 
 func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
