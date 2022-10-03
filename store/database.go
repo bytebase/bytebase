@@ -507,9 +507,6 @@ func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFi
 	if v := find.SyncStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.MaxLastSuccessfulSyncTs; v != nil {
-		where, args = append(where, fmt.Sprintf("last_successful_sync_ts < $%d", len(args)+1)), append(args, *v)
-	}
 	if !find.IncludeAllDatabase {
 		where = append(where, "name != '"+api.AllDatabaseName+"'")
 	}

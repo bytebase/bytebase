@@ -105,11 +105,9 @@ func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 	}()
 
 	okSyncStatus := api.OK
-	maxLastSuccessfulSyncTs := time.Now().Add(-schemaSyncInterval).Unix()
 	databaseList, err := s.server.store.FindDatabase(ctx, &api.DatabaseFind{
-		InstanceID:              instanceID,
-		SyncStatus:              &okSyncStatus,
-		MaxLastSuccessfulSyncTs: &maxLastSuccessfulSyncTs,
+		InstanceID: instanceID,
+		SyncStatus: &okSyncStatus,
 	})
 	if err != nil {
 		log.Debug("Failed to find databases to sync",

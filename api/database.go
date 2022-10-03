@@ -90,10 +90,9 @@ type DatabaseFind struct {
 	InstanceID *int
 
 	// Domain specific fields
-	Name                    *string
-	IncludeAllDatabase      bool
-	SyncStatus              *SyncStatus
-	MaxLastSuccessfulSyncTs *int64
+	Name               *string
+	IncludeAllDatabase bool
+	SyncStatus         *SyncStatus
 }
 
 func (find *DatabaseFind) String() string {
