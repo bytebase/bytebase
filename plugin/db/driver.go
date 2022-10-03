@@ -469,11 +469,6 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 		return nil, err
 	}
 
-	if err := driver.Ping(ctx); err != nil {
-		_ = driver.Close(ctx)
-		return nil, err
-	}
-
 	return driver, nil
 }
 

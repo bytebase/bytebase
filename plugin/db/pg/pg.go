@@ -114,6 +114,9 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		"user":     username,
 		"password": password,
 	}
+	if database != "" {
+		m["dbname"] = database
+	}
 
 	// We should use the default connection dsn without setting sslmode.
 	// Some provider might still perform default SSL check at the server side so we
@@ -135,22 +138,17 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 	}
 	dsn := strings.Join(tokens, " ")
 
-	var guesses []string
 	if database != "" {
-		guesses = append(guesses, database)
-	} else {
-		// Guess default database postgres, template1.
-		guesses = append(guesses, "")
-		guesses = append(guesses, "bytebase")
-		guesses = append(guesses, "postgres")
-		guesses = append(guesses, "template1")
+		return database, dsn, nil
 	}
 
+	// Guess default database postgres, template1.
+	guesses := []string{"", "bytebase", "postgres", "template1"}
 	//  dsn+" dbname=bytebase"
-	for _, guess := range guesses {
+	for _, guessDatabase := range guesses {
 		guessDSN := dsn
-		if guess != "" {
-			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guess)
+		if guessDatabase != "" {
+			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
 		}
 		if err := func() error {
 			db, err := sql.Open(driverName, guessDSN)
@@ -162,11 +160,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		}(); err != nil {
 			continue
 		}
-		return guess, guessDSN, nil
-	}
-
-	if database != "" {
-		return "", "", errors.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
+		return guessDatabase, guessDSN, nil
 	}
 	return "", "", errors.Errorf("cannot connecting instance, make sure the connection info is correct")
 }
