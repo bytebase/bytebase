@@ -44,6 +44,7 @@ jobs:
           check-latest: true
           cache: true
       - name: Verify go.mod is tidy
+        if: ${{ matrix.release-tags == 'mysql' }}
         run: |
           go mod tidy
           git diff --exit-code
@@ -58,6 +59,7 @@ jobs:
         run: go generate -tags ${{ matrix.release-tags }} ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
+        if: ${{ matrix.release-tags == 'mysql' }}
         with:
           version: v1.49.0
           args: -v
