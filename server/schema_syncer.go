@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	allDatabasesSyncChan = make(chan bool, 100)
+	instanceDatabaseSyncChan = make(chan *api.Instance, 100)
 )
 
 // NewSchemaSyncer creates a schema syncer.
@@ -43,9 +43,11 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			s.syncAllInstances(ctx)
-			s.syncAllDatabases(ctx)
-		case <-allDatabasesSyncChan:
-			s.syncAllDatabases(ctx)
+			// Sync all databases for all instances.
+			s.syncAllDatabases(ctx, nil /* instanceID */)
+		case instance := <-instanceDatabaseSyncChan:
+			// Sync all databases for instance.
+			s.syncAllDatabases(ctx, &instance.ID)
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
@@ -91,7 +93,7 @@ func (s *SchemaSyncer) syncAllInstances(ctx context.Context) {
 	instanceWG.Wait()
 }
 
-func (s *SchemaSyncer) syncAllDatabases(ctx context.Context) {
+func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -105,6 +107,7 @@ func (s *SchemaSyncer) syncAllDatabases(ctx context.Context) {
 	okSyncStatus := api.OK
 	maxLastSuccessfulSyncTs := time.Now().Add(-schemaSyncInterval).Unix()
 	databaseList, err := s.server.store.FindDatabase(ctx, &api.DatabaseFind{
+		InstanceID:              instanceID,
 		SyncStatus:              &okSyncStatus,
 		MaxLastSuccessfulSyncTs: &maxLastSuccessfulSyncTs,
 	})
