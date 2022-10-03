@@ -316,9 +316,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		resultSet := &api.SQLResultSet{AdviceList: adviceList}
 		if queryErr == nil {
 			resultSet.Data = string(bytes)
-			log.Debug("Query result",
+			log.Debug("Query result advice",
 				zap.String("statement", exec.Statement),
-				zap.String("data", resultSet.Data),
 				zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
 			)
 		} else {
