@@ -130,7 +130,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				resultSet.Error = err.Error()
 			}
 			// Sync all databases in the instance asynchronously.
-			instanceSyncChan <- instance
+			instanceDatabaseSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
