@@ -81,6 +81,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:         "WITH result AS (  seLeCT * FROM test) SELECT * FROM result LIMIT 123;",
 		},
 		{
+			sqlStatement: "  seLeCT * FROM test;",
+			limit:        0,
+			want:         "WITH result AS (  seLeCT * FROM test) SELECT * FROM result;",
+		},
+		{
 			sqlStatement: "  \n \r SELEct * from test ",
 			limit:        100,
 			want:         "WITH result AS (  \n \r SELEct * from test) SELECT * FROM result LIMIT 100;",

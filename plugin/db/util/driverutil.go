@@ -408,7 +408,11 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 func getStatementWithResultLimit(stmt string, limit int) string {
 	stmt = strings.TrimRight(stmt, " \n\t;")
 	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+		limitPart := ""
+		if limit > 0 {
+			limitPart = fmt.Sprintf(" LIMIT %d", limit)
+		}
+		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
 	}
 	return stmt
 }
