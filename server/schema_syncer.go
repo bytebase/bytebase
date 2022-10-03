@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	schemaSyncInterval = time.Duration(30) * time.Minute
+	schemaSyncInterval = 30 * time.Minute
 )
 
 var (
-	instanceSyncChan chan *api.Instance = make(chan *api.Instance)
+	instanceDatabaseSyncChan = make(chan *api.Instance, 100)
 )
 
 // NewSchemaSyncer creates a schema syncer.
@@ -39,107 +39,113 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
-	runningTasks := make(map[int]bool)
-	mu := sync.RWMutex{}
 	for {
 		select {
 		case <-ticker.C:
-			log.Debug("New schema syncer round started...")
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						err, ok := r.(error)
-						if !ok {
-							err = errors.Errorf("%v", r)
-						}
-						log.Error("Schema syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
-					}
-				}()
-
-				rowStatus := api.Normal
-				instanceFind := &api.InstanceFind{
-					RowStatus: &rowStatus,
-				}
-				instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
-				if err != nil {
-					log.Error("Failed to retrieve instances", zap.Error(err))
-					return
-				}
-
-				for _, instance := range instanceList {
-					mu.Lock()
-					if _, ok := runningTasks[instance.ID]; ok {
-						mu.Unlock()
-						continue
-					}
-					runningTasks[instance.ID] = true
-					mu.Unlock()
-
-					go func(instance *api.Instance) {
-						log.Debug("Sync instance schema", zap.String("instance", instance.Name))
-						defer func() {
-							mu.Lock()
-							delete(runningTasks, instance.ID)
-							mu.Unlock()
-						}()
-						databaseList, err := s.server.syncInstance(ctx, instance)
-						if err != nil {
-							log.Debug("Failed to sync instance",
-								zap.Int("id", instance.ID),
-								zap.String("name", instance.Name),
-								zap.String("error", err.Error()))
-							return
-						}
-						for _, databaseName := range databaseList {
-							// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-							if err := s.server.syncDatabaseSchema(ctx, instance, databaseName); err != nil {
-								log.Debug("Failed to sync database schema",
-									zap.Int("instanceID", instance.ID),
-									zap.String("instanceName", instance.Name),
-									zap.String("databaseName", databaseName),
-									zap.String("error", err.Error()))
-							}
-						}
-					}(instance)
-				}
-			}()
-		case instance := <-instanceSyncChan:
-			go func(instance *api.Instance) {
-				defer func() {
-					if r := recover(); r != nil {
-						err, ok := r.(error)
-						if !ok {
-							err = errors.Errorf("%v", r)
-						}
-						log.Error("Schema syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
-					}
-				}()
-
-				databaseList, err := s.server.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &instance.ID})
-				if err != nil {
-					log.Debug("Failed to find databases for the syncing instance",
-						zap.Int("id", instance.ID),
-						zap.String("name", instance.Name),
-						zap.String("error", err.Error()))
-					return
-				}
-				for _, database := range databaseList {
-					if database.SyncStatus != api.OK {
-						continue
-					}
-
-					// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-					if err := s.server.syncDatabaseSchema(ctx, instance, database.Name); err != nil {
-						log.Debug("Failed to sync database schema",
-							zap.Int("instanceID", instance.ID),
-							zap.String("instanceName", instance.Name),
-							zap.String("databaseName", database.Name),
-							zap.String("error", err.Error()))
-					}
-				}
-			}(instance)
+			s.syncAllInstances(ctx)
+			// Sync all databases for all instances.
+			s.syncAllDatabases(ctx, nil /* instanceID */)
+		case instance := <-instanceDatabaseSyncChan:
+			// Sync all databases for instance.
+			s.syncAllDatabases(ctx, &instance.ID)
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
 	}
+}
+
+func (s *SchemaSyncer) syncAllInstances(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			log.Error("Instance syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+		}
+	}()
+
+	rowStatus := api.Normal
+	instanceFind := &api.InstanceFind{
+		RowStatus: &rowStatus,
+	}
+	instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
+	if err != nil {
+		log.Error("Failed to retrieve instances", zap.Error(err))
+		return
+	}
+
+	var instanceWG sync.WaitGroup
+	for _, instance := range instanceList {
+		instanceWG.Add(1)
+		go func(instance *api.Instance) {
+			defer instanceWG.Done()
+			log.Debug("Sync instance schema", zap.String("instance", instance.Name))
+			if _, err := s.server.syncInstance(ctx, instance); err != nil {
+				log.Debug("Failed to sync instance",
+					zap.Int("id", instance.ID),
+					zap.String("name", instance.Name),
+					zap.String("error", err.Error()))
+				return
+			}
+		}(instance)
+	}
+	instanceWG.Wait()
+}
+
+func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			log.Error("Database syncer PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
+		}
+	}()
+
+	okSyncStatus := api.OK
+	databaseList, err := s.server.store.FindDatabase(ctx, &api.DatabaseFind{
+		InstanceID: instanceID,
+		SyncStatus: &okSyncStatus,
+	})
+	if err != nil {
+		log.Debug("Failed to find databases to sync",
+			zap.String("error", err.Error()))
+		return
+	}
+
+	instanceMap := make(map[int][]*api.Database)
+	for _, database := range databaseList {
+		instanceMap[database.InstanceID] = append(instanceMap[database.InstanceID], database)
+	}
+
+	var instanceWG sync.WaitGroup
+	for _, databaseList := range instanceMap {
+		instanceWG.Add(1)
+		go func(databaseList []*api.Database) {
+			defer instanceWG.Done()
+
+			if len(databaseList) == 0 {
+				return
+			}
+			instance := databaseList[0].Instance
+			for _, database := range databaseList {
+				log.Debug("Sync database schema",
+					zap.String("instance", instance.Name),
+					zap.String("database", database.Name),
+					zap.Int64("lastSuccessfulSyncTs", database.LastSuccessfulSyncTs),
+				)
+				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
+				if err := s.server.syncDatabaseSchema(ctx, instance, database.Name); err != nil {
+					log.Debug("Failed to sync database schema",
+						zap.Int("instanceID", instance.ID),
+						zap.String("instanceName", instance.Name),
+						zap.String("databaseName", database.Name),
+						zap.String("error", err.Error()))
+				}
+			}
+		}(databaseList)
+	}
+	instanceWG.Wait()
 }

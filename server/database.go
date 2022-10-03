@@ -701,7 +701,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceSyncChan <- updatedInstance
+		instanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -776,7 +776,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceSyncChan <- updatedInstance
+		instanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
