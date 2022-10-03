@@ -347,7 +347,6 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	rowCount := 0
 	data := []interface{}{}
 	for rows.Next() {
 		scanArgs := make([]interface{}, colCount)
@@ -398,10 +397,6 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		}
 
 		data = append(data, rowData)
-		rowCount++
-		if rowCount == limit {
-			break
-		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
