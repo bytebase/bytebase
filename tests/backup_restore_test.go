@@ -157,7 +157,7 @@ func TestPITRDropDatabase(t *testing.T) {
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Second)
 	targetTs := time.Now().Unix()
 
 	dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, database.Name)
