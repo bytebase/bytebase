@@ -70,7 +70,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					zap.Error(err))
 			}
 			// Sync all databases in the instance asynchronously.
-			instanceSyncChan <- instance
+			instanceDatabaseSyncChan <- instance
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -208,7 +208,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 						zap.Error(err))
 				}
 				// Sync all databases in the instance asynchronously.
-				instanceSyncChan <- instancePatched
+				instanceDatabaseSyncChan <- instancePatched
 			}
 		}
 
