@@ -44,6 +44,7 @@ jobs:
           check-latest: true
           cache: true
       - name: Verify go.mod is tidy
+        if: ${{ matrix.release-tags == 'mysql' }}
         run: |
           go mod tidy
           git diff --exit-code
@@ -54,16 +55,11 @@ jobs:
             ./resources/mysql/*.tar.gz
             ./resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
-      # Release mode needs to embed frontend dist
-      - name: Touch garbage dist/index.html
-        if: ${{ matrix.release-tags == 'release,mysql' }}
-        run: |
-          mkdir -p server/dist
-          touch server/dist/index.html
       - name: Install dependencies
         run: go generate -tags ${{ matrix.release-tags }} ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
+        if: ${{ matrix.release-tags == 'mysql' }}
         with:
           version: v1.49.0
           args: -v
