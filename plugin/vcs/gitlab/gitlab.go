@@ -801,9 +801,9 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+		return nil, common.Errorf(common.NotFound, "failed to get branch from URL %s", url)
 	} else if code >= 300 {
-		return nil, errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+		return nil, errors.Errorf("failed to get branch from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
@@ -907,9 +907,9 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
+		return common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
 	} else if code >= 300 {
-		return errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
+		return errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			resp,

@@ -574,7 +574,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-// nolint
+// nolint:unused
 func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) error {
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
@@ -611,7 +611,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 }
 
 // setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
-// nolint
+// nolint:unused
 func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Repository) (*vcsPlugin.BranchInfo, error) {
 	branch, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).GetBranch(
 		ctx,
@@ -655,7 +655,7 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 }
 
 // setupVCSSQLReviewCIForGitLab will create the pull request in GitLab to setup SQL review action.
-// nolint
+// nolint:unused
 func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
 	actionFileExisted := true
 
