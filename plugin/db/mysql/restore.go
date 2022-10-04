@@ -706,6 +706,8 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	}
 
 	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	// We cannot set password as a flag. Otherwise, there is warning message
+	// "mysqlbinlog: [Warning] Using a password on the command line interface can be insecure."
 	if driver.connCfg.Password != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))
 	}
