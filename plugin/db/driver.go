@@ -455,7 +455,7 @@ func Register(dbType Type, f driverFunc) {
 	drivers[dbType] = f
 }
 
-// Open opens a database specified by its database driver type and connection config.
+// Open opens a database specified by its database driver type and connection config without verifying the connection.
 func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
@@ -466,11 +466,6 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 
 	driver, err := f(driverConfig).Open(ctx, dbType, connectionConfig, connCtx)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := driver.Ping(ctx); err != nil {
-		_ = driver.Close(ctx)
 		return nil, err
 	}
 
