@@ -15,7 +15,7 @@ const (
 
 // sqlReviewCIFilePath is the remote file path for GitLab SQL review CI.
 // We can include the remote file path in the GitLab CI.
-// So we can store the script in our own GitHub repo.
+// So we can store the script in our own GitHub repo: https://github.com/bytebase/sql-review-gitlab-ci
 var sqlReviewCIFilePath = fmt.Sprintf(
 	"https://raw.githubusercontent.com/bytebase/sql-review-gitlab-ci/%s/sql-review.yml",
 	sqlReviewCIVersion,
