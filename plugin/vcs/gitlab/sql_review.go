@@ -8,7 +8,7 @@ import (
 
 const (
 	// sqlReviewCIVersion is the version for GitLab SQL review CI.
-	sqlReviewCIVersion = "0.0.2"
+	sqlReviewCIVersion = "0.0.3"
 	// CIFilePath is the local path for GitLab ci file.
 	CIFilePath = ".gitlab-ci.yml"
 )
