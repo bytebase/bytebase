@@ -30,7 +30,7 @@ const (
 	apiPageSize = 100
 
 	// SQLReviewCIVersion is the version for GitLab SQL review CI.
-	SQLReviewCIVersion = "0.0.1"
+	SQLReviewCIVersion = "0.0.2"
 	// CIFilePath is the local path for GitLab ci file.
 	CIFilePath = ".gitlab-ci.yml"
 )
@@ -38,10 +38,8 @@ const (
 // SQLReviewCIFilePath is the remote file path for GitLab SQL review CI.
 // We can include the remote file path in the GitLab CI.
 // So we can store the script in our own GitHub repo.
-// TODO: ed - change this to official repo.
-// TODO: ed - and we'd better using version to control it, just like the GitHub action.
 var SQLReviewCIFilePath = fmt.Sprintf(
-	"https://raw.githubusercontent.com/ed-bytebase/sql-review-gitlab-ci/%s/sql-review.yml",
+	"https://raw.githubusercontent.com/bytebase/sql-review-gitlab-ci/%s/sql-review.yml",
 	SQLReviewCIVersion,
 )
 
