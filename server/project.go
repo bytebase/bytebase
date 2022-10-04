@@ -642,7 +642,7 @@ func refreshTokenNoop() common.TokenRefresher {
 	}
 }
 
-// nolint
+// nolint:unused
 func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) error {
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
@@ -680,7 +680,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 }
 
 // setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
-// nolint
+// nolint:unused
 func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Repository) (*vcsPlugin.BranchInfo, error) {
 	branch, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).GetBranch(
 		ctx,
@@ -724,10 +724,10 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 }
 
 // setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
-// nolint
+// nolint:unused
 func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
 	sqlReviewEndpoint := fmt.Sprintf("%s/v1/project/%d/sql-review", s.profile.ExternalURL, repository.ProjectID)
-	sqlReviewConfig := fmt.Sprintf(github.SQLReviewAction, sqlReviewEndpoint)
+	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
 	fileLastCommitID := ""
 
 	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(

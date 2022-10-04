@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	_ "embed"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/common"
@@ -23,20 +21,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
 
-// SQLReviewAction is the GitHub action for SQL review in VCS workflow.
-//
-//go:embed sql-review-action.yml
-var SQLReviewAction string
-
 const (
 	// githubComURL is URL for the GitHub.com.
 	githubComURL = "https://github.com"
 
 	// apiPageSize is the default page size when making API requests.
 	apiPageSize = 100
-
-	// SQLReviewActionFilePath is the SQL review action file path.
-	SQLReviewActionFilePath = ".github/workflows/sql-review.yml"
 )
 
 func init() {
