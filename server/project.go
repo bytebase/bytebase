@@ -714,28 +714,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 		}
 	}
 
-	if content["sql-review"] == nil {
-		// Add include for SQL review CI
-		var includeList []interface{}
-		// Docs for GitLab include syntax: https://docs.gitlab.com/ee/ci/yaml/includes.html
-		switch content["include"].(type) {
-		case []interface{}:
-			includeList = append(includeList, content["include"].([]interface{})...)
-		case interface{}, string:
-			includeList = append(includeList, content["include"])
-		}
-
-		includeList = append(includeList, map[string]string{"remote": gitlab.SQLReviewCIFilePath})
-		content["include"] = includeList
-	}
-
-	// Add SQL review endpoint.
-	content["sql-review"] = make(map[string]interface{})
-	content["sql-review"].(map[string]interface{})["variables"] = make(map[string]interface{})
-	content["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["VERSION"] = gitlab.SQLReviewCIVersion
-	content["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["SQL_REVIEW_API"] = sqlReviewEndpoint
-
-	newContent, err := yaml.Marshal(content)
+	newContent, err := gitlab.SetupSQLReviewCI(content, sqlReviewEndpoint)
 	if err != nil {
 		return err
 	}
@@ -756,7 +735,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 			vcsPlugin.FileCommitCreate{
 				Branch:        branch.Name,
 				CommitMessage: "chore: update SQL review CI",
-				Content:       string(newContent),
+				Content:       newContent,
 				LastCommitID:  fileMeta.LastCommitID,
 			},
 		)
@@ -777,7 +756,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 		vcsPlugin.FileCommitCreate{
 			Branch:        branch.Name,
 			CommitMessage: "chore: add SQL review CI",
-			Content:       string(newContent),
+			Content:       newContent,
 		},
 	)
 }

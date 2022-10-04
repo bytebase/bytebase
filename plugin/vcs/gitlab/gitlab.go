@@ -28,19 +28,6 @@ const (
 	apiPath = "api/v4"
 	// apiPageSize is the default page size when making API requests.
 	apiPageSize = 100
-
-	// SQLReviewCIVersion is the version for GitLab SQL review CI.
-	SQLReviewCIVersion = "0.0.2"
-	// CIFilePath is the local path for GitLab ci file.
-	CIFilePath = ".gitlab-ci.yml"
-)
-
-// SQLReviewCIFilePath is the remote file path for GitLab SQL review CI.
-// We can include the remote file path in the GitLab CI.
-// So we can store the script in our own GitHub repo.
-var SQLReviewCIFilePath = fmt.Sprintf(
-	"https://raw.githubusercontent.com/bytebase/sql-review-gitlab-ci/%s/sql-review.yml",
-	SQLReviewCIVersion,
 )
 
 var _ vcs.Provider = (*Provider)(nil)
