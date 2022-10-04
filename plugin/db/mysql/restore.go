@@ -704,11 +704,11 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	if driver.connCfg.Port != "" {
 		args = append(args, "--port", driver.connCfg.Port)
 	}
-	if driver.connCfg.Password != "" {
-		args = append(args, fmt.Sprintf("--password=%s", driver.connCfg.Password))
-	}
 
 	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	if driver.connCfg.Password != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))
+	}
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
