@@ -108,8 +108,10 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		if password, isSet := u.User.Password(); isSet {
 			connCfg.Password = password
 		} else {
-			// Try to lookup the password using env var.
-			connCfg.Password = os.Getenv("BB_META_DB_PASSWORD")
+			// Try to lookup the password using Postgres' default
+			// env var.
+			// https://www.postgresql.org/docs/current/libpq-envars.html
+			connCfg.Password = os.Getenv("PGPASSWORD")
 		}
 	}
 
