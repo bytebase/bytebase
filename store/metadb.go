@@ -105,7 +105,12 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 
 	if u.User != nil {
 		connCfg.Username = u.User.Username()
-		connCfg.Password, _ = u.User.Password()
+		if password, isSet := u.User.Password(); isSet {
+			connCfg.Password = password
+		} else {
+			connCfg.Password = os.Getenv("PGPASSWORD")
+		}
+
 	}
 
 	if connCfg.Username == "" {
