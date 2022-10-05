@@ -47,15 +47,13 @@ func Test_SetupSQLReviewCI(t *testing.T) {
 
 	assert.NotNil(t, content["sql-review"])
 	assert.NotNil(t, content["sql-review"].(map[string]interface{})["variables"])
-
-	assert.Equal(t, content["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["VERSION"], sqlReviewCIVersion)
 	assert.Equal(t, content["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["SQL_REVIEW_API"], mockSQLReviewEndpoint)
 }
 
 func findSQLReviewCI(include []interface{}) map[string]interface{} {
 	for _, data := range include {
 		if val, ok := data.(map[string]interface{}); ok {
-			if val["remote"] == sqlReviewCIFilePath {
+			if val["local"] == SQLReviewCIFilePath {
 				return val
 			}
 		}

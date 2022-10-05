@@ -303,7 +303,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		// TODO: ed - enable the code
-		// Init SQL review CI for VCS
+		// Setup SQL review CI for VCS
 		// if err := s.setupVCSSQLReviewCI(ctx, repository); err != nil {
 		// 	return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
 		// }
@@ -654,11 +654,70 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 	return branchCreate, nil
 }
 
-// setupVCSSQLReviewCIForGitLab will create the pull request in GitLab to setup SQL review action.
+// setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
 // nolint:unused
 func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
-	actionFileExisted := true
+	// create or update the .gitlab-ci.yml
+	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
+		sqlReviewEndpoint := fmt.Sprintf("%s/v1/project/%d/sql-review", s.profile.ExternalURL, repository.ProjectID)
+		content := make(map[string]interface{})
 
+		if fileMeta != nil {
+			ciFileContent, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(
+				ctx,
+				common.OauthContext{
+					ClientID:     repository.VCS.ApplicationID,
+					ClientSecret: repository.VCS.Secret,
+					AccessToken:  repository.AccessToken,
+					RefreshToken: repository.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repository.WebURL),
+				},
+				repository.VCS.InstanceURL,
+				repository.ExternalID,
+				gitlab.CIFilePath,
+				fileMeta.LastCommitID,
+			)
+			if err != nil {
+				return "", err
+			}
+			if err := yaml.Unmarshal([]byte(ciFileContent), &content); err != nil {
+				return "", err
+			}
+		}
+
+		newContent, err := gitlab.SetupSQLReviewCI(content, sqlReviewEndpoint)
+		if err != nil {
+			return "", err
+		}
+
+		return newContent, nil
+	}); err != nil {
+		return err
+	}
+
+	// create or update the SQL review CI.
+	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
+		return gitlab.SQLReviewCI, nil
+	}); err != nil {
+		return err
+	}
+
+	// create or update the SQL review script.
+	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewScriptFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
+		return gitlab.SQLReviewScript, nil
+	})
+}
+
+// createOrUpdateVCSSQLReviewFileForGitLab will create or update SQL review file for GitLab CI.
+// nolint:unused
+func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
+	ctx context.Context,
+	repository *api.Repository,
+	branch *vcsPlugin.BranchInfo,
+	fileName string,
+	getNewContent func(meta *vcsPlugin.FileMeta) (string, error),
+) error {
+	fileExisted := true
 	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
@@ -670,7 +729,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
-		gitlab.CIFilePath,
+		fileName,
 		branch.Name,
 	)
 	if err != nil {
@@ -681,45 +740,18 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 			zap.Error(err),
 		)
 		if common.ErrorCode(err) == common.NotFound {
-			actionFileExisted = false
+			fileExisted = false
 		} else {
 			return err
 		}
 	}
 
-	sqlReviewEndpoint := fmt.Sprintf("%s/v1/project/%d/sql-review", s.profile.ExternalURL, repository.ProjectID)
-	content := make(map[string]interface{})
-
-	if actionFileExisted {
-		ciFileContent, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(
-			ctx,
-			common.OauthContext{
-				ClientID:     repository.VCS.ApplicationID,
-				ClientSecret: repository.VCS.Secret,
-				AccessToken:  repository.AccessToken,
-				RefreshToken: repository.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repository.WebURL),
-			},
-			repository.VCS.InstanceURL,
-			repository.ExternalID,
-			gitlab.CIFilePath,
-			fileMeta.LastCommitID,
-		)
-		if err != nil {
-			return err
-		}
-
-		if err := yaml.Unmarshal([]byte(ciFileContent), &content); err != nil {
-			return err
-		}
-	}
-
-	newContent, err := gitlab.SetupSQLReviewCI(content, sqlReviewEndpoint)
+	newContent, err := getNewContent(fileMeta)
 	if err != nil {
 		return err
 	}
 
-	if actionFileExisted {
+	if fileExisted {
 		return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{
@@ -731,7 +763,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 			},
 			repository.VCS.InstanceURL,
 			repository.ExternalID,
-			gitlab.CIFilePath,
+			fileName,
 			vcsPlugin.FileCommitCreate{
 				Branch:        branch.Name,
 				CommitMessage: "chore: update SQL review CI",
@@ -752,10 +784,10 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
-		gitlab.CIFilePath,
+		fileName,
 		vcsPlugin.FileCommitCreate{
 			Branch:        branch.Name,
-			CommitMessage: "chore: add SQL review CI",
+			CommitMessage: "chore: setup SQL review CI",
 			Content:       newContent,
 		},
 	)

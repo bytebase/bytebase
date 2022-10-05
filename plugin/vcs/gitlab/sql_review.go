@@ -1,25 +1,29 @@
 package gitlab
 
 import (
-	"fmt"
+	_ "embed"
 
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	// sqlReviewCIVersion is the version for GitLab SQL review CI.
-	sqlReviewCIVersion = "0.0.3"
 	// CIFilePath is the local path for GitLab ci file.
 	CIFilePath = ".gitlab-ci.yml"
+	// SQLReviewCIFilePath is the local path for SQL review CI in GitLab repo.
+	SQLReviewCIFilePath = ".gitlab/sql-review.yml"
+	// SQLReviewScriptFilePath is the local path for SQL review script in GitLab repo.
+	SQLReviewScriptFilePath = ".gitlab/sql-review.sh"
 )
 
-// sqlReviewCIFilePath is the remote file path for GitLab SQL review CI.
-// We can include the remote file path in the GitLab CI.
-// So we can store the script in our own GitHub repo: https://github.com/bytebase/sql-review-gitlab-ci
-var sqlReviewCIFilePath = fmt.Sprintf(
-	"https://raw.githubusercontent.com/bytebase/sql-review-gitlab-ci/%s/sql-review.yml",
-	sqlReviewCIVersion,
-)
+// SQLReviewCI is the GitLab CI for SQL review in VCS workflow.
+//
+//go:embed .gitlab/sql-review.yml
+var SQLReviewCI string
+
+// SQLReviewScript is the SQL review script used in SQL review CI.
+//
+//go:embed .gitlab/sql-review.sh
+var SQLReviewScript string
 
 // SetupSQLReviewCI will update the GitLab CI content to add or update the SQL review CI.
 func SetupSQLReviewCI(gitlabCI map[string]interface{}, sqlReviewEndpoint string) (string, error) {
@@ -34,14 +38,13 @@ func SetupSQLReviewCI(gitlabCI map[string]interface{}, sqlReviewEndpoint string)
 			includeList = append(includeList, include)
 		}
 
-		includeList = append(includeList, map[string]string{"remote": sqlReviewCIFilePath})
+		includeList = append(includeList, map[string]string{"local": SQLReviewCIFilePath})
 		gitlabCI["include"] = includeList
 	}
 
 	// Add SQL review endpoint.
 	gitlabCI["sql-review"] = make(map[string]interface{})
 	gitlabCI["sql-review"].(map[string]interface{})["variables"] = make(map[string]interface{})
-	gitlabCI["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["VERSION"] = sqlReviewCIVersion
 	gitlabCI["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["SQL_REVIEW_API"] = sqlReviewEndpoint
 
 	newContent, err := yaml.Marshal(gitlabCI)
