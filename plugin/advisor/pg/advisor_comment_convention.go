@@ -76,8 +76,7 @@ func (checker *columnCommentConventionChecker) Visit(node ast.Node) ast.Visitor 
 	}
 	var column columnData
 
-	switch n := node.(type) {
-	case *ast.CommentStmt:
+	if n, ok := node.(*ast.CommentStmt); ok {
 		column = columnData{
 			comment: n.Comment,
 			line:    n.LastLine(),
