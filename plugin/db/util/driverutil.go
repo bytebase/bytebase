@@ -313,6 +313,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	readOnly := true
 	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 	// https://github.com/pingcap/tidb/issues/34626
+	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
 	if dbType == db.TiDB || dbType == db.ClickHouse {
 		readOnly = false
 	}
