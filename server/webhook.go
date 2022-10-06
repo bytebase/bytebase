@@ -36,11 +36,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		repos, err := s.getRepositoryList(ctx, c)
-		if err != nil {
-			return err
-		}
-
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
@@ -53,24 +48,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if pushEvent.ObjectKind != gitlab.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
 		}
-		baseVCSPushEvent := vcs.PushEvent{
-			Ref:                pushEvent.Ref,
-			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-			RepositoryURL:      pushEvent.Project.WebURL,
-			RepositoryFullPath: pushEvent.Project.FullPath,
-			AuthorName:         pushEvent.AuthorName,
-		}
-
-		filteredRepos, err := filterReposGitLab(c.Request().Header, repos, baseVCSPushEvent)
-		if err != nil {
-			return err
-		}
-		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Ignore this push event.")
-			return c.String(http.StatusOK, "OK")
-		}
-		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
-
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
@@ -83,7 +60,29 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			c.Response().WriteHeader(http.StatusOK)
 			return nil
 		}
-		baseVCSPushEvent.CommitList = commitList
+		baseVCSPushEvent := vcs.PushEvent{
+			Ref:                pushEvent.Ref,
+			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+			RepositoryURL:      pushEvent.Project.WebURL,
+			RepositoryFullPath: pushEvent.Project.FullPath,
+			AuthorName:         pushEvent.AuthorName,
+			CommitList:         commitList,
+		}
+
+		repos, err := s.getRepositoryList(ctx, c)
+		if err != nil {
+			return err
+		}
+		filteredRepos, err := filterReposGitLab(c.Request().Header, repos, baseVCSPushEvent)
+		if err != nil {
+			return err
+		}
+		if len(filteredRepos) == 0 {
+			log.Debug("Empty handle repo list. Ignore this push event.")
+			return c.String(http.StatusOK, "OK")
+		}
+		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
+
 		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
 		if err != nil {
 			return err
@@ -106,11 +105,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 		}
 
-		repos, err := s.getRepositoryList(ctx, c)
-		if err != nil {
-			return err
-		}
-
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
@@ -119,14 +113,28 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
+		commitList := convertGitHubCommitList(pushEvent.Commits)
+		if len(pushEvent.Commits) == 0 {
+			log.Debug("No commit in the GitHub push event. Ignore this push event.",
+				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
+				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
+				zap.String("commits", getCommitsMessage(commitList)))
+			c.Response().WriteHeader(http.StatusOK)
+			return nil
+		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       pushEvent.Repository.FullName,
 			RepositoryURL:      pushEvent.Repository.HTMLURL,
 			RepositoryFullPath: pushEvent.Repository.FullName,
 			AuthorName:         pushEvent.Sender.Login,
+			CommitList:         commitList,
 		}
 
+		repos, err := s.getRepositoryList(ctx, c)
+		if err != nil {
+			return err
+		}
 		filteredRepos, err := filterReposGitHub(c.Request().Header, body, repos, baseVCSPushEvent)
 		if err != nil {
 			return err
@@ -137,16 +145,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
-		commitList := convertGitHubCommitList(pushEvent.Commits)
-		if len(pushEvent.Commits) == 0 {
-			log.Debug("No commit in the GitHub push event. Ignore this push event.",
-				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
-				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
-				zap.String("commits", getCommitsMessage(commitList)))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
-		}
-		baseVCSPushEvent.CommitList = commitList
 		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
 		if err != nil {
 			return err
