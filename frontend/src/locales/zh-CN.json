@@ -1413,7 +1413,7 @@
       },
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
-        "desc": "给只读数据源设置一个覆盖的读复制连接信息。"
+        "desc": "使用只读副本连接到只读数据源。"
       }
     }
   },
