@@ -162,7 +162,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		}
 		return guessDatabase, guessDSN, nil
 	}
-	return "", "", errors.Errorf("cannot connecting instance, make sure the connection info is correct")
+	return "", "", errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
