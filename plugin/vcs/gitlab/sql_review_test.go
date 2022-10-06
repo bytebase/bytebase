@@ -47,7 +47,7 @@ func Test_SetupSQLReviewCI(t *testing.T) {
 
 	assert.NotNil(t, content["sql-review"])
 	assert.NotNil(t, content["sql-review"].(map[string]interface{})["variables"])
-	assert.Equal(t, content["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["SQL_REVIEW_API"], mockSQLReviewEndpoint)
+	assert.Equal(t, content["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["API"], mockSQLReviewEndpoint)
 }
 
 func findSQLReviewCI(include []interface{}) map[string]interface{} {
