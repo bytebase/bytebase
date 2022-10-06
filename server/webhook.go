@@ -57,8 +57,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				zap.String("repoURL", common.EscapeForLogging(pushEvent.Project.WebURL)),
 				zap.String("repoName", pushEvent.Project.FullPath),
 				zap.String("commits", getCommitsMessage(commitList)))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
+			return c.String(http.StatusOK, "OK")
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
@@ -119,8 +118,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
 				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
 				zap.String("commits", getCommitsMessage(commitList)))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
+			return c.String(http.StatusOK, "OK")
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
