@@ -677,6 +677,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
+		if !s.feature(api.FeatureReadReplicaConnection) {
+			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
+			}
+		}
 
 		if dataSourceCreate.Type == api.Admin && (dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "") {
 			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
@@ -747,6 +752,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourcePatch := &api.DataSourcePatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
+		}
+		if !s.feature(api.FeatureReadReplicaConnection) {
+			if dataSourcePatch.HostOverride != nil || dataSourcePatch.PortOverride != nil {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
+			}
 		}
 
 		dataSourcePatch.ID = dataSourceID
