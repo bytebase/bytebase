@@ -52,26 +52,19 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		filter := func(token string) (bool, error) {
 			return c.Request().Header.Get("X-Gitlab-Token") == token, nil
 		}
-		repoList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
 		if err != nil {
 			return err
 		}
-		if len(repoList) == 0 {
+		if len(repositoryList) == 0 {
 			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", repoList))
+		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
-		}
-		if len(commitList) == 0 {
-			log.Debug("No commit in the GitLab push event. Ignore this push event.",
-				zap.String("repoURL", common.EscapeForLogging(pushEvent.Project.WebURL)),
-				zap.String("repoName", pushEvent.Project.FullPath),
-				zap.String("commits", getCommitsMessage(commitList)))
-			return c.String(http.StatusOK, "OK")
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
@@ -82,7 +75,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			CommitList:         commitList,
 		}
 
-		createdMessages, err := s.createIssuesFromCommits(ctx, repoList, commitList, baseVCSPushEvent)
+		createdMessages, err := s.createIssuesFromCommits(ctx, repositoryList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -121,24 +114,17 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 			return ok, nil
 		}
-		repoList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
 		if err != nil {
 			return err
 		}
-		if len(repoList) == 0 {
+		if len(repositoryList) == 0 {
 			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", repoList))
+		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
 		commitList := convertGitHubCommitList(pushEvent.Commits)
-		if len(pushEvent.Commits) == 0 {
-			log.Debug("No commit in the GitHub push event. Ignore this push event.",
-				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
-				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
-				zap.String("commits", getCommitsMessage(commitList)))
-			return c.String(http.StatusOK, "OK")
-		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       repositoryID,
@@ -148,7 +134,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			CommitList:         commitList,
 		}
 
-		createdMessages, err := s.createIssuesFromCommits(ctx, repoList, commitList, baseVCSPushEvent)
+		createdMessages, err := s.createIssuesFromCommits(ctx, repositoryList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -156,20 +142,25 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
-	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
+func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+	distinctFileList := getDistinctFileList(baseVCSPushEvent.CommitList)
 	if len(distinctFileList) == 0 {
+		var commitIDs []string
+		for _, c := range baseVCSPushEvent.CommitList {
+			commitIDs = append(commitIDs, c.ID)
+		}
 		log.Warn("No files found from the push event",
 			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
 			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
-			zap.String("commits", getCommitsMessage(commitList)))
+			zap.String("commits", strings.Join(commitIDs, ",")))
 		return nil, nil
 	}
+
 	var createdMessages []string
 	for _, item := range distinctFileList {
 		var createdMessageList []string
 		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-		for _, repo := range filteredRepos {
+		for _, repo := range repositoryList {
 			pushEvent := baseVCSPushEvent
 			pushEvent.VCSType = repo.VCS.Type
 			pushEvent.BaseDirectory = repo.BaseDirectory
@@ -200,7 +191,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*a
 			repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
 		}
 		if len(createdMessageList) == 0 {
-			for _, repo := range filteredRepos {
+			for _, repo := range repositoryList {
 				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
 					for _, activityCreate := range activityCreateList {
 						if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
@@ -214,9 +205,10 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*a
 		}
 		createdMessages = append(createdMessages, createdMessageList...)
 	}
+
 	if len(createdMessages) == 0 {
 		var repoURLs []string
-		for _, repo := range filteredRepos {
+		for _, repo := range repositoryList {
 			repoURLs = append(repoURLs, repo.WebURL)
 		}
 		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", repoURLs))
@@ -224,23 +216,15 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*a
 	return createdMessages, nil
 }
 
-func (s *Server) getRepositoryList(ctx context.Context, webhookEndpointID string) ([]*api.Repository, error) {
+type repositoryFilter func(string) (bool, error)
+
+func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 	}
 	if len(repos) == 0 {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
-	}
-	return repos, nil
-}
-
-type repositoryFilter func(string) (bool, error)
-
-func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
-	repos, err := s.getRepositoryList(ctx, webhookEndpointID)
-	if err != nil {
-		return nil, err
 	}
 
 	branch, err := parseBranchNameFromRefs(pushEventRef)
@@ -389,7 +373,7 @@ type distinctFileItem struct {
 	itemType  fileItemType
 }
 
-func dedupMigrationFilesFromCommitList(commitList []vcs.Commit) []distinctFileItem {
+func getDistinctFileList(commitList []vcs.Commit) []distinctFileItem {
 	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []distinctFileItem
 	for _, commit := range commitList {
@@ -407,16 +391,18 @@ func dedupMigrationFilesFromCommitList(commitList []vcs.Commit) []distinctFileIt
 			}
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
-				if item.fileName == file.fileName {
-					if file.createdTs < commit.CreatedTs {
-						// A file can be added and then modified in a later commit. We should consider the item as added.
-						if file.itemType == fileItemTypeAdded {
-							item.itemType = fileItemTypeAdded
-						}
-						distinctFileList[i] = item
-					}
-					return
+				if item.fileName != file.fileName {
+					continue
 				}
+				if file.createdTs < commit.CreatedTs {
+					// A file can be added and then modified in a later commit. We should consider the item as added.
+					if file.itemType == fileItemTypeAdded {
+						item.itemType = fileItemTypeAdded
+					}
+					distinctFileList[i] = item
+				}
+				// The fileName should be unique within the distinctFileList.
+				return
 			}
 			distinctFileList = append(distinctFileList, item)
 		}
@@ -853,14 +839,6 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	}
 
 	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, activityCreateList, nil
-}
-
-func getCommitsMessage(commitList []vcs.Commit) string {
-	var commitIDs []string
-	for _, c := range commitList {
-		commitIDs = append(commitIDs, c.ID)
-	}
-	return strings.Join(commitIDs, ", ")
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract
