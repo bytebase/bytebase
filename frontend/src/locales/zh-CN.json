@@ -1410,6 +1410,10 @@
       "bb-feature-sync-schema": {
         "title": "库表同步",
         "desc": "将选定的源数据库 Schema 版本同步到目标数据库。请通过@:{'subscription.upgrade'}来完全开启该功能。"
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Read replica connection",
+        "desc": "使用只读副本连接到只读数据源。"
       }
     }
   },

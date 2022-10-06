@@ -22,6 +22,7 @@ export type FeatureType =
   // Admin & Security
   | "bb.feature.rbac"
   | "bb.feature.3rd-party-auth"
+  | "bb.feature.read-replica-connection"
   // Branding
   | "bb.feature.branding";
 
@@ -90,6 +91,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Admin & Security
   ["bb.feature.rbac", [false, true, true]],
   ["bb.feature.3rd-party-auth", [false, true, true]],
+  ["bb.feature.read-replica-connection", [false, false, true]],
   // Branding
   ["bb.feature.branding", [false, false, true]],
 ]);
