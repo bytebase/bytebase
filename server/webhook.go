@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -48,6 +47,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if pushEvent.ObjectKind != gitlab.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
 		}
+		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
+
+		filter := func(token string) (bool, error) {
+			return c.Request().Header.Get("X-Gitlab-Token") == token, nil
+		}
+		repoList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		if err != nil {
+			return err
+		}
+		if len(repoList) == 0 {
+			log.Debug("Empty handle repo list. Ignore this push event.")
+			return c.String(http.StatusOK, "OK")
+		}
+		log.Debug("Process push event in repos", zap.Any("repos", repoList))
+
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
@@ -61,28 +75,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
-			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+			RepositoryID:       repositoryID,
 			RepositoryURL:      pushEvent.Project.WebURL,
 			RepositoryFullPath: pushEvent.Project.FullPath,
 			AuthorName:         pushEvent.AuthorName,
 			CommitList:         commitList,
 		}
 
-		repos, err := s.getRepositoryList(ctx, c)
-		if err != nil {
-			return err
-		}
-		filteredRepos, err := filterReposGitLab(c.Request().Header, repos, baseVCSPushEvent)
-		if err != nil {
-			return err
-		}
-		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Ignore this push event.")
-			return c.String(http.StatusOK, "OK")
-		}
-		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
-
-		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
+		createdMessages, err := s.createIssuesFromCommits(ctx, repoList, commitList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -112,6 +112,25 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
+		repositoryID := pushEvent.Repository.FullName
+
+		filter := func(token string) (bool, error) {
+			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), token, body)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
+			}
+			return ok, nil
+		}
+		repoList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		if err != nil {
+			return err
+		}
+		if len(repoList) == 0 {
+			log.Debug("Empty handle repo list. Ignore this push event.")
+			return c.String(http.StatusOK, "OK")
+		}
+		log.Debug("Process push event in repos", zap.Any("repos", repoList))
+
 		commitList := convertGitHubCommitList(pushEvent.Commits)
 		if len(pushEvent.Commits) == 0 {
 			log.Debug("No commit in the GitHub push event. Ignore this push event.",
@@ -122,28 +141,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
-			RepositoryID:       pushEvent.Repository.FullName,
+			RepositoryID:       repositoryID,
 			RepositoryURL:      pushEvent.Repository.HTMLURL,
-			RepositoryFullPath: pushEvent.Repository.FullName,
+			RepositoryFullPath: repositoryID,
 			AuthorName:         pushEvent.Sender.Login,
 			CommitList:         commitList,
 		}
 
-		repos, err := s.getRepositoryList(ctx, c)
-		if err != nil {
-			return err
-		}
-		filteredRepos, err := filterReposGitHub(c.Request().Header, body, repos, baseVCSPushEvent)
-		if err != nil {
-			return err
-		}
-		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Ignore this push event.")
-			return c.String(http.StatusOK, "OK")
-		}
-		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
-
-		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
+		createdMessages, err := s.createIssuesFromCommits(ctx, repoList, commitList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -219,8 +224,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*a
 	return createdMessages, nil
 }
 
-func (s *Server) getRepositoryList(ctx context.Context, c echo.Context) ([]*api.Repository, error) {
-	webhookEndpointID := c.Param("id")
+func (s *Server) getRepositoryList(ctx context.Context, webhookEndpointID string) ([]*api.Repository, error) {
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
@@ -231,11 +235,19 @@ func (s *Server) getRepositoryList(ctx context.Context, c echo.Context) ([]*api.
 	return repos, nil
 }
 
-func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, error) {
-	branch, err := parseBranchNameFromRefs(pushEvent.Ref)
+type repositoryFilter func(string) (bool, error)
+
+func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
+	repos, err := s.getRepositoryList(ctx, webhookEndpointID)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEvent.Ref).SetInternal(err)
+		return nil, err
 	}
+
+	branch, err := parseBranchNameFromRefs(pushEventRef)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
+	}
+
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
 		if repo.BranchFilter != branch {
@@ -246,49 +258,23 @@ func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api
 			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 			continue
 		}
-		if pushEvent.RepositoryID != repo.ExternalID {
-			log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", pushEvent.RepositoryID), zap.String("repoExternalID", repo.ExternalID))
+		if pushEventRepositoryID != repo.ExternalID {
+			log.Debug("Skipping repo due to external ID mismatch", zap.Int("repoID", repo.ID), zap.String("pushEventExternalID", pushEventRepositoryID), zap.String("repoExternalID", repo.ExternalID))
 			continue
 		}
-		filteredRepos = append(filteredRepos, repo)
-	}
-	return filteredRepos, nil
-}
 
-func filterReposGitLab(httpHeader http.Header, repos []*api.Repository, pushEvent vcs.PushEvent) ([]*api.Repository, error) {
-	filteredRepos, err := filterReposCommon(pushEvent, repos)
-	if err != nil {
-		return nil, err
-	}
-	var ret []*api.Repository
-	for _, repo := range filteredRepos {
-		if secretToken := httpHeader.Get("X-Gitlab-Token"); secretToken != repo.WebhookSecretToken {
-			log.Debug("Skipping repo due to secret token mismatch", zap.Int("repoID", repo.ID), zap.String("headerSecretToken", secretToken), zap.String("repoSecretToken", repo.WebhookSecretToken))
-			continue
-		}
-		ret = append(ret, repo)
-	}
-	return ret, nil
-}
-
-func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository, pushEvent vcs.PushEvent) ([]*api.Repository, error) {
-	filteredRepos, err := filterReposCommon(pushEvent, repos)
-	if err != nil {
-		return nil, err
-	}
-	var ret []*api.Repository
-	for _, repo := range filteredRepos {
-		validated, err := validateGitHubWebhookSignature256(httpHeader.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, httpBody)
+		ok, err := filter(repo.WebhookSecretToken)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
+			return nil, err
 		}
-		if !validated {
+		if !ok {
 			log.Debug("Skipping repo due to mismatched payload signature", zap.Int("repoID", repo.ID))
 			continue
 		}
-		ret = append(ret, repo)
+
+		filteredRepos = append(filteredRepos, repo)
 	}
-	return ret, nil
+	return filteredRepos, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
