@@ -1413,7 +1413,7 @@
       },
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
-        "desc": "Set an override read replica connection to read-only data source."
+        "desc": "Connect to a read replica for the read-only data source."
       }
     }
   },
