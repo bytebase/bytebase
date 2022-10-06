@@ -112,7 +112,8 @@ const (
 	// Currently, we only support GitLab EE/CE auth.
 	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 
-	// FeatureReadReplicaConnection
+	// FeatureReadReplicaConnection allows user to set a read replica connection
+	// including host and port to data source.
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
 
 	// Branding.
