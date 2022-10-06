@@ -1410,6 +1410,10 @@
       "bb-feature-sync-schema": {
         "title": "Synchronize Schema",
         "desc": "Synchronize schema from the base database to the target database with the selected migration version."
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Read replica connection",
+        "desc": "Connect to a read replica for the read-only data source."
       }
     }
   },
