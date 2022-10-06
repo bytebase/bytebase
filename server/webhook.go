@@ -61,9 +61,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.AuthorName,
 		}
 
-		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
-		if httpErr != nil {
-			return httpErr
+		filteredRepos, err := filterReposCommon(baseVCSPushEvent, repos)
+		if err != nil {
+			return err
 		}
 		filteredRepos = filterReposGitLab(c.Request().Header, filteredRepos)
 		if len(filteredRepos) == 0 {
@@ -85,9 +85,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return nil
 		}
 		baseVCSPushEvent.CommitList = commitList
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
-		if httpErr != nil {
-			return httpErr
+		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
+		if err != nil {
+			return err
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
@@ -128,13 +128,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.Sender.Login,
 		}
 
-		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
-		if httpErr != nil {
-			return httpErr
+		filteredRepos, err := filterReposCommon(baseVCSPushEvent, repos)
+		if err != nil {
+			return err
 		}
-		filteredRepos, httpErr = filterReposGitHub(c.Request().Header, body, filteredRepos)
-		if httpErr != nil {
-			return httpErr
+		filteredRepos, err = filterReposGitHub(c.Request().Header, body, filteredRepos)
+		if err != nil {
+			return err
 		}
 		if len(filteredRepos) == 0 {
 			log.Debug("Empty handle repo list. Ignore this push event.")
@@ -152,15 +152,15 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return nil
 		}
 		baseVCSPushEvent.CommitList = commitList
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
-		if httpErr != nil {
-			return httpErr
+		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
+		if err != nil {
+			return err
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
 }
 
-func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
+func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
 	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 	if len(distinctFileList) == 0 {
 		log.Warn("No files found from the push event",
@@ -188,15 +188,15 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*a
 				Added:       common.EscapeForLogging(item.fileName),
 			}
 
-			createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
+			createdMessage, created, activityCreateList, err := s.createIssueFromPushEvent(
 				ctx,
 				&pushEvent,
 				repo,
 				item.fileName,
 				item.itemType,
 			)
-			if httpErr != nil {
-				return nil, httpErr
+			if err != nil {
+				return nil, err
 			}
 			if created {
 				createdMessageList = append(createdMessageList, createdMessage)
@@ -240,7 +240,7 @@ func (s *Server) getRepositoryList(ctx context.Context, c echo.Context) ([]*api.
 	return repos, nil
 }
 
-func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
+func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, error) {
 	branch, err := parseBranchNameFromRefs(pushEvent.Ref)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEvent.Ref).SetInternal(err)
@@ -276,7 +276,7 @@ func filterReposGitLab(httpHeader http.Header, repos []*api.Repository) []*api.R
 	return filteredRepos
 }
 
-func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
+func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository) ([]*api.Repository, error) {
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
 		validated, err := validateGitHubWebhookSignature256(httpHeader.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, httpBody)
@@ -716,7 +716,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, error) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
