@@ -302,11 +302,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
-		// TODO: ed - enable the code
-		// Setup SQL review CI for VCS
-		// if err := s.setupVCSSQLReviewCI(ctx, repository); err != nil {
-		// 	return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
-		// }
+		//	Setup SQL review CI for VCS
+		if api.FeatureFlight[api.FeatureVCSSQLReviewWorkflow] && s.feature(api.FeatureVCSSQLReviewWorkflow) {
+			if err := s.setupVCSSQLReviewCI(ctx, repository); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
+			}
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, repository); err != nil {
