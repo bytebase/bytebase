@@ -909,8 +909,8 @@ func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatu
 
 // waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
-	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
-	time.Sleep(2 * time.Second)
+	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
+	time.Sleep(1 * time.Second)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
