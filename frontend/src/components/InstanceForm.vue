@@ -347,6 +347,12 @@
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.read-replica-connection"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -370,6 +376,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 import {
+  hasFeature,
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
@@ -389,6 +396,7 @@ interface State {
   isUpdating: boolean;
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
+  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -420,6 +428,7 @@ const state = reactive<State>({
   isUpdating: false,
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
+  showFeatureModal: false,
 });
 
 const allowEdit = computed(() => {
@@ -587,6 +596,14 @@ const updateInstanceDataSource = () => {
     hostOverride: curr.hostOverride,
     portOverride: curr.portOverride,
   };
+
+  if (!hasFeature("bb.feature.read-replica-connection")) {
+    if (newValue.hostOverride !== "" || newValue.portOverride !== "") {
+      currentDataSource.value.hostOverride = "";
+      currentDataSource.value.portOverride = "";
+      state.showFeatureModal = true;
+    }
+  }
 
   if (curr.useEmptyPassword) {
     // When 'Password: Empty' is checked, we set the password to empty string.

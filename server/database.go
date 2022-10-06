@@ -754,7 +754,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
 		if !s.feature(api.FeatureReadReplicaConnection) {
-			if dataSourcePatch.HostOverride != nil || dataSourcePatch.PortOverride != nil {
+			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
+			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
 		}
