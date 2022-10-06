@@ -32,25 +32,14 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
-const (
-	gitlabWebhookPath = "hook/gitlab"
-	githubWebhookPath = "hook/github"
-)
-
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
-
-		webhookEndpointID, repos, httpErr := s.validateWebhookRequest(ctx, c)
-		if httpErr != nil {
-			return httpErr
-		}
 
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
 		}
-
 		var pushEvent gitlab.WebhookPushEvent
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
@@ -59,25 +48,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if pushEvent.ObjectKind != gitlab.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
 		}
-		baseVCSPushEvent := vcs.PushEvent{
-			Ref:                pushEvent.Ref,
-			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-			RepositoryURL:      pushEvent.Project.WebURL,
-			RepositoryFullPath: pushEvent.Project.FullPath,
-			AuthorName:         pushEvent.AuthorName,
-		}
-
-		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
-		if httpErr != nil {
-			return httpErr
-		}
-		filteredRepos = filterReposGitLab(c.Request().Header, filteredRepos)
-		if len(filteredRepos) == 0 {
-			log.Debug("Empty handle repo list. Ignore this push event.")
-			return c.String(http.StatusOK, "OK")
-		}
-		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
-
 		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
@@ -87,13 +57,34 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				zap.String("repoURL", common.EscapeForLogging(pushEvent.Project.WebURL)),
 				zap.String("repoName", pushEvent.Project.FullPath),
 				zap.String("commits", getCommitsMessage(commitList)))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
+			return c.String(http.StatusOK, "OK")
 		}
-		baseVCSPushEvent.CommitList = commitList
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
-		if httpErr != nil {
-			return httpErr
+		baseVCSPushEvent := vcs.PushEvent{
+			Ref:                pushEvent.Ref,
+			RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+			RepositoryURL:      pushEvent.Project.WebURL,
+			RepositoryFullPath: pushEvent.Project.FullPath,
+			AuthorName:         pushEvent.AuthorName,
+			CommitList:         commitList,
+		}
+
+		repos, err := s.getRepositoryList(ctx, c)
+		if err != nil {
+			return err
+		}
+		filteredRepos, err := filterReposGitLab(c.Request().Header, repos, baseVCSPushEvent)
+		if err != nil {
+			return err
+		}
+		if len(filteredRepos) == 0 {
+			log.Debug("Empty handle repo list. Ignore this push event.")
+			return c.String(http.StatusOK, "OK")
+		}
+		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
+
+		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
+		if err != nil {
+			return err
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
@@ -103,31 +94,31 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
-
 		// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
 		// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
 		// We respond to this event so as not to mislead users.
 		if eventType == github.WebhookPing {
 			return c.String(http.StatusOK, "OK")
 		}
-
 		if eventType != github.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
-		}
-
-		webhookEndpointID, repos, httpErr := s.validateWebhookRequest(ctx, c)
-		if httpErr != nil {
-			return httpErr
 		}
 
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
 		}
-
 		var pushEvent github.WebhookPushEvent
 		if err := json.Unmarshal(body, &pushEvent); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+		}
+		commitList := convertGitHubCommitList(pushEvent.Commits)
+		if len(pushEvent.Commits) == 0 {
+			log.Debug("No commit in the GitHub push event. Ignore this push event.",
+				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
+				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
+				zap.String("commits", getCommitsMessage(commitList)))
+			return c.String(http.StatusOK, "OK")
 		}
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
@@ -135,15 +126,16 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			RepositoryURL:      pushEvent.Repository.HTMLURL,
 			RepositoryFullPath: pushEvent.Repository.FullName,
 			AuthorName:         pushEvent.Sender.Login,
+			CommitList:         commitList,
 		}
 
-		filteredRepos, httpErr := filterReposCommon(baseVCSPushEvent, repos)
-		if httpErr != nil {
-			return httpErr
+		repos, err := s.getRepositoryList(ctx, c)
+		if err != nil {
+			return err
 		}
-		filteredRepos, httpErr = filterReposGitHub(c.Request().Header, body, filteredRepos)
-		if httpErr != nil {
-			return httpErr
+		filteredRepos, err := filterReposGitHub(c.Request().Header, body, repos, baseVCSPushEvent)
+		if err != nil {
+			return err
 		}
 		if len(filteredRepos) == 0 {
 			log.Debug("Empty handle repo list. Ignore this push event.")
@@ -151,25 +143,15 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", filteredRepos))
 
-		commitList := convertGitHubCommitList(pushEvent.Commits)
-		if len(pushEvent.Commits) == 0 {
-			log.Debug("No commit in the GitHub push event. Ignore this push event.",
-				zap.String("repoURL", common.EscapeForLogging(pushEvent.Repository.HTMLURL)),
-				zap.String("repoName", common.EscapeForLogging(pushEvent.Repository.FullName)),
-				zap.String("commits", getCommitsMessage(commitList)))
-			c.Response().WriteHeader(http.StatusOK)
-			return nil
-		}
-		baseVCSPushEvent.CommitList = commitList
-		createdMessages, httpErr := s.createIssuesFromCommits(ctx, webhookEndpointID, filteredRepos, commitList, baseVCSPushEvent)
-		if httpErr != nil {
-			return httpErr
+		createdMessages, err := s.createIssuesFromCommits(ctx, filteredRepos, commitList, baseVCSPushEvent)
+		if err != nil {
+			return err
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
 }
 
-func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID string, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, *echo.HTTPError) {
+func (s *Server) createIssuesFromCommits(ctx context.Context, filteredRepos []*api.Repository, commitList []vcs.Commit, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
 	distinctFileList := dedupMigrationFilesFromCommitList(commitList)
 	if len(distinctFileList) == 0 {
 		log.Warn("No files found from the push event",
@@ -197,16 +179,15 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 				Added:       common.EscapeForLogging(item.fileName),
 			}
 
-			createdMessage, created, activityCreateList, httpErr := s.createIssueFromPushEvent(
+			createdMessage, created, activityCreateList, err := s.createIssueFromPushEvent(
 				ctx,
 				&pushEvent,
 				repo,
-				webhookEndpointID,
 				item.fileName,
 				item.itemType,
 			)
-			if httpErr != nil {
-				return nil, httpErr
+			if err != nil {
+				return nil, err
 			}
 			if created {
 				createdMessageList = append(createdMessageList, createdMessage)
@@ -238,19 +219,19 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 	return createdMessages, nil
 }
 
-func (s *Server) validateWebhookRequest(ctx context.Context, c echo.Context) (string, []*api.Repository, *echo.HTTPError) {
+func (s *Server) getRepositoryList(ctx context.Context, c echo.Context) ([]*api.Repository, error) {
 	webhookEndpointID := c.Param("id")
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
-		return "", nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 	}
 	if len(repos) == 0 {
-		return "", nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
 	}
-	return webhookEndpointID, repos, nil
+	return repos, nil
 }
 
-func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
+func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api.Repository, error) {
 	branch, err := parseBranchNameFromRefs(pushEvent.Ref)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEvent.Ref).SetInternal(err)
@@ -274,21 +255,29 @@ func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api
 	return filteredRepos, nil
 }
 
-func filterReposGitLab(httpHeader http.Header, repos []*api.Repository) []*api.Repository {
-	var filteredRepos []*api.Repository
-	for _, repo := range repos {
+func filterReposGitLab(httpHeader http.Header, repos []*api.Repository, pushEvent vcs.PushEvent) ([]*api.Repository, error) {
+	filteredRepos, err := filterReposCommon(pushEvent, repos)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*api.Repository
+	for _, repo := range filteredRepos {
 		if secretToken := httpHeader.Get("X-Gitlab-Token"); secretToken != repo.WebhookSecretToken {
 			log.Debug("Skipping repo due to secret token mismatch", zap.Int("repoID", repo.ID), zap.String("headerSecretToken", secretToken), zap.String("repoSecretToken", repo.WebhookSecretToken))
 			continue
 		}
-		filteredRepos = append(filteredRepos, repo)
+		ret = append(ret, repo)
 	}
-	return filteredRepos
+	return ret, nil
 }
 
-func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository) ([]*api.Repository, *echo.HTTPError) {
-	var filteredRepos []*api.Repository
-	for _, repo := range repos {
+func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository, pushEvent vcs.PushEvent) ([]*api.Repository, error) {
+	filteredRepos, err := filterReposCommon(pushEvent, repos)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*api.Repository
+	for _, repo := range filteredRepos {
 		validated, err := validateGitHubWebhookSignature256(httpHeader.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, httpBody)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
@@ -297,9 +286,9 @@ func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Rep
 			log.Debug("Skipping repo due to mismatched payload signature", zap.Int("repoID", repo.ID))
 			continue
 		}
-		filteredRepos = append(filteredRepos, repo)
+		ret = append(ret, repo)
 	}
-	return filteredRepos, nil
+	return ret, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
@@ -545,19 +534,19 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent *vcs.PushEvent, file 
 }
 
 // readFileContent reads the content of the given file from the given repository.
-func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, webhookEndpointID string, file string) (string, error) {
+func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string) (string, error) {
 	// Retrieve the latest AccessToken and RefreshToken as the previous
 	// ReadFileContent call may have updated the stored token pair. ReadFileContent
 	// will fetch and store the new token pair if the existing token pair has
 	// expired.
-	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &repo.WebhookEndpointID})
 	if err != nil {
-		return "", errors.Wrapf(err, "get repository by webhook endpoint %q", webhookEndpointID)
+		return "", errors.Wrapf(err, "get repository by webhook endpoint %q", repo.WebhookEndpointID)
 	} else if len(repos) == 0 {
-		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", webhookEndpointID)
+		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", repo.WebhookEndpointID)
 	}
 
-	repo := repos[0]
+	repo = repos[0]
 	content, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
 		common.OauthContext{
@@ -580,14 +569,14 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string, webhookEndpointID string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo["DB_NAME"]
 	if dbName == "" {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
 		return nil, nil
 	}
 
-	statement, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, file)
+	statement, err := s.readFileContent(ctx, pushEvent, repo, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -633,8 +622,8 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, fileName string, fileType fileItemType, webhookEndpointID string, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
-	statement, err := s.readFileContent(ctx, pushEvent, webhookEndpointID, fileName)
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, fileName string, fileType fileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+	statement, err := s.readFileContent(ctx, pushEvent, repo, fileName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -726,7 +715,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, webhookEndpointID, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, error) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -769,7 +758,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && schemaInfo != nil {
 		// Having no schema info indicates that the file is not a schema file (e.g.
 		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file, webhookEndpointID)
+		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file)
 		migrationDescription = "Apply_schema_diff"
 		migrationType = db.Migrate
 	} else {
@@ -795,7 +784,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		// We are here dealing with:
 		// 1. data update in SDL/DDL
 		// 2. schema update in DDL
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, webhookEndpointID, migrationInfo)
+		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, migrationInfo)
 	}
 
 	if len(migrationDetailList) == 0 {
