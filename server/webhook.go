@@ -14,7 +14,6 @@ import (
 	"path"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -62,7 +61,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
-		commitList, err := convertGitLabCommitList(pushEvent.CommitList)
+		commitList, err := pushEvent.GetCommitList()
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
@@ -124,7 +123,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
-		commitList := convertGitHubCommitList(pushEvent.Commits)
+		commitList := pushEvent.GetCommitList()
 		baseVCSPushEvent := vcs.PushEvent{
 			Ref:                pushEvent.Ref,
 			RepositoryID:       repositoryID,
@@ -140,80 +139,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
-}
-
-func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
-	distinctFileList := getDistinctFileList(baseVCSPushEvent.CommitList)
-	if len(distinctFileList) == 0 {
-		var commitIDs []string
-		for _, c := range baseVCSPushEvent.CommitList {
-			commitIDs = append(commitIDs, c.ID)
-		}
-		log.Warn("No files found from the push event",
-			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
-			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
-			zap.String("commits", strings.Join(commitIDs, ",")))
-		return nil, nil
-	}
-
-	var createdMessages []string
-	for _, item := range distinctFileList {
-		var createdMessageList []string
-		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-		for _, repo := range repositoryList {
-			pushEvent := baseVCSPushEvent
-			pushEvent.VCSType = repo.VCS.Type
-			pushEvent.BaseDirectory = repo.BaseDirectory
-			pushEvent.FileCommit = vcs.FileCommit{
-				ID:          item.commit.ID,
-				Title:       item.commit.Title,
-				Message:     item.commit.Message,
-				CreatedTs:   item.commit.CreatedTs,
-				URL:         item.commit.URL,
-				AuthorName:  item.commit.AuthorName,
-				AuthorEmail: item.commit.AuthorEmail,
-				Added:       common.EscapeForLogging(item.fileName),
-			}
-
-			createdMessage, created, activityCreateList, err := s.createIssueFromPushEvent(
-				ctx,
-				&pushEvent,
-				repo,
-				item.fileName,
-				item.itemType,
-			)
-			if err != nil {
-				return nil, err
-			}
-			if created {
-				createdMessageList = append(createdMessageList, createdMessage)
-			}
-			repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
-		}
-		if len(createdMessageList) == 0 {
-			for _, repo := range repositoryList {
-				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
-					for _, activityCreate := range activityCreateList {
-						if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-							log.Warn("Failed to create project activity for the ignored repository file",
-								zap.Error(err),
-							)
-						}
-					}
-				}
-			}
-		}
-		createdMessages = append(createdMessages, createdMessageList...)
-	}
-
-	if len(createdMessages) == 0 {
-		var repoURLs []string
-		for _, repo := range repositoryList {
-			repoURLs = append(repoURLs, repo.WebURL)
-		}
-		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", repoURLs))
-	}
-	return createdMessages, nil
 }
 
 type repositoryFilter func(string) (bool, error)
@@ -289,52 +214,78 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 	return ref[len(expectedPrefix):], nil
 }
 
-func convertGitLabCommitList(commitList []gitlab.WebhookCommit) ([]vcs.Commit, error) {
-	var ret []vcs.Commit
-	for _, commit := range commitList {
-		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
+func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+	distinctFileList := getDistinctFileList(baseVCSPushEvent.CommitList)
+	if len(distinctFileList) == 0 {
+		var commitIDs []string
+		for _, c := range baseVCSPushEvent.CommitList {
+			commitIDs = append(commitIDs, c.ID)
 		}
-		ret = append(ret, vcs.Commit{
-			ID:           commit.ID,
-			Title:        commit.Title,
-			Message:      commit.Message,
-			CreatedTs:    createdTime.Unix(),
-			URL:          commit.URL,
-			AuthorName:   commit.Author.Name,
-			AuthorEmail:  commit.Author.Email,
-			AddedList:    commit.AddedList,
-			ModifiedList: commit.ModifiedList,
-		})
+		log.Warn("No files found from the push event",
+			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
+			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			zap.String("commits", strings.Join(commitIDs, ",")))
+		return nil, nil
 	}
-	return ret, nil
-}
 
-func convertGitHubCommitList(commitList []github.WebhookCommit) []vcs.Commit {
-	var ret []vcs.Commit
-	for _, commit := range commitList {
-		// The Distinct is false if the commit has not been pushed before.
-		if !commit.Distinct {
-			continue
+	var createdMessages []string
+	for _, item := range distinctFileList {
+		var createdMessageList []string
+		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
+		for _, repo := range repositoryList {
+			pushEvent := baseVCSPushEvent
+			pushEvent.VCSType = repo.VCS.Type
+			pushEvent.BaseDirectory = repo.BaseDirectory
+			pushEvent.FileCommit = vcs.FileCommit{
+				ID:          item.commit.ID,
+				Title:       item.commit.Title,
+				Message:     item.commit.Message,
+				CreatedTs:   item.commit.CreatedTs,
+				URL:         item.commit.URL,
+				AuthorName:  item.commit.AuthorName,
+				AuthorEmail: item.commit.AuthorEmail,
+				Added:       common.EscapeForLogging(item.fileName),
+			}
+
+			createdMessage, created, activityCreateList, err := s.createIssueFromPushEvent(
+				ctx,
+				&pushEvent,
+				repo,
+				item.fileName,
+				item.itemType,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if created {
+				createdMessageList = append(createdMessageList, createdMessage)
+			}
+			repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
 		}
-		// Per Git convention, the message title and body are separated by two new line characters.
-		messages := strings.SplitN(commit.Message, "\n\n", 2)
-		messageTitle := messages[0]
-
-		ret = append(ret, vcs.Commit{
-			ID:           commit.ID,
-			Title:        messageTitle,
-			Message:      commit.Message,
-			CreatedTs:    commit.Timestamp.Unix(),
-			URL:          commit.URL,
-			AuthorName:   commit.Author.Name,
-			AuthorEmail:  commit.Author.Email,
-			AddedList:    commit.Added,
-			ModifiedList: commit.Modified,
-		})
+		if len(createdMessageList) == 0 {
+			for _, repo := range repositoryList {
+				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
+					for _, activityCreate := range activityCreateList {
+						if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+							log.Warn("Failed to create project activity for the ignored repository file",
+								zap.Error(err),
+							)
+						}
+					}
+				}
+			}
+		}
+		createdMessages = append(createdMessages, createdMessageList...)
 	}
-	return ret
+
+	if len(createdMessages) == 0 {
+		var repoURLs []string
+		for _, repo := range repositoryList {
+			repoURLs = append(repoURLs, repo.WebURL)
+		}
+		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", repoURLs))
+	}
+	return createdMessages, nil
 }
 
 // fileItemType is the type of a file item.
@@ -415,6 +366,164 @@ func getDistinctFileList(commitList []vcs.Commit) []distinctFileItem {
 		}
 	}
 	return distinctFileList
+}
+
+// createIssueFromPushEvent attempts to create a new issue for the given file of
+// the push event. It returns "created=true" when a new issue has been created,
+// along with the creation message to be presented in the UI. An *echo.HTTPError
+// is returned in case of the error during the process.
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, error) {
+	if repo.Project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+	}
+
+	fileEscaped := common.EscapeForLogging(file)
+	log.Debug("Processing file",
+		zap.String("file", fileEscaped),
+		zap.String("commit", common.EscapeForLogging(pushEvent.FileCommit.ID)),
+	)
+
+	if !strings.HasPrefix(fileEscaped, repo.BaseDirectory) {
+		log.Debug("Ignored file outside the base directory",
+			zap.String("file", fileEscaped),
+			zap.String("base_directory", repo.BaseDirectory),
+		)
+		return "", false, nil, nil
+	}
+
+	schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, fileEscaped)
+	if err != nil {
+		log.Debug("Failed to parse schema file info",
+			zap.String("file", fileEscaped),
+			zap.Error(err),
+		)
+		return "", false, nil, nil
+	}
+
+	var migrationDetailList []*api.MigrationDetail
+	var activityCreateList []*api.ActivityCreate
+	var migrationDescription string
+	var migrationType db.MigrationType
+
+	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && schemaInfo != nil {
+		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
+		return "", false, nil, nil
+	}
+
+	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && schemaInfo != nil {
+		// Having no schema info indicates that the file is not a schema file (e.g.
+		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
+		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file)
+		migrationDescription = "Apply_schema_diff"
+		migrationType = db.Migrate
+	} else {
+		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+		if err != nil {
+			log.Error("Failed to parse migration info",
+				zap.Int("project", repo.ProjectID),
+				zap.Any("pushEvent", pushEvent),
+				zap.String("file", file),
+				zap.Error(err),
+			)
+			return "", false, nil, nil
+		}
+		migrationDescription = migrationInfo.Description
+		migrationType = migrationInfo.Type
+
+		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && migrationInfo.Type != db.Data {
+			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type))
+			return "", false, []*api.ActivityCreate{activityCreate}, nil
+		}
+
+		// We are here dealing with:
+		// 1. data update in SDL/DDL
+		// 2. schema update in DDL
+		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, migrationInfo)
+	}
+
+	if len(migrationDetailList) == 0 {
+		return "", false, activityCreateList, nil
+	}
+
+	// Create schema update issue
+	creatorID := api.SystemBotID
+	if pushEvent.FileCommit.AuthorEmail != "" {
+		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
+		if err != nil {
+			log.Error("Failed to find the principal with committer email",
+				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+				zap.Error(err),
+			)
+		}
+		if committerPrincipal == nil {
+			log.Debug("Failed to find the principal with committer email, use system bot instead",
+				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+			)
+		} else {
+			creatorID = committerPrincipal.ID
+		}
+	}
+
+	createContext, err := json.Marshal(
+		&api.MigrationContext{
+			MigrationType: migrationType,
+			VCSPushEvent:  pushEvent,
+			DetailList:    migrationDetailList,
+		},
+	)
+	if err != nil {
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
+	}
+
+	issueType := api.IssueDatabaseSchemaUpdate
+	if migrationType == db.Data {
+		issueType = api.IssueDatabaseDataUpdate
+	}
+	issueCreate := &api.IssueCreate{
+		ProjectID:     repo.ProjectID,
+		Name:          fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(fileEscaped, repo.BaseDirectory+"/")),
+		Type:          issueType,
+		Description:   pushEvent.FileCommit.Message,
+		AssigneeID:    api.SystemBotID,
+		CreateContext: string(createContext),
+	}
+	issue, err := s.createIssue(ctx, issueCreate, creatorID)
+	if err != nil {
+		errMsg := "Failed to create schema update issue"
+		if issueType == api.IssueDatabaseDataUpdate {
+			errMsg = "Failed to create data update issue"
+		}
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+	}
+
+	// Create a project activity after successfully creating the issue from the push event.
+	activityPayload, err := json.Marshal(
+		api.ActivityProjectRepositoryPushPayload{
+			VCSPushEvent: *pushEvent,
+			IssueID:      issue.ID,
+			IssueName:    issue.Name,
+		},
+	)
+	if err != nil {
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   creatorID,
+		ContainerID: repo.ProjectID,
+		Type:        api.ActivityProjectRepositoryPush,
+		Level:       api.ActivityInfo,
+		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
+		Payload:     string(activityPayload),
+	}
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+	}
+
+	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, activityCreateList, nil
 }
 
 // findProjectDatabases finds the list of databases with given name in the
@@ -681,164 +790,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		}
 	}
 	return nil
-}
-
-// createIssueFromPushEvent attempts to create a new issue for the given file of
-// the push event. It returns "created=true" when a new issue has been created,
-// along with the creation message to be presented in the UI. An *echo.HTTPError
-// is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, error) {
-	if repo.Project.TenantMode == api.TenantModeTenant {
-		if !s.feature(api.FeatureMultiTenancy) {
-			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-	}
-
-	fileEscaped := common.EscapeForLogging(file)
-	log.Debug("Processing file",
-		zap.String("file", fileEscaped),
-		zap.String("commit", common.EscapeForLogging(pushEvent.FileCommit.ID)),
-	)
-
-	if !strings.HasPrefix(fileEscaped, repo.BaseDirectory) {
-		log.Debug("Ignored file outside the base directory",
-			zap.String("file", fileEscaped),
-			zap.String("base_directory", repo.BaseDirectory),
-		)
-		return "", false, nil, nil
-	}
-
-	schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, fileEscaped)
-	if err != nil {
-		log.Debug("Failed to parse schema file info",
-			zap.String("file", fileEscaped),
-			zap.Error(err),
-		)
-		return "", false, nil, nil
-	}
-
-	var migrationDetailList []*api.MigrationDetail
-	var activityCreateList []*api.ActivityCreate
-	var migrationDescription string
-	var migrationType db.MigrationType
-
-	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && schemaInfo != nil {
-		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
-		return "", false, nil, nil
-	}
-
-	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && schemaInfo != nil {
-		// Having no schema info indicates that the file is not a schema file (e.g.
-		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file)
-		migrationDescription = "Apply_schema_diff"
-		migrationType = db.Migrate
-	} else {
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-		if err != nil {
-			log.Error("Failed to parse migration info",
-				zap.Int("project", repo.ProjectID),
-				zap.Any("pushEvent", pushEvent),
-				zap.String("file", file),
-				zap.Error(err),
-			)
-			return "", false, nil, nil
-		}
-		migrationDescription = migrationInfo.Description
-		migrationType = migrationInfo.Type
-
-		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && migrationInfo.Type != db.Data {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type))
-			return "", false, []*api.ActivityCreate{activityCreate}, nil
-		}
-
-		// We are here dealing with:
-		// 1. data update in SDL/DDL
-		// 2. schema update in DDL
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, migrationInfo)
-	}
-
-	if len(migrationDetailList) == 0 {
-		return "", false, activityCreateList, nil
-	}
-
-	// Create schema update issue
-	creatorID := api.SystemBotID
-	if pushEvent.FileCommit.AuthorEmail != "" {
-		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
-		if err != nil {
-			log.Error("Failed to find the principal with committer email",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
-				zap.Error(err),
-			)
-		}
-		if committerPrincipal == nil {
-			log.Debug("Failed to find the principal with committer email, use system bot instead",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
-			)
-		} else {
-			creatorID = committerPrincipal.ID
-		}
-	}
-
-	createContext, err := json.Marshal(
-		&api.MigrationContext{
-			MigrationType: migrationType,
-			VCSPushEvent:  pushEvent,
-			DetailList:    migrationDetailList,
-		},
-	)
-	if err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
-	}
-
-	issueType := api.IssueDatabaseSchemaUpdate
-	if migrationType == db.Data {
-		issueType = api.IssueDatabaseDataUpdate
-	}
-	issueCreate := &api.IssueCreate{
-		ProjectID:     repo.ProjectID,
-		Name:          fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(fileEscaped, repo.BaseDirectory+"/")),
-		Type:          issueType,
-		Description:   pushEvent.FileCommit.Message,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
-	}
-	issue, err := s.createIssue(ctx, issueCreate, creatorID)
-	if err != nil {
-		errMsg := "Failed to create schema update issue"
-		if issueType == api.IssueDatabaseDataUpdate {
-			errMsg = "Failed to create data update issue"
-		}
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
-	}
-
-	// Create a project activity after successfully creating the issue from the push event.
-	activityPayload, err := json.Marshal(
-		api.ActivityProjectRepositoryPushPayload{
-			VCSPushEvent: *pushEvent,
-			IssueID:      issue.ID,
-			IssueName:    issue.Name,
-		},
-	)
-	if err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
-	}
-
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
-		ContainerID: repo.ProjectID,
-		Type:        api.ActivityProjectRepositoryPush,
-		Level:       api.ActivityInfo,
-		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
-		Payload:     string(activityPayload),
-	}
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
-	}
-
-	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, activityCreateList, nil
 }
 
 // parseSchemaFileInfo attempts to parse the given schema file path to extract

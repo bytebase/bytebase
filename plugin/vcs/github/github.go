@@ -961,3 +961,30 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }
+
+// GetCommitList returns the commit list in VCS format.
+func (p WebhookPushEvent) GetCommitList() []vcs.Commit {
+	var ret []vcs.Commit
+	for _, commit := range p.Commits {
+		// The Distinct is false if the commit has not been pushed before.
+		if !commit.Distinct {
+			continue
+		}
+		// Per Git convention, the message title and body are separated by two new line characters.
+		messages := strings.SplitN(commit.Message, "\n\n", 2)
+		messageTitle := messages[0]
+
+		ret = append(ret, vcs.Commit{
+			ID:           commit.ID,
+			Title:        messageTitle,
+			Message:      commit.Message,
+			CreatedTs:    commit.Timestamp.Unix(),
+			URL:          commit.URL,
+			AuthorName:   commit.Author.Name,
+			AuthorEmail:  commit.Author.Email,
+			AddedList:    commit.Added,
+			ModifiedList: commit.Modified,
+		})
+	}
+	return ret
+}

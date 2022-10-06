@@ -989,3 +989,26 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }
+
+// GetCommitList returns the commit list in VCS format.
+func (p WebhookPushEvent) GetCommitList() ([]vcs.Commit, error) {
+	var ret []vcs.Commit
+	for _, commit := range p.CommitList {
+		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
+		}
+		ret = append(ret, vcs.Commit{
+			ID:           commit.ID,
+			Title:        commit.Title,
+			Message:      commit.Message,
+			CreatedTs:    createdTime.Unix(),
+			URL:          commit.URL,
+			AuthorName:   commit.Author.Name,
+			AuthorEmail:  commit.Author.Email,
+			AddedList:    commit.AddedList,
+			ModifiedList: commit.ModifiedList,
+		})
+	}
+	return ret, nil
+}
