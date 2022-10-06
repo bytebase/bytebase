@@ -25,6 +25,14 @@ var SQLReviewCI string
 //go:embed .gitlab/sql-review.sh
 var SQLReviewScript string
 
+type sqlReviewCIConfig struct {
+	Variables sqlReviewCIVariables `yaml:"variables"`
+}
+
+type sqlReviewCIVariables struct {
+	API string `yaml:"API"`
+}
+
 // SetupSQLReviewCI will update the GitLab CI content to add or update the SQL review CI.
 func SetupSQLReviewCI(gitlabCI map[string]interface{}, sqlReviewEndpoint string) (string, error) {
 	if gitlabCI["sql-review"] == nil {
@@ -43,9 +51,11 @@ func SetupSQLReviewCI(gitlabCI map[string]interface{}, sqlReviewEndpoint string)
 	}
 
 	// Add SQL review endpoint.
-	gitlabCI["sql-review"] = make(map[string]interface{})
-	gitlabCI["sql-review"].(map[string]interface{})["variables"] = make(map[string]interface{})
-	gitlabCI["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["SQL_REVIEW_API"] = sqlReviewEndpoint
+	gitlabCI["sql-review"] = sqlReviewCIConfig{
+		Variables: sqlReviewCIVariables{
+			API: sqlReviewEndpoint,
+		},
+	}
 
 	newContent, err := yaml.Marshal(gitlabCI)
 	if err != nil {

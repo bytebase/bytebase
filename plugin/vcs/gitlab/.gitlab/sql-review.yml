@@ -4,7 +4,7 @@ sql-review:
       - merge_requests
   image: docker:stable
   variables:
-    SQL_REVIEW_API: "" # This is the API for SQL reivew.
+    API: "" # This is the API for SQL reivew.
   before_script:
     - apk update && apk add git
     - apk update && apk add bash
@@ -16,7 +16,7 @@ sql-review:
     - git fetch origin ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}
     - FILES=$(git diff-tree --no-commit-id --diff-filter=AM --name-only -r origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME -r $CI_COMMIT_SHA -- '*.sql')
     - echo $FILES
-    - bash ./sql-review.sh --files="$FILES" --api="$SQL_REVIEW_API"
+    - bash ./sql-review.sh --files="$FILES" --api="$API"
   artifacts:
     when: always
     reports:
