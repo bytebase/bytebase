@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-func TestDedupMigrationFiles(t *testing.T) {
+func TestGetDistinctFileList(t *testing.T) {
 	timestamp1 := "2021-01-13T00:00:00+00:00"
 	timestamp2 := "2021-01-14T00:00:00+00:00"
 	timestamp3 := "2021-01-15T00:00:00+00:00"
@@ -442,7 +442,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := dedupMigrationFilesFromCommitList(tt.commitList)
+			got := getDistinctFileList(tt.commitList)
 			assert.Equal(t, tt.want, got)
 		})
 	}
