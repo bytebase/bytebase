@@ -112,6 +112,10 @@ const (
 	// Currently, we only support GitLab EE/CE auth.
 	Feature3rdPartyAuth FeatureType = "bb.feature.3rd-party-auth"
 
+	// FeatureReadReplicaConnection allows user to set a read replica connection
+	// including host and port to data source.
+	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
+
 	// Branding.
 
 	// FeatureBranding enables customized branding.
@@ -151,6 +155,8 @@ func (e FeatureType) Name() string {
 		return "RBAC"
 	case Feature3rdPartyAuth:
 		return "3rd party auth"
+	case FeatureReadReplicaConnection:
+		return "Read replica connection"
 	case FeatureBranding:
 		return "Branding"
 	case FeatureEnvironmentTierPolicy:
@@ -192,6 +198,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSQLReviewPolicy:       {false, true, true},
 	FeatureRBAC:                  {false, true, true},
 	Feature3rdPartyAuth:          {false, true, true},
+	FeatureReadReplicaConnection: {false, false, true},
 	FeatureBranding:              {false, false, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
 }
