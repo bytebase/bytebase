@@ -61,11 +61,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.AuthorName,
 		}
 
-		filteredRepos, err := filterReposCommon(baseVCSPushEvent, repos)
+		filteredRepos, err := filterReposGitLab(c.Request().Header, repos, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
-		filteredRepos = filterReposGitLab(c.Request().Header, filteredRepos)
 		if len(filteredRepos) == 0 {
 			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
@@ -128,11 +127,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			AuthorName:         pushEvent.Sender.Login,
 		}
 
-		filteredRepos, err := filterReposCommon(baseVCSPushEvent, repos)
-		if err != nil {
-			return err
-		}
-		filteredRepos, err = filterReposGitHub(c.Request().Header, body, filteredRepos)
+		filteredRepos, err := filterReposGitHub(c.Request().Header, body, repos, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -264,21 +259,29 @@ func filterReposCommon(pushEvent vcs.PushEvent, repos []*api.Repository) ([]*api
 	return filteredRepos, nil
 }
 
-func filterReposGitLab(httpHeader http.Header, repos []*api.Repository) []*api.Repository {
-	var filteredRepos []*api.Repository
-	for _, repo := range repos {
+func filterReposGitLab(httpHeader http.Header, repos []*api.Repository, pushEvent vcs.PushEvent) ([]*api.Repository, error) {
+	filteredRepos, err := filterReposCommon(pushEvent, repos)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*api.Repository
+	for _, repo := range filteredRepos {
 		if secretToken := httpHeader.Get("X-Gitlab-Token"); secretToken != repo.WebhookSecretToken {
 			log.Debug("Skipping repo due to secret token mismatch", zap.Int("repoID", repo.ID), zap.String("headerSecretToken", secretToken), zap.String("repoSecretToken", repo.WebhookSecretToken))
 			continue
 		}
-		filteredRepos = append(filteredRepos, repo)
+		ret = append(ret, repo)
 	}
-	return filteredRepos
+	return ret, nil
 }
 
-func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository) ([]*api.Repository, error) {
-	var filteredRepos []*api.Repository
-	for _, repo := range repos {
+func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Repository, pushEvent vcs.PushEvent) ([]*api.Repository, error) {
+	filteredRepos, err := filterReposCommon(pushEvent, repos)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*api.Repository
+	for _, repo := range filteredRepos {
 		validated, err := validateGitHubWebhookSignature256(httpHeader.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, httpBody)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
@@ -287,9 +290,9 @@ func filterReposGitHub(httpHeader http.Header, httpBody []byte, repos []*api.Rep
 			log.Debug("Skipping repo due to mismatched payload signature", zap.Int("repoID", repo.ID))
 			continue
 		}
-		filteredRepos = append(filteredRepos, repo)
+		ret = append(ret, repo)
 	}
-	return filteredRepos, nil
+	return ret, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
