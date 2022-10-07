@@ -136,6 +136,13 @@ type Repository struct {
 	WebURL   string `json:"webUrl"`
 }
 
+// PullRequestFile is the API message for file in the pull request.
+type PullRequestFile struct {
+	Path         string
+	LastCommitID string
+	DeletedFile  bool
+}
+
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
@@ -215,6 +222,13 @@ type Provider interface {
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
 	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
+	// CreatePullRequest creates the pull request in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// pullRequestID: the pull request id
+	ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestID int) ([]*PullRequestFile, error)
 	// Creates a webhook. Returns the created webhook ID on success.
 	//
 	// oauthCtx: OAuth context to create the webhook
