@@ -990,15 +990,15 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 	}
 }
 
-// GetCommitList returns the commit list in VCS format.
-func (p WebhookPushEvent) GetCommitList() ([]vcs.Commit, error) {
-	var ret []vcs.Commit
+// ToVCS returns the push event in VCS format.
+func (p WebhookPushEvent) ToVCS() (vcs.PushEvent, error) {
+	var commitList []vcs.Commit
 	for _, commit := range p.CommitList {
 		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
+			return vcs.PushEvent{}, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
 		}
-		ret = append(ret, vcs.Commit{
+		commitList = append(commitList, vcs.Commit{
 			ID:           commit.ID,
 			Title:        commit.Title,
 			Message:      commit.Message,
@@ -1010,5 +1010,12 @@ func (p WebhookPushEvent) GetCommitList() ([]vcs.Commit, error) {
 			ModifiedList: commit.ModifiedList,
 		})
 	}
-	return ret, nil
+	return vcs.PushEvent{
+		Ref:                p.Ref,
+		RepositoryID:       fmt.Sprintf("%v", p.Project.ID),
+		RepositoryURL:      p.Project.WebURL,
+		RepositoryFullPath: p.Project.FullPath,
+		AuthorName:         p.AuthorName,
+		CommitList:         commitList,
+	}, nil
 }

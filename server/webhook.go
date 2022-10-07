@@ -61,17 +61,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
-		commitList, err := pushEvent.GetCommitList()
+		baseVCSPushEvent, err := pushEvent.ToVCS()
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
-		}
-		baseVCSPushEvent := vcs.PushEvent{
-			Ref:                pushEvent.Ref,
-			RepositoryID:       repositoryID,
-			RepositoryURL:      pushEvent.Project.WebURL,
-			RepositoryFullPath: pushEvent.Project.FullPath,
-			AuthorName:         pushEvent.AuthorName,
-			CommitList:         commitList,
 		}
 
 		createdMessages, err := s.createIssuesFromCommits(ctx, repositoryList, baseVCSPushEvent)
@@ -123,15 +115,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
-		commitList := pushEvent.GetCommitList()
-		baseVCSPushEvent := vcs.PushEvent{
-			Ref:                pushEvent.Ref,
-			RepositoryID:       repositoryID,
-			RepositoryURL:      pushEvent.Repository.HTMLURL,
-			RepositoryFullPath: repositoryID,
-			AuthorName:         pushEvent.Sender.Login,
-			CommitList:         commitList,
-		}
+		baseVCSPushEvent := pushEvent.ToVCS()
 
 		createdMessages, err := s.createIssuesFromCommits(ctx, repositoryList, baseVCSPushEvent)
 		if err != nil {

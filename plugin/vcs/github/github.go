@@ -962,9 +962,9 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 	}
 }
 
-// GetCommitList returns the commit list in VCS format.
-func (p WebhookPushEvent) GetCommitList() []vcs.Commit {
-	var ret []vcs.Commit
+// ToVCS returns the push event in VCS format.
+func (p WebhookPushEvent) ToVCS() vcs.PushEvent {
+	var commitList []vcs.Commit
 	for _, commit := range p.Commits {
 		// The Distinct is false if the commit has not been pushed before.
 		if !commit.Distinct {
@@ -974,7 +974,7 @@ func (p WebhookPushEvent) GetCommitList() []vcs.Commit {
 		messages := strings.SplitN(commit.Message, "\n\n", 2)
 		messageTitle := messages[0]
 
-		ret = append(ret, vcs.Commit{
+		commitList = append(commitList, vcs.Commit{
 			ID:           commit.ID,
 			Title:        messageTitle,
 			Message:      commit.Message,
@@ -986,5 +986,12 @@ func (p WebhookPushEvent) GetCommitList() []vcs.Commit {
 			ModifiedList: commit.Modified,
 		})
 	}
-	return ret
+	return vcs.PushEvent{
+		Ref:                p.Ref,
+		RepositoryID:       p.Repository.FullName,
+		RepositoryURL:      p.Repository.HTMLURL,
+		RepositoryFullPath: p.Repository.FullName,
+		AuthorName:         p.Sender.Login,
+		CommitList:         commitList,
+	}
 }
