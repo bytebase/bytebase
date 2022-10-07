@@ -21,14 +21,12 @@ after_script:
   - echo "After script section"
 `
 
-const mockSQLReviewEndpoint = "https://example.bytebase.com/sql/advise"
-
 func Test_SetupSQLReviewCI(t *testing.T) {
 	content := make(map[string]interface{})
 	err := yaml.Unmarshal([]byte(mockGitLabCIContentYAMLStr), &content)
 	require.NoError(t, err)
 
-	newContent, err := SetupSQLReviewCI(content, mockSQLReviewEndpoint)
+	newContent, err := SetupSQLReviewCI(content)
 	require.NoError(t, err)
 
 	err = yaml.Unmarshal([]byte(newContent), &content)
@@ -44,10 +42,6 @@ func Test_SetupSQLReviewCI(t *testing.T) {
 
 	sqlReviewCI := findSQLReviewCI(include)
 	assert.NotNil(t, sqlReviewCI)
-
-	assert.NotNil(t, content["sql-review"])
-	assert.NotNil(t, content["sql-review"].(map[string]interface{})["variables"])
-	assert.Equal(t, content["sql-review"].(map[string]interface{})["variables"].(map[string]interface{})["API"], mockSQLReviewEndpoint)
 }
 
 func findSQLReviewCI(include []interface{}) map[string]interface{} {

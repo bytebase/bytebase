@@ -660,7 +660,6 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
-		sqlReviewEndpoint := fmt.Sprintf("%s/v1/project/%d/sql-review", s.profile.ExternalURL, repository.ProjectID)
 		content := make(map[string]interface{})
 
 		if fileMeta != nil {
@@ -686,7 +685,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 			}
 		}
 
-		newContent, err := gitlab.SetupSQLReviewCI(content, sqlReviewEndpoint)
+		newContent, err := gitlab.SetupSQLReviewCI(content)
 		if err != nil {
 			return "", err
 		}
@@ -697,15 +696,9 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 	}
 
 	// create or update the SQL review CI.
-	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
-		return gitlab.SQLReviewCI, nil
-	}); err != nil {
-		return err
-	}
-
-	// create or update the SQL review script.
-	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewScriptFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
-		return gitlab.SQLReviewScript, nil
+	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
+		sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
+		return fmt.Sprintf(gitlab.SQLReviewCI, sqlReviewEndpoint), nil
 	})
 }
 
