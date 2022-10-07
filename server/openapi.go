@@ -23,11 +23,6 @@ var (
 	_ catalog.Catalog = (*catalogService)(nil)
 )
 
-type projectSQLCheckRequestBody struct {
-	Statement string `json:"statement"`
-	FilePath  string `json:"filePath"`
-}
-
 // catalogService is the catalog service for sql check api.
 type catalogService struct {
 	finder *catalog.Finder
