@@ -311,7 +311,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
-		// TODO: ed - enable the code
+		// TODO(ed): enable the code
 		// Init SQL review CI for VCS
 		// if err := s.setupVCSSQLReviewCI(ctx, repository); err != nil {
 		// 	return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)

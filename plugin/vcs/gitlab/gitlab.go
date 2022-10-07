@@ -760,21 +760,21 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // GetBranch gets the given branch in the repository.
-// TODO: ed - implement this in another PR.
+// TODO(ed): implement this in another PR.
 // Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
 func (*Provider) GetBranch(_ context.Context, _ common.OauthContext, _, _, _ string) (*vcs.BranchInfo, error) {
 	return nil, errors.Errorf("GetBranch for GitLab is not implemented yet")
 }
 
 // CreateBranch creates the branch in the repository.
-// TODO: ed - implement this in another PR.
+// TODO(ed): implement this in another PR.
 // Docs: https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
 func (*Provider) CreateBranch(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.BranchInfo) error {
 	return errors.Errorf("CreateBranch for GitLab is not implemented yet")
 }
 
 // CreatePullRequest creates the pull request in the repository.
-// TODO: ed - implement this in another PR.
+// TODO(ed): implement this in another PR.
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
 func (*Provider) CreatePullRequest(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.PullRequestCreate) error {
 	return errors.Errorf("CreatePullRequest for GitLab is not implemented yet")
