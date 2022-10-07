@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 )
 
@@ -65,8 +64,8 @@ func (p PushEvent) GetDistinctFileList() []DistinctFileItem {
 	var distinctFileList []DistinctFileItem
 	for _, commit := range p.CommitList {
 		log.Debug("Pre-processing commit to dedup migration files...",
-			zap.String("id", common.EscapeForLogging(commit.ID)),
-			zap.String("title", common.EscapeForLogging(commit.Title)),
+			zap.String("id", commit.ID),
+			zap.String("title", commit.Title),
 		)
 
 		addDistinctFile := func(fileName string, itemType FileItemType) {

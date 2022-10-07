@@ -66,7 +66,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
 
-		createdMessages, err := s.createIssuesFromCommits(ctx, repositoryList, baseVCSPushEvent)
+		createdMessages, err := s.processPushEvent(ctx, repositoryList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -117,7 +117,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		baseVCSPushEvent := pushEvent.ToVCS()
 
-		createdMessages, err := s.createIssuesFromCommits(ctx, repositoryList, baseVCSPushEvent)
+		createdMessages, err := s.processPushEvent(ctx, repositoryList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -192,13 +192,17 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 func parseBranchNameFromRefs(ref string) (string, error) {
 	expectedPrefix := "refs/heads/"
 	if !strings.HasPrefix(ref, expectedPrefix) || len(expectedPrefix) == len(ref) {
-		log.Debug("ref is not prefix with expected prefix", zap.String("escaped ref", common.EscapeForLogging(ref)), zap.String("expected prefix", expectedPrefix))
+		log.Debug(
+			"ref is not prefix with expected prefix",
+			zap.String("ref", ref),
+			zap.String("expected prefix", expectedPrefix),
+		)
 		return ref, errors.Errorf("unexpected ref name %q without prefix %q", ref, expectedPrefix)
 	}
 	return ref[len(expectedPrefix):], nil
 }
 
-func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
 	distinctFileList := baseVCSPushEvent.GetDistinctFileList()
 	if len(distinctFileList) == 0 {
 		var commitIDs []string
@@ -206,7 +210,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*
 			commitIDs = append(commitIDs, c.ID)
 		}
 		log.Warn("No files found from the push event",
-			zap.String("repoURL", common.EscapeForLogging(baseVCSPushEvent.RepositoryURL)),
+			zap.String("repoURL", baseVCSPushEvent.RepositoryURL),
 			zap.String("repoName", baseVCSPushEvent.RepositoryFullPath),
 			zap.String("commits", strings.Join(commitIDs, ",")))
 		return nil, nil
@@ -228,10 +232,10 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*
 				URL:         item.Commit.URL,
 				AuthorName:  item.Commit.AuthorName,
 				AuthorEmail: item.Commit.AuthorEmail,
-				Added:       common.EscapeForLogging(item.FileName),
+				Added:       item.FileName,
 			}
 
-			createdMessage, created, activityCreateList, err := s.createIssueFromPushEvent(
+			createdMessage, created, activityCreateList, err := s.processFile(
 				ctx,
 				&pushEvent,
 				repo,
@@ -272,35 +276,34 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*
 	return createdMessages, nil
 }
 
-// createIssueFromPushEvent attempts to create a new issue for the given file of
+// processFile attempts to create a new issue for the given file of
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType vcs.FileItemType) (string, bool, []*api.ActivityCreate, error) {
-	if repo.Project.TenantMode == api.TenantModeTenant {
+func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType vcs.FileItemType) (string, bool, []*api.ActivityCreate, error) {
+	if repo.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 	}
 
-	fileEscaped := common.EscapeForLogging(file)
 	log.Debug("Processing file",
-		zap.String("file", fileEscaped),
-		zap.String("commit", common.EscapeForLogging(pushEvent.FileCommit.ID)),
+		zap.String("file", file),
+		zap.String("commit", pushEvent.FileCommit.ID),
 	)
 
-	if !strings.HasPrefix(fileEscaped, repo.BaseDirectory) {
+	if !strings.HasPrefix(file, repo.BaseDirectory) {
 		log.Debug("Ignored file outside the base directory",
-			zap.String("file", fileEscaped),
+			zap.String("file", file),
 			zap.String("base_directory", repo.BaseDirectory),
 		)
 		return "", false, nil, nil
 	}
 
-	schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, fileEscaped)
+	schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, file)
 	if err != nil {
 		log.Debug("Failed to parse schema file info",
-			zap.String("file", fileEscaped),
+			zap.String("file", file),
 			zap.Error(err),
 		)
 		return "", false, nil, nil
@@ -358,13 +361,13 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
 		if err != nil {
 			log.Error("Failed to find the principal with committer email",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+				zap.String("email", pushEvent.FileCommit.AuthorEmail),
 				zap.Error(err),
 			)
 		}
 		if committerPrincipal == nil {
 			log.Debug("Failed to find the principal with committer email, use system bot instead",
-				zap.String("email", common.EscapeForLogging(pushEvent.FileCommit.AuthorEmail)),
+				zap.String("email", pushEvent.FileCommit.AuthorEmail),
 			)
 		} else {
 			creatorID = committerPrincipal.ID
@@ -388,7 +391,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.Pu
 	}
 	issueCreate := &api.IssueCreate{
 		ProjectID:     repo.ProjectID,
-		Name:          fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(fileEscaped, repo.BaseDirectory+"/")),
+		Name:          fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(file, repo.BaseDirectory+"/")),
 		Type:          issueType,
 		Description:   pushEvent.FileCommit.Message,
 		AssigneeID:    api.SystemBotID,
