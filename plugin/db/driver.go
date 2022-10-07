@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -188,6 +189,9 @@ const (
 	// Migrate is the migration type for MIGRATE.
 	// Used for DDL change including CREATE DATABASE.
 	Migrate MigrationType = "MIGRATE"
+	// SDLMigrate is the migration type for SDL_MIGRATE.
+	// Used for SDL based migration.
+	SDLMigrate MigrationType = "SDL_MIGRATE"
 	// Branch is the migration type for BRANCH.
 	// Used when restoring from a backup (the restored database branched from the original backup).
 	Branch MigrationType = "BRANCH"
@@ -250,6 +254,7 @@ const placeholderRegexp = `[^\\/?%*:|"<>]+`
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
 // Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
+// It returns (nil, nil) if it doesn't looks like a schema file path.
 func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, error) {
 	placeholderList := []string{
 		"ENV_NAME",
@@ -273,7 +278,8 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 		return nil, errors.Errorf("invalid file path template: %q", filePathTemplate)
 	}
 	if !myRegex.MatchString(filePath) {
-		return nil, errors.Errorf("file path %q does not match file path template %q", filePath, filePathTemplate)
+		// File path does not match file path template.
+		return nil, nil
 	}
 
 	mi := &MigrationInfo{
@@ -335,6 +341,51 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 	}
 
 	return mi, nil
+}
+
+// ParseSchemaFileInfo attempts to parse the given schema file path to extract
+// the schema file info.
+// It returns (nil, nil) if it doesn't looks like a schema file path.
+//
+// The possible keys for the returned map are: "ENV_NAME", "DB_NAME".
+func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*MigrationInfo, error) {
+	if schemaPathTemplate == "" {
+		return nil, nil
+	}
+
+	// Escape "." characters to match literals instead of using it as a wildcard.
+	schemaFilePathRegex := strings.ReplaceAll(schemaPathTemplate, ".", `\.`)
+
+	placeholders := []string{
+		"ENV_NAME",
+		"DB_NAME",
+	}
+	for _, placeholder := range placeholders {
+		schemaFilePathRegex = strings.ReplaceAll(schemaFilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+	}
+
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	re, err := regexp.Compile(path.Join(baseDirectory, schemaFilePathRegex))
+	if err != nil {
+		return nil, errors.Wrap(err, "compile schema file path regex")
+	}
+	match := re.FindStringSubmatch(file)
+	if len(match) == 0 {
+		return nil, nil
+	}
+
+	info := make(map[string]string)
+	// Skip the first item because it is always the empty string, see docstring of
+	// the SubexpNames() method.
+	for i, name := range re.SubexpNames()[1:] {
+		info[name] = match[i+1]
+	}
+	return &MigrationInfo{
+		Source:      VCS,
+		Type:        SDLMigrate,
+		Environment: info["ENV_NAME"],
+		Database:    info["DB_NAME"],
+	}, nil
 }
 
 // MigrationHistory is the API message for migration history.
