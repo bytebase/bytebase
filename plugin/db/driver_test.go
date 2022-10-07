@@ -250,7 +250,7 @@ func TestParseSchemaFileInfo(t *testing.T) {
 			file:               "testdb__LATEST.sql",
 			schemaInfo: &MigrationInfo{
 				Source:   VCS,
-				Type:     SDLMigrate,
+				Type:     Migrate,
 				Database: "testdb",
 			},
 		},
@@ -261,7 +261,7 @@ func TestParseSchemaFileInfo(t *testing.T) {
 			file:               "Test/testdb__LATEST.sql",
 			schemaInfo: &MigrationInfo{
 				Source:      VCS,
-				Type:        SDLMigrate,
+				Type:        Migrate,
 				Environment: "Test",
 				Database:    "testdb",
 			},
@@ -281,7 +281,7 @@ func TestParseSchemaFileInfo(t *testing.T) {
 			file:               "bytebase/Test/testdb__LATEST.sql",
 			schemaInfo: &MigrationInfo{
 				Source:      VCS,
-				Type:        SDLMigrate,
+				Type:        Migrate,
 				Environment: "Test",
 				Database:    "testdb",
 			},

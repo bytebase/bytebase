@@ -189,9 +189,6 @@ const (
 	// Migrate is the migration type for MIGRATE.
 	// Used for DDL change including CREATE DATABASE.
 	Migrate MigrationType = "MIGRATE"
-	// SDLMigrate is the migration type for SDL_MIGRATE.
-	// Used for SDL based migration.
-	SDLMigrate MigrationType = "SDL_MIGRATE"
 	// Branch is the migration type for BRANCH.
 	// Used when restoring from a backup (the restored database branched from the original backup).
 	Branch MigrationType = "BRANCH"
@@ -382,7 +379,7 @@ func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*Migra
 	}
 	return &MigrationInfo{
 		Source:      VCS,
-		Type:        SDLMigrate,
+		Type:        Migrate,
 		Environment: info["ENV_NAME"],
 		Database:    info["DB_NAME"],
 	}, nil
