@@ -989,3 +989,33 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }
+
+// ToVCS returns the push event in VCS format.
+func (p WebhookPushEvent) ToVCS() (vcs.PushEvent, error) {
+	var commitList []vcs.Commit
+	for _, commit := range p.CommitList {
+		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+		if err != nil {
+			return vcs.PushEvent{}, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
+		}
+		commitList = append(commitList, vcs.Commit{
+			ID:           commit.ID,
+			Title:        commit.Title,
+			Message:      commit.Message,
+			CreatedTs:    createdTime.Unix(),
+			URL:          commit.URL,
+			AuthorName:   commit.Author.Name,
+			AuthorEmail:  commit.Author.Email,
+			AddedList:    commit.AddedList,
+			ModifiedList: commit.ModifiedList,
+		})
+	}
+	return vcs.PushEvent{
+		Ref:                p.Ref,
+		RepositoryID:       fmt.Sprintf("%v", p.Project.ID),
+		RepositoryURL:      p.Project.WebURL,
+		RepositoryFullPath: p.Project.FullPath,
+		AuthorName:         p.AuthorName,
+		CommitList:         commitList,
+	}, nil
+}
