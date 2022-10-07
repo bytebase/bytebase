@@ -12,7 +12,10 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"sort"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -21,6 +24,8 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/advisor"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
@@ -28,6 +33,11 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
+
+type vcsSQLReviewResult struct {
+	Status  advisor.Status `json:"status"`
+	Content []string       `json:"content"`
+}
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
@@ -122,6 +132,320 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
+
+	g.GET("/sql-review/:projectID/pull/:pullRequestID", func(c echo.Context) error {
+		log.Debug("SQL review request received for VCS project",
+			zap.String("project_id", c.Param("projectID")),
+			zap.String("pull_request_id", c.Param("pullRequestID")),
+		)
+
+		projectID, err := strconv.Atoi(c.Param("projectID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid project id: %s", c.Param("projectID")).SetInternal(err)
+		}
+		pullRequestID, err := strconv.Atoi(c.Param("pullRequestID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid pull request id: %s", c.Param("pullRequestID")).SetInternal(err)
+		}
+
+		ctx := c.Request().Context()
+
+		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
+			ProjectID: &projectID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find repository").SetInternal(err)
+		}
+		if len(repos) == 0 {
+			return echo.NewHTTPError(http.StatusNotFound, "Cannot found repository in project")
+		}
+		repo := repos[0]
+
+		log.Debug("Processing pull request for repository",
+			zap.Int("project", repo.ProjectID),
+			zap.String("external_id", repo.ExternalID),
+			zap.String("vcs", string(repo.VCS.Type)),
+			zap.String("base_directory", repo.BaseDirectory),
+			zap.String("file_path_template", repo.FilePathTemplate),
+		)
+
+		prFiles, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ListPullRequestFile(
+			ctx,
+			common.OauthContext{
+				ClientID:     repo.VCS.ApplicationID,
+				ClientSecret: repo.VCS.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.WebURL),
+			},
+			repo.VCS.InstanceURL,
+			repo.ExternalID,
+			pullRequestID,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list pull request file").SetInternal(err)
+		}
+
+		sqlCheckAdvice := map[string][]advisor.Advice{}
+
+		var wg sync.WaitGroup
+		for _, prFile := range prFiles {
+			wg.Add(1)
+			go func(file *vcs.PullRequestFile) {
+				adviceList, err := s.sqlAdviceForPullRequestFile(ctx, file, repo)
+				if err != nil {
+					log.Debug(
+						"Failed to take SQL review for file",
+						zap.String("file", file.Path),
+						zap.Int("pr", pullRequestID),
+						zap.Error(err),
+					)
+					return
+				}
+				if adviceList != nil {
+					sqlCheckAdvice[file.Path] = adviceList
+				}
+
+				wg.Done()
+			}(prFile)
+		}
+
+		wg.Wait()
+
+		response := &vcsSQLReviewResult{}
+		switch repo.VCS.Type {
+		case vcs.GitHubCom:
+			response = convertSQLAdiceToGitHubActionResult(sqlCheckAdvice)
+		case vcs.GitLabSelfHost:
+			response = convertSQLAdviceToGitLabCIResult(sqlCheckAdvice)
+		}
+
+		log.Debug("SQL review request finished",
+			zap.String("status", string(response.Status)),
+			zap.String("content", strings.Join(response.Content, "\n")),
+			zap.String("vcs", string(repo.VCS.Type)),
+			zap.String("pull_request_id", c.Param("pullRequestID")),
+		)
+
+		return c.JSON(http.StatusOK, response)
+	})
+}
+
+func (s *Server) sqlAdviceForPullRequestFile(
+	ctx context.Context,
+	file *vcs.PullRequestFile,
+	repo *api.Repository,
+) ([]advisor.Advice, error) {
+	if file.DeletedFile {
+		return nil, nil
+	}
+
+	log.Debug("Processing file",
+		zap.String("file", file.Path),
+		zap.String("vcs", string(repo.VCS.Type)),
+	)
+
+	if !strings.HasPrefix(file.Path, repo.BaseDirectory) {
+		log.Debug("Ignored file outside the base directory",
+			zap.String("file", file.Path),
+			zap.String("base_directory", repo.BaseDirectory),
+		)
+		return nil, nil
+	}
+
+	migrationInfo, err := db.ParseMigrationInfo(file.Path, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+	if err != nil {
+		log.Debug("Failed to parse migration info",
+			zap.String("external_id", repo.ExternalID),
+			zap.String("file", file.Path),
+			zap.Error(err),
+		)
+		return nil, nil
+	}
+	if migrationInfo.Database == "" {
+		return nil, nil
+	}
+
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	if err != nil {
+		log.Debug(
+			"Failed to list databse migration info",
+			zap.Int("project", repo.ProjectID),
+			zap.String("database", migrationInfo.Database),
+			zap.String("environment", migrationInfo.Environment),
+			zap.Error(err),
+		)
+		return nil, errors.Errorf("Failed to list databse migration info with error: %v", err)
+	}
+
+	sort.Slice(databases, func(i, j int) bool {
+		return databases[i].Instance.Environment.Order < databases[j].Instance.Environment.Order
+	})
+
+	fileContent, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+		ctx,
+		common.OauthContext{
+			ClientID:     repo.VCS.ApplicationID,
+			ClientSecret: repo.VCS.Secret,
+			AccessToken:  repo.AccessToken,
+			RefreshToken: repo.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repo.WebURL),
+		},
+		repo.VCS.InstanceURL,
+		repo.ExternalID,
+		file.Path,
+		file.LastCommitID,
+	)
+	if err != nil {
+		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", file.Path, err)
+	}
+
+	for _, database := range databases {
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &database.Instance.EnvironmentID})
+		if err != nil {
+			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+				log.Debug("Cannot found SQL review policy in environment", zap.Int("Environment", database.Instance.EnvironmentID), zap.Error(err))
+				continue
+			}
+
+			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", database.Instance.EnvironmentID, err)
+		}
+
+		dbType, err := advisorDB.ConvertToAdvisorDBType(string(database.Instance.Engine))
+		if err != nil {
+			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", database.Instance.Engine, err)
+		}
+
+		catalog, err := s.store.NewCatalog(ctx, database.ID, database.Instance.Engine)
+		if err != nil {
+			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
+		}
+
+		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
+			DbType:    dbType,
+			Catalog:   catalog,
+		})
+		if err != nil {
+			return nil, errors.Errorf("Failed to exec the SQL check for database %v with error: %v", database.ID, err)
+		}
+
+		return adviceList, nil
+	}
+
+	return nil, nil
+}
+
+// convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
+// junit xml format: https://llg.cubic.org/docs/junit/
+func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
+	testsuiteList := []string{}
+	status := advisor.Success
+
+	for filePath, adviceList := range adviceMap {
+		testcaseList := []string{}
+		for _, advice := range adviceList {
+			if advice.Code == 0 {
+				continue
+			}
+
+			line := advice.Line
+			if line <= 0 {
+				line = 1
+			}
+
+			if advice.Status == advisor.Error {
+				status = advice.Status
+			} else if advice.Status == advisor.Warn && status != advisor.Error {
+				status = advice.Status
+			}
+
+			content := fmt.Sprintf(
+				`
+				Error: %s
+				You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#%d
+				`,
+				advice.Content,
+				advice.Code,
+			)
+
+			testcase := fmt.Sprintf(
+				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>%s</failure>\n</testcase>",
+				advice.Title,
+				filePath,
+				filePath,
+				line,
+				content,
+			)
+
+			testcaseList = append(testcaseList, testcase)
+		}
+
+		if len(testcaseList) > 0 {
+			testsuiteList = append(
+				testsuiteList,
+				fmt.Sprintf("<testsuite name=\"%s\">%s</testsuite>", filePath, strings.Join(testcaseList, "\n")),
+			)
+		}
+	}
+
+	return &vcsSQLReviewResult{
+		Status: status,
+		Content: []string{
+			fmt.Sprintf(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?><testsuites name=\"SQL Review\">%s</testsuites>",
+				strings.Join(testsuiteList, "\n"),
+			),
+		},
+	}
+}
+
+// convertSQLAdiceToGitHubActionResult will convert SQL advice map to GitHub action output format.
+func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
+	messageList := []string{}
+	status := advisor.Success
+
+	for filePath, adviceList := range adviceMap {
+		for _, advice := range adviceList {
+			if advice.Code == 0 || advice.Status == advisor.Success {
+				continue
+			}
+
+			line := advice.Line
+			if line <= 0 {
+				line = 1
+			}
+
+			prefix := ""
+
+			if advice.Status == advisor.Error {
+				prefix = "error"
+				status = advice.Status
+			} else {
+				prefix = "warning"
+				if status != advisor.Error {
+					status = advice.Status
+				}
+			}
+
+			msg := fmt.Sprintf(
+				"::%s file=%s,line=%d,col=1,endColumn=2,title=%s (%d)::%s\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#%d",
+				prefix,
+				filePath,
+				line,
+				advice.Title,
+				advice.Code,
+				advice.Content,
+				advice.Code,
+			)
+			messageList = append(messageList, strings.ReplaceAll(msg, "\n", "%0A"))
+		}
+	}
+	return &vcsSQLReviewResult{
+		Status:  status,
+		Content: messageList,
+	}
 }
 
 type repositoryFilter func(string) (bool, error)
