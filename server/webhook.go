@@ -322,7 +322,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 		// Having no schema info indicates that the file is not a schema file (e.g.
 		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file)
-		migrationDescription = "Apply_schema_diff"
+		migrationDescription = "Apply schema diff"
 		migrationType = db.Migrate
 	} else {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
@@ -340,6 +340,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 			log.Error("File path does not match file path template",
 				zap.Int("project", repo.ProjectID),
 				zap.String("file", file),
+				zap.String("file_path_template", path.Join(repo.BaseDirectory, repo.FilePathTemplate)),
 			)
 			return "", false, nil, nil
 		}
