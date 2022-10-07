@@ -12,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"regexp"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -218,6 +217,11 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 
 	var createdMessages []string
 	for _, item := range distinctFileList {
+		log.Debug("Processing file",
+			zap.String("file", item.FileName),
+			zap.String("commit", item.Commit.ID),
+		)
+
 		var createdMessageList []string
 		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
 		for _, repo := range repositoryList {
@@ -287,11 +291,6 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 		}
 	}
 
-	log.Debug("Processing file",
-		zap.String("file", file),
-		zap.String("commit", pushEvent.FileCommit.ID),
-	)
-
 	if !strings.HasPrefix(file, repo.BaseDirectory) {
 		log.Debug("Ignored file outside the base directory",
 			zap.String("file", file),
@@ -300,7 +299,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 		return "", false, nil, nil
 	}
 
-	schemaInfo, err := parseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, file)
+	schemaInfo, err := db.ParseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, file)
 	if err != nil {
 		log.Debug("Failed to parse schema file info",
 			zap.String("file", file),
@@ -323,7 +322,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 		// Having no schema info indicates that the file is not a schema file (e.g.
 		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file)
-		migrationDescription = "Apply_schema_diff"
+		migrationDescription = "Apply schema diff"
 		migrationType = db.Migrate
 	} else {
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
@@ -334,6 +333,14 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 				zap.Any("pushEvent", pushEvent),
 				zap.String("file", file),
 				zap.Error(err),
+			)
+			return "", false, nil, nil
+		}
+		if migrationInfo == nil {
+			log.Error("File path does not match file path template",
+				zap.Int("project", repo.ProjectID),
+				zap.String("file", file),
+				zap.String("file_path_template", path.Join(repo.BaseDirectory, repo.FilePathTemplate)),
 			)
 			return "", false, nil, nil
 		}
@@ -557,8 +564,8 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo map[string]string, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
-	dbName := schemaInfo["DB_NAME"]
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+	dbName := schemaInfo.Database
 	if dbName == "" {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
 		return nil, nil
@@ -571,7 +578,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	}
 
 	activityCreateList := []*api.ActivityCreate{}
-	envName := schemaInfo["ENV_NAME"]
+	envName := schemaInfo.Environment
 	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
@@ -697,46 +704,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		}
 	}
 	return nil
-}
-
-// parseSchemaFileInfo attempts to parse the given schema file path to extract
-// the schema file info. It returns (nil, nil) if it doesn't looks like a schema
-// file path.
-//
-// The possible keys for the returned map are: "ENV_NAME", "DB_NAME".
-func parseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (map[string]string, error) {
-	if schemaPathTemplate == "" {
-		return nil, nil
-	}
-
-	// Escape "." characters to match literals instead of using it as a wildcard.
-	schemaFilePathRegex := strings.ReplaceAll(schemaPathTemplate, ".", `\.`)
-
-	placeholders := []string{
-		"ENV_NAME",
-		"DB_NAME",
-	}
-	for _, placeholder := range placeholders {
-		schemaFilePathRegex = strings.ReplaceAll(schemaFilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
-	}
-
-	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-	re, err := regexp.Compile(path.Join(baseDirectory, schemaFilePathRegex))
-	if err != nil {
-		return nil, errors.Wrap(err, "compile schema file path regex")
-	}
-	match := re.FindStringSubmatch(file)
-	if len(match) == 0 {
-		return nil, nil
-	}
-
-	info := make(map[string]string)
-	// Skip the first item because it is always the empty string, see docstring of
-	// the SubexpNames() method.
-	for i, name := range re.SubexpNames()[1:] {
-		info[name] = match[i+1]
-	}
-	return info, nil
 }
 
 // computeDatabaseSchemaDiff computes the diff between current database schema
