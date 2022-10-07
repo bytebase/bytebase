@@ -581,7 +581,6 @@
     "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",
-    "sync-schema-now": "Sync schema now",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
@@ -1326,7 +1325,7 @@
     "setting": {
       "description": "A label is a key-value pair that helps you identify the tenant for a database. {link}."
     },
-    "db-name-template-tips": "Allow you to group databases with the same {placeholder} from different tenants. {link}.",
+    "db-name-template-tips": "All tenant databases should follow this naming template. The databases with the same {placeholder} will be in the same group. Empty value means each database forms its own group. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
@@ -1411,6 +1410,10 @@
       "bb-feature-sync-schema": {
         "title": "Synchronize Schema",
         "desc": "Synchronize schema from the base database to the target database with the selected migration version."
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Read replica connection",
+        "desc": "Connect to a read replica for the read-only data source."
       }
     }
   },

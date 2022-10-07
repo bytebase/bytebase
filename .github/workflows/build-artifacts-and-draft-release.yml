@@ -15,7 +15,7 @@ jobs:
           version: 6.10.0
       - uses: actions/setup-node@v3
         with:
-          node-version: "14"
+          node-version: "16"
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile
@@ -47,7 +47,7 @@ jobs:
           version: 6.10.0
       - uses: actions/setup-node@v3
         with:
-          node-version: "14"
+          node-version: "16"
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile
@@ -80,7 +80,7 @@ jobs:
           version: 6.10.0
       - uses: actions/setup-node@v3
         with:
-          node-version: "14"
+          node-version: "16"
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile

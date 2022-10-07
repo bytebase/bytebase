@@ -328,14 +328,6 @@
     <!-- Action Button Group -->
     <div class="pt-4 px-2">
       <div class="flex justify-between items-center">
-        <div>
-          <BBCheckbox
-            v-if="connectionInfoChanged"
-            :title="$t('instance.sync-schema-now')"
-            :value="state.syncSchema"
-            @toggle="state.syncSchema = !state.syncSchema"
-          />
-        </div>
         <div class="flex justify-end items-center">
           <div>
             <BBSpin v-if="state.isUpdating" :title="$t('common.updating')" />
@@ -355,6 +347,12 @@
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.read-replica-connection"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -378,6 +376,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 import {
+  hasFeature,
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
@@ -395,9 +394,9 @@ interface State {
   originalInstance: Instance;
   instance: Instance;
   isUpdating: boolean;
-  syncSchema: boolean;
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
+  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -427,9 +426,9 @@ const state = reactive<State>({
   // Make hard copy since we are going to make equal comparison to determine the update button enable state.
   instance: cloneDeep(props.instance),
   isUpdating: false,
-  syncSchema: true,
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
+  showFeatureModal: false,
 });
 
 const allowEdit = computed(() => {
@@ -598,6 +597,14 @@ const updateInstanceDataSource = () => {
     portOverride: curr.portOverride,
   };
 
+  if (!hasFeature("bb.feature.read-replica-connection")) {
+    if (newValue.hostOverride !== "" || newValue.portOverride !== "") {
+      currentDataSource.value.hostOverride = "";
+      currentDataSource.value.portOverride = "";
+      state.showFeatureModal = true;
+    }
+  }
+
   if (curr.useEmptyPassword) {
     // When 'Password: Empty' is checked, we set the password to empty string.
     newValue.password = "";
@@ -655,7 +662,7 @@ const updateInstance = (field: string, value: string) => {
 };
 
 const doUpdate = () => {
-  const patchedInstance: InstancePatch = { syncSchema: state.syncSchema };
+  const patchedInstance: InstancePatch = {};
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
   const reloadDatabaseAndUser = connectionInfoChanged.value;
@@ -705,7 +712,6 @@ const doUpdate = () => {
               password: dataSource.password,
               hostOverride: dataSource.hostOverride,
               portOverride: dataSource.portOverride,
-              syncSchema: state.syncSchema,
             };
             if (typeof dataSource.sslCa !== "undefined") {
               dataSourceCreate.sslCa = dataSource.sslCa;
@@ -725,7 +731,7 @@ const doUpdate = () => {
             dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
-              dataSource: { ...dataSource, syncSchema: state.syncSchema },
+              dataSource: { ...dataSource },
             })
           );
         }
@@ -770,7 +776,6 @@ const doUpdate = () => {
         })
         .finally(() => {
           state.isUpdating = false;
-          state.syncSchema = true;
         });
     });
   }
