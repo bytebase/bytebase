@@ -452,6 +452,12 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 	if v := patch.Key; v != nil {
 		set, args = append(set, fmt.Sprintf("key = $%d", len(args)+1)), append(args, strings.ToUpper(*v))
 	}
+	if v := patch.TenantMode; v != nil {
+		set, args = append(set, fmt.Sprintf("tenant_mode = $%d", len(args)+1)), append(args, strings.ToUpper(string(*v)))
+	}
+	if v := patch.DBNameTemplate; v != nil {
+		set, args = append(set, fmt.Sprintf("db_name_template = $%d", len(args)+1)), append(args, strings.ToUpper(string(*v)))
+	}
 	if v := patch.WorkflowType; v != nil {
 		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
 	}
