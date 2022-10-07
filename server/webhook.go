@@ -199,7 +199,7 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 }
 
 func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
-	distinctFileList := getDistinctFileList(baseVCSPushEvent.CommitList)
+	distinctFileList := baseVCSPushEvent.GetDistinctFileList()
 	if len(distinctFileList) == 0 {
 		var commitIDs []string
 		for _, c := range baseVCSPushEvent.CommitList {
@@ -221,22 +221,22 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*
 			pushEvent.VCSType = repo.VCS.Type
 			pushEvent.BaseDirectory = repo.BaseDirectory
 			pushEvent.FileCommit = vcs.FileCommit{
-				ID:          item.commit.ID,
-				Title:       item.commit.Title,
-				Message:     item.commit.Message,
-				CreatedTs:   item.commit.CreatedTs,
-				URL:         item.commit.URL,
-				AuthorName:  item.commit.AuthorName,
-				AuthorEmail: item.commit.AuthorEmail,
-				Added:       common.EscapeForLogging(item.fileName),
+				ID:          item.Commit.ID,
+				Title:       item.Commit.Title,
+				Message:     item.Commit.Message,
+				CreatedTs:   item.Commit.CreatedTs,
+				URL:         item.Commit.URL,
+				AuthorName:  item.Commit.AuthorName,
+				AuthorEmail: item.Commit.AuthorEmail,
+				Added:       common.EscapeForLogging(item.FileName),
 			}
 
 			createdMessage, created, activityCreateList, err := s.createIssueFromPushEvent(
 				ctx,
 				&pushEvent,
 				repo,
-				item.fileName,
-				item.itemType,
+				item.FileName,
+				item.ItemType,
 			)
 			if err != nil {
 				return nil, err
@@ -272,91 +272,11 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, repositoryList []*
 	return createdMessages, nil
 }
 
-// fileItemType is the type of a file item.
-type fileItemType string
-
-// The list of file item types.
-const (
-	fileItemTypeAdded    fileItemType = "added"
-	fileItemTypeModified fileItemType = "modified"
-)
-
-// We are observing the push webhook event so that we will receive the event either when:
-// 1. A commit is directly pushed to a branch.
-// 2. One or more commits are merged to a branch.
-//
-// There is a complication to deal with the 2nd type. A typical workflow is a developer first
-// commits the migration file to the feature branch, and at a later point, she creates a merge
-// request to merge the commit to the main branch. Even the developer only creates a single commit
-// on the feature branch, that merge request may contain multiple commits (unless both squash and fast-forward merge are used):
-// 1. The original commit on the feature branch.
-// 2. The merge request commit.
-//
-// And both commits would include that added migration file. Since we create an issue per migration file,
-// we need to filter the commit list to prevent creating a duplicated issue. GitLab has a limitation to distinguish
-// whether the commit is a merge commit (https://gitlab.com/gitlab-org/gitlab/-/issues/30914), so we need to dedup
-// ourselves. Below is the filtering algorithm:
-//  1. If we observe the same migration file multiple times, then we should use the latest migration file. This does not matter
-//     for change-based migration since a developer would always create different migration file with incremental names, while it
-//     will be important for the state-based migration, since the file name is always the same and we need to use the latest snapshot.
-//  2. Maintain the relative commit order between different migration files. If migration file A happens before migration file B,
-//     then we should create an issue for migration file A first.
-type distinctFileItem struct {
-	createdTs int64
-	commit    vcs.Commit
-	fileName  string
-	itemType  fileItemType
-}
-
-func getDistinctFileList(commitList []vcs.Commit) []distinctFileItem {
-	// Use list instead of map because we need to maintain the relative commit order in the source branch.
-	var distinctFileList []distinctFileItem
-	for _, commit := range commitList {
-		log.Debug("Pre-processing commit to dedup migration files...",
-			zap.String("id", common.EscapeForLogging(commit.ID)),
-			zap.String("title", common.EscapeForLogging(commit.Title)),
-		)
-
-		addDistinctFile := func(fileName string, itemType fileItemType) {
-			item := distinctFileItem{
-				createdTs: commit.CreatedTs,
-				commit:    commit,
-				fileName:  fileName,
-				itemType:  itemType,
-			}
-			for i, file := range distinctFileList {
-				// For the migration file with the same name, keep the one from the latest commit
-				if item.fileName != file.fileName {
-					continue
-				}
-				if file.createdTs < commit.CreatedTs {
-					// A file can be added and then modified in a later commit. We should consider the item as added.
-					if file.itemType == fileItemTypeAdded {
-						item.itemType = fileItemTypeAdded
-					}
-					distinctFileList[i] = item
-				}
-				// The fileName should be unique within the distinctFileList.
-				return
-			}
-			distinctFileList = append(distinctFileList, item)
-		}
-
-		for _, added := range commit.AddedList {
-			addDistinctFile(added, fileItemTypeAdded)
-		}
-		for _, modified := range commit.ModifiedList {
-			addDistinctFile(modified, fileItemTypeModified)
-		}
-	}
-	return distinctFileList
-}
-
 // createIssueFromPushEvent attempts to create a new issue for the given file of
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType fileItemType) (string, bool, []*api.ActivityCreate, error) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType vcs.FileItemType) (string, bool, []*api.ActivityCreate, error) {
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -687,7 +607,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, fileName string, fileType fileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, fileName string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	statement, err := s.readFileContent(ctx, pushEvent, repo, fileName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to read file content"))
@@ -714,7 +634,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
-	if fileType == fileItemTypeAdded {
+	if fileType == vcs.FileItemTypeAdded {
 		for _, database := range databases {
 			migrationDetailList = append(migrationDetailList,
 				&api.MigrationDetail{
