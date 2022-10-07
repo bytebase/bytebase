@@ -56,10 +56,6 @@ type InstanceCreate struct {
 	SslCa        string  `jsonapi:"attr,sslCa"`
 	SslCert      string  `jsonapi:"attr,sslCert"`
 	SslKey       string  `jsonapi:"attr,sslKey"`
-	// If true, syncs the schema after adding the instance. The client
-	// may set to false if the target instance contains too many databases
-	// to avoid the request timeout.
-	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -100,10 +96,6 @@ type InstancePatch struct {
 	ExternalLink  *string `jsonapi:"attr,externalLink"`
 	Host          *string `jsonapi:"attr,host"`
 	Port          *string `jsonapi:"attr,port"`
-	// If true, syncs the schema after patching the instance. The client
-	// may set to false if the target instance contains too many databases
-	// to avoid the request timeout.
-	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from a instance.

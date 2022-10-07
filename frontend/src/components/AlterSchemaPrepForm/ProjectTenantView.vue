@@ -180,6 +180,10 @@ const deployment = computed(() => {
 const databaseListGroupByName = computed(
   (): { name: string; list: Database[] }[] => {
     if (!props.project) return [];
+    // All databases will be in the same group if dbNameTemplate is empty.
+    if (props.project.dbNameTemplate === "") {
+      return [{ name: "", list: props.databaseList }];
+    }
     if (props.project.dbNameTemplate && labelList.value.length === 0) return [];
 
     const dict = groupBy(props.databaseList, (db) => {
@@ -189,8 +193,6 @@ const databaseListGroupByName = computed(
           props.project!.dbNameTemplate,
           labelList.value
         );
-      } else {
-        return db.name;
       }
     });
     return Object.keys(dict).map((name) => ({

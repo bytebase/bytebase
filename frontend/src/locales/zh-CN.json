@@ -581,7 +581,6 @@
     "select-database-user": "选择数据库用户",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
-    "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
@@ -1326,7 +1325,7 @@
     "setting": {
       "description": "标签是一组可用于标识数据库租户的键值对。{link}。"
     },
-    "db-name-template-tips": "让您能够把属于不同租户但是有相同 {placeholder} 的数据库分成一组。{link}。",
+    "db-name-template-tips": "所有租户数据库名字遵循命名模版。有着相同 {placeholder} 的数据库会被分成一组。空值代表每一个数据库自成一组。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"
@@ -1411,6 +1410,10 @@
       "bb-feature-sync-schema": {
         "title": "库表同步",
         "desc": "将选定的源数据库 Schema 版本同步到目标数据库。请通过@:{'subscription.upgrade'}来完全开启该功能。"
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Read replica connection",
+        "desc": "使用只读副本连接到只读数据源。"
       }
     }
   },

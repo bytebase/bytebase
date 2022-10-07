@@ -49,7 +49,7 @@ func insert(db *sql.DB, insertCount int, batchCount int) error {
 	var buf bytes.Buffer
 	for i := 0; i < insertCount; i += batchCount {
 		buf.Reset()
-		// We use bytes.Buffer here to concat the strings because strings are too slow.
+		// We use bytes.Buffer to concatenate strings because strings are too slow.
 		_, _ = buf.WriteString(insertSQL)
 		for j := 0; j < batchCount; j++ {
 			id := i + j

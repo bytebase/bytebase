@@ -174,6 +174,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid LGTM check setting value: %v", v.Value))
 			}
 		}
+		if v := projectPatch.TenantMode; v != nil {
+			if *v == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+			}
+		}
+		if v := projectPatch.DBNameTemplate; v != nil {
+			if err := api.ValidateProjectDBNameTemplate(*v); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed patch project request: %s", err.Error()))
+			}
+		}
 
 		// Verify before archiving the project:
 		// 1. the project has no database.
@@ -794,7 +804,7 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 	switch vcsType {
 	case vcsPlugin.GitLabSelfHost:
 		webhookCreate := gitlab.WebhookCreate{
-			URL:                   fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, gitlabWebhookPath, webhookEndpointID),
+			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", s.profile.ExternalURL, webhookEndpointID),
 			SecretToken:           secretToken,
 			PushEvents:            true,
 			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
@@ -806,7 +816,7 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 	case vcsPlugin.GitHubCom:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
-				URL:         fmt.Sprintf("%s/%s/%s", s.profile.ExternalURL, githubWebhookPath, webhookEndpointID),
+				URL:         fmt.Sprintf("%s/hook/github/%s", s.profile.ExternalURL, webhookEndpointID),
 				ContentType: "json",
 				Secret:      secretToken,
 				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate

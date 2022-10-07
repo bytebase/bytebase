@@ -81,8 +81,6 @@ export type InstanceCreate = {
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
-
-  syncSchema: boolean;
 };
 
 export type InstancePatch = {
@@ -94,7 +92,6 @@ export type InstancePatch = {
   externalLink?: string;
   host?: string;
   port?: string;
-  syncSchema?: boolean;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";

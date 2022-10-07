@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -11,7 +12,7 @@ func TestParseMigrationInfo(t *testing.T) {
 	type test struct {
 		filePath         string
 		filePathTemplate string
-		want             MigrationInfo
+		want             *MigrationInfo
 		wantErr          string
 	}
 
@@ -19,7 +20,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db1__001foo",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -34,7 +35,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db foo_+-=_#!$.__1.2.3",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "1.2.3",
 				Namespace:   "db foo_+-=_#!$.",
 				Database:    "db foo_+-=_#!$.",
@@ -49,7 +50,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "bytebase/db1__001foo",
 			filePathTemplate: "bytebase/{{DB_NAME}}__{{VERSION}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -64,7 +65,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "bytebase/dev/db1__001foo",
 			filePathTemplate: "bytebase/{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -79,7 +80,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db1__001foo__create_t1",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{DESCRIPTION}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -94,7 +95,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db1__001foo__migrate",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -109,7 +110,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db1__001foo__ddl",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -124,7 +125,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db1__001foo__dml",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -139,7 +140,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db_shop1__001foo__data",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db_shop1",
 				Database:    "db_shop1",
@@ -154,7 +155,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db_shop1__001foo__data__fix_customer_info",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db_shop1",
 				Database:    "db_shop1",
@@ -169,7 +170,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         ".db__20220811.sql",
 			filePathTemplate: ".{{DB_NAME}}__{{VERSION}}.sql",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "20220811",
 				Namespace:   "db",
 				Database:    "db",
@@ -184,7 +185,7 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db1__001foo__baseline",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}__{{TYPE}}",
-			want: MigrationInfo{
+			want: &MigrationInfo{
 				Version:     "001foo",
 				Namespace:   "db1",
 				Database:    "db1",
@@ -199,30 +200,14 @@ func TestParseMigrationInfo(t *testing.T) {
 		{
 			filePath:         "db",
 			filePathTemplate: "{{DB_NAME}}__{{VERSION}}",
-			want: MigrationInfo{
-				Version:     "",
-				Namespace:   "",
-				Database:    "",
-				Environment: "",
-				Type:        "",
-				Description: "",
-				Creator:     "",
-			},
-			wantErr: "does not match file path template",
+			want:             nil,
+			wantErr:          "",
 		},
 		{ // Make sure the "." is escaped and should only match literals not as a wildcard
 			filePath:         ".db__20220811.sql",
 			filePathTemplate: "A{{DB_NAME}}__{{VERSION}}Asql",
-			want: MigrationInfo{
-				Version:     "",
-				Namespace:   "",
-				Database:    "",
-				Environment: "",
-				Type:        "",
-				Description: "",
-				Creator:     "",
-			},
-			wantErr: "does not match file path template",
+			want:             nil,
+			wantErr:          "",
 		},
 	}
 	for _, tc := range tests {
@@ -234,7 +219,79 @@ func TestParseMigrationInfo(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, tc.want, *mi)
+			if tc.want == nil {
+				require.Nil(t, mi)
+			} else {
+				require.Equal(t, *tc.want, *mi)
+			}
+		})
+	}
+}
+
+func TestParseSchemaFileInfo(t *testing.T) {
+	tests := []struct {
+		name               string
+		baseDirectory      string
+		schemaPathTemplate string
+		file               string
+		schemaInfo         *MigrationInfo
+	}{
+		{
+			name:               "no schemaPathTemplate",
+			baseDirectory:      "",
+			schemaPathTemplate: "",
+			file:               "Test/testdb__LATEST.sql",
+			schemaInfo:         nil,
+		},
+		{
+			name:               "only has DB_NAME",
+			baseDirectory:      "",
+			schemaPathTemplate: "{{DB_NAME}}__LATEST.sql",
+			file:               "testdb__LATEST.sql",
+			schemaInfo: &MigrationInfo{
+				Source:   VCS,
+				Type:     Migrate,
+				Database: "testdb",
+			},
+		},
+		{
+			name:               "has both ENV_NAME and DB_NAME",
+			baseDirectory:      "",
+			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}__LATEST.sql",
+			file:               "Test/testdb__LATEST.sql",
+			schemaInfo: &MigrationInfo{
+				Source:      VCS,
+				Type:        Migrate,
+				Environment: "Test",
+				Database:    "testdb",
+			},
+		},
+
+		{
+			name:               "baseDirectory does not match",
+			baseDirectory:      "bytebase",
+			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}__LATEST.sql",
+			file:               "Test/testdb__LATEST.sql",
+			schemaInfo:         nil,
+		},
+		{
+			name:               "baseDirectory with both ENV_NAME and DB_NAME",
+			baseDirectory:      "bytebase",
+			schemaPathTemplate: "{{ENV_NAME}}/{{DB_NAME}}__LATEST.sql",
+			file:               "bytebase/Test/testdb__LATEST.sql",
+			schemaInfo: &MigrationInfo{
+				Source:      VCS,
+				Type:        Migrate,
+				Environment: "Test",
+				Database:    "testdb",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ParseSchemaFileInfo(test.baseDirectory, test.schemaPathTemplate, test.file)
+			require.NoError(t, err)
+			assert.Equal(t, test.schemaInfo, got)
 		})
 	}
 }
