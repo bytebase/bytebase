@@ -996,7 +996,7 @@ func (p WebhookPushEvent) ToVCS() (vcs.PushEvent, error) {
 	for _, commit := range p.CommitList {
 		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 		if err != nil {
-			return vcs.PushEvent{}, errors.Wrapf(err, "failed to parse commit %s's timestamp %s", commit.ID, common.EscapeForLogging(commit.Timestamp))
+			return vcs.PushEvent{}, errors.Wrapf(err, "failed to parse commit %q's timestamp %q", commit.ID, commit.Timestamp)
 		}
 		commitList = append(commitList, vcs.Commit{
 			ID:           commit.ID,
