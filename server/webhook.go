@@ -336,6 +336,13 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 			)
 			return "", false, nil, nil
 		}
+		if migrationInfo == nil {
+			log.Error("File path does not match file path template",
+				zap.Int("project", repo.ProjectID),
+				zap.String("file", file),
+			)
+			return "", false, nil, nil
+		}
 		migrationDescription = migrationInfo.Description
 		migrationType = migrationInfo.Type
 
