@@ -665,7 +665,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 			return err
 		}
 	case vcsPlugin.GitLabSelfHost:
-		// TODO: ed - support GitLab
+		// TODO(ed): support GitLab
 		return nil
 	}
 
@@ -736,8 +736,8 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 // setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
 // nolint:unused
 func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
-	sqlReviewEndpoint := fmt.Sprintf("%s/v1/project/%d/sql-review", s.profile.ExternalURL, repository.ProjectID)
-	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
+	sqlReviewConfig := fmt.Sprintf(github.SQLReviewAction, sqlReviewEndpoint)
 	fileLastCommitID := ""
 
 	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(

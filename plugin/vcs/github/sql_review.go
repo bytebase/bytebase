@@ -5,17 +5,12 @@ import (
 	"fmt"
 )
 
-// sqlReviewAction is the GitHub action for SQL review in VCS workflow.
+// SQLReviewAction is the GitHub action for SQL review in VCS workflow.
 //
-//go:embed sql-review-action.yml
-var sqlReviewAction string
+//go:embed sql-review.yml
+var SQLReviewAction string
 
 const (
 	// SQLReviewActionFilePath is the SQL review action file path.
 	SQLReviewActionFilePath = ".github/workflows/sql-review.yml"
 )
-
-// SetupSQLReviewCI will update the GitHub action content for SQL review.
-func SetupSQLReviewCI(sqlReviewEndpoint string) string {
-	return fmt.Sprintf(sqlReviewAction, sqlReviewEndpoint)
-}
