@@ -16,7 +16,7 @@ CREATE TABLE bytebase_migration_history (
     -- We call it source because maybe we could load history from other migration tool.
     -- Current allowed values are UI, VCS, LIBRARY.
     source TEXT NOT NULL,
-    -- Current allowed values are BASELINE, MIGRATE, BRANCH, DATA.
+    -- Current allowed values are BASELINE, MIGRATE, SDL_MIGRATE, BRANCH, DATA.
     type TEXT NOT NULL,
     -- Current allowed values are PENDING, DONE, FAILED.
     -- We create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
