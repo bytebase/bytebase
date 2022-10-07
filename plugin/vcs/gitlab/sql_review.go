@@ -15,7 +15,7 @@ const (
 
 // SQLReviewCI is the GitLab CI for SQL review in VCS workflow.
 //
-//go:embed .gitlab/sql-review.yml
+//go:embed sql-review.yml
 var SQLReviewCI string
 
 // SetupSQLReviewCI will update the GitLab CI content to add or update the SQL review CI.
