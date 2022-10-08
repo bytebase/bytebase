@@ -80,7 +80,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	g.GET("/project", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		projectFind := &api.ProjectFind{}
 		var principalID *int
 		if userIDStr := c.QueryParam("user"); userIDStr != "" {
 			userID, err := strconv.Atoi(userIDStr)
@@ -90,6 +89,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			principalID = &userID
 		}
 
+		projectFind := &api.ProjectFind{}
 		// Only Owner and DBA can fetch all projects from all users.
 		if principalID == nil {
 			role := c.Get(getRoleContextKey()).(api.Role)
@@ -122,15 +122,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		var activeProjectList []*api.Project
-		// if principalID is passed, we will enable the filter logic
+		// If pricipalID passed in, and the member is neither OWNER nor DBA, we need to enable the filter logic.
 		if projectFind.PrincipalID != nil {
 			principalID := *projectFind.PrincipalID
 			for _, project := range projectList {
 				// We will filter those project with the current principal as an inactive member (the role provider differs from that of the project)
 				roleProvider := project.RoleProvider
 				for _, projectMember := range project.ProjectMemberList {
-					if api.Role(projectMember.Role) == api.Owner || api.Role(projectMember.Role) == api.DBA ||
-						(projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider) {
+					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
 						activeProjectList = append(activeProjectList, project)
 						break
 					}
