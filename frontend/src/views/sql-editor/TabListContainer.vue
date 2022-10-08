@@ -17,8 +17,8 @@
           :class="{ active: tab.id === tabStore.currentTabId }"
           :style="scrollState.style"
           @click="handleSelectTab(tab)"
-          @mouseover="enterTabId = tab.id"
-          @mouseleave="enterTabId = ''"
+          @mouseover="hoverTabId = tab.id"
+          @mouseleave="hoverTabId = ''"
         >
           <div
             class="label max-w-5xl w-48 truncate"
@@ -54,7 +54,7 @@
               <span :class="isTempTab(tab) && 'italic'">{{ tab.name }}</span>
             </span>
           </div>
-          <template v-if="enterTabId === tab.id && tabStore.tabList.length > 1">
+          <template v-if="hoverTabId === tab.id && tabStore.tabList.length > 1">
             <span
               class="suffix close hover:bg-gray-200 rounded-sm"
               @click.prevent.stop="handleRemoveTab(tab)"
@@ -95,7 +95,7 @@
     </div>
     <div class="tab-list-more">
       <NPopselect
-        v-model:value="selectedTab"
+        v-model:value="tabStore.currentTabId"
         :options="localTabList"
         trigger="click"
         size="medium"
@@ -116,7 +116,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
+import { ref, reactive, nextTick, computed } from "vue";
 import { debounce } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useDialog } from "naive-ui";
@@ -130,8 +130,7 @@ const sheetStore = useSheetStore();
 const { t } = useI18n();
 const dialog = useDialog();
 
-const enterTabId = ref("");
-const selectedTab = computed(() => tabStore.currentTabId);
+const hoverTabId = ref("");
 // edit label state
 const labelState = reactive({
   currentLabelName: "",
@@ -276,17 +275,6 @@ const handleScollTabList = debounce((e: WheelEvent) => {
   console.log(e.deltaX > 0 ? "Move to right" : "Move to left");
   console.log(e.offsetX);
 }, 333);
-
-// add listener to confirm confrim if close the tab.
-onMounted(() => {
-  window.onbeforeunload = () => {
-    return "false";
-  };
-});
-// remove if unmount view
-onUnmounted(() => {
-  window.onbeforeunload = null;
-});
 </script>
 
 <style scoped>
