@@ -58,7 +58,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
 		baseVCSPushEvent, err := pushEvent.ToVCS()
 		if err != nil {
@@ -112,7 +111,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			log.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
-		log.Debug("Process push event in repos", zap.Any("repos", repositoryList))
 
 		baseVCSPushEvent := pushEvent.ToVCS()
 
