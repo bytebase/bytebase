@@ -211,7 +211,7 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.
 
 func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
-	migrationError := make(chan error)
+	migrationError := make(chan error, 1)
 
 	statement = strings.TrimSpace(statement)
 
@@ -237,11 +237,11 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	migrator := logic.NewMigrator(migrationContext, "bb")
 
-	go func(ctx context.Context) {
+	ctx1, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func(ctx1 context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		createdTs := time.Now().Unix()
@@ -264,11 +264,11 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 					close(syncDone)
 					return
 				}
-			case <-ctx.Done():
+			case <-ctx1.Done():
 				return
 			}
 		}
-	}(ctx)
+	}(ctx1)
 
 	go func() {
 		if err := migrator.Migrate(); err != nil {
@@ -288,5 +288,8 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-migrationError:
 		return true, nil, err
+	case <-ctx.Done():
+		migrationContext.PanicAbort <- errors.New("task canceled")
+		return true, nil, errors.New("task canceled")
 	}
 }
