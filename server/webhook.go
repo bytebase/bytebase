@@ -222,38 +222,47 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 			zap.String("commit", item.Commit.ID),
 		)
 
+		migrationInfo, fType, repository, err := getFileInfo(item, repositoryList)
+		if err != nil {
+			log.Warn("Failed to get file info for the ignored repository file",
+				zap.String("file", item.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		pushEvent := baseVCSPushEvent
+		pushEvent.VCSType = repository.VCS.Type
+		pushEvent.BaseDirectory = repository.BaseDirectory
+		pushEvent.FileCommit = vcs.FileCommit{
+			ID:          item.Commit.ID,
+			Title:       item.Commit.Title,
+			Message:     item.Commit.Message,
+			CreatedTs:   item.Commit.CreatedTs,
+			URL:         item.Commit.URL,
+			AuthorName:  item.Commit.AuthorName,
+			AuthorEmail: item.Commit.AuthorEmail,
+			Added:       item.FileName,
+		}
+
 		var createdMessageList []string
 		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-		for _, repo := range repositoryList {
-			pushEvent := baseVCSPushEvent
-			pushEvent.VCSType = repo.VCS.Type
-			pushEvent.BaseDirectory = repo.BaseDirectory
-			pushEvent.FileCommit = vcs.FileCommit{
-				ID:          item.Commit.ID,
-				Title:       item.Commit.Title,
-				Message:     item.Commit.Message,
-				CreatedTs:   item.Commit.CreatedTs,
-				URL:         item.Commit.URL,
-				AuthorName:  item.Commit.AuthorName,
-				AuthorEmail: item.Commit.AuthorEmail,
-				Added:       item.FileName,
-			}
-
-			createdMessage, created, activityCreateList, err := s.processFile(
-				ctx,
-				&pushEvent,
-				repo,
-				item.FileName,
-				item.ItemType,
-			)
-			if err != nil {
-				return nil, err
-			}
-			if created {
-				createdMessageList = append(createdMessageList, createdMessage)
-			}
-			repoID2ActivityCreateList[repo.ID] = append(repoID2ActivityCreateList[repo.ID], activityCreateList...)
+		createdMessage, created, activityCreateList, err := s.processFile(
+			ctx,
+			pushEvent,
+			repository,
+			item.FileName,
+			item.ItemType,
+			migrationInfo,
+			fType,
+		)
+		if err != nil {
+			return nil, err
 		}
+		if created {
+			createdMessageList = append(createdMessageList, createdMessage)
+		}
+		repoID2ActivityCreateList[repository.ID] = append(repoID2ActivityCreateList[repository.ID], activityCreateList...)
+
 		if len(createdMessageList) == 0 {
 			for _, repo := range repositoryList {
 				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
@@ -280,32 +289,83 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 	return createdMessages, nil
 }
 
+type fileType int
+
+const (
+	unknownFileType fileType = iota
+	migrationFileType
+	schemaFileType
+)
+
+func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository) (*db.MigrationInfo, fileType, *api.Repository, error) {
+	var migrationInfo *db.MigrationInfo
+	var fType fileType
+	var fileRepositoryList []*api.Repository
+	for _, repository := range repositoryList {
+		if !strings.HasPrefix(fileItem.FileName, repository.BaseDirectory) {
+			log.Debug("Ignored file outside the base directory",
+				zap.String("file", fileItem.FileName),
+				zap.String("base_directory", repository.BaseDirectory),
+			)
+			continue
+		}
+
+		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+		mi, err := db.ParseMigrationInfo(fileItem.FileName, path.Join(repository.BaseDirectory, repository.FilePathTemplate))
+		if err != nil {
+			log.Error("Failed to parse migration file info",
+				zap.Int("project", repository.ProjectID),
+				zap.String("file", fileItem.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		if mi != nil {
+			migrationInfo = mi
+			fType = migrationFileType
+			fileRepositoryList = append(fileRepositoryList, repository)
+			continue
+		}
+
+		si, err := db.ParseSchemaFileInfo(repository.BaseDirectory, repository.SchemaPathTemplate, fileItem.FileName)
+		if err != nil {
+			log.Debug("Failed to parse schema file info",
+				zap.String("file", fileItem.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		if si != nil {
+			migrationInfo = si
+			fType = schemaFileType
+			fileRepositoryList = append(fileRepositoryList, repository)
+			continue
+		}
+	}
+
+	switch len(fileRepositoryList) {
+	case 0:
+		return nil, unknownFileType, nil, errors.Errorf("file change is not associated with any project")
+	case 1:
+		return migrationInfo, fType, fileRepositoryList[0], nil
+	default:
+		var projectList []string
+		for _, repository := range fileRepositoryList {
+			projectList = append(projectList, repository.Project.Name)
+		}
+		return nil, unknownFileType, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ","))
+	}
+}
+
 // processFile attempts to create a new issue for the given file of
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string, fileType vcs.FileItemType) (string, bool, []*api.ActivityCreate, error) {
+func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, file string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo, fType fileType) (string, bool, []*api.ActivityCreate, error) {
 	if repo.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
-	}
-
-	if !strings.HasPrefix(file, repo.BaseDirectory) {
-		log.Debug("Ignored file outside the base directory",
-			zap.String("file", file),
-			zap.String("base_directory", repo.BaseDirectory),
-		)
-		return "", false, nil, nil
-	}
-
-	schemaInfo, err := db.ParseSchemaFileInfo(repo.BaseDirectory, repo.SchemaPathTemplate, file)
-	if err != nil {
-		log.Debug("Failed to parse schema file info",
-			zap.String("file", file),
-			zap.Error(err),
-		)
-		return "", false, nil, nil
 	}
 
 	var migrationDetailList []*api.MigrationDetail
@@ -313,48 +373,17 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 	var migrationDescription string
 	var migrationType db.MigrationType
 
-	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && schemaInfo != nil {
+	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && fType == schemaFileType {
 		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
 		return "", false, nil, nil
-	}
-
-	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && schemaInfo != nil {
-		// Having no schema info indicates that the file is not a schema file (e.g.
-		// "*__LATEST.sql"), try to parse the migration info see if it is a data update.
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, schemaInfo, file)
+	} else if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && fType == schemaFileType {
 		migrationDescription = "Apply schema diff"
 		migrationType = db.Migrate
+		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, migrationInfo, file)
 	} else {
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		migrationInfo, err := db.ParseMigrationInfo(file, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
-		if err != nil {
-			log.Error("Failed to parse migration info",
-				zap.Int("project", repo.ProjectID),
-				zap.Any("pushEvent", pushEvent),
-				zap.String("file", file),
-				zap.Error(err),
-			)
-			return "", false, nil, nil
-		}
-		if migrationInfo == nil {
-			log.Error("File path does not match file path template",
-				zap.Int("project", repo.ProjectID),
-				zap.String("file", file),
-				zap.String("file_path_template", path.Join(repo.BaseDirectory, repo.FilePathTemplate)),
-			)
-			return "", false, nil, nil
-		}
+		// We should allow DDL/DML for SDL schema change type project.
 		migrationDescription = migrationInfo.Description
 		migrationType = migrationInfo.Type
-
-		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && migrationInfo.Type != db.Data {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Errorf("Only DATA type migration scripts are allowed but got %q", migrationInfo.Type))
-			return "", false, []*api.ActivityCreate{activityCreate}, nil
-		}
-
-		// We are here dealing with:
-		// 1. data update in SDL/DDL
-		// 2. schema update in DDL
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, migrationInfo)
 	}
 
@@ -384,7 +413,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			MigrationType: migrationType,
-			VCSPushEvent:  pushEvent,
+			VCSPushEvent:  &pushEvent,
 			DetailList:    migrationDetailList,
 		},
 	)
@@ -416,7 +445,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent *vcs.PushEvent, repo
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
-			VCSPushEvent: *pushEvent,
+			VCSPushEvent: pushEvent,
 			IssueID:      issue.ID,
 			IssueName:    issue.Name,
 		},
@@ -505,10 +534,10 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 }
 
 // getIgnoredFileActivityCreate get a warning project activityCreate for the ignored file with given error.
-func getIgnoredFileActivityCreate(projectID int, pushEvent *vcs.PushEvent, file string, err error) *api.ActivityCreate {
+func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file string, err error) *api.ActivityCreate {
 	payload, marshalErr := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
-			VCSPushEvent: *pushEvent,
+			VCSPushEvent: pushEvent,
 		},
 	)
 	if marshalErr != nil {
@@ -529,7 +558,7 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent *vcs.PushEvent, file 
 }
 
 // readFileContent reads the content of the given file from the given repository.
-func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, repo *api.Repository, file string) (string, error) {
+func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, file string) (string, error) {
 	// Retrieve the latest AccessToken and RefreshToken as the previous
 	// ReadFileContent call may have updated the stored token pair. ReadFileContent
 	// will fetch and store the new token pair if the existing token pair has
@@ -564,7 +593,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 
 // prepareIssueFromPushEventSDL returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo.Database
 	if dbName == "" {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
@@ -617,7 +646,7 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 
 // prepareIssueFromPushEventDDL returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent *vcs.PushEvent, fileName string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileName string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	statement, err := s.readFileContent(ctx, pushEvent, repo, fileName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to read file content"))
