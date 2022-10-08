@@ -251,7 +251,7 @@ const placeholderRegexp = `[^\\/?%*:|"<>]+`
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
 // Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
-// It returns (nil, nil) if it doesn't looks like a schema file path.
+// It returns (nil, nil) if it doesn't look like a migration file path.
 func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, error) {
 	placeholderList := []string{
 		"ENV_NAME",
@@ -342,9 +342,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 
 // ParseSchemaFileInfo attempts to parse the given schema file path to extract
 // the schema file info.
-// It returns (nil, nil) if it doesn't looks like a schema file path.
-//
-// The possible keys for the returned map are: "ENV_NAME", "DB_NAME".
+// It returns (nil, nil) if it doesn't look like a schema file path.
 func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*MigrationInfo, error) {
 	if schemaPathTemplate == "" {
 		return nil, nil
