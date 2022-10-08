@@ -60,6 +60,7 @@ const (
 	ColumnExists                  Code = 412
 	DropAllColumns                Code = 413
 	SetColumnCharset              Code = 414
+	CharLengthExceedsLimit        Code = 415
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
