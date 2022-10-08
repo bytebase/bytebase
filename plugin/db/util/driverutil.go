@@ -27,13 +27,25 @@ func FormatErrorWithQuery(err error, query string) error {
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
+// This function only used for SQLite, snowflake and clickhouse.
+// For MySQL and PostgreSQL, use parser.SplitMultiSQLStream instead.
 func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
-	scanner := bufio.NewScanner(sc)
+	// TODO(rebelice): use parser/tokenizer to split SQL statements.
+	reader := bufio.NewReader(sc)
 	s := ""
 	delimiter := false
 	comment := false
-	for scanner.Scan() {
-		line := scanner.Text()
+	done := false
+	for !done {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				done = true
+			} else {
+				return err
+			}
+		}
+		line = strings.TrimRight(line, "\r\n")
 
 		execute := false
 		switch {
@@ -92,7 +104,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 		}
 	}
 
-	return scanner.Err()
+	return nil
 }
 
 // NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.

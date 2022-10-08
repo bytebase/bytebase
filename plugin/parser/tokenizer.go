@@ -2,7 +2,6 @@ package parser
 
 import (
 	"bufio"
-	"bytes"
 	"io"
 	"strings"
 	"unicode"
@@ -30,9 +29,9 @@ type tokenizer struct {
 	line   int
 
 	// steaming API specific field
-	scanner *bufio.Scanner
+	reader  *bufio.Reader
 	f       func(string) error
-	scanErr error
+	readErr error
 }
 
 // newTokenizer creates a new tokenizer.
@@ -49,38 +48,14 @@ func newTokenizer(statement string) *tokenizer {
 	return t
 }
 
-// scanLines is a split function for a Scanner that each line of text, also contains trailing end-of-line marker.
-func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		// We have a full newline-terminated line.
-		return i + 1, data[0 : i+1], nil
-	}
-	// If we're at EOF, we have a final, non-terminated line. Return it.
-	if atEOF {
-		return len(data), data, nil
-	}
-	// Request more data.
-	return 0, nil, nil
-}
-
 func newStreamTokenizer(src io.Reader, f func(string) error) *tokenizer {
 	t := &tokenizer{
-		cursor:  0,
-		line:    1,
-		scanner: bufio.NewScanner(src),
-		f:       f,
+		cursor: 0,
+		line:   1,
+		reader: bufio.NewReader(src),
+		f:      f,
 	}
-	t.scanner.Split(scanLines)
-	if t.scanner.Scan() {
-		t.buffer = []rune(t.scanner.Text())
-		t.len = uint(len(t.buffer))
-	} else {
-		t.scanner = nil
-		t.buffer = append(t.buffer, eofRune)
-	}
+	t.scan()
 	return t
 }
 
@@ -421,7 +396,7 @@ func (t *tokenizer) splitMySQLMultiSQL() ([]SingleSQL, error) {
 					return nil, err
 				}
 			}
-			return res, t.scanErr
+			return res, t.readErr
 		case t.equalWordCaseInsensitive(delimiter):
 			t.skip(uint(len(delimiter)))
 			text := t.getString(startPos, t.pos()-startPos)
@@ -566,7 +541,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]SingleSQL, error) {
 					return nil, err
 				}
 			}
-			return res, t.scanErr
+			return res, t.readErr
 		// return error when meeting BEGIN ATOMIC.
 		case t.equalWordCaseInsensitive(beginRuneList):
 			t.skip(uint(len(beginRuneList)))
@@ -733,14 +708,21 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 }
 
 func (t *tokenizer) scan() {
-	if t.scanner != nil {
-		if t.scanner.Scan() {
-			t.buffer = append(t.buffer, []rune(t.scanner.Text())...)
+	if t.reader != nil {
+		s, err := t.reader.ReadString('\n')
+		if err == nil {
+			t.buffer = append(t.buffer, []rune(s)...)
 			t.len = uint(len(t.buffer))
-		} else {
+		} else if err == io.EOF {
+			// bufio.Reader treates EOF as an error, we need special handling.
+			t.buffer = append(t.buffer, []rune(s)...)
+			t.len = uint(len(t.buffer))
+			t.reader = nil
 			t.buffer = append(t.buffer, eofRune)
-			t.scanErr = t.scanner.Err()
-			t.scanner = nil
+		} else {
+			t.reader = nil
+			t.buffer = append(t.buffer, eofRune)
+			t.readErr = err
 		}
 	}
 }
@@ -781,7 +763,7 @@ func (t *tokenizer) truncate(pos uint) {
 }
 
 func (t *tokenizer) char(after uint) rune {
-	for t.cursor+after >= t.len && t.scanner != nil {
+	for t.cursor+after >= t.len && t.reader != nil {
 		t.scan()
 	}
 
@@ -802,7 +784,7 @@ func (t *tokenizer) preChar(before uint) rune {
 
 func (t *tokenizer) skip(step uint) {
 	t.cursor += step
-	for t.cursor > t.len && t.scanner != nil {
+	for t.cursor > t.len && t.reader != nil {
 		t.scan()
 	}
 	if t.cursor > t.len {
