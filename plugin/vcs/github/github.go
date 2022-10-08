@@ -947,6 +947,8 @@ type environmentVariable struct {
 //
 // https://docs.github.com/en/rest/actions/secrets#create-or-update-a-repository-secret
 func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	// We have to encrypt the secret value using the public key in the repository.
+	// Docs: https://docs.github.com/en/rest/actions/secrets#example-encrypting-a-secret-using-nodejs
 	publicKey, err := p.getRepositoryPublicKey(ctx, oauthCtx, instanceURL, repositoryID)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get public key")
@@ -955,8 +957,6 @@ func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx commo
 	if err != nil {
 		return errors.Wrapf(err, "Failed to encrypt environment variable")
 	}
-
-	fmt.Printf("encryptValue: %s\n", encryptValue)
 
 	body, err := json.Marshal(
 		environmentVariable{
