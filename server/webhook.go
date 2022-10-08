@@ -390,17 +390,25 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 	}
 
 	// Create schema update issue
+	issueName := fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(file, repo.BaseDirectory+"/"))
+	if err := s.createIssueFromPushEvent(ctx, issueName, pushEvent, repo, migrationType, migrationDetailList); err != nil {
+		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+	}
+
+	return fmt.Sprintf("Created issue %q on adding %s", issueName, file), true, activityCreateList, nil
+}
+
+func (s *Server) createIssueFromPushEvent(ctx context.Context, issueName string, pushEvent vcs.PushEvent, repo *api.Repository, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
 	creatorID := api.SystemBotID
 	if pushEvent.FileCommit.AuthorEmail != "" {
 		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
 		if err != nil {
-			log.Error("Failed to find the principal with committer email",
+			log.Warn("Failed to find the principal with committer email, use system bot instead",
 				zap.String("email", pushEvent.FileCommit.AuthorEmail),
 				zap.Error(err),
 			)
-		}
-		if committerPrincipal == nil {
-			log.Debug("Failed to find the principal with committer email, use system bot instead",
+		} else if committerPrincipal == nil {
+			log.Warn("Principal with committer email does not exist, use system bot instead",
 				zap.String("email", pushEvent.FileCommit.AuthorEmail),
 			)
 		} else {
@@ -416,7 +424,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 		},
 	)
 	if err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
 	}
 
 	issueType := api.IssueDatabaseSchemaUpdate
@@ -425,7 +433,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 	}
 	issueCreate := &api.IssueCreate{
 		ProjectID:     repo.ProjectID,
-		Name:          fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(file, repo.BaseDirectory+"/")),
+		Name:          issueName,
 		Type:          issueType,
 		Description:   pushEvent.FileCommit.Message,
 		AssigneeID:    api.SystemBotID,
@@ -437,7 +445,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 		if issueType == api.IssueDatabaseDataUpdate {
 			errMsg = "Failed to create data update issue"
 		}
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
 	}
 
 	// Create a project activity after successfully creating the issue from the push event.
@@ -449,7 +457,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 		},
 	)
 	if err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 	}
 
 	activityCreate := &api.ActivityCreate{
@@ -461,10 +469,10 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 		Payload:     string(activityPayload),
 	}
 	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
-	return fmt.Sprintf("Created issue %q on adding %s", issue.Name, file), true, activityCreateList, nil
+	return nil
 }
 
 // findProjectDatabases finds the list of databases with given name in the
