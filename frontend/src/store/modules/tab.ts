@@ -40,7 +40,7 @@ export const useTabStore = defineStore("tab", () => {
   // states
   // We store the tabIdList and the tabs separately.
   // This index-entity modeling enables us to update one tab entity at a time,
-  // which will reduce the performance costing while writing localStorage.
+  // and reduce the performance costing while writing localStorage.
   const tabs = ref(new Map<string, TabInfo>());
   const tabIdList = ref<string[]>([]);
   const currentTabId = ref<string>();
