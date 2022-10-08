@@ -177,7 +177,7 @@ export default defineComponent({
       }
 
       let jdbcString = t(
-        "datasource.jdbc-cant-connect-to-socket-database-value-instance-host",
+        "data-source.jdbc-cant-connect-to-socket-database-value-instance-host",
         [database.value.instance.host]
       );
       if (!isSocket) {
@@ -215,7 +215,7 @@ export default defineComponent({
         pushNotification({
           module: "bytebase",
           style: "INFO",
-          title: t("datasource.connection-name-string-copied-to-clipboard", [
+          title: t("data-source.connection-name-string-copied-to-clipboard", [
             connection.name,
           ]),
         });

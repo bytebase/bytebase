@@ -10,9 +10,9 @@
   >
     <option disabled :selected="undefined === state.selectedId">
       <template v-if="!database">
-        {{ $t("datasource.select-database-first") }}
+        {{ $t("data-source.select-database-first") }}
       </template>
-      <template v-else> {{ $t("datasource.select-data-source") }} </template>
+      <template v-else> {{ $t("data-source.select-data-source") }} </template>
     </option>
     <template v-if="database">
       <option
