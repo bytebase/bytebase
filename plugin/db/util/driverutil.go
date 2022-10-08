@@ -37,7 +37,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				finish = true
+				done = true
 			} else {
 				return err
 			}
