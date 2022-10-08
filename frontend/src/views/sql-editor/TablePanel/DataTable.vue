@@ -5,7 +5,7 @@
     <div class="w-full flex-1 overflow-hidden">
       <div
         ref="scrollerRef"
-        class="inner-wrapper max-h-full w-full overflow-auto border-y border-r border-block-border"
+        class="inner-wrapper max-h-full w-full overflow-auto border-y border-r border-block-border fix-scrollbar-z-index"
         :class="data.length === 0 && 'border-b-0 border-r-0'"
       >
         <div
