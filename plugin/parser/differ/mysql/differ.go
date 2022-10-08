@@ -65,7 +65,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var alterTableAddConstraintSpecs []*ast.AlterTableSpec
-			var alterTableDropConstraintSpecs []*ast.AlterTableSpec
 
 			oldColumnMap := buildColumnMap(oldNodes, newStmt.Table.Name)
 			for _, columnDef := range newStmt.Cols {
@@ -104,46 +103,25 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 				}
 			}
-			if len(alterTableAddColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
-					},
-					Specs: alterTableAddColumnSpecs,
-				})
+			// We merge the multi-ALTER TABLE statement into one ALTER TABLE statement.
+			alterTableStmt := &ast.AlterTableStmt{
+				Table: &ast.TableName{
+					Name: model.NewCIStr(tableName),
+				},
 			}
-			if len(alterTableModifyColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
-					},
-					Specs: alterTableModifyColumnSpecs,
-				})
-			}
-			// We should drop the remaining indices in the indexMap.
+			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableAddColumnSpecs...)
+			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableModifyColumnSpecs...)
+
+			// We should drop the remaining indices in the indexMap.s
 			for indexName := range indexMap {
-				alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
+				alterTableStmt.Specs = append(alterTableStmt.Specs, &ast.AlterTableSpec{
 					Tp:   ast.AlterTableDropIndex,
 					Name: indexName,
 				})
 			}
-
-			if len(alterTableAddConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
-					},
-					Specs: alterTableDropConstraintSpecs,
-				})
-			}
-
-			if len(alterTableDropConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
-					},
-					Specs: alterTableAddConstraintSpecs,
-				})
+			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableAddConstraintSpecs...)
+			if len(alterTableStmt.Specs) != 0 {
+				diff = append(diff, alterTableStmt)
 			}
 		default:
 		}
