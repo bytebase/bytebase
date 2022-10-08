@@ -139,7 +139,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
 		}
 		return nil
-
 	})
 
 	g.GET("/project/:projectID", func(c echo.Context) error {
