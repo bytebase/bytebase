@@ -590,7 +590,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-// nolint:unused
 func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) error {
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
@@ -616,7 +615,9 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 
 	switch repository.VCS.Type {
 	case vcsPlugin.GitHubCom:
-		return nil
+		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch); err != nil {
+			return err
+		}
 	case vcsPlugin.GitLabSelfHost:
 		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch); err != nil {
 			return err
@@ -644,7 +645,6 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 }
 
 // setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
-// nolint:unused
 func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Repository) (*vcsPlugin.BranchInfo, error) {
 	branch, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).GetBranch(
 		ctx,
@@ -687,8 +687,60 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 	return branchCreate, nil
 }
 
+// setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
+func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
+	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
+	fileLastCommitID := ""
+
+	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		github.SQLReviewActionFilePath,
+		branch.Name,
+	)
+	if err != nil {
+		log.Debug(
+			"Failed to get file meta",
+			zap.String("file", github.SQLReviewActionFilePath),
+			zap.String("last_commit", branch.LastCommitID),
+			zap.Int("code", common.ErrorCode(err).Int()),
+			zap.Error(err),
+		)
+	} else if fileMeta != nil {
+		fileLastCommitID = fileMeta.LastCommitID
+	}
+
+	return vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreateFile(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		github.SQLReviewActionFilePath,
+		vcsPlugin.FileCommitCreate{
+			Branch:        branch.Name,
+			CommitMessage: sqlReviewInVCSPRTitle,
+			Content:       sqlReviewConfig,
+			LastCommitID:  fileLastCommitID,
+		},
+	)
+}
+
 // setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
-// nolint:unused
 func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
@@ -735,7 +787,6 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 }
 
 // createOrUpdateVCSSQLReviewFileForGitLab will create or update SQL review file for GitLab CI.
-// nolint:unused
 func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
 	ctx context.Context,
 	repository *api.Repository,

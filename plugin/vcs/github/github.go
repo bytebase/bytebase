@@ -4,6 +4,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/nacl/box"
 
 	"github.com/pkg/errors"
 
@@ -658,7 +662,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	}
 
 	url := fmt.Sprintf("%s/repos/%s/contents/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
-	code, _, _, err := oauth.Put(
+	code, _, resp, err := oauth.Put(
 		ctx,
 		p.client,
 		url,
@@ -684,7 +688,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		return errors.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
 			url,
 			code,
-			body,
+			resp,
 		)
 	}
 	return nil
@@ -779,33 +783,318 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 	return &file, nil
 }
 
+type githubBranchCreate struct {
+	Ref string `json:"ref"`
+	SHA string `json:"sha"`
+}
+
+type githubBranch struct {
+	Ref    string          `json:"ref"`
+	Object referenceObject `json:"object"`
+}
+
+type referenceObject struct {
+	SHA string `json:"sha"`
+}
+
 // GetBranch gets the given branch in the repository.
 //
-// Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
-func (*Provider) GetBranch(_ context.Context, _ common.OauthContext, _, _, _ string) (*vcs.BranchInfo, error) {
-	return nil, errors.Errorf("GetBranch for GitHub is not implemented yet")
+// Docs: https://docs.github.com/en/rest/git/refs#get-a-reference
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(instanceURL), repositoryID, branchName)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	res := new(githubBranch)
+	if err := json.Unmarshal([]byte(body), res); err != nil {
+		return nil, err
+	}
+
+	name, err := vcs.Branch(res.Ref)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vcs.BranchInfo{
+		Name:         name,
+		LastCommitID: res.Object.SHA,
+	}, nil
 }
 
 // CreateBranch creates the branch in the repository.
 //
 // Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
-func (*Provider) CreateBranch(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.BranchInfo) error {
-	return errors.Errorf("CreateBranch for GitHub is not implemented yet")
+func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
+	body, err := json.Marshal(
+		githubBranchCreate{
+			Ref: fmt.Sprintf("refs/heads/%s", branch.Name),
+			SHA: branch.LastCommitID,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal branch create")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/git/refs", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
 }
 
 // CreatePullRequest creates the pull request in the repository.
 //
 // Docs: https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
-func (*Provider) CreatePullRequest(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.PullRequestCreate) error {
-	return errors.Errorf("CreatePullRequest for GitHub is not implemented yet")
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
+	body, err := json.Marshal(pullRequestCreate)
+	if err != nil {
+		return errors.Wrap(err, "marshal pull request create")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/pulls", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+type environmentVariable struct {
+	EncryptedValue string `json:"encrypted_value"`
+	KeyID          string `json:"key_id"`
 }
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 //
+// https://docs.github.com/en/rest/actions/secrets#create-or-update-a-repository-secret
+func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	// We have to encrypt the secret value using the public key in the repository.
+	// Docs: https://docs.github.com/en/rest/actions/secrets#example-encrypting-a-secret-using-nodejs
+	publicKey, err := p.getRepositoryPublicKey(ctx, oauthCtx, instanceURL, repositoryID)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get public key")
+	}
+	encryptValue, err := encryptEnvironmentVariable(publicKey.Key, value)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to encrypt environment variable")
+	}
+
+	body, err := json.Marshal(
+		environmentVariable{
+			KeyID:          publicKey.KeyID,
+			EncryptedValue: encryptValue,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal environment variable")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/actions/secrets/%s", p.APIURL(instanceURL), repositoryID, key)
+	code, _, resp, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to upsert environment variable from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to upsert environment variable from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+// encryptEnvironmentVariable encrypt the value with public key
+//
+// https://github.com/jefflinse/githubsecret
+func encryptEnvironmentVariable(publicKey, value string) (string, error) {
+	const keySize = 32
+	const nonceSize = 24
+
+	// decode the provided public key from base64
+	recipientKey := new([keySize]byte)
+	b, err := base64.StdEncoding.DecodeString(publicKey)
+	if err != nil {
+		return "", err
+	} else if size := len(b); size != keySize {
+		return "", errors.Errorf("Public key has invalid length, expect %d bytes but found %d", keySize, size)
+	}
+
+	copy(recipientKey[:], b)
+
+	// create an ephemeral key pair
+	pubKey, privKey, err := box.GenerateKey(rand.Reader)
+	if err != nil {
+		return "", err
+	}
+
+	// create the nonce by hashing together the two public keys
+	nonce := new([nonceSize]byte)
+	nonceHash, err := blake2b.New(nonceSize, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := nonceHash.Write(pubKey[:]); err != nil {
+		return "", err
+	}
+
+	if _, err := nonceHash.Write(recipientKey[:]); err != nil {
+		return "", err
+	}
+
+	copy(nonce[:], nonceHash.Sum(nil))
+
+	// begin the output with the ephemeral public key and append the encrypted content
+	out := box.Seal(pubKey[:], []byte(value), nonce, recipientKey, privKey)
+
+	// base64-encode the final output
+	return base64.StdEncoding.EncodeToString(out), nil
+}
+
+type repositoryPublicKey struct {
+	KeyID string `json:"key_id"`
+	Key   string `json:"key"`
+}
+
+// getRepositoryPublicKey returns the public key in the GitHub repository.
+//
 // https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
-// https://docs.github.com/en/rest/actions/secrets#get-a-repository-secret
-func (*Provider) UpsertEnvironmentVariable(_ context.Context, _ common.OauthContext, _, _, _, _ string) error {
-	return errors.Errorf("UpsertEnvironmentVariable for GitHub is not implemented yet")
+func (p *Provider) getRepositoryPublicKey(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) (*repositoryPublicKey, error) {
+	url := fmt.Sprintf("%s/repos/%s/actions/secrets/public-key", p.APIURL(instanceURL), repositoryID)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get repo public key from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to get repo public key from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	res := new(repositoryPublicKey)
+	if err := json.Unmarshal([]byte(body), res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // CreateWebhook creates a webhook in the repository with given payload.
