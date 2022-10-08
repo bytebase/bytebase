@@ -711,18 +711,16 @@ func (t *tokenizer) scan() {
 	if t.reader != nil {
 		s, err := t.reader.ReadString('\n')
 		readSuccessfully := (err == nil || err == io.EOF)
-		needEOF := (err != nil)
-		returnError := (err != nil && err != io.EOF)
 		if readSuccessfully {
 			t.buffer = append(t.buffer, []rune(s)...)
 			t.len = uint(len(t.buffer))
 		}
-		if needEOF {
+		if err != nil {
 			t.reader = nil
 			t.buffer = append(t.buffer, eofRune)
-		}
-		if returnError {
-			t.readErr = err
+			if err != io.EOF {
+				t.readErr = err
+			}
 		}
 	}
 }
