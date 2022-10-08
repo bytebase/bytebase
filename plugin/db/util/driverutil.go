@@ -28,6 +28,7 @@ func FormatErrorWithQuery(err error, query string) error {
 
 // ApplyMultiStatements will apply the split statements from scanner.
 func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
+	// TODO(rebelice): use parser/tokenizer to split SQL statements.
 	reader := bufio.NewReader(sc)
 	s := ""
 	delimiter := false
