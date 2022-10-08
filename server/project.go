@@ -75,19 +75,33 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.GET("/project", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		projectFind := &api.ProjectFind{}
+		var principalID *int
 		if userIDStr := c.QueryParam("user"); userIDStr != "" {
 			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
 			}
-			projectFind.PrincipalID = &userID
+			principalID = &userID
 		}
 
 		// Only Owner and DBA can fetch all projects from all users.
-		if projectFind.PrincipalID == nil {
+		if principalID == nil {
 			role := c.Get(getRoleContextKey()).(api.Role)
 			if role != api.Owner && role != api.DBA {
 				return echo.NewHTTPError(http.StatusForbidden, "Not allowed to fetch all project list")
+			}
+		} else {
+			member, err := s.store.GetMemberByPrincipalID(ctx, *principalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve member for principal ID: %d", *principalID)).SetInternal(err)
+			}
+			if member == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Member for principal ID: %d not found", *principalID))
+			}
+			// We allow Workspace OWNER and DBA to fetch all projects. The store layer will filter by principal ID indiscriminately,
+			// so we only set the principal ID to not nil to enable the filter in the store layer when the member is neither OWNER nor DBA.
+			if member.Role != api.Owner && member.Role != api.DBA {
+				projectFind.PrincipalID = principalID
 			}
 		}
 
@@ -95,6 +109,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			projectFind.RowStatus = &rowStatus
 		}
+
 		projectList, err := s.store.FindProject(ctx, projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
@@ -108,7 +123,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				// We will filter those project with the current principal as an inactive member (the role provider differs from that of the project)
 				roleProvider := project.RoleProvider
 				for _, projectMember := range project.ProjectMemberList {
-					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
+					if api.Role(projectMember.Role) == api.Owner || api.Role(projectMember.Role) == api.DBA ||
+						(projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider) {
 						activeProjectList = append(activeProjectList, project)
 						break
 					}
@@ -123,6 +139,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
 		}
 		return nil
+
 	})
 
 	g.GET("/project/:projectID", func(c echo.Context) error {
