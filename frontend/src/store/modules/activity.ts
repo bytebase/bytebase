@@ -140,7 +140,7 @@ export const useActivityStore = defineStore("activity", {
       }
       this.fetchActivityListForIssue(issue);
     },
-    // We do not store the returned list because the caller will specify different limits
+    // We do not store the returned list because the caller will specify different limits.
     async fetchActivityListForProject({
       projectId,
       limit,
