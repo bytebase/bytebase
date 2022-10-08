@@ -395,7 +395,7 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 	}
 
-	return fmt.Sprintf("Created issue %q on adding %s", issueName, file), true, activityCreateList, nil
+	return fmt.Sprintf("Created issue %q from file %q", issueName, file), true, activityCreateList, nil
 }
 
 func (s *Server) createIssueFromPushEvent(ctx context.Context, issueName string, pushEvent vcs.PushEvent, repo *api.Repository, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
