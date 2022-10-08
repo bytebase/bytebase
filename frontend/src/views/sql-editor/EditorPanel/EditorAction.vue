@@ -79,7 +79,7 @@
               v-if="selectedInstance.id !== UNKNOWN_ID"
               class="flex flex-col"
             >
-              <h1 class="text-gray-400">{{ $t("common.environment") }}:</h1>
+              <h1 class="text-gray-400">{{ $t("common.environment") }}</h1>
               <span class="flex items-center">
                 {{ selectedInstance.environment.name }}
                 <ProtectedEnvironmentIcon
@@ -92,14 +92,14 @@
               v-if="selectedInstance.id !== UNKNOWN_ID"
               class="flex flex-col"
             >
-              <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
+              <h1 class="text-gray-400">{{ $t("common.instance") }}</h1>
               <span>{{ selectedInstance.name }}</span>
             </div>
             <div
               v-if="selectedDatabase.id !== UNKNOWN_ID"
               class="flex flex-col"
             >
-              <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
+              <h1 class="text-gray-400">{{ $t("common.database") }}</h1>
               <span>{{ selectedDatabase.name }}</span>
             </div>
           </div>
