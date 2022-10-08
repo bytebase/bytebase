@@ -670,7 +670,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
-		vcsPlugin.SQLReviewApiSecretName,
+		vcsPlugin.SQLReviewAPISecretName,
 		repository.WebhookSecretToken,
 	); err != nil {
 		return err

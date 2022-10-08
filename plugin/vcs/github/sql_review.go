@@ -19,5 +19,5 @@ const (
 
 // SetupSQLReviewCI will setup the SQL review CI content with SQL review endpoint.
 func SetupSQLReviewCI(endpoint string) string {
-	return fmt.Sprintf(sqlReviewAction, endpoint, vcs.SQLReviewApiSecretName)
+	return fmt.Sprintf(sqlReviewAction, endpoint, vcs.SQLReviewAPISecretName)
 }
