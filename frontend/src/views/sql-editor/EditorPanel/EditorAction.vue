@@ -49,6 +49,17 @@
               v-if="selectedInstance.id !== UNKNOWN_ID"
               class="flex items-center"
             >
+              <span class="ml-2">{{ selectedInstance.environment.name }}</span>
+              <ProtectedEnvironmentIcon
+                :environment="selectedInstance.environment"
+                class="ml-1"
+              />
+            </div>
+            <div
+              v-if="selectedInstance.id !== UNKNOWN_ID"
+              class="flex items-center"
+            >
+              <span class="mx-2">/</span>
               <InstanceEngineIcon :instance="selectedInstance" show-status />
               <span class="ml-2">{{ selectedInstance.name }}</span>
             </div>
@@ -56,7 +67,7 @@
               v-if="selectedDatabase.id !== UNKNOWN_ID"
               class="flex items-center"
             >
-              &nbsp; / &nbsp;
+              <span class="mx-2">/</span>
               <heroicons-outline:database />
               <span class="ml-2">{{ selectedDatabase.name }}</span>
             </div>
@@ -68,14 +79,27 @@
               v-if="selectedInstance.id !== UNKNOWN_ID"
               class="flex flex-col"
             >
-              <h1 class="text-gray-400">{{ $t("common.instance") }}:</h1>
+              <h1 class="text-gray-400">{{ $t("common.environment") }}</h1>
+              <span class="flex items-center">
+                {{ selectedInstance.environment.name }}
+                <ProtectedEnvironmentIcon
+                  :environment="selectedInstance.environment"
+                  class="ml-1"
+                />
+              </span>
+            </div>
+            <div
+              v-if="selectedInstance.id !== UNKNOWN_ID"
+              class="flex flex-col"
+            >
+              <h1 class="text-gray-400">{{ $t("common.instance") }}</h1>
               <span>{{ selectedInstance.name }}</span>
             </div>
             <div
               v-if="selectedDatabase.id !== UNKNOWN_ID"
               class="flex flex-col"
             >
-              <h1 class="text-gray-400">{{ $t("common.database") }}:</h1>
+              <h1 class="text-gray-400">{{ $t("common.database") }}</h1>
               <span>{{ selectedDatabase.name }}</span>
             </div>
           </div>
@@ -124,6 +148,7 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils/slug";
 import SharePopover from "./SharePopover.vue";
+import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
