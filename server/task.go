@@ -279,7 +279,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		cancel()
 
-		return nil
+		return c.NoContent(http.StatusOK)
 	})
 }
 
