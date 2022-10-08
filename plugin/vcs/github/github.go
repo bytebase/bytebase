@@ -779,6 +779,35 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 	return &file, nil
 }
 
+// GetBranch gets the given branch in the repository.
+//
+// Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
+func (*Provider) GetBranch(_ context.Context, _ common.OauthContext, _, _, _ string) (*vcs.BranchInfo, error) {
+	return nil, errors.Errorf("GetBranch for GitHub is not implemented yet")
+}
+
+// CreateBranch creates the branch in the repository.
+//
+// Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
+func (*Provider) CreateBranch(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.BranchInfo) error {
+	return errors.Errorf("CreateBranch for GitHub is not implemented yet")
+}
+
+// CreatePullRequest creates the pull request in the repository.
+//
+// Docs: https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+func (*Provider) CreatePullRequest(_ context.Context, _ common.OauthContext, _, _ string, _ *vcs.PullRequestCreate) error {
+	return errors.Errorf("CreatePullRequest for GitHub is not implemented yet")
+}
+
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+//
+// https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
+// https://docs.github.com/en/rest/actions/secrets#get-a-repository-secret
+func (*Provider) UpsertEnvironmentVariable(_ context.Context, _ common.OauthContext, _, _, _, _ string) error {
+	return errors.Errorf("UpsertEnvironmentVariable for GitHub is not implemented yet")
+}
+
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
