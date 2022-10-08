@@ -783,12 +783,12 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 	return &file, nil
 }
 
-type gitHubBranchCreate struct {
+type githubBranchCreate struct {
 	Ref string `json:"ref"`
 	SHA string `json:"sha"`
 }
 
-type gitHubBranch struct {
+type githubBranch struct {
 	Ref    string          `json:"ref"`
 	Object referenceObject `json:"object"`
 }
@@ -831,7 +831,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 		)
 	}
 
-	res := new(gitHubBranch)
+	res := new(githubBranch)
 	if err := json.Unmarshal([]byte(body), res); err != nil {
 		return nil, err
 	}
@@ -852,7 +852,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 // Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
 func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
 	body, err := json.Marshal(
-		gitHubBranchCreate{
+		githubBranchCreate{
 			Ref: fmt.Sprintf("refs/heads/%s", branch.Name),
 			SHA: branch.LastCommitID,
 		},

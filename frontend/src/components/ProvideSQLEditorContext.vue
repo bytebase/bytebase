@@ -16,7 +16,7 @@ import {
   useInstanceStore,
   pushNotification,
 } from "@/store";
-import type { Instance, Database, ConnectionAtom } from "@/types";
+import type { Instance, Database, Connection, ConnectionAtom } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
   emptyConnection,
@@ -25,6 +25,8 @@ import {
   sheetSlug as makeSheetSlug,
   connectionSlug as makeConnectionSlug,
   isSheetReadable,
+  isSameConnection,
+  isTempTab,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
@@ -122,18 +124,18 @@ const prepareSheet = async () => {
   } else {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
+    tabStore.updateCurrentTab({
+      sheetId: sheet.id,
+      name: sheet.name,
+      statement: sheet.statement,
+      isSaved: true,
+      connection: {
+        ...emptyConnection(),
+        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
+        databaseId: sheet.databaseId || UNKNOWN_ID,
+      },
+    });
   }
-  tabStore.updateCurrentTab({
-    sheetId: sheet.id,
-    name: sheet.name,
-    statement: sheet.statement,
-    isSaved: true,
-    connection: {
-      ...emptyConnection(),
-      instanceId: sheet.database?.instanceId || UNKNOWN_ID,
-      databaseId: sheet.databaseId || UNKNOWN_ID,
-    },
-  });
 
   return true;
 };
@@ -148,12 +150,31 @@ const prepareConnectionSlug = async () => {
     return false;
   }
 
-  tabStore.selectOrAddTempTab();
+  const maybeOpenNewTab = (connection: Connection) => {
+    const tab = tabStore.currentTab;
+    if (tab.sheetId) {
+      // Don't touch a saved sheet.
+      tabStore.selectOrAddTempTab();
+      return;
+    }
+    if (isTempTab(tab)) {
+      // Override current tab if it's a temp tab.
+      return;
+    }
+    if (isSameConnection(tab.connection, connection)) {
+      // Stay on current tab if its connection and target connection are equal.
+      return;
+    }
+    // Select or add a temp tab otherwise.
+    tabStore.selectOrAddTempTab();
+  };
+
   if (Number.isNaN(databaseId)) {
     // connected to instance
     const connection = await sqlEditorStore.fetchConnectionByInstanceId(
       instanceId
     );
+    maybeOpenNewTab(connection);
     tabStore.updateCurrentTab({ connection });
   } else {
     // connected to db
@@ -162,6 +183,7 @@ const prepareConnectionSlug = async () => {
         instanceId,
         databaseId
       );
+    maybeOpenNewTab(connection);
     tabStore.updateCurrentTab({ connection });
   }
   return true;
@@ -241,8 +263,11 @@ onMounted(async () => {
 
   watch(currentUser, (user) => {
     if (user.id === UNKNOWN_ID) {
+      // Cleanup when user signed out
       sqlEditorStore.connectionTree.data = [];
       sqlEditorStore.connectionTree.state = ConnectionTreeState.UNSET;
+
+      tabStore.reset();
     }
   });
 
