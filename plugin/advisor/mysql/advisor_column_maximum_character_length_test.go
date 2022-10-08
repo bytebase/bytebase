@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
-func TestColumnMaxCharLength(t *testing.T) {
+func TestColumnMaximumCharacterLength(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
 			Statement: `CREATE TABLE t(name char(20));`,
@@ -41,7 +41,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.maximum-char-length",
+					Title:   "column.maximum-character-length",
 					Content: "The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},
@@ -53,7 +53,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.maximum-char-length",
+					Title:   "column.maximum-character-length",
 					Content: "The length of the CHAR column `name_2` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},
@@ -65,7 +65,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.maximum-char-length",
+					Title:   "column.maximum-character-length",
 					Content: "The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},
@@ -77,7 +77,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.maximum-char-length",
+					Title:   "column.maximum-character-length",
 					Content: "The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},
@@ -89,8 +89,8 @@ func TestColumnMaxCharLength(t *testing.T) {
 		Number: 20,
 	})
 	require.NoError(t, err)
-	advisor.RunSQLReviewRuleTests(t, tests, &ColumnMaximumCharLengthAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleColumnMaximumCharLength,
+	advisor.RunSQLReviewRuleTests(t, tests, &ColumnMaximumCharacterLengthAdvisor{}, &advisor.SQLReviewRule{
+		Type:    advisor.SchemaRuleColumnMaximumCharacterLength,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, advisor.MockMySQLDatabase)
