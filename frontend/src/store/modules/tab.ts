@@ -119,6 +119,7 @@ export const useTabStore = defineStore("tab", () => {
 
   // watchers
   const watchTab = (tab: TabInfo, immediate: boolean) => {
+    // Use a throttled watcher to reduce the performance overhead when writing.
     watchThrottled(
       () => pick(tab, ...PERSISTENT_TASK_FIELDS),
       (tabPartial: PersistentTaskInfo) => {
