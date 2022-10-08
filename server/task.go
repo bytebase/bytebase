@@ -261,7 +261,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel the task").SetInternal(err)
 		}
 		if task == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
 		if !taskCancellationImplemented[task.Type] {
@@ -275,7 +275,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		defer s.TaskScheduler.runningExecutorsMutex.Unlock()
 		cancel, ok := s.TaskScheduler.runningExecutorsCancel[taskID]
 		if !ok {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to cancel task")
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel task")
 		}
 		cancel()
 
