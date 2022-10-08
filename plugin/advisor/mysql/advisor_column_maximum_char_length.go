@@ -13,21 +13,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*ColumnMaxCharLengthAdvisor)(nil)
-	_ ast.Visitor     = (*columnMaxCharLengthChecker)(nil)
+	_ advisor.Advisor = (*ColumnMaximumCharLengthAdvisor)(nil)
+	_ ast.Visitor     = (*columnMaximumCharLengthChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnMaxCharLength, &ColumnMaxCharLengthAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnMaxCharLength, &ColumnMaxCharLengthAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLColumnMaximumCharLength, &ColumnMaximumCharLengthAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLColumnMaximumCharLength, &ColumnMaximumCharLengthAdvisor{})
 }
 
-// ColumnMaxCharLengthAdvisor is the advisor checking for max char length.
-type ColumnMaxCharLengthAdvisor struct {
+// ColumnMaximumCharLengthAdvisor is the advisor checking for max char length.
+type ColumnMaximumCharLengthAdvisor struct {
 }
 
-// Check checks for max char length.
-func (*ColumnMaxCharLengthAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+// Check checks for maximum char length.
+func (*ColumnMaximumCharLengthAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -41,7 +41,7 @@ func (*ColumnMaxCharLengthAdvisor) Check(ctx advisor.Context, statement string) 
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnMaxCharLengthChecker{
+	checker := &columnMaximumCharLengthChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 		max:   payload.Number,
@@ -64,7 +64,7 @@ func (*ColumnMaxCharLengthAdvisor) Check(ctx advisor.Context, statement string) 
 	return checker.adviceList, nil
 }
 
-type columnMaxCharLengthChecker struct {
+type columnMaximumCharLengthChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -74,7 +74,7 @@ type columnMaxCharLengthChecker struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (checker *columnMaxCharLengthChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *columnMaximumCharLengthChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var tableName, columnName string
 	var line int
 	switch node := in.(type) {
@@ -128,7 +128,7 @@ func (checker *columnMaxCharLengthChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*columnMaxCharLengthChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*columnMaximumCharLengthChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 

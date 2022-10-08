@@ -91,8 +91,8 @@ const (
 	SchemaRuleColumnTypeRestriction SQLReviewRuleType = "column.type-restriction"
 	// SchemaRuleColumnDisallowSetCharset disallow set column charset.
 	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
-	// SchemaRuleColumnMaxCharLength enforce the max char length.
-	SchemaRuleColumnMaxCharLength SQLReviewRuleType = "column.max-char-length"
+	// SchemaRuleColumnMaximumCharLength enforce the maximum char length.
+	SchemaRuleColumnMaximumCharLength SQLReviewRuleType = "column.maximum-char-length"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -213,7 +213,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaxCharLength:
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaximumCharLength:
 		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -709,10 +709,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLDisallowSetColumnCharset, nil
 		}
-	case SchemaRuleColumnMaxCharLength:
+	case SchemaRuleColumnMaximumCharLength:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLColumnMaxCharLength, nil
+			return MySQLColumnMaximumCharLength, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {

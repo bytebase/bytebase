@@ -89,8 +89,8 @@ func TestColumnMaxCharLength(t *testing.T) {
 		Number: 20,
 	})
 	require.NoError(t, err)
-	advisor.RunSQLReviewRuleTests(t, tests, &ColumnMaxCharLengthAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleColumnMaxCharLength,
+	advisor.RunSQLReviewRuleTests(t, tests, &ColumnMaximumCharLengthAdvisor{}, &advisor.SQLReviewRule{
+		Type:    advisor.SchemaRuleColumnMaximumCharLength,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, advisor.MockMySQLDatabase)
