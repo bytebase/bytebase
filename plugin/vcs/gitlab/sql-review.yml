@@ -6,12 +6,11 @@ sql-review:
   variables:
     API: "%s" # This is the API for SQL reivew.
   before_script:
-    - apk update && apk add bash
     - apk update && apk add curl
     - apk update && apk add jq
   script:
     - echo "Start request $API/pull/$CI_MERGE_REQUEST_IID"
-    - 'response=$(curl -s --show-error -X GET "$API/pull/$CI_MERGE_REQUEST_IID" -H "Content-type: application/json")'
+    - 'response=$(curl -s --show-error -X GET "$API/pull/$CI_MERGE_REQUEST_IID" -H "Content-type: application/json" -H "X-SQL-Review-Token: $%s")'
     - echo $response
     - xml=$(echo $response | jq -r '.content')
     - status=$(echo $response | jq -r '.status')

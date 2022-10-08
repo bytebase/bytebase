@@ -592,6 +592,23 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		return err
 	}
 
+	if err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).UpsertEnvironmentVariable(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		vcsPlugin.SQLReviewApiSecretName,
+		repository.WebhookSecretToken,
+	); err != nil {
+		return err
+	}
+
 	switch repository.VCS.Type {
 	case vcsPlugin.GitHubCom:
 		return nil
@@ -695,7 +712,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 			}
 		}
 
-		newContent, err := gitlab.SetupSQLReviewCI(content)
+		newContent, err := gitlab.SetupGitLabCI(content)
 		if err != nil {
 			return "", err
 		}
@@ -708,7 +725,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 	// create or update the SQL review CI.
 	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
 		sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
-		return fmt.Sprintf(gitlab.SQLReviewCI, sqlReviewEndpoint), nil
+		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
 	})
 }
 

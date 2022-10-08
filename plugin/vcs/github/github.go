@@ -800,6 +800,14 @@ func (*Provider) CreatePullRequest(_ context.Context, _ common.OauthContext, _, 
 	return errors.Errorf("CreatePullRequest for GitHub is not implemented yet")
 }
 
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+//
+// https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
+// https://docs.github.com/en/rest/actions/secrets#get-a-repository-secret
+func (*Provider) UpsertEnvironmentVariable(_ context.Context, _ common.OauthContext, _, _, _, _ string) error {
+	return errors.Errorf("UpsertEnvironmentVariable for GitHub is not implemented yet")
+}
+
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook

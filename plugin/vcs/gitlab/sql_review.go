@@ -2,8 +2,11 @@ package gitlab
 
 import (
 	_ "embed"
+	"fmt"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 const (
@@ -13,13 +16,18 @@ const (
 	SQLReviewCIFilePath = ".gitlab/sql-review.yml"
 )
 
-// SQLReviewCI is the GitLab CI for SQL review in VCS workflow.
+// sqlReviewCI is the GitLab CI for SQL review in VCS workflow.
 //
 //go:embed sql-review.yml
-var SQLReviewCI string
+var sqlReviewCI string
 
-// SetupSQLReviewCI will update the GitLab CI content to add or update the SQL review CI.
-func SetupSQLReviewCI(gitlabCI map[string]interface{}) (string, error) {
+// SetupSQLReviewCI will setup the SQL review CI content with SQL review endpoint.
+func SetupSQLReviewCI(endpoint string) string {
+	return fmt.Sprintf(sqlReviewCI, endpoint, vcs.SQLReviewApiSecretName)
+}
+
+// SetupGitLabCI will update the GitLab CI content to add or update the SQL review CI.
+func SetupGitLabCI(gitlabCI map[string]interface{}) (string, error) {
 	if gitlabCI["sql-review"] == nil {
 		// Add include for SQL review CI
 		var includeList []interface{}

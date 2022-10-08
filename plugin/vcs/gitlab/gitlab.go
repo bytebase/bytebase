@@ -919,6 +919,158 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 	return nil
 }
 
+type environmentVariable struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	_, err := p.getEnvironmentVariable(ctx, oauthCtx, instanceURL, repositoryID, key)
+	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return p.createEnvironmentVariable(ctx, oauthCtx, instanceURL, repositoryID, key, value)
+		}
+
+		return err
+	}
+
+	return p.updateEnvironmentVariable(ctx, oauthCtx, instanceURL, repositoryID, key, value)
+}
+
+// getEnvironmentVariable gets the environment variable in the repository.
+//
+// https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
+func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key string) (*environmentVariable, error) {
+	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
+	} else if code >= 300 {
+		return nil,
+			errors.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	variable := new(environmentVariable)
+	if err := json.Unmarshal([]byte(body), variable); err != nil {
+		return nil, err
+	}
+
+	return variable, nil
+}
+
+// createEnvironmentVariable creates the environment variable in the repository.
+//
+// https://docs.gitlab.com/ee/api/project_level_variables.html#create-a-variable
+func (p *Provider) createEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	url := fmt.Sprintf("%s/projects/%s/variables", p.APIURL(instanceURL), repositoryID)
+	body, err := json.Marshal(
+		environmentVariable{
+			Key:   key,
+			Value: value,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal environment create")
+	}
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create environment variable through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create environment variable through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
+}
+
+// updateEnvironmentVariable updates the environment variable in the repository.
+//
+// https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
+func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
+	body, err := json.Marshal(
+		environmentVariable{
+			Key:   key,
+			Value: value,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal environment create")
+	}
+	code, _, resp, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to update environment variable through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to update environment variable through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
+}
+
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook

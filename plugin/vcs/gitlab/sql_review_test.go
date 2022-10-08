@@ -21,12 +21,12 @@ after_script:
   - echo "After script section"
 `
 
-func Test_SetupSQLReviewCI(t *testing.T) {
+func Test_SetupGitLabCI(t *testing.T) {
 	content := make(map[string]interface{})
 	err := yaml.Unmarshal([]byte(mockGitLabCIContentYAMLStr), &content)
 	require.NoError(t, err)
 
-	newContent, err := SetupSQLReviewCI(content)
+	newContent, err := SetupGitLabCI(content)
 	require.NoError(t, err)
 
 	err = yaml.Unmarshal([]byte(newContent), &content)
