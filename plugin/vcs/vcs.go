@@ -23,7 +23,7 @@ const (
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
 
-		// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
+	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
 	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
 )
 

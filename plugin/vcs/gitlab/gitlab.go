@@ -810,7 +810,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 		)
 	}
 
-	branch := new(gitLabBranch)
+	branch := new(gitlabBranch)
 	if err := json.Unmarshal([]byte(body), branch); err != nil {
 		return nil, err
 	}
@@ -826,7 +826,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 // Docs: https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
 func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
 	body, err := json.Marshal(
-		gitLabBranchCreate{
+		gitlabBranchCreate{
 			Branch: branch.Name,
 			Ref:    branch.LastCommitID,
 		},
@@ -874,7 +874,7 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
 func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
 	body, err := json.Marshal(
-		gitLabMergeRequestCreate{
+		gitlabMergeRequestCreate{
 			Title:        pullRequestCreate.Title,
 			Description:  pullRequestCreate.Body,
 			SourceBranch: pullRequestCreate.Head,
