@@ -369,19 +369,16 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 	var migrationDetailList []*api.MigrationDetail
 	var activityCreateList []*api.ActivityCreate
 	var migrationDescription string
-	var migrationType db.MigrationType
 
 	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && fType == schemaFileType {
 		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
 		return "", false, nil, nil
 	} else if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && fType == schemaFileType {
 		migrationDescription = "Apply schema diff"
-		migrationType = db.Migrate
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, migrationInfo, file)
 	} else {
 		// We should allow DDL/DML for SDL schema change type project.
 		migrationDescription = migrationInfo.Description
-		migrationType = migrationInfo.Type
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, migrationInfo)
 	}
 
@@ -391,14 +388,14 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 
 	// Create schema update issue
 	issueName := fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(file, repo.BaseDirectory+"/"))
-	if err := s.createIssueFromPushEvent(ctx, issueName, pushEvent, repo, migrationType, migrationDetailList); err != nil {
+	if err := s.createIssueFromMigrationFile(ctx, issueName, pushEvent, repo.ProjectID, migrationInfo.Type, migrationDetailList); err != nil {
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 	}
 
 	return fmt.Sprintf("Created issue %q from file %q", issueName, file), true, activityCreateList, nil
 }
 
-func (s *Server) createIssueFromPushEvent(ctx context.Context, issueName string, pushEvent vcs.PushEvent, repo *api.Repository, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
+func (s *Server) createIssueFromMigrationFile(ctx context.Context, issueName string, pushEvent vcs.PushEvent, projectID int, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
 	creatorID := api.SystemBotID
 	if pushEvent.FileCommit.AuthorEmail != "" {
 		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
@@ -432,7 +429,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, issueName string,
 		issueType = api.IssueDatabaseDataUpdate
 	}
 	issueCreate := &api.IssueCreate{
-		ProjectID:     repo.ProjectID,
+		ProjectID:     projectID,
 		Name:          issueName,
 		Type:          issueType,
 		Description:   pushEvent.FileCommit.Message,
@@ -462,7 +459,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, issueName string,
 
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   creatorID,
-		ContainerID: repo.ProjectID,
+		ContainerID: projectID,
 		Type:        api.ActivityProjectRepositoryPush,
 		Level:       api.ActivityInfo,
 		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
