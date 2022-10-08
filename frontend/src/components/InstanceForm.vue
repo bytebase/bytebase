@@ -598,7 +598,7 @@ const updateInstanceDataSource = () => {
   };
 
   if (!hasFeature("bb.feature.read-replica-connection")) {
-    if (newValue.hostOverride !== "" || newValue.portOverride !== "") {
+    if (newValue.hostOverride || newValue.portOverride) {
       currentDataSource.value.hostOverride = "";
       currentDataSource.value.portOverride = "";
       state.showFeatureModal = true;
