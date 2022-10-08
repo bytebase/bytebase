@@ -30,6 +30,8 @@ type Instance struct {
 	basedir string
 	// datadir is the directory where the mysql data is stored.
 	datadir string
+	// cfgPath is the path for mysql configuration.
+	cfgPath string
 	// port is the port of the mysql instance.
 	port int
 	// proc is the process of the mysql instance.
@@ -47,7 +49,7 @@ func (i Instance) Port() int {
 func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	i.port = port
 	cmd := exec.Command(filepath.Join(i.basedir, "bin", "mysqld"),
-		fmt.Sprintf("--defaults-file=%s", filepath.Join(i.basedir, "my.cnf")),
+		fmt.Sprintf("--defaults-file=%s", i.cfgPath),
 		fmt.Sprintf("--port=%d", i.port),
 	)
 	cmd.Stdout = stdout
@@ -87,8 +89,8 @@ func (i *Instance) Stop() error {
 	return i.proc.Kill()
 }
 
-// Install installs mysql on basedir, prepares the data directory and default user.
-func Install(basedir, datadir, user string) (*Instance, error) {
+// install installs mysql on basedir, prepares the data directory and default user.
+func install(basedir, cfgdir, datadir, user string) (*Instance, error) {
 	var tarName, version string
 	// Mysql uses both tar.gz and tar.xz, so we use this ugly hack.
 	var extractFn func(io.Reader, string) error
@@ -105,14 +107,20 @@ func Install(basedir, datadir, user string) (*Instance, error) {
 		return nil, errors.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
 
-	tarF, err := resources.Open(tarName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open mysql dist %q", tarName)
-	}
-	defer tarF.Close()
+	if _, err := os.Stat(basedir); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, errors.Wrapf(err, "failed to check binary directory path %q", basedir)
+		}
 
-	if err := extractFn(tarF, basedir); err != nil {
-		return nil, errors.Wrapf(err, "failed to extract mysql distribution %q", tarName)
+		tarF, err := resources.Open(tarName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to open mysql dist %q", tarName)
+		}
+		defer tarF.Close()
+
+		if err := extractFn(tarF, basedir); err != nil {
+			return nil, errors.Wrapf(err, "failed to extract mysql distribution %q", tarName)
+		}
 	}
 
 	basedir = filepath.Join(basedir, version)
@@ -124,7 +132,7 @@ socket=mysql.sock
 mysqlx=0
 user=%s
 `
-	defaultCfgFile, err := os.Create(filepath.Join(basedir, "my.cnf"))
+	defaultCfgFile, err := os.Create(filepath.Join(cfgdir, "my.cnf"))
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +155,7 @@ user=%s
 
 	return &Instance{
 		basedir: basedir,
+		cfgPath: defaultCfgFile.Name(),
 		datadir: datadir,
 	}, nil
 }
@@ -154,19 +163,19 @@ user=%s
 // SetupTestInstance installs and starts a mysql instance for testing,
 // returns the instance and the stop function.
 func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
-	basedir, datadir := t.TempDir(), t.TempDir()
-	t.Log("Installing Mysql...")
-	i, err := Install(basedir, datadir, "root")
+	basedir, cfgdir, datadir := filepath.Join(os.TempDir(), "mysql-server"), t.TempDir(), t.TempDir()
+	t.Log("Installing MySQL...")
+	i, err := install(basedir, cfgdir, datadir, "root")
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log("Starting Mysql...")
+	t.Log("Starting MySQL...")
 	if err := i.Start(port, os.Stdout, os.Stderr); err != nil {
 		t.Fatal(err)
 	}
 
 	stopFn := func() {
-		t.Log("Stopping Mysql...")
+		t.Log("Stopping MySQL...")
 		if err := i.Stop(); err != nil {
 			t.Fatal(err)
 		}
