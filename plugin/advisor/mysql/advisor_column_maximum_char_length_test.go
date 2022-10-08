@@ -41,7 +41,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.max-char-length",
+					Title:   "column.maximum-char-length",
 					Content: "The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},
@@ -53,7 +53,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.max-char-length",
+					Title:   "column.maximum-char-length",
 					Content: "The length of the CHAR column `name_2` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},
@@ -65,7 +65,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.max-char-length",
+					Title:   "column.maximum-char-length",
 					Content: "The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},
@@ -77,7 +77,7 @@ func TestColumnMaxCharLength(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CharLengthExceedsLimit,
-					Title:   "column.max-char-length",
+					Title:   "column.maximum-char-length",
 					Content: "The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead",
 					Line:    1,
 				},

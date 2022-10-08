@@ -42,9 +42,9 @@ func (*ColumnMaximumCharLengthAdvisor) Check(ctx advisor.Context, statement stri
 		return nil, err
 	}
 	checker := &columnMaximumCharLengthChecker{
-		level: level,
-		title: string(ctx.Rule.Type),
-		max:   payload.Number,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		maximum: payload.Number,
 	}
 
 	for _, stmt := range stmtList {
@@ -70,7 +70,7 @@ type columnMaximumCharLengthChecker struct {
 	title      string
 	text       string
 	line       int
-	max        int
+	maximum    int
 }
 
 // Enter implements the ast.Visitor interface.
@@ -81,7 +81,7 @@ func (checker *columnMaximumCharLengthChecker) Enter(in ast.Node) (ast.Node, boo
 	case *ast.CreateTableStmt:
 		for _, column := range node.Cols {
 			charLength := getCharLength(column)
-			if checker.max > 0 && charLength > checker.max {
+			if checker.maximum > 0 && charLength > checker.maximum {
 				tableName = node.Table.Name.O
 				columnName = column.Name.Name.O
 				line = column.OriginTextPosition()
@@ -94,7 +94,7 @@ func (checker *columnMaximumCharLengthChecker) Enter(in ast.Node) (ast.Node, boo
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
 					charLength := getCharLength(column)
-					if checker.max > 0 && charLength > checker.max {
+					if checker.maximum > 0 && charLength > checker.maximum {
 						tableName = node.Table.Name.O
 						columnName = column.Name.Name.O
 						line = node.OriginTextPosition()
@@ -102,7 +102,7 @@ func (checker *columnMaximumCharLengthChecker) Enter(in ast.Node) (ast.Node, boo
 				}
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
 				charLength := getCharLength(spec.NewColumns[0])
-				if checker.max > 0 && charLength > checker.max {
+				if checker.maximum > 0 && charLength > checker.maximum {
 					tableName = node.Table.Name.O
 					columnName = spec.NewColumns[0].Name.Name.O
 					line = node.OriginTextPosition()
@@ -119,7 +119,7 @@ func (checker *columnMaximumCharLengthChecker) Enter(in ast.Node) (ast.Node, boo
 			Status:  checker.level,
 			Code:    advisor.CharLengthExceedsLimit,
 			Title:   checker.title,
-			Content: fmt.Sprintf("The length of the CHAR column `%s` is bigger than %d, please use VARCHAR instead", columnName, checker.max),
+			Content: fmt.Sprintf("The length of the CHAR column `%s` is bigger than %d, please use VARCHAR instead", columnName, checker.maximum),
 			Line:    line,
 		})
 	}
