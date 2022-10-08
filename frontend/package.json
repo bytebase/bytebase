@@ -17,7 +17,7 @@
     "@codingame/monaco-vscode-api": "1.69.11",
     "@markdoc/markdoc": "0.1.7",
     "@soerenmartius/vue3-clipboard": "0.1.2",
-    "@tanstack/table-core": "8.5.13",
+    "@tanstack/table-core": "8.5.15",
     "@tanstack/vue-table": "8.5.13",
     "@vueuse/core": "9.2.0",
     "axios": "0.27.2",
