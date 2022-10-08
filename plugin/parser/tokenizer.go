@@ -710,17 +710,19 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 func (t *tokenizer) scan() {
 	if t.reader != nil {
 		s, err := t.reader.ReadString('\n')
-		readSuccessfully := (err == nil || err == io.EOF)
-		if readSuccessfully {
+		if err == nil {
 			t.buffer = append(t.buffer, []rune(s)...)
 			t.len = uint(len(t.buffer))
-		}
-		if err != nil {
+		} else if err == io.EOF {
+			// bufio.Reader treates EOF as an error, we need special handling.
+			t.buffer = append(t.buffer, []rune(s)...)
+			t.len = uint(len(t.buffer))
 			t.reader = nil
 			t.buffer = append(t.buffer, eofRune)
-			if err != io.EOF {
-				t.readErr = err
-			}
+		} else {
+			t.reader = nil
+			t.buffer = append(t.buffer, eofRune)
+			t.readErr = err
 		}
 	}
 }
