@@ -34,19 +34,14 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	comment := false
 	finish := false
 	for !finish {
-		var list []byte
-		for {
-			fragment, isPrefix, err := reader.ReadLine()
-			if err != nil && err != io.EOF {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				finish = true
+			} else {
 				return err
 			}
-			list = append(list, fragment...)
-			if !isPrefix || err == io.EOF {
-				finish = (err == io.EOF)
-				break
-			}
 		}
-		line := string(list)
 
 		execute := false
 		switch {
