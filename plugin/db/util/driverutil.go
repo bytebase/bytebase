@@ -32,7 +32,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	s := ""
 	delimiter := false
 	comment := false
-	finish := false
+	done := false
 	for !done {
 		line, err := reader.ReadString('\n')
 		if err != nil {
