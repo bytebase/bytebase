@@ -383,16 +383,3 @@ func getIndexName(index *ast.Constraint) string {
 	// TODO(zp): handle the duplicated index name.
 	return index.Keys[0].Column.Name.O
 }
-
-// getKetTpFromConstraintTp converts the constraint type to the key type.
-func getKeyTpFromConstraintTp(tp ast.ConstraintType) ast.IndexKeyType {
-	switch tp {
-	case ast.ConstraintUniq, ast.ConstraintUniqIndex, ast.ConstraintUniqKey:
-		return ast.IndexKeyTypeUnique
-	case ast.ConstraintFulltext:
-		return ast.IndexKeyTypeFullText
-	case ast.ConstraintIndex, ast.ConstraintKey:
-		return ast.IndexKeyTypeNone
-	}
-	return ast.IndexKeyTypeNone
-}
