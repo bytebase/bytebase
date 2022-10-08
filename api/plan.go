@@ -68,6 +68,8 @@ const (
 	// in turns belongs to the instance.
 	// - Support defining extra data source for a database and exposing the related data source UI.
 	FeatureDataSource FeatureType = "bb.feature.data-source"
+	// FeatureVCSSQLReviewWorkflow allows user to enable the SQL review CI in VCS workflow.
+	FeatureVCSSQLReviewWorkflow FeatureType = "bb.feature.vcs-sql-review"
 
 	// FeatureGhost allows user to use gh-ost for MySQL database migration.
 	FeatureGhost FeatureType = "bb.feature.ghost"
@@ -161,6 +163,8 @@ func (e FeatureType) Name() string {
 		return "Branding"
 	case FeatureEnvironmentTierPolicy:
 		return "Environment tier"
+	case FeatureVCSSQLReviewWorkflow:
+		return "VCS SQL review workflow"
 	}
 	return ""
 }
@@ -201,6 +205,13 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureReadReplicaConnection: {false, false, true},
 	FeatureBranding:              {false, false, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
+	FeatureVCSSQLReviewWorkflow:  {false, false, true},
+}
+
+// FeatureFlight is the flight map for features.
+// We can disable the hidden feature here. After the feature is released, we can set the bool to true to enable the feature.
+var FeatureFlight = map[FeatureType]bool{
+	FeatureVCSSQLReviewWorkflow: false,
 }
 
 // Plan is the API message for a plan.

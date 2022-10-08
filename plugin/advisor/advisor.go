@@ -109,6 +109,9 @@ const (
 	// MySQLDisallowSetColumnCharset is an advisor type for MySQL disallow set column charset.
 	MySQLDisallowSetColumnCharset Type = "bb.plugin.advisor.mysql.column.disallow-set-charset"
 
+	// MySQLColumnMaximumCharacterLength is an advisor type for MySQL maximum character length.
+	MySQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.mysql.column.maximum-character-length"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 

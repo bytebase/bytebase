@@ -22,6 +22,9 @@ const (
 	GitLabSelfHost Type = "GITLAB_SELF_HOST"
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
+
+	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
+	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
 )
 
 // OAuthToken is the API message for OAuthToken.
@@ -136,6 +139,20 @@ type Repository struct {
 	WebURL   string `json:"webUrl"`
 }
 
+// BranchInfo is the API message for repository branch.
+type BranchInfo struct {
+	Name         string
+	LastCommitID string
+}
+
+// PullRequestCreate is the API message to create pull request in repository.
+type PullRequestCreate struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
+	Head  string `json:"head"`
+	Base  string `json:"base"`
+}
+
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
@@ -215,6 +232,35 @@ type Provider interface {
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
 	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
+	// GetBranch gets the given branch in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// branchName: the target branch name
+	GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*BranchInfo, error)
+	// CreateBranch creates the branch in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// branch: the new branch info
+	CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *BranchInfo) error
+	// CreatePullRequest creates the pull request in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// pullRequestCreate: the new pull request info
+	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) error
+	// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// key: the environment variable name
+	// value: the environment variable value
+	UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, key, value string) error
 	// Creates a webhook. Returns the created webhook ID on success.
 	//
 	// oauthCtx: OAuth context to create the webhook

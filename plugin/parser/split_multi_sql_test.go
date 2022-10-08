@@ -1,8 +1,11 @@
 package parser
 
 import (
+	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -17,8 +20,30 @@ type resData struct {
 	err string
 }
 
+func generateOneMBInsert() string {
+	rand.Seed(time.Now().UnixNano())
+	letterList := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]byte, 1024*1024)
+	for i := range b {
+		b[i] = letterList[rand.Intn(len(letterList))]
+	}
+	return fmt.Sprintf("INSERT INTO t values('%s')", string(b))
+}
+
 func TestPGSplitMultiSQL(t *testing.T) {
+	bigSQL := generateOneMBInsert()
 	tests := []testData{
+		{
+			statement: bigSQL,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     bigSQL,
+						LastLine: 1,
+					},
+				},
+			},
+		},
 		{
 			statement: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)",
 			want: resData{
@@ -210,7 +235,19 @@ func TestPGSplitMultiSQL(t *testing.T) {
 }
 
 func TestMySQLSplitMultiSQL(t *testing.T) {
+	bigSQL := generateOneMBInsert()
 	tests := []testData{
+		{
+			statement: bigSQL,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     bigSQL,
+						LastLine: 1,
+					},
+				},
+			},
+		},
 		{
 			statement: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)",
 			want: resData{

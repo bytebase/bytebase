@@ -759,6 +759,318 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
+type gitlabBranch struct {
+	Name   string `json:"name"`
+	Commit Commit `json:"commit"`
+}
+
+type gitlabBranchCreate struct {
+	Branch string `json:"branch"`
+	Ref    string `json:"ref"`
+}
+
+type gitlabMergeRequestCreate struct {
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	SourceBranch string `json:"source_branch"`
+	TargetBranch string `json:"target_branch"`
+}
+
+// GetBranch gets the given branch in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+	url := fmt.Sprintf("%s/projects/%s/repository/branches/%s", p.APIURL(instanceURL), repositoryID, branchName)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get branch from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to get branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	branch := new(gitlabBranch)
+	if err := json.Unmarshal([]byte(body), branch); err != nil {
+		return nil, err
+	}
+
+	return &vcs.BranchInfo{
+		Name:         branch.Name,
+		LastCommitID: branch.Commit.ID,
+	}, nil
+}
+
+// CreateBranch creates the branch in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
+func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
+	body, err := json.Marshal(
+		gitlabBranchCreate{
+			Branch: branch.Name,
+			Ref:    branch.LastCommitID,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal branch create")
+	}
+
+	url := fmt.Sprintf("%s/projects/%s/repository/branches", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+// CreatePullRequest creates the pull request in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
+	body, err := json.Marshal(
+		gitlabMergeRequestCreate{
+			Title:        pullRequestCreate.Title,
+			Description:  pullRequestCreate.Body,
+			SourceBranch: pullRequestCreate.Head,
+			TargetBranch: pullRequestCreate.Base,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal pull request create")
+	}
+
+	url := fmt.Sprintf("%s/projects/%s/merge_requests", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+type environmentVariable struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	_, err := p.getEnvironmentVariable(ctx, oauthCtx, instanceURL, repositoryID, key)
+	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return p.createEnvironmentVariable(ctx, oauthCtx, instanceURL, repositoryID, key, value)
+		}
+
+		return err
+	}
+
+	return p.updateEnvironmentVariable(ctx, oauthCtx, instanceURL, repositoryID, key, value)
+}
+
+// getEnvironmentVariable gets the environment variable in the repository.
+//
+// https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
+func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key string) (*environmentVariable, error) {
+	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
+	} else if code >= 300 {
+		return nil,
+			errors.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	variable := new(environmentVariable)
+	if err := json.Unmarshal([]byte(body), variable); err != nil {
+		return nil, err
+	}
+
+	return variable, nil
+}
+
+// createEnvironmentVariable creates the environment variable in the repository.
+//
+// https://docs.gitlab.com/ee/api/project_level_variables.html#create-a-variable
+func (p *Provider) createEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	url := fmt.Sprintf("%s/projects/%s/variables", p.APIURL(instanceURL), repositoryID)
+	body, err := json.Marshal(
+		environmentVariable{
+			Key:   key,
+			Value: value,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal environment create")
+	}
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create environment variable through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create environment variable through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
+}
+
+// updateEnvironmentVariable updates the environment variable in the repository.
+//
+// https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
+func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
+	body, err := json.Marshal(
+		environmentVariable{
+			Key:   key,
+			Value: value,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal environment create")
+	}
+	code, _, resp, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to update environment variable through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to update environment variable through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
+}
+
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook
