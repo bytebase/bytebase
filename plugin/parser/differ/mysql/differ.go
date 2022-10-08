@@ -47,8 +47,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 
 	var diff []ast.Node
-	var dropIndex []ast.Node
-	var addIndex []ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
 
@@ -66,7 +64,8 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
-			var createIndexStmts []*ast.CreateIndexStmt
+			var alterTableAddConstraintSpecs []*ast.AlterTableSpec
+			var alterTableDropConstraintSpecs []*ast.AlterTableSpec
 
 			oldColumnMap := buildColumnMap(oldNodes, newStmt.Table.Name)
 			for _, columnDef := range newStmt.Cols {
@@ -99,12 +98,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 							continue
 						}
 					}
-					createIndexStmts = append(createIndexStmts, &ast.CreateIndexStmt{
-						IndexName:               constraint.Name,
-						Table:                   &ast.TableName{Name: model.NewCIStr(tableName)},
-						IndexPartSpecifications: constraint.Keys,
-						IndexOption:             constraint.Option,
-						KeyType:                 getKeyTpFromConstraintTp(constraint.Tp),
+					alterTableAddConstraintSpecs = append(alterTableAddConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddConstraint,
+						Constraint: constraint,
 					})
 				}
 			}
@@ -124,20 +120,31 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Specs: alterTableModifyColumnSpecs,
 				})
 			}
+			// We should drop the remaining indices in the indexMap.
 			for indexName := range indexMap {
-				dropIndex = append(dropIndex, &ast.DropIndexStmt{
-					IndexName: indexName,
+				alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
+					Tp:   ast.AlterTableDropIndex,
+					Name: indexName,
+				})
+			}
+
+			if len(alterTableAddConstraintSpecs) > 0 {
+				diff = append(diff, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
+					Specs: alterTableDropConstraintSpecs,
 				})
 			}
-			// We should drop the remaining indices in the indexMap.
-			for _, createIndexStmt := range createIndexStmts {
-				addIndex = append(addIndex, createIndexStmt)
+
+			if len(alterTableDropConstraintSpecs) > 0 {
+				diff = append(diff, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableAddConstraintSpecs,
+				})
 			}
-			diff = append(diff, dropIndex...)
-			diff = append(diff, addIndex...)
 		default:
 		}
 	}

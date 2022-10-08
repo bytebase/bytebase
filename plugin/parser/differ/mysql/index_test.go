@@ -289,8 +289,8 @@ func TestIndexType(t *testing.T) {
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE(name));`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING HASH(name));`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE INDEX `book_idx` ON `book` (`name`) USING HASH;\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `book_idx`(`name`) USING HASH;\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE(name));`,
@@ -323,29 +323,29 @@ func TestIndexOption(t *testing.T) {
 			// KEY_BLOCK_SIZE not match.
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) KEY_BLOCK_SIZE=30);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) KEY_BLOCK_SIZE=50);`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE INDEX `book_idx` ON `book` (`name`) KEY_BLOCK_SIZE=50;\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `book_idx`(`name`) KEY_BLOCK_SIZE=50;\n",
 		},
 		{
 			// WITH PARSER not match.
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_a);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_b);`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE FULLTEXT INDEX `book_idx` ON `book` (`name`) WITH PARSER `parser_b`;\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD FULLTEXT `book_idx`(`name`) WITH PARSER `parser_b`;\n",
 		},
 		{
 			// COMMENT not match.
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) COMMENT 'comment_b');`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE INDEX `book_idx` ON `book` (`name`) COMMENT 'comment_b';\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `book_idx`(`name`) COMMENT 'comment_b';\n",
 		},
 		{
 			// VISIBILITY not match.
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) VISIBLE);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) INVISIBLE);`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE INDEX `book_idx` ON `book` (`name`) INVISIBLE;\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `book_idx`(`name`) INVISIBLE;\n",
 		},
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
@@ -372,20 +372,20 @@ func TestKeyPart(t *testing.T) {
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id) COMMENT 'comment_a');`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE INDEX `book_idx` ON `book` (`id`) USING BTREE COMMENT 'comment_a';\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `book_idx`(`id`) USING BTREE COMMENT 'comment_a';\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE INDEX `book_idx` ON `book` ((`id`+1)) USING BTREE COMMENT 'comment_a';\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `book_idx`((`id`+1)) USING BTREE COMMENT 'comment_a';\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 2)) COMMENT 'comment_a');`,
-			want: "DROP INDEX `book_idx` ON `book`;\n" +
-				"CREATE INDEX `book_idx` ON `book` ((`id`+2)) USING BTREE COMMENT 'comment_a';\n",
+			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `book_idx`((`id`+2)) USING BTREE COMMENT 'comment_a';\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
