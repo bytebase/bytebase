@@ -12,7 +12,7 @@ specifiers:
   '@tailwindcss/forms': 0.5.3
   '@tailwindcss/line-clamp': 0.4.2
   '@tailwindcss/typography': 0.5.7
-  '@tanstack/table-core': 8.5.13
+  '@tanstack/table-core': 8.5.15
   '@tanstack/vue-table': 8.5.13
   '@types/canvas-confetti': 1.4.3
   '@types/dompurify': 2.3.4
@@ -92,7 +92,7 @@ dependencies:
   '@codingame/monaco-vscode-api': 1.69.11_2dqbcwnoiqa4sunjfnse34uode
   '@markdoc/markdoc': 0.1.7
   '@soerenmartius/vue3-clipboard': 0.1.2
-  '@tanstack/table-core': 8.5.13
+  '@tanstack/table-core': 8.5.15
   '@tanstack/vue-table': 8.5.13_vue@3.2.40
   '@vueuse/core': 9.2.0_vue@3.2.40
   axios: 0.27.2
@@ -580,6 +580,11 @@ packages:
 
   /@tanstack/table-core/8.5.13:
     resolution: {integrity: sha512-kvDRjC7LrLNNNgUMfsBz3nHOwbBLFdosWQ16dfbD9D/OJrvFHRXoUIPzF0MNqqSPghaj7/18fnwXHGypvzoh9Q==}
+    engines: {node: '>=12'}
+    dev: false
+
+  /@tanstack/table-core/8.5.15:
+    resolution: {integrity: sha512-k+BcCOAYD610Cij6p1BPyEqjMQjZIdAnVDoIUKVnA/tfHbF4JlDP7pKAftXPBxyyX5Z1yQPurPnOdEY007Snyg==}
     engines: {node: '>=12'}
     dev: false
 
