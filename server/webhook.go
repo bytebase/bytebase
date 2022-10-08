@@ -377,7 +377,12 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 		migrationDescription = "Apply schema diff"
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, migrationInfo, file)
 	} else {
-		// We should allow DDL/DML for SDL schema change type project.
+		// This is a migration-based DDL or DML file and we would allow it for both DDL and SDL schema change type project.
+		// For DDL schema change type project, this is expected.
+		// For SDL schema change type project, we allow it because:
+		// 1) DML is always migration-based.
+		// 2) We may have a limitation in SDL implementation.
+		// 3) User just wants to break the glass.
 		migrationDescription = migrationInfo.Description
 		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, migrationInfo)
 	}
