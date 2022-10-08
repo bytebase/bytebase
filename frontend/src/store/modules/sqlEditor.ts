@@ -18,6 +18,9 @@ import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
 import { useTabStore } from "./tab";
 
+// set the limit to 10000 temporarily to avoid the query timeout and page crash
+export const RESULT_ROWS_LIMIT = 10000;
+
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
     connectionTree: {
@@ -55,8 +58,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         instanceId,
         databaseName,
         statement: statement,
-        // set the limit to 10000 temporarily to avoid the query timeout and page crash
-        limit: 10000,
+        limit: RESULT_ROWS_LIMIT,
       });
 
       return queryResult;
