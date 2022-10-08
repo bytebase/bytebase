@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
 )
@@ -954,7 +953,7 @@ ALTER TABLE ONLY public.users
 
 func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 	branchFilter := "feature/foo"
-	dbName := "db"
+	dbName := "db1"
 	externalID := "121"
 	repoFullPath := "test/wildcard"
 
@@ -1189,7 +1188,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			t.Parallel()
 
 			port := getTestPort(t.Name())
-			mysqlPort := port + 3
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
@@ -1251,17 +1249,15 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			})
 			a.NoError(err)
 			// Provision an instance.
-			instanceName := "testInstance"
-			_, stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
-			defer stopInstance()
-			connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
+			instanceRootDir := t.TempDir()
+			instanceName := "testInstance1"
+			instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+			a.NoError(err)
 			instance, err := ctl.addInstance(api.InstanceCreate{
 				EnvironmentID: environment.ID,
 				Name:          instanceName,
-				Engine:        db.MySQL,
-				Host:          connCfg.Host,
-				Port:          connCfg.Port,
-				Username:      connCfg.Username,
+				Engine:        db.SQLite,
+				Host:          instanceDir,
 			})
 			a.NoError(err)
 
