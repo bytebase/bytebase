@@ -28,12 +28,25 @@ func FormatErrorWithQuery(err error, query string) error {
 
 // ApplyMultiStatements will apply the split statements from scanner.
 func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
-	scanner := bufio.NewScanner(sc)
+	reader := bufio.NewReader(sc)
 	s := ""
 	delimiter := false
 	comment := false
-	for scanner.Scan() {
-		line := scanner.Text()
+	finish := false
+	for !finish {
+		var list []byte
+		for {
+			fragment, isPrefix, err := reader.ReadLine()
+			if err != nil && err != io.EOF {
+				return err
+			}
+			list = append(list, fragment...)
+			if !isPrefix || err == io.EOF {
+				finish = (err == io.EOF)
+				break
+			}
+		}
+		line := string(list)
 
 		execute := false
 		switch {
@@ -92,7 +105,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 		}
 	}
 
-	return scanner.Err()
+	return nil
 }
 
 // NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.
