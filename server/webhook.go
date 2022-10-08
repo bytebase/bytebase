@@ -222,7 +222,7 @@ func (s *Server) createIssuesFromCommits(ctx context.Context, webhookEndpointID 
 
 func (s *Server) validateWebhookRequest(ctx context.Context, c echo.Context) (string, []*api.Repository, *echo.HTTPError) {
 	webhookEndpointID := c.Param("id")
-	// In mono-repository settings, one GitLab Project/GitHub Repository may correspond to multiple Bytebase Project/Repository.
+	// In a monorepo, one GitLab Project/GitHub Repository may be connected by multiple Bytebase projects.
 	// We need to further filter out the repositories for this webhook push event.
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
@@ -541,7 +541,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent *vcs.PushEvent, 
 		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", webhookEndpointID)
 	}
 
-	// In mono-repository settings, one GitLab Project/GitHub Repository may correspond to multiple Bytebase Project/Repository.
+	// In a monorepo, one GitLab Project/GitHub Repository may be connected by multiple Bytebase projects.
 	// In this case, they are the same except for the record ID in database.
 	// So we can just use the first one in the list.
 	repo := repos[0]
