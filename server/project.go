@@ -733,7 +733,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 		github.SQLReviewActionFilePath,
 		vcsPlugin.FileCommitCreate{
 			Branch:        branch.Name,
-			CommitMessage: "chore: update SQL review action",
+			CommitMessage: sqlReviewInVCSPRTitle,
 			Content:       sqlReviewConfig,
 			LastCommitID:  fileLastCommitID,
 		},
