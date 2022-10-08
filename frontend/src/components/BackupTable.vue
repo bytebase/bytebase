@@ -75,7 +75,10 @@
           <BBSpin v-if="state.loadingMigrationHistory" />
         </div>
       </BBTableCell>
-      <BBTableCell>
+      <BBTableCell class="tooltip-wrapper">
+        <span class="tooltip">
+          {{ dayjs(backup.createdTs * 1000).format("YYYY-MM-DD HH:mm") }}
+        </span>
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
       <BBTableCell>
