@@ -272,8 +272,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		s.TaskScheduler.runningExecutorsMutex.Lock()
-		defer s.TaskScheduler.runningExecutorsMutex.Unlock()
 		cancel, ok := s.TaskScheduler.runningExecutorsCancel[taskID]
+		s.TaskScheduler.runningExecutorsMutex.Unlock()
 		if !ok {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel task")
 		}
