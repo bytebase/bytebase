@@ -377,9 +377,9 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
 		return "", false, nil, nil
 	} else if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && fType == schemaFileType {
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, migrationInfo, file)
 		migrationDescription = "Apply schema diff"
 		migrationType = db.Migrate
+		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, migrationInfo, file)
 	} else {
 		// We should allow DDL/DML for SDL schema change type project.
 		migrationDescription = migrationInfo.Description
