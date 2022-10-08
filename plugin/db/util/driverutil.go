@@ -42,6 +42,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 				return err
 			}
 		}
+		line = strings.TrimRight(line, "\r\n")
 
 		execute := false
 		switch {
