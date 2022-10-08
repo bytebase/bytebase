@@ -12,7 +12,7 @@ specifiers:
   '@tailwindcss/forms': 0.5.3
   '@tailwindcss/line-clamp': 0.4.2
   '@tailwindcss/typography': 0.5.7
-  '@tanstack/table-core': 8.5.13
+  '@tanstack/table-core': 8.5.15
   '@tanstack/vue-table': 8.5.13
   '@types/canvas-confetti': 1.4.3
   '@types/dompurify': 2.3.4
@@ -35,7 +35,7 @@ specifiers:
   '@vue/eslint-config-typescript': 11.0.2
   '@vueuse/core': 9.2.0
   autoprefixer: 10.4.12
-  axios: 0.27.2
+  axios: 1.1.2
   bootstrap: 5.2.1
   canvas-confetti: 1.5.1
   dayjs: 1.11.5
@@ -92,10 +92,10 @@ dependencies:
   '@codingame/monaco-vscode-api': 1.69.11_2dqbcwnoiqa4sunjfnse34uode
   '@markdoc/markdoc': 0.1.7
   '@soerenmartius/vue3-clipboard': 0.1.2
-  '@tanstack/table-core': 8.5.13
+  '@tanstack/table-core': 8.5.15
   '@tanstack/vue-table': 8.5.13_vue@3.2.40
   '@vueuse/core': 9.2.0_vue@3.2.40
-  axios: 0.27.2
+  axios: 1.1.2
   bootstrap: 5.2.1_@popperjs+core@2.11.6
   canvas-confetti: 1.5.1
   dayjs: 1.11.5
@@ -580,6 +580,11 @@ packages:
 
   /@tanstack/table-core/8.5.13:
     resolution: {integrity: sha512-kvDRjC7LrLNNNgUMfsBz3nHOwbBLFdosWQ16dfbD9D/OJrvFHRXoUIPzF0MNqqSPghaj7/18fnwXHGypvzoh9Q==}
+    engines: {node: '>=12'}
+    dev: false
+
+  /@tanstack/table-core/8.5.15:
+    resolution: {integrity: sha512-k+BcCOAYD610Cij6p1BPyEqjMQjZIdAnVDoIUKVnA/tfHbF4JlDP7pKAftXPBxyyX5Z1yQPurPnOdEY007Snyg==}
     engines: {node: '>=12'}
     dev: false
 
@@ -1341,11 +1346,12 @@ packages:
       postcss-value-parser: 4.2.0
     dev: true
 
-  /axios/0.27.2:
-    resolution: {integrity: sha512-t+yRIyySRTp/wua5xEr+z1q60QmLq8ABsS5O9Me1AsE5dfKqgnCFzwiCZZ/cGNd1lq4/7akDWMxdhVlucjmnOQ==}
+  /axios/1.1.2:
+    resolution: {integrity: sha512-bznQyETwElsXl2RK7HLLwb5GPpOLlycxHCtrpDR/4RqqBzjARaOTo3jz4IgtntWUYee7Ne4S8UHd92VCuzPaWA==}
     dependencies:
       follow-redirects: 1.15.1
       form-data: 4.0.0
+      proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
     dev: false
@@ -3212,6 +3218,10 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
     dev: true
+
+  /proxy-from-env/1.1.0:
+    resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
+    dev: false
 
   /punycode/2.1.1:
     resolution: {integrity: sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==}
