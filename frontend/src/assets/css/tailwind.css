@@ -238,6 +238,10 @@
   input[type="number"].hide-ticker {
     -moz-appearance: textfield;
   }
+
+  .fix-scrollbar-z-index {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .fade-enter-active,
