@@ -22,8 +22,8 @@ const (
 	GitLabSelfHost Type = "GITLAB_SELF_HOST"
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
-	// SQLReviewApiSecretName is the api secret name used in GitHub action or GitLab CI workflow.
-	SQLReviewApiSecretName = "SQL_REVIEW_API_SECRET"
+	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
+	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
 )
 
 // OAuthToken is the API message for OAuthToken.

@@ -23,7 +23,7 @@ var sqlReviewCI string
 
 // SetupSQLReviewCI will setup the SQL review CI content with SQL review endpoint.
 func SetupSQLReviewCI(endpoint string) string {
-	return fmt.Sprintf(sqlReviewCI, endpoint, vcs.SQLReviewApiSecretName)
+	return fmt.Sprintf(sqlReviewCI, endpoint, vcs.SQLReviewAPISecretName)
 }
 
 // SetupGitLabCI will update the GitLab CI content to add or update the SQL review CI.
