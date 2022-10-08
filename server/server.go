@@ -489,9 +489,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		}
 	}
 
-	// Sleep for 1 sec to make sure port is released between runs.
-	time.Sleep(time.Duration(1) * time.Second)
-
 	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 

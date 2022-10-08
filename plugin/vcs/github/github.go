@@ -961,3 +961,37 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 		return refresher(r.AccessToken, r.RefreshToken, expireAt)
 	}
 }
+
+// ToVCS returns the push event in VCS format.
+func (p WebhookPushEvent) ToVCS() vcs.PushEvent {
+	var commitList []vcs.Commit
+	for _, commit := range p.Commits {
+		// The Distinct is false if the commit has not been pushed before.
+		if !commit.Distinct {
+			continue
+		}
+		// Per Git convention, the message title and body are separated by two new line characters.
+		messages := strings.SplitN(commit.Message, "\n\n", 2)
+		messageTitle := messages[0]
+
+		commitList = append(commitList, vcs.Commit{
+			ID:           commit.ID,
+			Title:        messageTitle,
+			Message:      commit.Message,
+			CreatedTs:    commit.Timestamp.Unix(),
+			URL:          commit.URL,
+			AuthorName:   commit.Author.Name,
+			AuthorEmail:  commit.Author.Email,
+			AddedList:    commit.Added,
+			ModifiedList: commit.Modified,
+		})
+	}
+	return vcs.PushEvent{
+		Ref:                p.Ref,
+		RepositoryID:       p.Repository.FullName,
+		RepositoryURL:      p.Repository.HTMLURL,
+		RepositoryFullPath: p.Repository.FullName,
+		AuthorName:         p.Sender.Login,
+		CommitList:         commitList,
+	}
+}

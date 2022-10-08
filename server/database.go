@@ -629,7 +629,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID})
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
@@ -665,7 +665,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID})
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
@@ -676,6 +676,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceCreate := &api.DataSourceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
+		}
+		if !s.feature(api.FeatureReadReplicaConnection) {
+			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
+			}
 		}
 
 		if dataSourceCreate.Type == api.Admin && (dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "") {
@@ -690,18 +695,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
-		if dataSourceCreate.SyncSchema {
-			// Refetch the instance to get the updated data source.
-			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
-			}
-			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
-				log.Warn("Failed to sync instance schema",
-					zap.Int("instance_id", updatedInstance.ID),
-					zap.Error(err))
-			}
+		// Refetch the instance to get the updated data source.
+		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
+		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", updatedInstance.ID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		instanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -748,6 +753,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
+		if !s.feature(api.FeatureReadReplicaConnection) {
+			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
+			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
+			}
+		}
 
 		dataSourcePatch.ID = dataSourceID
 		dataSourcePatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
@@ -765,18 +776,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
-		if dataSourcePatch.SyncSchema {
-			// Refetch the instance to get the updated data source.
-			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
-			}
-			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
-				log.Warn("Failed to sync instance schema",
-					zap.Int("instance_id", updatedInstance.ID),
-					zap.Error(err))
-			}
+		// Refetch the instance to get the updated data source.
+		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
+		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", updatedInstance.ID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		instanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
@@ -809,7 +820,8 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 	}
 
-	// Validate labels can match database name template on the project.
+	// Validate labels can match database name template on the project if the
+	// template is not a wildcard.
 	if project.DBNameTemplate != "" {
 		tokens := make(map[string]string)
 		for _, label := range labels {

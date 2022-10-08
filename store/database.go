@@ -439,7 +439,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.Databa
 			last_successful_sync_ts,
 			schema_version
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'OK', EXTRACT(epoch from NOW()), $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'OK', $8, $9)
 		RETURNING
 			id,
 			creator_id,
@@ -464,6 +464,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.Databa
 		create.Name,
 		create.CharacterSet,
 		create.Collation,
+		create.LastSuccessfulSyncTs,
 		create.SchemaVersion,
 	).Scan(
 		&databaseRaw.ID,

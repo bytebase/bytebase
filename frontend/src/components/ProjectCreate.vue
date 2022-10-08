@@ -174,7 +174,7 @@ export default defineComponent({
         name: "New Project",
         key: randomString(3).toUpperCase(),
         tenantMode: "DISABLED",
-        dbNameTemplate: "",
+        dbNameTemplate: "{{DB_NAME}}_{{TENANT}}",
         roleProvider: "BYTEBASE",
       } as Project,
       showFeatureModal: false,
@@ -203,7 +203,9 @@ export default defineComponent({
     watch(
       () => state.enableDbNameTemplate,
       (on) => {
-        if (!on) {
+        if (on) {
+          state.project.dbNameTemplate = "{{DB_NAME}}_{{TENANT}}";
+        } else {
           state.project.dbNameTemplate = "";
         }
       }

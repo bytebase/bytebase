@@ -68,3 +68,54 @@ func TestFromStoredVersion(t *testing.T) {
 		require.Equal(t, tc.wantSemanticVersionSuffix, gotSemanticVersionSuffix)
 	}
 }
+
+func TestGetStatementWithResultLimit(t *testing.T) {
+	tests := []struct {
+		sqlStatement string
+		limit        int
+		want         string
+	}{
+		{
+			sqlStatement: "  seLeCT * FROM test;",
+			limit:        123,
+			want:         "WITH result AS (  seLeCT * FROM test) SELECT * FROM result LIMIT 123;",
+		},
+		{
+			sqlStatement: "  seLeCT * FROM test;",
+			limit:        0,
+			want:         "WITH result AS (  seLeCT * FROM test) SELECT * FROM result;",
+		},
+		{
+			sqlStatement: "  \n \r SELEct * from test ",
+			limit:        100,
+			want:         "WITH result AS (  \n \r SELEct * from test) SELECT * FROM result LIMIT 100;",
+		},
+		{
+			sqlStatement: "SELECT\n*\nFROM\ntest  ;\n",
+			limit:        100,
+			want:         "WITH result AS (SELECT\n*\nFROM\ntest) SELECT * FROM result LIMIT 100;",
+		},
+		{
+			sqlStatement: "SELECT\n*\nFROM\ntest  ;;;\n",
+			limit:        100,
+			want:         "WITH result AS (SELECT\n*\nFROM\ntest) SELECT * FROM result LIMIT 100;",
+		},
+		{
+			sqlStatement: "SELECT\n*\nFROM\n`test;`  ;;;\n",
+			limit:        100,
+			want:         "WITH result AS (SELECT\n*\nFROM\n`test;`) SELECT * FROM result LIMIT 100;",
+		},
+		{
+			sqlStatement: "EXPLAIN  \n \r SELEct * from test ",
+			limit:        0,
+			want:         "EXPLAIN  \n \r SELEct * from test",
+		},
+	}
+
+	for _, test := range tests {
+		got := getStatementWithResultLimit(test.sqlStatement, test.limit)
+		if got != test.want {
+			t.Errorf("trimSQLStatement %q: got result %v, want %v.", test.sqlStatement, got, test.want)
+		}
+	}
+}

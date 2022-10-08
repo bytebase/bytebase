@@ -6,9 +6,8 @@
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
-            &nbsp;
-            <span style="color: red">*</span>
-            <InstanceEngineIcon class="ml-1" :instance="state.instance" />
+            <span class="text-red-600 mr-2">*</span>
+            <InstanceEngineIcon :instance="state.instance" />
             <span class="ml-1">{{ state.instance.engineVersion }}</span>
           </label>
           <input
@@ -47,11 +46,11 @@
           <label for="host" class="textlabel block">
             <template v-if="state.instance.engine == 'SNOWFLAKE'">
               {{ $t("instance.account-name") }}
-              <span style="color: red">*</span>
+              <span class="text-red-600 mr-2">*</span>
             </template>
             <template v-else>
               {{ $t("instance.host-or-socket") }}
-              <span style="color: red">*</span>
+              <span class="text-red-600 mr-2">*</span>
             </template>
           </label>
           <input
@@ -186,9 +185,10 @@
           :dataSourceType="state.currentDataSourceType"
         />
         <div class="mt-2 sm:col-span-1 sm:col-start-1">
-          <label for="username" class="textlabel block">{{
-            $t("common.username")
-          }}</label>
+          <label for="username" class="textlabel block">
+            {{ $t("common.username") }}
+            <span class="text-red-600">*</span>
+          </label>
           <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
           thus we make it REQUIRED here.-->
@@ -210,6 +210,7 @@
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
               {{ $t("common.password") }}
+              <span class="text-red-600">*</span>
             </label>
             <BBCheckbox
               :title="$t('common.empty')"
@@ -238,10 +239,46 @@
           />
         </div>
 
+        <template v-if="state.currentDataSourceType === 'RO'">
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-row items-center space-x-2">
+              <label for="host" class="textlabel block">
+                {{ $t("data-source.read-replica-host") }}
+              </label>
+            </div>
+            <input
+              id="host"
+              name="host"
+              type="text"
+              class="textfield mt-1 w-full"
+              autocomplete="off"
+              :value="currentDataSource.hostOverride"
+              @input="handleCurrentDataSourceHostOverrideInput"
+            />
+          </div>
+
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-row items-center space-x-2">
+              <label for="port" class="textlabel block">
+                {{ $t("data-source.read-replica-port") }}
+              </label>
+            </div>
+            <input
+              id="port"
+              name="port"
+              type="text"
+              class="textfield mt-1 w-full"
+              autocomplete="off"
+              :value="currentDataSource.portOverride"
+              @input="handleCurrentDataSourcePortOverrideInput"
+            />
+          </div>
+        </template>
+
         <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
           <div class="flex flex-row items-center">
             <label for="password" class="textlabel block">
-              {{ $t("datasource.ssl-connection") }}
+              {{ $t("data-source.ssl-connection") }}
             </label>
           </div>
           <template v-if="currentDataSource.id === UNKNOWN_ID">
@@ -291,14 +328,6 @@
     <!-- Action Button Group -->
     <div class="pt-4 px-2">
       <div class="flex justify-between items-center">
-        <div>
-          <BBCheckbox
-            v-if="connectionInfoChanged"
-            :title="$t('instance.sync-schema-now')"
-            :value="state.syncSchema"
-            @toggle="state.syncSchema = !state.syncSchema"
-          />
-        </div>
         <div class="flex justify-end items-center">
           <div>
             <BBSpin v-if="state.isUpdating" :title="$t('common.updating')" />
@@ -318,6 +347,12 @@
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.read-replica-connection"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -341,6 +376,7 @@ import {
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 import {
+  hasFeature,
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
@@ -358,9 +394,9 @@ interface State {
   originalInstance: Instance;
   instance: Instance;
   isUpdating: boolean;
-  syncSchema: boolean;
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
+  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -390,9 +426,9 @@ const state = reactive<State>({
   // Make hard copy since we are going to make equal comparison to determine the update button enable state.
   instance: cloneDeep(props.instance),
   isUpdating: false,
-  syncSchema: true,
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
+  showFeatureModal: false,
 });
 
 const allowEdit = computed(() => {
@@ -515,6 +551,18 @@ const handleCurrentDataSourcePasswordInput = (event: Event) => {
   updateInstanceDataSource();
 };
 
+const handleCurrentDataSourceHostOverrideInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.hostOverride = str;
+  updateInstanceDataSource();
+};
+
+const handleCurrentDataSourcePortOverrideInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.portOverride = str;
+  updateInstanceDataSource();
+};
+
 const handleEditSsl = (edit: boolean) => {
   const curr = currentDataSource.value;
   if (!edit) {
@@ -545,7 +593,17 @@ const updateInstanceDataSource = () => {
   const newValue = {
     ...state.instance.dataSourceList[index],
     username: curr.username,
+    hostOverride: curr.hostOverride,
+    portOverride: curr.portOverride,
   };
+
+  if (!hasFeature("bb.feature.read-replica-connection")) {
+    if (newValue.hostOverride !== "" || newValue.portOverride !== "") {
+      currentDataSource.value.hostOverride = "";
+      currentDataSource.value.portOverride = "";
+      state.showFeatureModal = true;
+    }
+  }
 
   if (curr.useEmptyPassword) {
     // When 'Password: Empty' is checked, we set the password to empty string.
@@ -604,7 +662,7 @@ const updateInstance = (field: string, value: string) => {
 };
 
 const doUpdate = () => {
-  const patchedInstance: InstancePatch = { syncSchema: state.syncSchema };
+  const patchedInstance: InstancePatch = {};
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
   const reloadDatabaseAndUser = connectionInfoChanged.value;
@@ -652,7 +710,8 @@ const doUpdate = () => {
               type: dataSource.type,
               username: dataSource.username,
               password: dataSource.password,
-              syncSchema: state.syncSchema,
+              hostOverride: dataSource.hostOverride,
+              portOverride: dataSource.portOverride,
             };
             if (typeof dataSource.sslCa !== "undefined") {
               dataSourceCreate.sslCa = dataSource.sslCa;
@@ -672,7 +731,7 @@ const doUpdate = () => {
             dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
-              dataSource: { ...dataSource, syncSchema: state.syncSchema },
+              dataSource: { ...dataSource },
             })
           );
         }
@@ -717,7 +776,6 @@ const doUpdate = () => {
         })
         .finally(() => {
           state.isUpdating = false;
-          state.syncSchema = true;
         });
     });
   }
