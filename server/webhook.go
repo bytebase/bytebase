@@ -160,6 +160,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, "Cannot found repository in project")
 		}
 		repo := repos[0]
+		if c.Request().Header.Get("X-SQL-Review-Token") != repo.WebhookSecretToken {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid token")
+		}
 
 		log.Debug("Processing pull request for repository",
 			zap.Int("project", repo.ProjectID),
