@@ -14,7 +14,7 @@ sql-review:
     - echo $response
     - xml=$(echo $response | jq -r '.content')
     - status=$(echo $response | jq -r '.status')
-    - echo $xml > sql-review.xml
+    - for msg in $(echo $content | jq -r '.[]'); do echo $msg >> sql-review.xml; done
     - if [ "$status" == "ERROR" ]; then exit 1; fi
   artifacts:
     when: always
