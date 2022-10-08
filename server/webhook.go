@@ -388,31 +388,15 @@ func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo 
 
 	// Create schema update issue
 	issueName := fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(file, repo.BaseDirectory+"/"))
-	if err := s.createIssueFromMigrationFile(ctx, issueName, pushEvent, repo.ProjectID, migrationInfo.Type, migrationDetailList); err != nil {
+	creatorID := s.getIssueCreatorID(ctx, pushEvent.FileCommit.AuthorEmail)
+	if err := s.createIssueFromMigrationFile(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationInfo.Type, migrationDetailList); err != nil {
 		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 	}
 
 	return fmt.Sprintf("Created issue %q from file %q", issueName, file), true, activityCreateList, nil
 }
 
-func (s *Server) createIssueFromMigrationFile(ctx context.Context, issueName string, pushEvent vcs.PushEvent, projectID int, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
-	creatorID := api.SystemBotID
-	if pushEvent.FileCommit.AuthorEmail != "" {
-		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, pushEvent.FileCommit.AuthorEmail)
-		if err != nil {
-			log.Warn("Failed to find the principal with committer email, use system bot instead",
-				zap.String("email", pushEvent.FileCommit.AuthorEmail),
-				zap.Error(err),
-			)
-		} else if committerPrincipal == nil {
-			log.Warn("Principal with committer email does not exist, use system bot instead",
-				zap.String("email", pushEvent.FileCommit.AuthorEmail),
-			)
-		} else {
-			creatorID = committerPrincipal.ID
-		}
-	}
-
+func (s *Server) createIssueFromMigrationFile(ctx context.Context, issueName string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			MigrationType: migrationType,
@@ -470,6 +454,21 @@ func (s *Server) createIssueFromMigrationFile(ctx context.Context, issueName str
 	}
 
 	return nil
+}
+
+func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
+	creatorID := api.SystemBotID
+	if email != "" {
+		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, email)
+		if err != nil {
+			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", email), zap.Error(err))
+		} else if committerPrincipal == nil {
+			log.Warn("Principal with committer email does not exist, use system bot instead", zap.String("email", email))
+		} else {
+			creatorID = committerPrincipal.ID
+		}
+	}
+	return creatorID
 }
 
 // findProjectDatabases finds the list of databases with given name in the
