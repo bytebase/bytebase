@@ -780,6 +780,11 @@ func (*Provider) CreatePullRequest(_ context.Context, _ common.OauthContext, _, 
 	return errors.Errorf("CreatePullRequest for GitLab is not implemented yet")
 }
 
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+func (*Provider) UpsertEnvironmentVariable(_ context.Context, _ common.OauthContext, _, _, _, _ string) error {
+	return errors.Errorf("UpsertEnvironmentVariable for GitLab is not implemented yet")
+}
+
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook

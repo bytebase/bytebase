@@ -10,7 +10,7 @@ jobs:
           API="%s/pull/$pull_number"
           echo "Start request $API"
 
-          response=$(curl -s --show-error -X GET "$API" -H "Content-type: application/json")
+          response=$(curl -s --show-error -X GET "$API" -H "Content-type: application/json" -H "X-SQL-Review-Token: ${{ secrets.%s }}")
           echo $response
           status=$(echo $response | jq -r '.status')
           content=$(echo $response | jq -r '.content')

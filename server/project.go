@@ -659,6 +659,23 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		return err
 	}
 
+	if err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).UpsertEnvironmentVariable(
+		ctx,
+		common.OauthContext{
+			ClientID:     repository.VCS.ApplicationID,
+			ClientSecret: repository.VCS.Secret,
+			AccessToken:  repository.AccessToken,
+			RefreshToken: repository.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repository.WebURL),
+		},
+		repository.VCS.InstanceURL,
+		repository.ExternalID,
+		vcsPlugin.SQLReviewApiSecretName,
+		repository.WebhookSecretToken,
+	); err != nil {
+		return err
+	}
+
 	switch repository.VCS.Type {
 	case vcsPlugin.GitHubCom:
 		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch); err != nil {
@@ -737,7 +754,7 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 // nolint:unused
 func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
 	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
-	sqlReviewConfig := fmt.Sprintf(github.SQLReviewAction, sqlReviewEndpoint)
+	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
 	fileLastCommitID := ""
 
 	fileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(

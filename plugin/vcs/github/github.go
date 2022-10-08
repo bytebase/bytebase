@@ -4,6 +4,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/nacl/box"
 
 	"github.com/pkg/errors"
 
@@ -932,6 +936,163 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 	}
 
 	return nil
+}
+
+type environmentVariable struct {
+	EncryptedValue string `json:"encrypted_value"`
+	KeyID          string `json:"key_id"`
+}
+
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+//
+// https://docs.github.com/en/rest/actions/secrets#get-a-repository-secret
+func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	publicKey, err := p.getRepositoryPublicKey(ctx, oauthCtx, instanceURL, repositoryID)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get public key")
+	}
+	encryptValue, err := encryptEnvironmentVariable(publicKey.Key, value)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to encrypt environment variable")
+	}
+
+	body, err := json.Marshal(
+		environmentVariable{
+			KeyID:          publicKey.KeyID,
+			EncryptedValue: encryptValue,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal environment variable")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/actions/secrets/%s", p.APIURL(instanceURL), repositoryID, key)
+	code, _, resp, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to upsert environment variable from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to upsert environment variable from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+// encryptEnvironmentVariable encrypt the value with public key
+//
+// https://github.com/jefflinse/githubsecret
+func encryptEnvironmentVariable(publicKey, value string) (string, error) {
+	const keySize = 32
+	const nonceSize = 24
+
+	// decode the provided public key from base64
+	recipientKey := new([keySize]byte)
+	b, err := base64.StdEncoding.DecodeString(publicKey)
+	if err != nil {
+		return "", err
+	} else if size := len(b); size != keySize {
+		return "", errors.Errorf("recipient public key has invalid length (%d bytes)", size)
+	}
+
+	copy(recipientKey[:], b)
+
+	// create an ephemeral key pair
+	pubKey, privKey, err := box.GenerateKey(rand.Reader)
+	if err != nil {
+		return "", err
+	}
+
+	// create the nonce by hashing together the two public keys
+	nonce := new([nonceSize]byte)
+	nonceHash, err := blake2b.New(nonceSize, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := nonceHash.Write(pubKey[:]); err != nil {
+		return "", err
+	}
+
+	if _, err := nonceHash.Write(recipientKey[:]); err != nil {
+		return "", err
+	}
+
+	copy(nonce[:], nonceHash.Sum(nil))
+
+	// begin the output with the ephemeral public key and append the encrypted content
+	out := box.Seal(pubKey[:], []byte(value), nonce, recipientKey, privKey)
+
+	// base64-encode the final output
+	return base64.StdEncoding.EncodeToString(out), nil
+}
+
+type repositoryPublicKey struct {
+	KeyID string `json:"key_id"`
+	Key   string `json:"key"`
+}
+
+// getRepositoryPublicKey returns the public key in the GitHub repository.
+//
+// https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
+func (p *Provider) getRepositoryPublicKey(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) (*repositoryPublicKey, error) {
+	url := fmt.Sprintf("%s/repos/%s/actions/secrets/public-key", p.APIURL(instanceURL), repositoryID)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get repo public key from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to get repo public key from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	res := new(repositoryPublicKey)
+	if err := json.Unmarshal([]byte(body), res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // CreateWebhook creates a webhook in the repository with given payload.

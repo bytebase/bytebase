@@ -22,6 +22,8 @@ const (
 	GitLabSelfHost Type = "GITLAB_SELF_HOST"
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
+	// SQLReviewApiSecretName is the api secret name used in GitHub action or GitLab CI workflow.
+	SQLReviewApiSecretName = "SQL_REVIEW_API_SECRET"
 )
 
 // OAuthToken is the API message for OAuthToken.
@@ -250,6 +252,14 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// pullRequestCreate: the new pull request info
 	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) error
+	// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// key: the environment variable name
+	// value: the environment variable value
+	UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, key, value string) error
 	// Creates a webhook. Returns the created webhook ID on success.
 	//
 	// oauthCtx: OAuth context to create the webhook
