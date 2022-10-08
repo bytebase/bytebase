@@ -1013,7 +1013,7 @@ func encryptEnvironmentVariable(publicKey, value string) (string, error) {
 	if err != nil {
 		return "", err
 	} else if size := len(b); size != keySize {
-		return "", errors.Errorf("recipient public key has invalid length (%d bytes)", size)
+		return "", errors.Errorf("The public key has invalid length. Expect %d bytes but found %d", keySize, size)
 	}
 
 	copy(recipientKey[:], b)
