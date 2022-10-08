@@ -759,17 +759,17 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
-type gitLabBranch struct {
+type gitlabBranch struct {
 	Name   string `json:"name"`
 	Commit Commit `json:"commit"`
 }
 
-type gitLabBranchCreate struct {
+type gitlabBranchCreate struct {
 	Branch string `json:"branch"`
 	Ref    string `json:"ref"`
 }
 
-type gitLabMergeRequestCreate struct {
+type gitlabMergeRequestCreate struct {
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	SourceBranch string `json:"source_branch"`
