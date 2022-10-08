@@ -759,12 +759,12 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
-type gitLabMergeRequestChange struct {
+type gitlabMergeRequestChange struct {
 	SHA     string                   `json:"sha"`
-	Changes []gitLabMergeRequestFile `json:"changes"`
+	Changes []gitlabMergeRequestFile `json:"changes"`
 }
 
-type gitLabMergeRequestFile struct {
+type gitlabMergeRequestFile struct {
 	NewPath     string `json:"new_path"`
 	NewFile     bool   `json:"new_file"`
 	RenamedFile bool   `json:"renamed_file"`
@@ -804,7 +804,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 		)
 	}
 
-	pr := new(gitLabMergeRequestChange)
+	pr := new(gitlabMergeRequestChange)
 	if err := json.Unmarshal([]byte(body), pr); err != nil {
 		return nil, err
 	}
@@ -820,7 +820,6 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 
 	return res, nil
 }
-
 
 type gitlabBranch struct {
 	Name   string `json:"name"`
@@ -1132,7 +1131,6 @@ func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx commo
 		)
 	}
 	return nil
->>>>>>> e09f455c59a4c9fc03e29ffc04c4f5a1d2767202
 }
 
 // CreateWebhook creates a webhook in the repository with given payload.
