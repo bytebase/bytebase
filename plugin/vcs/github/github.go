@@ -15,10 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/nacl/box"
-
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/nacl/secretbox"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -945,7 +943,7 @@ type environmentVariable struct {
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 //
-// https://docs.github.com/en/rest/actions/secrets#get-a-repository-secret
+// https://docs.github.com/en/rest/actions/secrets#create-or-update-a-repository-secret
 func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
 	publicKey, err := p.getRepositoryPublicKey(ctx, oauthCtx, instanceURL, repositoryID)
 	if err != nil {
@@ -1002,50 +1000,21 @@ func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx commo
 
 // encryptEnvironmentVariable encrypt the value with public key
 //
-// https://github.com/jefflinse/githubsecret
+// https://zostay.com/posts/2022/05/04/do-not-use-libsodium-with-go/
 func encryptEnvironmentVariable(publicKey, value string) (string, error) {
-	const keySize = 32
-	const nonceSize = 24
+	var pkBytes [32]byte
+	copy(pkBytes[:], []byte(publicKey))
+	secretBytes := []byte(value)
 
-	// decode the provided public key from base64
-	recipientKey := new([keySize]byte)
-	b, err := base64.StdEncoding.DecodeString(publicKey)
-	if err != nil {
-		return "", err
-	} else if size := len(b); size != keySize {
-		return "", errors.Errorf("The public key has invalid length. Expect %d bytes but found %d", keySize, size)
+	var nonce [24]byte
+	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+		return "", errors.Errorf("failed to generate nonce: %v", err)
 	}
 
-	copy(recipientKey[:], b)
+	enc := secretbox.Seal(nonce[:], secretBytes, &nonce, &pkBytes)
+	encEnc := base64.StdEncoding.EncodeToString(enc)
 
-	// create an ephemeral key pair
-	pubKey, privKey, err := box.GenerateKey(rand.Reader)
-	if err != nil {
-		return "", err
-	}
-
-	// create the nonce by hashing together the two public keys
-	nonce := new([nonceSize]byte)
-	nonceHash, err := blake2b.New(nonceSize, nil)
-	if err != nil {
-		return "", err
-	}
-
-	if _, err := nonceHash.Write(pubKey[:]); err != nil {
-		return "", err
-	}
-
-	if _, err := nonceHash.Write(recipientKey[:]); err != nil {
-		return "", err
-	}
-
-	copy(nonce[:], nonceHash.Sum(nil))
-
-	// begin the output with the ephemeral public key and append the encrypted content
-	out := box.Seal(pubKey[:], []byte(value), nonce, recipientKey, privKey)
-
-	// base64-encode the final output
-	return base64.StdEncoding.EncodeToString(out), nil
+	return encEnc, nil
 }
 
 type repositoryPublicKey struct {
