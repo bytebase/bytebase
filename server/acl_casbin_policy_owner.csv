@@ -60,6 +60,7 @@ p, OWNER, /database/{id}/backup-setting, PATCH
 p, OWNER, /database/{id}/data-source, POST
 p, OWNER, /database/{id}/data-source/{dataSourceID}, GET
 p, OWNER, /database/{id}/data-source/{dataSourceID}, PATCH
+p, OWNER, /database/{id}/data-source/{dataSourceID}, DELETE
 p, OWNER, /issue, POST
 p, OWNER, /issue, GET
 p, OWNER, /issue/{id}, GET
@@ -82,7 +83,6 @@ p, OWNER, /pipeline/{pipelineID}/task/all, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/check, POST
-p, OWNER, /pipeline/{pipelineID}/task/{taskID}/cancel, POST
 p, OWNER, /sql/ping, POST
 p, OWNER, /sql/sync-schema, POST
 p, OWNER, /sql/execute, POST
