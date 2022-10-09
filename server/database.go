@@ -207,12 +207,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
 			targetProject = toProject
-
-			if toProject.TenantMode == api.TenantModeTenant {
-				if !s.feature(api.FeatureMultiTenancy) {
-					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-				}
-			}
 		}
 
 		// Patch database labels
