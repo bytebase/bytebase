@@ -63,6 +63,7 @@ specifiers:
   prettier: 2.7.1
   qs: 6.11.0
   rollup: 2.79.0
+  scroll-into-view-if-needed: ^2.2.29
   semver: 7.3.7
   slug: 8.0.0
   splitpanes: 3.1.1
@@ -85,6 +86,7 @@ specifiers:
   vue-i18n: 9.2.2
   vue-router: 4.1.5
   vue-tsc: 0.40.13
+  vuedraggable: ^4.1.0
   vueuc: 0.4.48
 
 dependencies:
@@ -115,6 +117,7 @@ dependencies:
   pinia: 2.0.22_lkgxmynzgulk7qrgf4psevjapq
   qs: 6.11.0
   rollup: 2.79.0
+  scroll-into-view-if-needed: 2.2.29
   semver: 7.3.7
   slug: 8.0.0
   splitpanes: 3.1.1
@@ -128,6 +131,7 @@ dependencies:
   vue: 3.2.40
   vue-i18n: 9.2.2_vue@3.2.40
   vue-router: 4.1.5_vue@3.2.40
+  vuedraggable: 4.1.0_vue@3.2.40
   vueuc: 0.4.48_vue@3.2.40
 
 devDependencies:
@@ -1521,6 +1525,10 @@ packages:
   /commander/7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
+    dev: false
+
+  /compute-scroll-into-view/1.0.17:
+    resolution: {integrity: sha512-j4dx+Fb0URmzbwwMUrhqWM2BEWHdFGx+qZ9qqASHRPqvTYdqvWnHg0H1hIbcyLnvgnoNAVMlwkepyqM3DaIFUg==}
     dev: false
 
   /concat-map/0.0.1:
@@ -3355,6 +3363,12 @@ packages:
       source-map-js: 1.0.2
     dev: false
 
+  /scroll-into-view-if-needed/2.2.29:
+    resolution: {integrity: sha512-hxpAR6AN+Gh53AdAimHM6C8oTN1ppwVZITihix+WqalywBeFcQ6LdQP5ABNl26nX8GTEL7VT+b8lKpdqq65wXg==}
+    dependencies:
+      compute-scroll-into-view: 1.0.17
+    dev: false
+
   /seemly/0.3.6:
     resolution: {integrity: sha512-lEV5VB8BUKTo/AfktXJcy+JeXns26ylbMkIUco8CYREsQijuz4mrXres2Q+vMLdwkuLxJdIPQ8IlCIxLYm71Yw==}
     dev: false
@@ -3406,6 +3420,10 @@ packages:
 
   /slug/8.0.0:
     resolution: {integrity: sha512-aIDda8JjwGHPPVHRAusym8OmXhw1PnM6P28/ShUUv/4RsUVYwxwL0eljtcBDg0yI4UbW7YADrZTWp1bLqa7+DQ==}
+    dev: false
+
+  /sortablejs/1.14.0:
+    resolution: {integrity: sha512-pBXvQCs5/33fdN1/39pPL0NZF20LeRbLQ5jtnheIPN9JQAaufGjKdWduZn4U7wCtVuzKhmRkI0DFYHYRbB2H1w==}
     dev: false
 
   /source-map-js/1.0.2:
@@ -3918,6 +3936,15 @@ packages:
       '@vue/runtime-dom': 3.2.40
       '@vue/server-renderer': 3.2.40_vue@3.2.40
       '@vue/shared': 3.2.40
+
+  /vuedraggable/4.1.0_vue@3.2.40:
+    resolution: {integrity: sha512-FU5HCWBmsf20GpP3eudURW3WdWTKIbEIQxh9/8GE806hydR9qZqRRxRE3RjqX7PkuLuMQG/A7n3cfj9rCEchww==}
+    peerDependencies:
+      vue: ^3.0.1
+    dependencies:
+      sortablejs: 1.14.0
+      vue: 3.2.40
+    dev: false
 
   /vueuc/0.4.48_vue@3.2.40:
     resolution: {integrity: sha512-dQTBLxCzfaPuzD3c4/dIxAULtnyY+xwdotCRFUDgf0DJiwuR3tI+txJ9K8uJKmaHwc1JDUVqhRAj9Jd/pvInWg==}

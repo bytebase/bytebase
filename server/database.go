@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -208,44 +207,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
 			targetProject = toProject
-
-			if toProject.TenantMode == api.TenantModeTenant {
-				if !s.feature(api.FeatureMultiTenancy) {
-					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-				}
-
-				labels := database.Labels
-				if dbPatch.Labels != nil {
-					labels = *dbPatch.Labels
-				}
-				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
-				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
-				}
-				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get schema from peer tenant database").SetInternal(err)
-				}
-
-				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
-				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
-					if err != nil {
-						return err
-					}
-					defer driver.Close(ctx)
-
-					var schemaBuf bytes.Buffer
-					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database schema for database %q", database.Name)).SetInternal(err)
-					}
-					if peerSchema != schemaBuf.String() {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name))
-					}
-				}
-			}
 		}
 
 		// Patch database labels
