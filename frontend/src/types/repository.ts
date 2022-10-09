@@ -110,7 +110,7 @@ export function baseDirectoryWebUrl(
     // Once we meet a "dynamic" segment which has a pattern that cannot be replaced
     // we won't push it, either the segments behind it.
     // E.g., the filePathTemplate is
-    // configure/{{ENV_NAME}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}__{{VERSION}}__{{DESCRIPTION}}.sql
+    // configure/{{ENV_NAME}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}##{{VERSION}}##{{DESCRIPTION}}.sql
     /**
       The segments are
         - configure
