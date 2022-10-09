@@ -10,10 +10,11 @@ import (
 
 func TestParseMigrationInfo(t *testing.T) {
 	type test struct {
-		filePath         string
-		filePathTemplate string
-		want             *MigrationInfo
-		wantErr          string
+		filePath              string
+		filePathTemplate      string
+		allowOmitDatabaseName bool
+		want                  *MigrationInfo
+		wantErr               string
 	}
 
 	tests := []test{
@@ -209,10 +210,29 @@ func TestParseMigrationInfo(t *testing.T) {
 			want:             nil,
 			wantErr:          "",
 		},
+
+		{
+			filePath:         "001foo##ddl",
+			filePathTemplate: "{{VERSION}}##{{TYPE}}",
+			want:             nil,
+			wantErr:          "does not contain {{DB_NAME}}",
+		},
+		{
+			filePath:              "001foo##ddl",
+			filePathTemplate:      "{{VERSION}}##{{TYPE}}",
+			allowOmitDatabaseName: true,
+			want: &MigrationInfo{
+				Version:     "001foo",
+				Source:      VCS,
+				Type:        Migrate,
+				Description: "Create  schema migration",
+			},
+			wantErr: "",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.filePath, func(t *testing.T) {
-			mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate)
+			mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate, tc.allowOmitDatabaseName)
 			if tc.wantErr != "" {
 				got := fmt.Sprintf("%v", err)
 				require.Contains(t, got, tc.wantErr)
@@ -222,6 +242,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			if tc.want == nil {
 				require.Nil(t, mi)
 			} else {
+				require.NotNil(t, mi)
 				require.Equal(t, *tc.want, *mi)
 			}
 		})

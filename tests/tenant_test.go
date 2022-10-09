@@ -977,3 +977,275 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		})
 	}
 }
+
+// TestTenantVCSDatabaseNameTemplate_Empty tests the behavior when a tenant
+// project has empty database name template where a single commit file should
+// match all databases in the project, and create migration issues for all of
+// them.
+func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(gitFile string) interface{}
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return github.WebhookPushEvent{
+					Ref: "refs/heads/feature/foo",
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Added: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), fake.NewGitHub, getTestPort(t.Name()))
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a VCS.
+			vcs, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a tenant project with empty database name template.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name:       "Test VCS Project",
+					Key:        "TestTenantVCSDatabaseNameTemplate_Empty",
+					TenantMode: api.TenantModeTenant,
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository.
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcs.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: ".{{DB_NAME}}##LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			a.NoError(err)
+
+			// Provision instances.
+			instanceRootDir := t.TempDir()
+
+			const stagingTenantNumber = 2 // We need more than one tenant to test wildcard
+			var stagingInstanceDirs []string
+			for i := 0; i < stagingTenantNumber; i++ {
+				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+				a.NoError(err)
+				stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
+			}
+			environments, err := ctl.getEnvironments()
+			a.NoError(err)
+			stagingEnvironment, err := findEnvironment(environments, "Staging")
+			a.NoError(err)
+
+			// Add the provisioned instances.
+			var stagingInstances []*api.Instance
+			for i, stagingInstanceDir := range stagingInstanceDirs {
+				instance, err := ctl.addInstance(
+					api.InstanceCreate{
+						EnvironmentID: stagingEnvironment.ID,
+						Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+						Engine:        db.SQLite,
+						Host:          stagingInstanceDir,
+					},
+				)
+				a.NoError(err)
+				stagingInstances = append(stagingInstances, instance)
+			}
+
+			// Create deployment configuration.
+			_, err = ctl.upsertDeploymentConfig(
+				api.DeploymentConfigUpsert{
+					ProjectID: project.ID,
+				},
+				api.DeploymentSchedule{
+					Deployments: []*api.Deployment{
+						{
+							Name: "Staging stage",
+							Spec: &api.DeploymentSpec{
+								Selector: &api.LabelSelector{
+									MatchExpressions: []*api.LabelSelectorRequirement{
+										{
+											Key:      api.EnvironmentKeyName,
+											Operator: api.InOperatorType,
+											Values:   []string{"Staging"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			)
+			a.NoError(err)
+
+			// Create issues that create databases.
+			const baseDatabaseName = "TestTenantVCSDatabaseNameTemplate_Empty"
+			for i, stagingInstance := range stagingInstances {
+				tenant := fmt.Sprintf("tenant%d", i)
+				databaseName := baseDatabaseName + "_" + tenant
+				err := ctl.createDatabase(project, stagingInstance, databaseName, "", nil /* labelMap */)
+				a.NoError(err)
+			}
+
+			// Getting databases for each environment.
+			databases, err := ctl.getDatabases(
+				api.DatabaseFind{
+					ProjectID: &project.ID,
+				},
+			)
+			a.NoError(err)
+
+			var stagingDatabases []*api.Database
+			for _, stagingInstance := range stagingInstances {
+				for _, database := range databases {
+					if database.Instance.ID == stagingInstance.ID {
+						stagingDatabases = append(stagingDatabases, database)
+						break
+					}
+				}
+			}
+			a.Equal(stagingTenantNumber, len(stagingDatabases))
+
+			// Simulate Git commits for schema update.
+			gitFile := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
+			a.NoError(err)
+
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get schema update issues.
+			openStatus := []api.IssueStatus{api.IssueOpen}
+			issues, err := ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: openStatus,
+				},
+			)
+			a.NoError(err)
+			a.Len(issues, 1)
+			issue := issues[0]
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+
+			// Query schema.
+			for i, stagingInstance := range stagingInstances {
+				tenant := fmt.Sprintf("tenant%d", i)
+				databaseName := baseDatabaseName + "_" + tenant
+				result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
+				a.NoError(err)
+				a.Equal(bookSchemaSQLResult, result)
+			}
+
+			// Query migration history
+			hm := map[string]bool{}
+			for i, instance := range stagingInstances {
+				tenant := fmt.Sprintf("tenant%d", i)
+				databaseName := baseDatabaseName + "_" + tenant
+				histories, err := ctl.getInstanceMigrationHistory(
+					db.MigrationHistoryFind{
+						ID:       &instance.ID,
+						Database: &databaseName,
+					},
+				)
+				a.NoError(err)
+				a.Len(histories, 2)
+				a.Equal(histories[0].Version, "ver1")
+				a.NotEqual(histories[1].Version, "")
+				hm[histories[0].Version] = true
+			}
+
+			a.Len(hm, 1)
+		})
+	}
+}

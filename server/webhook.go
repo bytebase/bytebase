@@ -322,8 +322,9 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 			continue
 		}
 
+		allowOmitDatabaseName := repository.Project.TenantMode == api.TenantModeTenant && repository.Project.DBNameTemplate == ""
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		mi, err := db.ParseMigrationInfo(fileItem.FileName, path.Join(repository.BaseDirectory, repository.FilePathTemplate))
+		mi, err := db.ParseMigrationInfo(fileItem.FileName, path.Join(repository.BaseDirectory, repository.FilePathTemplate), allowOmitDatabaseName)
 		if err != nil {
 			log.Error("Failed to parse migration file info",
 				zap.Int("project", repository.ProjectID),
