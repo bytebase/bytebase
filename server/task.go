@@ -261,11 +261,11 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel the task").SetInternal(err)
 		}
 		if task == nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Task not found with ID %d", taskID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
 		if !taskCancellationImplemented[task.Type] {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Canceling task type %s is not supported", task.Type))
+			return echo.NewHTTPError(http.StatusNotImplemented, fmt.Sprintf("Canceling task type %s is not supported", task.Type))
 		}
 		// TODO(p0ny): support cancel pending task.
 		if !isTaskStatusTransitionAllowed(task.Status, api.TaskCanceled) {
