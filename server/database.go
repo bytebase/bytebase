@@ -745,7 +745,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSourceOld == nil || dataSourceOld.DatabaseID != databaseID {
+		if dataSourceOld == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -824,7 +824,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSource == nil || dataSource.DatabaseID != databaseID {
+		if dataSource == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 		// Only allow to delete ReadOnly data source at present.
