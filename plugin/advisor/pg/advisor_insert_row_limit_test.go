@@ -31,7 +31,7 @@ func TestInsertRowLimit(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.InsertTooManyRows,
 					Title:   "insert.row-limit",
-					Content: "The value rows in one INSERT statement should be no more than 5, but found 6",
+					Content: "The value rows in \"INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f')\" should be no more than 5, but found 6",
 					Line:    1,
 				},
 			},

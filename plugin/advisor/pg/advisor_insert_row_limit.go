@@ -75,9 +75,8 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 	code := advisor.Ok
 	rows := 0
 
-	switch n := node.(type) {
-	// INSERT
-	case *ast.InsertStmt:
+	n, ok := node.(*ast.InsertStmt)
+	if ok {
 		if len(n.ValueList) > checker.maxRow {
 			code = advisor.InsertTooManyRows
 			rows = len(n.ValueList)
@@ -89,7 +88,7 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 			Status:  checker.level,
 			Code:    code,
 			Title:   checker.title,
-			Content: fmt.Sprintf("The value rows in one INSERT statement should be no more than %d, but found %d", checker.maxRow, rows),
+			Content: fmt.Sprintf("The value rows in \"%s\" should be no more than %d, but found %d", checker.text, checker.maxRow, rows),
 			Line:    checker.line,
 		})
 	}
