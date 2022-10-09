@@ -252,7 +252,7 @@ const placeholderRegexp = `[^\\/?%*:|"<>]+`
 // If filePath matches, then it will derive MigrationInfo from the filePath.
 // Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
 // It returns (nil, nil) if it doesn't look like a migration file path.
-func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, error) {
+func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName bool) (*MigrationInfo, error) {
 	placeholderList := []string{
 		"ENV_NAME",
 		"VERSION",
@@ -317,7 +317,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 	if mi.Version == "" {
 		return nil, errors.Errorf("file path %q does not contain {{VERSION}}, configured file path template %q", filePath, filePathTemplate)
 	}
-	if mi.Namespace == "" {
+	if mi.Namespace == "" && !allowOmitDatabaseName {
 		return nil, errors.Errorf("file path %q does not contain {{DB_NAME}}, configured file path template %q", filePath, filePathTemplate)
 	}
 
