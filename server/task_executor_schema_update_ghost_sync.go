@@ -211,6 +211,8 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.
 
 func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
+	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
+	// see PR #2919.
 	migrationError := make(chan error, 1)
 
 	statement = strings.TrimSpace(statement)
