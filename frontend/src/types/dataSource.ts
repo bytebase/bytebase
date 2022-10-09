@@ -70,8 +70,8 @@ export type DataSourcePatch = {
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
-  hostOverride: string;
-  portOverride: string;
+  hostOverride?: string;
+  portOverride?: string;
 };
 
 export type DataSourceMember = {
