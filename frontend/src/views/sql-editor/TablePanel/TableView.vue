@@ -18,6 +18,13 @@
         <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
           `${data.length} ${t("sql-editor.rows", data.length)}`
         }}</span>
+        <span
+          v-if="data.length === RESULT_ROWS_LIMIT"
+          class="ml-2 whitespace-nowrap text-sm text-gray-500"
+        >
+          <span>-</span>
+          <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
+        </span>
       </div>
       <div class="flex justify-between items-center gap-x-3">
         <NButton
@@ -71,6 +78,7 @@ import dayjs from "dayjs";
 import { useTabStore, useInstanceStore } from "@/store";
 import { createExplainToken } from "@/utils";
 import DataTable from "./DataTable.vue";
+import { RESULT_ROWS_LIMIT } from "@/store";
 
 interface State {
   search: string;
