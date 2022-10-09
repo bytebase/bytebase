@@ -46,9 +46,10 @@ export const useTabStore = defineStore("tab", () => {
   const currentTabId = ref<string>();
 
   // getters
-  const tabList = computed((): TabInfo[] =>
-    tabIdList.value.map((id) => tabs.value.get(id) ?? getDefaultTab())
-  );
+  const getTabById = (id: string) => {
+    return tabs.value.get(id) ?? getDefaultTab();
+  };
+  const tabList = computed((): TabInfo[] => tabIdList.value.map(getTabById));
   const currentTab = computed((): TabInfo => {
     const tab = tabList.value.find((tab) => tab.id === currentTabId.value);
     return tab ?? getDefaultTab();
@@ -202,6 +203,7 @@ export const useTabStore = defineStore("tab", () => {
     currentTabId,
     currentTab,
     isDisconnected,
+    getTabById,
     addTab,
     removeTab,
     updateCurrentTab,
