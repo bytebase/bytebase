@@ -39,6 +39,9 @@ type vcsSQLReviewResult struct {
 	Content []string       `json:"content"`
 }
 
+// sqlReviewDocs is the URL for SQL review doc.
+const sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
+
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -133,8 +136,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 	g.GET("/sql-review/:projectID/pull/:pullRequestID", func(c echo.Context) error {
 		log.Debug("SQL review request received for VCS project",
-			zap.String("project_id", c.Param("projectID")),
-			zap.String("pull_request_id", c.Param("pullRequestID")),
+			zap.String("project", c.Param("projectID")),
+			zap.String("pull_request", c.Param("pullRequestID")),
 		)
 
 		projectID, err := strconv.Atoi(c.Param("projectID"))
@@ -164,6 +167,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		log.Debug("Processing pull request for repository",
 			zap.Int("project", repo.ProjectID),
+			zap.Int("pull_request", pullRequestID),
 			zap.String("external_id", repo.ExternalID),
 			zap.String("vcs", string(repo.VCS.Type)),
 			zap.String("base_directory", repo.BaseDirectory),
@@ -198,7 +202,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					log.Debug(
 						"Failed to take SQL review for file",
 						zap.String("file", file.Path),
-						zap.Int("pr", pullRequestID),
 						zap.Error(err),
 					)
 					return
@@ -221,11 +224,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			response = convertSQLAdviceToGitLabCIResult(sqlCheckAdvice)
 		}
 
-		log.Debug("SQL review request finished",
+		log.Debug("SQL review finished",
+			zap.Int("project", repo.ProjectID),
+			zap.Int("pull_request", pullRequestID),
 			zap.String("status", string(response.Status)),
 			zap.String("content", strings.Join(response.Content, "\n")),
 			zap.String("vcs", string(repo.VCS.Type)),
-			zap.String("pull_request_id", c.Param("pullRequestID")),
 		)
 
 		return c.JSON(http.StatusOK, response)
@@ -237,7 +241,7 @@ func (s *Server) sqlAdviceForPullRequestFile(
 	file *vcs.PullRequestFile,
 	repo *api.Repository,
 ) ([]advisor.Advice, error) {
-	if file.DeletedFile {
+	if file.IsDeleted {
 		return nil, nil
 	}
 
@@ -301,6 +305,8 @@ func (s *Server) sqlAdviceForPullRequestFile(
 		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", file.Path, err)
 	}
 
+	// There may exist many databases that match the file name.
+	// We just need to use the first one, which has the SQL review policy and can let us take the check.
 	for _, database := range databases {
 		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &database.Instance.EnvironmentID})
 		if err != nil {
@@ -365,9 +371,10 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 			content := fmt.Sprintf(
 				`
 				Error: %s
-				You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#%d
+				You can check the docs at %s#%d
 				`,
 				advice.Content,
+				sqlReviewDocs,
 				advice.Code,
 			)
 
@@ -403,6 +410,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 }
 
 // convertSQLAdiceToGitHubActionResult will convert SQL advice map to GitHub action output format.
+// GitHub action output message: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
 func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
 	messageList := []string{}
 	status := advisor.Success
@@ -419,7 +427,6 @@ func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) 
 			}
 
 			prefix := ""
-
 			if advice.Status == advisor.Error {
 				prefix = "error"
 				status = advice.Status
@@ -431,15 +438,17 @@ func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) 
 			}
 
 			msg := fmt.Sprintf(
-				"::%s file=%s,line=%d,col=1,endColumn=2,title=%s (%d)::%s\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#%d",
+				"::%s file=%s,line=%d,col=1,endColumn=2,title=%s (%d)::%s\nDoc: %s#%d",
 				prefix,
 				filePath,
 				line,
 				advice.Title,
 				advice.Code,
 				advice.Content,
+				sqlReviewDocs,
 				advice.Code,
 			)
+			// To indent the output message in action
 			messageList = append(messageList, strings.ReplaceAll(msg, "\n", "%0A"))
 		}
 	}

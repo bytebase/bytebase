@@ -143,7 +143,7 @@ type Repository struct {
 type PullRequestFile struct {
 	Path         string
 	LastCommitID string
-	DeletedFile  bool
+	IsDeleted    bool
 }
 
 // BranchInfo is the API message for repository branch.

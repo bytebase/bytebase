@@ -814,7 +814,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 		res = append(res, &vcs.PullRequestFile{
 			Path:         file.NewPath,
 			LastCommitID: pr.SHA,
-			DeletedFile:  file.DeletedFile,
+			IsDeleted:    file.DeletedFile,
 		})
 	}
 
