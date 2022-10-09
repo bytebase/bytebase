@@ -106,7 +106,7 @@ watch(isCurrentTab, (value) => {
 }
 
 .name {
-  @apply h-6 flex items-center text-sm;
+  @apply h-6 w-full flex items-center text-sm;
 }
 .edit {
   @apply border-0 border-b absolute inset-0 p-0 text-sm;
