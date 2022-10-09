@@ -148,7 +148,7 @@
       </p>
 
       <div
-        v-if="!hasReadonlyDataSource"
+        v-if="!hasReadOnlyDataSource"
         class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
       >
         <heroicons-outline:exclamation
@@ -176,13 +176,13 @@
           @update:value="handleDataSourceTypeChange"
         >
           <NTab name="ADMIN">Admin</NTab>
-          <NTab name="RO" class="relative" :disabled="!hasReadonlyDataSource">
+          <NTab name="RO" class="relative" :disabled="!hasReadOnlyDataSource">
             <span>Read only</span>
             <BBButtonConfirm
-              v-if="hasReadonlyDataSource"
+              v-if="hasReadOnlyDataSource"
               :style="'DELETE'"
               class="absolute left-full ml-1"
-              :require-confirm="true"
+              :require-confirm="currentDataSource.id !== UNKNOWN_ID"
               :ok-text="$t('common.delete')"
               :confirm-title="
                 $t('data-source.delete-read-only-data-source') + '?'
@@ -491,7 +491,7 @@ const adminDataSource = computed(() => {
   return temp;
 });
 
-const hasReadonlyDataSource = computed(() => {
+const hasReadOnlyDataSource = computed(() => {
   for (const ds of state.dataSourceList) {
     if (ds.type === "RO") {
       return true;
@@ -594,9 +594,10 @@ const handleDeleteReadOnlyDataSource = async () => {
       databaseId: dataSource.databaseId,
       dataSourceId: dataSource.id,
     });
-    state.currentDataSourceType = "ADMIN";
-    await updateInstanceState();
   }
+
+  state.currentDataSourceType = "ADMIN";
+  await updateInstanceState();
 };
 
 const handleEditSsl = (edit: boolean) => {
