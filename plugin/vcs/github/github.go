@@ -786,9 +786,13 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 }
 
 type githubPullRequestFile struct {
-	FileName    string `json:"filename"`
-	SHA         string `json:"sha"`
-	Status      string `json:"status"`
+	FileName string `json:"filename"`
+	SHA      string `json:"sha"`
+	// The file status in GitHub PR.
+	// Available values: "added", "removed", "modified", "renamed", "copied", "changed", "unchanged"
+	Status string `json:"status"`
+	// The file content API URL, which contains the ref value in the query.
+	// Example: https://api.github.com/repos/octocat/Hello-World/contents/file1.txt?ref=6dcb09b5b57875f334f61aebed695e2e4193db5e
 	ContentsURL string `json:"contents_url"`
 }
 
