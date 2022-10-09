@@ -202,6 +202,7 @@ const useTableResize = (options: TableResizeOptions) => {
 export default useTableResize;
 
 const getElementWidth = (elem: HTMLElement) => {
+  if (!elem) return 0;
   const rect = elem.getBoundingClientRect();
   return rect.width;
 };
