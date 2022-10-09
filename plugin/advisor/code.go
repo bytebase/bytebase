@@ -103,7 +103,7 @@ const (
 	UpdateUseLimit    Code = 1102
 	InsertUseLimit    Code = 1103
 	UpdateUseOrderBy  Code = 1104
-	InsertUseOrderBy  Code = 1105
+	DeleteUseOrderBy  Code = 1105
 	DeleteUseLimit    Code = 1106
 )
 
