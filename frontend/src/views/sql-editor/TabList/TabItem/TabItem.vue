@@ -12,9 +12,7 @@
   >
     <div class="body">
       <Prefix :tab="tab" :index="index" />
-
       <Label :tab="tab" :index="index" />
-
       <Suffix :tab="tab" :index="index" @close="$emit('close', tab, index)" />
     </div>
   </div>
