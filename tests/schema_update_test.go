@@ -398,8 +398,8 @@ func TestVCS(t *testing.T) {
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
@@ -432,7 +432,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update.
-			gitFile := "bbtest/Prod/testVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
+			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
 			a.NoError(err)
 
@@ -472,7 +472,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(bookSchemaSQLResult, result)
 
 			// Simulate Git commits for failed data update.
-			gitFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
+			gitFile = "bbtest/Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatementWrong})
 			a.NoError(err)
 
@@ -725,8 +725,8 @@ func TestVCS_SDL(t *testing.T) {
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
@@ -758,7 +758,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update to create a new table "users".
-			const schemaFile = "bbtest/Prod/.testVCSSchemaUpdate__LATEST.sql"
+			const schemaFile = "bbtest/Prod/.testVCSSchemaUpdate##LATEST.sql"
 			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				schemaFile: schemaFileContent,
@@ -793,7 +793,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for data update to the table "users".
-			const dataFile = "bbtest/Prod/testVCSSchemaUpdate__ver2__data__insert_data.sql"
+			const dataFile = "bbtest/Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
 				dataFile: `INSERT INTO users (id) VALUES (1);`,
 			})
@@ -975,14 +975,14 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
-			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
 				// Normal
-				fmt.Sprintf("%s/%s/foo/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/foo/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "wildcard", dbName),
 				// One singleAsterisk cannot match two directories.
-				fmt.Sprintf("%s/%s/foo/bar/%s__ver2__data__insert_data.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/foo/bar/%s##ver2##data##insert_data.sql", baseDirectory, "wildcard", dbName),
 				// One singleAsterisk cannot match zero directory.
-				fmt.Sprintf("%s/%s/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "wildcard", dbName),
 			},
 			commitContents: []string{
 				"CREATE TABLE t1 (id INT);",
@@ -1017,16 +1017,16 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
-			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
 				// Two singleAsterisk can match one directory.
-				fmt.Sprintf("%s/%s/foo/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/foo/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "wildcard", dbName),
 				// Two singleAsterisk can match two directories.
-				fmt.Sprintf("%s/%s/foo/bar/%s__ver2__migrate__create_table_t2.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/foo/bar/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "wildcard", dbName),
 				// Two singleAsterisk can match three directories or more.
-				fmt.Sprintf("%s/%s/foo/bar/foo/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/foo/bar/foo/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "wildcard", dbName),
 				// Two singleAsterisk cannot match zero directory.
-				fmt.Sprintf("%s/%s/%s__ver4__migrate__create_table_t4.sql", baseDirectory, "wildcard", dbName),
+				fmt.Sprintf("%s/%s/%s##ver4##migrate##create_table_t4.sql", baseDirectory, "wildcard", dbName),
 			},
 			commitContents: []string{
 				"CREATE TABLE t1 (id INT);",
@@ -1063,14 +1063,14 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			envName:            "wildcard",
 			baseDirectory:      "",
 			vcsType:            vcs.GitLabSelfHost,
-			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
-				fmt.Sprintf("%s/foo/foo/bar/%s__ver1__migrate__create_table_t1.sql", "wildcard", dbName),
+				fmt.Sprintf("%s/foo/foo/bar/%s##ver1##migrate##create_table_t1.sql", "wildcard", dbName),
 				// ** matches foo/bar/foo, foo matches foo, * matches bar
-				fmt.Sprintf("%s/foo/bar/foo/foo/bar/%s__ver2__migrate__create_table_t2.sql", "wildcard", dbName),
+				fmt.Sprintf("%s/foo/bar/foo/foo/bar/%s##ver2##migrate##create_table_t2.sql", "wildcard", dbName),
 				// cannot match
-				fmt.Sprintf("%s/%s__ver3__migrate__create_table_t3.sql", "wildcard", dbName),
+				fmt.Sprintf("%s/%s##ver3##migrate##create_table_t3.sql", "wildcard", dbName),
 			},
 			commitContents: []string{
 				"CREATE TABLE t1 (id INT);",
@@ -1106,14 +1106,14 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			envName:            "生产",
 			baseDirectory:      "bbtest",
 			vcsType:            vcs.GitLabSelfHost,
-			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
-				fmt.Sprintf("%s/%s/foo/foo/bar/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "生产", dbName),
+				fmt.Sprintf("%s/%s/foo/foo/bar/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "生产", dbName),
 				// ** matches foo/bar/foo, foo matches foo, * matches bar
-				fmt.Sprintf("%s/%s/foo/bar/foo/foo/bar/%s__ver2__migrate__create_table_t2.sql", baseDirectory, "生产", dbName),
+				fmt.Sprintf("%s/%s/foo/bar/foo/foo/bar/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "生产", dbName),
 				// cannot match
-				fmt.Sprintf("%s/%s/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "生产", dbName),
+				fmt.Sprintf("%s/%s/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "生产", dbName),
 			},
 			commitContents: []string{
 				"CREATE TABLE t1 (id INT);",
@@ -1149,11 +1149,11 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			envName:            "ZO",
 			baseDirectory:      "bbtest",
 			vcsType:            vcs.GitLabSelfHost,
-			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
+			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitFileNames: []string{
-				fmt.Sprintf("%s/%s/%s/sql/%s__ver1__migrate__create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
-				fmt.Sprintf("%s/%s/%s/%s__ver2__migrate__create_table_t2.sql", baseDirectory, "ZO", dbName, dbName),
-				fmt.Sprintf("%s/%s/%s/sql/%s__ver3__migrate__create_table_t3.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "ZO", dbName, dbName),
+				fmt.Sprintf("%s/%s/%s/sql/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "ZO", dbName, dbName),
 			},
 			commitContents: []string{
 				"CREATE TABLE t1 (id INT);",
@@ -1236,7 +1236,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					BranchFilter:       branchFilter,
 					BaseDirectory:      baseDirectory,
 					FilePathTemplate:   test.filePathTemplate,
-					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
 					ExternalID:         externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",

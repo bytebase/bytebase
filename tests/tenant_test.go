@@ -324,8 +324,8 @@ func TestTenantVCS(t *testing.T) {
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: ".{{DB_NAME}}__LATEST.sql",
+					FilePathTemplate:   "{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: ".{{DB_NAME}}##LATEST.sql",
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
@@ -438,7 +438,7 @@ func TestTenantVCS(t *testing.T) {
 			a.Equal(len(prodDatabases), prodTenantNumber)
 
 			// Simulate Git commits.
-			gitFile := "bbtest/testTenantVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
+			gitFile := "bbtest/testTenantVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
 			a.NoError(err)
 
@@ -774,8 +774,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: ".{{DB_NAME}}__LATEST.sql",
+					FilePathTemplate:   "{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: ".{{DB_NAME}}##LATEST.sql",
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
@@ -893,7 +893,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.Equal(prodTenantNumber, len(prodDatabases))
 
 			// Simulate Git commits.
-			gitFile := "bbtest/testTenantVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
+			gitFile := "bbtest/testTenantVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
 			a.NoError(err)
 
@@ -971,7 +971,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.Len(hm2, 1)
 
 			// Check latestSchemaFile
-			files, err := ctl.vcsProvider.GetFiles(test.externalID, fmt.Sprintf("%s/.%s__LATEST.sql", baseDirectory, baseDatabaseName))
+			files, err := ctl.vcsProvider.GetFiles(test.externalID, fmt.Sprintf("%s/.%s##LATEST.sql", baseDirectory, baseDatabaseName))
 			a.NoError(err)
 			a.Len(files, 1)
 		})
