@@ -745,7 +745,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSourceOld == nil || dataSourceOld.DatabaseID != databaseID {
+		if dataSourceOld == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -793,6 +793,53 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
+		return nil
+	})
+
+	g.DELETE("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		databaseID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+
+		dataSourceFind := &api.DataSourceFind{
+			ID:         &dataSourceID,
+			DatabaseID: &databaseID,
+		}
+		dataSource, err := s.store.GetDataSource(ctx, dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
+		}
+		if dataSource == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found by ID %d and database ID %d", dataSourceID, databaseID))
+		}
+		// Only allow to delete ReadOnly data source at present.
+		if dataSource.Type != api.RO {
+			return echo.NewHTTPError(http.StatusForbidden, "Data source type is not read only")
+		}
+
+		if err := s.store.DeleteDataSource(ctx, &api.DataSourceDelete{
+			ID: dataSource.ID,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete data source").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
 }
