@@ -57,8 +57,10 @@ const (
 	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
-	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT and UPDATE statement.
+	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
 	SchemaRuleStatementDisallowLimit SQLReviewRuleType = "statement.disallow-limit"
+	// SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
+	SchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "statement.disallow-order-by"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -118,8 +120,6 @@ const (
 
 	// SchemaRuleInsertRowLimit enforce the insert row limit.
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
-	// SchemaRuleInsertUpdateNoOrderBy disallow the ORDER BY clause in INSERT and UPDATE statement.
-	SchemaRuleInsertUpdateNoOrderBy SQLReviewRuleType = "insert-update.no-order-by"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -802,10 +802,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLDisallowLimit, nil
 		}
-	case SchemaRuleInsertUpdateNoOrderBy:
+	case SchemaRuleStatementDisallowOrderBy:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLInsertUpdateNoOrderBy, nil
+			return MySQLDisallowOrderBy, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
