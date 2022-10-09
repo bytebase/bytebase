@@ -464,11 +464,18 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update.
-			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql"
-			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
+			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
+			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement3})
+			a.NoError(err)
+			gitFile2 := "bbtest/Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2})
+			a.NoError(err)
+			gitFile3 := "bbtest/Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile3: migrationStatement})
 			a.NoError(err)
 
-			payload, err := json.Marshal(test.newWebhookPushEvent([][]string{{gitFile}}, nil))
+			payload, err := json.Marshal(test.newWebhookPushEvent([][]string{{gitFile}, {gitFile2}, {gitFile3}}, nil))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -504,7 +511,7 @@ func TestVCS(t *testing.T) {
 			a.Equal(bookSchemaSQLResult, result)
 
 			// Simulate Git commits for failed data update.
-			gitFile = "bbtest/Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql"
+			gitFile = "bbtest/Prod/testVCSSchemaUpdate##ver4##data##insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatementWrong})
 			a.NoError(err)
 
@@ -570,7 +577,23 @@ func TestVCS(t *testing.T) {
 					Source:     db.VCS,
 					Type:       db.Data,
 					Status:     db.Done,
-					Schema:     dumpedSchema,
+					Schema:     dumpedSchema3,
+					SchemaPrev: dumpedSchema3,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     dumpedSchema3,
+					SchemaPrev: dumpedSchema2,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     dumpedSchema2,
 					SchemaPrev: dumpedSchema,
 				},
 				{
@@ -604,8 +627,8 @@ func TestVCS(t *testing.T) {
 				a.Equal(wantHistories[i], got)
 				a.NotEmpty(history.Version)
 			}
-			a.Equal(histories[0].Version, "ver2")
-			a.Equal(histories[1].Version, "ver1")
+			a.Equal("ver4", histories[0].Version)
+			a.Equal("ver3", histories[1].Version)
 		})
 	}
 }
