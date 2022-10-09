@@ -26,6 +26,9 @@ var (
 		api.TaskFailed:          {api.TaskRunning, api.TaskPendingApproval},
 		api.TaskCanceled:        {api.TaskRunning},
 	}
+	taskCancellationImplemented = map[api.TaskType]bool{
+		api.TaskDatabaseSchemaUpdateGhostSync: true,
+	}
 )
 
 func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
@@ -196,7 +199,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, task)
+		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, taskStatusPatch.Status)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
@@ -245,6 +248,48 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskUpdated.Name)).SetInternal(err)
 		}
 		return nil
+	})
+
+	g.POST("/pipeline/:pipelineID/task/:taskID/cancel", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		taskID, err := strconv.Atoi(c.Param("taskID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
+		}
+		task, err := s.store.GetTaskByID(ctx, taskID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel the task").SetInternal(err)
+		}
+		if task == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
+		}
+
+		if !taskCancellationImplemented[task.Type] {
+			return echo.NewHTTPError(http.StatusNotImplemented, fmt.Sprintf("Canceling task type %s is not supported", task.Type))
+		}
+		// TODO(p0ny): support cancel pending task.
+		if !isTaskStatusTransitionAllowed(task.Status, api.TaskCanceled) {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid task status transition from %v to %v.", task.Status, api.TaskCanceled))
+		}
+
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, api.TaskCanceled)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
+		}
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
+		}
+
+		s.TaskScheduler.runningExecutorsMutex.Lock()
+		cancel, ok := s.TaskScheduler.runningExecutorsCancel[taskID]
+		s.TaskScheduler.runningExecutorsMutex.Unlock()
+		if !ok {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel task")
+		}
+		cancel()
+
+		return c.NoContent(http.StatusOK)
 	})
 }
 
@@ -580,7 +625,13 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 }
 
 // canPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
-func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task) (bool, error) {
+func (s *Server) canPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task, toStatus api.TaskStatus) (bool, error) {
+	// The creator can cancel task.
+	if toStatus == api.TaskCanceled {
+		if principalID == task.CreatorID {
+			return true, nil
+		}
+	}
 	// the workspace owner and DBA roles can always change task status.
 	principal, err := s.store.GetPrincipalByID(ctx, principalID)
 	if err != nil {
@@ -663,7 +714,8 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
 		return nil, &common.Error{
 			Code: common.Invalid,
-			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
+			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
+		}
 	}
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
@@ -777,7 +829,6 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 
 func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
 	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
-
 	if err != nil {
 		// It's OK if we failed to find the SQL review policy, just emit an error log
 		log.Error("Failed to found SQL review policy id for task",

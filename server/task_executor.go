@@ -421,7 +421,6 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			latestSchemaFile,
 			schemaFileCommit,
 		)
-
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
 		}

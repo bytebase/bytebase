@@ -24,7 +24,7 @@ Demo Data
 
 ## Development
 
-1. Add a DDL SQL file such as `dev/20220408000000__schema_version_type.sql`. The prefix numbers should be the date time format when the PR is sent.
+1. Add a DDL SQL file such as `dev/20220408000000##schema_version_type.sql`. The prefix numbers should be the date time format when the PR is sent.
 2. Update `LATEST.sql` and `LATEST_DATA.sql` w.r.t. the DDL changes. (TODO: auto-generate the latest schema)
 3. Update Dev Demo data if needed.
 4. Since we use the same code for both dev and release schemas, we should add if-else branching to read storage differently based on schema version, such as [this example](https://github.com/bytebase/bytebase/pull/1039).

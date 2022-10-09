@@ -26,20 +26,22 @@ const (
 // NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		executorGetters:  make(map[api.TaskType]func() TaskExecutor),
-		runningExecutors: make(map[int]TaskExecutor),
-		server:           server,
+		executorGetters:        make(map[api.TaskType]func() TaskExecutor),
+		runningExecutors:       make(map[int]TaskExecutor),
+		runningExecutorsCancel: make(map[int]context.CancelFunc),
+		server:                 server,
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	executorGetters       map[api.TaskType]func() TaskExecutor
-	runningExecutors      map[int]TaskExecutor
-	runningExecutorsMutex sync.Mutex
-	taskProgress          sync.Map // map[taskID]api.Progress
-	sharedTaskState       sync.Map // map[taskID]interface{}
-	server                *Server
+	executorGetters        map[api.TaskType]func() TaskExecutor
+	runningExecutors       map[int]TaskExecutor
+	runningExecutorsCancel map[int]context.CancelFunc
+	runningExecutorsMutex  sync.Mutex
+	taskProgress           sync.Map // map[taskID]api.Progress
+	sharedTaskState        sync.Map // map[taskID]interface{}
+	server                 *Server
 }
 
 // Run will run the task scheduler.
@@ -149,18 +151,53 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						)
 						continue
 					}
+
+					executor := executorGetter()
 					s.runningExecutorsMutex.Lock()
-					s.runningExecutors[task.ID] = executorGetter()
+					s.runningExecutors[task.ID] = executor
 					s.runningExecutorsMutex.Unlock()
 
-					go func(task *api.Task, executor TaskExecutor) {
+					go func(ctx context.Context, task *api.Task, executor TaskExecutor) {
 						defer func() {
 							s.runningExecutorsMutex.Lock()
 							delete(s.runningExecutors, task.ID)
+							delete(s.runningExecutorsCancel, task.ID)
 							s.runningExecutorsMutex.Unlock()
 							s.taskProgress.Delete(task.ID)
 						}()
-						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
+
+						executorCtx, cancel := context.WithCancel(ctx)
+						s.runningExecutorsMutex.Lock()
+						s.runningExecutorsCancel[task.ID] = cancel
+						s.runningExecutorsMutex.Unlock()
+
+						done, result, err := RunTaskExecutorOnce(executorCtx, executor, s.server, task)
+
+						select {
+						case <-executorCtx.Done():
+							// task cancelled
+							log.Debug("Task canceled",
+								zap.Int("id", task.ID),
+								zap.String("name", task.Name),
+								zap.String("type", string(task.Type)),
+							)
+
+							taskStatusPatch := &api.TaskStatusPatch{
+								ID:        task.ID,
+								UpdaterID: api.SystemBotID,
+								Status:    api.TaskCanceled,
+							}
+							if _, err := s.server.patchTaskStatus(ctx, task, taskStatusPatch); err != nil {
+								log.Error("Failed to mark task as CANCELED",
+									zap.Int("id", task.ID),
+									zap.String("name", task.Name),
+									zap.Error(err),
+								)
+							}
+							return
+						default:
+						}
+
 						if !done && err != nil {
 							log.Debug("Encountered transient error running task, will retry",
 								zap.Int("id", task.ID),
@@ -272,7 +309,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 							return
 						}
-					}(task, s.runningExecutors[task.ID])
+					}(ctx, task, executor)
 				}
 			}()
 		case <-ctx.Done(): // if cancel() execute

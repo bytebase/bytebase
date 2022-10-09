@@ -176,7 +176,7 @@ var (
 )
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
-func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
+func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode, dbNameTemplate string) error {
 	tokens, _ := common.ParseTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
@@ -189,10 +189,18 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode Proj
 	}
 
 	for token, required := range repositoryFilePathTemplateTokens {
-		if required {
-			if _, ok := tokenMap[token]; !ok {
-				return errors.Errorf("missing %s in file path template", token)
-			}
+		// Skip checking tokens that are not required
+		if !required {
+			continue
+		}
+
+		// Skip checking {{DB_NAME}} if it's a tenant project with empty database name template (i.e .wildcard).
+		if tenantMode == TenantModeTenant && dbNameTemplate == "" && token == DBNameToken {
+			continue
+		}
+
+		if _, ok := tokenMap[token]; !ok {
+			return errors.Errorf("missing %s in file path template", token)
 		}
 	}
 	for token := range tokenMap {

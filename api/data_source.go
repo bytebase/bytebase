@@ -131,3 +131,8 @@ type DataSourcePatch struct {
 	HostOverride     *string `jsonapi:"attr,hostOverride"`
 	PortOverride     *string `jsonapi:"attr,portOverride"`
 }
+
+// DataSourceDelete is the API message for deleting data sources.
+type DataSourceDelete struct {
+	ID int
+}

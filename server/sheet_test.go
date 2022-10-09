@@ -25,8 +25,8 @@ func TestParseSheetInfo(t *testing.T) {
 			err: nil,
 		},
 		{
-			filePath:          "sheet/DEV__TEST__test.sql",
-			sheetPathTemplate: "sheet/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql",
+			filePath:          "sheet/DEV##TEST##test.sql",
+			sheetPathTemplate: "sheet/{{ENV_NAME}}##{{DB_NAME}}##{{NAME}}.sql",
 			want: &SheetInfo{
 				EnvironmentName: "DEV",
 				DatabaseName:    "TEST",
@@ -35,8 +35,8 @@ func TestParseSheetInfo(t *testing.T) {
 			err: nil,
 		},
 		{
-			filePath:          "sheet/DEV__test.sql",
-			sheetPathTemplate: "sheet/{{ENV_NAME}}__{{NAME}}.sql",
+			filePath:          "sheet/DEV##test.sql",
+			sheetPathTemplate: "sheet/{{ENV_NAME}}##{{NAME}}.sql",
 			want: &SheetInfo{
 				EnvironmentName: "DEV",
 				DatabaseName:    "",
@@ -45,8 +45,8 @@ func TestParseSheetInfo(t *testing.T) {
 			err: nil,
 		},
 		{
-			filePath:          "sheet/employee__test.sql",
-			sheetPathTemplate: "sheet/{{DB_NAME}}__{{NAME}}.sql",
+			filePath:          "sheet/employee##test.sql",
+			sheetPathTemplate: "sheet/{{DB_NAME}}##{{NAME}}.sql",
 			want: &SheetInfo{
 				EnvironmentName: "",
 				DatabaseName:    "employee",

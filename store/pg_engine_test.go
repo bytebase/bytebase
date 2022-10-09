@@ -83,24 +83,24 @@ func TestGetPatchVersions(t *testing.T) {
 		errPart        string
 	}{
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			names:          []string{"0000##hello.sql", "0001##world.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.2.3"),
 			want:           nil,
 			errPart:        "",
 		},
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			names:          []string{"0000##hello.sql", "0001##world.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.0.0"),
-			want:           []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
+			want:           []patchVersion{{semver.MustParse("1.1.0"), "0000##hello.sql"}, {semver.MustParse("1.1.1"), "0001##world.sql"}},
 			errPart:        "",
 		},
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			names:          []string{"0000##hello.sql", "0001##world.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.1.0"),
-			want:           []patchVersion{{semver.MustParse("1.1.1"), "0001__world.sql"}},
+			want:           []patchVersion{{semver.MustParse("1.1.1"), "0001##world.sql"}},
 			errPart:        "",
 		},
 		{
@@ -115,10 +115,10 @@ func TestGetPatchVersions(t *testing.T) {
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.0.0"),
 			want:           nil,
-			errPart:        "should include '__'",
+			errPart:        "should include '##'",
 		},
 		{
-			names:          []string{"00a0__hello.sql"},
+			names:          []string{"00a0##hello.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.0.0"),
 			want:           nil,
