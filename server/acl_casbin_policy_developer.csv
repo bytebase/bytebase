@@ -48,6 +48,7 @@ p, DEVELOPER, /database/{id}/backup-setting, PATCH
 p, DEVELOPER, /database/{id}/data-source, POST
 p, DEVELOPER, /database/{id}/data-source/{dataSourceID}, GET
 p, DEVELOPER, /database/{id}/data-source/{dataSourceID}, PATCH
+p, DEVELOPER, /database/{id}/data-source/{dataSourceID}, DELETE
 p, DEVELOPER, /issue, POST
 p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{id}, GET
