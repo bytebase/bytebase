@@ -82,13 +82,14 @@
                 :name="name"
               >
                 <template #arrow>
-                  <input
-                    type="radio"
-                    class="radio"
-                    :checked="name === state.selectedDatabaseName"
-                  />
+                  <!-- don't show the arrow -->
                 </template>
                 <template #header>
+                  <input
+                    type="radio"
+                    class="radio mr-2"
+                    :checked="name === state.selectedDatabaseName"
+                  />
                   <span class="text-base">{{ name }}</span>
                 </template>
                 <template #header-extra>
