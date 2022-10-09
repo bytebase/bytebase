@@ -47,7 +47,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 
 	var diff []ast.Node
-
 	oldTableMap := buildTableMap(oldNodes)
 
 	for _, node := range newNodes {
@@ -61,6 +60,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				diff = append(diff, &stmt)
 				continue
 			}
+			diff = append(diff, diffTableOptions(oldStmt.Options, newStmt.Options))
 			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
@@ -382,4 +382,264 @@ func getIndexName(index *ast.Constraint) string {
 	// https://dba.stackexchange.com/questions/160708/is-naming-an-index-required
 	// TODO(zp): handle the duplicated index name.
 	return index.Keys[0].Column.Name.O
+}
+
+// diffTableOptions returns the diff of two table options, returns nil if they are the same.
+func diffTableOptions(old, new []*ast.TableOption) *ast.AlterTableSpec {
+	// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+	// table_option: {
+	// 	AUTOEXTEND_SIZE [=] value
+	//   | AUTO_INCREMENT [=] value
+	//   | AVG_ROW_LENGTH [=] value
+	//   | [DEFAULT] CHARACTER SET [=] charset_name
+	//   | CHECKSUM [=] {0 | 1}
+	//   | [DEFAULT] COLLATE [=] collation_name
+	//   | COMMENT [=] 'string'
+	//   | COMPRESSION [=] {'ZLIB' | 'LZ4' | 'NONE'}
+	//   | CONNECTION [=] 'connect_string'
+	//   | {DATA | INDEX} DIRECTORY [=] 'absolute path to directory'
+	//   | DELAY_KEY_WRITE [=] {0 | 1}
+	//   | ENCRYPTION [=] {'Y' | 'N'}
+	//   | ENGINE [=] engine_name
+	//   | ENGINE_ATTRIBUTE [=] 'string'
+	//   | INSERT_METHOD [=] { NO | FIRST | LAST }
+	//   | KEY_BLOCK_SIZE [=] value
+	//   | MAX_ROWS [=] value
+	//   | MIN_ROWS [=] value
+	//   | PACK_KEYS [=] {0 | 1 | DEFAULT}
+	//   | PASSWORD [=] 'string'
+	//   | ROW_FORMAT [=] {DEFAULT | DYNAMIC | FIXED | COMPRESSED | REDUNDANT | COMPACT}
+	//   | START TRANSACTION	// This is an internal-use table option.
+	//							// It was introduced in MySQL 8.0.21 to permit CREATE TABLE ... SELECT to be logged as a single,
+	//							// atomic transaction in the binary log when using row-based replication with a storage engine that supports atomic DDL.
+	//   | SECONDARY_ENGINE_ATTRIBUTE [=] 'string'
+	//   | STATS_AUTO_RECALC [=] {DEFAULT | 0 | 1}
+	//   | STATS_PERSISTENT [=] {DEFAULT | 0 | 1}
+	//   | STATS_SAMPLE_PAGES [=] value
+	//   | TABLESPACE tablespace_name [STORAGE {DISK | MEMORY}]
+	//   | UNION [=] (tbl_name[,tbl_name]...)
+	// }
+
+	// We use map to record the table options, so we can easily find the difference.
+	oldOptionsMap := buildTableOptionMap(old)
+	newOptionsMap := buildTableOptionMap(new)
+
+	var options []*ast.TableOption
+	for oldTp, oldOption := range oldOptionsMap {
+		newOption, ok := newOptionsMap[oldTp]
+		if !ok {
+			// We should drop the table option if it doesn't exist in the new table options.
+			options = append(options, dropOption(oldOption))
+			continue
+		}
+		if !isTableOptionValEqual(oldOption, newOption) {
+			options = append(options, newOption)
+		}
+	}
+	// We should add the table option if it doesn't exist in the old table options.
+	for newTp, newOption := range newOptionsMap {
+		if _, ok := oldOptionsMap[newTp]; !ok {
+			// We should add the table option if it doesn't exist in the old table options.
+			options = append(options, newOption)
+		}
+	}
+	if len(options) == 0 {
+		return nil
+	}
+	return &ast.AlterTableSpec{
+		Tp:      ast.AlterTableOption,
+		Options: options,
+	}
+}
+
+// dropOption generate the table options node need to oppended to the ALTER TABLE OPTION spec.
+func dropOption(option *ast.TableOption) *ast.TableOption {
+	switch option.Tp {
+	case ast.TableOptionAutoIncrement:
+		// You cannot reset the counter to a value less than or equal to the value that is currently in use.
+		// For both InnoDB and MyISAM, if the value is less than or equal to the maximum value currently in the AUTO_INCREMENT column,
+		// the value is reset to the current maximum AUTO_INCREMENT column value plus one.
+		// https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+		return &ast.TableOption{
+			Tp:        ast.TableOptionAutoIncrement,
+			UintValue: 0,
+		}
+	case ast.TableOptionAvgRowLength:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionAvgRowLength,
+			UintValue: 0,
+		}
+	case ast.TableOptionCharset:
+		// TODO(zp): handle the default charset and collate
+	case ast.TableOptionCollate:
+	case ast.TableOptionCheckSum:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionCheckSum,
+			UintValue: 0,
+		}
+	case ast.TableOptionComment:
+		// Set to "" to remove the comment.
+		return &ast.TableOption{
+			Tp: ast.TableOptionComment,
+		}
+	case ast.TableOptionCompression:
+		// TODO(zp): handle the compression
+	case ast.TableOptionConnection:
+		// Set to "" to remove the connection.
+		return &ast.TableOption{
+			Tp: ast.TableOptionConnection,
+		}
+	case ast.TableOptionDataDirectory:
+		// TODO(zp): handle the default data directory and index directory
+	case ast.TableOptionIndexDirectory:
+	case ast.TableOptionDelayKeyWrite:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionDelayKeyWrite,
+			UintValue: 0,
+		}
+	case ast.TableOptionEngine:
+		// TODO(zp): handle the default engine
+	case ast.TableOptionInsertMethod:
+		return &ast.TableOption{
+			Tp:       ast.TableOptionInsertMethod,
+			StrValue: "NO",
+		}
+	case ast.TableOptionKeyBlockSize:
+		// TODO(zp): InnoDB doesn't support this. And the default value will be ensured when compiling.
+	case ast.TableOptionMaxRows:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionMaxRows,
+			UintValue: 0,
+		}
+	case ast.TableOptionMinRows:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionMinRows,
+			UintValue: 0,
+		}
+	case ast.TableOptionPackKeys:
+		// TiDB doesn't support this, and the restore will always write "DEFAULT".
+		return &ast.TableOption{
+			Tp: ast.TableOptionPackKeys,
+		}
+	case ast.TableOptionPassword:
+		// mysqldump will not dump the password, so we can ignore this.
+	case ast.TableOptionRowFormat:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionRowFormat,
+			UintValue: ast.RowFormatDefault,
+		}
+	case ast.TableOptionStatsAutoRecalc:
+		return &ast.TableOption{
+			Tp:      ast.TableOptionStatsAutoRecalc,
+			Default: true,
+		}
+	case ast.TableOptionStatsPersistent:
+		// TiDB doesn't support this, and the restore will always write "DEFAULT".
+		return &ast.TableOption{
+			Tp: ast.TableOptionStatsPersistent,
+		}
+	case ast.TableOptionStatsSamplePages:
+		return &ast.TableOption{
+			Tp:      ast.TableOptionStatsSamplePages,
+			Default: true,
+		}
+	case ast.TableOptionTablespace:
+		// TODO(zp): handle the table space
+	case ast.TableOptionUnion:
+		// TODO(zp): handle the union
+	}
+	return nil
+}
+
+// isTableOptionValEqual compare the two table options value, if they are equal, returns true.
+// Caller need to ensure the two table options are not nil and the type is the same.
+func isTableOptionValEqual(old, new *ast.TableOption) bool {
+	switch old.Tp {
+	case ast.TableOptionAutoIncrement:
+		// You cannot reset the counter to a value less than or equal to the value that is currently in use.
+		// For both InnoDB and MyISAM, if the value is less than or equal to the maximum value currently in the AUTO_INCREMENT column,
+		// the value is reset to the current maximum AUTO_INCREMENT column value plus one.
+		// https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+		return old.UintValue == new.UintValue
+	case ast.TableOptionAvgRowLength:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionCharset:
+		if old.Default != new.Default {
+			return false
+		}
+		if old.Default && new.Default {
+			return true
+		}
+		return old.StrValue == new.StrValue
+	case ast.TableOptionCollate:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionCheckSum:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionComment:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionCompression:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionConnection:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionDataDirectory:
+		// TODO(zp): handle the default data directory and index directory
+	case ast.TableOptionIndexDirectory:
+	case ast.TableOptionDelayKeyWrite:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionEngine:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionInsertMethod:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionKeyBlockSize:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionMaxRows:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionMinRows:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionPackKeys:
+		// TiDB doesn't support this, and the restore will always write "DEFAULT".
+		// The parser will ignore it. So we can only ignore it here.
+		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11661
+		return old.Default == new.Default
+	case ast.TableOptionPassword:
+		// mysqldump will not dump the password, so we just return false here.
+		return false
+	case ast.TableOptionRowFormat:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionStatsAutoRecalc:
+		// TiDB parser will ignore the DEFAULT value. So we just can compare the UINT value here.
+		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11599
+		return old.UintValue == new.UintValue
+	case ast.TableOptionStatsPersistent:
+		// TiDB parser doesn't support this, it only assign the type without any value.
+		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11595
+		return true
+	case ast.TableOptionStatsSamplePages:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionTablespace:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionUnion:
+		oldTableNames := old.TableNames
+		newTableNames := new.TableNames
+		if len(oldTableNames) != len(newTableNames) {
+			return false
+		}
+		for i, oldTableName := range oldTableNames {
+			newTableName := newTableNames[i]
+			if oldTableName.Name.O != newTableName.Name.O {
+				return false
+			}
+		}
+		return true
+	}
+	return true
+}
+
+// buildTableOptionMap builds a map of table options.
+func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*ast.TableOption {
+	m := make(map[ast.TableOptionType]*ast.TableOption)
+	for _, option := range options {
+		m[option.Tp] = option
+	}
+	return m
 }
