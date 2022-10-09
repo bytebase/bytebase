@@ -204,7 +204,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						zap.String("file", file.Path),
 						zap.Error(err),
 					)
-					return
 				}
 				if adviceList != nil {
 					sqlCheckAdvice[file.Path] = adviceList
@@ -267,8 +266,8 @@ func (s *Server) sqlAdviceForPullRequestFile(
 		)
 		return nil, nil
 	}
-	if migrationInfo.Database == "" {
-		return nil, nil
+	if migrationInfo == nil || migrationInfo.Database == "" {
+		return nil, errors.Errorf("Cannot parse migration info for file %s", file.Path)
 	}
 
 	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
@@ -345,7 +344,8 @@ func (s *Server) sqlAdviceForPullRequestFile(
 }
 
 // convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
-// junit xml format: https://llg.cubic.org/docs/junit/
+// GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
+// junit XML format: https://llg.cubic.org/docs/junit/
 func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
 	testsuiteList := []string{}
 	status := advisor.Success
