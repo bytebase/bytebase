@@ -12,21 +12,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*InsertUpdateNoOrderByAdvisor)(nil)
-	_ ast.Visitor     = (*insertUpdateNoOrderByChecker)(nil)
+	_ advisor.Advisor = (*DisallowOrderByAdvisor)(nil)
+	_ ast.Visitor     = (*disallowOrderByChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLInsertUpdateNoOrderBy, &InsertUpdateNoOrderByAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLInsertUpdateNoOrderBy, &InsertUpdateNoOrderByAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 }
 
-// InsertUpdateNoOrderByAdvisor is the advisor checking for no ORDER BY clause in INSERT/UPDATE statement.
-type InsertUpdateNoOrderByAdvisor struct {
+// DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.
+type DisallowOrderByAdvisor struct {
 }
 
-// Check checks for no ORDER BY clause in INSERT/UPDATE statement.
-func (*InsertUpdateNoOrderByAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+// Check checks for no ORDER BY clause in DELETE/UPDATE statements.
+func (*DisallowOrderByAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -36,7 +36,7 @@ func (*InsertUpdateNoOrderByAdvisor) Check(ctx advisor.Context, statement string
 	if err != nil {
 		return nil, err
 	}
-	checker := &insertUpdateNoOrderByChecker{
+	checker := &disallowOrderByChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -58,7 +58,7 @@ func (*InsertUpdateNoOrderByAdvisor) Check(ctx advisor.Context, statement string
 	return checker.adviceList, nil
 }
 
-type insertUpdateNoOrderByChecker struct {
+type disallowOrderByChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -67,16 +67,16 @@ type insertUpdateNoOrderByChecker struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (checker *insertUpdateNoOrderByChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *disallowOrderByChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
 	case *ast.UpdateStmt:
 		if node.Order != nil {
 			code = advisor.UpdateUseOrderBy
 		}
-	case *ast.InsertStmt:
-		if useOrderBy(node) {
-			code = advisor.InsertUseOrderBy
+	case *ast.DeleteStmt:
+		if node.Order != nil {
+			code = advisor.DeleteUseOrderBy
 		}
 	}
 
@@ -85,7 +85,7 @@ func (checker *insertUpdateNoOrderByChecker) Enter(in ast.Node) (ast.Node, bool)
 			Status:  checker.level,
 			Code:    code,
 			Title:   checker.title,
-			Content: fmt.Sprintf("ORDER BY clause is forbidden in INSERT and UPDATE statement, but \"%s\" uses", checker.text),
+			Content: fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", checker.text),
 			Line:    checker.line,
 		})
 	}
@@ -93,18 +93,6 @@ func (checker *insertUpdateNoOrderByChecker) Enter(in ast.Node) (ast.Node, bool)
 }
 
 // Leave implements the ast.Visitor interface.
-func (*insertUpdateNoOrderByChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*disallowOrderByChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
-}
-
-func useOrderBy(node *ast.InsertStmt) bool {
-	if node.Select != nil {
-		switch stmt := node.Select.(type) {
-		case *ast.SelectStmt:
-			return stmt.OrderBy != nil
-		case *ast.SetOprStmt:
-			return stmt.OrderBy != nil
-		}
-	}
-	return false
 }

@@ -158,13 +158,13 @@ const (
 	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
 
 	// MySQLDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
-	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.disallow.disallow-limit"
+	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.statement.disallow-limit"
 
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
 
-	// MySQLInsertUpdateNoOrderBy is an advisor type for MySQL no ORDER BY clause in INSERT/UPDATE statement.
-	MySQLInsertUpdateNoOrderBy Type = "bb.plugin.advisor.mysql.insert-update.no-order-by"
+	// MySQLDisallowOrderBy is an advisor type for MySQL no ORDER BY clause in DELETE/UPDATE statement.
+	MySQLDisallowOrderBy Type = "bb.plugin.advisor.mysql.statement.disallow-order-by"
 
 	// PostgreSQL Advisor.
 
@@ -212,6 +212,9 @@ const (
 
 	// PostgreSQLTableNoFK is an advisor type for PostgreSQL table disallow foreign key.
 	PostgreSQLTableNoFK Type = "bb.plugin.advisor.postgresql.table.no-foreign-key"
+
+	// PostgreSQLInsertRowLimit is an advisor type for PostgreSQL to limit INSERT rows.
+	PostgreSQLInsertRowLimit Type = "bb.plugin.advisor.postgresql.insert.row-limit"
 )
 
 // Advice is the result of an advisor.

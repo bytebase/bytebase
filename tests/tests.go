@@ -115,8 +115,8 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// We allocates 4 ports for each of the integration test, who probably would start
-	// the Bytebase server, Postgres, MySQL and GitLab.
+	// We allocate 4 ports for each of the integration test, who probably would start
+	// the Bytebase server, Postgres, MySQL and code host (GitLab or GitHub).
 	tests := []string{
 		"TestServiceRestart",
 		"TestSchemaAndDataUpdate",
@@ -136,6 +136,8 @@ func getTestPort(testName string) int {
 		"TestGhostSchemaUpdate",
 		"TestTenantVCSDatabaseNameTemplate/GitLab",
 		"TestTenantVCSDatabaseNameTemplate/GitHub",
+		"TestTenantVCSDatabaseNameTemplate_Empty/GitLab",
+		"TestTenantVCSDatabaseNameTemplate_Empty/GitHub",
 		"TestBootWithExternalPg",
 		"TestSheetVCS/GitLab",
 		"TestSheetVCS/GitHub",
