@@ -261,7 +261,7 @@ type fileInfo struct {
 
 // groupFileInfoByRepo groups information for distinct files in the push event by their corresponding api.Repository.
 // In a GitLab/GitHub monorepo, a user could create multiple projects and configure different base directory in the repository.
-// Bytebase will create different api.Repository for each project. If the user decide to do a migration in multiple directories at once,
+// Bytebase will create a different api.Repository for each project. If the user decides to do a migration in multiple directories at once,
 // the push event will trigger changes in multiple projects. So we first group the files into api.Repository, and create issue(s) in
 // each project.
 func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repositoryList []*api.Repository) map[int][]fileInfo {
