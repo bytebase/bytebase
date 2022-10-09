@@ -216,26 +216,33 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 
 	var createdMessageList []string
 	repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
-	for _, fileInfoList := range repoID2FileItemList {
-		repository := fileInfoList[0].repository
-		pushEvent := baseVCSPushEvent
-		pushEvent.VCSType = repository.VCS.Type
-		pushEvent.BaseDirectory = repository.BaseDirectory
-		createdMessage, created, activityCreateList, err := s.processFilesInProject(
-			ctx,
-			pushEvent,
-			repository,
-			fileInfoList,
-		)
-		if err != nil {
-			return nil, err
-		}
-		if created {
-			createdMessageList = append(createdMessageList, createdMessage)
-		} else {
-			for _, activityCreate := range activityCreateList {
-				if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-					log.Warn("Failed to create project activity for the ignored repository files", zap.Error(err))
+	for _, fileInfoListInRepo := range repoID2FileItemList {
+		// There are possibly multiple files in the push event.
+		// Each file corresponds to a (database name, schema version) pair.
+		// We want the migration statements are sorted by the file's schema version, and grouped by the database name.
+		dbID2FileInfoList := groupFileInfoByDatabase(fileInfoListInRepo)
+		for _, fileInfoListInDB := range dbID2FileInfoList {
+			fileInfoListSorted := sortFilesBySchemaVersion(fileInfoListInDB)
+			repository := fileInfoListSorted[0].repository
+			pushEvent := baseVCSPushEvent
+			pushEvent.VCSType = repository.VCS.Type
+			pushEvent.BaseDirectory = repository.BaseDirectory
+			createdMessage, created, activityCreateList, err := s.processFilesInProject(
+				ctx,
+				pushEvent,
+				repository,
+				fileInfoListSorted,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if created {
+				createdMessageList = append(createdMessageList, createdMessage)
+			} else {
+				for _, activityCreate := range activityCreateList {
+					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+						log.Warn("Failed to create project activity for the ignored repository files", zap.Error(err))
+					}
 				}
 			}
 		}
@@ -257,6 +264,14 @@ type fileInfo struct {
 	migrationInfo *db.MigrationInfo
 	fType         fileType
 	repository    *api.Repository
+}
+
+func groupFileInfoByDatabase(fileInfoList []fileInfo) map[string][]fileInfo {
+	dbID2FileInfoList := make(map[string][]fileInfo)
+	for _, fileInfo := range fileInfoList {
+		dbID2FileInfoList[fileInfo.migrationInfo.Database] = append(dbID2FileInfoList[fileInfo.migrationInfo.Database], fileInfo)
+	}
+	return dbID2FileInfoList
 }
 
 // groupFileInfoByRepo groups information for distinct files in the push event by their corresponding api.Repository.
@@ -362,9 +377,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 // is returned in case of the error during the process.
 func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, fileInfoList []fileInfo) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
 	if repo.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
-		if !s.feature(api.FeatureMultiTenancy) {
-			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
+		return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
 
 	var migrationDetailList []*api.MigrationDetail
@@ -373,11 +386,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	// Default to DATA migration. If later we found any MIGRATE migration file, we set migrationType to MIGRATE.
 	migrationTypeDDL := db.Data
 
-	// There are possibly multiple files in the push event.
-	// Each file corresponds to a (database name, schema version) pair.
-	// We want the migration statements are sorted by the file's schema version, and grouped by the database name.
-	fileInfoListSorted := sortFilesBySchemaVersionGroupByDatabase(fileInfoList)
-	for _, fileInfo := range fileInfoListSorted {
+	for _, fileInfo := range fileInfoList {
 		if fileInfo.fType == schemaFileType {
 			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
@@ -424,7 +433,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
 }
 
-func sortFilesBySchemaVersionGroupByDatabase(fileInfoList []fileInfo) []fileInfo {
+func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	var ret []fileInfo
 	ret = append(ret, fileInfoList...)
 	sort.Slice(ret, func(i, j int) bool {
