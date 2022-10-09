@@ -181,19 +181,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								zap.String("name", task.Name),
 								zap.String("type", string(task.Type)),
 							)
-
-							taskStatusPatch := &api.TaskStatusPatch{
-								ID:        task.ID,
-								UpdaterID: api.SystemBotID,
-								Status:    api.TaskCanceled,
-							}
-							if _, err := s.server.patchTaskStatus(ctx, task, taskStatusPatch); err != nil {
-								log.Error("Failed to mark task as CANCELED",
-									zap.Int("id", task.ID),
-									zap.String("name", task.Name),
-									zap.Error(err),
-								)
-							}
 							return
 						default:
 						}

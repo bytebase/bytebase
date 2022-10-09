@@ -20,11 +20,12 @@ import (
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
 		api.TaskPendingApproval: {api.TaskPending},
-		api.TaskPending:         {api.TaskRunning, api.TaskPendingApproval},
-		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
-		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskRunning, api.TaskPendingApproval},
-		api.TaskCanceled:        {api.TaskRunning},
+		// TODO(p0ny): support cancel pending task.
+		api.TaskPending:  {api.TaskRunning, api.TaskPendingApproval},
+		api.TaskRunning:  {api.TaskDone, api.TaskFailed, api.TaskCanceled},
+		api.TaskDone:     {},
+		api.TaskFailed:   {api.TaskRunning, api.TaskPendingApproval},
+		api.TaskCanceled: {api.TaskRunning},
 	}
 	taskCancellationImplemented = map[api.TaskType]bool{
 		api.TaskDatabaseSchemaUpdateGhostSync: true,
@@ -212,6 +213,9 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
+			if common.ErrorCode(err) == common.NotImplemented {
+				return echo.NewHTTPError(http.StatusNotImplemented, common.ErrorMessage(err))
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
 
@@ -248,48 +252,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskUpdated.Name)).SetInternal(err)
 		}
 		return nil
-	})
-
-	g.POST("/pipeline/:pipelineID/task/:taskID/cancel", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		taskID, err := strconv.Atoi(c.Param("taskID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
-		}
-		task, err := s.store.GetTaskByID(ctx, taskID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel the task").SetInternal(err)
-		}
-		if task == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
-		}
-
-		if !taskCancellationImplemented[task.Type] {
-			return echo.NewHTTPError(http.StatusNotImplemented, fmt.Sprintf("Canceling task type %s is not supported", task.Type))
-		}
-		// TODO(p0ny): support cancel pending task.
-		if !isTaskStatusTransitionAllowed(task.Status, api.TaskCanceled) {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid task status transition from %v to %v.", task.Status, api.TaskCanceled))
-		}
-
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, api.TaskCanceled)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
-		}
-		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
-		}
-
-		s.TaskScheduler.runningExecutorsMutex.Lock()
-		cancel, ok := s.TaskScheduler.runningExecutorsCancel[taskID]
-		s.TaskScheduler.runningExecutorsMutex.Unlock()
-		if !ok {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel task")
-		}
-		cancel()
-
-		return c.NoContent(http.StatusOK)
 	})
 }
 
@@ -716,6 +678,19 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 			Code: common.Invalid,
 			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
 		}
+	}
+
+	if taskStatusPatch.Status == api.TaskCanceled {
+		if !taskCancellationImplemented[task.Type] {
+			return nil, common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
+		}
+		s.TaskScheduler.runningExecutorsMutex.Lock()
+		cancel, ok := s.TaskScheduler.runningExecutorsCancel[task.ID]
+		s.TaskScheduler.runningExecutorsMutex.Unlock()
+		if !ok {
+			return nil, errors.New("Failed to cancel task")
+		}
+		cancel()
 	}
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
