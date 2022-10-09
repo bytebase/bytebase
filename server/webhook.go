@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -213,13 +214,75 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 		return nil, nil
 	}
 
-	var createdMessages []string
-	for _, item := range distinctFileList {
-		log.Debug("Processing file",
-			zap.String("file", item.FileName),
-			zap.String("commit", item.Commit.ID),
-		)
+	var createdMessageList []string
+	repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
+	for _, fileInfoListInRepo := range repoID2FileItemList {
+		// There are possibly multiple files in the push event.
+		// Each file corresponds to a (database name, schema version) pair.
+		// We want the migration statements are sorted by the file's schema version, and grouped by the database name.
+		dbID2FileInfoList := groupFileInfoByDatabase(fileInfoListInRepo)
+		for _, fileInfoListInDB := range dbID2FileInfoList {
+			fileInfoListSorted := sortFilesBySchemaVersion(fileInfoListInDB)
+			repository := fileInfoListSorted[0].repository
+			pushEvent := baseVCSPushEvent
+			pushEvent.VCSType = repository.VCS.Type
+			pushEvent.BaseDirectory = repository.BaseDirectory
+			createdMessage, created, activityCreateList, err := s.processFilesInProject(
+				ctx,
+				pushEvent,
+				repository,
+				fileInfoListSorted,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if created {
+				createdMessageList = append(createdMessageList, createdMessage)
+			} else {
+				for _, activityCreate := range activityCreateList {
+					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+						log.Warn("Failed to create project activity for the ignored repository files", zap.Error(err))
+					}
+				}
+			}
+		}
+	}
 
+	if len(createdMessageList) == 0 {
+		var repoURLs []string
+		for _, repo := range repositoryList {
+			repoURLs = append(repoURLs, repo.WebURL)
+		}
+		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Strings("repos", repoURLs))
+	}
+
+	return createdMessageList, nil
+}
+
+type fileInfo struct {
+	item          vcs.DistinctFileItem
+	migrationInfo *db.MigrationInfo
+	fType         fileType
+	repository    *api.Repository
+}
+
+func groupFileInfoByDatabase(fileInfoList []fileInfo) map[string][]fileInfo {
+	dbID2FileInfoList := make(map[string][]fileInfo)
+	for _, fileInfo := range fileInfoList {
+		dbID2FileInfoList[fileInfo.migrationInfo.Database] = append(dbID2FileInfoList[fileInfo.migrationInfo.Database], fileInfo)
+	}
+	return dbID2FileInfoList
+}
+
+// groupFileInfoByRepo groups information for distinct files in the push event by their corresponding api.Repository.
+// In a GitLab/GitHub monorepo, a user could create multiple projects and configure different base directory in the repository.
+// Bytebase will create a different api.Repository for each project. If the user decides to do a migration in multiple directories at once,
+// the push event will trigger changes in multiple projects. So we first group the files into api.Repository, and create issue(s) in
+// each project.
+func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repositoryList []*api.Repository) map[int][]fileInfo {
+	repoID2FileItemList := make(map[int][]fileInfo)
+	for _, item := range distinctFileList {
+		log.Debug("Processing file", zap.String("file", item.FileName), zap.String("commit", item.Commit.ID))
 		migrationInfo, fType, repository, err := getFileInfo(item, repositoryList)
 		if err != nil {
 			log.Warn("Failed to get file info for the ignored repository file",
@@ -228,63 +291,14 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 			)
 			continue
 		}
-		pushEvent := baseVCSPushEvent
-		pushEvent.VCSType = repository.VCS.Type
-		pushEvent.BaseDirectory = repository.BaseDirectory
-		pushEvent.FileCommit = vcs.FileCommit{
-			ID:          item.Commit.ID,
-			Title:       item.Commit.Title,
-			Message:     item.Commit.Message,
-			CreatedTs:   item.Commit.CreatedTs,
-			URL:         item.Commit.URL,
-			AuthorName:  item.Commit.AuthorName,
-			AuthorEmail: item.Commit.AuthorEmail,
-			Added:       item.FileName,
-		}
-
-		var createdMessageList []string
-		repoID2ActivityCreateList := make(map[int][]*api.ActivityCreate)
-		createdMessage, created, activityCreateList, err := s.processFile(
-			ctx,
-			pushEvent,
-			repository,
-			item.FileName,
-			item.ItemType,
-			migrationInfo,
-			fType,
-		)
-		if err != nil {
-			return nil, err
-		}
-		if created {
-			createdMessageList = append(createdMessageList, createdMessage)
-		}
-		repoID2ActivityCreateList[repository.ID] = append(repoID2ActivityCreateList[repository.ID], activityCreateList...)
-
-		if len(createdMessageList) == 0 {
-			for _, repo := range repositoryList {
-				if activityCreateList, ok := repoID2ActivityCreateList[repo.ID]; ok {
-					for _, activityCreate := range activityCreateList {
-						if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-							log.Warn("Failed to create project activity for the ignored repository file",
-								zap.Error(err),
-							)
-						}
-					}
-				}
-			}
-		}
-		createdMessages = append(createdMessages, createdMessageList...)
+		repoID2FileItemList[repository.ID] = append(repoID2FileItemList[repository.ID], fileInfo{
+			item:          item,
+			migrationInfo: migrationInfo,
+			fType:         fType,
+			repository:    repository,
+		})
 	}
-
-	if len(createdMessages) == 0 {
-		var repoURLs []string
-		for _, repo := range repositoryList {
-			repoURLs = append(repoURLs, repo.WebURL)
-		}
-		log.Warn("Ignored push event because no applicable file found in the commit list", zap.Any("repos", repoURLs))
-	}
-	return createdMessages, nil
+	return repoID2FileItemList
 }
 
 type fileType int
@@ -355,53 +369,84 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 	}
 }
 
-// processFile attempts to create a new issue for the given file of
-// the push event. It returns "created=true" when a new issue has been created,
+// processFilesInProject attempts to create new issue(s) according to the repository type.
+// 1. For a state based project, we create one issue per schema file, and one issue for all of the rest migration files (if any).
+// 2. For a migration based project, we create one issue for all of the migration files. All schema files are ignored.
+// It returns "created=true" when new issue(s) has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) processFile(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, file string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo, fType fileType) (string, bool, []*api.ActivityCreate, error) {
+func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, fileInfoList []fileInfo) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
 	if repo.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
-		if !s.feature(api.FeatureMultiTenancy) {
-			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
+		return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
 
 	var migrationDetailList []*api.MigrationDetail
 	var activityCreateList []*api.ActivityCreate
-	var migrationDescription string
+	var createdIssueList []string
+	// Default to DATA migration. If later we found any MIGRATE migration file, we set migrationType to MIGRATE.
+	// The reason for this design is that, if a user merges DDL/DML in a single PR/MR, we suppose the user is possibly changing the schema while inserting/updating some seed/existing data.
+	// If the user wants to create a pure DML issue, they should create a dedicated PR/MR only containing DML SQL statements.
+	migrationTypeDDL := db.Data
 
-	if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeDDL && fType == schemaFileType {
-		log.Debug("Ignored schema file for non-SDL", zap.String("file", file), zap.String("type", string(fileType)))
-		return "", false, nil, nil
-	} else if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL && fType == schemaFileType {
-		migrationDescription = "Apply schema diff"
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, migrationInfo, file)
-	} else {
-		// This is a migration-based DDL or DML file and we would allow it for both DDL and SDL schema change type project.
-		// For DDL schema change type project, this is expected.
-		// For SDL schema change type project, we allow it because:
-		// 1) DML is always migration-based.
-		// 2) We may have a limitation in SDL implementation.
-		// 3) User just wants to break the glass.
-		migrationDescription = migrationInfo.Description
-		migrationDetailList, activityCreateList = s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, file, fileType, migrationInfo)
+	for _, fileInfo := range fileInfoList {
+		if fileInfo.fType == schemaFileType {
+			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
+				// Create one issue per schema file for SDL project.
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
+				activityCreateList = append(activityCreateList, activityCreateListForFile...)
+				if len(migrationDetailListForFile) != 0 {
+					issueName := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
+					creatorID := s.getIssueCreatorID(ctx, pushEvent.FileCommit.AuthorEmail)
+					if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, fileInfo.migrationInfo.Type, migrationDetailListForFile); err != nil {
+						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+					}
+					createdIssueList = append(createdIssueList, issueName)
+				}
+			} else {
+				log.Debug("Ignored schema file for non-SDL project", zap.String("fileName", fileInfo.item.FileName), zap.String("type", string(fileInfo.item.ItemType)))
+			}
+		} else { // fileInfo.fType == migrationFileType
+			// This is a migration-based DDL or DML file and we would allow it for both DDL and SDL schema change type project.
+			// For DDL schema change type project, this is expected.
+			// For SDL schema change type project, we allow it because:
+			// 1) DML is always migration-based.
+			// 2) We may have a limitation in SDL implementation.
+			// 3) User just wants to break the glass.
+			if fileInfo.migrationInfo.Type == db.Migrate {
+				migrationTypeDDL = db.Migrate
+			}
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, fileInfo.item.FileName, fileInfo.item.ItemType, fileInfo.migrationInfo)
+			activityCreateList = append(activityCreateList, activityCreateListForFile...)
+			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+		}
 	}
 
 	if len(migrationDetailList) == 0 {
-		return "", false, activityCreateList, nil
+		return "", len(createdIssueList) != 0, activityCreateList, nil
 	}
 
-	// Create schema update issue
-	issueName := fmt.Sprintf("%s by %s", migrationDescription, strings.TrimPrefix(file, repo.BaseDirectory+"/"))
+	// Create one issue per push event for DDL project, or non-schema files for SDL project.
+	issueName := pushEvent.CommitList[0].Title
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.FileCommit.AuthorEmail)
-	if err := s.createIssueFromMigrationFile(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationInfo.Type, migrationDetailList); err != nil {
-		return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+	if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationTypeDDL, migrationDetailList); err != nil {
+		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
 
-	return fmt.Sprintf("Created issue %q from file %q", issueName, file), true, activityCreateList, nil
+	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
 }
 
-func (s *Server) createIssueFromMigrationFile(ctx context.Context, issueName string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
+func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
+	var ret []fileInfo
+	ret = append(ret, fileInfoList...)
+	sort.Slice(ret, func(i, j int) bool {
+		mi := ret[i].migrationInfo
+		mj := ret[j].migrationInfo
+		return mi.Database < mj.Database || (mi.Database == mj.Database && mi.Version < mj.Version)
+	})
+	return ret
+}
+
+func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			MigrationType: migrationType,
@@ -590,7 +635,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
 		file,
-		pushEvent.FileCommit.ID,
+		pushEvent.CommitList[len(pushEvent.CommitList)-1].ID,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "read content")
