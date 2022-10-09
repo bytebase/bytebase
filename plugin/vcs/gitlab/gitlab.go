@@ -770,10 +770,11 @@ type gitlabBranchCreate struct {
 }
 
 type gitlabMergeRequestCreate struct {
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	SourceBranch string `json:"source_branch"`
-	TargetBranch string `json:"target_branch"`
+	Title              string `json:"title"`
+	Description        string `json:"description"`
+	SourceBranch       string `json:"source_branch"`
+	TargetBranch       string `json:"target_branch"`
+	RemoveSourceBranch bool   `json:"remove_source_branch"`
 }
 
 // GetBranch gets the given branch in the repository.
@@ -875,10 +876,11 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
 	body, err := json.Marshal(
 		gitlabMergeRequestCreate{
-			Title:        pullRequestCreate.Title,
-			Description:  pullRequestCreate.Body,
-			SourceBranch: pullRequestCreate.Head,
-			TargetBranch: pullRequestCreate.Base,
+			Title:              pullRequestCreate.Title,
+			Description:        pullRequestCreate.Body,
+			SourceBranch:       pullRequestCreate.Head,
+			TargetBranch:       pullRequestCreate.Base,
+			RemoveSourceBranch: pullRequestCreate.RemoveHeadAfterMerged,
 		},
 	)
 	if err != nil {
