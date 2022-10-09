@@ -23,8 +23,9 @@
           <TabItem
             :tab="tabStore.getTabById(id)"
             :index="index"
+            :data-tab-id="id"
             @select="(tab) => handleSelectTab(tab)"
-            @close="(tab) => handleRemoveTab(tab)"
+            @close="(tab, index) => handleRemoveTab(tab, index)"
           />
         </template>
       </Draggable>
@@ -37,10 +38,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, nextTick, computed, onMounted } from "vue";
+import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDialog } from "naive-ui";
 import Draggable from "vuedraggable";
+import scrollIntoView from "scroll-into-view-if-needed";
 
 import type { TabInfo } from "@/types";
 import { useTabStore } from "@/store";
@@ -78,7 +80,7 @@ const handleAddTab = () => {
   nextTick(recalculateScrollState);
 };
 
-const handleRemoveTab = async (tab: TabInfo) => {
+const handleRemoveTab = async (tab: TabInfo, index: number) => {
   if (!tab.isSaved) {
     const $dialog = dialog.create({
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-tab"),
@@ -87,7 +89,7 @@ const handleRemoveTab = async (tab: TabInfo) => {
         $dialog.destroy();
       },
       async onNegativeClick() {
-        await remove();
+        remove(index);
         $dialog.destroy();
       },
       negativeText: t("common.confirm"),
@@ -95,16 +97,19 @@ const handleRemoveTab = async (tab: TabInfo) => {
       showIcon: false,
     });
   } else {
-    await remove();
+    remove(index);
   }
 
-  async function remove() {
-    await tabStore.removeTab(tab);
-    const tabsLength = tabStore.tabList.length;
+  function remove(index: number) {
+    if (tabStore.tabList.length <= 1) return;
 
-    if (tabsLength > 0) {
-      handleSelectTab(tabStore.tabList[tabsLength - 1]);
-    }
+    tabStore.removeTab(tab);
+
+    // select a tab near the removed tab.
+    const nextIndex = Math.min(index, tabStore.tabList.length - 1);
+    const nextTab = tabStore.tabList[nextIndex];
+    handleSelectTab(nextTab);
+
     nextTick(recalculateScrollState);
   }
 };
@@ -142,8 +147,29 @@ const recalculateScrollState = () => {
     } else {
       scrollState.moreRight = false;
     }
+  } else {
+    scrollState.moreRight = false;
   }
 };
+
+watch(
+  () => tabStore.currentTabId,
+  (id) => {
+    requestAnimationFrame(() => {
+      // Scroll the selected tab into view if needed.
+      const tabElements = Array.from(document.querySelectorAll(".tab-item"));
+      const tabElement = tabElements.find(
+        (elem) => elem.getAttribute("data-tab-id") === id
+      );
+      if (tabElement) {
+        scrollIntoView(tabElement, {
+          scrollMode: "if-needed",
+        });
+      }
+    });
+  },
+  { immediate: true }
+);
 
 onMounted(() => recalculateScrollState());
 </script>
