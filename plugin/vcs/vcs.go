@@ -151,8 +151,8 @@ type PullRequestCreate struct {
 	Body  string `json:"body"`
 	Head  string `json:"head"`
 	Base  string `json:"base"`
-	// Flag indicating if a merge request should remove the source branch when merging.
-	// Only support GitLab
+	// Flag indicating if a merge request should remove the source branch after merging.
+	// Only support GitLab.
 	RemoveHeadAfterMerged bool `json:"-"`
 }
 
