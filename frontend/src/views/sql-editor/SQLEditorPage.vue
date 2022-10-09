@@ -1,6 +1,6 @@
 <template>
   <div class="sqleditor--wrapper">
-    <TabListContainer />
+    <TabList />
     <Splitpanes class="default-theme flex flex-col flex-1 overflow-hidden">
       <Pane size="20">
         <AsidePanel />
@@ -30,7 +30,7 @@ import { computed } from "vue";
 import { useSQLEditorStore, useTabStore } from "@/store";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
-import TabListContainer from "./TabListContainer.vue";
+import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
