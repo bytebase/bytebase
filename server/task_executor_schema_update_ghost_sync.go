@@ -239,9 +239,9 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 
 	migrator := logic.NewMigrator(migrationContext, "bb")
 
-	ctx1, cancel := context.WithCancel(ctx)
+	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	go func(ctx1 context.Context) {
+	go func(childCtx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		createdTs := time.Now().Unix()
@@ -264,11 +264,11 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 					close(syncDone)
 					return
 				}
-			case <-ctx1.Done():
+			case <-childCtx.Done():
 				return
 			}
 		}
-	}(ctx1)
+	}(childCtx)
 
 	go func() {
 		if err := migrator.Migrate(); err != nil {
