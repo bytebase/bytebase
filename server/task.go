@@ -267,8 +267,9 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		if !taskCancellationImplemented[task.Type] {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Canceling task type %s is not supported", task.Type))
 		}
-		if task.Status != api.TaskRunning {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task is not running")
+		// TODO(p0ny): support cancel pending task.
+		if !isTaskStatusTransitionAllowed(task.Status, api.TaskCanceled) {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid task status transition from %v to %v.", task.Status, api.TaskCanceled))
 		}
 
 		s.TaskScheduler.runningExecutorsMutex.Lock()
