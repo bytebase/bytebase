@@ -34,7 +34,7 @@ const (
 	// 11001 -> Major version 1, minor version 1001
 	// 20001 -> Major version 2, minor version 1
 	//
-	// The migration file follows the name pattern of {{version_number}}__{{description}}.
+	// The migration file follows the name pattern of {{version_number}}##{{description}}.
 	//
 	// Though minor version is backward compatible, we require the schema version must match both the MAJOR and MINOR version,
 	// otherwise, Bytebase will fail to start. We choose this because otherwise failed minor migration changes like adding an
@@ -507,7 +507,7 @@ func getDevMigrations() ([]devMigration, error) {
 			continue
 		}
 
-		parts := strings.Split(baseName, "__")
+		parts := strings.Split(baseName, "##")
 		if len(parts) != 2 {
 			return nil, errors.Errorf("invalid migration file name %q", name)
 		}
@@ -547,9 +547,9 @@ func getPatchVersions(minorVersion semver.Version, currentVersion semver.Version
 	var patchVersions []patchVersion
 	for _, name := range names {
 		baseName := filepath.Base(name)
-		parts := strings.Split(baseName, "__")
+		parts := strings.Split(baseName, "##")
 		if len(parts) != 2 {
-			return nil, errors.Errorf("migration filename %q should include '__'", name)
+			return nil, errors.Errorf("migration filename %q should include '##'", name)
 		}
 		patch, err := strconv.ParseInt(parts[0], 10, 64)
 		if err != nil {

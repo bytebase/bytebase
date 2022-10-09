@@ -34,8 +34,8 @@ VALUES
         'http://gitlab.bytebase.com/bytebase-demo/blog',
         'master',
         'bytebase',
-        '{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql',
-        '{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql',
+        '{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql',
+        '{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql',
         -- Refers to the bytebase-demo/blog
         '13',
         -- Refers to the webhook in bytebase-demo/blog
@@ -83,8 +83,8 @@ VALUES
         'http://gitlab.bytebase.com/bytebase-demo/shop',
         'master',
         'bytebase',
-        '{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql',
-        '{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql',
+        '{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql',
+        '{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql',
         -- Refers to the bytebase-demo/shop
         '14',
         -- Refers to the webhook in bytebase-demo/shop
@@ -133,8 +133,8 @@ VALUES
         'http://gitlab.bytebase.com/bytebase-demo/tenant',
         'master',
         'bytebase',
-        '{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql',
-        '.{{DB_NAME}}__LATEST.sql',
+        '{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql',
+        '.{{DB_NAME}}##LATEST.sql',
         -- Refers to the bytebase-demo/tenant
         '15',
         -- Refers to the webhook in bytebase-demo/tenant

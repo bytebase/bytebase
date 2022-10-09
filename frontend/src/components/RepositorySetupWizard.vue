@@ -73,17 +73,17 @@ import { useProjectStore, useRepositoryStore } from "@/store";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
-  "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
+  "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
 // Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
-const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
+const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql";
 // Default sheet path tempalte is to organize script files for SQL Editor.
 const DEFAULT_SHEET_PATH_TEMPLATE =
-  "script/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql";
+  "script/{{ENV_NAME}}##{{DB_NAME}}##{{NAME}}.sql";
 
 // For tenant mode projects, {{ENV_NAME}} is not supported.
 const DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE =
-  "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
-const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}__LATEST.sql";
+  "{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
+const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}##LATEST.sql";
 const DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE = "script/{{NAME}}.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
