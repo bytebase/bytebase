@@ -594,8 +594,8 @@ const handleDeleteReadOnlyDataSource = async () => {
       databaseId: dataSource.databaseId,
       dataSourceId: dataSource.id,
     });
-    await updateInstanceState();
     state.currentDataSourceType = "ADMIN";
+    await updateInstanceState();
   }
 };
 
