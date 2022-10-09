@@ -121,11 +121,11 @@ export const useDataSourceStore = defineStore("dataSource", {
     async patchDataSource({
       databaseId,
       dataSourceId,
-      dataSource,
+      dataSourcePatch,
     }: {
       databaseId: DatabaseId;
       dataSourceId: DataSourceId;
-      dataSource: DataSourcePatch;
+      dataSourcePatch: DataSourcePatch;
     }) {
       const data = (
         await axios.patch(
@@ -133,7 +133,7 @@ export const useDataSourceStore = defineStore("dataSource", {
           {
             data: {
               type: "dataSourcePatch",
-              attributes: dataSource,
+              attributes: dataSourcePatch,
             },
           }
         )
