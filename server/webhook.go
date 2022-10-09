@@ -384,6 +384,8 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	var activityCreateList []*api.ActivityCreate
 	var createdIssueList []string
 	// Default to DATA migration. If later we found any MIGRATE migration file, we set migrationType to MIGRATE.
+	// The reason for this design is that, if a user merges DDL/DML in a single PR/MR, we suppose the user is possibly changing the schema while inserting/updating some seed/existing data.
+	// If the user wants to create a pure DML issue, they should create a dedicated PR/MR only containing DML SQL statements.
 	migrationTypeDDL := db.Data
 
 	for _, fileInfo := range fileInfoList {
