@@ -504,10 +504,10 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 
 	// We support 3 patterns on how to organize the schema files.
 	// Pattern 1: 	The database name is the same across all environments. Each environment will have its own directory, so the
-	//              schema file looks like "dev/v1__db1", "staging/v1__db1".
+	//              schema file looks like "dev/v1##db1", "staging/v1##db1".
 	//
 	// Pattern 2: 	Like 1, the database name is the same across all environments. All environment shares the same schema file,
-	//              say v1__db1, when a new file is added like v2__db1__add_column, we will create a multi stage pipeline where
+	//              say v1##db1, when a new file is added like v2##db1##add_column, we will create a multi stage pipeline where
 	//              each stage corresponds to an environment.
 	//
 	// Pattern 3:  	The database name is different among different environments. In such case, the database name alone is enough
