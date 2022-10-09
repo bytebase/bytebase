@@ -53,3 +53,14 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 	}
 	return nil
 }
+
+func (s *Server) schedulePipelineTaskCheck(ctx context.Context, pipeline *api.Pipeline) error {
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */); err != nil {
+				return errors.Wrapf(err, "failed to schedule task check for task %d", task.ID)
+			}
+		}
+	}
+	return nil
+}
