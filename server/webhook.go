@@ -134,6 +134,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
 
+	// The projectID is the project id in Bytebase.
+	// The pullRequestID is the pull request id in GitHub or GitLab.
+	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
 	g.GET("/sql-review/:projectID/pull/:pullRequestID", func(c echo.Context) error {
 		log.Debug("SQL review request received for VCS project",
 			zap.String("project", c.Param("projectID")),

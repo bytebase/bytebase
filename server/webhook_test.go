@@ -1,6 +1,7 @@
 package server
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -177,5 +178,8 @@ func TestVCSSQLReview_ConvertSQLAdiceToGitHubActionResult(t *testing.T) {
 	res := convertSQLAdiceToGitHubActionResult(mockSQLAdviceMap)
 	assert.Equal(t, advisor.Error, res.Status)
 	assert.Equal(t, 4, len(res.Content))
+	// We don't care about the order
+	sort.Strings(expect)
+	sort.Strings(res.Content)
 	assert.Equal(t, expect, res.Content)
 }
