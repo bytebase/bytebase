@@ -393,10 +393,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               taskPatched.CreatorID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckGhostSync,
-					SkipIfAlreadyTerminated: false,
+					CreatorID: taskPatched.CreatorID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckGhostSync,
 				})
 				if err != nil {
 					// It's OK if we failed to trigger a check, just emit an error log
@@ -419,11 +418,10 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 				}
 				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SystemBotID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckDatabaseStatementSyntax,
-					Payload:                 string(payload),
-					SkipIfAlreadyTerminated: false,
+					CreatorID: api.SystemBotID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckDatabaseStatementSyntax,
+					Payload:   string(payload),
 				})
 				if err != nil {
 					// It's OK if we failed to trigger a check, just emit an error log
@@ -452,11 +450,10 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
 				}
 				if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SystemBotID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckDatabaseStatementType,
-					Payload:                 string(payload),
-					SkipIfAlreadyTerminated: false,
+					CreatorID: api.SystemBotID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckDatabaseStatementType,
+					Payload:   string(payload),
 				}); err != nil {
 					// It's OK if we failed to trigger a check, just emit an error log
 					log.Error("Failed to trigger statement type check after changing the task statement",
@@ -522,11 +519,10 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 		}
 		_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               api.SystemBotID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckGeneralEarliestAllowedTime,
-			Payload:                 string(payload),
-			SkipIfAlreadyTerminated: false,
+			CreatorID: api.SystemBotID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckGeneralEarliestAllowedTime,
+			Payload:   string(payload),
 		})
 		if err != nil {
 			// It's OK if we failed to trigger a check, just emit an error log
@@ -826,11 +822,10 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 	}
 
 	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               api.SystemBotID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseStatementAdvise,
-		Payload:                 string(payload),
-		SkipIfAlreadyTerminated: false,
+		CreatorID: api.SystemBotID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckDatabaseStatementAdvise,
+		Payload:   string(payload),
 	}); err != nil {
 		// It's OK if we failed to trigger a check, just emit an error log
 		log.Error("Failed to trigger statement advise task after changing task statement",
