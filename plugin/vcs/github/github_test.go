@@ -1141,3 +1141,242 @@ func TestOAuth_RefreshToken(t *testing.T) {
 	assert.Equal(t, "ghu_16C7e42F292c6912E7710c838347Ae178B4a", token)
 	assert.True(t, calledRefresher)
 }
+
+func TestProvider_GetBranch(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "GET", r.Method)
+						assert.Equal(t, "/repos/octocat/Hello-World/git/ref/heads/featureA", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/git/refs#get-a-reference
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "ref": "refs/heads/featureA",
+  "node_id": "MDM6UmVmcmVmcy9oZWFkcy9mZWF0dXJlQQ==",
+  "url": "https://api.github.com/repos/octocat/Hello-World/git/refs/heads/featureA",
+  "object": {
+    "type": "commit",
+    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.GetBranch(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "featureA")
+	require.NoError(t, err)
+
+	want := &vcs.BranchInfo{
+		Name:         "featureA",
+		LastCommitID: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_CreateBranch(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "POST", r.Method)
+						assert.Equal(t, "/repos/octocat/Hello-World/git/refs", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/git/refs#create-a-reference
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "ref": "refs/heads/featureA",
+  "node_id": "MDM6UmVmcmVmcy9oZWFkcy9mZWF0dXJlQQ==",
+  "url": "https://api.github.com/repos/octocat/Hello-World/git/refs/heads/featureA",
+  "object": {
+    "type": "commit",
+    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.CreateBranch(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.BranchInfo{
+		Name:         "featureA",
+		LastCommitID: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+	})
+	require.NoError(t, err)
+}
+
+func TestProvider_CreatePullRequest(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "POST", r.Method)
+						assert.Equal(t, "/repos/octocat/Hello-World/pulls", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347",
+  "id": 1,
+  "node_id": "MDExOlB1bGxSZXF1ZXN0MQ==",
+  "html_url": "https://github.com/octocat/Hello-World/pull/1347",
+  "diff_url": "https://github.com/octocat/Hello-World/pull/1347.diff",
+  "patch_url": "https://github.com/octocat/Hello-World/pull/1347.patch",
+  "issue_url": "https://api.github.com/repos/octocat/Hello-World/issues/1347",
+  "commits_url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347/commits",
+  "review_comments_url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347/comments",
+  "review_comment_url": "https://api.github.com/repos/octocat/Hello-World/pulls/comments{/number}",
+  "comments_url": "https://api.github.com/repos/octocat/Hello-World/issues/1347/comments",
+  "statuses_url": "https://api.github.com/repos/octocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e",
+  "number": 1347,
+  "state": "open",
+  "locked": true,
+  "title": "Amazing new feature",
+  "body": "Please pull these awesome changes in!",
+  "active_lock_reason": "too heated",
+  "created_at": "2011-01-26T19:01:12Z",
+  "updated_at": "2011-01-26T19:01:12Z",
+  "closed_at": "2011-01-26T19:01:12Z",
+  "merged_at": "2011-01-26T19:01:12Z",
+  "merge_commit_sha": "e5bd3914e2e596debea16f433f57875b5b90bcd6",
+  "head": {
+    "label": "octocat:new-topic",
+    "ref": "new-topic",
+    "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "user": {
+      "login": "octocat",
+      "id": 1,
+      "node_id": "MDQ6VXNlcjE=",
+      "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/octocat",
+      "html_url": "https://github.com/octocat",
+      "followers_url": "https://api.github.com/users/octocat/followers",
+      "following_url": "https://api.github.com/users/octocat/following{/other_user}",
+      "gists_url": "https://api.github.com/users/octocat/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/octocat/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/octocat/subscriptions",
+      "organizations_url": "https://api.github.com/users/octocat/orgs",
+      "repos_url": "https://api.github.com/users/octocat/repos",
+      "events_url": "https://api.github.com/users/octocat/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/octocat/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+  },
+  "base": {
+    "label": "octocat:master",
+    "ref": "master",
+    "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "user": {
+      "login": "octocat",
+      "id": 1,
+      "node_id": "MDQ6VXNlcjE=",
+      "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/octocat",
+      "html_url": "https://github.com/octocat",
+      "followers_url": "https://api.github.com/users/octocat/followers",
+      "following_url": "https://api.github.com/users/octocat/following{/other_user}",
+      "gists_url": "https://api.github.com/users/octocat/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/octocat/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/octocat/subscriptions",
+      "organizations_url": "https://api.github.com/users/octocat/orgs",
+      "repos_url": "https://api.github.com/users/octocat/repos",
+      "events_url": "https://api.github.com/users/octocat/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/octocat/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+  },
+  "author_association": "OWNER",
+  "auto_merge": null,
+  "draft": false,
+  "merged": false,
+  "mergeable": true,
+  "rebaseable": true,
+  "mergeable_state": "clean",
+  "comments": 10,
+  "review_comments": 0,
+  "maintainer_can_modify": true,
+  "commits": 3,
+  "additions": 100,
+  "deletions": 3,
+  "changed_files": 5
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.CreatePullRequest(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
+		Title:                 "Amazing new feature",
+		Body:                  "Please pull these awesome changes in!",
+		Head:                  "new-topic",
+		Base:                  "master",
+		RemoveHeadAfterMerged: true,
+	})
+	require.NoError(t, err)
+}
+
+func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						switch r.URL.Path {
+						case "/repos/octocat/Hello-World/actions/secrets/public-key":
+							assert.Equal(t, "GET", r.Method)
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								// Example response taken from https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
+								Body: io.NopCloser(strings.NewReader(`
+{
+  "key_id": "568250167242549743",
+  "key": "YJf3Ojcv8TSEBCtR0wtTR/F2bD3nBl1lxiwkfV/TYQk="
+}
+`)),
+							}, nil
+						case "/repos/octocat/Hello-World/actions/secrets/1":
+							assert.Equal(t, "PUT", r.Method)
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								// Example response taken from https://docs.github.com/en/rest/actions/secrets#create-or-update-a-repository-secret
+								Body: io.NopCloser(strings.NewReader("")),
+							}, nil
+						}
+
+						return nil, errors.Errorf("Invalid request. %s: %s", r.Method, r.URL.Path)
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1", "new value")
+	require.NoError(t, err)
+}
