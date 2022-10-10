@@ -466,7 +466,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		}
 	}
 
-	// create an activity and trigger task check for earliest allowed time update
+	// earliest allowed time update.
+	// - create an activity.
+	// - dismiss stale approval.
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
 		if issue == nil {
@@ -509,28 +511,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
 			}
 			taskPatched = t
-		}
-
-		// trigger task check
-		payload, err = json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
-			EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
-		}
-		_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID: api.SystemBotID,
-			TaskID:    task.ID,
-			Type:      api.TaskCheckGeneralEarliestAllowedTime,
-			Payload:   string(payload),
-		})
-		if err != nil {
-			// It's OK if we failed to trigger a check, just emit an error log
-			log.Error("Failed to trigger timing check after changing task earliest allowed time",
-				zap.Int("task_id", task.ID),
-				zap.String("task_name", task.Name),
-				zap.Error(err),
-			)
 		}
 	}
 	return taskPatched, nil
