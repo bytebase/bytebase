@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
@@ -29,6 +30,15 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
+
+// nolint:unused
+type vcsSQLReviewResult struct {
+	Status  advisor.Status `json:"status"`
+	Content []string       `json:"content"`
+}
+
+// sqlReviewDocs is the URL for SQL review doc.
+const sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
@@ -826,4 +836,132 @@ func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Da
 		return "", errors.New("compute schema diff")
 	}
 	return diff, nil
+}
+
+// convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
+// GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
+// junit XML format: https://llg.cubic.org/docs/junit/
+// nolint:unused
+func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
+	testsuiteList := []string{}
+	status := advisor.Success
+
+	fileList := []string{}
+	for filePath := range adviceMap {
+		fileList = append(fileList, filePath)
+	}
+	sort.Strings(fileList)
+
+	for _, filePath := range fileList {
+		adviceList := adviceMap[filePath]
+		testcaseList := []string{}
+		for _, advice := range adviceList {
+			if advice.Code == 0 {
+				continue
+			}
+
+			line := advice.Line
+			if line <= 0 {
+				line = 1
+			}
+
+			if advice.Status == advisor.Error {
+				status = advice.Status
+			} else if advice.Status == advisor.Warn && status != advisor.Error {
+				status = advice.Status
+			}
+
+			content := fmt.Sprintf(`Error: %s
+You can check the docs at %s#%d`,
+				advice.Content,
+				sqlReviewDocs,
+				advice.Code,
+			)
+
+			testcase := fmt.Sprintf(
+				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>\n%s\n</failure>\n</testcase>",
+				advice.Title,
+				filePath,
+				filePath,
+				line,
+				content,
+			)
+
+			testcaseList = append(testcaseList, testcase)
+		}
+
+		if len(testcaseList) > 0 {
+			testsuiteList = append(
+				testsuiteList,
+				fmt.Sprintf("<testsuite name=\"%s\">\n%s\n</testsuite>", filePath, strings.Join(testcaseList, "\n")),
+			)
+		}
+	}
+
+	return &vcsSQLReviewResult{
+		Status: status,
+		Content: []string{
+			fmt.Sprintf(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n%s\n</testsuites>",
+				strings.Join(testsuiteList, "\n"),
+			),
+		},
+	}
+}
+
+// convertSQLAdiceToGitHubActionResult will convert SQL advice map to GitHub action output format.
+// GitHub action output message: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
+// nolint:unused
+func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
+	messageList := []string{}
+	status := advisor.Success
+
+	fileList := []string{}
+	for filePath := range adviceMap {
+		fileList = append(fileList, filePath)
+	}
+	sort.Strings(fileList)
+
+	for _, filePath := range fileList {
+		adviceList := adviceMap[filePath]
+		for _, advice := range adviceList {
+			if advice.Code == 0 || advice.Status == advisor.Success {
+				continue
+			}
+
+			line := advice.Line
+			if line <= 0 {
+				line = 1
+			}
+
+			prefix := ""
+			if advice.Status == advisor.Error {
+				prefix = "error"
+				status = advice.Status
+			} else {
+				prefix = "warning"
+				if status != advisor.Error {
+					status = advice.Status
+				}
+			}
+
+			msg := fmt.Sprintf(
+				"::%s file=%s,line=%d,col=1,endColumn=2,title=%s (%d)::%s\nDoc: %s#%d",
+				prefix,
+				filePath,
+				line,
+				advice.Title,
+				advice.Code,
+				advice.Content,
+				sqlReviewDocs,
+				advice.Code,
+			)
+			// To indent the output message in action
+			messageList = append(messageList, strings.ReplaceAll(msg, "\n", "%0A"))
+		}
+	}
+	return &vcsSQLReviewResult{
+		Status:  status,
+		Content: messageList,
+	}
 }
