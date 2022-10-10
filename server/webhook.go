@@ -150,21 +150,22 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	// id is the webhookEndpointID in repository
 	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
 	g.POST("/sql-review/:id", func(c echo.Context) error {
-		log.Debug("SQL review request received for VCS project",
-			zap.String("webhook_endpoint_id", c.Param("id")),
-		)
-
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
 		}
+		log.Debug("SQL review request received for VCS project",
+			zap.String("webhook_endpoint_id", c.Param("id")),
+			zap.String("request", string(body)),
+		)
+
 		var request vcsSQLReviewRequest
 		if err := json.Unmarshal(body, &request); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed SQL review request").SetInternal(err)
 		}
 
 		filter := func(repo *api.Repository) (bool, error) {
-			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && request.WebURL == repo.WebURL, nil
+			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(request.WebURL, repo.WebURL), nil
 		}
 		ctx := c.Request().Context()
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)
@@ -187,7 +188,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				ClientSecret: repo.VCS.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, request.WebURL),
+				Refresher:    s.refreshToken(ctx, repo.WebURL),
 			},
 			repo.VCS.InstanceURL,
 			request.RepositoryID,
