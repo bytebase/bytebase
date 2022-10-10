@@ -797,3 +797,294 @@ func TestOAuth_RefreshToken(t *testing.T) {
 	assert.Equal(t, "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54", token)
 	assert.True(t, calledRefresher)
 }
+
+func TestProvider_GetBranch(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "GET", r.Method)
+						assert.Equal(t, "/api/v4/projects/1/repository/branches/main", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "name": "main",
+  "merged": false,
+  "protected": true,
+  "default": true,
+  "developers_can_push": false,
+  "developers_can_merge": false,
+  "can_push": true,
+  "web_url": "https://gitlab.example.com/my-group/my-project/-/tree/main",
+  "commit": {
+    "author_email": "john@example.com",
+    "author_name": "John Smith",
+    "authored_date": "2012-06-27T05:51:39-07:00",
+    "committed_date": "2012-06-28T03:44:20-07:00",
+    "committer_email": "john@example.com",
+    "committer_name": "John Smith",
+    "id": "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+    "short_id": "7b5c3cc",
+    "title": "add projects API",
+    "message": "add projects API",
+    "parent_ids": [
+      "4ad91d3c1144c406e50c7b33bae684bd6837faf8"
+    ]
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.GetBranch(ctx, common.OauthContext{}, "", "1", "main")
+	require.NoError(t, err)
+
+	want := &vcs.BranchInfo{
+		Name:         "main",
+		LastCommitID: "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_CreateBranch(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "POST", r.Method)
+						assert.Equal(t, "/api/v4/projects/1/repository/branches", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "commit": {
+    "author_email": "john@example.com",
+    "author_name": "John Smith",
+    "authored_date": "2012-06-27T05:51:39-07:00",
+    "committed_date": "2012-06-28T03:44:20-07:00",
+    "committer_email": "john@example.com",
+    "committer_name": "John Smith",
+    "id": "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+    "short_id": "7b5c3cc",
+    "title": "add projects API",
+    "message": "add projects API",
+    "parent_ids": [
+      "4ad91d3c1144c406e50c7b33bae684bd6837faf8"
+    ]
+  },
+  "name": "newbranch",
+  "merged": false,
+  "protected": false,
+  "default": false,
+  "developers_can_push": false,
+  "developers_can_merge": false,
+  "can_push": true,
+  "web_url": "https://gitlab.example.com/my-group/my-project/-/tree/newbranch"
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.CreateBranch(ctx, common.OauthContext{}, "", "1", &vcs.BranchInfo{
+		Name:         "newbranch",
+		LastCommitID: "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+	})
+	require.NoError(t, err)
+}
+
+func TestProvider_CreatePullRequest(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/merge_requests", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "id": 1,
+  "iid": 1,
+  "project_id": 3,
+  "title": "test1",
+  "description": "fixed login page css paddings",
+  "state": "merged",
+  "created_at": "2017-04-29T08:46:00Z",
+  "updated_at": "2017-04-29T08:46:00Z",
+  "target_branch": "master",
+  "source_branch": "test1",
+  "upvotes": 0,
+  "downvotes": 0,
+  "author": {
+    "id": 1,
+    "name": "Administrator",
+    "username": "admin",
+    "state": "active",
+    "avatar_url": null,
+    "web_url" : "https://gitlab.example.com/admin"
+  },
+  "assignee": {
+    "id": 1,
+    "name": "Administrator",
+    "username": "admin",
+    "state": "active",
+    "avatar_url": null,
+    "web_url" : "https://gitlab.example.com/admin"
+  },
+  "source_project_id": 2,
+  "target_project_id": 3,
+  "labels": [
+    "Community contribution",
+    "Manage"
+  ],
+  "draft": false,
+  "work_in_progress": false,
+  "merge_when_pipeline_succeeds": true,
+  "merge_status": "can_be_merged",
+  "merge_error": null,
+  "sha": "8888888888888888888888888888888888888888",
+  "merge_commit_sha": null,
+  "squash_commit_sha": null,
+  "user_notes_count": 1,
+  "discussion_locked": null,
+  "should_remove_source_branch": true,
+  "force_remove_source_branch": false,
+  "allow_collaboration": false,
+  "allow_maintainer_to_push": false,
+  "web_url": "http://gitlab.example.com/my-group/my-project/merge_requests/1",
+  "references": {
+    "short": "!1",
+    "relative": "!1",
+    "full": "my-group/my-project!1"
+  },
+  "time_stats": {
+    "time_estimate": 0,
+    "total_time_spent": 0,
+    "human_time_estimate": null,
+    "human_total_time_spent": null
+  },
+  "squash": false,
+  "subscribed": false,
+  "changes_count": "1",
+  "closed_by": null,
+  "closed_at": null,
+  "latest_build_started_at": "2018-09-07T07:27:38.472Z",
+  "latest_build_finished_at": "2018-09-07T08:07:06.012Z",
+  "first_deployed_to_production_at": null,
+  "pipeline": {
+    "id": 29626725,
+    "sha": "2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f",
+    "ref": "patch-28",
+    "status": "success",
+    "web_url": "https://gitlab.example.com/my-group/my-project/pipelines/29626725"
+  },
+  "diff_refs": {
+    "base_sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00",
+    "head_sha": "2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f",
+    "start_sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00"
+  },
+  "diverged_commits_count": 2,
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.CreatePullRequest(ctx, common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
+		Title:                 "test1",
+		Body:                  "fixed login page css paddings",
+		Head:                  "test1",
+		Base:                  "master",
+		RemoveHeadAfterMerged: true,
+	})
+	require.NoError(t, err)
+}
+
+func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						switch r.URL.Path {
+						case "/api/v4/projects/1/variables/1":
+							if r.Method == "GET" {
+								return &http.Response{
+									StatusCode: http.StatusOK,
+									// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
+									Body: io.NopCloser(strings.NewReader(`
+{
+    "variable_type": "env_var",
+    "key": "1",
+    "value": "new value",
+    "protected": false,
+    "masked": false,
+    "environment_scope": "*"
+}
+`)),
+								}, nil
+							} else if r.Method == "PUT" {
+								return &http.Response{
+									StatusCode: http.StatusOK,
+									// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
+									Body: io.NopCloser(strings.NewReader(`
+{
+    "variable_type": "env_var",
+    "key": "1",
+    "value": "new value",
+    "protected": false,
+    "masked": false,
+    "environment_scope": "*"
+}
+`)),
+								}, nil
+							}
+						case "/api/v4/projects/1/variables":
+							assert.Equal(t, "POST", r.Method)
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#create-a-variable
+								Body: io.NopCloser(strings.NewReader(`
+{
+    "variable_type": "env_var",
+    "key": "1",
+    "value": "new value",
+    "protected": false,
+    "masked": false,
+    "environment_scope": "*"
+}
+`)),
+							}, nil
+						}
+
+						return nil, errors.Errorf("Invalid request. %s: %s", r.Method, r.URL.Path)
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, "", "1", "1", "new value")
+	require.NoError(t, err)
+}
