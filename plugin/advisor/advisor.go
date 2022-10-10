@@ -221,6 +221,9 @@ const (
 
 	// PostgreSQLInsertRowLimit is an advisor type for PostgreSQL to limit INSERT rows.
 	PostgreSQLInsertRowLimit Type = "bb.plugin.advisor.postgresql.insert.row-limit"
+
+	// PostgreSQLIndexKeyNumberLimit is an advisor type for postgresql index key number limit.
+	PostgreSQLIndexKeyNumberLimit Type = "bb.plugin.advisor.postgresql.index.key-number-limit"
 )
 
 // Advice is the result of an advisor.
