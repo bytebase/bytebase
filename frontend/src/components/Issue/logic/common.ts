@@ -182,19 +182,19 @@ export const useCommonLogic = () => {
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
     const taskList = flattenTaskList<TaskCreate>(issueCreate);
+    const migrationType = taskList[0].migrationType!;
     const detailList: MigrationDetail[] = taskList.map((task) => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
+        migrationType: migrationType,
         databaseId: task.databaseId!,
         databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement: maybeFormatStatementOnSave(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
-    const migrationType = taskList[0].migrationType!;
 
     issueCreate.createContext = {
-      migrationType,
       detailList: detailList,
     };
 

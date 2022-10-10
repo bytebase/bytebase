@@ -152,11 +152,11 @@ func TestTenant(t *testing.T) {
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
-		MigrationType: db.Migrate,
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseName: databaseName,
-				Statement:    migrationStatement,
+				MigrationType: db.Migrate,
+				DatabaseName:  databaseName,
+				Statement:     migrationStatement,
 			},
 		},
 	})
@@ -617,11 +617,11 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
-		MigrationType: db.Migrate,
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseName: baseDatabaseName,
-				Statement:    migrationStatement,
+				MigrationType: db.Migrate,
+				DatabaseName:  baseDatabaseName,
+				Statement:     migrationStatement,
 			},
 		},
 	})

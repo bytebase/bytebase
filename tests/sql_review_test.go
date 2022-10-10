@@ -764,11 +764,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string, wait bool) []api.TaskCheckResult {
 	createContext, err := json.Marshal(&api.MigrationContext{
-		MigrationType: db.Migrate,
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseID: databaseID,
-				Statement:  statement,
+				MigrationType: db.Migrate,
+				DatabaseID:    databaseID,
+				Statement:     statement,
 			},
 		},
 	})
