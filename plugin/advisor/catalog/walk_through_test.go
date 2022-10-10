@@ -29,6 +29,51 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t(a int NOT NULL);
+				INSERT INTO t(a) values (1), (NULL);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeInsertNullIntoNotNullColumn,
+				Content: "Column 'a' cannot be null",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int);
+				INSERT INTO t(a) values (1), ();
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeInsertColumnCountNotMatchValueCount,
+				Content: "Column count doesn't match value count at row 2",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int);
+				INSERT INTO t(a, a) values (1, 2);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeInsertSpecifiedColumnTwice,
+				Content: "Column 'a' specified twice",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				INSERT INTO test values (1);
 			`,
 			err: &WalkThroughError{
