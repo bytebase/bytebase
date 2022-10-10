@@ -1031,7 +1031,7 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
 							if r.Method == "GET" {
 								return &http.Response{
 									StatusCode: http.StatusOK,
-									// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
+									// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
 									Body: io.NopCloser(strings.NewReader(`
 {
     "variable_type": "env_var",
