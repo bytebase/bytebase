@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"path"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -39,6 +38,12 @@ type vcsSQLReviewResult struct {
 	Content []string       `json:"content"`
 }
 
+type vcsSQLReviewRequest struct {
+	RepositoryID  string `json:"repositoryId"`
+	PullRequestID int    `json:"pullRequestId"`
+	WebURL        string `json:"webURL"`
+}
+
 // sqlReviewDocs is the URL for SQL review doc.
 const sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
 
@@ -60,8 +65,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
-		filter := func(token string) (bool, error) {
-			return c.Request().Header.Get("X-Gitlab-Token") == token, nil
+		filter := func(repo *api.Repository) (bool, error) {
+			return c.Request().Header.Get("X-Gitlab-Token") == repo.WebhookSecretToken, nil
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
 		if err != nil {
@@ -109,8 +114,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := pushEvent.Repository.FullName
 
-		filter := func(token string) (bool, error) {
-			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), token, body)
+		filter := func(repo *api.Repository) (bool, error) {
+			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
 			}
@@ -134,49 +139,39 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
 
-	// The projectID is the project id in Bytebase.
-	// The pullRequestID is the pull request id in GitHub or GitLab.
+	// id is the webhookEndpointID in repository
 	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
-	g.GET("/sql-review/:projectID/pull/:pullRequestID", func(c echo.Context) error {
+	g.POST("/sql-review/:id", func(c echo.Context) error {
 		log.Debug("SQL review request received for VCS project",
-			zap.String("project", c.Param("projectID")),
-			zap.String("pull_request", c.Param("pullRequestID")),
+			zap.String("webhook_endpoint_id", c.Param("id")),
 		)
 
-		projectID, err := strconv.Atoi(c.Param("projectID"))
+		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid project id: %s", c.Param("projectID")).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
 		}
-		pullRequestID, err := strconv.Atoi(c.Param("pullRequestID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid pull request id: %s", c.Param("pullRequestID")).SetInternal(err)
+		var request vcsSQLReviewRequest
+		if err := json.Unmarshal(body, &request); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed SQL review request").SetInternal(err)
 		}
 
+		filter := func(repo *api.Repository) (bool, error) {
+			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && request.WebURL == repo.WebURL, nil
+		}
 		ctx := c.Request().Context()
-
-		repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{
-			ProjectID: &projectID,
-		})
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), "", request.RepositoryID, filter)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find repository").SetInternal(err)
+			return err
 		}
-		if len(repos) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, "Cannot found repository in project")
-		}
-		repo := repos[0]
-		if c.Request().Header.Get("X-SQL-Review-Token") != repo.WebhookSecretToken {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid token")
+		if len(repositoryList) == 0 {
+			log.Debug("Empty handle repo list. Ignore this request.")
+			return c.JSON(http.StatusOK, &vcsSQLReviewResult{
+				Status:  advisor.Success,
+				Content: []string{},
+			})
 		}
 
-		log.Debug("Processing pull request for repository",
-			zap.Int("project", repo.ProjectID),
-			zap.Int("pull_request", pullRequestID),
-			zap.String("external_id", repo.ExternalID),
-			zap.String("vcs", string(repo.VCS.Type)),
-			zap.String("base_directory", repo.BaseDirectory),
-			zap.String("file_path_template", repo.FilePathTemplate),
-		)
-
+		repo := repositoryList[0]
 		prFiles, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ListPullRequestFile(
 			ctx,
 			common.OauthContext{
@@ -184,35 +179,51 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				ClientSecret: repo.VCS.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.WebURL),
+				Refresher:    s.refreshToken(ctx, request.WebURL),
 			},
 			repo.VCS.InstanceURL,
-			repo.ExternalID,
-			pullRequestID,
+			request.RepositoryID,
+			request.PullRequestID,
 		)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list pull request file").SetInternal(err)
 		}
 
-		sqlCheckAdvice := map[string][]advisor.Advice{}
-
-		var wg sync.WaitGroup
+		distinctFileList := []vcs.DistinctFileItem{}
 		for _, prFile := range prFiles {
-			wg.Add(1)
-			go func(file *vcs.PullRequestFile) {
-				defer wg.Done()
-				adviceList, err := s.sqlAdviceForPullRequestFile(ctx, file, repo)
-				if err != nil {
-					log.Debug(
-						"Failed to take SQL review for file",
-						zap.String("file", file.Path),
-						zap.Error(err),
-					)
-					return
-				}
-				
-				sqlCheckAdvice[file.Path] = adviceList
-			}(prFile)
+			if prFile.IsDeleted {
+				continue
+			}
+			distinctFileList = append(distinctFileList, vcs.DistinctFileItem{
+				FileName: prFile.Path,
+				Commit: vcs.Commit{
+					ID: prFile.LastCommitID,
+				},
+			})
+		}
+
+		sqlCheckAdvice := map[string][]advisor.Advice{}
+		var wg sync.WaitGroup
+
+		repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
+		for _, fileInfoListInRepo := range repoID2FileItemList {
+			for _, file := range fileInfoListInRepo {
+				wg.Add(1)
+				go func(file fileInfo) {
+					defer wg.Done()
+					adviceList, err := s.sqlAdviceForFileInfo(ctx, file)
+					if err != nil {
+						log.Debug(
+							"Failed to take SQL review for file",
+							zap.String("file", file.item.FileName),
+							zap.String("external_id", file.repository.ExternalID),
+							zap.Error(err),
+						)
+					} else if adviceList != nil {
+						sqlCheckAdvice[file.item.FileName] = adviceList
+					}
+				}(file)
+			}
 		}
 
 		wg.Wait()
@@ -226,10 +237,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		log.Debug("SQL review finished",
-			zap.Int("project", repo.ProjectID),
-			zap.Int("pull_request", pullRequestID),
+			zap.Int("pull_request", request.PullRequestID),
 			zap.String("status", string(response.Status)),
 			zap.String("content", strings.Join(response.Content, "\n")),
+			zap.String("repository_id", request.RepositoryID),
 			zap.String("vcs", string(repo.VCS.Type)),
 		)
 
@@ -237,73 +248,43 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) sqlAdviceForPullRequestFile(
+func (s *Server) sqlAdviceForFileInfo(
 	ctx context.Context,
-	file *vcs.PullRequestFile,
-	repo *api.Repository,
+	fileInfo fileInfo,
 ) ([]advisor.Advice, error) {
-	if file.IsDeleted {
-		return nil, nil
-	}
-
 	log.Debug("Processing file",
-		zap.String("file", file.Path),
-		zap.String("vcs", string(repo.VCS.Type)),
+		zap.String("file", fileInfo.item.FileName),
+		zap.String("vcs", string(fileInfo.repository.VCS.Type)),
 	)
 
-	if !strings.HasPrefix(file.Path, repo.BaseDirectory) {
-		log.Debug("Ignored file outside the base directory",
-			zap.String("file", file.Path),
-			zap.String("base_directory", repo.BaseDirectory),
-		)
-		return nil, nil
-	}
-
-	migrationInfo, err := db.ParseMigrationInfo(file.Path, path.Join(repo.BaseDirectory, repo.FilePathTemplate), false)
-	if err != nil {
-		log.Debug("Failed to parse migration info",
-			zap.String("external_id", repo.ExternalID),
-			zap.String("file", file.Path),
-			zap.Error(err),
-		)
-		return nil, nil
-	}
-	if migrationInfo == nil || migrationInfo.Database == "" {
-		return nil, errors.Errorf("Cannot parse migration info for file %s", file.Path)
-	}
-
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, fileInfo.repository.ProjectID, fileInfo.repository.Project.TenantMode, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
 		log.Debug(
 			"Failed to list databse migration info",
-			zap.Int("project", repo.ProjectID),
-			zap.String("database", migrationInfo.Database),
-			zap.String("environment", migrationInfo.Environment),
+			zap.Int("project", fileInfo.repository.ProjectID),
+			zap.String("database", fileInfo.migrationInfo.Database),
+			zap.String("environment", fileInfo.migrationInfo.Environment),
 			zap.Error(err),
 		)
-		return nil, errors.Errorf("Failed to list databse migration info with error: %v", err)
+		return nil, errors.Errorf("Failed to list databse with error: %v", err)
 	}
 
-	sort.Slice(databases, func(i, j int) bool {
-		return databases[i].Instance.Environment.Order < databases[j].Instance.Environment.Order
-	})
-
-	fileContent, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+	fileContent, err := vcs.Get(fileInfo.repository.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
 		common.OauthContext{
-			ClientID:     repo.VCS.ApplicationID,
-			ClientSecret: repo.VCS.Secret,
-			AccessToken:  repo.AccessToken,
-			RefreshToken: repo.RefreshToken,
-			Refresher:    s.refreshToken(ctx, repo.WebURL),
+			ClientID:     fileInfo.repository.VCS.ApplicationID,
+			ClientSecret: fileInfo.repository.VCS.Secret,
+			AccessToken:  fileInfo.repository.AccessToken,
+			RefreshToken: fileInfo.repository.RefreshToken,
+			Refresher:    s.refreshToken(ctx, fileInfo.repository.WebURL),
 		},
-		repo.VCS.InstanceURL,
-		repo.ExternalID,
-		file.Path,
-		file.LastCommitID,
+		fileInfo.repository.VCS.InstanceURL,
+		fileInfo.repository.ExternalID,
+		fileInfo.item.FileName,
+		fileInfo.item.Commit.ID,
 	)
 	if err != nil {
-		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", file.Path, err)
+		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", fileInfo.item.FileName, err)
 	}
 
 	// There may exist many databases that match the file name.
@@ -457,8 +438,9 @@ func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) 
 	}
 }
 
-type repositoryFilter func(string) (bool, error)
+type repositoryFilter func(*api.Repository) (bool, error)
 
+// TODO: pushEventRef can be empty.
 func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
@@ -488,7 +470,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			continue
 		}
 
-		ok, err := filter(repo.WebhookSecretToken)
+		ok, err := filter(repo)
 		if err != nil {
 			return nil, err
 		}
@@ -851,26 +833,6 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 	return creatorID
 }
 
-// findProjectDatabasesWithDifferentEnvironment finds the list of databases with given name in the project.
-// If the `envName` is not empty, it will be used as a filter condition for the result list.
-// It will ensure each database has a different environment.
-func (s *Server) findProjectDatabasesWithDifferentEnvironment(ctx context.Context, projectID int, tenantMode api.ProjectTenantMode, dbName, envName string) ([]*api.Database, error) {
-	databases, err := s.findProjectDatabases(ctx, projectID, tenantMode, dbName, envName)
-	if err != nil {
-		return nil, err
-	}
-
-	// In case there are databases with identical name in a project for the same environment.
-	marked := make(map[int]struct{})
-	for _, database := range databases {
-		if _, ok := marked[database.Instance.EnvironmentID]; ok {
-			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, envName)
-		}
-		marked[database.Instance.EnvironmentID] = struct{}{}
-	}
-	return databases, nil
-}
-
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the `envName` is not empty, it will be used as a filter condition
 // for the result list.
@@ -924,6 +886,14 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 		filteredDatabases = foundDatabases
 	}
 
+	// In case there are databases with identical name in a project for the same environment.
+	marked := make(map[int]struct{})
+	for _, database := range filteredDatabases {
+		if _, ok := marked[database.Instance.EnvironmentID]; ok {
+			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, envName)
+		}
+		marked[database.Instance.EnvironmentID] = struct{}{}
+	}
 	return filteredDatabases, nil
 }
 
@@ -1015,7 +985,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabasesWithDifferentEnvironment(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -1070,7 +1040,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabasesWithDifferentEnvironment(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
