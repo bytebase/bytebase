@@ -230,7 +230,7 @@ func TestTableOption(t *testing.T) {
 			new:  `CREATE TABLE book(id INT);`,
 			want: "ALTER TABLE `book` PASSWORD = '';\n",
 		},
-		// // ROW_FORMAT
+		// ROW_FORMAT
 		{
 			old:  `CREATE TABLE book(id INT) ROW_FORMAT = DYNAMIC;`,
 			new:  `CREATE TABLE book(id INT) ROW_FORMAT = COMPRESSED;`,
