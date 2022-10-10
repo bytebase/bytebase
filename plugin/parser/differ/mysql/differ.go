@@ -45,7 +45,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
-
 	var diff []ast.Node
 	oldTableMap := buildTableMap(oldNodes)
 
@@ -60,7 +59,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				diff = append(diff, &stmt)
 				continue
 			}
-			diff = append(diff, diffTableOptions(oldStmt.Options, newStmt.Options))
+			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
+				diff = append(diff, alterTableOptionStmt)
+			}
 			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
@@ -149,20 +150,20 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		}
 	}
 
-	deparse := func(nodes []ast.Node) (string, error) {
-		restoreFlags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
-		var buf bytes.Buffer
-		for _, node := range nodes {
-			if err := node.Restore(format.NewRestoreCtx(restoreFlags, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
+	return deparse(diff, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+}
+
+func deparse(nodes []ast.Node, flag format.RestoreFlags) (string, error) {
+	var buf bytes.Buffer
+	for _, node := range nodes {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
 		}
-		return buf.String(), nil
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
 	}
-	return deparse(diff)
+	return buf.String(), nil
 }
 
 // buildTableMap returns a map of table name to create table statements.
@@ -385,7 +386,7 @@ func getIndexName(index *ast.Constraint) string {
 }
 
 // diffTableOptions returns the diff of two table options, returns nil if they are the same.
-func diffTableOptions(old, new []*ast.TableOption) *ast.AlterTableSpec {
+func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *ast.AlterTableStmt {
 	// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 	// table_option: {
 	// 	AUTOEXTEND_SIZE [=] value
@@ -429,7 +430,9 @@ func diffTableOptions(old, new []*ast.TableOption) *ast.AlterTableSpec {
 		newOption, ok := newOptionsMap[oldTp]
 		if !ok {
 			// We should drop the table option if it doesn't exist in the new table options.
-			options = append(options, dropOption(oldOption))
+			if astOption := dropOption(oldOption); astOption != nil {
+				options = append(options, dropOption(oldOption))
+			}
 			continue
 		}
 		if !isTableOptionValEqual(oldOption, newOption) {
@@ -446,9 +449,14 @@ func diffTableOptions(old, new []*ast.TableOption) *ast.AlterTableSpec {
 	if len(options) == 0 {
 		return nil
 	}
-	return &ast.AlterTableSpec{
-		Tp:      ast.AlterTableOption,
-		Options: options,
+	return &ast.AlterTableStmt{
+		Table: tableName,
+		Specs: []*ast.AlterTableSpec{
+			{
+				Tp:      ast.AlterTableOption,
+				Options: options,
+			},
+		},
 	}
 }
 
@@ -470,8 +478,16 @@ func dropOption(option *ast.TableOption) *ast.TableOption {
 			UintValue: 0,
 		}
 	case ast.TableOptionCharset:
-		// TODO(zp): handle the default charset and collate
+		// TODO(zp): we use utf8mb4 as the default charset, but it's not always true.
+		return &ast.TableOption{
+			Tp:       ast.TableOptionCharset,
+			StrValue: "utf8mb4",
+		}
 	case ast.TableOptionCollate:
+		return &ast.TableOption{
+			Tp:       ast.TableOptionCollate,
+			StrValue: "utf8mb4_general_ci",
+		}
 	case ast.TableOptionCheckSum:
 		return &ast.TableOption{
 			Tp:        ast.TableOptionCheckSum,
@@ -497,9 +513,16 @@ func dropOption(option *ast.TableOption) *ast.TableOption {
 			Tp:        ast.TableOptionDelayKeyWrite,
 			UintValue: 0,
 		}
+	case ast.TableOptionEncryption:
+		return &ast.TableOption{
+			Tp:       ast.TableOptionEncryption,
+			StrValue: "N",
+		}
 	case ast.TableOptionEngine:
 		// TODO(zp): handle the default engine
 	case ast.TableOptionInsertMethod:
+		// INSERT METHOD only support in MERGE storage engine.
+		// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 		return &ast.TableOption{
 			Tp:       ast.TableOptionInsertMethod,
 			StrValue: "NO",
@@ -522,7 +545,10 @@ func dropOption(option *ast.TableOption) *ast.TableOption {
 			Tp: ast.TableOptionPackKeys,
 		}
 	case ast.TableOptionPassword:
-		// mysqldump will not dump the password, so we can ignore this.
+		// mysqldump will not dump the password, but we handle it to pass the test.
+		return &ast.TableOption{
+			Tp: ast.TableOptionPassword,
+		}
 	case ast.TableOptionRowFormat:
 		return &ast.TableOption{
 			Tp:        ast.TableOptionRowFormat,
@@ -582,10 +608,13 @@ func isTableOptionValEqual(old, new *ast.TableOption) bool {
 	case ast.TableOptionConnection:
 		return old.StrValue == new.StrValue
 	case ast.TableOptionDataDirectory:
-		// TODO(zp): handle the default data directory and index directory
+		return old.StrValue == new.StrValue
 	case ast.TableOptionIndexDirectory:
+		return old.StrValue == new.StrValue
 	case ast.TableOptionDelayKeyWrite:
 		return old.UintValue == new.UintValue
+	case ast.TableOptionEncryption:
+		return old.StrValue == new.StrValue
 	case ast.TableOptionEngine:
 		return old.StrValue == new.StrValue
 	case ast.TableOptionInsertMethod:
