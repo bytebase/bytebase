@@ -146,6 +146,9 @@ type CreateDatabaseContext struct {
 
 // MigrationDetail is the detail for database migration such as Migrate, Data.
 type MigrationDetail struct {
+	// MigrationType is the type of a migration.
+	// MigrationType can be empty for gh-ost type of migration.
+	MigrationType db.MigrationType `json:"migrationType"`
 	// DatabaseID is the ID of a database.
 	DatabaseID int `json:"databaseId"`
 	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
@@ -162,8 +165,6 @@ type MigrationDetail struct {
 
 // MigrationContext is the issue create context for database migration such as Migrate, Data.
 type MigrationContext struct {
-	// MigrationType is the type of a migration.
-	MigrationType db.MigrationType `json:"migrationType"`
 	// DetailList is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
 	DetailList []*MigrationDetail `json:"detailList"`

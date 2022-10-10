@@ -45,6 +45,7 @@ export type CreateDatabaseContext = {
 };
 
 export type MigrationDetail = {
+  migrationType: MigrationType;
   databaseId: DatabaseId;
   databaseName: string;
   statement: string;
@@ -57,7 +58,6 @@ export type UpdateSchemaGhostDetail = MigrationDetail & {
 };
 
 export type MigrationContext = {
-  migrationType: MigrationType;
   detailList: MigrationDetail[];
   vcsPushEvent?: VCSPushEvent;
 };

@@ -613,17 +613,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	}
-	create := &api.PipelineCreate{}
-	switch c.MigrationType {
-	case db.Baseline:
-		create.Name = "Establish database baseline pipeline"
-	case db.Migrate:
-		create.Name = "Update database schema pipeline"
-	case db.Data:
-		create.Name = "Update database data pipeline"
-	default:
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid migration type %q", c.MigrationType))
+	create := &api.PipelineCreate{
+		Name: "Change database pipeline",
 	}
+
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
@@ -632,9 +625,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	// If migration type is establishing baseline and project's workflow is VCS,
 	// then the context must contain a VCS push event field. We need this VCS
 	// context to identify the write-back destination after migration.
-	if c.MigrationType == db.Baseline && project.WorkflowType == api.VCSWorkflow {
-		if c.VCSPushEvent == nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create establishing baseline issue for GitOps workflow project, vcs context missing")
+	for _, detail := range c.DetailList {
+		if detail.MigrationType == db.Baseline && project.WorkflowType == api.VCSWorkflow {
+			if c.VCSPushEvent == nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create establishing baseline issue for GitOps workflow project, vcs context missing")
+			}
 		}
 	}
 
@@ -644,8 +639,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if !s.feature(api.FeatureMultiTenancy) {
 			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
-		if c.MigrationType != db.Migrate && c.MigrationType != db.Data {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
+		for _, detail := range c.DetailList {
+			if detail.MigrationType != db.Migrate && detail.MigrationType != db.Data {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
+			}
 		}
 		if len(c.DetailList) != 1 {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have exactly one update schema detail")
@@ -668,7 +665,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+			taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -701,7 +698,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 
-					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, schemaVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -736,7 +733,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 		envToDatabaseMap := make(map[envKey][]api.TaskCreate)
 		for _, d := range c.DetailList {
-			if c.MigrationType == db.Migrate && d.Statement == "" {
+			if d.MigrationType == db.Migrate && d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
@@ -751,7 +748,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if d.SchemaVersion != "" {
 				schemaVersion = d.SchemaVersion
 			}
-			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion)
+			taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, schemaVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -833,16 +830,16 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 	return create, nil
 }
 
-func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (*api.TaskCreate, error) {
+func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
-	switch migrationType {
+	switch d.MigrationType {
 	case db.Migrate:
 		taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)
 	case db.Data:
 		taskName = fmt.Sprintf("DML(data) for %q", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
-	payload.MigrationType = migrationType
+	payload.MigrationType = d.MigrationType
 	payload.Statement = d.Statement
 	payload.SchemaVersion = schemaVersion
 	if vcsPushEvent != nil {
@@ -851,14 +848,14 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to marshal database schema update payload: %v", err)
-		if migrationType == db.Data {
+		if d.MigrationType == db.Data {
 			errMsg = fmt.Sprintf("Failed to marshal database data update payload: %v", err)
 		}
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
 	}
 
 	taskType := api.TaskDatabaseSchemaUpdate
-	if migrationType == db.Data {
+	if d.MigrationType == db.Data {
 		taskType = api.TaskDatabaseDataUpdate
 	}
 	return &api.TaskCreate{
@@ -869,7 +866,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
-		MigrationType:     migrationType,
+		MigrationType:     d.MigrationType,
 		Payload:           string(bytes),
 	}, nil
 }
