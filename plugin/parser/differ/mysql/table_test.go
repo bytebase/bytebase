@@ -170,6 +170,7 @@ func TestTableOption(t *testing.T) {
 		},
 		// INSERT_METHOD
 		// TODO(zp): enable this test if the upstream repo fix it.
+		// https://github.com/pingcap/tidb/pull/38355
 		// {
 		// 	old:  `CREATE TABLE book(id INT) INSERT_METHOD = LAST;`,
 		// 	new:  `CREATE TABLE book(id INT) INSERT_METHOD = FIRST;`,
