@@ -11,6 +11,7 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pingcap/tidb/parser/mysql"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -73,6 +74,15 @@ const (
 	ErrorTypeIncorrectIndexName = 506
 	// ErrorTypeSpatialIndexKeyNullable is the error that keys in spatial index are nullable.
 	ErrorTypeSpatialIndexKeyNullable = 507
+
+	// 601 ~ 699 insert statement error type.
+
+	// ErrorTypeInsertColumnCountNotMatchValueCount is the error that column count doesn't match value count.
+	ErrorTypeInsertColumnCountNotMatchValueCount = 601
+	// ErrorTypeInsertSpecifiedColumnTwice is the error that column specified twice in INSERT.
+	ErrorTypeInsertSpecifiedColumnTwice = 602
+	// ErrorTypeInsertNullIntoNotNullColumn is the error that insert NULL into NOT NULL columns.
+	ErrorTypeInsertNullIntoNotNullColumn = 603
 )
 
 // WalkThroughError is the error for walking-through.
@@ -254,9 +264,45 @@ func (d *DatabaseState) checkInsert(node *tidbast.InsertStmt) *WalkThroughError 
 		if table == nil {
 			return nil
 		}
+		specifiedColumnMap := make(map[string]bool)
 		for _, col := range node.Columns {
 			if _, exists := table.columnSet[col.Name.O]; !exists {
 				return NewColumnNotExistsError(table.name, col.Name.O)
+			}
+			if _, ok := specifiedColumnMap[col.Name.O]; ok {
+				return &WalkThroughError{
+					Type: ErrorTypeInsertSpecifiedColumnTwice,
+					// Content is from MySQL error content
+					Content: fmt.Sprintf("Column '%s' specified twice", col.Name.O),
+				}
+			}
+			specifiedColumnMap[col.Name.O] = true
+		}
+
+		if len(node.Lists) > 0 {
+			for i, row := range node.Lists {
+				if node.Columns != nil && len(node.Columns) != len(row) {
+					return &WalkThroughError{
+						Type: ErrorTypeInsertColumnCountNotMatchValueCount,
+						// Content is from MySQL error content
+						Content: fmt.Sprintf("Column count doesn't match value count at row %d", i+1),
+					}
+				}
+
+				for columnPos, value := range row {
+					if value.GetType().GetType() == mysql.TypeNull {
+						columnName := node.Columns[columnPos].Name.O
+						// after check, all columns exist
+						column := table.columnSet[columnName]
+						if column.nullable != nil && !*column.nullable {
+							return &WalkThroughError{
+								Type: ErrorTypeInsertNullIntoNotNullColumn,
+								// Content is from MySQL error content
+								Content: fmt.Sprintf("Column '%s' cannot be null", columnName),
+							}
+						}
+					}
+				}
 			}
 		}
 	}
