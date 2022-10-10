@@ -468,7 +468,11 @@ func dropTableOption(option *ast.TableOption) *ast.TableOption {
 		// For both InnoDB and MyISAM, if the value is less than or equal to the maximum value currently in the AUTO_INCREMENT column,
 		// the value is reset to the current maximum AUTO_INCREMENT column value plus one.
 		// https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
-		// Users want to drop the AUTO_INCREMENT, they need to `ALTER TABLE tbl MODIFY COLUMN` to drop the AUTO_INCREMENT.
+		// So we always set the auto_increment value to 0, it will be reset to the current maximum AUTO_INCREMENT column value plus one.
+		return &ast.TableOption{
+			Tp:        ast.TableOptionAutoIncrement,
+			UintValue: 0,
+		}
 	case ast.TableOptionAvgRowLength:
 		// AVG_ROW_LENGTH only works in MyISAM tables.
 		return &ast.TableOption{
