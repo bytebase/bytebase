@@ -1,7 +1,8 @@
 <template>
   <button
+    v-bind="$attrs"
     class="btn-icon text-sm"
-    @click.prevent="
+    @click.prevent.stop="
       () => {
         if (requireConfirm) {
           state.showModal = true;
