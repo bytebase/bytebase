@@ -57,11 +57,6 @@ func TestTableOption(t *testing.T) {
 			new:  `CREATE TABLE book(id INT PRIMARY KEY AUTO_INCREMENT) AUTO_INCREMENT = 10;`,
 			want: "ALTER TABLE `book` AUTO_INCREMENT = 10;\n",
 		},
-		{
-			old:  `CREATE TABLE book(id INT PRIMARY KEY AUTO_INCREMENT) AUTO_INCREMENT = 4;`,
-			new:  `CREATE TABLE book(id INT PRIMARY KEY AUTO_INCREMENT);`,
-			want: "ALTER TABLE `book` AUTO_INCREMENT = 0;\n",
-		},
 		// AVG_ROW_LENGTH
 		{
 			old:  `CREATE TABLE book(id INT) AVG_ROW_LENGTH = 1;`,

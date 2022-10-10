@@ -468,22 +468,21 @@ func dropTableOption(option *ast.TableOption) *ast.TableOption {
 		// For both InnoDB and MyISAM, if the value is less than or equal to the maximum value currently in the AUTO_INCREMENT column,
 		// the value is reset to the current maximum AUTO_INCREMENT column value plus one.
 		// https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
-		return &ast.TableOption{
-			Tp:        ast.TableOptionAutoIncrement,
-			UintValue: 0,
-		}
+		// Users want to drop the AUTO_INCREMENT, they need to `ALTER TABLE tbl MODIFY COLUMN` to drop the AUTO_INCREMENT.
 	case ast.TableOptionAvgRowLength:
+		// AVG_ROW_LENGTH only works in MyISAM tables.
 		return &ast.TableOption{
 			Tp:        ast.TableOptionAvgRowLength,
 			UintValue: 0,
 		}
 	case ast.TableOptionCharset:
-		// TODO(zp): we use utf8mb4 as the default charset, but it's not always true.
+		// TODO(zp): we use utf8mb4 as the default charset, but it's not always true. We should consider the database default charset.
 		return &ast.TableOption{
 			Tp:       ast.TableOptionCharset,
 			StrValue: "utf8mb4",
 		}
 	case ast.TableOptionCollate:
+		// TODO(zp): default collate is related with the charset.
 		return &ast.TableOption{
 			Tp:       ast.TableOptionCollate,
 			StrValue: "utf8mb4_general_ci",
@@ -506,8 +505,11 @@ func dropTableOption(option *ast.TableOption) *ast.TableOption {
 			Tp: ast.TableOptionConnection,
 		}
 	case ast.TableOptionDataDirectory:
-		// TODO(zp): handle the default data directory and index directory
 	case ast.TableOptionIndexDirectory:
+		// TODO(zp): handle the default data directory and index directory, there are a lot of situations we need to consider.
+		// 1. Data Directory and Index Directory will be ignored on Windows.
+		// 2. For a normal table, data directory and index directory cannot changed after the table is created, but for a partition table, it can be changed by USING `alter add PARTITIONS data DIRECTORY ...`
+		// 3. We should know the default data directory like /var/mysql/data, and the default index directory like /var/mysql/index.
 	case ast.TableOptionDelayKeyWrite:
 		return &ast.TableOption{
 			Tp:        ast.TableOptionDelayKeyWrite,
