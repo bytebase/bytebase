@@ -48,9 +48,9 @@ const buildNewTenantSchemaUpdateIssue = async (
     migrationType = "DATA";
   }
   helper.issueCreate!.createContext = {
-    migrationType,
     detailList: [
       {
+        migrationType: migrationType,
         databaseName: route.query.databaseName,
         statement: VALIDATE_ONLY_SQL,
       },
