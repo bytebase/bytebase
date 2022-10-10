@@ -257,7 +257,7 @@ func (s *Server) sqlAdviceForPullRequestFile(
 		return nil, nil
 	}
 
-	migrationInfo, err := db.ParseMigrationInfo(file.Path, path.Join(repo.BaseDirectory, repo.FilePathTemplate))
+	migrationInfo, err := db.ParseMigrationInfo(file.Path, path.Join(repo.BaseDirectory, repo.FilePathTemplate), false)
 	if err != nil {
 		log.Debug("Failed to parse migration info",
 			zap.String("external_id", repo.ExternalID),
