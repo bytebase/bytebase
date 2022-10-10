@@ -66,9 +66,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
 		filter := func(repo *api.Repository) (bool, error) {
-			return c.Request().Header.Get("X-Gitlab-Token") == repo.WebhookSecretToken, nil
+			if c.Request().Header.Get("X-Gitlab-Token") == repo.WebhookSecretToken {
+				return false, nil
+			}
+
+			return validateWebhookEventBranch(pushEvent.Ref, repo)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -119,9 +123,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
 			}
-			return ok, nil
+			if !ok {
+				return false, nil
+			}
+
+			return validateWebhookEventBranch(pushEvent.Ref, repo)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -159,7 +167,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && request.WebURL == repo.WebURL, nil
 		}
 		ctx := c.Request().Context()
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), "", request.RepositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -328,8 +336,7 @@ func (s *Server) sqlAdviceForFileInfo(
 
 type repositoryFilter func(*api.Repository) (bool, error)
 
-// TODO: pushEventRef can be empty.
-func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
+func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
@@ -338,17 +345,8 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
 	}
 
-	branch, err := parseBranchNameFromRefs(pushEventRef)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
-	}
-
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
-		if repo.BranchFilter != branch {
-			log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
-			continue
-		}
 		if repo.VCS == nil {
 			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 			continue
@@ -370,6 +368,19 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		filteredRepos = append(filteredRepos, repo)
 	}
 	return filteredRepos, nil
+}
+
+func validateWebhookEventBranch(pushEventRef string, repo *api.Repository) (bool, error) {
+	branch, err := parseBranchNameFromRefs(pushEventRef)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
+	}
+	if branch != repo.BranchFilter {
+		log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
