@@ -79,7 +79,7 @@ func (checker *columnNoNullChecker) generateAdviceList() []advisor.Advice {
 			Status:  checker.level,
 			Code:    advisor.ColumnCanNotNull,
 			Title:   checker.title,
-			Content: fmt.Sprintf(`Column "%s" in %s can not have NULL value`, column.column, column.normalizeTableName()),
+			Content: fmt.Sprintf(`Column "%s" in %s can have NULL value`, column.column, column.normalizeTableName()),
 			Line:    checker.nullableColumns[column],
 		})
 	}
