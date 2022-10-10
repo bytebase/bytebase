@@ -800,7 +800,61 @@ type githubPullRequestFile struct {
 //
 // Docs: https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
 func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestID int) ([]*vcs.PullRequestFile, error) {
-	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%d/files?per_page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize)
+	var allPRFiles []githubPullRequestFile
+	page := 1
+	for {
+		fileList, err := p.listPaginatedPullRequestFile(ctx, oauthCtx, instanceURL, repositoryID, pullRequestID, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to list pull request file")
+		}
+
+		if len(fileList) == 0 {
+			break
+		}
+
+		allPRFiles = append(allPRFiles, fileList...)
+
+		page++
+	}
+
+	var res []*vcs.PullRequestFile
+	for _, file := range allPRFiles {
+		u, err := url.Parse(file.ContentsURL)
+		if err != nil {
+			log.Debug("Failed to parse content url for file",
+				zap.String("content_url", file.ContentsURL),
+				zap.String("file", file.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		m, _ := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			log.Debug("Failed to parse query for file",
+				zap.String("content_url", file.ContentsURL),
+				zap.String("file", file.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		refs, ok := m["ref"]
+		if !ok || len(refs) != 1 {
+			continue
+		}
+
+		res = append(res, &vcs.PullRequestFile{
+			Path:         file.FileName,
+			LastCommitID: refs[0],
+			IsDeleted:    file.Status == "removed",
+		})
+	}
+
+	return res, nil
+}
+
+// listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
+func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestID, page int) ([]githubPullRequestFile, error) {
+	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%d/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -833,40 +887,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 	if err := json.Unmarshal([]byte(body), &prFiles); err != nil {
 		return nil, err
 	}
-
-	var res []*vcs.PullRequestFile
-	for _, file := range prFiles {
-		u, err := url.Parse(file.ContentsURL)
-		if err != nil {
-			log.Debug("Failed to parse content url for file",
-				zap.String("content_url", file.ContentsURL),
-				zap.String("file", file.FileName),
-				zap.Error(err),
-			)
-			continue
-		}
-		m, _ := url.ParseQuery(u.RawQuery)
-		if err != nil {
-			log.Debug("Failed to parse query for file",
-				zap.String("content_url", file.ContentsURL),
-				zap.String("file", file.FileName),
-				zap.Error(err),
-			)
-			continue
-		}
-		refs, ok := m["ref"]
-		if !ok || len(refs) != 1 {
-			continue
-		}
-
-		res = append(res, &vcs.PullRequestFile{
-			Path:         file.FileName,
-			LastCommitID: refs[0],
-			IsDeleted:    file.Status == "removed",
-		})
-	}
-
-	return res, nil
+	return prFiles, nil
 }
 
 type githubBranchCreate struct {
