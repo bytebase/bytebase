@@ -29,10 +29,11 @@
 
 <script lang="ts" setup>
 import { computed, Ref } from "vue";
+import dayjs from "dayjs";
+
 import { Issue } from "@/types";
 import { activeTask } from "@/utils";
 import { useIssueLogic } from "./logic";
-import dayjs from "dayjs";
 
 const issue = useIssueLogic().issue as Ref<Issue>;
 
