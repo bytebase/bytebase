@@ -368,18 +368,15 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf(
-				`
-				Error: %s
-				You can check the docs at %s#%d
-				`,
+			content := fmt.Sprintf(`Error: %s
+You can check the docs at %s#%d`,
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,
 			)
 
 			testcase := fmt.Sprintf(
-				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>%s</failure>\n</testcase>",
+				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>\n%s\n</failure>\n</testcase>",
 				advice.Title,
 				filePath,
 				filePath,
@@ -393,7 +390,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 		if len(testcaseList) > 0 {
 			testsuiteList = append(
 				testsuiteList,
-				fmt.Sprintf("<testsuite name=\"%s\">%s</testsuite>", filePath, strings.Join(testcaseList, "\n")),
+				fmt.Sprintf("<testsuite name=\"%s\">\n%s\n</testsuite>", filePath, strings.Join(testcaseList, "\n")),
 			)
 		}
 	}
@@ -402,7 +399,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 		Status: status,
 		Content: []string{
 			fmt.Sprintf(
-				"<?xml version=\"1.0\" encoding=\"UTF-8\"?><testsuites name=\"SQL Review\">%s</testsuites>",
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n%s\n</testsuites>",
 				strings.Join(testsuiteList, "\n"),
 			),
 		},
