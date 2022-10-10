@@ -430,7 +430,7 @@ func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *as
 		newOption, ok := newOptionsMap[oldTp]
 		if !ok {
 			// We should drop the table option if it doesn't exist in the new table options.
-			if astOption := dropOption(oldOption); astOption != nil {
+			if astOption := dropTableOption(oldOption); astOption != nil {
 				options = append(options, astOption)
 			}
 			continue
@@ -460,8 +460,8 @@ func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *as
 	}
 }
 
-// dropOption generate the table options node need to oppended to the ALTER TABLE OPTION spec.
-func dropOption(option *ast.TableOption) *ast.TableOption {
+// dropTableOption generate the table options node need to oppended to the ALTER TABLE OPTION spec.
+func dropTableOption(option *ast.TableOption) *ast.TableOption {
 	switch option.Tp {
 	case ast.TableOptionAutoIncrement:
 		// You cannot reset the counter to a value less than or equal to the value that is currently in use.
