@@ -200,6 +200,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		for _, prFile := range prFiles {
 			wg.Add(1)
 			go func(file *vcs.PullRequestFile) {
+				defer wg.Done()
 				adviceList, err := s.sqlAdviceForPullRequestFile(ctx, file, repo)
 				if err != nil {
 					log.Debug(
@@ -207,12 +208,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						zap.String("file", file.Path),
 						zap.Error(err),
 					)
+					return
 				}
-				if adviceList != nil {
-					sqlCheckAdvice[file.Path] = adviceList
-				}
-
-				wg.Done()
+				
+				sqlCheckAdvice[file.Path] = adviceList
 			}(prFile)
 		}
 
