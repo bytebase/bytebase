@@ -431,7 +431,7 @@ func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *as
 		if !ok {
 			// We should drop the table option if it doesn't exist in the new table options.
 			if astOption := dropOption(oldOption); astOption != nil {
-				options = append(options, dropOption(oldOption))
+				options = append(options, astOption)
 			}
 			continue
 		}
