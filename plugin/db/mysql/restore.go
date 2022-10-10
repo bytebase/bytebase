@@ -856,7 +856,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 	for i, meta := range metaList {
 		if meta.FirstEventTs >= targetTs {
 			if i == 0 {
-				return nil, errors.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, meta.FirstEventTs, targetMeta.binlogName)
+				return nil, errors.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, meta.FirstEventTs, metaList[0].binlogName)
 			}
 			// The previous local binlog file contains targetTs.
 			targetMeta = &metaList[i-1]
