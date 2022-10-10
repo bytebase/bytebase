@@ -118,6 +118,9 @@ const (
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
 
+	// SchemaRuleCollationAllowlist enforce the collation allowlist.
+	SchemaRuleCollationAllowlist SQLReviewRuleType = "collation.allowlist"
+
 	// SchemaRuleInsertRowLimit enforce the insert row limit.
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
 	// SchemaRuleInsertMustSpecifyColumn enforce the insert column specified.
@@ -254,9 +257,9 @@ type TypeRestrictionRulePayload struct {
 	TypeList []string `json:"typeList"`
 }
 
-// CharsetAllowlistRulePayload is the payload for charset allowlist rule.
-type CharsetAllowlistRulePayload struct {
-	CharsetAllowlist []string `json:"charsetAllowlist"`
+// AllowlistRulePayload is the payload for allowlist rules.
+type AllowlistRulePayload struct {
+	Allowlist []string `json:"allowlist"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -367,13 +370,13 @@ func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePa
 	return &trr, nil
 }
 
-// UnmarshalCharsetAllowlistRulePayload will unmarshal payload to CharsetAllowlistRulePayload.
-func UnmarshalCharsetAllowlistRulePayload(payload string) (*CharsetAllowlistRulePayload, error) {
-	var cwr CharsetAllowlistRulePayload
-	if err := json.Unmarshal([]byte(payload), &cwr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal charset allowlist rule payload %q", payload)
+// UnmarshalAllowlistRulePayload will unmarshal payload to AllowlistRulePayload.
+func UnmarshalAllowlistRulePayload(payload string) (*AllowlistRulePayload, error) {
+	var allowlist AllowlistRulePayload
+	if err := json.Unmarshal([]byte(payload), &allowlist); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal allowlist rule payload %q", payload)
 	}
-	return &cwr, nil
+	return &allowlist, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -783,6 +786,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLCharsetAllowlist, nil
+		}
+	case SchemaRuleCollationAllowlist:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLCollationAllowlist, nil
 		}
 	case SchemaRuleIndexPKType:
 		switch engine {

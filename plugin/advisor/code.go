@@ -106,6 +106,9 @@ const (
 	DeleteUseOrderBy       Code = 1105
 	DeleteUseLimit         Code = 1106
 	InsertNotSpecifyColumn Code = 1107
+
+	// 1201 ~ 1299 collation error code.
+	DisabledCollation Code = 1201
 )
 
 // Int returns the int type of code.
