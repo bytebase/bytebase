@@ -178,54 +178,8 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 	s.executors[taskType] = executor
 }
 
-// Returns true if we meet either of the following conditions:
-//  1. Task has a non-default value and no task check has run before (so we are about to kick off the check for the first time)
-//  2. The specified EarliestAllowedTs has elapsed, so we need to rerun the check to unblock the task.
-//
-// On the other hand, we would also rerun the check if user has modified EarliestAllowedTs. This is handled separately in the task patch handler.
-func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
-	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		Type:       &taskCheckType,
-		StatusList: &statusList,
-		Latest:     true,
-	}
-	taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
-	if err != nil {
-		return false, err
-	}
-
-	// If there is not any task check scheduled before, we should only schedule one if user has specified a non-default value.
-	if len(taskCheckRunList) == 0 {
-		return task.EarliestAllowedTs != 0, nil
-	}
-
-	if forceSchedule {
-		return true, nil
-	}
-
-	if time.Now().After(time.Unix(task.EarliestAllowedTs, 0)) {
-		checkResult := &api.TaskCheckRunResultPayload{}
-		if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
-			return false, err
-		}
-		if checkResult.ResultList[0].Status == api.TaskCheckStatusSuccess {
-			return false, nil
-		}
-		return true, nil
-	}
-
-	return false, nil
-}
-
 // ScheduleCheckIfNeeded schedules a check if needed.
 func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
-	if err := s.scheduleTimingTaskCheck(ctx, task, creatorID); err != nil {
-		return nil, errors.Wrap(err, "failed to schedule timing task check")
-	}
-
 	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
@@ -426,31 +380,6 @@ func (s *TaskCheckScheduler) schedulePITRTaskCheck(ctx context.Context, task *ap
 		CreatorID: creatorID,
 		TaskID:    task.ID,
 		Type:      api.TaskCheckPITRMySQL,
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
-	ok, err := s.shouldScheduleTimingTaskCheck(ctx, task, true /* forceSchedule */)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return nil
-	}
-	taskCheckPayload, err := json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
-		EarliestAllowedTs: task.EarliestAllowedTs,
-	})
-	if err != nil {
-		return err
-	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckGeneralEarliestAllowedTime,
-		Payload:   string(taskCheckPayload),
 	}); err != nil {
 		return err
 	}
