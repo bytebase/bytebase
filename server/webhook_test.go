@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 // TODO(d): fix the double underscore "__".
@@ -77,4 +79,103 @@ func TestParseBranchNameFromGitHubRefs(t *testing.T) {
 			assert.Equal(t, test.expect, branch)
 		}
 	}
+}
+
+var mockSQLAdviceMap = map[string][]advisor.Advice{
+	"file1.sql": {
+		{
+			Status:  advisor.Success,
+			Code:    advisor.Ok,
+			Title:   "OK",
+			Content: "",
+		},
+		{
+			Status:  advisor.Warn,
+			Code:    advisor.ColumnCanNotNull,
+			Title:   "column.no-null",
+			Content: `Column "id" in "public"."book" can not have NULL value`,
+			Line:    1,
+		},
+		{
+			Status:  advisor.Error,
+			Code:    advisor.NamingIndexConventionMismatch,
+			Title:   "naming.index.idx",
+			Content: "Index in table \"tech_book\" mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found \"tech_book_id_name\"",
+			Line:    2,
+		},
+	},
+	"file2.sql": {
+		{
+			Status:  advisor.Warn,
+			Code:    advisor.NamingTableConventionMismatch,
+			Title:   "naming.table",
+			Content: "\"techBook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+			Line:    1,
+		},
+		{
+			Status:  advisor.Success,
+			Code:    advisor.Ok,
+			Title:   "OK",
+			Content: "",
+		},
+		{
+			Status:  advisor.Error,
+			Code:    advisor.NamingUKConventionMismatch,
+			Title:   "naming.index.uk",
+			Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found \"tech_book_id_name\"",
+			Line:    4,
+		},
+	},
+}
+
+func TestVCSSQLReview_ConvertSQLAdviceToGitLabCIResult(t *testing.T) {
+	expect :=
+		`<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="SQL Review">
+<testsuite name="file1.sql">
+<testcase name="column.no-null" classname="file1.sql" file="file1.sql#L1">
+<failure>
+Error: Column "id" in "public"."book" can not have NULL value
+You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402
+</failure>
+</testcase>
+<testcase name="naming.index.idx" classname="file1.sql" file="file1.sql#L2">
+<failure>
+Error: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name"
+You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#303
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="file2.sql">
+<testcase name="naming.table" classname="file2.sql" file="file2.sql#L1">
+<failure>
+Error: "techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"
+You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#301
+</failure>
+</testcase>
+<testcase name="naming.index.uk" classname="file2.sql" file="file2.sql#L4">
+<failure>
+Error: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
+You can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#304
+</failure>
+</testcase>
+</testsuite>
+</testsuites>`
+	res := convertSQLAdviceToGitLabCIResult(mockSQLAdviceMap)
+	assert.Equal(t, advisor.Error, res.Status)
+	assert.Equal(t, 1, len(res.Content))
+	assert.Equal(t, expect, res.Content[0])
+}
+
+func TestVCSSQLReview_ConvertSQLAdiceToGitHubActionResult(t *testing.T) {
+	expect := []string{
+		"::warning file=file1.sql,line=1,col=1,endColumn=2,title=column.no-null (402)::Column \"id\" in \"public\".\"book\" can not have NULL value%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#402",
+		"::error file=file1.sql,line=2,col=1,endColumn=2,title=naming.index.idx (303)::Index in table \"tech_book\" mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found \"tech_book_id_name\"%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#303",
+		"::warning file=file2.sql,line=1,col=1,endColumn=2,title=naming.table (301)::\"techBook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#301",
+		"::error file=file2.sql,line=4,col=1,endColumn=2,title=naming.index.uk (304)::Unique key in table \"tech_book\" mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found \"tech_book_id_name\"%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#304",
+	}
+	res := convertSQLAdiceToGitHubActionResult(mockSQLAdviceMap)
+	assert.Equal(t, advisor.Error, res.Status)
+	assert.Equal(t, 4, len(res.Content))
+	assert.Equal(t, expect, res.Content)
 }
