@@ -384,21 +384,17 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	var migrationDetailList []*api.MigrationDetail
 	var activityCreateList []*api.ActivityCreate
 	var createdIssueList []string
-	// Default to DATA migration. If later we found any MIGRATE migration file, we set migrationType to MIGRATE.
-	// The reason for this design is that, if a user merges DDL/DML in a single PR/MR, we suppose the user is possibly changing the schema while inserting/updating some seed/existing data.
-	// If the user wants to create a pure DML issue, they should create a dedicated PR/MR only containing DML SQL statements.
-	migrationTypeDDL := db.Data
 
 	for _, fileInfo := range fileInfoList {
 		if fileInfo.fType == schemaFileType {
 			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventSDL(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
 					issueName := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
 					creatorID := s.getIssueCreatorID(ctx, pushEvent.FileCommit.AuthorEmail)
-					if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, fileInfo.migrationInfo.Type, migrationDetailListForFile); err != nil {
+					if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
@@ -413,10 +409,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			// 1) DML is always migration-based.
 			// 2) We may have a limitation in SDL implementation.
 			// 3) User just wants to break the glass.
-			if fileInfo.migrationInfo.Type == db.Migrate {
-				migrationTypeDDL = db.Migrate
-			}
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromPushEventDDL(ctx, repo, pushEvent, fileInfo.item.FileName, fileInfo.item.ItemType, fileInfo.migrationInfo)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo.item.FileName, fileInfo.item.ItemType, fileInfo.migrationInfo)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 		}
@@ -429,7 +422,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	// Create one issue per push event for DDL project, or non-schema files for SDL project.
 	issueName := pushEvent.CommitList[0].Title
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.FileCommit.AuthorEmail)
-	if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationTypeDDL, migrationDetailList); err != nil {
+	if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
 
@@ -447,21 +440,23 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	return ret
 }
 
-func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationType db.MigrationType, migrationDetailList []*api.MigrationDetail) error {
+func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationDetailList []*api.MigrationDetail) error {
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
-			MigrationType: migrationType,
-			VCSPushEvent:  &pushEvent,
-			DetailList:    migrationDetailList,
+			VCSPushEvent: &pushEvent,
+			DetailList:   migrationDetailList,
 		},
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update schema context").SetInternal(err)
 	}
 
-	issueType := api.IssueDatabaseSchemaUpdate
-	if migrationType == db.Data {
-		issueType = api.IssueDatabaseDataUpdate
+	// TODO(d): unify issue type for database changes.
+	issueType := api.IssueDatabaseDataUpdate
+	for _, detail := range migrationDetailList {
+		if detail.MigrationType == db.Migrate || detail.MigrationType == db.Baseline {
+			issueType = api.IssueDatabaseSchemaUpdate
+		}
 	}
 	issueCreate := &api.IssueCreate{
 		ProjectID:     projectID,
@@ -644,9 +639,9 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 	return content, nil
 }
 
-// prepareIssueFromPushEventSDL returns the migration info and a list of update
+// prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	dbName := schemaInfo.Database
 	if dbName == "" {
 		log.Debug("Ignored schema file without a database name", zap.String("file", file))
@@ -665,8 +660,10 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				DatabaseName: dbName,
-				Statement:    statement,
+				// TODO(d): make it to SDL migration.
+				MigrationType: db.Migrate,
+				DatabaseName:  dbName,
+				Statement:     statement,
 			},
 		)
 		return migrationDetailList, nil
@@ -688,8 +685,10 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				DatabaseID: database.ID,
-				Statement:  diff,
+				// TODO(d): make it to SDL migration.
+				MigrationType: db.Migrate,
+				DatabaseID:    database.ID,
+				Statement:     diff,
 			},
 		)
 	}
@@ -697,9 +696,9 @@ func (s *Server) prepareIssueFromPushEventSDL(ctx context.Context, repo *api.Rep
 	return migrationDetailList, activityCreateList
 }
 
-// prepareIssueFromPushEventDDL returns a list of update schema details derived
+// prepareIssueFromFile returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileName string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileName string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
 	statement, err := s.readFileContent(ctx, pushEvent, repo, fileName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to read file content"))
@@ -709,9 +708,14 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 	var migrationDetailList []*api.MigrationDetail
 
 	// TODO(dragonly): handle modified file for tenant mode.
+	migrationType := db.Migrate
+	if migrationInfo.Type == db.Data {
+		migrationType = db.Data
+	}
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
+				MigrationType: migrationType,
 				DatabaseName:  migrationInfo.Database,
 				Statement:     statement,
 				SchemaVersion: migrationInfo.Version,
@@ -730,6 +734,7 @@ func (s *Server) prepareIssueFromPushEventDDL(ctx context.Context, repo *api.Rep
 		for _, database := range databases {
 			migrationDetailList = append(migrationDetailList,
 				&api.MigrationDetail{
+					MigrationType: migrationType,
 					DatabaseID:    database.ID,
 					Statement:     statement,
 					SchemaVersion: migrationInfo.Version,

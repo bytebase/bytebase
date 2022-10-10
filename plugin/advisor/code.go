@@ -98,13 +98,14 @@ const (
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
 
-	// 1101 ~ 1199 insert/update error code.
-	InsertTooManyRows Code = 1101
-	UpdateUseLimit    Code = 1102
-	InsertUseLimit    Code = 1103
-	UpdateUseOrderBy  Code = 1104
-	DeleteUseOrderBy  Code = 1105
-	DeleteUseLimit    Code = 1106
+	// 1101 ~ 1199 insert/update/delete error code.
+	InsertTooManyRows      Code = 1101
+	UpdateUseLimit         Code = 1102
+	InsertUseLimit         Code = 1103
+	UpdateUseOrderBy       Code = 1104
+	DeleteUseOrderBy       Code = 1105
+	DeleteUseLimit         Code = 1106
+	InsertNotSpecifyColumn Code = 1107
 )
 
 // Int returns the int type of code.

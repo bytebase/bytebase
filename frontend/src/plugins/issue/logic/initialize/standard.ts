@@ -36,9 +36,9 @@ export const buildNewStandardIssue = async (
     migrationType === "BASELINE" ? ESTABLISH_BASELINE_SQL : VALIDATE_ONLY_SQL;
 
   const createContext: IssueCreateContext = {
-    migrationType,
     detailList: databaseList.map((db) => {
       return {
+        migrationType: migrationType,
         databaseId: db.id,
         databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement,

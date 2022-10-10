@@ -163,6 +163,9 @@ const (
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
 
+	// MySQLInsertMustSpecifyColumn is an advisor type for MySQL to enforce column specified.
+	MySQLInsertMustSpecifyColumn Type = "bb.plugin.advisor.mysql.insert.must-specify-column"
+
 	// MySQLDisallowOrderBy is an advisor type for MySQL no ORDER BY clause in DELETE/UPDATE statement.
 	MySQLDisallowOrderBy Type = "bb.plugin.advisor.mysql.statement.disallow-order-by"
 

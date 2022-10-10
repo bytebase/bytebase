@@ -403,9 +403,9 @@ const handleConfirmButtonClick = async () => {
     state.targetSchemaInfo.databaseId as DatabaseId
   );
   const migrationContext: MigrationContext = {
-    migrationType: "MIGRATE",
     detailList: [
       {
+        migrationType: "MIGRATE",
         databaseId: targetDatabase.id,
         databaseName: targetDatabase.name,
         statement: state.editStatement,
