@@ -74,6 +74,10 @@ const renderActionSentence = () => {
           str = t("activity.sentence.failed");
           break;
         }
+        case "CANCELED": {
+          str = t("activity.sentence.canceled");
+          break;
+        }
       }
       if (activity.creator.id != SYSTEM_BOT_ID) {
         // If creator is not the robot (which means we do NOT use task name in the subject),
