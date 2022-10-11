@@ -17,10 +17,6 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 	for _, task := range stage.TaskList {
 		switch task.Status {
 		case api.TaskPendingApproval:
-			task, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */)
-			if err != nil {
-				return errors.Wrap(err, "failed to schedule check")
-			}
 			policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
@@ -42,12 +38,20 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 				}
 			}
 		case api.TaskPending:
-			if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */); err != nil {
-				return errors.Wrap(err, "failed to schedule check")
-			}
 			_, err := s.TaskScheduler.ScheduleIfNeeded(ctx, task)
 			if err != nil {
 				return errors.Wrap(err, "failed to schedule task")
+			}
+		}
+	}
+	return nil
+}
+
+func (s *Server) schedulePipelineTaskCheck(ctx context.Context, pipeline *api.Pipeline) error {
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID, true /* skipIfAlreadyTerminated */); err != nil {
+				return errors.Wrapf(err, "failed to schedule task check for task %d", task.ID)
 			}
 		}
 	}
