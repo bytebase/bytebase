@@ -1,1 +1,1 @@
-export * from "./naive";
+export * from "./simple";

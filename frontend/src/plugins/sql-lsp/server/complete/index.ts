@@ -11,7 +11,7 @@ import {
   createTableCandidates,
 } from "./candidates";
 import { getFromClauses } from "./utils";
-import { naiveTokenize } from "./tokenizer";
+import { simpleTokenize } from "./tokenizer";
 import { AliasMapping } from "./alias";
 
 export const complete = (
@@ -26,7 +26,7 @@ export const complete = (
     end: params.position,
   });
 
-  const tokens = naiveTokenize(textBeforeCursor);
+  const tokens = simpleTokenize(textBeforeCursor);
   const lastToken = tokens[tokens.length - 1].toLowerCase();
   const tableList = schema.databases.flatMap((db) => db.tables);
 
