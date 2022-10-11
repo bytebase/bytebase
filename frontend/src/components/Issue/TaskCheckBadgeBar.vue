@@ -156,7 +156,6 @@ export default defineComponent({
       const groupByType = groupBy(props.taskCheckRunList, (run) => run.type);
       /*
         `groupByType` looks like: {
-          "bb.task-check.general.earliest-allowed-time": [run1, run2, ...],
           "bb.task-check.database.statement.compatibility": [run1, run2, ...],
           "bb.task-check.database.statement.syntax": [run1, run2, ...],
           ...
@@ -228,7 +227,6 @@ export default defineComponent({
 const TaskCheckTypeOrderList: TaskCheckType[] = [
   "bb.task-check.pitr.mysql",
   "bb.task-check.database.ghost.sync",
-  "bb.task-check.general.earliest-allowed-time",
   "bb.task-check.database.statement.compatibility",
   "bb.task-check.database.statement.syntax",
   "bb.task-check.database.statement.type",
@@ -260,10 +258,6 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
   [
     "bb.task-check.instance.migration-schema",
     "task.check-type.migration-schema",
-  ],
-  [
-    "bb.task-check.general.earliest-allowed-time",
-    "task.check-type.earliest-allowed-time",
   ],
   ["bb.task-check.database.ghost.sync", "task.check-type.ghost-sync"],
   ["bb.task-check.issue.lgtm", "task.check-type.lgtm"],
