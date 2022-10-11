@@ -220,7 +220,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				wg.Add(1)
 				go func(file fileInfo) {
 					defer wg.Done()
-					adviceList, err := s.sqlAdviceForFileInfo(ctx, file)
+					adviceList, err := s.sqlAdviceForFile(ctx, file)
 					if err != nil {
 						log.Debug(
 							"Failed to take SQL review for file",
@@ -257,7 +257,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) sqlAdviceForFileInfo(
+func (s *Server) sqlAdviceForFile(
 	ctx context.Context,
 	fileInfo fileInfo,
 ) ([]advisor.Advice, error) {
@@ -1077,8 +1077,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf(`Error: %s
-You can check the docs at %s#%d`,
+			content := fmt.Sprintf("Error: %s.\nYou can check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,
