@@ -367,6 +367,10 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		}
 	}
 
+	if err := s.schedulePipelineTaskCheck(ctx, issue.Pipeline); err != nil {
+		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Name)
+	}
+
 	if err := s.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}

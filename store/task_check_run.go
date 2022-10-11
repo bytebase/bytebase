@@ -137,11 +137,6 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 	defer tx.Rollback()
 
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
-	if create.SkipIfAlreadyTerminated {
-		statusList = append(statusList, api.TaskCheckRunDone)
-		statusList = append(statusList, api.TaskCheckRunFailed)
-		statusList = append(statusList, api.TaskCheckRunCanceled)
-	}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &create.TaskID,
 		Type:       &create.Type,
@@ -153,21 +148,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return nil, err
 	}
 
-	runningCount := 0
-	if create.SkipIfAlreadyTerminated {
-		for _, taskCheckRun := range taskCheckRunList {
-			switch taskCheckRun.Status {
-			case api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunCanceled:
-				return taskCheckRun, nil
-			case api.TaskCheckRunRunning:
-				runningCount++
-			}
-		}
-	} else {
-		runningCount = len(taskCheckRunList)
-	}
-
-	if runningCount > 0 {
+	if runningCount := len(taskCheckRunList); runningCount > 0 {
 		if runningCount > 1 {
 			// Normally, this should not happen, if it occurs, emit a warning
 			log.Warn(fmt.Sprintf("Found %d task check run, expect at most 1", len(taskCheckRunList)),

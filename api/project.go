@@ -156,10 +156,17 @@ var (
 	// TenantToken is the token for tenant.
 	TenantToken = "{{TENANT}}"
 
-	// boolean indicates whether it's an required or optional token.
+	// boolean indicates whether it's a required or optional token.
 	repositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}":     true,
 		DBNameToken:       true,
+		"{{TYPE}}":        true,
+		EnvironmentToken:  false,
+		"{{DESCRIPTION}}": false,
+	}
+	tenantWildcardRepositoryFilePathTemplateTokens = map[string]bool{
+		"{{VERSION}}":     true,
+		DBNameToken:       false,
 		"{{TYPE}}":        true,
 		EnvironmentToken:  false,
 		"{{DESCRIPTION}}": false,
@@ -188,14 +195,14 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode Proj
 		}
 	}
 
-	for token, required := range repositoryFilePathTemplateTokens {
+	filePathTemplateTokens := repositoryFilePathTemplateTokens
+	// Skip checking {{DB_NAME}} if it's a tenant project with empty database name template (i.e .wildcard).
+	if tenantMode == TenantModeTenant && dbNameTemplate == "" {
+		filePathTemplateTokens = tenantWildcardRepositoryFilePathTemplateTokens
+	}
+	for token, required := range filePathTemplateTokens {
 		// Skip checking tokens that are not required
 		if !required {
-			continue
-		}
-
-		// Skip checking {{DB_NAME}} if it's a tenant project with empty database name template (i.e .wildcard).
-		if tenantMode == TenantModeTenant && dbNameTemplate == "" && token == DBNameToken {
 			continue
 		}
 
@@ -204,7 +211,7 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode Proj
 		}
 	}
 	for token := range tokenMap {
-		if _, ok := repositoryFilePathTemplateTokens[token]; !ok {
+		if _, ok := filePathTemplateTokens[token]; !ok {
 			return errors.Errorf("unknown token %s in file path template", token)
 		}
 	}
