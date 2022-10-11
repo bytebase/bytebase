@@ -23,14 +23,14 @@ export class AliasMapping {
     fromTables.forEach((clause) => {
       const { as } = clause;
       if (!as) {
-        // If a from table clause is not aliased, ignore it.
+        // If we met a "from {table}" clause without alias, ignore it here.
         return;
       }
       const { name, database } = getTableNameFromTableNode(
         clause,
         this.dialect
       );
-      // Setup the mapping relationship between the alias and table(s).
+      // Set up the mapping relationship between the alias and table(s).
       const list = this.aliasMap.get(as) ?? [];
       list.push(
         ...this.tableList.filter((t) => {
