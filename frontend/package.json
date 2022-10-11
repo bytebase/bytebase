@@ -15,6 +15,7 @@
   "dependencies": {
     "@bytebase/vue-kbar": "0.1.8",
     "@codingame/monaco-vscode-api": "1.69.11",
+    "@joe-re/sql-parser": "^1.2.1",
     "@markdoc/markdoc": "0.1.7",
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/table-core": "8.5.15",
