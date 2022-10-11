@@ -204,7 +204,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     "CANCEL",
     {
       type: "CANCEL",
-      to: "PENDING",
+      to: "CANCELED",
       buttonName: "common.cancel",
       buttonType: "NORMAL",
     },
@@ -218,9 +218,10 @@ const APPLICABLE_TASK_TRANSITION_LIST: Map<
 > = new Map([
   ["PENDING", []],
   ["PENDING_APPROVAL", ["APPROVE"]],
-  ["RUNNING", []],
+  ["RUNNING", ["CANCEL"]],
   ["DONE", []],
   ["FAILED", ["RETRY"]],
+  ["CANCELED", []],
 ]);
 
 export function applicableTaskTransition(
