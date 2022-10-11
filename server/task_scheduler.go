@@ -443,15 +443,9 @@ func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, 
 	if blocked {
 		return false, nil
 	}
-	// timing task check
-	if task.EarliestAllowedTs != 0 {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime, api.TaskCheckStatusSuccess)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
+
+	if task.EarliestAllowedTs != 0 && time.Now().Before(time.Unix(task.EarliestAllowedTs, 0)) {
+		return false, nil
 	}
 
 	return s.passAllCheck(ctx, task, api.TaskCheckStatusWarn)
