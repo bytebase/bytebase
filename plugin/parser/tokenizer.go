@@ -657,7 +657,7 @@ func (t *tokenizer) scanComment() error {
 // scanTo scans to delimiter. Use KMP algorithm.
 func (t *tokenizer) scanTo(delimiter []rune) error {
 	if len(delimiter) == 0 {
-		return errors.Errorf("scanTo failed: delimiter can not be nil")
+		return errors.Errorf("scanTo failed: delimiter cannot be nil")
 	}
 
 	// KMP algorithm.
