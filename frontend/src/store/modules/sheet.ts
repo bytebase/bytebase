@@ -90,7 +90,7 @@ export const useSheetStore = defineStore("sheet", {
     },
     /**
      * Check the sheet whether is read-only.
-     * 1. If the sheet is not created yet, it can not be edited.
+     * 1. If the sheet is not created yet, it cannot be edited.
      * 2. If the sheet is created by the current user, it can be edited.
      * 3. If the sheet is created by other user, will be checked the visibility of the sheet.
      *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
