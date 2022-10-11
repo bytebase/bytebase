@@ -212,6 +212,10 @@ func (d *DatabaseState) validateDML(in tidbast.DMLNode) (err *WalkThroughError) 
 	switch node := in.(type) {
 	case *tidbast.InsertStmt:
 		return d.checkInsert(node)
+	case *tidbast.DeleteStmt:
+		return d.checkDelete(node)
+	case *tidbast.UpdateStmt:
+		return d.checkUpdate(node)
 	default:
 		return nil
 	}
@@ -254,6 +258,41 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 	default:
 		return nil
 	}
+}
+
+func (d *DatabaseState) checkUpdate(node *tidbast.UpdateStmt) *WalkThroughError {
+	// Only check the UPDATE single TABLE case.
+	tableName, ok := getTableSourceName(node.TableRefs)
+	if ok {
+		table, err := d.findTableState(tableName, false /* createIncompleteTable */)
+		if err != nil {
+			return err
+		}
+		if table == nil {
+			return nil
+		}
+		for _, item := range node.List {
+			columName := item.Column.Name.O
+			if _, exists := table.columnSet[columName]; !exists {
+				return NewColumnNotExistsError(table.name, columName)
+			}
+		}
+	}
+	return nil
+}
+
+func (d *DatabaseState) checkDelete(node *tidbast.DeleteStmt) *WalkThroughError {
+	// Only check the DELETE FROM single TABLE case.
+	if !node.IsMultiTable {
+		tableName, ok := getTableSourceName(node.TableRefs)
+		if ok {
+			_, err := d.findTableState(tableName, false /* createIncopleteTable */)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (d *DatabaseState) checkInsert(node *tidbast.InsertStmt) *WalkThroughError {
