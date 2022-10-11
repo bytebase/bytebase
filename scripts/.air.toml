@@ -2,7 +2,7 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-  full_bin = 'BB_REDIRECT_URL=http:\/\/localhost:3000 ./.air/bytebase --port 8080 --external-url http:\/\/1e29-115-194-90-33.jp.ngrok.io --data . --debug'
+  bin = './.air/bytebase --port 8080 --data . --debug'
   ## Use --tags "store.db" to enable SQL query logging against our metadata db.
   cmd = """
   go build \
