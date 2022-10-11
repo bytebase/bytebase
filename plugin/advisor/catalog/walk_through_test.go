@@ -29,6 +29,49 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				UPDATE t SET a = 1;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeTableNotExists,
+				Content: "Table `t` does not exist",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int);
+				UPDATE t set b = 222;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeColumnNotExists,
+				Content: "Column `b` does not exist in table `t`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				DELETE FROM t;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeTableNotExists,
+				Content: "Table `t` does not exist",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				CREATE TABLE t as select * from t1;
 			`,
 			err: &WalkThroughError{
