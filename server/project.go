@@ -37,7 +37,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project request").SetInternal(err)
 		}
 		if projectCreate.Key == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
 		}
 		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -169,7 +169,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if v := projectPatch.Key; v != nil && *v == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
 		}
 		if v := projectPatch.LGTMCheckSetting; v != nil {
 			if !s.feature(api.FeatureLGTM) {
