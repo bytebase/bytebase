@@ -45,7 +45,13 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
-	var diff []ast.Node
+
+	var add []ast.Node
+	var inplaceUpdate []ast.Node
+	var nonInplaceDrop [][]ast.Node
+	var nonInplaceAdd []ast.Node
+	var drop [][]ast.Node
+
 	oldTableMap := buildTableMap(oldNodes)
 
 	for _, node := range newNodes {
@@ -56,11 +62,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
-				diff = append(diff, &stmt)
+				add = append(add, &stmt)
 				continue
 			}
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
-				diff = append(diff, alterTableOptionStmt)
+				inplaceUpdate = append(inplaceUpdate, alterTableOptionStmt)
 			}
 			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
@@ -106,7 +112,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				}
 			}
 			if len(alterTableAddColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				add = append(add, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -114,7 +120,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 			if len(alterTableModifyColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				inplaceUpdate = append(inplaceUpdate, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -130,7 +136,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableAddConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				add = append(add, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -139,23 +145,31 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableDropConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
+				drop = append(drop, []ast.Node{
+					&ast.AlterTableStmt{
+						Table: &ast.TableName{
+							Name: model.NewCIStr(tableName),
+						},
+						Specs: alterTableAddConstraintSpecs,
 					},
-					Specs: alterTableAddConstraintSpecs,
 				})
 			}
 		default:
 		}
 	}
 
-	return deparse(diff, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(add, inplaceUpdate, nonInplaceDrop, nonInplaceAdd, drop, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(nodes []ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.Node, nonInplaceAdd []ast.Node, drop [][]ast.Node, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
-	for _, node := range nodes {
+	// We should following the right order to avoid break the dependency:
+	// Additions for new nodes.
+	// Updates for in-place node updates.
+	// Deletions for destructive (none in-place) node updates (in reverse order).
+	// Additions for destructive node updates.
+	// Deletions for deleted nodes (in reverse order).
+	for _, node := range add {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
@@ -163,7 +177,61 @@ func deparse(nodes []ast.Node, flag format.RestoreFlags) (string, error) {
 			return "", err
 		}
 	}
+	for _, node := range inplaceUpdate {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	reNonInplaceDropNodes := reverse2D(nonInplaceDrop)
+	for _, nodes := range reNonInplaceDropNodes {
+		for _, node := range nodes {
+			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+				return "", err
+			}
+			if _, err := buf.Write([]byte(";\n")); err != nil {
+				return "", err
+			}
+		}
+	}
+	for _, node := range nonInplaceAdd {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	reDropNodes := reverse2D(drop)
+	for _, nodes := range reDropNodes {
+		for _, node := range nodes {
+			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+				return "", err
+			}
+			if _, err := buf.Write([]byte(";\n")); err != nil {
+				return "", err
+			}
+		}
+	}
 	return buf.String(), nil
+}
+
+func reverse2D(nodes [][]ast.Node) [][]ast.Node {
+	var newNodes [][]ast.Node
+	for i := len(nodes) - 1; i >= 0; i-- {
+		newNodes = append(newNodes, reverse(nodes[i]))
+	}
+	return newNodes
+}
+
+func reverse(nodes []ast.Node) []ast.Node {
+	var newNodes []ast.Node
+	for i := len(nodes) - 1; i >= 0; i-- {
+		newNodes = append(newNodes, nodes[i])
+	}
+	return newNodes
 }
 
 // buildTableMap returns a map of table name to create table statements.
