@@ -48,6 +48,8 @@ const (
 	ErrorTypeTableExists = 301
 	// ErrorTypeTableNotExists is the error that table not exists.
 	ErrorTypeTableNotExists = 302
+	// ErrorTypeUseCreateTableAs is the error that using CREATE TABLE AS statements.
+	ErrorTypeUseCreateTableAs = 303
 
 	// 401 ~ 499 column error type.
 
@@ -968,6 +970,13 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		return &WalkThroughError{
 			Type:    ErrorTypeTableExists,
 			Content: fmt.Sprintf("Table `%s` already exists", node.Table.Name.O),
+		}
+	}
+
+	if node.Select != nil {
+		return &WalkThroughError{
+			Type:    ErrorTypeUseCreateTableAs,
+			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", node.Text()),
 		}
 	}
 
