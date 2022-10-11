@@ -266,9 +266,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor()
 		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
 
-		timingExecutor := NewTaskCheckTimingExecutor()
-		taskCheckScheduler.Register(api.TaskCheckGeneralEarliestAllowedTime, timingExecutor)
-
 		checkLGTMExecutor := NewTaskCheckLGTMExecutor()
 		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
 

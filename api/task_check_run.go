@@ -171,12 +171,6 @@ type TaskCheckRunCreate struct {
 	Type    TaskCheckType `jsonapi:"attr,type"`
 	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`
-
-	// If true, then we will skip creating the task check run if there has already been a DONE check run
-	// for this (TaskID, Type) pair. The check is done at the store layer so that we can wrap it in the
-	// same transaction.
-	// This is NOT persisted into the db
-	SkipIfAlreadyTerminated bool
 }
 
 // TaskCheckRunFind is the API message for finding task check runs.
