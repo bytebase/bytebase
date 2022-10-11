@@ -29,6 +29,21 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t as select * from t1;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeUseCreateTableAs,
+				Content: "Disallow the CREATE TABLE AS statement but \"CREATE TABLE t as select * from t1;\" uses",
+				Line:    2,
+			},
+		},
+
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `	
 				CREATE TABLE t(a int NOT NULL);
 				INSERT INTO t(a) values (1), (NULL);
 			`,
