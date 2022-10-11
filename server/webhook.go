@@ -66,7 +66,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
 		filter := func(repo *api.Repository) (bool, error) {
-			if c.Request().Header.Get("X-Gitlab-Token") == repo.WebhookSecretToken {
+			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
 				return false, nil
 			}
 
