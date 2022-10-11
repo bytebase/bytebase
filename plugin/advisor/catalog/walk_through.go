@@ -566,7 +566,7 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 
 func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
-	// And the other indexes can not use the name which case-insensitive equals 'PRIMARY'.
+	// And the other indexes cannot use the name which case-insensitive equals 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
 		incorrectName := oldName
 		if strings.ToUpper(oldName) != PrimaryKeyName {
@@ -807,7 +807,7 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 		return NewColumnNotExistsError(t.name, columnName)
 	}
 
-	// Can not drop all columns in a table using ALTER TABLE DROP COLUMN.
+	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
 	if len(t.columnSet) == 1 {
 		return &WalkThroughError{
 			Type: ErrorTypeDropAllColumns,

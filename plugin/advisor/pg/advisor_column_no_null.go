@@ -77,9 +77,9 @@ func (checker *columnNoNullChecker) generateAdviceList() []advisor.Advice {
 	for _, column := range columnList {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
-			Code:    advisor.ColumnCanNotNull,
+			Code:    advisor.ColumnCannotNull,
 			Title:   checker.title,
-			Content: fmt.Sprintf(`Column "%s" in %s can not have NULL value`, column.column, column.normalizeTableName()),
+			Content: fmt.Sprintf(`Column "%s" in %s cannot have NULL value`, column.column, column.normalizeTableName()),
 			Line:    checker.nullableColumns[column],
 		})
 	}

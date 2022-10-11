@@ -80,7 +80,7 @@ export const complete = (
         provideColumnAutoCompletion(`public.${maybeTableName}`);
       }
       // "{schema_name}." (postgresql) - will implement next time
-      // - alias (can not recognize yet)
+      // - alias (cannot recognize yet)
     }
 
     if (tokenListBeforeDot.length === 2) {
