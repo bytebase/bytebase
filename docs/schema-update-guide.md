@@ -30,7 +30,7 @@ Demo Data
 4. Since we use the same code for both dev and release schemas, we should add if-else branching to read storage differently based on schema version, such as [this example](https://github.com/bytebase/bytebase/pull/1039).
 
 ## Release
-Releaser should take the following steps for schema update release, at most once a month. A DDL file should only be moved forward to release only if the feature is completed and well tested.
+Releaser should take the following steps for schema update release, about once a month. A DDL file should only be moved forward to release only if the feature is completed and well tested.
 
 1. Create a new version directory in the release directory, such as `release/1.6`.
 1. Move DDLs to be released from `dev` to `release/1.6`. Rename DDL SQL file prefixes in sure the prefixes are in consecutively increasing order starting from `0000`.

@@ -20,7 +20,7 @@ MAJOR version change usually happens at most once or twice a year. And if we do,
 
 We change MINOR version if the new version upgrades the underlying database schema. While the upgrade does not require customer involvement.
 
-MINOR version change usually happens at most once every month.
+MINOR version change usually happens about once every month.
 
 ## When PATCH version is changed
 
