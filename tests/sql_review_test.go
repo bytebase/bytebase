@@ -512,7 +512,16 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book",
+				statement: `
+					CREATE TABLE tech_book(
+						id int NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					DELETE FROM tech_book`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
@@ -524,7 +533,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book WHERE name like `%abc`",
+				statement: `
+					CREATE TABLE tech_book(
+						id int NOT NULL,
+						name varchar(220) NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					` +
+					"DELETE FROM tech_book WHERE name like `%abc`",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
@@ -593,7 +613,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book WHERE a = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
+				statement: `
+					CREATE TABLE tech_book(
+						id int NOT NULL,
+						name varchar(220) NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					` +
+					"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
