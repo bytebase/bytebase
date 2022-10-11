@@ -104,7 +104,7 @@
         class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:w-auto"
         @click.prevent="$emit('cancel')"
       >
-        {{ $t("common.cancel") }}
+        {{ cancelText }}
       </button>
       <button
         type="button"
@@ -113,7 +113,7 @@
         :disabled="!allowSubmit"
         @click.prevent="$emit('submit', state.comment)"
       >
-        {{ okText }}
+        {{ displayingOkText }}
       </button>
     </div>
   </div>
@@ -127,6 +127,7 @@ import TaskCheckBar from "./TaskCheckBar.vue";
 import { Issue, IssueStatusTransition, Task } from "@/types";
 import { OutputField } from "@/plugins";
 import { activeEnvironment, TaskStatusTransition } from "@/utils";
+import { useI18n } from "vue-i18n";
 
 type CheckSummary = {
   successCount: number;
@@ -171,6 +172,7 @@ export default defineComponent({
   },
   emits: ["submit", "cancel"],
   setup(props) {
+    const { t } = useI18n();
     const commentTextArea = ref("");
 
     const state = reactive<LocalState>({
@@ -178,6 +180,16 @@ export default defineComponent({
       outputValueList: props.outputFieldList.map((field) =>
         cloneDeep(props.issue.payload[field.id])
       ),
+    });
+
+    const cancelText = computed(() => t("common.cancel"));
+    const displayingOkText = computed(() => {
+      if (props.okText === cancelText.value) {
+        // We don't want to see [Cancel] [Cancel]
+        // So fall back to [Cancel] [Confirm] if okText===cancelText
+        return t("common.confirm");
+      }
+      return props.okText;
     });
 
     const environmentId = computed(() => {
@@ -297,6 +309,8 @@ export default defineComponent({
 
     return {
       state,
+      cancelText,
+      displayingOkText,
       environmentId,
       showTaskCheckBar,
       commentTextArea,
