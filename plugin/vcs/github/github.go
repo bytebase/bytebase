@@ -799,7 +799,7 @@ type githubPullRequestFile struct {
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestID int) ([]*vcs.PullRequestFile, error) {
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	var allPRFiles []githubPullRequestFile
 	page := 1
 	for {
@@ -853,8 +853,8 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 }
 
 // listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
-func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestID, page int) ([]githubPullRequestFile, error) {
-	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%d/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
+func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string, page int) ([]githubPullRequestFile, error) {
+	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,

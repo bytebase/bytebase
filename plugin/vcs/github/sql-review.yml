@@ -7,6 +7,7 @@ jobs:
       - name: SQL advise
         run: |
           API="%s"
+          TOKEN="${{ secrets.%s }}"
           echo "Start request $API"
 
           pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
@@ -17,8 +18,8 @@ jobs:
             --arg webURL "$GITHUB_SERVER_URL" \
             '$ARGS.named')
 
-          response=$(curl -s -w "%{http_code}" -X POST $API \
-            -H "X-SQL-Review-Token: ${{ secrets.%s }}" \
+          response=$(curl -s -w "%%{http_code}" -X POST $API \
+            -H "X-SQL-Review-Token: $TOKEN" \
             -H "Content-Type: application/json" \
             -d "$request_body")
           echo "::debug::response $response"

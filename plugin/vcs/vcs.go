@@ -262,7 +262,7 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// pullRequestID: the pull request id
-	ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestID int) ([]*PullRequestFile, error)
+	ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
 	// pullRequestCreate: the new pull request info
 	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) error
 	// UpsertEnvironmentVariable creates or updates the environment variable in the repository.

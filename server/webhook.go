@@ -40,7 +40,7 @@ type vcsSQLReviewResult struct {
 
 type vcsSQLReviewRequest struct {
 	RepositoryID  string `json:"repositoryId"`
-	PullRequestID int    `json:"pullRequestId"`
+	PullRequestID string `json:"pullRequestId"`
 	WebURL        string `json:"webURL"`
 }
 
@@ -165,7 +165,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		filter := func(repo *api.Repository) (bool, error) {
-			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(request.WebURL, repo.WebURL), nil
+			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(repo.WebURL, request.WebURL), nil
 		}
 		ctx := c.Request().Context()
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)
@@ -246,7 +246,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		log.Debug("SQL review finished",
-			zap.Int("pull_request", request.PullRequestID),
+			zap.String("pull_request", request.PullRequestID),
 			zap.String("status", string(response.Status)),
 			zap.String("content", strings.Join(response.Content, "\n")),
 			zap.String("repository_id", request.RepositoryID),

@@ -40,18 +40,7 @@ func Test_SetupGitLabCI(t *testing.T) {
 	include, ok := content["include"].([]interface{})
 	assert.Equal(t, ok, true)
 
-	sqlReviewCI := findSQLReviewCI(include)
+	sqlReviewCI, ok := findSQLReviewCI(include)
+	assert.Equal(t, ok, true)
 	assert.NotNil(t, sqlReviewCI)
-}
-
-func findSQLReviewCI(include []interface{}) map[string]interface{} {
-	for _, data := range include {
-		if val, ok := data.(map[string]interface{}); ok {
-			if val["local"] == SQLReviewCIFilePath {
-				return val
-			}
-		}
-	}
-
-	return nil
 }

@@ -774,8 +774,8 @@ type gitlabMergeRequestFile struct {
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestID int) ([]*vcs.PullRequestFile, error) {
-	url := fmt.Sprintf("%s/projects/%s/merge_requests/%d/changes", p.APIURL(instanceURL), repositoryID, pullRequestID)
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/changes", p.APIURL(instanceURL), repositoryID, pullRequestID)
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,

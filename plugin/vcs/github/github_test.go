@@ -1420,7 +1420,7 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
 		},
 	)
 	ctx := context.Background()
-	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", 1)
+	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1")
 	require.NoError(t, err)
 
 	want := []*vcs.PullRequestFile{
