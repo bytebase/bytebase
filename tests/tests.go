@@ -160,6 +160,7 @@ func getTestPort(testName string) int {
 		"TestSQLReviewForPostgreSQL",
 
 		"TestArchiveProject",
+		"TestDataSource",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -618,6 +619,16 @@ func (ctl *controller) setLicense() error {
 	return nil
 }
 
+func (ctl *controller) removeLicense() error {
+	err := ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
+		License: "",
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to switch plan")
+	}
+	return nil
+}
+
 func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, patch); err != nil {
@@ -630,6 +641,19 @@ func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error 
 	}
 
 	return nil
+}
+
+func (ctl *controller) getInstanceByID(instanceID int) (*api.Instance, error) {
+	body, err := ctl.get(fmt.Sprintf("/instance/%d", instanceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	instance := new(api.Instance)
+	if err = jsonapi.UnmarshalPayload(body, instance); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal get instance response")
+	}
+	return instance, nil
 }
 
 // addInstance adds an instance.
@@ -1430,6 +1454,32 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 	dataSource := new(api.DataSource)
 	if err = jsonapi.UnmarshalPayload(body, dataSource); err != nil {
 		return errors.Wrap(err, "fail to unmarshal dataSource response")
+	}
+	return nil
+}
+
+func (ctl *controller) patchDataSource(databaseID int, dataSourcePatch api.DataSourcePatch) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &dataSourcePatch); err != nil {
+		return errors.Wrap(err, "failed to marshal dataSourcePatch")
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourcePatch.ID), buf)
+	if err != nil {
+		return err
+	}
+
+	dataSource := new(api.DataSource)
+	if err = jsonapi.UnmarshalPayload(body, dataSource); err != nil {
+		return errors.Wrap(err, "fail to unmarshal dataSource response")
+	}
+	return nil
+}
+
+func (ctl *controller) deleteDataSource(databaseID, dataSourceID int) error {
+	_, err := ctl.delete(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourceID), nil)
+	if err != nil {
+		return err
 	}
 	return nil
 }
