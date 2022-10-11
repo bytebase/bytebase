@@ -217,7 +217,6 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.type"
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
-  | "bb.task-check.general.earliest-allowed-time"
   | "bb.task-check.database.ghost.sync"
   | "bb.task-check.issue.lgtm"
   | "bb.task-check.pitr.mysql";
