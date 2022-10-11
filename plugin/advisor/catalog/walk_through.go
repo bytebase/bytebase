@@ -48,6 +48,8 @@ const (
 	ErrorTypeTableExists = 301
 	// ErrorTypeTableNotExists is the error that table not exists.
 	ErrorTypeTableNotExists = 302
+	// ErrorTypeUseCreateTableAs is the error that using CREATE TABLE AS statements.
+	ErrorTypeUseCreateTableAs = 303
 
 	// 401 ~ 499 column error type.
 
@@ -566,7 +568,7 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 
 func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
-	// And the other indexes can not use the name which case-insensitive equals 'PRIMARY'.
+	// And the other indexes cannot use the name which case-insensitive equals 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
 		incorrectName := oldName
 		if strings.ToUpper(oldName) != PrimaryKeyName {
@@ -807,7 +809,7 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 		return NewColumnNotExistsError(t.name, columnName)
 	}
 
-	// Can not drop all columns in a table using ALTER TABLE DROP COLUMN.
+	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
 	if len(t.columnSet) == 1 {
 		return &WalkThroughError{
 			Type: ErrorTypeDropAllColumns,
@@ -968,6 +970,13 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		return &WalkThroughError{
 			Type:    ErrorTypeTableExists,
 			Content: fmt.Sprintf("Table `%s` already exists", node.Table.Name.O),
+		}
+	}
+
+	if node.Select != nil {
+		return &WalkThroughError{
+			Type:    ErrorTypeUseCreateTableAs,
+			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", node.Text()),
 		}
 	}
 

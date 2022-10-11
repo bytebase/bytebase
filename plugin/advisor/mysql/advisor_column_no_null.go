@@ -78,9 +78,9 @@ func (checker columnNoNullChecker) generateAdvice() []advisor.Advice {
 		if col != nil && col.Nullable() {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    advisor.ColumnCanNotNull,
+				Code:    advisor.ColumnCannotNull,
 				Title:   checker.title,
-				Content: fmt.Sprintf("`%s`.`%s` can not have NULL value", column.tableName, column.columnName),
+				Content: fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
 				Line:    column.line,
 			})
 		}

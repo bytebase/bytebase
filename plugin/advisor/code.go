@@ -47,7 +47,7 @@ const (
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn              Code = 401
-	ColumnCanNotNull              Code = 402
+	ColumnCannotNull              Code = 402
 	ChangeColumnType              Code = 403
 	NotNullColumnWithNullDefault  Code = 404
 	ColumnNotExists               Code = 405

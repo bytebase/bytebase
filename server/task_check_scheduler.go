@@ -178,59 +178,13 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 	s.executors[taskType] = executor
 }
 
-// Returns true if we meet either of the following conditions:
-//  1. Task has a non-default value and no task check has run before (so we are about to kick off the check for the first time)
-//  2. The specified EarliestAllowedTs has elapsed, so we need to rerun the check to unblock the task.
-//
-// On the other hand, we would also rerun the check if user has modified EarliestAllowedTs. This is handled separately in the task patch handler.
-func (s *TaskCheckScheduler) shouldScheduleTimingTaskCheck(ctx context.Context, task *api.Task, forceSchedule bool) (bool, error) {
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunRunning}
-	taskCheckType := api.TaskCheckGeneralEarliestAllowedTime
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		Type:       &taskCheckType,
-		StatusList: &statusList,
-		Latest:     true,
-	}
-	taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
-	if err != nil {
-		return false, err
-	}
-
-	// If there is not any task check scheduled before, we should only schedule one if user has specified a non-default value.
-	if len(taskCheckRunList) == 0 {
-		return task.EarliestAllowedTs != 0, nil
-	}
-
-	if forceSchedule {
-		return true, nil
-	}
-
-	if time.Now().After(time.Unix(task.EarliestAllowedTs, 0)) {
-		checkResult := &api.TaskCheckRunResultPayload{}
-		if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
-			return false, err
-		}
-		if checkResult.ResultList[0].Status == api.TaskCheckStatusSuccess {
-			return false, nil
-		}
-		return true, nil
-	}
-
-	return false, nil
-}
-
 // ScheduleCheckIfNeeded schedules a check if needed.
-func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) (*api.Task, error) {
-	if err := s.scheduleTimingTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
-		return nil, errors.Wrap(err, "failed to schedule timing task check")
-	}
-
-	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
+	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
 
-	if err := s.schedulePITRTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+	if err := s.schedulePITRTaskCheck(ctx, task, creatorID); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
 	}
 
@@ -238,11 +192,11 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return task, nil
 	}
 
-	if err := s.scheduleGeneralTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+	if err := s.scheduleGeneralTaskCheck(ctx, task, creatorID); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule general task check")
 	}
 
-	if err := s.scheduleGhostTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated); err != nil {
+	if err := s.scheduleGhostTaskCheck(ctx, task, creatorID); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule gh-ost task check")
 	}
 
@@ -258,15 +212,15 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
 	}
 
-	if err := s.scheduleSyntaxCheckTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated, database, statement); err != nil {
+	if err := s.scheduleSyntaxCheckTaskCheck(ctx, task, creatorID, database, statement); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
 
-	if err := s.scheduleSQLReviewTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated, database, statement); err != nil {
+	if err := s.scheduleSQLReviewTaskCheck(ctx, task, creatorID, database, statement); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
 
-	if err := s.scheduleStmtTypeTaskCheck(ctx, task, creatorID, skipIfAlreadyTerminated, database, statement); err != nil {
+	if err := s.scheduleStmtTypeTaskCheck(ctx, task, creatorID, database, statement); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
 
@@ -306,7 +260,8 @@ func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 		return "", errors.Errorf("invalid task type %s", task.Type)
 	}
 }
-func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
+
+func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) error {
 	if !api.IsStatementTypeCheckSupported(database.Instance.Engine) {
 		return nil
 	}
@@ -320,17 +275,17 @@ func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task
 		return errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
 	}
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseStatementType,
-		Payload:                 string(payload),
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckDatabaseStatementType,
+		Payload:   string(payload),
 	}); err != nil {
 		return err
 	}
 	return nil
 }
-func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
+
+func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) error {
 	if !api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
 		return nil
 	}
@@ -349,17 +304,17 @@ func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, tas
 		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseStatementAdvise,
-		Payload:                 string(payload),
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckDatabaseStatementAdvise,
+		Payload:   string(payload),
 	}); err != nil {
 		return err
 	}
 	return nil
 }
-func (s *TaskCheckScheduler) scheduleSyntaxCheckTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool, database *api.Database, statement string) error {
+
+func (s *TaskCheckScheduler) scheduleSyntaxCheckTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) error {
 	if !api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
 		return nil
 	}
@@ -373,32 +328,29 @@ func (s *TaskCheckScheduler) scheduleSyntaxCheckTaskCheck(ctx context.Context, t
 		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseStatementSyntax,
-		Payload:                 string(payload),
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckDatabaseStatementSyntax,
+		Payload:   string(payload),
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *TaskCheckScheduler) scheduleGeneralTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+func (s *TaskCheckScheduler) scheduleGeneralTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseConnect,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckDatabaseConnect,
 	}); err != nil {
 		return err
 	}
 
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckInstanceMigrationSchema,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckInstanceMigrationSchema,
 	}); err != nil {
 		return err
 	}
@@ -406,64 +358,35 @@ func (s *TaskCheckScheduler) scheduleGeneralTaskCheck(ctx context.Context, task 
 	return nil
 }
 
-func (s *TaskCheckScheduler) scheduleGhostTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+func (s *TaskCheckScheduler) scheduleGhostTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
 	if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return nil
 	}
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckGhostSync,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckGhostSync,
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *TaskCheckScheduler) schedulePITRTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+func (s *TaskCheckScheduler) schedulePITRTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
 	if task.Type != api.TaskDatabaseRestorePITRRestore {
 		return nil
 	}
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckPITRMySQL,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckPITRMySQL,
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *TaskCheckScheduler) scheduleTimingTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
-	// we only set skipIfAlreadyTerminated to false when user explicitly want to reschedule a taskCheck
-	ok, err := s.shouldScheduleTimingTaskCheck(ctx, task, !skipIfAlreadyTerminated /* forceSchedule */)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return nil
-	}
-	taskCheckPayload, err := json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
-		EarliestAllowedTs: task.EarliestAllowedTs,
-	})
-	if err != nil {
-		return err
-	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckGeneralEarliestAllowedTime,
-		Payload:                 string(taskCheckPayload),
-		SkipIfAlreadyTerminated: false,
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int, skipIfAlreadyTerminated bool) error {
+func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
 	if !s.server.feature(api.FeatureLGTM) {
 		return nil
 	}
@@ -480,10 +403,9 @@ func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *ap
 		return nil
 	}
 	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               creatorID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckIssueLGTM,
-		SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		CreatorID: creatorID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckIssueLGTM,
 	}); err != nil {
 		return err
 	}

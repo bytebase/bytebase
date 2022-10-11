@@ -264,19 +264,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		DatabaseID: &database.ID,
 	})
 	a.NoError(err)
-
-	// Test if POST /api/database/:id/data-source api is working right.
-	// TODO(steven): I will add read-only data source testing to a separate test later.
-	err = ctl.createDataSource(api.DataSourceCreate{
-		InstanceID: instance.ID,
-		DatabaseID: database.ID,
-		CreatorID:  project.Creator.ID,
-		Name:       "ADMIN data source",
-		Type:       "ADMIN",
-		Username:   "root",
-		Password:   "",
-	})
-	a.NoError(err)
 }
 
 func TestVCS(t *testing.T) {
