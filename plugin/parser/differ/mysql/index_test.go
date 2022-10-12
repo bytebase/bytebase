@@ -376,10 +376,22 @@ func TestKeyPart(t *testing.T) {
 				"ALTER TABLE `book` ADD INDEX `book_idx`(`id`) USING BTREE COMMENT 'comment_a';\n",
 		},
 		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, name) COMMENT 'comment_a');`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, name) COMMENT 'comment_b');`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `name`) COMMENT 'comment_b';\n",
+		},
+		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
 				"ALTER TABLE `book` ADD INDEX `book_idx`((`id`+1)) USING BTREE COMMENT 'comment_a';\n",
+		},
+		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (id, name) COMMENT 'comment_a');`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+1)) COMMENT 'comment_a';\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
@@ -388,8 +400,19 @@ func TestKeyPart(t *testing.T) {
 				"ALTER TABLE `book` ADD INDEX `book_idx`((`id`+2)) USING BTREE COMMENT 'comment_a';\n",
 		},
 		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 2)) COMMENT 'comment_a');`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+2)) COMMENT 'comment_a';\n",
+		},
+		{
 			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY (id, name) COMMENT 'comment_a');`,
+			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY (id, name) COMMENT 'comment_a');`,
 			want: "",
 		},
 		{
@@ -397,7 +420,28 @@ func TestKeyPart(t *testing.T) {
 			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
 			want: "",
 		},
+		{
+			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY ((id + 1)) COMMENT 'comment_a');`,
+			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY ((id + 1)) COMMENT 'comment_a');`,
+			want: "",
+		},
 	}
+
+	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
+	for _, test := range tests {
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
+
+func TestPrimaryKey(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{}
 
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
