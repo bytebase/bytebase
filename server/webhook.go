@@ -63,7 +63,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				return false, nil
 			}
 
-			return validateWebhookEventBranch(pushEvent.Ref, repo)
+			return s.validateWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -120,7 +120,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				return false, nil
 			}
 
-			return validateWebhookEventBranch(pushEvent.Ref, repo)
+			return s.validateWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -177,13 +177,13 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 	return filteredRepos, nil
 }
 
-func validateWebhookEventBranch(pushEventRef string, repo *api.Repository) (bool, error) {
+func (*Server) validateWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
 	}
-	if branch != repo.BranchFilter {
-		log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
+	if branch != branchFilter {
+		log.Debug("Skipping repo due to branch filter mismatch", zap.String("branch", branch), zap.String("filter", branchFilter))
 		return false, nil
 	}
 
