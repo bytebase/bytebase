@@ -530,7 +530,7 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the `envName` is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenantMode api.ProjectTenantMode, dbName, envName string) ([]*api.Database, error) {
+func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*api.Database, error) {
 	// Retrieve the current schema from the database
 	foundDatabases, err := s.store.FindDatabase(ctx,
 		&api.DatabaseFind{
@@ -542,15 +542,6 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 		return nil, errors.Wrap(err, "find database")
 	} else if len(foundDatabases) == 0 {
 		return nil, errors.Errorf("project %d does not have database %q", projectID, dbName)
-	}
-
-	// Tenant mode does not allow filtering databases by environment and expect
-	// multiple databases with the same name.
-	if tenantMode == api.TenantModeTenant {
-		if envName != "" {
-			return nil, errors.Errorf("non-empty environment is not allowed for tenant mode project")
-		}
-		return foundDatabases, nil
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -665,7 +656,6 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 	}
 
 	activityCreateList := []*api.ActivityCreate{}
-	envName := schemaInfo.Environment
 	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
@@ -679,7 +669,8 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+	envName := schemaInfo.Environment
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, envName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -734,7 +725,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, migrationInfo.Database, migrationInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
