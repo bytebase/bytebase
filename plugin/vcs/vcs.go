@@ -139,6 +139,13 @@ type Repository struct {
 	WebURL   string `json:"webUrl"`
 }
 
+// PullRequestFile is the API message for file in the pull request.
+type PullRequestFile struct {
+	Path         string
+	LastCommitID string
+	IsDeleted    bool
+}
+
 // BranchInfo is the API message for repository branch.
 type BranchInfo struct {
 	Name         string
@@ -254,6 +261,8 @@ type Provider interface {
 	// oauthCtx: OAuth context to create the webhook
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// pullRequestID: the pull request id
+	ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
 	// pullRequestCreate: the new pull request info
 	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) error
 	// UpsertEnvironmentVariable creates or updates the environment variable in the repository.

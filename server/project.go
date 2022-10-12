@@ -613,13 +613,15 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		return err
 	}
 
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", s.profile.ExternalURL, repository.WebhookEndpointID)
+
 	switch repository.VCS.Type {
 	case vcsPlugin.GitHubCom:
-		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch); err != nil {
+		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return err
 		}
 	case vcsPlugin.GitLabSelfHost:
-		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch); err != nil {
+		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch, sqlReviewEndpoint); err != nil {
 			return err
 		}
 	}
@@ -689,8 +691,7 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 }
 
 // setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
-func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
-	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
+func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
 	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
 	fileLastCommitID := ""
 
@@ -742,7 +743,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 }
 
 // setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
-func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
+func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
 		content := make(map[string]interface{})
@@ -782,7 +783,6 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 
 	// create or update the SQL review CI.
 	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
-		sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
 		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
 	})
 }
