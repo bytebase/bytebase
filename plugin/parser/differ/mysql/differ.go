@@ -182,6 +182,12 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 // We're not supporting all the MySQL statements for now.
 // validateStmtNodes validates the stmt nodes, return nil if they are valid.
+// We support 5 statements:
+// 1. CREATE TABLE statement.
+// 2. CREATE VIEW statement.
+// 3. CREATE FUNCTION statement.
+// 4. CREATE TRIGGER statement.
+// 5. CREATE PROCEDURE statement.
 func validateStmtNodes(nodes []ast.StmtNode) error {
 	// TODO(zp): validate more statements.
 	for _, node := range nodes {
@@ -191,6 +197,17 @@ func validateStmtNodes(nodes []ast.StmtNode) error {
 				for _, option := range columnDef.Options {
 					if option.Tp == ast.ColumnOptionPrimaryKey {
 						return errors.New("unsupported column inline PK in CREATE TABLE statement likes `CREATE TABLE tbl(id INT PARIMARY KEY);`")
+					}
+					if option.Tp == ast.ColumnOptionUniqKey {
+						return errors.New("unsupported column inline UNIQUE KEY in CREATE TABLE statement likes `CREATE TABLE tbl(id INT UNIQUE KEY);`")
+					}
+				}
+			}
+			for _, constraint := range stmt.Constraints {
+				switch constraint.Tp {
+				case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintFulltext:
+					if constraint.Name == "" {
+						return errors.New("unsupported unnamed index in CREATE TABLE statement likes `CREATE TABLE tbl(id INT, INDEX(id));`")
 					}
 				}
 			}
