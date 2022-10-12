@@ -120,7 +120,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				return false, nil
 			}
 
-			return s.validateWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
+			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
