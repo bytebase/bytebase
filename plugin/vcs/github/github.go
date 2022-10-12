@@ -812,7 +812,6 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 			break
 		}
 		allPRFiles = append(allPRFiles, fileList...)
-
 		page++
 	}
 
