@@ -177,7 +177,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 	return filteredRepos, nil
 }
 
-func (*Server) validateWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
