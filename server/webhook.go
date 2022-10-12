@@ -58,10 +58,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
-		filter := func(token string) (bool, error) {
-			return c.Request().Header.Get("X-Gitlab-Token") == token, nil
+		filter := func(repo *api.Repository) (bool, error) {
+			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
+				return false, nil
+			}
+
+			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -107,14 +111,18 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := pushEvent.Repository.FullName
 
-		filter := func(token string) (bool, error) {
-			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), token, body)
+		filter := func(repo *api.Repository) (bool, error) {
+			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
 			}
-			return ok, nil
+			if !ok {
+				return false, nil
+			}
+
+			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -133,9 +141,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-type repositoryFilter func(string) (bool, error)
+type repositoryFilter func(*api.Repository) (bool, error)
 
-func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
+func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
@@ -144,17 +152,8 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
 	}
 
-	branch, err := parseBranchNameFromRefs(pushEventRef)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
-	}
-
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
-		if repo.BranchFilter != branch {
-			log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
-			continue
-		}
 		if repo.VCS == nil {
 			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 			continue
@@ -164,7 +163,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			continue
 		}
 
-		ok, err := filter(repo.WebhookSecretToken)
+		ok, err := filter(repo)
 		if err != nil {
 			return nil, err
 		}
@@ -176,6 +175,19 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		filteredRepos = append(filteredRepos, repo)
 	}
 	return filteredRepos, nil
+}
+
+func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+	branch, err := parseBranchNameFromRefs(pushEventRef)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
+	}
+	if branch != branchFilter {
+		log.Debug("Skipping repo due to branch filter mismatch", zap.String("branch", branch), zap.String("filter", branchFilter))
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
@@ -862,8 +874,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf(`Error: %s
-You can check the docs at %s#%d`,
+			content := fmt.Sprintf("Error: %s.\nYou can check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,
