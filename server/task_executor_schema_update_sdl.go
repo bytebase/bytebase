@@ -27,14 +27,16 @@ type SchemaUpdateSDLTaskExecutor struct {
 // RunOnce will run the schema update (SDL) task executor once.
 func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer atomic.StoreInt32(&exec.completed, 1)
-	payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
+	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	// 		diff, err := s.computeDatabaseSchemaDiff(ctx, database, statement)
-	statement := payload.Statement
-	return runMigration(ctx, server, task, payload.MigrationType, statement, payload.SchemaVersion, payload.VCSPushEvent)
+	ddl, err := server.computeDatabaseSchemaDiff(ctx, task.Database, payload.Statement)
+	if err != nil {
+		return true, nil, errors.Wrap(err, "invalid database schema diff")
+	}
+	return runMigration(ctx, server, task, payload.MigrationType, ddl, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.

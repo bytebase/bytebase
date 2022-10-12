@@ -95,15 +95,6 @@ type TaskDatabaseCreatePayload struct {
 	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
-// TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update via state-based migration.
-type TaskDatabaseSchemaUpdateSDLPayload struct {
-	MigrationType db.MigrationType `json:"migrationType,omitempty"`
-	// Statement is the SDL i.e. the full state of the database schema.
-	Statement     string         `json:"statement,omitempty"`
-	SchemaVersion string         `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
-}
-
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
 	MigrationType db.MigrationType `json:"migrationType,omitempty"`
