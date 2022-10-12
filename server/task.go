@@ -666,6 +666,8 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 			return nil, errors.New("Failed to cancel task")
 		}
 		cancel()
+		result := "Task cancellation requested."
+		taskStatusPatch.Result = &result
 	}
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
