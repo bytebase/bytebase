@@ -269,13 +269,14 @@ func (s *Server) sqlAdviceForFile(
 		zap.String("vcs", string(fileInfo.repository.VCS.Type)),
 	)
 
-	if fileInfo.repository.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+	// TODO: support tenant mode project
+	if fileInfo.repository.Project.TenantMode == api.TenantModeTenant {
 		return []advisor.Advice{
 			{
 				Status:  advisor.Warn,
 				Code:    advisor.Unsupported,
 				Title:   "Tenant mode is not supported",
-				Content: fmt.Sprintf("Project %s a tenant mode project. Please upgrade your subscription to support this feature.", fileInfo.repository.Project.Name),
+				Content: fmt.Sprintf("Project %s a tenant mode project.", fileInfo.repository.Project.Name),
 				Line:    1,
 			},
 		}, nil
