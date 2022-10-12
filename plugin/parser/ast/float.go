@@ -10,8 +10,8 @@ type Float struct {
 	Size int
 }
 
-// EqualTypeName implements the DataType interface.
-func (f *Float) EqualTypeName(tp string) bool {
+// EquivalentType implements the DataType interface.
+func (f *Float) EquivalentType(tp string) bool {
 	tp = strings.ToLower(tp)
 	switch f.Size {
 	case 4:

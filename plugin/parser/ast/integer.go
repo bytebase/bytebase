@@ -10,8 +10,8 @@ type Integer struct {
 	Size int
 }
 
-// EqualTypeName implements the DataType interface.
-func (i *Integer) EqualTypeName(tp string) bool {
+// EquivalentType implements the DataType interface.
+func (i *Integer) EquivalentType(tp string) bool {
 	tp = strings.ToLower(tp)
 	switch i.Size {
 	case 2:

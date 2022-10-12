@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
-func TestEqualTypeName(t *testing.T) {
+func TestEquivalentType(t *testing.T) {
 	type testData struct {
 		originType string
 		matchType  string
@@ -53,6 +53,6 @@ func TestEqualTypeName(t *testing.T) {
 		require.True(t, ok)
 		require.Len(t, addColumn.ColumnList, 1)
 		column := addColumn.ColumnList[0]
-		require.True(t, column.Type.EqualTypeName(test.matchType))
+		require.True(t, column.Type.EquivalentType(test.matchType))
 	}
 }

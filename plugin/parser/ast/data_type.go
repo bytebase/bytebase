@@ -9,7 +9,7 @@ var (
 type DataType interface {
 	Node
 
-	EqualTypeName(string) bool
+	EquivalentType(string) bool
 	dataTypeInterface()
 }
 
@@ -19,7 +19,7 @@ type dataType struct {
 
 func (*dataType) dataTypeInterface() {}
 
-func (*dataType) EqualTypeName(_ string) bool {
+func (*dataType) EquivalentType(_ string) bool {
 	return false
 }
 

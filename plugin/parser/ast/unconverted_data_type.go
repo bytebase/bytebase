@@ -11,8 +11,8 @@ type UnconvertedDataType struct {
 	Name []string
 }
 
-// EqualTypeName implements the DataType interface.
-func (u *UnconvertedDataType) EqualTypeName(tp string) bool {
+// EquivalentType implements the DataType interface.
+func (u *UnconvertedDataType) EquivalentType(tp string) bool {
 	tp = strings.ToLower(tp)
 	return strings.ToLower(strings.Join(u.Name, ".")) == tp
 }

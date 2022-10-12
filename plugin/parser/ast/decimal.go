@@ -11,8 +11,8 @@ type Decimal struct {
 	Scale     int
 }
 
-// EqualTypeName implements the DataType interface.
-func (*Decimal) EqualTypeName(tp string) bool {
+// EquivalentType implements the DataType interface.
+func (*Decimal) EquivalentType(tp string) bool {
 	tp = strings.ToLower(tp)
 	return strings.HasPrefix(tp, "decimal") || strings.HasPrefix(tp, "numeric")
 }
