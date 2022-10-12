@@ -531,7 +531,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 	}
 	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
 		// no value is set, fallback to default.
-		// the assignee group is the workspace owner and DBA.
+		// the assignee group is the workspace owner or DBA.
 		principal, err := s.store.GetPrincipalByID(ctx, principalID)
 		if err != nil {
 			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
