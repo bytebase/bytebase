@@ -481,6 +481,14 @@ func TestIndex(t *testing.T) {
 				"ALTER TABLE `book` DROP PRIMARY KEY;\n" +
 				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `address`);\n",
 		},
+		// ADD COLUMN -> DROP INDEX -> ADD INDEX
+		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX id_name_idx (id, name));`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX id_address_idx (id, address));`,
+			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
+				"ALTER TABLE `book` DROP INDEX `id_name_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `id_address_idx`(`id`, `address`);\n",
+		},
 	}
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
