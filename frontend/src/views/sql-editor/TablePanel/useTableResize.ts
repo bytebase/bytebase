@@ -106,8 +106,9 @@ const useTableResize = (options: TableResizeOptions) => {
 
           const column = state.columns[index];
           if (column) {
-            // sometimes the `columns` is out-of-sync with the `indexList`
+            // Sometimes the `columns` is out-of-sync with the `indexList`
             // so we need to detect and suppress errors here.
+            // Only occurs in dev hot reload mode.
             column.width = finalWidth;
           }
 
