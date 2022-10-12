@@ -46,6 +46,33 @@
         />
       </template>
     </BBStepTab>
+    <BBModal
+      v-if="state.showSetupSQLReviewCIModal"
+      class="relative overflow-hidden"
+      :title="$t('repository.sql-review-ci-setup')"
+      @close="closeSetupSQLReviewModal"
+    >
+      <div class="space-y-4 max-w-[32rem]">
+        <div class="whitespace-pre-wrap">
+          {{ $t("repository.sql-review-ci-setup-modal") }}
+        </div>
+
+        <div class="flex justify-end pt-4 gap-x-2">
+          <a
+            class="btn-primary items-center space-x-2 mx-2 my-2"
+            :href="state.sqlReviewCIPullRequestURL"
+            target="_blank"
+          >
+            {{ $t("repository.sql-review-ci-setup-pr") }}
+          </a>
+        </div>
+      </div>
+    </BBModal>
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      feature="bb.feature.vcs-sql-review"
+      @cancel="state.showFeatureModal = false"
+    />
   </div>
 </template>
 
@@ -69,7 +96,7 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useProjectStore, useRepositoryStore } from "@/store";
+import { useProjectStore, useRepositoryStore, hasFeature } from "@/store";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -93,6 +120,9 @@ const CONFIGURE_DEPLOY_STEP = 2;
 interface LocalState {
   config: ProjectRepositoryConfig;
   currentStep: number;
+  showFeatureModal: boolean;
+  showSetupSQLReviewCIModal: boolean;
+  sqlReviewCIPullRequestURL: string;
 }
 
 export default defineComponent({
@@ -157,10 +187,14 @@ export default defineComponent({
           sheetPathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE
             : DEFAULT_SHEET_PATH_TEMPLATE,
+          enableSQLReviewCI: false,
         },
         schemaChangeType: props.project.schemaChangeType,
       },
       currentStep: CHOOSE_PROVIDER_STEP,
+      showFeatureModal: false,
+      showSetupSQLReviewCIModal: false,
+      sqlReviewCIPullRequestURL: "",
     });
 
     const allowNext = computed((): boolean => {
@@ -210,20 +244,32 @@ export default defineComponent({
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
           schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
           sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
+          enableSQLReviewCI: state.config.repositoryConfig.enableSQLReviewCI,
           externalId: externalId,
           accessToken: state.config.token.accessToken,
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
         };
-        await repositoryStore.createRepository({
+        const createdRepository = await repositoryStore.createRepository({
           projectId: props.project.id,
           repositoryCreate,
         });
+        if (createdRepository.sqlReviewCIPullRequestURL) {
+          state.sqlReviewCIPullRequestURL =
+            createdRepository.sqlReviewCIPullRequestURL;
+          state.showSetupSQLReviewCIModal = true;
+        }
         allowFinishCallback();
-        emit("finish");
       };
 
       if (props.create) {
+        if (
+          state.config.repositoryConfig.enableSQLReviewCI &&
+          !hasFeature("bb.feature.vcs-sql-review")
+        ) {
+          state.showFeatureModal = true;
+          return;
+        }
         createFunc();
       } else {
         // It's simple to implement change behavior as delete followed by create.
@@ -235,6 +281,11 @@ export default defineComponent({
             createFunc();
           });
       }
+    };
+
+    const closeSetupSQLReviewModal = () => {
+      state.showSetupSQLReviewCIModal = false;
+      emit("finish");
     };
 
     const cancel = () => {
@@ -275,6 +326,7 @@ export default defineComponent({
       setVCS,
       setToken,
       setRepository,
+      closeSetupSQLReviewModal,
     };
   },
 });

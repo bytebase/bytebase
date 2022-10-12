@@ -927,6 +927,14 @@
     "schema-path-example": "Schema path example",
     "sheet-path-template": "Sheet path template",
     "sheet-path-template-description": "Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.",
+    "sql-review-ci": "SQL Review CI",
+    "sql-review-ci-enable": "Enable SQL Review CI",
+    "sql-review-ci-description": "Bytebase will auto create an pull request for your repository to setup the SQL review CI. Once CI setup, we can take the SQL review in every pull request for changed SQL files.",
+    "sql-review-ci-setup": "Setup SQL Review CI",
+    "sql-review-ci-setup-pr": "Review the pull request",
+    "sql-review-ci-setup-modal": "We have created a pull request for your repository to set up the SQL review CI. Please go to review and merge the pull request.",
+    "sql-review-ci-remove": "Remove SQL Review CI",
+    "sql-review-ci-remove-modal": "SQL Review CI is disabled. You need to remove the CI from your repository manually.",
     "git-provider": "Git provider",
     "version-control-status": "@.capitalize:common.version-control is {status}",
     "version-control-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
@@ -1384,6 +1392,10 @@
       "bb-feature-sql-review": {
         "title": "SQL review policy",
         "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan. @:{'subscription.trial'}."
+      },
+      "bb-feature-vcs-sql-review": {
+        "title": "SQL review in GitOps workflow",
+        "desc": "We can help you setup the SQL review CI in GitOps workflow. The SQL review will be triggered in the pull request for changed SQL files."
       },
       "bb-feature-rbac": {
         "title": "Role management",
