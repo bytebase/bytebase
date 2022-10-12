@@ -29,6 +29,8 @@ export type Repository = {
   filePathTemplate: string;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
+  enableSQLReviewCI: boolean;
+  sqlReviewCIPullRequestURL: string;
   // e.g. In GitLab, this is the corresponding project id.
   externalId: string;
 };
@@ -46,6 +48,7 @@ export type RepositoryCreate = {
   filePathTemplate: string;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
+  enableSQLReviewCI: boolean;
   externalId: string;
   accessToken: string;
   expiresTs: number;
@@ -58,6 +61,7 @@ export type RepositoryPatch = {
   filePathTemplate?: string;
   schemaPathTemplate?: string;
   sheetPathTemplate?: string;
+  enableSQLReviewCI?: boolean;
 };
 
 export type RepositoryConfig = {
@@ -66,6 +70,7 @@ export type RepositoryConfig = {
   filePathTemplate: string;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
+  enableSQLReviewCI: boolean;
 };
 
 export type ExternalRepositoryInfo = {

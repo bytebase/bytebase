@@ -164,7 +164,7 @@ export const useRepositoryStore = defineStore("repository", {
     }: {
       projectId: ProjectId;
       repositoryPatch: RepositoryPatch;
-    }) {
+    }): Promise<Repository> {
       const data = (
         await axios.patch(`/api/project/${projectId}/repository`, {
           data: {
