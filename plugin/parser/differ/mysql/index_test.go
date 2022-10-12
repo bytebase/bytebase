@@ -467,13 +467,21 @@ func TestKeyPart(t *testing.T) {
 	}
 }
 
-func TestPrimaryKey(t *testing.T) {
+func TestIndex(t *testing.T) {
 	tests := []struct {
 		old  string
 		new  string
 		want string
-	}{}
-
+	}{
+		// ADD COLUMN -> DROP PRIMARY KEY -> ADD PRIMARY KEY
+		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50), CONSTRAINT PRIMARY KEY(id, name));`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, address));`,
+			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
+				"ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `address`);\n",
+		},
+	}
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
