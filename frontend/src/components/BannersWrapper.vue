@@ -29,7 +29,7 @@ import {
   useDebugStore,
   useSubscriptionStore,
 } from "@/store/modules";
-import { isDBAOrOwner } from "@/utils";
+import { isDBAOrOwner, isDev } from "@/utils";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
@@ -71,6 +71,6 @@ const shouldShowReadonlyBanner = computed(() => {
 });
 
 const shouldShowExternalUrlBanner = computed(() => {
-  return needConfigureExternalUrl.value;
+  return !isDev && needConfigureExternalUrl.value;
 });
 </script>
