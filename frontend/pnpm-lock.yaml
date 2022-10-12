@@ -5,6 +5,7 @@ specifiers:
   '@codingame/monaco-vscode-api': 1.69.11
   '@iconify/json': 2.1.116
   '@intlify/vite-plugin-vue-i18n': 6.0.3
+  '@joe-re/sql-parser': ^1.2.1
   '@markdoc/markdoc': 0.1.7
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 3.1.0
@@ -92,6 +93,7 @@ specifiers:
 dependencies:
   '@bytebase/vue-kbar': 0.1.8_vue@3.2.40
   '@codingame/monaco-vscode-api': 1.69.11_2dqbcwnoiqa4sunjfnse34uode
+  '@joe-re/sql-parser': 1.2.1
   '@markdoc/markdoc': 0.1.7
   '@soerenmartius/vue3-clipboard': 0.1.2
   '@tanstack/table-core': 8.5.15
@@ -481,6 +483,11 @@ packages:
     dependencies:
       '@intlify/core-base': 9.2.2
       '@intlify/shared': 9.2.2
+
+  /@joe-re/sql-parser/1.2.1:
+    resolution: {integrity: sha512-rOKu7geeeKGkbs9bbN5EQpAXfsbHevDQ6gqa8OpLGUVX8eM21oOIfneH/Arge7PFRYD9OLRKaeUwZSH3rthDyA==}
+    engines: {node: '>=0.8.0'}
+    dev: false
 
   /@juggle/resize-observer/3.4.0:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
