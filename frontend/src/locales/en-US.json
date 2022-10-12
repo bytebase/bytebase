@@ -929,7 +929,7 @@
     "sheet-path-template-description": "Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.",
     "sql-review-ci": "SQL Review CI",
     "sql-review-ci-enable": "Enable SQL Review CI",
-    "sql-review-ci-description": "Bytebase will auto create an pull request for your repository to setup the SQL review CI. Once CI setup, we can take the SQL review in every pull request for changed SQL files.",
+    "sql-review-ci-description": "Bytebase will create a pull request for your repository to set up the SQL review CI. Once CI setup, we will take SQL reviews in every pull request for changed SQL files.",
     "sql-review-ci-setup": "Setup SQL Review CI",
     "sql-review-ci-setup-pr": "Review the pull request",
     "sql-review-ci-setup-modal": "We have created a pull request for your repository to set up the SQL review CI. Please review and merge the pull request.",
