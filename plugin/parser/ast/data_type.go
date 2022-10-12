@@ -9,6 +9,7 @@ var (
 type DataType interface {
 	Node
 
+	EqualTypeName(string) bool
 	dataTypeInterface()
 }
 
@@ -17,6 +18,10 @@ type dataType struct {
 }
 
 func (*dataType) dataTypeInterface() {}
+
+func (*dataType) EqualTypeName(_ string) bool {
+	return false
+}
 
 // NumericType is the interface for numeric type.
 type NumericType interface {
