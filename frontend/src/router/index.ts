@@ -530,10 +530,9 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const projectId = idFromSlug(slug);
-                const project = useProjectStore().getProjectById(projectId);
-
-                const isDefaultProject = projectId === DEFAULT_PROJECT_ID;
+                const project = useProjectStore().getProjectById(
+                  idFromSlug(slug)
+                );
 
                 if (project.rowStatus == "NORMAL") {
                   const actionList: string[] = [];
@@ -567,7 +566,7 @@ const routes: Array<RouteRecordRaw> = [
                             true;
                     }
                   }
-                  if (isDefaultProject) {
+                  if (project.id === DEFAULT_PROJECT_ID) {
                     allowAlterSchemaOrChangeData = false;
                   }
                   if (allowAlterSchemaOrChangeData) {
