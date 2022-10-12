@@ -45,7 +45,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
-	var diff []ast.Node
+
+	var newNodeList []ast.Node
+	var inplaceUpdate []ast.Node
+	var dropNodeList [][]ast.Node
+
 	oldTableMap := buildTableMap(oldNodes)
 
 	for _, node := range newNodes {
@@ -56,11 +60,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
-				diff = append(diff, &stmt)
+				newNodeList = append(newNodeList, &stmt)
 				continue
 			}
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
-				diff = append(diff, alterTableOptionStmt)
+				inplaceUpdate = append(inplaceUpdate, alterTableOptionStmt)
 			}
 			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
@@ -106,7 +110,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				}
 			}
 			if len(alterTableAddColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -114,7 +118,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 			if len(alterTableModifyColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				inplaceUpdate = append(inplaceUpdate, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -130,7 +134,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableAddConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -139,28 +143,64 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableDropConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
+				dropNodeList = append(dropNodeList, []ast.Node{
+					&ast.AlterTableStmt{
+						Table: &ast.TableName{
+							Name: model.NewCIStr(tableName),
+						},
+						Specs: alterTableAddConstraintSpecs,
 					},
-					Specs: alterTableAddConstraintSpecs,
 				})
 			}
 		default:
 		}
 	}
 
-	return deparse(diff, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(nodes []ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
-	for _, node := range nodes {
+	// We should following the right order to avoid break the dependency:
+	// Additions for new nodes.
+	// Updates for in-place node updates.
+	// Deletions for destructive (none in-place) node updates (in reverse order).
+	// Additions for destructive node updates.
+	// Deletions for deleted nodes (in reverse order).
+	for _, node := range newNodeList {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {
 			return "", err
+		}
+	}
+
+	for _, node := range inplaceUpdate {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+
+	var reDropNodes [][]ast.Node
+	for i := len(dropNodeList) - 1; i >= 0; i-- {
+		var nodes []ast.Node
+		for j := len(dropNodeList[i]) - 1; j >= 0; j-- {
+			nodes = append(nodes, dropNodeList[i][j])
+		}
+		reDropNodes = append(reDropNodes, nodes)
+	}
+	for _, nodes := range reDropNodes {
+		for _, node := range nodes {
+			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+				return "", err
+			}
+			if _, err := buf.Write([]byte(";\n")); err != nil {
+				return "", err
+			}
 		}
 	}
 	return buf.String(), nil
