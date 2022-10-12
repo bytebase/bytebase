@@ -100,9 +100,15 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropNotNull)
 				case pgquery.AlterTableType_AT_AlterColumnType:
+					column, ok := alterCmd.Def.Node.(*pgquery.Node_ColumnDef)
+					if !ok {
+						return nil, parser.NewConvertErrorf("expected ColumnDef but found %t", alterCmd.Def.Node)
+					}
+					tp, _ := convertDataType(column.ColumnDef.TypeName)
 					alterColumType := &ast.AlterColumnTypeStmt{
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
+						Type:       tp,
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
