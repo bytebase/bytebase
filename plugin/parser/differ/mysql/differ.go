@@ -161,7 +161,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	return deparse(newNodeList, inplaceUpdate, nonInplaceDrop, nonInplaceAdd, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.Node, nonInplaceAdd []ast.Node, drop [][]ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.Node, nonInplaceAdd []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -169,7 +169,7 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 	// Deletions for destructive (none in-place) node updates (in reverse order).
 	// Additions for destructive node updates.
 	// Deletions for deleted nodes (in reverse order).
-	for _, node := range add {
+	for _, node := range newNodeList {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
@@ -216,10 +216,10 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 	}
 
 	var reDropNodes [][]ast.Node
-	for i := len(drop) - 1; i >= 0; i-- {
+	for i := len(dropNodeList) - 1; i >= 0; i-- {
 		var nodes []ast.Node
-		for j := len(drop[i]) - 1; j >= 0; j-- {
-			nodes = append(nodes, drop[i][j])
+		for j := len(dropNodeList[i]) - 1; j >= 0; j-- {
+			nodes = append(nodes, dropNodeList[i][j])
 		}
 		reDropNodes = append(reDropNodes, nodes)
 	}
