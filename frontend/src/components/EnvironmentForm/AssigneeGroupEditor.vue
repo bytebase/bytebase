@@ -113,6 +113,9 @@ watch(
     if (value === "MANUAL_APPROVAL_NEVER") {
       // Empty the array since it's meaningless when MANUAL_APPROVAL_NEVER
       emit("update", []);
+    } else if (value === "MANUAL_APPROVAL_ALWAYS") {
+      // Sync the local state to the payload
+      emit("update", getAssigneeGroupListByValue(state.assigneeGroup));
     }
   },
   { immediate: true }
