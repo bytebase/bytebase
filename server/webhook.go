@@ -31,6 +31,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
+// nolint:unused
 type vcsSQLReviewResult struct {
 	Status  advisor.Status `json:"status"`
 	Content []string       `json:"content"`
