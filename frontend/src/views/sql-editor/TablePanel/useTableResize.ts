@@ -104,7 +104,13 @@ const useTableResize = (options: TableResizeOptions) => {
           const stretchedWidth = getElementWidth(th);
           const finalWidth = normalizeWidth(stretchedWidth);
 
-          state.columns[index].width = finalWidth;
+          const column = state.columns[index];
+          if (column) {
+            // Sometimes the `columns` is out-of-sync with the `indexList`
+            // so we need to detect and suppress errors here.
+            // Only occurs in dev hot reload mode.
+            column.width = finalWidth;
+          }
 
           return finalWidth;
         });
