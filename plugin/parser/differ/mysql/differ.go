@@ -46,6 +46,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
+	if err := validateStmtNodes(newNodes); err != nil {
+		return "", errors.Wrapf(err, "failed to validate the statement %q", newStmt)
+	}
+
 	var newNodeList []ast.Node
 	var inplaceUpdate []ast.Node
 	var dropNodeList [][]ast.Node
@@ -83,7 +87,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 					continue
 				}
-				// We need to compare the two column definitions.
+				// Compare the two column definitions.
 				if !isColumnEqual(oldColumnDef, columnDef) {
 					alterTableModifyColumnSpecs = append(alterTableModifyColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableModifyColumn,
@@ -92,14 +96,25 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 				}
 			}
+			// Compare the create definitions
 			for _, constraint := range newStmt.Constraints {
-				if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
-					constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
-					constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
+				switch constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
 					indexName := getIndexName(constraint)
 					if oldConstraint, ok := indexMap[indexName]; ok {
 						if isIndexEqual(constraint, oldConstraint) {
 							delete(indexMap, indexName)
+							continue
+						}
+					}
+					alterTableAddConstraintSpecs = append(alterTableAddConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddConstraint,
+						Constraint: constraint,
+					})
+				case ast.ConstraintPrimaryKey:
+					if oldConstraint, ok := indexMap["PRIMARY"]; ok {
+						if isIndexEqual(constraint, oldConstraint) {
+							delete(indexMap, "PRIMARY")
 							continue
 						}
 					}
@@ -127,6 +142,12 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 			// We should drop the remaining indices in the indexMap.
 			for indexName := range indexMap {
+				if indexName == "PRIMARY" {
+					alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
+						Tp: ast.AlterTableDropPrimaryKey,
+					})
+					continue
+				}
 				alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
 					Tp:   ast.AlterTableDropIndex,
 					Name: indexName,
@@ -157,6 +178,27 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 
 	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+}
+
+// We're not supporting all the MySQL statements for now.
+// validateStmtNodes validates the stmt nodes, return nil if they are valid.
+func validateStmtNodes(nodes []ast.StmtNode) error {
+	// TODO(zp): validate more statements.
+	for _, node := range nodes {
+		switch stmt := node.(type) {
+		case *ast.CreateTableStmt:
+			for _, columnDef := range stmt.Cols {
+				for _, option := range columnDef.Options {
+					if option.Tp == ast.ColumnOptionPrimaryKey {
+						return errors.New("unsupported column inline PK in CREATE TABLE statement likes `CREATE TABLE tbl(id INT PARIMARY KEY);`")
+					}
+				}
+			}
+		default:
+			return errors.Errorf("unsupported statement: %T", node)
+		}
+	}
+	return nil
 }
 
 func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
@@ -247,6 +289,13 @@ func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
 			constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
 			indexName := getIndexName(constraint)
 			indexMap[indexName] = constraint
+		}
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			// A table can have only one PRIMARY KEY.
+			// The name of a PRIMARY KEY is always PRIMARY, which thus cannot be used as the name for any other kind of index.
+			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+			// https://dev.mysql.com/doc/refman/5.7/en/create-table.html
+			indexMap["PRIMARY"] = constraint
 		}
 	}
 	return indexMap
