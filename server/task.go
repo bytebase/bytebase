@@ -663,11 +663,17 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		cancel, ok := s.TaskScheduler.runningExecutorsCancel[task.ID]
 		s.TaskScheduler.runningExecutorsMutex.Unlock()
 		if !ok {
-			return nil, errors.New("Failed to cancel task")
+			return nil, errors.New("failed to cancel task")
 		}
 		cancel()
-		result := "Task cancellation requested."
-		taskStatusPatch.Result = &result
+		result, err := json.Marshal(api.TaskRunResultPayload{
+			Detail: "Task cancellation requested.",
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed")
+		}
+		resultStr := string(result)
+		taskStatusPatch.Result = &resultStr
 	}
 
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
