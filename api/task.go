@@ -36,6 +36,8 @@ const (
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
+	// TaskDatabaseSchemaUpdateSDL is the task type for updating database schemas via state-based migration.
+	TaskDatabaseSchemaUpdateSDL TaskType = "bb.task.database.schema.update-sdl"
 	// TaskDatabaseSchemaUpdateGhostSync is the task type for gh-ost syncing ghost table.
 	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
 	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.

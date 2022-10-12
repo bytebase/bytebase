@@ -159,7 +159,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID: %d", issue.ProjectID)).SetInternal(err)
 			}
-			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
+			if project.TenantMode == api.TenantModeTenant && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL) {
 				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
 			}
 		}
@@ -285,6 +285,27 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			payloadStr := string(bytes)
 			taskPatch.Payload = &payloadStr
+		case api.TaskDatabaseSchemaUpdateSDL:
+			payload := &api.TaskDatabaseSchemaUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
+			}
+			oldStatement = payload.Statement
+			payload.Statement = *taskPatch.Statement
+			// 1. For VCS workflows, patchTask only happens when we modify the same file.
+			// 	  In that case, we want to use the same schema version parsed from the file name.
+			//    The task executor will force retry using the new SQL statement.
+			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
+			//    get migration history version conflict if the previous task has been attempted.
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+			}
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+			}
+			payloadStr := string(bytes)
+			taskPatch.Payload = &payloadStr
 		case api.TaskDatabaseDataUpdate:
 			payload := &api.TaskDatabaseDataUpdatePayload{}
 			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -347,7 +368,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	}
 
 	// create an activity and trigger task check for statement update
-	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		if oldStatement != newStatement {
 			if issue == nil {
 				err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
@@ -529,9 +550,9 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 			break
 		}
 	}
-	if groupValue == nil {
+	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
 		// no value is set, fallback to default.
-		// the assignee group is the workspace owner and DBA.
+		// the assignee group is the workspace owner or DBA.
 		principal, err := s.store.GetPrincipalByID(ctx, principalID)
 		if err != nil {
 			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
@@ -728,7 +749,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	}
 
 	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
-	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
+	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
@@ -835,7 +856,7 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 			break
 		}
 	}
-	if groupValue == nil {
+	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
 		member, err := s.getAnyWorkspaceOwnerOrDBA(ctx)
 		if err != nil {
 			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")

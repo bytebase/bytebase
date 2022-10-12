@@ -839,6 +839,8 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 	switch d.MigrationType {
 	case db.Migrate:
 		taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)
+	case db.MigrateSDL:
+		taskName = fmt.Sprintf("SDL for %q", database.Name)
 	case db.Data:
 		taskName = fmt.Sprintf("DML(data) for %q", database.Name)
 	}
@@ -861,6 +863,8 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 	taskType := api.TaskDatabaseSchemaUpdate
 	if d.MigrationType == db.Data {
 		taskType = api.TaskDatabaseDataUpdate
+	} else if d.MigrationType == db.MigrateSDL {
+		taskType = api.TaskDatabaseSchemaUpdateSDL
 	}
 	return &api.TaskCreate{
 		Name:              taskName,
