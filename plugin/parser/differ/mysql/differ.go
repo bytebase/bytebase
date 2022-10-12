@@ -46,11 +46,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
-	var add []ast.Node
+	var newNodeList []ast.Node
 	var inplaceUpdate []ast.Node
 	var nonInplaceDrop [][]ast.Node
 	var nonInplaceAdd []ast.Node
-	var drop [][]ast.Node
+	var dropNodeList [][]ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
 
@@ -62,7 +62,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
-				add = append(add, &stmt)
+				newNodeList = append(newNodeList, &stmt)
 				continue
 			}
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
@@ -112,7 +112,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				}
 			}
 			if len(alterTableAddColumnSpecs) > 0 {
-				add = append(add, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -136,7 +136,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableAddConstraintSpecs) > 0 {
-				add = append(add, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -145,7 +145,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableDropConstraintSpecs) > 0 {
-				drop = append(drop, []ast.Node{
+				dropNodeList = append(dropNodeList, []ast.Node{
 					&ast.AlterTableStmt{
 						Table: &ast.TableName{
 							Name: model.NewCIStr(tableName),
@@ -158,7 +158,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		}
 	}
 
-	return deparse(add, inplaceUpdate, nonInplaceDrop, nonInplaceAdd, drop, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(newNodeList, inplaceUpdate, nonInplaceDrop, nonInplaceAdd, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
 func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.Node, nonInplaceAdd []ast.Node, drop [][]ast.Node, flag format.RestoreFlags) (string, error) {
