@@ -48,8 +48,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 	var newNodeList []ast.Node
 	var inplaceUpdate []ast.Node
-	var nonInplaceDrop [][]ast.Node
-	var nonInplaceAdd []ast.Node
 	var dropNodeList [][]ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
@@ -158,10 +156,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		}
 	}
 
-	return deparse(newNodeList, inplaceUpdate, nonInplaceDrop, nonInplaceAdd, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.Node, nonInplaceAdd []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -179,34 +177,6 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop []
 	}
 
 	for _, node := range inplaceUpdate {
-		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
-		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
-		}
-	}
-
-	var reNonInplaceDropNodes [][]ast.Node
-	for i := len(nonInplaceDrop) - 1; i >= 0; i-- {
-		var nodes []ast.Node
-		for j := len(nonInplaceDrop[i]) - 1; j >= 0; j-- {
-			nodes = append(nodes, nonInplaceDrop[i][j])
-		}
-		reNonInplaceDropNodes = append(reNonInplaceDropNodes, nodes)
-	}
-	for _, nodes := range reNonInplaceDropNodes {
-		for _, node := range nodes {
-			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	for _, node := range nonInplaceAdd {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
