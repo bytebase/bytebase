@@ -36,6 +36,8 @@ const (
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
+	// TaskDatabaseSchemaUpdateSDL is the task type for updating database schemas via state-based migration.
+	TaskDatabaseSchemaUpdateSDL TaskType = "bb.task.database.schema.update-sdl"
 	// TaskDatabaseSchemaUpdateGhostSync is the task type for gh-ost syncing ghost table.
 	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
 	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.
@@ -91,6 +93,15 @@ type TaskDatabaseCreatePayload struct {
 	Collation     string `json:"collation,omitempty"`
 	Labels        string `json:"labels,omitempty"`
 	SchemaVersion string `json:"schemaVersion,omitempty"`
+}
+
+// TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update via state-based migration.
+type TaskDatabaseSchemaUpdateSDLPayload struct {
+	MigrationType db.MigrationType `json:"migrationType,omitempty"`
+	// Statement is the SDL i.e. the full state of the database schema.
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
