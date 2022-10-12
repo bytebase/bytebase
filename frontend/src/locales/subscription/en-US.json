@@ -87,7 +87,10 @@
         "vsc-workflow": "VCS workflow #GitOps",
         "shareable-query-link": "Shareable query link",
         "im-integration": "IM integration",
-        "inbox-notification": "Inbox notification"
+        "inbox-notification": "Inbox notification",
+        "vsc-workflow-basic": "Basic",
+        "vsc-workflow-advanced": "Advanced",
+        "vsc-workflow-advanced-tooltip": "Basic + SQL Review CI"
       }
     },
     "admin-and-security": {
