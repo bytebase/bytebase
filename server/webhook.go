@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -24,8 +23,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/differ"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -58,10 +55,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
-		filter := func(token string) (bool, error) {
-			return c.Request().Header.Get("X-Gitlab-Token") == token, nil
+		filter := func(repo *api.Repository) (bool, error) {
+			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
+				return false, nil
+			}
+
+			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -107,14 +108,18 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := pushEvent.Repository.FullName
 
-		filter := func(token string) (bool, error) {
-			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), token, body)
+		filter := func(repo *api.Repository) (bool, error) {
+			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
 			}
-			return ok, nil
+			if !ok {
+				return false, nil
+			}
+
+			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -133,9 +138,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 }
 
-type repositoryFilter func(string) (bool, error)
+type repositoryFilter func(*api.Repository) (bool, error)
 
-func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
+func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
@@ -144,17 +149,8 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
 	}
 
-	branch, err := parseBranchNameFromRefs(pushEventRef)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
-	}
-
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
-		if repo.BranchFilter != branch {
-			log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
-			continue
-		}
 		if repo.VCS == nil {
 			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 			continue
@@ -164,7 +160,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			continue
 		}
 
-		ok, err := filter(repo.WebhookSecretToken)
+		ok, err := filter(repo)
 		if err != nil {
 			return nil, err
 		}
@@ -176,6 +172,19 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		filteredRepos = append(filteredRepos, repo)
 	}
 	return filteredRepos, nil
+}
+
+func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+	branch, err := parseBranchNameFromRefs(pushEventRef)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
+	}
+	if branch != branchFilter {
+		log.Debug("Skipping repo due to branch filter mismatch", zap.String("branch", branch), zap.String("filter", branchFilter))
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
@@ -530,7 +539,7 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the `envName` is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenantMode api.ProjectTenantMode, dbName, envName string) ([]*api.Database, error) {
+func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*api.Database, error) {
 	// Retrieve the current schema from the database
 	foundDatabases, err := s.store.FindDatabase(ctx,
 		&api.DatabaseFind{
@@ -542,15 +551,6 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 		return nil, errors.Wrap(err, "find database")
 	} else if len(foundDatabases) == 0 {
 		return nil, errors.Errorf("project %d does not have database %q", projectID, dbName)
-	}
-
-	// Tenant mode does not allow filtering databases by environment and expect
-	// multiple databases with the same name.
-	if tenantMode == api.TenantModeTenant {
-		if envName != "" {
-			return nil, errors.Errorf("non-empty environment is not allowed for tenant mode project")
-		}
-		return foundDatabases, nil
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -658,52 +658,42 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return nil, nil
 	}
 
-	statement, err := s.readFileContent(ctx, pushEvent, repo, file)
+	sdl, err := s.readFileContent(ctx, pushEvent, repo, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
-	activityCreateList := []*api.ActivityCreate{}
-	envName := schemaInfo.Environment
 	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				// TODO(d): make it to SDL migration.
-				MigrationType: db.Migrate,
+				MigrationType: db.MigrateSDL,
 				DatabaseName:  dbName,
-				Statement:     statement,
+				Statement:     sdl,
 			},
 		)
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+	envName := schemaInfo.Environment
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, envName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	for _, database := range databases {
-		diff, err := s.computeDatabaseSchemaDiff(ctx, database, statement)
-		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
-			activityCreateList = append(activityCreateList, activityCreate)
-			continue
-		}
-
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				// TODO(d): make it to SDL migration.
-				MigrationType: db.Migrate,
+				MigrationType: db.MigrateSDL,
 				DatabaseID:    database.ID,
-				Statement:     diff,
+				Statement:     sdl,
 			},
 		)
 	}
 
-	return migrationDetailList, activityCreateList
+	return migrationDetailList, nil
 }
 
 // prepareIssueFromFile returns a list of update schema details derived
@@ -734,7 +724,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, migrationInfo.Database, migrationInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -803,41 +793,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 	return nil
 }
 
-// computeDatabaseSchemaDiff computes the diff between current database schema
-// and the given schema. It returns an empty string if there is no applicable
-// diff.
-func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Database, newSchemaStr string) (string, error) {
-	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
-	if err != nil {
-		return "", errors.Wrap(err, "get admin driver")
-	}
-	defer func() {
-		_ = driver.Close(ctx)
-	}()
-
-	var schema bytes.Buffer
-	_, err = driver.Dump(ctx, database.Name, &schema, true /* schemaOnly */)
-	if err != nil {
-		return "", errors.Wrap(err, "dump old schema")
-	}
-
-	var engine parser.EngineType
-	switch database.Instance.Engine {
-	case db.Postgres:
-		engine = parser.Postgres
-	case db.MySQL:
-		engine = parser.MySQL
-	default:
-		return "", errors.Errorf("unsupported database engine %q", database.Instance.Engine)
-	}
-
-	diff, err := differ.SchemaDiff(engine, schema.String(), newSchemaStr)
-	if err != nil {
-		return "", errors.New("compute schema diff")
-	}
-	return diff, nil
-}
-
 // convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
 // GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
 // junit XML format: https://llg.cubic.org/docs/junit/
@@ -871,8 +826,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf(`Error: %s
-You can check the docs at %s#%d`,
+			content := fmt.Sprintf("Error: %s.\nYou can check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,

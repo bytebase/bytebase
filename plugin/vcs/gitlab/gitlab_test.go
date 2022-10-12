@@ -999,7 +999,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
     "head_sha": "2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f",
     "start_sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00"
   },
-  "diverged_commits_count": 2,
+  "diverged_commits_count": 2
 }
 `)),
 						}, nil
@@ -1010,7 +1010,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.CreatePullRequest(ctx, common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
+	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
 		Title:                 "test1",
 		Body:                  "fixed login page css paddings",
 		Head:                  "test1",
@@ -1018,6 +1018,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 		RemoveHeadAfterMerged: true,
 	})
 	require.NoError(t, err)
+	assert.Equal(t, "http://gitlab.example.com/my-group/my-project/merge_requests/1", res.URL)
 }
 
 func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
@@ -1087,4 +1088,71 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
 	ctx := context.Background()
 	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, "", "1", "1", "new value")
 	require.NoError(t, err)
+}
+
+func TestProvider_ListPullRequestFile(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/merge_requests/1/changes", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "id": 21,
+  "iid": 1,
+  "project_id": 4,
+  "title": "Blanditiis beatae suscipit hic assumenda et molestias nisi asperiores repellat et.",
+  "state": "reopened",
+  "created_at": "2015-02-02T19:49:39.159Z",
+  "updated_at": "2015-02-02T20:08:49.959Z",
+  "target_branch": "secret_token",
+  "source_branch": "version-1-9",
+  "source_project_id": 4,
+  "target_project_id": 4,
+  "labels": [ ],
+  "description": "Qui voluptatibus placeat ipsa alias quasi. Deleniti rem ut sint. Optio velit qui distinctio.",
+  "draft": false,
+  "work_in_progress": false,
+  "merge_when_pipeline_succeeds": true,
+  "merge_status": "can_be_merged",
+  "subscribed" : true,
+  "sha": "8888888888888888888888888888888888888888",
+  "merge_commit_sha": null,
+  "squash_commit_sha": null,
+  "changes": [
+    {
+    "old_path": "VERSION",
+    "new_path": "VERSION",
+    "a_mode": "100644",
+    "b_mode": "100644",
+    "new_file": false,
+    "renamed_file": false,
+    "deleted_file": false
+    }
+  ],
+  "overflow": false
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+	ctx := context.Background()
+	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, "", "1", "1")
+	require.NoError(t, err)
+
+	want := []*vcs.PullRequestFile{
+		{
+			Path:         "VERSION",
+			LastCommitID: "8888888888888888888888888888888888888888",
+			IsDeleted:    false,
+		},
+	}
+	assert.Equal(t, want, got)
 }

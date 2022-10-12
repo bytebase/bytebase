@@ -3,13 +3,16 @@ import type {
   CompletionItem,
   CompletionParams,
 } from "vscode-languageserver/browser";
-import { SQLDialect, Schema } from "@sql-lsp/types";
+import type { SQLDialect, Schema } from "@sql-lsp/types";
 import {
   createColumnCandidates,
   createDatabaseCandidates,
   createKeywordCandidates,
   createTableCandidates,
 } from "./candidates";
+import { getFromClauses } from "./utils";
+import { simpleTokenize } from "./tokenizer";
+import { AliasMapping } from "./alias";
 
 export const complete = (
   params: CompletionParams,
@@ -17,15 +20,18 @@ export const complete = (
   schema: Schema,
   dialect: SQLDialect
 ): CompletionItem[] => {
-  // const sql = document.getText(); // not used yet
+  const sql = document.getText();
   const textBeforeCursor = document.getText({
     start: { line: 0, character: 0 },
     end: params.position,
   });
 
-  const tokens = textBeforeCursor.trim().split(/\s+/);
+  const tokens = simpleTokenize(textBeforeCursor);
   const lastToken = tokens[tokens.length - 1].toLowerCase();
   const tableList = schema.databases.flatMap((db) => db.tables);
+
+  const { fromTables } = getFromClauses(sql);
+  const aliasMapping = new AliasMapping(tableList, fromTables, dialect);
 
   let suggestions: CompletionItem[] = [];
 
@@ -43,6 +49,15 @@ export const complete = (
         false //  // without database prefix since it's already inputted
       );
       suggestions.push(...tableListOfDatabase);
+    };
+
+    const provideColumnAutoCompletionByAlias = (alias: string) => {
+      const tables = aliasMapping.getTablesByAlias(alias);
+      // provide auto completion items for table columns with table alias
+      for (const table of tables) {
+        const columnListOfTable = createColumnCandidates(table, false);
+        suggestions.push(...columnListOfTable);
+      }
     };
 
     const provideColumnAutoCompletion = (
@@ -64,6 +79,11 @@ export const complete = (
 
     if (tokenListBeforeDot.length === 1) {
       // if the input is "x." x might be a
+
+      // - "{alias}." (mysql/postgresql)
+      const maybeAlias = tokenListBeforeDot[0];
+      provideColumnAutoCompletionByAlias(maybeAlias);
+
       // - "{database_name}." (mysql)
       if (dialect === "mysql") {
         const maybeDatabaseName = tokenListBeforeDot[0];
@@ -79,8 +99,7 @@ export const complete = (
         // since "public" schema can be omitted by default
         provideColumnAutoCompletion(`public.${maybeTableName}`);
       }
-      // "{schema_name}." (postgresql) - will implement next time
-      // - alias (cannot recognize yet)
+      // TODO: "{schema_name}." (postgresql)
     }
 
     if (tokenListBeforeDot.length === 2) {
@@ -95,7 +114,7 @@ export const complete = (
         const maybeTableNameWithSchema = tokenListBeforeDot.join(".");
         provideColumnAutoCompletion(maybeTableNameWithSchema);
       }
-      // "{database_name}.{schema_name}." (postgresql) - will implement next time
+      // TODO: "{database_name}.{schema_name}." (postgresql)
     }
 
     if (dialect === "postgresql" && tokenListBeforeDot.length === 3) {
@@ -112,6 +131,8 @@ export const complete = (
     // We didn't walk the AST, so still we don't know which type of
     // clause we are in. So we provide some naive suggestions.
 
+    const suggestionsForAliases = aliasMapping.createAllAliasCandidates();
+
     // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
     const suggestionsForDatabase =
       dialect === "mysql" ? createDatabaseCandidates(schema.databases) : [];
@@ -122,6 +143,7 @@ export const complete = (
     const suggestionsForKeyword = createKeywordCandidates();
 
     suggestions = [
+      ...suggestionsForAliases,
       ...suggestionsForKeyword,
       ...suggestionsForTable,
       ...suggestionsForDatabase,

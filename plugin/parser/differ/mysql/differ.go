@@ -50,11 +50,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to validate the statement %q", newStmt)
 	}
 
-	var add []ast.Node
+	var newNodeList []ast.Node
 	var inplaceUpdate []ast.Node
-	var nonInplaceDrop [][]ast.Node
-	var nonInplaceAdd []ast.Node
-	var drop [][]ast.Node
+	var dropNodeList [][]ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
 
@@ -66,7 +64,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
-				add = append(add, &stmt)
+				newNodeList = append(newNodeList, &stmt)
 				continue
 			}
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
@@ -127,7 +125,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				}
 			}
 			if len(alterTableAddColumnSpecs) > 0 {
-				add = append(add, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -157,7 +155,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableAddConstraintSpecs) > 0 {
-				add = append(add, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -166,7 +164,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableDropConstraintSpecs) > 0 {
-				drop = append(drop, []ast.Node{
+				dropNodeList = append(dropNodeList, []ast.Node{
 					&ast.AlterTableStmt{
 						Table: &ast.TableName{
 							Name: model.NewCIStr(tableName),
@@ -179,7 +177,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		}
 	}
 
-	return deparse(add, inplaceUpdate, nonInplaceDrop, nonInplaceAdd, drop, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
 // We're not support all the MySQL statements for now.
@@ -203,7 +201,7 @@ func validateStmtNodes(nodes []ast.StmtNode) error {
 	return nil
 }
 
-func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.Node, nonInplaceAdd []ast.Node, drop [][]ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -211,7 +209,7 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 	// Deletions for destructive (none in-place) node updates (in reverse order).
 	// Additions for destructive node updates.
 	// Deletions for deleted nodes (in reverse order).
-	for _, node := range add {
+	for _, node := range newNodeList {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
@@ -219,6 +217,7 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 			return "", err
 		}
 	}
+
 	for _, node := range inplaceUpdate {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
@@ -227,26 +226,15 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 			return "", err
 		}
 	}
-	reNonInplaceDropNodes := reverse2D(nonInplaceDrop)
-	for _, nodes := range reNonInplaceDropNodes {
-		for _, node := range nodes {
-			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
+
+	var reDropNodes [][]ast.Node
+	for i := len(dropNodeList) - 1; i >= 0; i-- {
+		var nodes []ast.Node
+		for j := len(dropNodeList[i]) - 1; j >= 0; j-- {
+			nodes = append(nodes, dropNodeList[i][j])
 		}
+		reDropNodes = append(reDropNodes, nodes)
 	}
-	for _, node := range nonInplaceAdd {
-		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
-		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
-		}
-	}
-	reDropNodes := reverse2D(drop)
 	for _, nodes := range reDropNodes {
 		for _, node := range nodes {
 			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
