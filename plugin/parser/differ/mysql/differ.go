@@ -46,7 +46,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
-	if validateStmtNodes(newNodes) != nil {
+	if err := validateStmtNodes(newNodes); err != nil {
 		return "", errors.Wrapf(err, "failed to validate the statement %q", newStmt)
 	}
 
