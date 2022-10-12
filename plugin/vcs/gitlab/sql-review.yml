@@ -9,12 +9,16 @@ sql-review:
     - apk update && apk add curl
     - apk update && apk add jq
   script:
-    - echo "Start request $API/pull/$CI_MERGE_REQUEST_IID"
-    - 'response=$(curl -s --show-error -X GET "$API/pull/$CI_MERGE_REQUEST_IID" -H "Content-type: application/json" -H "X-SQL-Review-Token: $%s")'
+    - echo "Start request $API"
+    - request_body=$(jq -n --arg repositoryId "$CI_PROJECT_ID" --arg pullRequestId $CI_MERGE_REQUEST_IID --arg webURL "$CI_SERVER_URL" '$ARGS.named')
+    - 'response=$(curl -s --show-error -X POST "$API" -H "Content-type: application/json" -H "X-SQL-Review-Token: $%s" -d "$request_body")'
     - echo $response
     - content=$(echo $response | jq -r '.content')
+    - len=$(echo $content | jq '. | length')
+    - if [ $len == 0 ]; then exit 0; fi
+    - msg=$(echo $content | jq -r '.[0]')
+    - echo $msg >> sql-review.xml
     - status=$(echo $response | jq -r '.status')
-    - for msg in $(echo $content | jq -r '.[]'); do echo $msg >> sql-review.xml; done
     - if [ "$status" == "ERROR" ]; then exit 1; fi
   artifacts:
     when: always

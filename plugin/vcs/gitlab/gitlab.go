@@ -759,6 +759,68 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
+type gitlabMergeRequestChange struct {
+	SHA     string                   `json:"sha"`
+	Changes []gitlabMergeRequestFile `json:"changes"`
+}
+
+type gitlabMergeRequestFile struct {
+	NewPath     string `json:"new_path"`
+	NewFile     bool   `json:"new_file"`
+	RenamedFile bool   `json:"renamed_file"`
+	DeletedFile bool   `json:"deleted_file"`
+}
+
+// ListPullRequestFile lists the changed files in the pull request.
+//
+// Docs: https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/changes", p.APIURL(instanceURL), repositoryID, pullRequestID)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to list merge request file from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to list merge request file from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	pr := new(gitlabMergeRequestChange)
+	if err := json.Unmarshal([]byte(body), pr); err != nil {
+		return nil, err
+	}
+
+	var res []*vcs.PullRequestFile
+	for _, file := range pr.Changes {
+		res = append(res, &vcs.PullRequestFile{
+			Path:         file.NewPath,
+			LastCommitID: pr.SHA,
+			IsDeleted:    file.DeletedFile,
+		})
+	}
+
+	return res, nil
+}
+
 type gitlabBranch struct {
 	Name   string `json:"name"`
 	Commit Commit `json:"commit"`
