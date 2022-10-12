@@ -33,11 +33,14 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
+// vcsSQLReviewResult the is SQL review result in VCS workflow.
 type vcsSQLReviewResult struct {
 	Status  advisor.Status `json:"status"`
 	Content []string       `json:"content"`
 }
 
+// vcsSQLReviewRequest is the request from SQL review CI in VCS workflow.
+// In the VCS SQL review workflow, the CI will generate the request body then POST /hook/sql-review/:webhook_endpoint_id.
 type vcsSQLReviewRequest struct {
 	RepositoryID  string `json:"repositoryId"`
 	PullRequestID string `json:"pullRequestId"`
@@ -265,6 +268,18 @@ func (s *Server) sqlAdviceForFile(
 		zap.String("file", fileInfo.item.FileName),
 		zap.String("vcs", string(fileInfo.repository.VCS.Type)),
 	)
+
+	if fileInfo.repository.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+		return []advisor.Advice{
+			{
+				Status:  advisor.Warn,
+				Code:    advisor.Unsupported,
+				Title:   "Tenant mode is not supported",
+				Content: fmt.Sprintf("Project %s a tenant mode project. Please upgrade your subscription to support this feature.", fileInfo.repository.Project.Name),
+				Line:    1,
+			},
+		}, nil
+	}
 
 	databases, err := s.findProjectDatabases(ctx, fileInfo.repository.ProjectID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
