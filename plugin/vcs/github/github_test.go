@@ -1280,7 +1280,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
       "received_events_url": "https://api.github.com/users/octocat/received_events",
       "type": "User",
       "site_admin": false
-    },
+    }
   },
   "base": {
     "label": "octocat:master",
@@ -1305,7 +1305,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
       "received_events_url": "https://api.github.com/users/octocat/received_events",
       "type": "User",
       "site_admin": false
-    },
+    }
   },
   "author_association": "OWNER",
   "auto_merge": null,
@@ -1339,7 +1339,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 		RemoveHeadAfterMerged: true,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "https://api.github.com/repos/octocat/Hello-World/pulls/1347", res.URL)
+	assert.Equal(t, "https://github.com/octocat/Hello-World/pull/1347", res.URL)
 }
 
 func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
