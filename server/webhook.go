@@ -13,6 +13,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -22,16 +23,28 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
-// nolint:unused
+// vcsSQLReviewResult the is SQL review result in VCS workflow.
 type vcsSQLReviewResult struct {
 	Status  advisor.Status `json:"status"`
 	Content []string       `json:"content"`
+}
+
+// vcsSQLReviewRequest is the request from SQL review CI in VCS workflow.
+// In the VCS SQL review workflow, the CI will generate the request body then POST /hook/sql-review/:webhook_endpoint_id.
+type vcsSQLReviewRequest struct {
+	RepositoryID  string `json:"repositoryId"`
+	PullRequestID string `json:"pullRequestId"`
+	// WebURL is the server URL for GitOps CI.
+	// In GitHub, the URL should be "https://github.com". Docs: https://docs.github.com/en/actions/learn-github-actions/environment-variables
+	// In GitLab, the URL should be the base URL of the GitLab instance like "https://gitlab.bytebase.com". Docs: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+	WebURL string `json:"webURL"`
 }
 
 // sqlReviewDocs is the URL for SQL review doc.
@@ -136,6 +149,207 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
+
+	// id is the webhookEndpointID in repository
+	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
+	g.POST("/sql-review/:id", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
+		}
+		log.Debug("SQL review request received for VCS project",
+			zap.String("webhook_endpoint_id", c.Param("id")),
+			zap.String("request", string(body)),
+		)
+
+		var request vcsSQLReviewRequest
+		if err := json.Unmarshal(body, &request); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed SQL review request").SetInternal(err)
+		}
+
+		filter := func(repo *api.Repository) (bool, error) {
+			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(repo.WebURL, request.WebURL), nil
+		}
+		ctx := c.Request().Context()
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)
+		if err != nil {
+			return err
+		}
+		if len(repositoryList) == 0 {
+			log.Debug("Empty handle repo list. Ignore this request.")
+			return c.JSON(http.StatusOK, &vcsSQLReviewResult{
+				Status:  advisor.Success,
+				Content: []string{},
+			})
+		}
+
+		repo := repositoryList[0]
+		prFiles, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ListPullRequestFile(
+			ctx,
+			common.OauthContext{
+				ClientID:     repo.VCS.ApplicationID,
+				ClientSecret: repo.VCS.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.WebURL),
+			},
+			repo.VCS.InstanceURL,
+			request.RepositoryID,
+			request.PullRequestID,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list pull request file").SetInternal(err)
+		}
+
+		distinctFileList := []vcs.DistinctFileItem{}
+		for _, prFile := range prFiles {
+			if prFile.IsDeleted {
+				continue
+			}
+			distinctFileList = append(distinctFileList, vcs.DistinctFileItem{
+				FileName: prFile.Path,
+				Commit: vcs.Commit{
+					ID: prFile.LastCommitID,
+				},
+			})
+		}
+
+		sqlCheckAdvice := map[string][]advisor.Advice{}
+		var wg sync.WaitGroup
+
+		repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
+		for _, fileInfoListInRepo := range repoID2FileItemList {
+			for _, file := range fileInfoListInRepo {
+				wg.Add(1)
+				go func(file fileInfo) {
+					defer wg.Done()
+					adviceList, err := s.sqlAdviceForFile(ctx, file)
+					if err != nil {
+						log.Debug(
+							"Failed to take SQL review for file",
+							zap.String("file", file.item.FileName),
+							zap.String("external_id", file.repository.ExternalID),
+							zap.Error(err),
+						)
+					} else if adviceList != nil {
+						sqlCheckAdvice[file.item.FileName] = adviceList
+					}
+				}(file)
+			}
+		}
+
+		wg.Wait()
+
+		response := &vcsSQLReviewResult{}
+		switch repo.VCS.Type {
+		case vcs.GitHubCom:
+			response = convertSQLAdiceToGitHubActionResult(sqlCheckAdvice)
+		case vcs.GitLabSelfHost:
+			response = convertSQLAdviceToGitLabCIResult(sqlCheckAdvice)
+		}
+
+		log.Debug("SQL review finished",
+			zap.String("pull_request", request.PullRequestID),
+			zap.String("status", string(response.Status)),
+			zap.String("content", strings.Join(response.Content, "\n")),
+			zap.String("repository_id", request.RepositoryID),
+			zap.String("vcs", string(repo.VCS.Type)),
+		)
+
+		return c.JSON(http.StatusOK, response)
+	})
+}
+
+func (s *Server) sqlAdviceForFile(
+	ctx context.Context,
+	fileInfo fileInfo,
+) ([]advisor.Advice, error) {
+	log.Debug("Processing file",
+		zap.String("file", fileInfo.item.FileName),
+		zap.String("vcs", string(fileInfo.repository.VCS.Type)),
+	)
+
+	if fileInfo.repository.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+		return []advisor.Advice{
+			{
+				Status:  advisor.Warn,
+				Code:    advisor.Unsupported,
+				Title:   "Tenant mode is not supported",
+				Content: fmt.Sprintf("Project %s a tenant mode project. Please upgrade your subscription to support this feature.", fileInfo.repository.Project.Name),
+				Line:    1,
+			},
+		}, nil
+	}
+
+	// TODO(ed): findProjectDatabases doesn't support the tenant mode.
+	// We can use https://github.com/bytebase/bytebase/blob/main/server/issue.go#L691 to find databases in tenant mode project.
+	databases, err := s.findProjectDatabases(ctx, fileInfo.repository.ProjectID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
+	if err != nil {
+		log.Debug(
+			"Failed to list databse migration info",
+			zap.Int("project", fileInfo.repository.ProjectID),
+			zap.String("database", fileInfo.migrationInfo.Database),
+			zap.String("environment", fileInfo.migrationInfo.Environment),
+			zap.Error(err),
+		)
+		return nil, errors.Errorf("Failed to list databse with error: %v", err)
+	}
+
+	fileContent, err := vcs.Get(fileInfo.repository.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+		ctx,
+		common.OauthContext{
+			ClientID:     fileInfo.repository.VCS.ApplicationID,
+			ClientSecret: fileInfo.repository.VCS.Secret,
+			AccessToken:  fileInfo.repository.AccessToken,
+			RefreshToken: fileInfo.repository.RefreshToken,
+			Refresher:    s.refreshToken(ctx, fileInfo.repository.WebURL),
+		},
+		fileInfo.repository.VCS.InstanceURL,
+		fileInfo.repository.ExternalID,
+		fileInfo.item.FileName,
+		fileInfo.item.Commit.ID,
+	)
+	if err != nil {
+		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", fileInfo.item.FileName, err)
+	}
+
+	// There may exist many databases that match the file name.
+	// We just need to use the first one, which has the SQL review policy and can let us take the check.
+	for _, database := range databases {
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &database.Instance.EnvironmentID})
+		if err != nil {
+			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+				log.Debug("Cannot found SQL review policy in environment", zap.Int("Environment", database.Instance.EnvironmentID), zap.Error(err))
+				continue
+			}
+
+			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", database.Instance.EnvironmentID, err)
+		}
+
+		dbType, err := advisorDB.ConvertToAdvisorDBType(string(database.Instance.Engine))
+		if err != nil {
+			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", database.Instance.Engine, err)
+		}
+
+		catalog, err := s.store.NewCatalog(ctx, database.ID, database.Instance.Engine)
+		if err != nil {
+			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
+		}
+
+		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
+			DbType:    dbType,
+			Catalog:   catalog,
+		})
+		if err != nil {
+			return nil, errors.Errorf("Failed to exec the SQL check for database %v with error: %v", database.ID, err)
+		}
+
+		return adviceList, nil
+	}
+
+	return nil, nil
 }
 
 type repositoryFilter func(*api.Repository) (bool, error)
