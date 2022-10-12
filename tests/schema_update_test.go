@@ -906,7 +906,7 @@ ALTER TABLE ONLY public.users
 				{
 					Database:   databaseName,
 					Source:     db.VCS,
-					Type:       db.Migrate,
+					Type:       db.MigrateSDL,
 					Status:     db.Done,
 					Schema:     updatedSchema,
 					SchemaPrev: initialSchema,
