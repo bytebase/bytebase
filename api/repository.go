@@ -34,12 +34,17 @@ type Repository struct {
 	// If empty, then Bytebase won't auto generate it.
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	// The file path template for matching the sql files for sheet.
-	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
-	ExternalID         string `jsonapi:"attr,externalId"`
-	ExternalWebhookID  string
-	WebhookURLHost     string
-	WebhookEndpointID  string
-	WebhookSecretToken string
+	SheetPathTemplate string `jsonapi:"attr,sheetPathTemplate"`
+	// If true, we will create a pull request for repository to setup the SQL review CI.
+	EnableSQLReviewCI bool `jsonapi:"attr,enableSQLReviewCI"`
+	// SQLReviewCIPullRequestURL is the pull request URL to setup the SQL review CI.
+	// Only return this value if we need to auto-create the pull request for users.
+	SQLReviewCIPullRequestURL string `jsonapi:"attr,sqlReviewCIPullRequestURL"`
+	ExternalID                string `jsonapi:"attr,externalId"`
+	ExternalWebhookID         string
+	WebhookURLHost            string
+	WebhookEndpointID         string
+	WebhookSecretToken        string
 	// These will be exclusively used on the server side and we don't return it to the client.
 	AccessToken  string
 	ExpiresTs    int64
@@ -65,6 +70,7 @@ type RepositoryCreate struct {
 	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
+	EnableSQLReviewCI  bool   `jsonapi:"attr,enableSQLReviewCI"`
 	ExternalID         string `jsonapi:"attr,externalId"`
 	// Token belonged by the user linking the project to the VCS repository. We store this token together
 	// with the refresh token in the new repository record so we can use it to call VCS API on
@@ -115,6 +121,7 @@ type RepositoryPatch struct {
 	FilePathTemplate   *string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate *string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  *string `jsonapi:"attr,sheetPathTemplate"`
+	EnableSQLReviewCI  *bool   `jsonapi:"attr,enableSQLReviewCI"`
 	AccessToken        *string
 	ExpiresTs          *int64
 	RefreshToken       *string

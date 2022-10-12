@@ -1331,7 +1331,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.CreatePullRequest(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
+	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
 		Title:                 "Amazing new feature",
 		Body:                  "Please pull these awesome changes in!",
 		Head:                  "new-topic",
@@ -1339,6 +1339,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 		RemoveHeadAfterMerged: true,
 	})
 	require.NoError(t, err)
+	assert.Equal(t, "https://api.github.com/repos/octocat/Hello-World/pulls/1347", res.URL)
 }
 
 func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
