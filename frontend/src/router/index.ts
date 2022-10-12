@@ -530,9 +530,10 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = useProjectStore().getProjectById(
-                  idFromSlug(slug)
-                );
+                const projectId = idFromSlug(slug);
+                const project = useProjectStore().getProjectById(projectId);
+
+                const isDefaultProject = projectId === DEFAULT_PROJECT_ID;
 
                 if (project.rowStatus == "NORMAL") {
                   const actionList: string[] = [];
@@ -565,6 +566,9 @@ const routes: Array<RouteRecordRaw> = [
                           : // For TEAM plan, all members of the project are allowed
                             true;
                     }
+                  }
+                  if (isDefaultProject) {
+                    allowAlterSchemaOrChangeData = false;
                   }
                   if (allowAlterSchemaOrChangeData) {
                     actionList.push(
