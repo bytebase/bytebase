@@ -1202,8 +1202,9 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 // TODO: The same GitLab API endpoint supports using the HEAD request to only
 // get the file metadata.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
-	// Since GitLab of stale version doesn't support get large file content well, we move to use the raw api.
-	// See https://gitlab.com/gitlab-org/gitlab-pages/-/issues/315 for more details.
+	// GitLab is often deployed privately, often in conjunction with a reverse proxy service.
+	// The reverse proxy service may modify the http header, for example by changing the Content-Encoding to gzip.
+	// We may be able to avoid dealing with this by using the raw api.
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s/raw?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
 	code, header, body, err := oauth.Get(
 		ctx,
