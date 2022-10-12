@@ -932,7 +932,7 @@
     "sql-review-ci-description": "Bytebase will auto create an pull request for your repository to setup the SQL review CI. Once CI setup, we can take the SQL review in every pull request for changed SQL files.",
     "sql-review-ci-setup": "Setup SQL Review CI",
     "sql-review-ci-setup-pr": "Review the pull request",
-    "sql-review-ci-setup-modal": "We have created a pull request for your repository to set up the SQL review CI. Please go to review and merge the pull request.",
+    "sql-review-ci-setup-modal": "We have created a pull request for your repository to set up the SQL review CI. Please review and merge the pull request.",
     "sql-review-ci-remove": "Remove SQL Review CI",
     "sql-review-ci-remove-modal": "SQL Review CI is disabled. You need to remove the CI from your repository.",
     "git-provider": "Git provider",
