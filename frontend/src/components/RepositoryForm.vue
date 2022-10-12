@@ -234,7 +234,13 @@
         <FeatureBadge feature="bb.feature.vcs-sql-review" class="text-accent" />
       </div>
       <div class="mt-1 textinfolabel">
-        {{ $t("repository.sql-review-ci-description") }}
+        {{
+          $t("repository.sql-review-ci-description", {
+            pr: vcsType.startsWith("GITLAB")
+              ? $t("repository.merge-request")
+              : $t("repository.pull-request"),
+          })
+        }}
       </div>
       <div class="flex space-x-4 mt-2">
         <BBCheckbox

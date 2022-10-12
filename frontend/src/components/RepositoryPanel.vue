@@ -88,7 +88,13 @@
   >
     <div class="space-y-4 max-w-[32rem]">
       <div class="whitespace-pre-wrap">
-        {{ $t("repository.sql-review-ci-setup-modal") }}
+        {{
+          $t("repository.sql-review-ci-setup-modal", {
+            pr: repository.vcs.type.startsWith("GITLAB")
+              ? $t("repository.merge-request")
+              : $t("repository.pull-request"),
+          })
+        }}
       </div>
 
       <div class="flex justify-end pt-4 gap-x-2">
@@ -97,9 +103,35 @@
           :href="state.sqlReviewCIPullRequestURL"
           target="_blank"
         >
-          {{ $t("repository.sql-review-ci-setup-pr") }}
+          {{
+            $t("repository.sql-review-ci-setup-pr", {
+              pr: repository.vcs.type.startsWith("GITLAB")
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
+            })
+          }}
         </a>
       </div>
+    </div>
+  </BBModal>
+  <BBModal
+    v-if="state.showLoadingSQLReviewPRModal"
+    class="relative overflow-hidden"
+    :show-close="false"
+    :esc-closable="false"
+    :title="$t('repository.sql-review-ci-setup')"
+  >
+    <div
+      class="whitespace-pre-wrap max-w-[32rem] flex justify-start items-start gap-x-2"
+    >
+      <BBSpin class="mt-1" />
+      {{
+        $t("repository.sql-review-ci-loading-modal", {
+          pr: repository.vcs.type.startsWith("GITLAB")
+            ? $t("repository.merge-request")
+            : $t("repository.pull-request"),
+        })
+      }}
     </div>
   </BBModal>
   <BBModal
@@ -158,6 +190,7 @@ interface LocalState {
   schemaChangeType: SchemaChangeType;
   showFeatureModal: boolean;
   showSetupSQLReviewCIModal: boolean;
+  showLoadingSQLReviewPRModal: boolean;
   showRemoveSQLReviewCIModal: boolean;
   sqlReviewCIPullRequestURL: string;
 }
@@ -195,6 +228,7 @@ export default defineComponent({
       schemaChangeType: props.project.schemaChangeType,
       showFeatureModal: false,
       showSetupSQLReviewCIModal: false,
+      showLoadingSQLReviewPRModal: false,
       showRemoveSQLReviewCIModal: false,
       sqlReviewCIPullRequestURL: "",
     });
@@ -273,6 +307,13 @@ export default defineComponent({
         return;
       }
 
+      if (
+        !props.repository.enableSQLReviewCI &&
+        state.repositoryConfig.enableSQLReviewCI
+      ) {
+        state.showLoadingSQLReviewPRModal = true;
+      }
+
       const repositoryPatch: RepositoryPatch = {};
       if (
         props.repository.branchFilter != state.repositoryConfig.branchFilter
@@ -337,7 +378,9 @@ export default defineComponent({
       if (updatedRepository.sqlReviewCIPullRequestURL) {
         state.sqlReviewCIPullRequestURL =
           updatedRepository.sqlReviewCIPullRequestURL;
+        state.showLoadingSQLReviewPRModal = false;
         state.showSetupSQLReviewCIModal = true;
+        window.open(updatedRepository.sqlReviewCIPullRequestURL, "_blank");
       } else if (removeSQLReview) {
         state.showRemoveSQLReviewCIModal = true;
       }

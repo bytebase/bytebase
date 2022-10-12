@@ -54,7 +54,13 @@
     >
       <div class="space-y-4 max-w-[32rem]">
         <div class="whitespace-pre-wrap">
-          {{ $t("repository.sql-review-ci-setup-modal") }}
+          {{
+            $t("repository.sql-review-ci-setup-modal", {
+              pr: state.config.vcs.type.startsWith("GITLAB")
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
+            })
+          }}
         </div>
 
         <div class="flex justify-end pt-4 gap-x-2">
@@ -63,9 +69,35 @@
             :href="state.sqlReviewCIPullRequestURL"
             target="_blank"
           >
-            {{ $t("repository.sql-review-ci-setup-pr") }}
+            {{
+              $t("repository.sql-review-ci-setup-pr", {
+                pr: state.config.vcs.type.startsWith("GITLAB")
+                  ? $t("repository.merge-request")
+                  : $t("repository.pull-request"),
+              })
+            }}
           </a>
         </div>
+      </div>
+    </BBModal>
+    <BBModal
+      v-if="state.showLoadingSQLReviewPRModal"
+      class="relative overflow-hidden"
+      :show-close="false"
+      :esc-closable="false"
+      :title="$t('repository.sql-review-ci-setup')"
+    >
+      <div
+        class="whitespace-pre-wrap max-w-[32rem] flex justify-start items-start gap-x-2"
+      >
+        <BBSpin class="mt-1" />
+        {{
+          $t("repository.sql-review-ci-loading-modal", {
+            pr: state.config.vcs.type.startsWith("GITLAB")
+              ? $t("repository.merge-request")
+              : $t("repository.pull-request"),
+          })
+        }}
       </div>
     </BBModal>
     <FeatureModal
@@ -122,6 +154,7 @@ interface LocalState {
   currentStep: number;
   showFeatureModal: boolean;
   showSetupSQLReviewCIModal: boolean;
+  showLoadingSQLReviewPRModal: boolean;
   sqlReviewCIPullRequestURL: string;
 }
 
@@ -194,6 +227,7 @@ export default defineComponent({
       currentStep: CHOOSE_PROVIDER_STEP,
       showFeatureModal: false,
       showSetupSQLReviewCIModal: false,
+      showLoadingSQLReviewPRModal: false,
       sqlReviewCIPullRequestURL: "",
     });
 
@@ -217,7 +251,19 @@ export default defineComponent({
     };
 
     const tryFinishSetup = (allowFinishCallback: () => void) => {
+      if (
+        state.config.repositoryConfig.enableSQLReviewCI &&
+        !hasFeature("bb.feature.vcs-sql-review")
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
+
       const createFunc = async () => {
+        if (state.config.repositoryConfig.enableSQLReviewCI) {
+          state.showLoadingSQLReviewPRModal = true;
+        }
+
         let externalId = state.config.repositoryInfo.externalId;
         if (state.config.vcs.type == "GITHUB_COM") {
           externalId = state.config.repositoryInfo.fullPath;
@@ -255,21 +301,16 @@ export default defineComponent({
           repositoryCreate,
         });
         if (createdRepository.sqlReviewCIPullRequestURL) {
+          state.showLoadingSQLReviewPRModal = false;
           state.sqlReviewCIPullRequestURL =
             createdRepository.sqlReviewCIPullRequestURL;
           state.showSetupSQLReviewCIModal = true;
+          window.open(createdRepository.sqlReviewCIPullRequestURL, "_blank");
         }
         allowFinishCallback();
       };
 
       if (props.create) {
-        if (
-          state.config.repositoryConfig.enableSQLReviewCI &&
-          !hasFeature("bb.feature.vcs-sql-review")
-        ) {
-          state.showFeatureModal = true;
-          return;
-        }
         createFunc();
       } else {
         // It's simple to implement change behavior as delete followed by create.
