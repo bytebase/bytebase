@@ -248,22 +248,6 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]
 	return buf.String(), nil
 }
 
-func reverse2D(nodes [][]ast.Node) [][]ast.Node {
-	var newNodes [][]ast.Node
-	for i := len(nodes) - 1; i >= 0; i-- {
-		newNodes = append(newNodes, reverse(nodes[i]))
-	}
-	return newNodes
-}
-
-func reverse(nodes []ast.Node) []ast.Node {
-	var newNodes []ast.Node
-	for i := len(nodes) - 1; i >= 0; i-- {
-		newNodes = append(newNodes, nodes[i])
-	}
-	return newNodes
-}
-
 // buildTableMap returns a map of table name to create table statements.
 func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 	tableMap := make(map[string]*ast.CreateTableStmt)
