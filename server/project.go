@@ -318,10 +318,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		//	Setup SQL review CI for VCS
-		if api.FeatureFlight[api.FeatureVCSSQLReviewWorkflow] && s.feature(api.FeatureVCSSQLReviewWorkflow) {
-			if err := s.setupVCSSQLReviewCI(ctx, repository); err != nil {
+		if repository.EnableSQLReviewCI && api.FeatureFlight[api.FeatureVCSSQLReviewWorkflow] && s.feature(api.FeatureVCSSQLReviewWorkflow) {
+			pullRequest, err := s.setupVCSSQLReviewCI(ctx, repository)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
 			}
+			repository.SQLReviewCIPullRequestURL = pullRequest.URL
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -439,6 +441,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
+		}
+
+		//	Setup SQL review CI for VCS
+		if !repo.EnableSQLReviewCI && updatedRepo.EnableSQLReviewCI && api.FeatureFlight[api.FeatureVCSSQLReviewWorkflow] && s.feature(api.FeatureVCSSQLReviewWorkflow) {
+			pullRequest, err := s.setupVCSSQLReviewCI(ctx, updatedRepo)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
+			}
+			updatedRepo.SQLReviewCIPullRequestURL = pullRequest.URL
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -590,10 +601,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) error {
+func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) (*vcsPlugin.PullRequest, error) {
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).UpsertEnvironmentVariable(
@@ -610,7 +621,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		vcsPlugin.SQLReviewAPISecretName,
 		repository.WebhookSecretToken,
 	); err != nil {
-		return err
+		return nil, err
 	}
 
 	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", s.profile.ExternalURL, repository.WebhookEndpointID)
@@ -618,11 +629,11 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 	switch repository.VCS.Type {
 	case vcsPlugin.GitHubCom:
 		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch, sqlReviewEndpoint); err != nil {
-			return err
+			return nil, err
 		}
 	case vcsPlugin.GitLabSelfHost:
 		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch, sqlReviewEndpoint); err != nil {
-			return err
+			return nil, err
 		}
 	}
 

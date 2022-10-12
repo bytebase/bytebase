@@ -163,6 +163,11 @@ type PullRequestCreate struct {
 	RemoveHeadAfterMerged bool `json:"-"`
 }
 
+// PullRequest is the API message for pull request in repository.
+type PullRequest struct {
+	URL string `json:"url"`
+}
+
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
@@ -264,7 +269,7 @@ type Provider interface {
 	// pullRequestID: the pull request id
 	ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
 	// pullRequestCreate: the new pull request info
-	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) error
+	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) (*PullRequest, error)
 	// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook
