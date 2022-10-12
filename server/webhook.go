@@ -284,6 +284,8 @@ func (s *Server) sqlAdviceForFile(
 		}, nil
 	}
 
+	// TODO(ed): findProjectDatabases doesn't support the tenant mode.
+	// We can use https://github.com/bytebase/bytebase/blob/main/server/issue.go#L691 to find databases in tenant mode project.
 	databases, err := s.findProjectDatabases(ctx, fileInfo.repository.ProjectID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
 		log.Debug(
