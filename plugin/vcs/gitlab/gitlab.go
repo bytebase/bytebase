@@ -932,10 +932,14 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 	return nil
 }
 
+type gitlabMergeRequest struct {
+	WebURL string `json:"web_url"`
+}
+
 // CreatePullRequest creates the pull request in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
 	body, err := json.Marshal(
 		gitlabMergeRequestCreate{
 			Title:              pullRequestCreate.Title,
@@ -946,7 +950,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		},
 	)
 	if err != nil {
-		return errors.Wrap(err, "marshal pull request create")
+		return nil, errors.Wrap(err, "marshal pull request create")
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/merge_requests", p.APIURL(instanceURL), repositoryID)
@@ -967,20 +971,27 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		),
 	)
 	if err != nil {
-		return errors.Wrapf(err, "GET %s", url)
+		return nil, errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
+		return nil, common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
 	} else if code >= 300 {
-		return errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
+		return nil, errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			resp,
 		)
 	}
 
-	return nil
+	var res gitlabMergeRequest
+	if err := json.Unmarshal([]byte(resp), &res); err != nil {
+		return nil, err
+	}
+
+	return &vcs.PullRequest{
+		URL: res.WebURL,
+	}, nil
 }
 
 type environmentVariable struct {

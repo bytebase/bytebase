@@ -929,6 +929,8 @@ CREATE TABLE repository (
     schema_path_template TEXT NOT NULL DEFAULT '',
     -- The file path template to match the script file for sheet.
     sheet_path_template TEXT NOT NULL DEFAULT '',
+    -- If enable the SQL review CI in VCS repository.
+    enable_sql_review_ci BOOLEAN NOT NULL DEFAULT false,
     -- Repository id from the corresponding VCS provider.
     -- For GitLab, this is the project id. e.g. 123
     external_id TEXT NOT NULL,
