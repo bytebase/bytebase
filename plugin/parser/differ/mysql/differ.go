@@ -180,7 +180,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-// We're not support all the MySQL statements for now.
+// We're not supporting all the MySQL statements for now.
 // validateStmtNodes validates the stmt nodes, return nil if they are valid.
 func validateStmtNodes(nodes []ast.StmtNode) error {
 	// TODO(zp): validate more statements.
