@@ -1792,3 +1792,28 @@ func TestCommentStmt(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCreateDatabase(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "CREATE DATABASE db1 ENCODING = 'UTF8'",
+			want: []ast.Node{&ast.CreateDatabaseStmt{
+				Name: "db1",
+				OptionList: []*ast.DatabaseOptionDef{
+					{
+						Type:  ast.DatabaseOptionEncoding,
+						Value: "UTF8",
+					},
+				},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE DATABASE db1 ENCODING = 'UTF8'",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
