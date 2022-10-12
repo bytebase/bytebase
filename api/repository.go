@@ -35,10 +35,12 @@ type Repository struct {
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	// The file path template for matching the sql files for sheet.
 	SheetPathTemplate string `jsonapi:"attr,sheetPathTemplate"`
-	// If true, we will create a pull request for repository to setup the SQL review CI.
+	// Setup CI to do SQL review for all PRs.
 	EnableSQLReviewCI bool `jsonapi:"attr,enableSQLReviewCI"`
 	// SQLReviewCIPullRequestURL is the pull request URL to setup the SQL review CI.
-	// Only return this value if we need to auto-create the pull request for users.
+	// This field is used by the frontend to redirect users to the pull request.
+	// We don't need to persist it in the storage,
+	// only return this value if we need to auto-create the pull request for users.
 	SQLReviewCIPullRequestURL string `jsonapi:"attr,sqlReviewCIPullRequestURL"`
 	ExternalID                string `jsonapi:"attr,externalId"`
 	ExternalWebhookID         string
