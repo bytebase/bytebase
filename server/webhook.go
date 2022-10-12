@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -24,8 +23,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/differ"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -661,21 +658,19 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return nil, nil
 	}
 
-	statement, err := s.readFileContent(ctx, pushEvent, repo, file)
+	sdl, err := s.readFileContent(ctx, pushEvent, repo, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
-	activityCreateList := []*api.ActivityCreate{}
 	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				// TODO(d): make it to SDL migration.
-				MigrationType: db.Migrate,
+				MigrationType: db.MigrateSDL,
 				DatabaseName:  dbName,
-				Statement:     statement,
+				Statement:     sdl,
 			},
 		)
 		return migrationDetailList, nil
@@ -689,24 +684,16 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 	}
 
 	for _, database := range databases {
-		diff, err := s.computeDatabaseSchemaDiff(ctx, database, statement)
-		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
-			activityCreateList = append(activityCreateList, activityCreate)
-			continue
-		}
-
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				// TODO(d): make it to SDL migration.
-				MigrationType: db.Migrate,
+				MigrationType: db.MigrateSDL,
 				DatabaseID:    database.ID,
-				Statement:     diff,
+				Statement:     sdl,
 			},
 		)
 	}
 
-	return migrationDetailList, activityCreateList
+	return migrationDetailList, nil
 }
 
 // prepareIssueFromFile returns a list of update schema details derived
@@ -804,41 +791,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		}
 	}
 	return nil
-}
-
-// computeDatabaseSchemaDiff computes the diff between current database schema
-// and the given schema. It returns an empty string if there is no applicable
-// diff.
-func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Database, newSchemaStr string) (string, error) {
-	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
-	if err != nil {
-		return "", errors.Wrap(err, "get admin driver")
-	}
-	defer func() {
-		_ = driver.Close(ctx)
-	}()
-
-	var schema bytes.Buffer
-	_, err = driver.Dump(ctx, database.Name, &schema, true /* schemaOnly */)
-	if err != nil {
-		return "", errors.Wrap(err, "dump old schema")
-	}
-
-	var engine parser.EngineType
-	switch database.Instance.Engine {
-	case db.Postgres:
-		engine = parser.Postgres
-	case db.MySQL:
-		engine = parser.MySQL
-	default:
-		return "", errors.Errorf("unsupported database engine %q", database.Instance.Engine)
-	}
-
-	diff, err := differ.SchemaDiff(engine, schema.String(), newSchemaStr)
-	if err != nil {
-		return "", errors.New("compute schema diff")
-	}
-	return diff, nil
 }
 
 // convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.

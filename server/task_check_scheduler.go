@@ -188,7 +188,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
 	}
 
-	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateSDL && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return task, nil
 	}
 
@@ -239,6 +239,12 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	switch task.Type {
 	case api.TaskDatabaseSchemaUpdate:
+		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdatePayload")
+		}
+		return taskPayload.Statement, nil
+	case api.TaskDatabaseSchemaUpdateSDL:
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdatePayload")
