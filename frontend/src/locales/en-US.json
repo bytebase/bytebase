@@ -212,7 +212,8 @@
     "access-denied": "Access denied",
     "no": "No",
     "yes": "Yes",
-    "advanced": "Advanced"
+    "advanced": "Advanced",
+    "restart": "Restart"
   },
   "error-page": {
     "go-back-home": "Go back home"

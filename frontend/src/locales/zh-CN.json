@@ -212,7 +212,8 @@
     "access-denied": "拒绝访问",
     "no": "否",
     "yes": "是",
-    "advanced": "高级"
+    "advanced": "高级",
+    "restart": "重启"
   },
   "error-page": {
     "go-back-home": "回到主页"
