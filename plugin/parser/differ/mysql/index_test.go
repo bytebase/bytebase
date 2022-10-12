@@ -232,54 +232,6 @@ func TestIsIndexOptionEqual(t *testing.T) {
 	}
 }
 
-func TestGetIndexName(t *testing.T) {
-	tests := []struct {
-		constraint *ast.Constraint
-		want       string
-	}{
-		{
-			constraint: &ast.Constraint{
-				Name: "id_idx",
-				Keys: []*ast.IndexPartSpecification{
-					{
-						Column: &ast.ColumnName{
-							Name: model.NewCIStr("id"),
-						},
-					},
-					{
-						Column: &ast.ColumnName{
-							Name: model.NewCIStr("name"),
-						},
-					},
-				},
-			},
-			want: "id_idx",
-		},
-		{
-			constraint: &ast.Constraint{
-				Keys: []*ast.IndexPartSpecification{
-					{
-						Column: &ast.ColumnName{
-							Name: model.NewCIStr("id"),
-						},
-					},
-					{
-						Column: &ast.ColumnName{
-							Name: model.NewCIStr("name"),
-						},
-					},
-				},
-			},
-			want: "id",
-		},
-	}
-	a := require.New(t)
-	for _, test := range tests {
-		got := getIndexName(test.constraint)
-		a.Equalf(test.want, got, "constraint: %v", test.constraint)
-	}
-}
-
 func TestIndexType(t *testing.T) {
 	tests := []struct {
 		old  string
@@ -469,10 +421,29 @@ func TestKeyPart(t *testing.T) {
 
 func TestIndex(t *testing.T) {
 	tests := []struct {
-		old  string
-		new  string
-		want string
+		old     string
+		new     string
+		want    string
+		wantErr bool
 	}{
+		// Column inline primary key
+		{
+			old:     `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(id, name));`,
+			new:     `CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(50) NOT NULL);`,
+			wantErr: true,
+		},
+		// Column inline UNIQUE index
+		{
+			old:     `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, UNIQUE KEY id(id, name));`,
+			new:     `CREATE TABLE book(id INT UNIQUE, name VARCHAR(50) NOT NULL);`,
+			wantErr: true,
+		},
+		// Unnamed index
+		{
+			old:     `CREATE TABLE book(id INT, KEY id(id));`,
+			new:     `CREATE TABLE book(id INT, KEY(id));`,
+			wantErr: true,
+		},
 		// ADD COLUMN -> DROP PRIMARY KEY -> ADD PRIMARY KEY
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), CONSTRAINT PRIMARY KEY(id, name));`,
@@ -480,6 +451,7 @@ func TestIndex(t *testing.T) {
 			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
 				"ALTER TABLE `book` DROP PRIMARY KEY;\n" +
 				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `address`);\n",
+			wantErr: false,
 		},
 		// ADD COLUMN -> DROP INDEX -> ADD INDEX
 		{
@@ -488,13 +460,18 @@ func TestIndex(t *testing.T) {
 			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
 				"ALTER TABLE `book` DROP INDEX `id_name_idx`;\n" +
 				"ALTER TABLE `book` ADD INDEX `id_address_idx`(`id`, `address`);\n",
+			wantErr: false,
 		},
 	}
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		got, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		if test.wantErr {
+			a.Error(err)
+			continue
+		}
 		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+		a.Equalf(test.want, got, "old: %s\nnew: %s\n", test.old, test.new)
 	}
 }

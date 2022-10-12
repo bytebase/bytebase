@@ -46,10 +46,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
-	if err := validateStmtNodes(newNodes); err != nil {
-		return "", errors.Wrapf(err, "failed to validate the statement %q", newStmt)
-	}
-
 	var newNodeList []ast.Node
 	var inplaceUpdate []ast.Node
 	var dropNodeList [][]ast.Node
@@ -57,6 +53,12 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldTableMap := buildTableMap(oldNodes)
 
 	for _, node := range newNodes {
+		// We only support the following statements:
+		// 1. CREATE TABLE statement.
+		// 2. CREATE VIEW statement.
+		// 3. CREATE FUNCTION statement.
+		// 4. CREATE TRIGGER statement.
+		// 5. CREATE PROCEDURE statement.
 		switch newStmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := newStmt.Table.Name.O
@@ -78,6 +80,15 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 			oldColumnMap := buildColumnMap(oldNodes, newStmt.Table.Name)
 			for _, columnDef := range newStmt.Cols {
+				for _, option := range columnDef.Options {
+					// We don't support column inline PK and UNIQUE KEY.
+					if option.Tp == ast.ColumnOptionPrimaryKey {
+						return "", errors.New("unsupported column inline PK in CREATE TABLE statement likes `CREATE TABLE tbl(id INT PARIMARY KEY);`")
+					}
+					if option.Tp == ast.ColumnOptionUniqKey {
+						return "", errors.New("unsupported column inline UNIQUE KEY in CREATE TABLE statement likes `CREATE TABLE tbl(id INT UNIQUE KEY);`")
+					}
+				}
 				newColumnName := columnDef.Name.Name.O
 				oldColumnDef, ok := oldColumnMap[newColumnName]
 				if !ok {
@@ -100,7 +111,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			for _, constraint := range newStmt.Constraints {
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
-					indexName := getIndexName(constraint)
+					// We don't support unnamed index.
+					indexName := constraint.Name
+					if indexName == "" {
+						return "", errors.New("unsupported unnamed index in CREATE TABLE statement likes `CREATE TABLE tbl(id INT, INDEX(id));`")
+					}
 					if oldConstraint, ok := indexMap[indexName]; ok {
 						if isIndexEqual(constraint, oldConstraint) {
 							delete(indexMap, indexName)
@@ -174,48 +189,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 		default:
+			return "", errors.Errorf("unsupported statement: %T", newStmt)
 		}
 	}
-
 	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
-}
-
-// We're not supporting all the MySQL statements for now.
-// validateStmtNodes validates the stmt nodes, return nil if they are valid.
-// We support 5 statements:
-// 1. CREATE TABLE statement.
-// 2. CREATE VIEW statement.
-// 3. CREATE FUNCTION statement.
-// 4. CREATE TRIGGER statement.
-// 5. CREATE PROCEDURE statement.
-func validateStmtNodes(nodes []ast.StmtNode) error {
-	// TODO(zp): validate more statements.
-	for _, node := range nodes {
-		switch stmt := node.(type) {
-		case *ast.CreateTableStmt:
-			for _, columnDef := range stmt.Cols {
-				for _, option := range columnDef.Options {
-					if option.Tp == ast.ColumnOptionPrimaryKey {
-						return errors.New("unsupported column inline PK in CREATE TABLE statement likes `CREATE TABLE tbl(id INT PARIMARY KEY);`")
-					}
-					if option.Tp == ast.ColumnOptionUniqKey {
-						return errors.New("unsupported column inline UNIQUE KEY in CREATE TABLE statement likes `CREATE TABLE tbl(id INT UNIQUE KEY);`")
-					}
-				}
-			}
-			for _, constraint := range stmt.Constraints {
-				switch constraint.Tp {
-				case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintFulltext:
-					if constraint.Name == "" {
-						return errors.New("unsupported unnamed index in CREATE TABLE statement likes `CREATE TABLE tbl(id INT, INDEX(id));`")
-					}
-				}
-			}
-		default:
-			return errors.Errorf("unsupported statement: %T", node)
-		}
-	}
-	return nil
 }
 
 func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
@@ -304,7 +281,7 @@ func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
 		if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
 			constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
 			constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
-			indexName := getIndexName(constraint)
+			indexName := constraint.Name
 			indexMap[indexName] = constraint
 		}
 		if constraint.Tp == ast.ConstraintPrimaryKey {
@@ -478,17 +455,6 @@ func isIndexOptionEqual(old, new *ast.IndexOption) bool {
 	}
 	// TODO(zp): support ENGINE_ATTRIBUTE and SECONDARY_ENGINE_ATTRIBUTE.
 	return true
-}
-
-// getIndexName returns the name of the index.
-func getIndexName(index *ast.Constraint) string {
-	if index.Name != "" {
-		return index.Name
-	}
-	// If the index name is empty, it will be generated by MySQL.
-	// https://dba.stackexchange.com/questions/160708/is-naming-an-index-required
-	// TODO(zp): handle the duplicated index name.
-	return index.Keys[0].Column.Name.O
 }
 
 // diffTableOptions returns the diff of two table options, returns nil if they are the same.
