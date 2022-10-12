@@ -44,7 +44,10 @@ type vcsSQLReviewResult struct {
 type vcsSQLReviewRequest struct {
 	RepositoryID  string `json:"repositoryId"`
 	PullRequestID string `json:"pullRequestId"`
-	WebURL        string `json:"webURL"`
+	// WebURL is the server URL for GitOps CI.
+	// In GitHub, the URL should be "https://github.com". Docs: https://docs.github.com/en/actions/learn-github-actions/environment-variables
+	// In GitLab, the URL should be the base URL of the GitLab instance like "https://gitlab.bytebase.com". Docs: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+	WebURL string `json:"webURL"`
 }
 
 // sqlReviewDocs is the URL for SQL review doc.
