@@ -670,7 +670,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 			Detail: "Task cancellation requested.",
 		})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed")
+			return nil, errors.Wrapf(err, "failed to marshal TaskRunResultPayload")
 		}
 		resultStr := string(result)
 		taskStatusPatch.Result = &resultStr
