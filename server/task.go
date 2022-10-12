@@ -25,7 +25,7 @@ var (
 		api.TaskRunning:  {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:     {},
 		api.TaskFailed:   {api.TaskRunning, api.TaskPendingApproval},
-		api.TaskCanceled: {api.TaskRunning},
+		api.TaskCanceled: {api.TaskPendingApproval},
 	}
 	taskCancellationImplemented = map[api.TaskType]bool{
 		api.TaskDatabaseSchemaUpdateGhostSync: true,
