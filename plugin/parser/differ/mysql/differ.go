@@ -177,6 +177,7 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 			return "", err
 		}
 	}
+
 	for _, node := range inplaceUpdate {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
@@ -185,7 +186,15 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 			return "", err
 		}
 	}
-	reNonInplaceDropNodes := reverse2D(nonInplaceDrop)
+
+	var reNonInplaceDropNodes [][]ast.Node
+	for i := len(nonInplaceDrop) - 1; i >= 0; i-- {
+		var nodes []ast.Node
+		for j := len(nonInplaceDrop[i]) - 1; j >= 0; j-- {
+			nodes = append(nodes, nonInplaceDrop[i][j])
+		}
+		reNonInplaceDropNodes = append(reNonInplaceDropNodes, nodes)
+	}
 	for _, nodes := range reNonInplaceDropNodes {
 		for _, node := range nodes {
 			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
@@ -196,6 +205,7 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 			}
 		}
 	}
+
 	for _, node := range nonInplaceAdd {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
@@ -204,7 +214,15 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 			return "", err
 		}
 	}
-	reDropNodes := reverse2D(drop)
+
+	var reDropNodes [][]ast.Node
+	for i := len(drop) - 1; i >= 0; i-- {
+		var nodes []ast.Node
+		for j := len(drop[i]) - 1; j >= 0; j-- {
+			nodes = append(nodes, drop[i][j])
+		}
+		reDropNodes = append(reDropNodes, nodes)
+	}
 	for _, nodes := range reDropNodes {
 		for _, node := range nodes {
 			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
@@ -216,22 +234,6 @@ func deparse(add []ast.Node, inplaceUpdate []ast.Node, nonInplaceDrop [][]ast.No
 		}
 	}
 	return buf.String(), nil
-}
-
-func reverse2D(nodes [][]ast.Node) [][]ast.Node {
-	var newNodes [][]ast.Node
-	for i := len(nodes) - 1; i >= 0; i-- {
-		newNodes = append(newNodes, reverse(nodes[i]))
-	}
-	return newNodes
-}
-
-func reverse(nodes []ast.Node) []ast.Node {
-	var newNodes []ast.Node
-	for i := len(nodes) - 1; i >= 0; i-- {
-		newNodes = append(newNodes, nodes[i])
-	}
-	return newNodes
 }
 
 // buildTableMap returns a map of table name to create table statements.
