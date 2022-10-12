@@ -23,3 +23,23 @@ export const createColumnCandidates = (
 
   return uniqBy(suggestions, (item) => item.label);
 };
+
+export const createColumnCandidatesByAlias = (
+  alias: string,
+  tables: Table[]
+): CompletionItem[] => {
+  const suggestions = tables.flatMap<CompletionItem>((table) => {
+    return table.columns.map<CompletionItem>((column) => {
+      const label = `${alias}.${column.name}`;
+      return {
+        label,
+        kind: ICONS.COLUMN,
+        detail: "<Column>",
+        documentation: label,
+        sortText: SortText.ALIAS,
+        insertText: label,
+      };
+    });
+  });
+  return uniqBy(suggestions, (item) => item.label);
+};
