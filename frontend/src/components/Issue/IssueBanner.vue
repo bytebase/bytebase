@@ -38,7 +38,12 @@ import { useIssueLogic } from "./logic";
 const issue = useIssueLogic().issue as Ref<Issue>;
 
 const showCancelBanner = computed(() => {
-  return issue.value.status == "CANCELED";
+  if (issue.value.status == "CANCELED") {
+    return true;
+  }
+
+  const task = activeTask(issue.value.pipeline);
+  return task.status == "CANCELED";
 });
 
 const showSuccessBanner = computed(() => {
