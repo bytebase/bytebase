@@ -124,6 +124,57 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 	}
 }
 
+func TestGetMySQLStatementWithResultLimit(t *testing.T) {
+	tests := []struct {
+		sqlStatement string
+		limit        int
+		want         string
+	}{
+		{
+			sqlStatement: "  seLeCT * FROM test;",
+			limit:        123,
+			want:         "SELECT * FROM (  seLeCT * FROM test) result LIMIT 123;",
+		},
+		{
+			sqlStatement: "  seLeCT * FROM test;",
+			limit:        0,
+			want:         "SELECT * FROM (  seLeCT * FROM test) result;",
+		},
+		{
+			sqlStatement: "  \n \r SELEct * from test ",
+			limit:        100,
+			want:         "SELECT * FROM (  \n \r SELEct * from test) result LIMIT 100;",
+		},
+		{
+			sqlStatement: "SELECT\n*\nFROM\ntest  ;\n",
+			limit:        100,
+			want:         "SELECT * FROM (SELECT\n*\nFROM\ntest) result LIMIT 100;",
+		},
+		{
+			sqlStatement: "SELECT\n*\nFROM\ntest  ;;;\n",
+			limit:        100,
+			want:         "SELECT * FROM (SELECT\n*\nFROM\ntest) result LIMIT 100;",
+		},
+		{
+			sqlStatement: "SELECT\n*\nFROM\n`test;`  ;;;\n",
+			limit:        100,
+			want:         "SELECT * FROM (SELECT\n*\nFROM\n`test;`) result LIMIT 100;",
+		},
+		{
+			sqlStatement: "EXPLAIN  \n \r SELEct * from test ",
+			limit:        0,
+			want:         "EXPLAIN  \n \r SELEct * from test",
+		},
+	}
+
+	for _, test := range tests {
+		got := getMySQLStatementWithResultLimit(test.sqlStatement, test.limit)
+		if got != test.want {
+			t.Errorf("trimSQLStatement %q: got result %v, want %v.", test.sqlStatement, got, test.want)
+		}
+	}
+}
+
 func TestApplyMultiStatements(t *testing.T) {
 	type testData struct {
 		statement string
