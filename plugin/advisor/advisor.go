@@ -169,8 +169,14 @@ const (
 	// MySQLInsertMustSpecifyColumn is an advisor type for MySQL to enforce column specified.
 	MySQLInsertMustSpecifyColumn Type = "bb.plugin.advisor.mysql.insert.must-specify-column"
 
+	// MySQLInsertDisallowOrderByRand is an advisor type for MySQL to disallow order by rand in INSERT statements.
+	MySQLInsertDisallowOrderByRand Type = "bb.plugin.advisor.mysql.insert.disallow-order-by-rand"
+
 	// MySQLDisallowOrderBy is an advisor type for MySQL no ORDER BY clause in DELETE/UPDATE statement.
 	MySQLDisallowOrderBy Type = "bb.plugin.advisor.mysql.statement.disallow-order-by"
+
+	// MySQLMergeAlterTable is an advisor type for MySQL no redundant ALTER TABLE statements.
+	MySQLMergeAlterTable Type = "bb.plugin.advisor.mysql.statement.merge-alter-table"
 
 	// PostgreSQL Advisor.
 

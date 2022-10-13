@@ -30,6 +30,7 @@ const (
 	StatementLeadingWildcardLike Code = 204
 	StatementCreateTableAs       Code = 205
 	StatementDisallowCommit      Code = 206
+	StatementRedundantAlterTable Code = 207
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -106,6 +107,7 @@ const (
 	DeleteUseOrderBy       Code = 1105
 	DeleteUseLimit         Code = 1106
 	InsertNotSpecifyColumn Code = 1107
+	InsertUseOrderByRand   Code = 1108
 
 	// 1201 ~ 1299 collation error code.
 	DisabledCollation Code = 1201

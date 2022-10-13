@@ -61,6 +61,8 @@ const (
 	SchemaRuleStatementDisallowLimit SQLReviewRuleType = "statement.disallow-limit"
 	// SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
 	SchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "statement.disallow-order-by"
+	// SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
+	SchemaRuleStatementMergeAlterTable SQLReviewRuleType = "statement.merge-alter-table"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -125,6 +127,8 @@ const (
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
 	// SchemaRuleInsertMustSpecifyColumn enforce the insert column specified.
 	SchemaRuleInsertMustSpecifyColumn SQLReviewRuleType = "insert.must-specify-column"
+	// SchemaRuleInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+	SchemaRuleInsertDisallowOrderByRand SQLReviewRuleType = "insert.disallow-order-by-rand"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -812,6 +816,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLInsertMustSpecifyColumn, nil
 		}
+	case SchemaRuleInsertDisallowOrderByRand:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertDisallowOrderByRand, nil
+		}
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -821,6 +830,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLDisallowOrderBy, nil
+		}
+	case SchemaRuleStatementMergeAlterTable:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLMergeAlterTable, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

@@ -361,7 +361,7 @@ func (s *Server) sqlAdviceForFile(
 		{
 			Status:  advisor.Warn,
 			Code:    advisor.NotFound,
-			Title:   "Cannot found SQL review policy",
+			Title:   "SQL review policy not found",
 			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", s.profile.ExternalURL),
 			Line:    1,
 		},
