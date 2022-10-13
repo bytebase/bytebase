@@ -10,11 +10,11 @@ import (
 
 func TestParseMigrationInfo(t *testing.T) {
 	type test struct {
-		filePath              string
-		filePathTemplate      string
-		allowOmitDatabaseName bool
-		want                  *MigrationInfo
-		wantErr               string
+		filePath         string
+		filePathTemplate string
+		isTenantWildcard bool
+		want             *MigrationInfo
+		wantErr          string
 	}
 
 	tests := []test{
@@ -218,9 +218,9 @@ func TestParseMigrationInfo(t *testing.T) {
 			wantErr:          "does not contain {{DB_NAME}}",
 		},
 		{
-			filePath:              "001foo##ddl",
-			filePathTemplate:      "{{VERSION}}##{{TYPE}}",
-			allowOmitDatabaseName: true,
+			filePath:         "001foo##ddl",
+			filePathTemplate: "{{VERSION}}##{{TYPE}}",
+			isTenantWildcard: true,
 			want: &MigrationInfo{
 				Version:     "001foo",
 				Source:      VCS,
@@ -229,10 +229,24 @@ func TestParseMigrationInfo(t *testing.T) {
 			},
 			wantErr: "",
 		},
+		{
+			filePath:         "001foo##ddl##earth##bar",
+			filePathTemplate: "{{VERSION}}##{{TYPE}}##{{LOCATION}}##{{TENANT}}",
+			isTenantWildcard: true,
+			want: &MigrationInfo{
+				Version:     "001foo",
+				Source:      VCS,
+				Type:        Migrate,
+				Location:    "earth",
+				Tenant:      "bar",
+				Description: "Create  schema migration",
+			},
+			wantErr: "",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.filePath, func(t *testing.T) {
-			mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate, tc.allowOmitDatabaseName)
+			mi, err := ParseMigrationInfo(tc.filePath, tc.filePathTemplate, tc.isTenantWildcard)
 			if tc.wantErr != "" {
 				got := fmt.Sprintf("%v", err)
 				require.Contains(t, got, tc.wantErr)

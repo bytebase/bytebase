@@ -227,6 +227,8 @@ type MigrationInfo struct {
 	Source         MigrationSource
 	Type           MigrationType
 	Status         MigrationStatus
+	Location       string
+	Tenant         string
 	Description    string
 	Creator        string
 	IssueID        string
@@ -251,17 +253,33 @@ type MigrationInfo struct {
 // Refer to https://stackoverflow.com/a/6222235/19075342, but we support "." for now.
 const placeholderRegexp = `[^\\/?%*:|"<>]+`
 
-// ParseMigrationInfo matches filePath against filePathTemplate
-// If filePath matches, then it will derive MigrationInfo from the filePath.
-// Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
+// ParseMigrationInfo matches filePath against `filePathTemplate If filePath
+// matches, then it will derive MigrationInfo from the filePath. Both filePath
+// and filePathTemplate are the full file path (including the base directory) of
+// the repository.
+//
+// The isTenantWildcard indicate whehter the parse is for a tenant project that
+// has empty database name template (wildcard).
+//
 // It returns (nil, nil) if it doesn't look like a migration file path.
-func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName bool) (*MigrationInfo, error) {
+func ParseMigrationInfo(filePath, filePathTemplate string, isTenantWildcard bool) (*MigrationInfo, error) {
 	placeholderList := []string{
 		"ENV_NAME",
 		"VERSION",
 		"DB_NAME",
 		"TYPE",
 		"DESCRIPTION",
+	}
+
+	// Tenant projects have wildcard database matching supports a different set of placeholders.
+	if isTenantWildcard {
+		placeholderList = []string{
+			"VERSION",
+			"TYPE",
+			"DESCRIPTION",
+			"LOCATION",
+			"TENANT",
+		}
 	}
 
 	// Escape "." characters to match literals instead of using it as a wildcard.
@@ -313,6 +331,10 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 				}
 			case "DESCRIPTION":
 				mi.Description = matchList[index]
+			case "LOCATION":
+				mi.Location = matchList[index]
+			case "TENANT":
+				mi.Tenant = matchList[index]
 			}
 		}
 	}
@@ -320,7 +342,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 	if mi.Version == "" {
 		return nil, errors.Errorf("file path %q does not contain {{VERSION}}, configured file path template %q", filePath, filePathTemplate)
 	}
-	if mi.Namespace == "" && !allowOmitDatabaseName {
+	if mi.Namespace == "" && !isTenantWildcard {
 		return nil, errors.Errorf("file path %q does not contain {{DB_NAME}}, configured file path template %q", filePath, filePathTemplate)
 	}
 
