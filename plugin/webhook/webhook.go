@@ -83,7 +83,7 @@ func (c *Context) getMetaList() []meta {
 
 	if c.Issue != nil {
 		m = append(m, meta{
-			Name:  "Isuue",
+			Name:  "Issue",
 			Value: c.Issue.Name,
 		})
 	}
