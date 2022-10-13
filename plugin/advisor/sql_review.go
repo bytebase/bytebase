@@ -125,6 +125,8 @@ const (
 	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
 	// SchemaRuleInsertMustSpecifyColumn enforce the insert column specified.
 	SchemaRuleInsertMustSpecifyColumn SQLReviewRuleType = "insert.must-specify-column"
+	// SchemaRuleInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+	SchemaRuleInsertDisallowOrderByRand SQLReviewRuleType = "insert.disallow-order-by-rand"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -811,6 +813,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertMustSpecifyColumn, nil
+		}
+	case SchemaRuleInsertDisallowOrderByRand:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLInsertDisallowOrderByRand, nil
 		}
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {
