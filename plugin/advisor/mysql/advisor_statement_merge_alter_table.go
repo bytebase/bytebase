@@ -14,6 +14,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*StatementMergeAlterTableAdvisor)(nil)
+	_ ast.Visitor     = (*statementMergeAlterTableChecker)(nil)
 )
 
 func init() {
