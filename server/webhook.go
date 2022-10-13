@@ -350,7 +350,15 @@ func (s *Server) sqlAdviceForFile(
 		return adviceList, nil
 	}
 
-	return nil, nil
+	return []advisor.Advice{
+		{
+			Status:  advisor.Warn,
+			Code:    advisor.NotFound,
+			Title:   "Cannot found SQL review policy",
+			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", s.profile.ExternalURL),
+			Line:    1,
+		},
+	}, nil
 }
 
 type repositoryFilter func(*api.Repository) (bool, error)
@@ -548,6 +556,14 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 	var fType fileType
 	var fileRepositoryList []*api.Repository
 	for _, repository := range repositoryList {
+		if repository.Project.RowStatus == api.Archived {
+			log.Debug("Ignored repository as associated project is archived",
+				zap.String("file", fileItem.FileName),
+				zap.Int("repository_id", repository.ID),
+				zap.String("repository_external_id", repository.ExternalID),
+			)
+			continue
+		}
 		if !strings.HasPrefix(fileItem.FileName, repository.BaseDirectory) {
 			log.Debug("Ignored file outside the base directory",
 				zap.String("file", fileItem.FileName),
