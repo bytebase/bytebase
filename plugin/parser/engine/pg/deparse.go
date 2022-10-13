@@ -171,6 +171,13 @@ func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Buil
 		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
 			return err
 		}
+	case *ast.Serial:
+		if _, err := buf.WriteString("SERIAL"); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
+			return err
+		}
 	case *ast.UnconvertedDataType:
 		var nameList []string
 		for _, name := range node.Name {
