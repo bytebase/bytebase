@@ -61,7 +61,7 @@ const (
 	SchemaRuleStatementDisallowLimit SQLReviewRuleType = "statement.disallow-limit"
 	// SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
 	SchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "statement.disallow-order-by"
-	// SchemaRuleStatementMergeAlterTable disallow adjacent ALTER TABLE statements.
+	// SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
 	SchemaRuleStatementMergeAlterTable SQLReviewRuleType = "statement.merge-alter-table"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.

@@ -175,7 +175,7 @@ const (
 	// MySQLDisallowOrderBy is an advisor type for MySQL no ORDER BY clause in DELETE/UPDATE statement.
 	MySQLDisallowOrderBy Type = "bb.plugin.advisor.mysql.statement.disallow-order-by"
 
-	// MySQLMergeAlterTable is an advisor type for MySQL no adjacent ALTER TABLE statements.
+	// MySQLMergeAlterTable is an advisor type for MySQL no redundant ALTER TABLE statements.
 	MySQLMergeAlterTable Type = "bb.plugin.advisor.mysql.statement.merge-alter-table"
 
 	// PostgreSQL Advisor.

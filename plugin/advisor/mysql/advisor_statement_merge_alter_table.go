@@ -4,6 +4,7 @@ package mysql
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pingcap/tidb/parser/ast"
 
@@ -20,11 +21,11 @@ func init() {
 	advisor.Register(db.TiDB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 }
 
-// StatementMergeAlterTableAdvisor is the advisor checking for merging adjacent ALTER TABLE statements.
+// StatementMergeAlterTableAdvisor is the advisor checking for merging ALTER TABLE statements.
 type StatementMergeAlterTableAdvisor struct {
 }
 
-// Check checks for merging adjacent ALTER TABLE statements.
+// Check checks for merging ALTER TABLE statements.
 func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
@@ -36,25 +37,85 @@ func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, statement str
 		return nil, err
 	}
 	checker := &statementMergeAlterTableChecker{
-		level:                   level,
-		title:                   string(ctx.Rule.Type),
-		adjacentAlterTableCount: 0,
+		level:    level,
+		title:    string(ctx.Rule.Type),
+		tableMap: make(map[string]tableStatement),
 	}
 
 	for _, stmt := range stmtList {
-		checker.Check(stmt)
-		checker.lastText = stmt.Text()
-		checker.lastLine = stmt.OriginTextPosition()
+		checker.text = stmt.Text()
+		checker.line = stmt.OriginTextPosition()
+		(stmt).Accept(checker)
 	}
 
-	if checker.adjacentAlterTableCount > 1 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementAdjacentAlterTable,
-			Title:   checker.title,
-			Content: fmt.Sprintf("Adjacent ALTER TABLE statements before \"%s\"", checker.lastText),
-			Line:    checker.lastLine,
-		})
+	return checker.generateAdvice(), nil
+}
+
+type statementMergeAlterTableChecker struct {
+	adviceList []advisor.Advice
+	level      advisor.Status
+	title      string
+	text       string
+	line       int
+	tableMap   map[string]tableStatement
+}
+
+type tableStatement struct {
+	name     string
+	count    int
+	lastLine int
+}
+
+// Enter implements the ast.Visitor interface.
+func (checker *statementMergeAlterTableChecker) Enter(in ast.Node) (ast.Node, bool) {
+	switch node := in.(type) {
+	case *ast.CreateTableStmt:
+		data := tableStatement{
+			name:     node.Table.Name.O,
+			count:    1,
+			lastLine: checker.line,
+		}
+		checker.tableMap[node.Table.Name.O] = data
+	case *ast.AlterTableStmt:
+		data, ok := checker.tableMap[node.Table.Name.O]
+		if !ok {
+			data = tableStatement{
+				name:  node.Table.Name.O,
+				count: 0,
+			}
+		}
+		data.count++
+		data.lastLine = checker.line
+		checker.tableMap[node.Table.Name.O] = data
+	}
+
+	return in, false
+}
+
+// Leave implements the ast.Visitor interface.
+func (*statementMergeAlterTableChecker) Leave(in ast.Node) (ast.Node, bool) {
+	return in, true
+}
+
+func (checker *statementMergeAlterTableChecker) generateAdvice() []advisor.Advice {
+	var tableList []tableStatement
+	for _, table := range checker.tableMap {
+		tableList = append(tableList, table)
+	}
+	sort.Slice(tableList, func(i, j int) bool {
+		return tableList[i].lastLine < tableList[j].lastLine
+	})
+
+	for _, table := range tableList {
+		if table.count > 1 {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.StatementRedundantAlterTable,
+				Title:   checker.title,
+				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
+				Line:    table.lastLine,
+			})
+		}
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -65,41 +126,5 @@ func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, statement str
 			Content: "",
 		})
 	}
-	return checker.adviceList, nil
-}
-
-type statementMergeAlterTableChecker struct {
-	adviceList              []advisor.Advice
-	level                   advisor.Status
-	title                   string
-	lastText                string
-	lastLine                int
-	adjacentAlterTableCount int
-	tableName               string
-}
-
-// Check checks for mergeing alter table statements.
-func (checker *statementMergeAlterTableChecker) Check(in ast.Node) {
-	alterTable, ok := in.(*ast.AlterTableStmt)
-	canMerge := false
-	if ok && alterTable.Table.Name.L == checker.tableName {
-		canMerge = true
-	}
-	if !canMerge {
-		if checker.adjacentAlterTableCount > 1 {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementAdjacentAlterTable,
-				Title:   checker.title,
-				Content: fmt.Sprintf("Adjacent ALTER TABLE statements before \"%s\"", checker.lastText),
-				Line:    checker.lastLine,
-			})
-		}
-		checker.adjacentAlterTableCount = 0
-	}
-
-	if ok {
-		checker.adjacentAlterTableCount++
-		checker.tableName = alterTable.Table.Name.L
-	}
+	return checker.adviceList
 }

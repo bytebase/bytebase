@@ -29,9 +29,9 @@ func TestStatementMergeAlterTable(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.StatementAdjacentAlterTable,
+					Code:    advisor.StatementRedundantAlterTable,
 					Title:   "statement.merge-alter-table",
-					Content: "Adjacent ALTER TABLE statements before \"ALTER TABLE tech_book ADD COLUMN b int;\"",
+					Content: "There are 2 statements to modify table `tech_book`",
 					Line:    3,
 				},
 			},
@@ -45,10 +45,18 @@ func TestStatementMergeAlterTable(t *testing.T) {
 				`,
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Success,
-					Code:    advisor.Ok,
-					Title:   "OK",
-					Content: "",
+					Status:  advisor.Warn,
+					Code:    advisor.StatementRedundantAlterTable,
+					Title:   "statement.merge-alter-table",
+					Content: "There are 2 statements to modify table `t`",
+					Line:    4,
+				},
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.StatementRedundantAlterTable,
+					Title:   "statement.merge-alter-table",
+					Content: "There are 2 statements to modify table `tech_book`",
+					Line:    5,
 				},
 			},
 		},
@@ -62,10 +70,17 @@ func TestStatementMergeAlterTable(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.StatementAdjacentAlterTable,
+					Code:    advisor.StatementRedundantAlterTable,
 					Title:   "statement.merge-alter-table",
-					Content: "Adjacent ALTER TABLE statements before \"ALTER TABLE tech_book ADD COLUMN b int;\"",
+					Content: "There are 2 statements to modify table `tech_book`",
 					Line:    4,
+				},
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.StatementRedundantAlterTable,
+					Title:   "statement.merge-alter-table",
+					Content: "There are 2 statements to modify table `t`",
+					Line:    5,
 				},
 			},
 		},
