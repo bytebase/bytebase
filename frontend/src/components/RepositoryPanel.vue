@@ -135,10 +135,32 @@
     </div>
   </BBModal>
   <BBModal
-    v-if="state.showRemoveSQLReviewCIModal"
+    v-if="state.showRestoreSQLReviewCIModal"
     class="relative overflow-hidden"
     :title="$t('repository.sql-review-ci-remove')"
     @close="onSQLReviewCIModalClose"
+  >
+    <div class="space-y-4 max-w-[32rem]">
+      <div class="whitespace-pre-wrap">
+        {{ $t("repository.sql-review-ci-restore-modal") }}
+      </div>
+
+      <div class="flex justify-end pt-4 gap-x-2">
+        <button
+          type="button"
+          class="btn-normal"
+          @click.prevent="onSQLReviewCIModalClose"
+        >
+          {{ $t("common.close") }}
+        </button>
+      </div>
+    </div>
+  </BBModal>
+  <BBModal
+    v-if="state.showDisableSQLReviewCIModal"
+    class="relative overflow-hidden"
+    :title="$t('repository.sql-review-ci-remove')"
+    @close="state.showDisableSQLReviewCIModal = false"
   >
     <div class="space-y-4 max-w-[32rem]">
       <div class="whitespace-pre-wrap">
@@ -149,7 +171,7 @@
         <button
           type="button"
           class="btn-normal"
-          @click.prevent="onSQLReviewCIModalClose"
+          @click.prevent="state.showDisableSQLReviewCIModal = false"
         >
           {{ $t("common.close") }}
         </button>
@@ -191,7 +213,8 @@ interface LocalState {
   showFeatureModal: boolean;
   showSetupSQLReviewCIModal: boolean;
   showLoadingSQLReviewPRModal: boolean;
-  showRemoveSQLReviewCIModal: boolean;
+  showDisableSQLReviewCIModal: boolean;
+  showRestoreSQLReviewCIModal: boolean;
   sqlReviewCIPullRequestURL: string;
 }
 
@@ -229,7 +252,8 @@ export default defineComponent({
       showFeatureModal: false,
       showSetupSQLReviewCIModal: false,
       showLoadingSQLReviewPRModal: false,
-      showRemoveSQLReviewCIModal: false,
+      showDisableSQLReviewCIModal: false,
+      showRestoreSQLReviewCIModal: false,
       sqlReviewCIPullRequestURL: "",
     });
 
@@ -276,7 +300,7 @@ export default defineComponent({
       );
     });
 
-    const removeSQLReviewCI = computed(() => {
+    const disableSQLReviewCI = computed(() => {
       return (
         props.repository.enableSQLReviewCI &&
         !state.repositoryConfig.enableSQLReviewCI
@@ -284,13 +308,13 @@ export default defineComponent({
     });
 
     const onSQLReviewCIModalClose = () => {
-      state.showRemoveSQLReviewCIModal = false;
+      state.showRestoreSQLReviewCIModal = false;
       restoreToUIWorkflowType(false);
     };
 
     const restoreToUIWorkflowType = (checkSQLReviewCI: boolean) => {
       if (checkSQLReviewCI && props.repository.enableSQLReviewCI) {
-        state.showRemoveSQLReviewCIModal = true;
+        state.showRestoreSQLReviewCIModal = true;
         return;
       }
       repositoryStore.deleteRepositoryByProjectId(props.project.id).then(() => {
@@ -373,7 +397,7 @@ export default defineComponent({
         });
       }
 
-      const removeSQLReview = removeSQLReviewCI.value;
+      const disableSQLReview = disableSQLReviewCI.value;
 
       const updatedRepository =
         await repositoryStore.updateRepositoryByProjectId({
@@ -386,8 +410,8 @@ export default defineComponent({
         state.showLoadingSQLReviewPRModal = false;
         state.showSetupSQLReviewCIModal = true;
         window.open(updatedRepository.sqlReviewCIPullRequestURL, "_blank");
-      } else if (removeSQLReview) {
-        state.showRemoveSQLReviewCIModal = true;
+      } else if (disableSQLReview) {
+        state.showDisableSQLReviewCIModal = true;
       }
       pushNotification({
         module: "bytebase",
