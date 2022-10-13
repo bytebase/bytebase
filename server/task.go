@@ -770,6 +770,29 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
+	// Cancel every dependency of the task.
+	if taskPatched.Status == api.TaskCanceled {
+		queue := []int{taskPatched.ID}
+		for len(queue) != 0 {
+			fromTaskID := queue[0]
+			queue = queue[1:]
+			dagList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: &fromTaskID})
+			if err != nil {
+				return nil, err
+			}
+			for _, dag := range dagList {
+				if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+					ID:        dag.ToTaskID,
+					UpdaterID: api.SystemBotID,
+					Status:    api.TaskCanceled,
+				}); err != nil {
+					return nil, errors.Wrap(err, "failed to patch dependent tasks")
+				}
+				queue = append(queue, dag.ToTaskID)
+			}
+		}
+	}
+
 	// If every task in the pipeline completes, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
