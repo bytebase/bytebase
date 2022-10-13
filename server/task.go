@@ -769,6 +769,13 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
+	// Cancel every task depending on the canceled task.
+	if taskPatched.Status == api.TaskCanceled {
+		if err := s.cancelDependingTasks(ctx, taskPatched); err != nil {
+			return nil, errors.Wrapf(err, "failed to cancel depending tasks for task %d", taskPatched.ID)
+		}
+	}
+
 	// If every task in the pipeline completes, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
@@ -889,4 +896,33 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 		}
 	}
 	return true
+}
+
+func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error {
+	queue := []int{task.ID}
+	seen := map[int]bool{task.ID: true}
+	for len(queue) != 0 {
+		fromTaskID := queue[0]
+		queue = queue[1:]
+		dagList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: &fromTaskID})
+		if err != nil {
+			return err
+		}
+		for _, dag := range dagList {
+			if seen[dag.ToTaskID] {
+				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
+			}
+			seen[dag.ToTaskID] = true
+
+			if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+				ID:        dag.ToTaskID,
+				UpdaterID: api.SystemBotID,
+				Status:    api.TaskCanceled,
+			}); err != nil {
+				return err
+			}
+			queue = append(queue, dag.ToTaskID)
+		}
+	}
+	return nil
 }
