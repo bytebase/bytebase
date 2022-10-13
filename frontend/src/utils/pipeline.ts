@@ -76,12 +76,13 @@ export function activeStage(pipeline: Pipeline): Stage {
   for (const stage of pipeline.stageList) {
     for (const task of stage.taskList) {
       if (
-        task.status == "PENDING" ||
-        task.status == "PENDING_APPROVAL" ||
-        task.status == "RUNNING" ||
+        task.status === "PENDING" ||
+        task.status === "PENDING_APPROVAL" ||
+        task.status === "RUNNING" ||
         // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
-        task.status == "FAILED"
+        task.status === "FAILED" ||
+        task.status === "CANCELED"
       ) {
         return stage;
       }
@@ -98,12 +99,13 @@ export function activeTask(pipeline: Pipeline): Task {
   for (const stage of pipeline.stageList) {
     for (const task of stage.taskList) {
       if (
-        task.status == "PENDING" ||
-        task.status == "PENDING_APPROVAL" ||
-        task.status == "RUNNING" ||
+        task.status === "PENDING" ||
+        task.status === "PENDING_APPROVAL" ||
+        task.status === "RUNNING" ||
         // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
-        task.status == "FAILED"
+        task.status === "FAILED" ||
+        task.status === "CANCELED"
       ) {
         return task;
       }
@@ -121,12 +123,13 @@ export function activeTask(pipeline: Pipeline): Task {
 export function activeTaskInStage(stage: Stage): Task {
   for (const task of stage.taskList) {
     if (
-      task.status == "PENDING" ||
-      task.status == "PENDING_APPROVAL" ||
-      task.status == "RUNNING" ||
+      task.status === "PENDING" ||
+      task.status === "PENDING_APPROVAL" ||
+      task.status === "RUNNING" ||
       // "FAILED" is also a transient task status, which requires user
       // to take further action (e.g. Skip, Retry)
-      task.status == "FAILED"
+      task.status === "FAILED" ||
+      task.status === "CANCELED"
     ) {
       return task;
     }
@@ -160,7 +163,8 @@ export type TaskStatusTransitionType =
   | "APPROVE"
   | "RETRY"
   | "CANCEL"
-  | "SKIP";
+  | "SKIP"
+  | "RESTART";
 
 export interface TaskStatusTransition {
   type: TaskStatusTransitionType;
@@ -209,6 +213,15 @@ const TASK_STATUS_TRANSITION_LIST: Map<
       buttonType: "NORMAL",
     },
   ],
+  [
+    "RESTART",
+    {
+      type: "RESTART",
+      to: "PENDING_APPROVAL",
+      buttonName: "common.restart",
+      buttonType: "NORMAL",
+    },
+  ],
 ]);
 
 // The transition button are displayed from left to right on the UI, and the right-most one is the primary button
@@ -221,7 +234,7 @@ const APPLICABLE_TASK_TRANSITION_LIST: Map<
   ["RUNNING", ["CANCEL"]],
   ["DONE", []],
   ["FAILED", ["RETRY"]],
-  ["CANCELED", []],
+  ["CANCELED", ["RESTART"]],
 ]);
 
 export function applicableTaskTransition(
