@@ -557,7 +557,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 	var fileRepositoryList []*api.Repository
 	for _, repository := range repositoryList {
 		if repository.Project.RowStatus == api.Archived {
-			log.Debug("Ignored repository as associated project is archived",
+			log.Debug("Skip repository as the associated project is archived",
 				zap.String("file", fileItem.FileName),
 				zap.Int("repository_id", repository.ID),
 				zap.String("repository_external_id", repository.ExternalID),
