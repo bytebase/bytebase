@@ -835,37 +835,57 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 }
 
 func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (*api.TaskCreate, error) {
-	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
+	var taskName string
+	var taskType api.TaskType
+	var payloadBytebase string
 	switch d.MigrationType {
-	case db.Migrate:
-		taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)
+	case db.Baseline, db.Migrate:
+		taskName = fmt.Sprintf("Establish %q baseline", database.Name)
+		taskType = api.TaskDatabaseSchemaUpdate
+		if d.MigrationType == db.Migrate {
+			taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)
+			taskType = api.TaskDatabaseSchemaUpdate
+		}
+		payload := api.TaskDatabaseSchemaUpdatePayload{
+			Statement:     d.Statement,
+			SchemaVersion: schemaVersion,
+			VCSPushEvent:  vcsPushEvent,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database update payload").SetInternal(err)
+		}
+		payloadBytebase = string(bytes)
 	case db.MigrateSDL:
 		taskName = fmt.Sprintf("SDL for %q", database.Name)
+		taskType = api.TaskDatabaseSchemaUpdateSDL
+		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
+			Statement:     d.Statement,
+			SchemaVersion: schemaVersion,
+			VCSPushEvent:  vcsPushEvent,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database SDL schema update payload").SetInternal(err)
+		}
+		payloadBytebase = string(bytes)
 	case db.Data:
 		taskName = fmt.Sprintf("DML(data) for %q", database.Name)
-	}
-	payload := api.TaskDatabaseSchemaUpdatePayload{}
-	payload.MigrationType = d.MigrationType
-	payload.Statement = d.Statement
-	payload.SchemaVersion = schemaVersion
-	if vcsPushEvent != nil {
-		payload.VCSPushEvent = vcsPushEvent
-	}
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to marshal database schema update payload: %v", err)
-		if d.MigrationType == db.Data {
-			errMsg = fmt.Sprintf("Failed to marshal database data update payload: %v", err)
+		taskType = api.TaskDatabaseDataUpdate
+		payload := api.TaskDatabaseDataUpdatePayload{
+			Statement:     d.Statement,
+			SchemaVersion: schemaVersion,
+			VCSPushEvent:  vcsPushEvent,
 		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database data update payload").SetInternal(err)
+		}
+		payloadBytebase = string(bytes)
+	default:
+		return nil, errors.Errorf("unsupported migration type %q", d.MigrationType)
 	}
 
-	taskType := api.TaskDatabaseSchemaUpdate
-	if d.MigrationType == db.Data {
-		taskType = api.TaskDatabaseDataUpdate
-	} else if d.MigrationType == db.MigrateSDL {
-		taskType = api.TaskDatabaseSchemaUpdateSDL
-	}
 	return &api.TaskCreate{
 		Name:              taskName,
 		InstanceID:        database.Instance.ID,
@@ -874,8 +894,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
-		MigrationType:     d.MigrationType,
-		Payload:           string(bytes),
+		Payload:           payloadBytebase,
 	}, nil
 }
 
@@ -1051,7 +1070,6 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
 		Statement:         detail.Statement,
 		EarliestAllowedTs: detail.EarliestAllowedTs,
-		MigrationType:     db.Migrate,
 		Payload:           string(bytesSync),
 	})
 

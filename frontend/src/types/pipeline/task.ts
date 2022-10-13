@@ -161,7 +161,6 @@ export type TaskCreate = {
   characterSet?: string;
   collation?: string;
   backupId?: BackupId;
-  migrationType?: MigrationType;
   earliestAllowedTs: number;
 };
 
