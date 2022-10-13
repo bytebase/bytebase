@@ -30,6 +30,7 @@ const (
 	StatementLeadingWildcardLike Code = 204
 	StatementCreateTableAs       Code = 205
 	StatementDisallowCommit      Code = 206
+	StatementRedundantAlterTable Code = 207
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
