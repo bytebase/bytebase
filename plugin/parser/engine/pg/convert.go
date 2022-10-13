@@ -104,11 +104,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					if !ok {
 						return nil, parser.NewConvertErrorf("expected ColumnDef but found %t", alterCmd.Def.Node)
 					}
-					tp, _ := convertDataType(column.ColumnDef.TypeName)
 					alterColumType := &ast.AlterColumnTypeStmt{
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
-						Type:       tp,
+						Type:       convertDataType(column.ColumnDef.TypeName),
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
