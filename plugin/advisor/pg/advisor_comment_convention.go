@@ -12,7 +12,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*ColumnCommentConventionAdvisor)(nil)
-	_ ast.Visitor     = (*columnCommentConventionChecker)(nil)
+	_ ast.Visitor     = (*commentConventionChecker)(nil)
 )
 
 func init() {
@@ -38,10 +38,9 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, statement stri
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnCommentConventionChecker{
+	checker := &commentConventionChecker{
 		level:     level,
 		title:     string(ctx.Rule.Type),
-		required:  payload.Required,
 		maxLength: payload.MaxLength,
 	}
 
@@ -60,16 +59,15 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, statement stri
 	return checker.adviceList, nil
 }
 
-type columnCommentConventionChecker struct {
+type commentConventionChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	required   bool
 	maxLength  int
 }
 
 // Visit implements the ast.Visitor interface.
-func (checker *columnCommentConventionChecker) Visit(node ast.Node) ast.Visitor {
+func (checker *commentConventionChecker) Visit(node ast.Node) ast.Visitor {
 	type columnData struct {
 		comment string
 		line    int

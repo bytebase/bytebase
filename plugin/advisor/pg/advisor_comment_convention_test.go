@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
-func TestColumnCommentConvention(t *testing.T) {
+func TestCommentConvention(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
 			Statement: `comment on column public.name is 'is a column name'`,
