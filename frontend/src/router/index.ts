@@ -566,6 +566,9 @@ const routes: Array<RouteRecordRaw> = [
                             true;
                     }
                   }
+                  if (project.id === DEFAULT_PROJECT_ID) {
+                    allowAlterSchemaOrChangeData = false;
+                  }
                   if (allowAlterSchemaOrChangeData) {
                     actionList.push(
                       "quickaction.bb.database.schema.update",
