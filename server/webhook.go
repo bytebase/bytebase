@@ -168,6 +168,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		filter := func(repo *api.Repository) (bool, error) {
+			if repo.Project.RowStatus == api.Archived {
+				log.Debug("Skip repository as the associated project is archived",
+					zap.Int("repository_id", repo.ID),
+					zap.String("repository_external_id", repo.ExternalID),
+				)
+				return false, nil
+			}
 			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(repo.WebURL, request.WebURL), nil
 		}
 		ctx := c.Request().Context()
@@ -350,7 +357,15 @@ func (s *Server) sqlAdviceForFile(
 		return adviceList, nil
 	}
 
-	return nil, nil
+	return []advisor.Advice{
+		{
+			Status:  advisor.Warn,
+			Code:    advisor.NotFound,
+			Title:   "SQL review policy not found",
+			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", s.profile.ExternalURL),
+			Line:    1,
+		},
+	}, nil
 }
 
 type repositoryFilter func(*api.Repository) (bool, error)
