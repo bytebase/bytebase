@@ -208,28 +208,31 @@ const tryStartStageOrTaskStatusTransition = (
   const task = currentTask.value;
   const payload = mode === "TASK" ? task : task.stage;
   const name = payload.name;
+  let actionText = "";
   switch (transition.type) {
     case "RUN":
-      updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.run")} '${name}'?`;
+      actionText = t("common.run");
       break;
     case "APPROVE":
-      updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.approve")} '${name}'?`;
+      actionText = t("common.approve");
       break;
     case "RETRY":
-      updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.retry")} '${name}'?`;
+      actionText = t("common.retry");
       break;
     case "CANCEL":
-      updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.cancel")} '${name}'?`;
+      actionText = t("common.cancel");
       break;
     case "SKIP":
-      updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.skip")} '${name}'?`;
+      actionText = t("common.skip");
       break;
+    case "RESTART":
+      actionText = t("common.restart");
+      break;
+    default:
+      console.assert(false, "should never reach this line");
   }
+  updateStatusModalState.title = `${actionText} '${name}'?`;
+  updateStatusModalState.style = "INFO";
   updateStatusModalState.transition = transition;
   updateStatusModalState.payload = payload;
   updateStatusModalState.show = true;
