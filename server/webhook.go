@@ -175,6 +175,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				)
 				return false, nil
 			}
+			if !repo.EnableSQLReviewCI {
+				log.Debug("Skip repository as the SQL review CI is not enabled.",
+					zap.Int("repository_id", repo.ID),
+					zap.String("repository_external_id", repo.ExternalID),
+				)
+				return false, nil
+			}
 			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(repo.WebURL, request.WebURL), nil
 		}
 		ctx := c.Request().Context()
