@@ -939,6 +939,7 @@
     "sql-review-ci-setup-modal": "We have created a {pr} for your repository to set up the SQL review CI. Please review and merge the {pr}.",
     "sql-review-ci-remove": "Remove SQL Review CI",
     "sql-review-ci-remove-modal": "SQL Review CI is disabled. You need to remove the CI from your repository.",
+    "sql-review-ci-restore-modal": "Once you restore to the UI workflow, the SQL review CI will be disabled for your repository. You can remove the CI file from your repository.",
     "git-provider": "Git provider",
     "version-control-status": "@.capitalize:common.version-control is {status}",
     "version-control-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
