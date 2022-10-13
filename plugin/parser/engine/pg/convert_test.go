@@ -111,30 +111,15 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "h",
-							Type:       &ast.Integer{Size: 2},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 2},
 						},
 						{
 							ColumnName: "i",
-							Type:       &ast.Integer{Size: 4},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 4},
 						},
 						{
 							ColumnName: "j",
-							Type:       &ast.Integer{Size: 8},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 8},
 						},
 						{
 							ColumnName: "k",
@@ -142,12 +127,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "l",
-							Type:       &ast.Integer{Size: 8},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 8},
 						},
 						{
 							ColumnName: "m",
@@ -171,21 +151,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "r",
-							Type:       &ast.Integer{Size: 2},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 2},
 						},
 						{
 							ColumnName: "s",
-							Type:       &ast.Integer{Size: 4},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 4},
 						},
 						{
 							ColumnName: "t",
