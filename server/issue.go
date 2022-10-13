@@ -840,7 +840,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 	var payloadBytebase string
 	switch d.MigrationType {
 	case db.Baseline, db.Migrate:
-		taskName = fmt.Sprintf("Establish %q baseline", database.Name)
+		taskName = fmt.Sprintf("Establish baseline for %q", database.Name)
 		taskType = api.TaskDatabaseSchemaUpdate
 		if d.MigrationType == db.Migrate {
 			taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)

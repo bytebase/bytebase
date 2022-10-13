@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
@@ -29,7 +30,12 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	return runMigration(ctx, server, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	migrationType := db.Migrate
+	if strings.HasPrefix(task.Name, "Establish baseline") {
+		migrationType = db.Baseline
+	}
+
+	return runMigration(ctx, server, task, migrationType, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
