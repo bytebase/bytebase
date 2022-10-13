@@ -773,7 +773,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	// Cancel every task depending on the canceled task.
 	if taskPatched.Status == api.TaskCanceled {
 		if err := s.cancelDependingTasks(ctx, taskPatched); err != nil {
-			return nil, errors.Wrap(err, "failed to cancel depending tasks")
+			return nil, errors.Wrapf(err, "failed to cancel depending tasks for task %d", taskPatched.ID)
 		}
 	}
 
