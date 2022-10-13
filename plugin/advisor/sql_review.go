@@ -61,6 +61,8 @@ const (
 	SchemaRuleStatementDisallowLimit SQLReviewRuleType = "statement.disallow-limit"
 	// SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
 	SchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "statement.disallow-order-by"
+	// SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
+	SchemaRuleStatementMergeAlterTable SQLReviewRuleType = "statement.merge-alter-table"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -828,6 +830,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLDisallowOrderBy, nil
+		}
+	case SchemaRuleStatementMergeAlterTable:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLMergeAlterTable, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
