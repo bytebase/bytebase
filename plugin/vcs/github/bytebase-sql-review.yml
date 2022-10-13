@@ -1,6 +1,6 @@
 on: [pull_request]
 jobs:
-  sql-review:
+  bytebase-sql-review:
     runs-on: ubuntu-latest
     name: SQL Review
     steps:

@@ -67,7 +67,7 @@
       :ok-text="$t('common.restore')"
       :confirm-title="$t('repository.restore-to-ui-workflow') + '?'"
       :confirm-description="$t('repository.restore-ui-workflow-description')"
-      @confirm="restoreToUIWorkflowType"
+      @confirm="() => restoreToUIWorkflowType(true)"
     />
     <div>
       <button
@@ -138,7 +138,7 @@
     v-if="state.showRemoveSQLReviewCIModal"
     class="relative overflow-hidden"
     :title="$t('repository.sql-review-ci-remove')"
-    @close="state.showRemoveSQLReviewCIModal = false"
+    @close="onSQLReviewCIModalClose"
   >
     <div class="space-y-4 max-w-[32rem]">
       <div class="whitespace-pre-wrap">
@@ -149,7 +149,7 @@
         <button
           type="button"
           class="btn-normal"
-          @click.prevent="state.showRemoveSQLReviewCIModal = false"
+          @click.prevent="onSQLReviewCIModalClose"
         >
           {{ $t("common.close") }}
         </button>
@@ -283,12 +283,17 @@ export default defineComponent({
       );
     });
 
-    const restoreToUIWorkflowType = () => {
-      const removeSQLReview = removeSQLReviewCI.value;
+    const onSQLReviewCIModalClose = () => {
+      state.showRemoveSQLReviewCIModal = false;
+      restoreToUIWorkflowType(false);
+    };
+
+    const restoreToUIWorkflowType = (checkSQLReviewCI: boolean) => {
+      if (checkSQLReviewCI && props.repository.enableSQLReviewCI) {
+        state.showRemoveSQLReviewCIModal = true;
+        return;
+      }
       repositoryStore.deleteRepositoryByProjectId(props.project.id).then(() => {
-        if (removeSQLReview) {
-          state.showRemoveSQLReviewCIModal = true;
-        }
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -396,6 +401,7 @@ export default defineComponent({
       repositoryInfo,
       allowUpdate,
       restoreToUIWorkflowType,
+      onSQLReviewCIModalClose,
       doUpdate,
     };
   },

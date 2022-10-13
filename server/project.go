@@ -318,7 +318,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		//	Setup SQL review CI for VCS
-		if repository.EnableSQLReviewCI && api.FeatureFlight[api.FeatureVCSSQLReviewWorkflow] && s.feature(api.FeatureVCSSQLReviewWorkflow) {
+		if repository.EnableSQLReviewCI && s.flight(api.FeatureVCSSQLReviewWorkflow) && s.feature(api.FeatureVCSSQLReviewWorkflow) {
 			pullRequest, err := s.setupVCSSQLReviewCI(ctx, repository)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
@@ -444,7 +444,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		//	Setup SQL review CI for VCS
-		if !repo.EnableSQLReviewCI && updatedRepo.EnableSQLReviewCI && api.FeatureFlight[api.FeatureVCSSQLReviewWorkflow] && s.feature(api.FeatureVCSSQLReviewWorkflow) {
+		if !repo.EnableSQLReviewCI && updatedRepo.EnableSQLReviewCI && s.flight(api.FeatureVCSSQLReviewWorkflow) && s.feature(api.FeatureVCSSQLReviewWorkflow) {
 			pullRequest, err := s.setupVCSSQLReviewCI(ctx, updatedRepo)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
