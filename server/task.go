@@ -901,6 +901,7 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 
 func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error {
 	queue := []int{task.ID}
+	seen := map[int]bool{task.ID: true}
 	for len(queue) != 0 {
 		fromTaskID := queue[0]
 		queue = queue[1:]
@@ -909,6 +910,11 @@ func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error
 			return err
 		}
 		for _, dag := range dagList {
+			if seen[dag.ToTaskID] {
+				return errors.New("found a cycle in task dag")
+			}
+			seen[dag.ToTaskID] = true
+
 			if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
 				ID:        dag.ToTaskID,
 				UpdaterID: api.SystemBotID,
