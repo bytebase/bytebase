@@ -243,7 +243,7 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 	}
 
 	blockedBy := []string{}
-	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: raw.ID})
+	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: &raw.ID})
 	if err != nil {
 		return nil, err
 	}
