@@ -122,6 +122,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						Tp:         ast.AlterTableAddConstraint,
 						Constraint: constraint,
 					})
+				// The parent column in the foreign key always needs an index, so in the case of referencing itself,
+				// we need to drop the foreign key before dropping the primary key.
+				// Since the mysqldump statement always puts the primary key in front of the foreign key, and we will reverse the drop statements order.
+				// TODO(zp): So we don't have to worry about this now until one of the statements doesn't come from mysqldump.
 				case ast.ConstraintForeignKey:
 					if oldConstraint, ok := constraintMap[constraint.Name]; ok {
 						if isForeignKeyConstraintEqual(constraint, oldConstraint) {
