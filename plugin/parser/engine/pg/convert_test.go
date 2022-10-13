@@ -1582,7 +1582,7 @@ func TestExplainStmt(t *testing.T) {
 func TestAlterColumnType(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a TYPE int",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
@@ -1596,13 +1596,16 @@ func TestAlterColumnType(t *testing.T) {
 								Name: "tech_book",
 							},
 							ColumnName: "a",
+							Type: &ast.Integer{
+								Size: 4,
+							},
 						},
 					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a TYPE int",
 					LastLine: 1,
 				},
 			},
