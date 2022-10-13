@@ -45,7 +45,15 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
-	var diff []ast.Node
+
+	if err := validateStmtNodes(newNodes); err != nil {
+		return "", errors.Wrapf(err, "failed to validate the statement %q", newStmt)
+	}
+
+	var newNodeList []ast.Node
+	var inplaceUpdate []ast.Node
+	var dropNodeList [][]ast.Node
+
 	oldTableMap := buildTableMap(oldNodes)
 
 	for _, node := range newNodes {
@@ -56,11 +64,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
-				diff = append(diff, &stmt)
+				newNodeList = append(newNodeList, &stmt)
 				continue
 			}
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
-				diff = append(diff, alterTableOptionStmt)
+				inplaceUpdate = append(inplaceUpdate, alterTableOptionStmt)
 			}
 			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
@@ -79,7 +87,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 					continue
 				}
-				// We need to compare the two column definitions.
+				// Compare the two column definitions.
 				if !isColumnEqual(oldColumnDef, columnDef) {
 					alterTableModifyColumnSpecs = append(alterTableModifyColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableModifyColumn,
@@ -88,10 +96,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 				}
 			}
+			// Compare the create definitions
 			for _, constraint := range newStmt.Constraints {
-				if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
-					constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
-					constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
+				switch constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
 					indexName := getIndexName(constraint)
 					if oldConstraint, ok := indexMap[indexName]; ok {
 						if isIndexEqual(constraint, oldConstraint) {
@@ -103,10 +111,21 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						Tp:         ast.AlterTableAddConstraint,
 						Constraint: constraint,
 					})
+				case ast.ConstraintPrimaryKey:
+					if oldConstraint, ok := indexMap["PRIMARY"]; ok {
+						if isIndexEqual(constraint, oldConstraint) {
+							delete(indexMap, "PRIMARY")
+							continue
+						}
+					}
+					alterTableAddConstraintSpecs = append(alterTableAddConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddConstraint,
+						Constraint: constraint,
+					})
 				}
 			}
 			if len(alterTableAddColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -114,7 +133,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 			if len(alterTableModifyColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				inplaceUpdate = append(inplaceUpdate, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -123,6 +142,12 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 			// We should drop the remaining indices in the indexMap.
 			for indexName := range indexMap {
+				if indexName == "PRIMARY" {
+					alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
+						Tp: ast.AlterTableDropPrimaryKey,
+					})
+					continue
+				}
 				alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
 					Tp:   ast.AlterTableDropIndex,
 					Name: indexName,
@@ -130,7 +155,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableAddConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -139,28 +164,85 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableDropConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
-					Table: &ast.TableName{
-						Name: model.NewCIStr(tableName),
+				dropNodeList = append(dropNodeList, []ast.Node{
+					&ast.AlterTableStmt{
+						Table: &ast.TableName{
+							Name: model.NewCIStr(tableName),
+						},
+						Specs: alterTableAddConstraintSpecs,
 					},
-					Specs: alterTableAddConstraintSpecs,
 				})
 			}
 		default:
 		}
 	}
 
-	return deparse(diff, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(nodes []ast.Node, flag format.RestoreFlags) (string, error) {
-	var buf bytes.Buffer
+// We're not supporting all the MySQL statements for now.
+// validateStmtNodes validates the stmt nodes, return nil if they are valid.
+func validateStmtNodes(nodes []ast.StmtNode) error {
+	// TODO(zp): validate more statements.
 	for _, node := range nodes {
+		switch stmt := node.(type) {
+		case *ast.CreateTableStmt:
+			for _, columnDef := range stmt.Cols {
+				for _, option := range columnDef.Options {
+					if option.Tp == ast.ColumnOptionPrimaryKey {
+						return errors.New("unsupported column inline PK in CREATE TABLE statement likes `CREATE TABLE tbl(id INT PARIMARY KEY);`")
+					}
+				}
+			}
+		default:
+			return errors.Errorf("unsupported statement: %T", node)
+		}
+	}
+	return nil
+}
+
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
+	var buf bytes.Buffer
+	// We should following the right order to avoid break the dependency:
+	// Additions for new nodes.
+	// Updates for in-place node updates.
+	// Deletions for destructive (none in-place) node updates (in reverse order).
+	// Additions for destructive node updates.
+	// Deletions for deleted nodes (in reverse order).
+	for _, node := range newNodeList {
 		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {
 			return "", err
+		}
+	}
+
+	for _, node := range inplaceUpdate {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+
+	var reDropNodes [][]ast.Node
+	for i := len(dropNodeList) - 1; i >= 0; i-- {
+		var nodes []ast.Node
+		for j := len(dropNodeList[i]) - 1; j >= 0; j-- {
+			nodes = append(nodes, dropNodeList[i][j])
+		}
+		reDropNodes = append(reDropNodes, nodes)
+	}
+	for _, nodes := range reDropNodes {
+		for _, node := range nodes {
+			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+				return "", err
+			}
+			if _, err := buf.Write([]byte(";\n")); err != nil {
+				return "", err
+			}
 		}
 	}
 	return buf.String(), nil
@@ -207,6 +289,13 @@ func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
 			constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
 			indexName := getIndexName(constraint)
 			indexMap[indexName] = constraint
+		}
+		if constraint.Tp == ast.ConstraintPrimaryKey {
+			// A table can have only one PRIMARY KEY.
+			// The name of a PRIMARY KEY is always PRIMARY, which thus cannot be used as the name for any other kind of index.
+			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+			// https://dev.mysql.com/doc/refman/5.7/en/create-table.html
+			indexMap["PRIMARY"] = constraint
 		}
 	}
 	return indexMap

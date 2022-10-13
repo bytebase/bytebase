@@ -388,6 +388,24 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &commentStmt, nil
+	case *pgquery.Node_CreatedbStmt:
+		createDatabaseStmt := ast.CreateDatabaseStmt{
+			Name: in.CreatedbStmt.Dbname,
+		}
+		for _, option := range in.CreatedbStmt.Options {
+			if item, ok := option.Node.(*pgquery.Node_DefElem); ok && item.DefElem.Defname == "encoding" {
+				value, ok := item.DefElem.Arg.Node.(*pgquery.Node_String_)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected String but found %t", item.DefElem.Arg.Node)
+				}
+				createDatabaseStmt.OptionList = append(createDatabaseStmt.OptionList, &ast.DatabaseOptionDef{
+					Type:  ast.DatabaseOptionEncoding,
+					Value: value.String_.Str,
+				})
+			}
+		}
+
+		return &createDatabaseStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}

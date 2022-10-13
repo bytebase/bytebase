@@ -319,37 +319,68 @@ func TestIndexOption(t *testing.T) {
 		new  string
 		want string
 	}{
+		// KEY_BLOCK_SIZE not match.
 		{
-			// KEY_BLOCK_SIZE not match.
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) KEY_BLOCK_SIZE=30);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) KEY_BLOCK_SIZE=50);`,
 			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
 				"ALTER TABLE `book` ADD INDEX `book_idx`(`name`) KEY_BLOCK_SIZE=50;\n",
 		},
 		{
-			// WITH PARSER not match.
+			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) KEY_BLOCK_SIZE=30);`,
+			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) KEY_BLOCK_SIZE=50);`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) KEY_BLOCK_SIZE=50;\n",
+		},
+		// WITH PARSER not match.
+		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_a);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) WITH PARSER parser_b);`,
 			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
 				"ALTER TABLE `book` ADD FULLTEXT `book_idx`(`name`) WITH PARSER `parser_b`;\n",
 		},
 		{
-			// COMMENT not match.
+			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (name) WITH PARSER parser_a);`,
+			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL,CONSTRAINT PRIMARY KEY (name) WITH PARSER parser_b);`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) WITH PARSER `parser_b`;\n",
+		},
+		// COMMENT not match.
+		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) COMMENT 'comment_b');`,
 			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
 				"ALTER TABLE `book` ADD INDEX `book_idx`(`name`) COMMENT 'comment_b';\n",
 		},
 		{
-			// VISIBILITY not match.
+			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) COMMENT 'comment_a');`,
+			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) COMMENT 'comment_b');`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) COMMENT 'comment_b';\n",
+		},
+		// VISIBILITY not match.
+		{
+
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) VISIBLE);`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) INVISIBLE);`,
 			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
 				"ALTER TABLE `book` ADD INDEX `book_idx`(`name`) INVISIBLE;\n",
 		},
 		{
+
+			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) VISIBLE);`,
+			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(name) INVISIBLE);`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`name`) INVISIBLE;\n",
+		},
+		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
 			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, FULLTEXT INDEX book_idx(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
+			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY(name) KEY_BLOCK_SIZE=30 WITH PARSER parser_a COMMENT 'no difference!');`,
 			want: "",
 		},
 	}
@@ -376,10 +407,22 @@ func TestKeyPart(t *testing.T) {
 				"ALTER TABLE `book` ADD INDEX `book_idx`(`id`) USING BTREE COMMENT 'comment_a';\n",
 		},
 		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, name) COMMENT 'comment_a');`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id) COMMENT 'comment_a');`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`) COMMENT 'comment_a';\n",
+		},
+		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
 			want: "ALTER TABLE `book` DROP INDEX `book_idx`;\n" +
 				"ALTER TABLE `book` ADD INDEX `book_idx`((`id`+1)) USING BTREE COMMENT 'comment_a';\n",
+		},
+		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (id, name) COMMENT 'comment_a');`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+1)) COMMENT 'comment_a';\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
@@ -388,8 +431,19 @@ func TestKeyPart(t *testing.T) {
 				"ALTER TABLE `book` ADD INDEX `book_idx`((`id`+2)) USING BTREE COMMENT 'comment_a';\n",
 		},
 		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 1)) COMMENT 'comment_a');`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((id + 2)) COMMENT 'comment_a');`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY((`id`+2)) COMMENT 'comment_a';\n",
+		},
+		{
 			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
+			want: "",
+		},
+		{
+			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY (id, name) COMMENT 'comment_a');`,
+			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY (id, name) COMMENT 'comment_a');`,
 			want: "",
 		},
 		{
@@ -397,8 +451,45 @@ func TestKeyPart(t *testing.T) {
 			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE ((id + 1)) COMMENT 'comment_a');`,
 			want: "",
 		},
+		{
+			old:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY ((id + 1)) COMMENT 'comment_a');`,
+			new:  `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, CONSTRAINT PRIAMRY KEY ((id + 1)) COMMENT 'comment_a');`,
+			want: "",
+		},
 	}
 
+	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
+	for _, test := range tests {
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
+
+func TestIndex(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
+		// ADD COLUMN -> DROP PRIMARY KEY -> ADD PRIMARY KEY
+		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50), CONSTRAINT PRIMARY KEY(id, name));`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, address));`,
+			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
+				"ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `address`);\n",
+		},
+		// ADD COLUMN -> DROP INDEX -> ADD INDEX
+		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX id_name_idx (id, name));`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX id_address_idx (id, address));`,
+			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
+				"ALTER TABLE `book` DROP INDEX `id_name_idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `id_address_idx`(`id`, `address`);\n",
+		},
+	}
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {

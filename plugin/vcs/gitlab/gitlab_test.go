@@ -999,7 +999,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
     "head_sha": "2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f",
     "start_sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00"
   },
-  "diverged_commits_count": 2,
+  "diverged_commits_count": 2
 }
 `)),
 						}, nil
@@ -1010,7 +1010,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.CreatePullRequest(ctx, common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
+	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
 		Title:                 "test1",
 		Body:                  "fixed login page css paddings",
 		Head:                  "test1",
@@ -1018,6 +1018,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 		RemoveHeadAfterMerged: true,
 	})
 	require.NoError(t, err)
+	assert.Equal(t, "http://gitlab.example.com/my-group/my-project/merge_requests/1", res.URL)
 }
 
 func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
