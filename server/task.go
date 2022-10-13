@@ -911,7 +911,7 @@ func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error
 		}
 		for _, dag := range dagList {
 			if seen[dag.ToTaskID] {
-				return errors.New("found a cycle in task dag")
+				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
 			}
 			seen[dag.ToTaskID] = true
 
