@@ -58,18 +58,18 @@ func TestCreateTable(t *testing.T) {
 				`"e" DECIMAL(4), ` +
 				`"f" FLOAT4, ` +
 				`"g" FLOAT8, ` +
-				`"h" INT2 NOT NULL, ` +
-				`"i" INT4 NOT NULL, ` +
-				`"j" INT8 NOT NULL, ` +
+				`"h" SERIAL2, ` +
+				`"i" SERIAL4, ` +
+				`"j" SERIAL8, ` +
 				`"k" INT8, ` +
-				`"l" INT8 NOT NULL, ` +
+				`"l" SERIAL8, ` +
 				`"m" FLOAT8, ` +
 				`"n" INT4, ` +
 				`"o" INT4, ` +
 				`"p" FLOAT4, ` +
 				`"q" INT2, ` +
-				`"r" INT2 NOT NULL, ` +
-				`"s" INT4 NOT NULL, ` +
+				`"r" SERIAL2, ` +
+				`"s" SERIAL4, ` +
 				`"t" DECIMAL)`,
 		},
 		{

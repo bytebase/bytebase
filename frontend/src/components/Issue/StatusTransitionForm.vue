@@ -224,6 +224,8 @@ export default defineComponent({
               return "btn-danger";
             case "SKIP":
               return "btn-danger";
+            case "RESTART":
+              return "btn-normal";
           }
         }
       }

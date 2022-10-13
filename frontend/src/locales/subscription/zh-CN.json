@@ -87,7 +87,10 @@
         "vsc-workflow": "VCS 工作流 #GitOps",
         "shareable-query-link": "分享查询链接",
         "im-integration": "IM 集成",
-        "inbox-notification": "站内信通知"
+        "inbox-notification": "站内信通知",
+        "vsc-workflow-basic": "基础",
+        "vsc-workflow-advanced": "高级",
+        "vsc-workflow-advanced-tooltip": "基础版功能 + SQL 审核 CI"
       }
     },
     "admin-and-security": {
