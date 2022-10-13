@@ -274,6 +274,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string, isTenantWildcard bool
 	// Tenant projects have wildcard database matching supports a different set of placeholders.
 	if isTenantWildcard {
 		placeholderList = []string{
+			"DB_NAME",
 			"VERSION",
 			"TYPE",
 			"DESCRIPTION",
