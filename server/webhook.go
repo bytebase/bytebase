@@ -168,6 +168,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		filter := func(repo *api.Repository) (bool, error) {
+			if repo.Project.RowStatus == api.Archived {
+				log.Debug("Skip repository as the associated project is archived",
+					zap.Int("repository_id", repo.ID),
+					zap.String("repository_external_id", repo.ExternalID),
+				)
+				return false, nil
+			}
 			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(repo.WebURL, request.WebURL), nil
 		}
 		ctx := c.Request().Context()
@@ -556,14 +563,6 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 	var fType fileType
 	var fileRepositoryList []*api.Repository
 	for _, repository := range repositoryList {
-		if repository.Project.RowStatus == api.Archived {
-			log.Debug("Skip repository as the associated project is archived",
-				zap.String("file", fileItem.FileName),
-				zap.Int("repository_id", repository.ID),
-				zap.String("repository_external_id", repository.ExternalID),
-			)
-			continue
-		}
 		if !strings.HasPrefix(fileItem.FileName, repository.BaseDirectory) {
 			log.Debug("Ignored file outside the base directory",
 				zap.String("file", fileItem.FileName),
