@@ -770,7 +770,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
-	// Cancel every dependency of the task.
+	// Cancel every task depending on the canceled task.
 	if taskPatched.Status == api.TaskCanceled {
 		queue := []int{taskPatched.ID}
 		for len(queue) != 0 {
