@@ -457,7 +457,7 @@ const useDatabaseAndTableList = () => {
   watch(
     databaseList,
     (list) => {
-      list.forEach((db) => tableStore.fetchTableListByDatabaseId(db.id));
+      list.forEach((db) => tableStore.getOrFetchTableListByDatabaseId(db.id));
     },
     { immediate: true }
   );
