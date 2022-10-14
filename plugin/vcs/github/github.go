@@ -888,17 +888,20 @@ func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx co
 	return prFiles, nil
 }
 
-type githubBranchCreate struct {
+// BranchCreate is the API message to create the branch.
+type BranchCreate struct {
 	Ref string `json:"ref"`
 	SHA string `json:"sha"`
 }
 
-type githubBranch struct {
+// Branch is the API message for GitHub branch.
+type Branch struct {
 	Ref    string          `json:"ref"`
-	Object referenceObject `json:"object"`
+	Object ReferenceObject `json:"object"`
 }
 
-type referenceObject struct {
+// ReferenceObject is the reference for the GitHub branch.
+type ReferenceObject struct {
 	SHA string `json:"sha"`
 }
 
@@ -936,7 +939,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 		)
 	}
 
-	res := new(githubBranch)
+	res := new(Branch)
 	if err := json.Unmarshal([]byte(body), res); err != nil {
 		return nil, err
 	}
@@ -957,7 +960,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 // Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
 func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
 	body, err := json.Marshal(
-		githubBranchCreate{
+		BranchCreate{
 			Ref: fmt.Sprintf("refs/heads/%s", branch.Name),
 			SHA: branch.LastCommitID,
 		},
@@ -1000,7 +1003,8 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 	return nil
 }
 
-type githubPullRequest struct {
+// PullRequest is the API message for GitHub pull request.
+type PullRequest struct {
 	HTMLURL string `json:"html_url"`
 }
 
@@ -1044,7 +1048,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		)
 	}
 
-	var res githubPullRequest
+	var res PullRequest
 	if err := json.Unmarshal([]byte(resp), &res); err != nil {
 		return nil, err
 	}
@@ -1054,7 +1058,8 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 	}, nil
 }
 
-type environmentVariable struct {
+// RepositorySecretUpdate is the API message to update the repository secret.
+type RepositorySecretUpdate struct {
 	EncryptedValue string `json:"encrypted_value"`
 	KeyID          string `json:"key_id"`
 }
@@ -1075,7 +1080,7 @@ func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx commo
 	}
 
 	body, err := json.Marshal(
-		environmentVariable{
+		RepositorySecretUpdate{
 			KeyID:          publicKey.KeyID,
 			EncryptedValue: encryptValue,
 		},
@@ -1166,7 +1171,8 @@ func encryptEnvironmentVariable(publicKey, value string) (string, error) {
 	return base64.StdEncoding.EncodeToString(out), nil
 }
 
-type repositoryPublicKey struct {
+// RepositorySecret is the secret for repository.
+type RepositorySecret struct {
 	KeyID string `json:"key_id"`
 	Key   string `json:"key"`
 }
@@ -1174,7 +1180,7 @@ type repositoryPublicKey struct {
 // getRepositoryPublicKey returns the public key in the GitHub repository.
 //
 // https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
-func (p *Provider) getRepositoryPublicKey(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) (*repositoryPublicKey, error) {
+func (p *Provider) getRepositoryPublicKey(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) (*RepositorySecret, error) {
 	url := fmt.Sprintf("%s/repos/%s/actions/secrets/public-key", p.APIURL(instanceURL), repositoryID)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -1205,7 +1211,7 @@ func (p *Provider) getRepositoryPublicKey(ctx context.Context, oauthCtx common.O
 		)
 	}
 
-	res := new(repositoryPublicKey)
+	res := new(RepositorySecret)
 	if err := json.Unmarshal([]byte(body), res); err != nil {
 		return nil, err
 	}
