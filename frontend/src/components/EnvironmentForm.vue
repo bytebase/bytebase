@@ -29,6 +29,7 @@
           <div class="flex space-x-4">
             <BBCheckbox
               :value="(state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier === 'PROTECTED'"
+              :disabled="!allowEdit"
               @toggle="(on: boolean) => {
                 (state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier = on ? 'PROTECTED' : 'UNPROTECTED'
               }"
@@ -185,7 +186,7 @@
             @click.prevent="onSQLReviewPolicyClick"
           >
             {{ sqlReviewPolicy.name }}
-            <span v-if="sqlReviewPolicy.rowStatus == 'ARCHIVED'">
+            <span v-if="sqlReviewPolicy.rowStatus === 'ARCHIVED'">
               ({{ $t("sql-review.disabled") }})
             </span>
           </button>
@@ -223,7 +224,9 @@
     </div>
     <!-- Update button group -->
     <div v-else class="flex justify-between items-center pt-5">
-      <template v-if="(state.environment as Environment).rowStatus == 'NORMAL'">
+      <template
+        v-if="(state.environment as Environment).rowStatus === 'NORMAL'"
+      >
         <BBButtonConfirm
           v-if="allowArchive"
           :style="'ARCHIVE'"
@@ -238,7 +241,7 @@
         />
       </template>
       <template
-        v-else-if="(state.environment as Environment).rowStatus == 'ARCHIVED'"
+        v-else-if="(state.environment as Environment).rowStatus === 'ARCHIVED'"
       >
         <BBButtonConfirm
           v-if="allowRestore"
@@ -431,7 +434,7 @@ const allowRestore = computed(() => {
 const allowEdit = computed(() => {
   return (
     props.create ||
-    ((state.environment as Environment).rowStatus == "NORMAL" &&
+    ((state.environment as Environment).rowStatus === "NORMAL" &&
       hasPermission.value)
   );
 });
