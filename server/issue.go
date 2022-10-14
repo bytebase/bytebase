@@ -252,7 +252,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Payload:     string(payload),
 			}
 			_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-				issue: issue,
+				issue: updatedIssue,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Name)).SetInternal(err)
