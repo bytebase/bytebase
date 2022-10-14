@@ -851,6 +851,18 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 
 	var payloadString string
 	if d.MigrationType == db.MigrateSDL {
+		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
+			Statement:     d.Statement,
+			SchemaVersion: schemaVersion,
+			VCSPushEvent:  vcsPushEvent,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			errMsg := fmt.Sprintf("Failed to marshal database schema update SDL payload: %v", err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
+		}
+		payloadString = string(bytes)
+	} else {
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			MigrationType: d.MigrationType,
 			Statement:     d.Statement,
@@ -863,18 +875,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 			if d.MigrationType == db.Data {
 				errMsg = fmt.Sprintf("Failed to marshal database data update payload: %v", err)
 			}
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
-		}
-		payloadString = string(bytes)
-	} else {
-		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
-			Statement:     d.Statement,
-			SchemaVersion: schemaVersion,
-			VCSPushEvent:  vcsPushEvent,
-		}
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			errMsg := fmt.Sprintf("Failed to marshal database schema update SDL payload: %v", err)
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, errMsg)
 		}
 		payloadString = string(bytes)
