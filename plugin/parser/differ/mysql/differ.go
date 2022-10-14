@@ -56,6 +56,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var dropNodeList []ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
+	oldViewMap := buildViewMap(oldNodes)
 
 	for _, node := range newNodes {
 		switch newStmt := node.(type) {
@@ -237,8 +238,30 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Specs: alterTableInplaceAddConstraintSpecs,
 				})
 			}
-		default:
+		case *ast.CreateViewStmt:
+			viewName := newStmt.ViewName.Name.O
+			createViewStmt := newStmt
+			createViewStmt.OrReplace = true
+			if view, ok := oldViewMap[viewName]; ok {
+				if !isViewEqual(newStmt, view) {
+					inplaceUpdate = append(inplaceUpdate, createViewStmt)
+				}
+				delete(oldViewMap, viewName)
+				continue
+			}
+			newNodeList = append(newNodeList, createViewStmt)
 		}
+	}
+	var viewNames []*ast.TableName
+	// Drop the remaining views in the oldViewMap.
+	for _, view := range oldViewMap {
+		viewNames = append(viewNames, view.ViewName)
+	}
+	if len(viewNames) > 0 {
+		dropNodeList = append(dropNodeList, &ast.DropTableStmt{
+			Tables: viewNames,
+			IsView: true,
+		})
 	}
 	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
@@ -310,6 +333,18 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 		}
 	}
 	return tableMap
+}
+
+// buildViewMap returns a map of view name to create view statements.
+func buildViewMap(nodes []ast.StmtNode) map[string]*ast.CreateViewStmt {
+	viewMap := make(map[string]*ast.CreateViewStmt)
+	for _, node := range nodes {
+		if stmt, ok := node.(*ast.CreateViewStmt); ok {
+			viewName := stmt.ViewName.Name.O
+			viewMap[viewName] = stmt
+		}
+	}
+	return viewMap
 }
 
 // buildColumnMap returns a map of column name to column definition on a given table.
@@ -850,6 +885,29 @@ func isTableOptionValEqual(old, new *ast.TableOption) bool {
 		return true
 	}
 	return true
+}
+
+// isViewEqual checks whether two views with same name are equal.
+func isViewEqual(old, new *ast.CreateViewStmt) bool {
+	// CREATE
+	// 		[OR REPLACE]
+	// 		[ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
+	// 		[DEFINER = user]
+	// 		[SQL SECURITY { DEFINER | INVOKER }]
+	// 		VIEW view_name [(column_list)]
+	// 		AS select_statement
+	// 		[WITH [CASCADED | LOCAL] CHECK OPTION]
+	// We can easily replace view statement by using `CREATE OR REPLACE VIEW` statement to replace the old one.
+	// So we don't need to compare each part, just compare the restore string.
+	restoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, nil)
+	var oldBuf, newBuf bytes.Buffer
+	if err := old.Restore(restoreCtx); err != nil {
+		return false
+	}
+	if err := new.Restore(restoreCtx); err != nil {
+		return false
+	}
+	return oldBuf.String() == newBuf.String()
 }
 
 // buildTableOptionMap builds a map of table options.
