@@ -658,7 +658,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 				if len(migrationDetailListForFile) != 0 {
 					databaseName := fileInfo.migrationInfo.Database
 					issueName := fmt.Sprintf(issueNameTemplate, databaseName, "Alter schema")
-					issueDescription := fmt.Sprintf("By VCS file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
+					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
 					creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
 					if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
