@@ -2,6 +2,7 @@ package pg
 
 import (
 	"fmt"
+
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
@@ -117,6 +118,8 @@ func (checker *indexNoDuplicateColumnChecker) Visit(node ast.Node) ast.Visitor {
 						})
 					}
 				}
+			default:
+				continue
 			}
 		}
 	}
