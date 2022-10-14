@@ -445,6 +445,8 @@ func TestVCS(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
+			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -508,6 +510,8 @@ func TestVCS(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
+			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -771,6 +775,10 @@ func TestVCS_SDL(t *testing.T) {
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
+			a.Equal("Apply schema diff by file Prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -805,6 +813,10 @@ func TestVCS_SDL(t *testing.T) {
 			status, err = ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
