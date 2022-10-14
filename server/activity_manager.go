@@ -119,7 +119,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			title = "Issue canceled - " + meta.issue.Name
 		}
 	case api.ActivityIssueCommentCreate:
-		title = "Comment created"
+		title = "Comment created - " + meta.issue.Name
 		link += fmt.Sprintf("#activity%d", activity.ID)
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
@@ -187,20 +187,20 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					}
 
 					if oldAssignee != nil && newAssignee != nil {
-						title = fmt.Sprintf("Reassigned issue from %s to %s", oldAssignee.Name, newAssignee.Name)
+						title = fmt.Sprintf("Reassigned issue from %s to %s - ", oldAssignee.Name, newAssignee.Name) + meta.issue.Name
 					} else if newAssignee != nil {
-						title = fmt.Sprintf("Assigned issue to %s", newAssignee.Name)
+						title = fmt.Sprintf("Assigned issue to %s - ", newAssignee.Name) + meta.issue.Name
 					} else if oldAssignee != nil {
-						title = fmt.Sprintf("Unassigned issue from %s", newAssignee.Name)
+						title = fmt.Sprintf("Unassigned issue from %s - ", newAssignee.Name) + meta.issue.Name
 					}
 				}
 			}
 		case api.IssueFieldDescription:
-			title = "Changed issue description"
+			title = "Changed issue description - " + meta.issue.Name
 		case api.IssueFieldName:
-			title = "Changed issue name"
+			title = "Changed issue name - " + meta.issue.Name
 		default:
-			title = "Updated issue"
+			title = "Updated issue - " + meta.issue.Name
 		}
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
