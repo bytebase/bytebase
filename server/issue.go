@@ -888,7 +888,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
-		MigrationType:     d.MigrationType,
 		Payload:           payloadString,
 	}, nil
 }
@@ -1065,7 +1064,6 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
 		Statement:         detail.Statement,
 		EarliestAllowedTs: detail.EarliestAllowedTs,
-		MigrationType:     db.Migrate,
 		Payload:           string(bytesSync),
 	})
 
