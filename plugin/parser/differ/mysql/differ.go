@@ -126,8 +126,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					if oldConstraint, ok := constraintMap[primaryKeyName]; ok {
 						if !isIndexEqual(constraint, oldConstraint) {
 							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
-								Tp:         ast.AlterTableDropPrimaryKey,
-								Constraint: oldConstraint,
+								Tp: ast.AlterTableDropPrimaryKey,
 							})
 							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
 								Tp:         ast.AlterTableAddConstraint,
@@ -149,16 +148,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					if oldConstraint, ok := constraintMap[constraint.Name]; ok {
 						if !isForeignKeyConstraintEqual(constraint, oldConstraint) {
 							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
-								Tp:         ast.AlterTableDropForeignKey,
-								Constraint: oldConstraint,
+								Tp:   ast.AlterTableDropForeignKey,
+								Name: constraint.Name,
 							})
 							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
 								Tp:         ast.AlterTableAddConstraint,
 								Constraint: constraint,
 							})
-							delete(constraintMap, constraint.Name)
-							continue
 						}
+						delete(constraintMap, constraint.Name)
+						continue
 					}
 					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableAddConstraint,
@@ -200,10 +199,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						Name: constraint.Name,
 					})
 				}
-				alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
-					Tp:   ast.AlterTableDropIndex,
-					Name: indexName,
-				})
 			}
 
 			if len(alterTableAddNewConstraintSpecs) > 0 {
@@ -241,6 +236,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Specs: alterTableInplaceAddConstraintSpecs,
 				})
 			}
+		default:
 		}
 	}
 	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
