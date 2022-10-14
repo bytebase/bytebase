@@ -85,7 +85,7 @@ func TestColumnMaximumCharacterLength(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(advisor.NumberLimitRulePayload{
+	payload, err := json.Marshal(advisor.NumberTypeRulePayload{
 		Number: 20,
 	})
 	require.NoError(t, err)

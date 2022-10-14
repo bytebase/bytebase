@@ -112,6 +112,9 @@ const (
 	// MySQLColumnMaximumCharacterLength is an advisor type for MySQL maximum character length.
 	MySQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.mysql.column.maximum-character-length"
 
+	// MySQLAutoIncrementColumnInitialValue is an advisor type for MySQL auto-increment column initial value.
+	MySQLAutoIncrementColumnInitialValue Type = "bb.plugin.advisor.mysql.column.auto-increment-initial-value"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 

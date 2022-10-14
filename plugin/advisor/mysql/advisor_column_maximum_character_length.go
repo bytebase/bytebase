@@ -37,7 +37,7 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(ctx advisor.Context, statement
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberLimitRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
