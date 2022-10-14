@@ -106,7 +106,7 @@ func TestIndexKeyNumberLimitAdvisor(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(advisor.NumberLimitRulePayload{
+	payload, err := json.Marshal(advisor.NumberTypeRulePayload{
 		Number: 1,
 	})
 	require.NoError(t, err)

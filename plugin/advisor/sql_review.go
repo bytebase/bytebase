@@ -99,6 +99,10 @@ const (
 	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
 	// SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 	SchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "column.maximum-character-length"
+	// SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
+	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
+	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -222,8 +226,8 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaximumCharacterLength:
-		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue:
+		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleColumnTypeRestriction:
@@ -251,8 +255,8 @@ type CommentConventionRulePayload struct {
 	MaxLength int  `json:"maxLength"`
 }
 
-// NumberLimitRulePayload is the payload for number limit rule.
-type NumberLimitRulePayload struct {
+// NumberTypeRulePayload is the number type payload.
+type NumberTypeRulePayload struct {
 	Number int `json:"number"`
 }
 
@@ -356,11 +360,11 @@ func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRu
 	return &ccr, nil
 }
 
-// UnmarshalNumberLimitRulePayload will unmarshal payload to NumberLimitRulePayload.
-func UnmarshalNumberLimitRulePayload(payload string) (*NumberLimitRulePayload, error) {
-	var nlr NumberLimitRulePayload
+// UnmarshalNumberTypeRulePayload will unmarshal payload to NumberTypeRulePayload.
+func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, error) {
+	var nlr NumberTypeRulePayload
 	if err := json.Unmarshal([]byte(payload), &nlr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal number limit rule payload %q", payload)
+		return nil, errors.Wrapf(err, "failed to unmarshal number type rule payload %q", payload)
 	}
 	return &nlr, nil
 }
@@ -722,6 +726,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnMaximumCharacterLength, nil
+		}
+	case SchemaRuleColumnAutoIncrementInitialValue:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLAutoIncrementColumnInitialValue, nil
+		}
+	case SchemaRuleColumnAutoIncrementMustUnsigned:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
