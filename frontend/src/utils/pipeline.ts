@@ -236,20 +236,6 @@ export const APPLICABLE_TASK_TRANSITION_LIST: Map<
   ["CANCELED", ["RESTART"]],
 ]);
 
-export function isApplicableTaskTransition(
-  task: Task,
-  transitionType: TaskStatusTransitionType
-): boolean {
-  if (task.id == EMPTY_ID || task.id == UNKNOWN_ID) {
-    return false;
-  }
-
-  const list = APPLICABLE_TASK_TRANSITION_LIST.get(task.status);
-
-  if (!list) return false;
-  return list.includes(transitionType);
-}
-
 export function applicableTaskTransition(
   pipeline: Pipeline
 ): TaskStatusTransition[] {

@@ -13,7 +13,6 @@ import {
   activeStage,
   allTaskList,
   applicableTaskTransition,
-  isApplicableTaskTransition,
   isDBAOrOwner,
   isOwnerOfProject,
   StageStatusTransition,
@@ -127,7 +126,7 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
           const pendingApprovalTaskList = currentStage.taskList.filter(
             (task) => {
               return (
-                isApplicableTaskTransition(task, APPROVE.type) &&
+                task.status === "PENDING_APPROVAL" &&
                 allowApplyTaskStatusTransition(task, APPROVE.to)
               );
             }
