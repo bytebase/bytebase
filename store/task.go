@@ -717,16 +717,16 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
-	var IDs []string
+	var ids []string
 	for _, id := range patch.IDList {
-		IDs = append(IDs, strconv.Itoa(id))
+		ids = append(ids, strconv.Itoa(id))
 	}
 
 	// Execute update query with RETURNING.
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
-		WHERE id in (`+strings.Join(IDs, ",")+`) 
+		WHERE id in (`+strings.Join(ids, ",")+`) 
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 		args...,
