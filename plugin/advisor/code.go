@@ -63,6 +63,7 @@ const (
 	SetColumnCharset                        Code = 414
 	CharLengthExceedsLimit                  Code = 415
 	AutoIncrementColumnInitialValueNotMatch Code = 416
+	AutoIncrementColumnSigned               Code = 417
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
