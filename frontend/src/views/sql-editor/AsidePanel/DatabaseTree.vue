@@ -21,6 +21,7 @@
         :selected-keys="selectedKeys"
         :expanded-keys="sqlEditorStore.expandedTreeNodeKeys"
         :render-label="renderLabel"
+        :render-prefix="renderPrefix"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :on-load="loadSubTree"
@@ -55,6 +56,7 @@ import type { ConnectionAtom, DatabaseId, InstanceId } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import {
   useDatabaseStore,
+  useInstanceStore,
   useIsLoggedIn,
   useSQLEditorStore,
   useTableStore,
@@ -69,6 +71,9 @@ import {
 } from "@/utils";
 import { generateTableItem } from "./utils";
 import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
+import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database";
+import HeroiconsOutlineTable from "~icons/heroicons-outline/table";
 
 type Position = {
   x: number;
@@ -81,6 +86,7 @@ type DropdownOptionWithConnectionAtom = DropdownOption & {
 
 const { t } = useI18n();
 
+const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const sqlEditorStore = useSQLEditorStore();
 const tableStore = useTableStore();
@@ -199,6 +205,26 @@ const renderLabel = ({ option }: { option: ConnectionAtom }) => {
     ),
     class: classes,
   });
+};
+
+// Render icons before nodes.
+const renderPrefix = ({ option }: { option: ConnectionAtom }) => {
+  if (option.type === "instance") {
+    const instanceId = option.id;
+    const instance = instanceStore.getInstanceById(instanceId);
+    return h(InstanceEngineIcon, {
+      instance,
+    });
+  } else if (option.type === "database") {
+    return h(HeroiconsOutlineDatabase, {
+      class: "w-4 h-4",
+    });
+  } else if (option.type === "table") {
+    return h(HeroiconsOutlineTable, {
+      class: "w-4 h-4",
+    });
+  }
+  return null;
 };
 
 // Render a 'connected' icon in the right of the node

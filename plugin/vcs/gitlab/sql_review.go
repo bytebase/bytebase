@@ -13,7 +13,7 @@ const (
 	// CIFilePath is the local path for GitLab ci file.
 	CIFilePath = ".gitlab-ci.yml"
 	// SQLReviewCIFilePath is the local path for SQL review CI in GitLab repo.
-	SQLReviewCIFilePath = ".gitlab/sql-review.yml"
+	SQLReviewCIFilePath = ".gitlab/bytebase-sql-review.yml"
 	// sqlReviewCIFileRelativePathInGitLabCI is the keyword for relative path for SQL review CI file in .gitlab-ci.yml.
 	sqlReviewCIFileRelativePathKeywordInGitLabCI = "local"
 	// gitlabCIIncludeKeyword is the keyword for "include" in .gitlab-ci.yml
@@ -23,7 +23,7 @@ const (
 
 // sqlReviewCI is the GitLab CI for SQL review in VCS workflow.
 //
-//go:embed sql-review.yml
+//go:embed bytebase-sql-review.yml
 var sqlReviewCI string
 
 // SetupSQLReviewCI will setup the SQL review CI content with SQL review endpoint.
