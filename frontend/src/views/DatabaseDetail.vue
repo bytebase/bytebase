@@ -530,7 +530,9 @@ const createMigration = async (
           : `Change data`
       );
     }
-    issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+    const datetime = dayjs().format("@MM-DD HH:mm");
+    const tz = "UTC" + dayjs().format("ZZ");
+    issueNameParts.push(`${datetime} ${tz}`);
 
     const query: Record<string, any> = {
       template: type,
