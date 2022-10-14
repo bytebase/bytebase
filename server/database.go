@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -208,44 +207,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
 			targetProject = toProject
-
-			if toProject.TenantMode == api.TenantModeTenant {
-				if !s.feature(api.FeatureMultiTenancy) {
-					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-				}
-
-				labels := database.Labels
-				if dbPatch.Labels != nil {
-					labels = *dbPatch.Labels
-				}
-				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
-				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
-				}
-				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get schema from peer tenant database").SetInternal(err)
-				}
-
-				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
-				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
-					if err != nil {
-						return err
-					}
-					defer driver.Close(ctx)
-
-					var schemaBuf bytes.Buffer
-					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database schema for database %q", database.Name)).SetInternal(err)
-					}
-					if peerSchema != schemaBuf.String() {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name))
-					}
-				}
-			}
 		}
 
 		// Patch database labels
@@ -745,7 +706,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSourceOld == nil || dataSourceOld.DatabaseID != databaseID {
+		if dataSourceOld == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -793,6 +754,53 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
+		return nil
+	})
+
+	g.DELETE("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		databaseID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+
+		dataSourceFind := &api.DataSourceFind{
+			ID:         &dataSourceID,
+			DatabaseID: &databaseID,
+		}
+		dataSource, err := s.store.GetDataSource(ctx, dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
+		}
+		if dataSource == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found by ID %d and database ID %d", dataSourceID, databaseID))
+		}
+		// Only allow to delete ReadOnly data source at present.
+		if dataSource.Type != api.RO {
+			return echo.NewHTTPError(http.StatusForbidden, "Data source type is not read only")
+		}
+
+		if err := s.store.DeleteDataSource(ctx, &api.DataSourceDelete{
+			ID: dataSource.ID,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete data source").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
 }

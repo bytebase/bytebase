@@ -36,6 +36,7 @@ type SchemaDiffer struct {
 type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
+// It only supports schema information from mysqldump.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldNodes, _, err := parser.New().Parse(oldStmt, "", "")
 	if err != nil {
@@ -46,7 +47,13 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
-	var diff []ast.Node
+	var newNodeList []ast.Node
+	var inplaceUpdate []ast.Node
+	// inplaceDropNodeList and inplaceAddNodeList are used to handle destructive node updates.
+	// For example, we should drop the old index named 'id_idx' and then add a new index named 'id_idx' in the same table.
+	var inplaceDropNodeList []ast.Node
+	var inplaceAddNodeList []ast.Node
+	var dropNodeList []ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
 
@@ -58,14 +65,19 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
-				diff = append(diff, &stmt)
+				newNodeList = append(newNodeList, &stmt)
 				continue
 			}
-			indexMap := buildIndexMap(oldStmt)
+			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
+				inplaceUpdate = append(inplaceUpdate, alterTableOptionStmt)
+			}
+			constraintMap := buildConstraintMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
-			var alterTableAddConstraintSpecs []*ast.AlterTableSpec
-			var alterTableDropConstraintSpecs []*ast.AlterTableSpec
+			var alterTableAddNewConstraintSpecs []*ast.AlterTableSpec
+			var alterTableDropExcessConstraintSpecs []*ast.AlterTableSpec
+			var alterTableInplaceAddConstraintSpecs []*ast.AlterTableSpec
+			var alterTableInplaceDropConstraintSpecs []*ast.AlterTableSpec
 
 			oldColumnMap := buildColumnMap(oldNodes, newStmt.Table.Name)
 			for _, columnDef := range newStmt.Cols {
@@ -78,7 +90,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 					continue
 				}
-				// We need to compare the two column definitions.
+				// Compare the two column definitions.
 				if !isColumnEqual(oldColumnDef, columnDef) {
 					alterTableModifyColumnSpecs = append(alterTableModifyColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableModifyColumn,
@@ -87,25 +99,75 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 				}
 			}
+			// Compare the create definitions
 			for _, constraint := range newStmt.Constraints {
-				if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
-					constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
-					constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
-					indexName := getIndexName(constraint)
-					if oldConstraint, ok := indexMap[indexName]; ok {
-						if isIndexEqual(constraint, oldConstraint) {
-							delete(indexMap, indexName)
-							continue
+				switch constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
+					indexName := constraint.Name
+					if oldConstraint, ok := constraintMap[indexName]; ok {
+						if !isIndexEqual(constraint, oldConstraint) {
+							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
+								Tp:   ast.AlterTableDropIndex,
+								Name: indexName,
+							})
+							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableAddConstraint,
+								Constraint: constraint,
+							})
 						}
+						delete(constraintMap, indexName)
+						continue
 					}
-					alterTableAddConstraintSpecs = append(alterTableAddConstraintSpecs, &ast.AlterTableSpec{
+					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddConstraint,
+						Constraint: constraint,
+					})
+				case ast.ConstraintPrimaryKey:
+					primaryKeyName := "PRIMARY"
+					if oldConstraint, ok := constraintMap[primaryKeyName]; ok {
+						if !isIndexEqual(constraint, oldConstraint) {
+							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
+								Tp: ast.AlterTableDropPrimaryKey,
+							})
+							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableAddConstraint,
+								Constraint: constraint,
+							})
+						}
+						delete(constraintMap, primaryKeyName)
+						continue
+					}
+					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddConstraint,
+						Constraint: constraint,
+					})
+				// The parent column in the foreign key always needs an index, so in the case of referencing itself,
+				// we need to drop the foreign key before dropping the primary key.
+				// Since the mysqldump statement always puts the primary key in front of the foreign key, and we will reverse the drop statements order.
+				// TODO(zp): So we don't have to worry about this now until one of the statements doesn't come from mysqldump.
+				case ast.ConstraintForeignKey:
+					if oldConstraint, ok := constraintMap[constraint.Name]; ok {
+						if !isForeignKeyConstraintEqual(constraint, oldConstraint) {
+							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
+								Tp:   ast.AlterTableDropForeignKey,
+								Name: constraint.Name,
+							})
+							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableAddConstraint,
+								Constraint: constraint,
+							})
+						}
+						delete(constraintMap, constraint.Name)
+						continue
+					}
+					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableAddConstraint,
 						Constraint: constraint,
 					})
 				}
 			}
 			if len(alterTableAddColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -113,7 +175,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 			if len(alterTableModifyColumnSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+				inplaceUpdate = append(inplaceUpdate, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
@@ -121,48 +183,119 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 			// We should drop the remaining indices in the indexMap.
-			for indexName := range indexMap {
-				alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
-					Tp:   ast.AlterTableDropIndex,
-					Name: indexName,
-				})
+			for indexName, constraint := range constraintMap {
+				switch constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
+					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
+						Tp:   ast.AlterTableDropIndex,
+						Name: indexName,
+					})
+				case ast.ConstraintPrimaryKey:
+					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
+						Tp: ast.AlterTableDropPrimaryKey,
+					})
+				case ast.ConstraintForeignKey:
+					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
+						Tp:   ast.AlterTableDropForeignKey,
+						Name: constraint.Name,
+					})
+				}
 			}
 
-			if len(alterTableAddConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+			if len(alterTableAddNewConstraintSpecs) > 0 {
+				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
-					Specs: alterTableDropConstraintSpecs,
+					Specs: alterTableAddNewConstraintSpecs,
 				})
 			}
 
-			if len(alterTableDropConstraintSpecs) > 0 {
-				diff = append(diff, &ast.AlterTableStmt{
+			if len(alterTableDropExcessConstraintSpecs) > 0 {
+				dropNodeList = append(dropNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
-					Specs: alterTableAddConstraintSpecs,
+					Specs: alterTableDropExcessConstraintSpecs,
+				})
+			}
+
+			if len(alterTableInplaceDropConstraintSpecs) > 0 {
+				inplaceDropNodeList = append(inplaceDropNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableInplaceDropConstraintSpecs,
+				})
+			}
+
+			if len(alterTableInplaceAddConstraintSpecs) > 0 {
+				inplaceAddNodeList = append(inplaceAddNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableInplaceAddConstraintSpecs,
 				})
 			}
 		default:
 		}
 	}
+	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+}
 
-	deparse := func(nodes []ast.Node) (string, error) {
-		restoreFlags := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
-		var buf bytes.Buffer
-		for _, node := range nodes {
-			if err := node.Restore(format.NewRestoreCtx(restoreFlags, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, flag format.RestoreFlags) (string, error) {
+	var buf bytes.Buffer
+	// We should following the right order to avoid break the dependency:
+	// Additions for new nodes.
+	// Updates for in-place node updates.
+	// Deletions for destructive (none in-place) node updates (in reverse order).
+	// Additions for destructive node updates.
+	// Deletions for deleted nodes (in reverse order).
+	for _, node := range newNodeList {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
 		}
-		return buf.String(), nil
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
 	}
-	return deparse(diff)
+
+	for _, node := range inplaceUpdate {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+
+	for i := len(inplaceDrop) - 1; i >= 0; i-- {
+		if err := inplaceDrop[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+
+	for i := len(inplaceAdd) - 1; i >= 0; i-- {
+		if err := inplaceAdd[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+
+	for i := len(dropNodeList) - 1; i >= 0; i-- {
+		if err := dropNodeList[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
 }
 
 // buildTableMap returns a map of table name to create table statements.
@@ -197,15 +330,19 @@ func buildColumnMap(nodes []ast.StmtNode, tableName model.CIStr) map[string]*ast
 	return oldColumnMap
 }
 
-// buildIndexMap build a map of index name to constraint on given table name.
-func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
+// buildConstraintMap build a map of index name to constraint on given table name.
+func buildConstraintMap(stmt *ast.CreateTableStmt) constraintMap {
 	indexMap := make(constraintMap)
 	for _, constraint := range stmt.Constraints {
-		if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
-			constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
-			constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
-			indexName := getIndexName(constraint)
-			indexMap[indexName] = constraint
+		switch constraint.Tp {
+		case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext, ast.ConstraintForeignKey:
+			indexMap[constraint.Name] = constraint
+		case ast.ConstraintPrimaryKey:
+			// A table can have only one PRIMARY KEY.
+			// The name of a PRIMARY KEY is always PRIMARY, which thus cannot be used as the name for any other kind of index.
+			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+			// https://dev.mysql.com/doc/refman/5.7/en/create-table.html
+			indexMap["PRIMARY"] = constraint
 		}
 	}
 	return indexMap
@@ -373,13 +510,353 @@ func isIndexOptionEqual(old, new *ast.IndexOption) bool {
 	return true
 }
 
-// getIndexName returns the name of the index.
-func getIndexName(index *ast.Constraint) string {
-	if index.Name != "" {
-		return index.Name
+// isForeignKeyEqual returns true if two foreign keys are the same.
+func isForeignKeyConstraintEqual(old, new *ast.Constraint) bool {
+	// FOREIGN KEY [index_name] (index_col_name,...) reference_definition
+	if old.Name != new.Name {
+		return false
 	}
-	// If the index name is empty, it will be generated by MySQL.
-	// https://dba.stackexchange.com/questions/160708/is-naming-an-index-required
-	// TODO(zp): handle the duplicated index name.
-	return index.Keys[0].Column.Name.O
+	if !isKeyPartEqual(old.Keys, new.Keys) {
+		return false
+	}
+	if !isReferenceDefinitionEqual(old.Refer, new.Refer) {
+		return false
+	}
+	return true
+}
+
+// isReferenceDefinitionEqual returns true if two reference definitions are the same.
+func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
+	// reference_definition:
+	// 	REFERENCES tbl_name (index_col_name,...)
+	//   [MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]
+	//   [ON DELETE reference_option]
+	//   [ON UPDATE reference_option]
+	if old.Table.Name.String() != new.Table.Name.String() {
+		return false
+	}
+
+	if len(old.IndexPartSpecifications) != len(new.IndexPartSpecifications) {
+		return false
+	}
+	for idx, oldIndexColName := range old.IndexPartSpecifications {
+		newIndexColName := new.IndexPartSpecifications[idx]
+		if oldIndexColName.Column.Name.String() != newIndexColName.Column.Name.String() {
+			return false
+		}
+	}
+
+	if old.Match != new.Match {
+		return false
+	}
+
+	if (old.OnDelete == nil) != (new.OnDelete == nil) {
+		return false
+	}
+	if old.OnDelete != nil && new.OnDelete != nil && old.OnDelete.ReferOpt != new.OnDelete.ReferOpt {
+		return false
+	}
+
+	if (old.OnUpdate == nil) != (new.OnUpdate == nil) {
+		return false
+	}
+	if old.OnUpdate != nil && new.OnUpdate != nil && old.OnUpdate.ReferOpt != new.OnUpdate.ReferOpt {
+		return false
+	}
+
+	return true
+}
+
+// diffTableOptions returns the diff of two table options, returns nil if they are the same.
+func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *ast.AlterTableStmt {
+	// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+	// table_option: {
+	// 	AUTOEXTEND_SIZE [=] value
+	//   | AUTO_INCREMENT [=] value
+	//   | AVG_ROW_LENGTH [=] value
+	//   | [DEFAULT] CHARACTER SET [=] charset_name
+	//   | CHECKSUM [=] {0 | 1}
+	//   | [DEFAULT] COLLATE [=] collation_name
+	//   | COMMENT [=] 'string'
+	//   | COMPRESSION [=] {'ZLIB' | 'LZ4' | 'NONE'}
+	//   | CONNECTION [=] 'connect_string'
+	//   | {DATA | INDEX} DIRECTORY [=] 'absolute path to directory'
+	//   | DELAY_KEY_WRITE [=] {0 | 1}
+	//   | ENCRYPTION [=] {'Y' | 'N'}
+	//   | ENGINE [=] engine_name
+	//   | ENGINE_ATTRIBUTE [=] 'string'
+	//   | INSERT_METHOD [=] { NO | FIRST | LAST }
+	//   | KEY_BLOCK_SIZE [=] value
+	//   | MAX_ROWS [=] value
+	//   | MIN_ROWS [=] value
+	//   | PACK_KEYS [=] {0 | 1 | DEFAULT}
+	//   | PASSWORD [=] 'string'
+	//   | ROW_FORMAT [=] {DEFAULT | DYNAMIC | FIXED | COMPRESSED | REDUNDANT | COMPACT}
+	//   | START TRANSACTION	// This is an internal-use table option.
+	//							// It was introduced in MySQL 8.0.21 to permit CREATE TABLE ... SELECT to be logged as a single,
+	//							// atomic transaction in the binary log when using row-based replication with a storage engine that supports atomic DDL.
+	//   | SECONDARY_ENGINE_ATTRIBUTE [=] 'string'
+	//   | STATS_AUTO_RECALC [=] {DEFAULT | 0 | 1}
+	//   | STATS_PERSISTENT [=] {DEFAULT | 0 | 1}
+	//   | STATS_SAMPLE_PAGES [=] value
+	//   | TABLESPACE tablespace_name [STORAGE {DISK | MEMORY}]
+	//   | UNION [=] (tbl_name[,tbl_name]...)
+	// }
+
+	// We use map to record the table options, so we can easily find the difference.
+	oldOptionsMap := buildTableOptionMap(old)
+	newOptionsMap := buildTableOptionMap(new)
+
+	var options []*ast.TableOption
+	for oldTp, oldOption := range oldOptionsMap {
+		newOption, ok := newOptionsMap[oldTp]
+		if !ok {
+			// We should drop the table option if it doesn't exist in the new table options.
+			if astOption := dropTableOption(oldOption); astOption != nil {
+				options = append(options, astOption)
+			}
+			continue
+		}
+		if !isTableOptionValEqual(oldOption, newOption) {
+			options = append(options, newOption)
+		}
+	}
+	// We should add the table option if it doesn't exist in the old table options.
+	for newTp, newOption := range newOptionsMap {
+		if _, ok := oldOptionsMap[newTp]; !ok {
+			// We should add the table option if it doesn't exist in the old table options.
+			options = append(options, newOption)
+		}
+	}
+	if len(options) == 0 {
+		return nil
+	}
+	return &ast.AlterTableStmt{
+		Table: tableName,
+		Specs: []*ast.AlterTableSpec{
+			{
+				Tp:      ast.AlterTableOption,
+				Options: options,
+			},
+		},
+	}
+}
+
+// dropTableOption generate the table options node need to oppended to the ALTER TABLE OPTION spec.
+func dropTableOption(option *ast.TableOption) *ast.TableOption {
+	switch option.Tp {
+	case ast.TableOptionAutoIncrement:
+		// You cannot reset the counter to a value less than or equal to the value that is currently in use.
+		// For both InnoDB and MyISAM, if the value is less than or equal to the maximum value currently in the AUTO_INCREMENT column,
+		// the value is reset to the current maximum AUTO_INCREMENT column value plus one.
+		// https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+		// So we always set the auto_increment value to 0, it will be reset to the current maximum AUTO_INCREMENT column value plus one.
+		return &ast.TableOption{
+			Tp:        ast.TableOptionAutoIncrement,
+			UintValue: 0,
+		}
+	case ast.TableOptionAvgRowLength:
+		// AVG_ROW_LENGTH only works in MyISAM tables.
+		return &ast.TableOption{
+			Tp:        ast.TableOptionAvgRowLength,
+			UintValue: 0,
+		}
+	case ast.TableOptionCharset:
+		// TODO(zp): we use utf8mb4 as the default charset, but it's not always true. We should consider the database default charset.
+		return &ast.TableOption{
+			Tp:       ast.TableOptionCharset,
+			StrValue: "utf8mb4",
+		}
+	case ast.TableOptionCollate:
+		// TODO(zp): default collate is related with the charset.
+		return &ast.TableOption{
+			Tp:       ast.TableOptionCollate,
+			StrValue: "utf8mb4_general_ci",
+		}
+	case ast.TableOptionCheckSum:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionCheckSum,
+			UintValue: 0,
+		}
+	case ast.TableOptionComment:
+		// Set to "" to remove the comment.
+		return &ast.TableOption{
+			Tp: ast.TableOptionComment,
+		}
+	case ast.TableOptionCompression:
+		// TODO(zp): handle the compression
+	case ast.TableOptionConnection:
+		// Set to "" to remove the connection.
+		return &ast.TableOption{
+			Tp: ast.TableOptionConnection,
+		}
+	case ast.TableOptionDataDirectory:
+	case ast.TableOptionIndexDirectory:
+		// TODO(zp): handle the default data directory and index directory, there are a lot of situations we need to consider.
+		// 1. Data Directory and Index Directory will be ignored on Windows.
+		// 2. For a normal table, data directory and index directory cannot changed after the table is created, but for a partition table, it can be changed by USING `alter add PARTITIONS data DIRECTORY ...`
+		// 3. We should know the default data directory like /var/mysql/data, and the default index directory like /var/mysql/index.
+	case ast.TableOptionDelayKeyWrite:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionDelayKeyWrite,
+			UintValue: 0,
+		}
+	case ast.TableOptionEncryption:
+		return &ast.TableOption{
+			Tp:       ast.TableOptionEncryption,
+			StrValue: "N",
+		}
+	case ast.TableOptionEngine:
+		// TODO(zp): handle the default engine
+	case ast.TableOptionInsertMethod:
+		// INSERT METHOD only support in MERGE storage engine.
+		// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+		return &ast.TableOption{
+			Tp:       ast.TableOptionInsertMethod,
+			StrValue: "NO",
+		}
+	case ast.TableOptionKeyBlockSize:
+		// TODO(zp): InnoDB doesn't support this. And the default value will be ensured when compiling.
+	case ast.TableOptionMaxRows:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionMaxRows,
+			UintValue: 0,
+		}
+	case ast.TableOptionMinRows:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionMinRows,
+			UintValue: 0,
+		}
+	case ast.TableOptionPackKeys:
+		// TiDB doesn't support this, and the restore will always write "DEFAULT".
+		return &ast.TableOption{
+			Tp: ast.TableOptionPackKeys,
+		}
+	case ast.TableOptionPassword:
+		// mysqldump will not dump the password, but we handle it to pass the test.
+		return &ast.TableOption{
+			Tp: ast.TableOptionPassword,
+		}
+	case ast.TableOptionRowFormat:
+		return &ast.TableOption{
+			Tp:        ast.TableOptionRowFormat,
+			UintValue: ast.RowFormatDefault,
+		}
+	case ast.TableOptionStatsAutoRecalc:
+		return &ast.TableOption{
+			Tp:      ast.TableOptionStatsAutoRecalc,
+			Default: true,
+		}
+	case ast.TableOptionStatsPersistent:
+		// TiDB doesn't support this, and the restore will always write "DEFAULT".
+		return &ast.TableOption{
+			Tp: ast.TableOptionStatsPersistent,
+		}
+	case ast.TableOptionStatsSamplePages:
+		return &ast.TableOption{
+			Tp:      ast.TableOptionStatsSamplePages,
+			Default: true,
+		}
+	case ast.TableOptionTablespace:
+		// TODO(zp): handle the table space
+	case ast.TableOptionUnion:
+		// TODO(zp): handle the union
+	}
+	return nil
+}
+
+// isTableOptionValEqual compare the two table options value, if they are equal, returns true.
+// Caller need to ensure the two table options are not nil and the type is the same.
+func isTableOptionValEqual(old, new *ast.TableOption) bool {
+	switch old.Tp {
+	case ast.TableOptionAutoIncrement:
+		// You cannot reset the counter to a value less than or equal to the value that is currently in use.
+		// For both InnoDB and MyISAM, if the value is less than or equal to the maximum value currently in the AUTO_INCREMENT column,
+		// the value is reset to the current maximum AUTO_INCREMENT column value plus one.
+		// https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+		return old.UintValue == new.UintValue
+	case ast.TableOptionAvgRowLength:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionCharset:
+		if old.Default != new.Default {
+			return false
+		}
+		if old.Default && new.Default {
+			return true
+		}
+		return old.StrValue == new.StrValue
+	case ast.TableOptionCollate:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionCheckSum:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionComment:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionCompression:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionConnection:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionDataDirectory:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionIndexDirectory:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionDelayKeyWrite:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionEncryption:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionEngine:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionInsertMethod:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionKeyBlockSize:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionMaxRows:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionMinRows:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionPackKeys:
+		// TiDB doesn't support this, and the restore will always write "DEFAULT".
+		// The parser will ignore it. So we can only ignore it here.
+		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11661
+		return old.Default == new.Default
+	case ast.TableOptionPassword:
+		// mysqldump will not dump the password, so we just return false here.
+		return false
+	case ast.TableOptionRowFormat:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionStatsAutoRecalc:
+		// TiDB parser will ignore the DEFAULT value. So we just can compare the UINT value here.
+		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11599
+		return old.UintValue == new.UintValue
+	case ast.TableOptionStatsPersistent:
+		// TiDB parser doesn't support this, it only assign the type without any value.
+		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11595
+		return true
+	case ast.TableOptionStatsSamplePages:
+		return old.UintValue == new.UintValue
+	case ast.TableOptionTablespace:
+		return old.StrValue == new.StrValue
+	case ast.TableOptionUnion:
+		oldTableNames := old.TableNames
+		newTableNames := new.TableNames
+		if len(oldTableNames) != len(newTableNames) {
+			return false
+		}
+		for i, oldTableName := range oldTableNames {
+			newTableName := newTableNames[i]
+			if oldTableName.Name.O != newTableName.Name.O {
+				return false
+			}
+		}
+		return true
+	}
+	return true
+}
+
+// buildTableOptionMap builds a map of table options.
+func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*ast.TableOption {
+	m := make(map[ast.TableOptionType]*ast.TableOption)
+	for _, option := range options {
+		m[option.Tp] = option
+	}
+	return m
 }

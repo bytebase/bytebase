@@ -41,6 +41,8 @@ const (
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
 
+	// AssigneeGroupValueWorkspaceOwnerOrDBA means the assignee can be selected from the workspace owners and DBAs.
+	AssigneeGroupValueWorkspaceOwnerOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
 	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners.
 	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
 

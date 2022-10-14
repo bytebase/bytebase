@@ -21,6 +21,7 @@ import {
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdatePayload,
+  TaskDatabaseSchemaUpdateSDLPayload,
   TaskGeneralPayload,
   TaskId,
   TaskPatch,
@@ -182,19 +183,19 @@ export const useCommonLogic = () => {
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
     const taskList = flattenTaskList<TaskCreate>(issueCreate);
+    const migrationType = taskList[0].migrationType!;
     const detailList: MigrationDetail[] = taskList.map((task) => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
+        migrationType: migrationType,
         databaseId: task.databaseId!,
         databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement: maybeFormatStatementOnSave(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
-    const migrationType = taskList[0].migrationType!;
 
     issueCreate.createContext = {
-      migrationType,
       detailList: detailList,
     };
 
@@ -235,6 +236,7 @@ export const TaskTypeWithStatement: TaskType[] = [
   "bb.task.general",
   "bb.task.database.create",
   "bb.task.database.schema.update",
+  "bb.task.database.schema.update-sdl",
   "bb.task.database.schema.update.ghost.sync",
   "bb.task.database.data.update",
 ];
@@ -299,6 +301,11 @@ const statementOfTask = (task: Task) => {
       return (
         ((task as Task).payload as TaskDatabaseSchemaUpdatePayload).statement ||
         ""
+      );
+    case "bb.task.database.schema.update-sdl":
+      return (
+        ((task as Task).payload as TaskDatabaseSchemaUpdateSDLPayload)
+          .statement || ""
       );
     case "bb.task.database.data.update":
       return (

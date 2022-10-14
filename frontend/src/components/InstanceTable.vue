@@ -15,7 +15,10 @@
         {{ instanceName(instance) }}
       </BBTableCell>
       <BBTableCell class="w-16">
-        {{ environmentNameFromId(instance.environment.id) }}
+        <div class="flex items-center gap-x-1">
+          {{ environmentNameFromId(instance.environment.id) }}
+          <ProtectedEnvironmentIcon :environment="instance.environment" />
+        </div>
       </BBTableCell>
       <BBTableCell class="w-48">
         <template v-if="instance.port"
@@ -46,10 +49,11 @@ import { urlfy, instanceSlug, environmentName } from "@/utils";
 import { EnvironmentId, Instance } from "@/types";
 import { useEnvironmentStore } from "@/store";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
+import ProtectedEnvironmentIcon from "./Environment/ProtectedEnvironmentIcon.vue";
 
 export default defineComponent({
   name: "InstanceTable",
-  components: { InstanceEngineIcon },
+  components: { InstanceEngineIcon, ProtectedEnvironmentIcon },
   props: {
     instanceList: {
       required: true,

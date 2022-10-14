@@ -181,19 +181,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								zap.String("name", task.Name),
 								zap.String("type", string(task.Type)),
 							)
-
-							taskStatusPatch := &api.TaskStatusPatch{
-								ID:        task.ID,
-								UpdaterID: api.SystemBotID,
-								Status:    api.TaskCanceled,
-							}
-							if _, err := s.server.patchTaskStatus(ctx, task, taskStatusPatch); err != nil {
-								log.Error("Failed to mark task as CANCELED",
-									zap.Int("id", task.ID),
-									zap.String("name", task.Name),
-									zap.Error(err),
-								)
-							}
 							return
 						default:
 						}
@@ -374,7 +361,7 @@ func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 
 func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
 	// schema update, data update and gh-ost sync task have required task check.
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
 		if err != nil {
 			return false, err
@@ -456,15 +443,9 @@ func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, 
 	if blocked {
 		return false, nil
 	}
-	// timing task check
-	if task.EarliestAllowedTs != 0 {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime, api.TaskCheckStatusSuccess)
-		if err != nil {
-			return false, err
-		}
-		if !pass {
-			return false, nil
-		}
+
+	if task.EarliestAllowedTs != 0 && time.Now().Before(time.Unix(task.EarliestAllowedTs, 0)) {
+		return false, nil
 	}
 
 	return s.passAllCheck(ctx, task, api.TaskCheckStatusWarn)

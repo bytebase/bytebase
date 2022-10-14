@@ -230,6 +230,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
 
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor)
+
 		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
 		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
@@ -265,9 +267,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor()
 		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
-
-		timingExecutor := NewTaskCheckTimingExecutor()
-		taskCheckScheduler.Register(api.TaskCheckGeneralEarliestAllowedTime, timingExecutor)
 
 		checkLGTMExecutor := NewTaskCheckLGTMExecutor()
 		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)

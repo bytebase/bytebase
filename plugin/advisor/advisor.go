@@ -112,6 +112,12 @@ const (
 	// MySQLColumnMaximumCharacterLength is an advisor type for MySQL maximum character length.
 	MySQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.mysql.column.maximum-character-length"
 
+	// MySQLAutoIncrementColumnInitialValue is an advisor type for MySQL auto-increment column initial value.
+	MySQLAutoIncrementColumnInitialValue Type = "bb.plugin.advisor.mysql.column.auto-increment-initial-value"
+
+	// MySQLAutoIncrementColumnMustUnsigned is an advisor type for MySQL unsigned auto-increment column.
+	MySQLAutoIncrementColumnMustUnsigned Type = "bb.plugin.advisor.mysql.column.auto-increment-must-unsigned"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
@@ -151,6 +157,9 @@ const (
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 
+	// MySQLCollationAllowlist is an advisor type for MySQL collation allowlist.
+	MySQLCollationAllowlist Type = "bb.plugin.advisor.mysql.collation.allowlist"
+
 	// MySQLIndexTypeNoBlob is an advisor type for MySQL index type no blob.
 	MySQLIndexTypeNoBlob Type = "bb.plugin.advisor.mysql.index.type-no-blob"
 
@@ -158,13 +167,22 @@ const (
 	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
 
 	// MySQLDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
-	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.disallow.disallow-limit"
+	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.statement.disallow-limit"
 
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
 
-	// MySQLInsertUpdateNoOrderBy is an advisor type for MySQL no ORDER BY clause in INSERT/UPDATE statement.
-	MySQLInsertUpdateNoOrderBy Type = "bb.plugin.advisor.mysql.insert-update.no-order-by"
+	// MySQLInsertMustSpecifyColumn is an advisor type for MySQL to enforce column specified.
+	MySQLInsertMustSpecifyColumn Type = "bb.plugin.advisor.mysql.insert.must-specify-column"
+
+	// MySQLInsertDisallowOrderByRand is an advisor type for MySQL to disallow order by rand in INSERT statements.
+	MySQLInsertDisallowOrderByRand Type = "bb.plugin.advisor.mysql.insert.disallow-order-by-rand"
+
+	// MySQLDisallowOrderBy is an advisor type for MySQL no ORDER BY clause in DELETE/UPDATE statement.
+	MySQLDisallowOrderBy Type = "bb.plugin.advisor.mysql.statement.disallow-order-by"
+
+	// MySQLMergeAlterTable is an advisor type for MySQL no redundant ALTER TABLE statements.
+	MySQLMergeAlterTable Type = "bb.plugin.advisor.mysql.statement.merge-alter-table"
 
 	// PostgreSQL Advisor.
 
@@ -215,6 +233,9 @@ const (
 
 	// PostgreSQLInsertRowLimit is an advisor type for PostgreSQL to limit INSERT rows.
 	PostgreSQLInsertRowLimit Type = "bb.plugin.advisor.postgresql.insert.row-limit"
+
+	// PostgreSQLIndexKeyNumberLimit is an advisor type for postgresql index key number limit.
+	PostgreSQLIndexKeyNumberLimit Type = "bb.plugin.advisor.postgresql.index.key-number-limit"
 )
 
 // Advice is the result of an advisor.

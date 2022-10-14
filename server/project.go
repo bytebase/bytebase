@@ -37,7 +37,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project request").SetInternal(err)
 		}
 		if projectCreate.Key == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
 		}
 		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -169,7 +169,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if v := projectPatch.Key; v != nil && *v == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project key can not be empty")
+			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
 		}
 		if v := projectPatch.LGTMCheckSetting; v != nil {
 			if !s.feature(api.FeatureLGTM) {
@@ -318,10 +318,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		//	Setup SQL review CI for VCS
-		if api.FeatureFlight[api.FeatureVCSSQLReviewWorkflow] && s.feature(api.FeatureVCSSQLReviewWorkflow) {
-			if err := s.setupVCSSQLReviewCI(ctx, repository); err != nil {
+		if repository.EnableSQLReviewCI && s.flight(api.FeatureVCSSQLReviewWorkflow) && s.feature(api.FeatureVCSSQLReviewWorkflow) {
+			pullRequest, err := s.setupVCSSQLReviewCI(ctx, repository)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
 			}
+			repository.SQLReviewCIPullRequestURL = pullRequest.URL
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -439,6 +441,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
+		}
+
+		//	Setup SQL review CI for VCS
+		if !repo.EnableSQLReviewCI && updatedRepo.EnableSQLReviewCI && s.flight(api.FeatureVCSSQLReviewWorkflow) && s.feature(api.FeatureVCSSQLReviewWorkflow) {
+			pullRequest, err := s.setupVCSSQLReviewCI(ctx, updatedRepo)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
+			}
+			updatedRepo.SQLReviewCIPullRequestURL = pullRequest.URL
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -590,10 +601,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) error {
+func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Repository) (*vcsPlugin.PullRequest, error) {
 	branch, err := s.setupVCSSQLReviewBranch(ctx, repository)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).UpsertEnvironmentVariable(
@@ -610,17 +621,19 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 		vcsPlugin.SQLReviewAPISecretName,
 		repository.WebhookSecretToken,
 	); err != nil {
-		return err
+		return nil, err
 	}
+
+	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", s.profile.ExternalURL, repository.WebhookEndpointID)
 
 	switch repository.VCS.Type {
 	case vcsPlugin.GitHubCom:
-		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch); err != nil {
-			return err
+		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, branch, sqlReviewEndpoint); err != nil {
+			return nil, err
 		}
 	case vcsPlugin.GitLabSelfHost:
-		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch); err != nil {
-			return err
+		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, branch, sqlReviewEndpoint); err != nil {
+			return nil, err
 		}
 	}
 
@@ -689,8 +702,7 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 }
 
 // setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
-func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
-	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
+func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
 	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
 	fileLastCommitID := ""
 
@@ -742,7 +754,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 }
 
 // setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
-func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo) error {
+func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *api.Repository, branch *vcsPlugin.BranchInfo, sqlReviewEndpoint string) error {
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
 		content := make(map[string]interface{})
@@ -782,7 +794,6 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 
 	// create or update the SQL review CI.
 	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
-		sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%d", s.profile.ExternalURL, repository.ProjectID)
 		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
 	})
 }

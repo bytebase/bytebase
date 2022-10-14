@@ -11,6 +11,7 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pingcap/tidb/parser/mysql"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -47,6 +48,8 @@ const (
 	ErrorTypeTableExists = 301
 	// ErrorTypeTableNotExists is the error that table not exists.
 	ErrorTypeTableNotExists = 302
+	// ErrorTypeUseCreateTableAs is the error that using CREATE TABLE AS statements.
+	ErrorTypeUseCreateTableAs = 303
 
 	// 401 ~ 499 column error type.
 
@@ -73,6 +76,15 @@ const (
 	ErrorTypeIncorrectIndexName = 506
 	// ErrorTypeSpatialIndexKeyNullable is the error that keys in spatial index are nullable.
 	ErrorTypeSpatialIndexKeyNullable = 507
+
+	// 601 ~ 699 insert statement error type.
+
+	// ErrorTypeInsertColumnCountNotMatchValueCount is the error that column count doesn't match value count.
+	ErrorTypeInsertColumnCountNotMatchValueCount = 601
+	// ErrorTypeInsertSpecifiedColumnTwice is the error that column specified twice in INSERT.
+	ErrorTypeInsertSpecifiedColumnTwice = 602
+	// ErrorTypeInsertNullIntoNotNullColumn is the error that insert NULL into NOT NULL columns.
+	ErrorTypeInsertNullIntoNotNullColumn = 603
 )
 
 // WalkThroughError is the error for walking-through.
@@ -200,6 +212,10 @@ func (d *DatabaseState) validateDML(in tidbast.DMLNode) (err *WalkThroughError) 
 	switch node := in.(type) {
 	case *tidbast.InsertStmt:
 		return d.checkInsert(node)
+	case *tidbast.DeleteStmt:
+		return d.checkDelete(node)
+	case *tidbast.UpdateStmt:
+		return d.checkUpdate(node)
 	default:
 		return nil
 	}
@@ -244,6 +260,41 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 	}
 }
 
+func (d *DatabaseState) checkUpdate(node *tidbast.UpdateStmt) *WalkThroughError {
+	// Only check the UPDATE single TABLE case.
+	tableName, ok := getTableSourceName(node.TableRefs)
+	if ok {
+		table, err := d.findTableState(tableName, false /* createIncompleteTable */)
+		if err != nil {
+			return err
+		}
+		if table == nil {
+			return nil
+		}
+		for _, item := range node.List {
+			columName := item.Column.Name.O
+			if _, exists := table.columnSet[columName]; !exists {
+				return NewColumnNotExistsError(table.name, columName)
+			}
+		}
+	}
+	return nil
+}
+
+func (d *DatabaseState) checkDelete(node *tidbast.DeleteStmt) *WalkThroughError {
+	// Only check the DELETE FROM single TABLE case.
+	if !node.IsMultiTable {
+		tableName, ok := getTableSourceName(node.TableRefs)
+		if ok {
+			_, err := d.findTableState(tableName, false /* createIncopleteTable */)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (d *DatabaseState) checkInsert(node *tidbast.InsertStmt) *WalkThroughError {
 	tableName, ok := getTableSourceName(node.Table)
 	if ok {
@@ -254,9 +305,45 @@ func (d *DatabaseState) checkInsert(node *tidbast.InsertStmt) *WalkThroughError 
 		if table == nil {
 			return nil
 		}
+		specifiedColumnMap := make(map[string]bool)
 		for _, col := range node.Columns {
 			if _, exists := table.columnSet[col.Name.O]; !exists {
 				return NewColumnNotExistsError(table.name, col.Name.O)
+			}
+			if _, ok := specifiedColumnMap[col.Name.O]; ok {
+				return &WalkThroughError{
+					Type: ErrorTypeInsertSpecifiedColumnTwice,
+					// Content is from MySQL error content
+					Content: fmt.Sprintf("Column '%s' specified twice", col.Name.O),
+				}
+			}
+			specifiedColumnMap[col.Name.O] = true
+		}
+
+		if len(node.Lists) > 0 {
+			for i, row := range node.Lists {
+				if node.Columns != nil && len(node.Columns) != len(row) {
+					return &WalkThroughError{
+						Type: ErrorTypeInsertColumnCountNotMatchValueCount,
+						// Content is from MySQL error content
+						Content: fmt.Sprintf("Column count doesn't match value count at row %d", i+1),
+					}
+				}
+
+				for columnPos, value := range row {
+					if value.GetType().GetType() == mysql.TypeNull {
+						columnName := node.Columns[columnPos].Name.O
+						// after check, all columns exist
+						column := table.columnSet[columnName]
+						if column.nullable != nil && !*column.nullable {
+							return &WalkThroughError{
+								Type: ErrorTypeInsertNullIntoNotNullColumn,
+								// Content is from MySQL error content
+								Content: fmt.Sprintf("Column '%s' cannot be null", columnName),
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -520,7 +607,7 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 
 func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
 	// For MySQL, the primary key has a special name 'PRIMARY'.
-	// And the other indexes can not use the name which case-insensitive equals 'PRIMARY'.
+	// And the other indexes cannot use the name which case-insensitive equals 'PRIMARY'.
 	if strings.ToUpper(oldName) == PrimaryKeyName || strings.ToUpper(newName) == PrimaryKeyName {
 		incorrectName := oldName
 		if strings.ToUpper(oldName) != PrimaryKeyName {
@@ -761,7 +848,7 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 		return NewColumnNotExistsError(t.name, columnName)
 	}
 
-	// Can not drop all columns in a table using ALTER TABLE DROP COLUMN.
+	// Cannot drop all columns in a table using ALTER TABLE DROP COLUMN.
 	if len(t.columnSet) == 1 {
 		return &WalkThroughError{
 			Type: ErrorTypeDropAllColumns,
@@ -922,6 +1009,13 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		return &WalkThroughError{
 			Type:    ErrorTypeTableExists,
 			Content: fmt.Sprintf("Table `%s` already exists", node.Table.Name.O),
+		}
+	}
+
+	if node.Select != nil {
+		return &WalkThroughError{
+			Type:    ErrorTypeUseCreateTableAs,
+			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", node.Text()),
 		}
 	}
 

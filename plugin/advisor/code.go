@@ -30,6 +30,7 @@ const (
 	StatementLeadingWildcardLike Code = 204
 	StatementCreateTableAs       Code = 205
 	StatementDisallowCommit      Code = 206
+	StatementRedundantAlterTable Code = 207
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -46,21 +47,23 @@ const (
 	NamingPKConventionMismatch Code = 306
 
 	// 401 ~ 499 column error code.
-	NoRequiredColumn              Code = 401
-	ColumnCanNotNull              Code = 402
-	ChangeColumnType              Code = 403
-	NotNullColumnWithNullDefault  Code = 404
-	ColumnNotExists               Code = 405
-	UseChangeColumnStatement      Code = 406
-	ChangeColumnOrder             Code = 407
-	NoColumnComment               Code = 408
-	ColumnCommentTooLong          Code = 409
-	AutoIncrementColumnNotInteger Code = 410
-	DisabledColumnType            Code = 411
-	ColumnExists                  Code = 412
-	DropAllColumns                Code = 413
-	SetColumnCharset              Code = 414
-	CharLengthExceedsLimit        Code = 415
+	NoRequiredColumn                        Code = 401
+	ColumnCannotNull                        Code = 402
+	ChangeColumnType                        Code = 403
+	NotNullColumnWithNullDefault            Code = 404
+	ColumnNotExists                         Code = 405
+	UseChangeColumnStatement                Code = 406
+	ChangeColumnOrder                       Code = 407
+	NoColumnComment                         Code = 408
+	ColumnCommentTooLong                    Code = 409
+	AutoIncrementColumnNotInteger           Code = 410
+	DisabledColumnType                      Code = 411
+	ColumnExists                            Code = 412
+	DropAllColumns                          Code = 413
+	SetColumnCharset                        Code = 414
+	CharLengthExceedsLimit                  Code = 415
+	AutoIncrementColumnInitialValueNotMatch Code = 416
+	AutoIncrementColumnSigned               Code = 417
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -98,13 +101,18 @@ const (
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
 
-	// 1101 ~ 1199 insert/update error code.
-	InsertTooManyRows Code = 1101
-	UpdateUseLimit    Code = 1102
-	InsertUseLimit    Code = 1103
-	UpdateUseOrderBy  Code = 1104
-	InsertUseOrderBy  Code = 1105
-	DeleteUseLimit    Code = 1106
+	// 1101 ~ 1199 insert/update/delete error code.
+	InsertTooManyRows      Code = 1101
+	UpdateUseLimit         Code = 1102
+	InsertUseLimit         Code = 1103
+	UpdateUseOrderBy       Code = 1104
+	DeleteUseOrderBy       Code = 1105
+	DeleteUseLimit         Code = 1106
+	InsertNotSpecifyColumn Code = 1107
+	InsertUseOrderByRand   Code = 1108
+
+	// 1201 ~ 1299 collation error code.
+	DisabledCollation Code = 1201
 )
 
 // Int returns the int type of code.

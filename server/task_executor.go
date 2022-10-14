@@ -375,6 +375,8 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	}
 	commitBody += "\n\n--------Original migration change--------\n\n"
 	if len(pushEvent.CommitList) == 0 {
+		// For legacy data in task payload stored in the database.
+		// TODO(dragonly): Remove the field FileCommit.
 		commitBody += fmt.Sprintf("%s\n\n%s",
 			pushEvent.FileCommit.URL,
 			pushEvent.FileCommit.Message,

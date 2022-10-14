@@ -18,6 +18,7 @@ export type TaskType =
   | "bb.task.general"
   | "bb.task.database.create"
   | "bb.task.database.schema.update"
+  | "bb.task.database.schema.update-sdl"
   | "bb.task.database.data.update"
   | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
@@ -50,6 +51,12 @@ export type TaskDatabaseCreatePayload = {
 };
 
 export type TaskDatabaseSchemaUpdatePayload = {
+  migrationType: MigrationType;
+  statement: string;
+  pushEvent?: VCSPushEvent;
+};
+
+export type TaskDatabaseSchemaUpdateSDLPayload = {
   migrationType: MigrationType;
   statement: string;
   pushEvent?: VCSPushEvent;
@@ -217,7 +224,6 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.type"
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
-  | "bb.task-check.general.earliest-allowed-time"
   | "bb.task-check.database.ghost.sync"
   | "bb.task-check.issue.lgtm"
   | "bb.task-check.pitr.mysql";

@@ -146,23 +146,23 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCanNotNull.Int(),
+						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
-						Content:   `Column "id" in "public"."userTable" can not have NULL value`,
+						Content:   `Column "id" in "public"."userTable" cannot have NULL value`,
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCanNotNull.Int(),
+						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
-						Content:   `Column "name" in "public"."userTable" can not have NULL value`,
+						Content:   `Column "name" in "public"."userTable" cannot have NULL value`,
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCanNotNull.Int(),
+						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
-						Content:   `Column "roomId" in "public"."userTable" can not have NULL value`,
+						Content:   `Column "roomId" in "public"."userTable" cannot have NULL value`,
 					},
 				},
 			},
@@ -491,28 +491,37 @@ func TestSQLReviewForMySQL(t *testing.T) {
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCanNotNull.Int(),
+						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
-						Content:   "`userTable`.`id` can not have NULL value",
+						Content:   "`userTable`.`id` cannot have NULL value",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCanNotNull.Int(),
+						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
-						Content:   "`userTable`.`name` can not have NULL value",
+						Content:   "`userTable`.`name` cannot have NULL value",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCanNotNull.Int(),
+						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
-						Content:   "`userTable`.`roomId` can not have NULL value",
+						Content:   "`userTable`.`roomId` cannot have NULL value",
 					},
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book",
+				statement: `
+					CREATE TABLE tech_book(
+						id int NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					DELETE FROM tech_book`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
@@ -524,7 +533,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book WHERE name like `%abc`",
+				statement: `
+					CREATE TABLE tech_book(
+						id int NOT NULL,
+						name varchar(220) NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					` +
+					"DELETE FROM tech_book WHERE name like `%abc`",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
@@ -593,7 +613,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book WHERE a = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
+				statement: `
+					CREATE TABLE tech_book(
+						id int NOT NULL,
+						name varchar(220) NOT NULL,
+						creator_id INT NOT NULL,
+						created_ts TIMESTAMP NOT NULL,
+						updater_id INT NOT NULL,
+						updated_ts TIMESTAMP NOT NULL,
+						CONSTRAINT pk_user_id PRIMARY KEY (id)
+					);
+					` +
+					"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
@@ -764,11 +795,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string, wait bool) []api.TaskCheckResult {
 	createContext, err := json.Marshal(&api.MigrationContext{
-		MigrationType: db.Migrate,
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseID: databaseID,
-				Statement:  statement,
+				MigrationType: db.Migrate,
+				DatabaseID:    databaseID,
+				Statement:     statement,
 			},
 		},
 	})

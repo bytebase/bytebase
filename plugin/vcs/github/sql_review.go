@@ -9,12 +9,12 @@ import (
 
 // sqlReviewAction is the GitHub action for SQL review in VCS workflow.
 //
-//go:embed sql-review.yml
+//go:embed bytebase-sql-review.yml
 var sqlReviewAction string
 
 const (
 	// SQLReviewActionFilePath is the SQL review action file path.
-	SQLReviewActionFilePath = ".github/workflows/sql-review.yml"
+	SQLReviewActionFilePath = ".github/workflows/bytebase-sql-review.yml"
 )
 
 // SetupSQLReviewCI will setup the SQL review CI content with SQL review endpoint.

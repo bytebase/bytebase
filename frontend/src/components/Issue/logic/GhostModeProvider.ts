@@ -79,6 +79,13 @@ export default defineComponent({
           return false;
         }
       }
+      if (
+        task.type === "bb.task.database.schema.update.ghost.sync" &&
+        to === "CANCELED"
+      ) {
+        // CANCELing gh-ost sync task is allowed.
+        return true;
+      }
       return baseAllowApplyTaskStatusTransition(task, to);
     };
 

@@ -562,6 +562,9 @@ const actionIcon = (activity: Activity): ActionIconType => {
         }
         break;
       }
+      case "CANCELED": {
+        return "cancel";
+      }
       case "RUNNING": {
         return "run";
       }

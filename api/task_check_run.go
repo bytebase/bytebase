@@ -75,8 +75,6 @@ const (
 	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
 	// TaskCheckGhostSync is the task check type for the gh-ost sync task.
 	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
-	// TaskCheckGeneralEarliestAllowedTime is the task check type for earliest allowed time.
-	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
 	// TaskCheckIssueLGTM is the task check type for LGTM comments.
 	TaskCheckIssueLGTM TaskCheckType = "bb.task-check.issue.lgtm"
 	// TaskCheckPITRMySQL is the task check type for MySQL PITR.
@@ -171,12 +169,6 @@ type TaskCheckRunCreate struct {
 	Type    TaskCheckType `jsonapi:"attr,type"`
 	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`
-
-	// If true, then we will skip creating the task check run if there has already been a DONE check run
-	// for this (TaskID, Type) pair. The check is done at the store layer so that we can wrap it in the
-	// same transaction.
-	// This is NOT persisted into the db
-	SkipIfAlreadyTerminated bool
 }
 
 // TaskCheckRunFind is the API message for finding task check runs.

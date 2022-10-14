@@ -15,16 +15,16 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: "`book`.`id` can not have NULL value",
+					Content: "`book`.`id` cannot have NULL value",
 					Line:    2,
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: "`book`.`name` can not have NULL value",
+					Content: "`book`.`name` cannot have NULL value",
 					Line:    3,
 				},
 			},
@@ -34,9 +34,9 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: "`book`.`name` can not have NULL value",
+					Content: "`book`.`name` cannot have NULL value",
 					Line:    1,
 				},
 			},
@@ -46,9 +46,9 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: "`book`.`name` can not have NULL value",
+					Content: "`book`.`name` cannot have NULL value",
 					Line:    1,
 				},
 			},
@@ -72,9 +72,9 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: "`book`.`id` can not have NULL value",
+					Content: "`book`.`id` cannot have NULL value",
 					Line:    3,
 				},
 			},
@@ -101,9 +101,9 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: "`book`.`name` can not have NULL value",
+					Content: "`book`.`name` cannot have NULL value",
 					Line:    3,
 				},
 			},

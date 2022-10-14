@@ -127,6 +127,25 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 	return dataSource, nil
 }
 
+// DeleteDataSource deletes an existing dataSource by ID.
+func (s *Store) DeleteDataSource(ctx context.Context, delete *api.DataSourceDelete) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if err := s.deleteDataSourceImpl(ctx, tx, delete); err != nil {
+		return FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
+
 //
 // private functions
 //
@@ -438,4 +457,12 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 		return nil, FormatError(err)
 	}
 	return &dataSourceRaw, nil
+}
+
+// deleteDataSourceImpl permanently deletes a dataSource by ID.
+func (*Store) deleteDataSourceImpl(ctx context.Context, tx *Tx, delete *api.DataSourceDelete) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE id = $1`, delete.ID); err != nil {
+		return FormatError(err)
+	}
+	return nil
 }

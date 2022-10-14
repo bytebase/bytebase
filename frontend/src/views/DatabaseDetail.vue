@@ -141,7 +141,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowAlterSchemaOrChangeData"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.data.update')"
@@ -153,7 +153,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowAlterSchemaOrChangeData"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
@@ -445,6 +445,13 @@ const allowEdit = computed(() => {
     }
   }
   return false;
+});
+
+const allowAlterSchemaOrChangeData = computed(() => {
+  if (database.value.project.id === DEFAULT_PROJECT_ID) {
+    return false;
+  }
+  return allowEdit.value;
 });
 
 const allowEditDatabaseLabels = computed((): boolean => {

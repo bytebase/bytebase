@@ -6,4 +6,5 @@ type AlterColumnTypeStmt struct {
 
 	Table      *TableDef
 	ColumnName string
+	Type       DataType
 }

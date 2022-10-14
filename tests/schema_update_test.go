@@ -93,11 +93,11 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.MigrationContext{
-		MigrationType: db.Migrate,
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseID: database.ID,
-				Statement:  migrationStatement,
+				MigrationType: db.Migrate,
+				DatabaseID:    database.ID,
+				Statement:     migrationStatement,
 			},
 		},
 	})
@@ -123,11 +123,11 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that updates database data.
 	createContext, err = json.Marshal(&api.MigrationContext{
-		MigrationType: db.Data,
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseID: database.ID,
-				Statement:  dataUpdateStatement,
+				MigrationType: db.Data,
+				DatabaseID:    database.ID,
+				Statement:     dataUpdateStatement,
 			},
 		},
 	})
@@ -262,19 +262,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	_, err = ctl.listSheets(api.SheetFind{
 		DatabaseID: &database.ID,
-	})
-	a.NoError(err)
-
-	// Test if POST /api/database/:id/data-source api is working right.
-	// TODO(steven): I will add read-only data source testing to a separate test later.
-	err = ctl.createDataSource(api.DataSourceCreate{
-		InstanceID: instance.ID,
-		DatabaseID: database.ID,
-		CreatorID:  project.Creator.ID,
-		Name:       "ADMIN data source",
-		Type:       "ADMIN",
-		Username:   "root",
-		Password:   "",
 	})
 	a.NoError(err)
 }
@@ -497,6 +484,8 @@ func TestVCS(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
+			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -560,6 +549,8 @@ func TestVCS(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
+			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -839,6 +830,10 @@ func TestVCS_SDL(t *testing.T) {
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
+			a.Equal("Apply schema diff by file Prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -873,6 +868,10 @@ func TestVCS_SDL(t *testing.T) {
 			status, err = ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
+			issue, err = ctl.getIssue(issue.ID)
+			a.NoError(err)
+			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -974,7 +973,7 @@ ALTER TABLE ONLY public.users
 				{
 					Database:   databaseName,
 					Source:     db.VCS,
-					Type:       db.Migrate,
+					Type:       db.MigrateSDL,
 					Status:     db.Done,
 					Schema:     updatedSchema,
 					SchemaPrev: initialSchema,

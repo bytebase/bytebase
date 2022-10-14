@@ -34,14 +34,19 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update stage tasks status request").SetInternal(err)
 		}
 
-		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID}, true /* returnOnErr */)
+		if stageAllTaskStatusPatch.Status != api.TaskPending {
+			return echo.NewHTTPError(http.StatusBadRequest, "Only support status transitioning from PENDING_APPROVAL to PENDING")
+		}
+
+		pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
+		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID, StatusList: &pendingApprovalStatus}, true /* returnOnErr */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get tasks").SetInternal(err)
 		}
 		if len(tasks) == 0 {
-			// which is impossible, because we make sure at least there is one task in each stage.
-			return echo.NewHTTPError(http.StatusInternalServerError, "No task in the stage")
+			return echo.NewHTTPError(http.StatusInternalServerError, "No task to approve in the stage")
 		}
+
 		// pick any task in the stage to validate
 		// because all tasks in the same stage share the issue & environment.
 		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0], stageAllTaskStatusPatch.Status)

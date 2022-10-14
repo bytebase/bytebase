@@ -20,11 +20,11 @@ import (
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
 		api.TaskPendingApproval: {api.TaskPending},
-		api.TaskPending:         {api.TaskRunning, api.TaskPendingApproval},
+		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval},
 		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:            {},
 		api.TaskFailed:          {api.TaskRunning, api.TaskPendingApproval},
-		api.TaskCanceled:        {api.TaskRunning},
+		api.TaskCanceled:        {api.TaskPendingApproval},
 	}
 	taskCancellationImplemented = map[api.TaskType]bool{
 		api.TaskDatabaseSchemaUpdateGhostSync: true,
@@ -46,7 +46,7 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 	// 2. a Failed task which can be retried
 	// 3. a Pending task which can't be scheduled because of failed task checks, task dependency or earliest allowed time
 	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %q state", task.Status))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q state", task.Status))
 	}
 	if task.Status == api.TaskPending {
 		ok, err := s.TaskScheduler.canSchedule(ctx, task)
@@ -54,7 +54,7 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
 		}
 		if ok {
-			return echo.NewHTTPError(http.StatusBadRequest, "can not update the PENDING task because it can be running at any time")
+			return echo.NewHTTPError(http.StatusBadRequest, "cannot update the PENDING task because it can be running at any time")
 		}
 	}
 	return nil
@@ -158,7 +158,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID: %d", issue.ProjectID)).SetInternal(err)
 			}
-			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
+			if project.TenantMode == api.TenantModeTenant && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL) {
 				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
 			}
 		}
@@ -212,6 +212,9 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
+			if common.ErrorCode(err) == common.NotImplemented {
+				return echo.NewHTTPError(http.StatusNotImplemented, common.ErrorMessage(err))
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
 		}
 
@@ -237,8 +240,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		skipIfAlreadyTerminated := false
-		taskUpdated, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, c.Get(getPrincipalIDContextKey()).(int), skipIfAlreadyTerminated)
+		taskUpdated, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
 		}
@@ -248,48 +250,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskUpdated.Name)).SetInternal(err)
 		}
 		return nil
-	})
-
-	g.POST("/pipeline/:pipelineID/task/:taskID/cancel", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		taskID, err := strconv.Atoi(c.Param("taskID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
-		}
-		task, err := s.store.GetTaskByID(ctx, taskID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel the task").SetInternal(err)
-		}
-		if task == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
-		}
-
-		if !taskCancellationImplemented[task.Type] {
-			return echo.NewHTTPError(http.StatusNotImplemented, fmt.Sprintf("Canceling task type %s is not supported", task.Type))
-		}
-		// TODO(p0ny): support cancel pending task.
-		if !isTaskStatusTransitionAllowed(task.Status, api.TaskCanceled) {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid task status transition from %v to %v.", task.Status, api.TaskCanceled))
-		}
-
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, task, api.TaskCanceled)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
-		}
-		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
-		}
-
-		s.TaskScheduler.runningExecutorsMutex.Lock()
-		cancel, ok := s.TaskScheduler.runningExecutorsCancel[taskID]
-		s.TaskScheduler.runningExecutorsMutex.Unlock()
-		if !ok {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to cancel task")
-		}
-		cancel()
-
-		return c.NoContent(http.StatusOK)
 	})
 }
 
@@ -307,6 +267,27 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			payload := &api.TaskDatabaseSchemaUpdatePayload{}
 			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
+			}
+			oldStatement = payload.Statement
+			payload.Statement = *taskPatch.Statement
+			// 1. For VCS workflows, patchTask only happens when we modify the same file.
+			// 	  In that case, we want to use the same schema version parsed from the file name.
+			//    The task executor will force retry using the new SQL statement.
+			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
+			//    get migration history version conflict if the previous task has been attempted.
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+			}
+			bytes, err := json.Marshal(payload)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+			}
+			payloadStr := string(bytes)
+			taskPatch.Payload = &payloadStr
+		case api.TaskDatabaseSchemaUpdateSDL:
+			payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update sdl payload").SetInternal(err)
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
@@ -386,7 +367,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	}
 
 	// create an activity and trigger task check for statement update
-	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		if oldStatement != newStatement {
 			if issue == nil {
 				err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
@@ -432,10 +413,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               taskPatched.CreatorID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckGhostSync,
-					SkipIfAlreadyTerminated: false,
+					CreatorID: taskPatched.CreatorID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckGhostSync,
 				})
 				if err != nil {
 					// It's OK if we failed to trigger a check, just emit an error log
@@ -458,11 +438,10 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
 				}
 				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SystemBotID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckDatabaseStatementSyntax,
-					Payload:                 string(payload),
-					SkipIfAlreadyTerminated: false,
+					CreatorID: api.SystemBotID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckDatabaseStatementSyntax,
+					Payload:   string(payload),
 				})
 				if err != nil {
 					// It's OK if we failed to trigger a check, just emit an error log
@@ -491,11 +470,10 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
 				}
 				if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID:               api.SystemBotID,
-					TaskID:                  task.ID,
-					Type:                    api.TaskCheckDatabaseStatementType,
-					Payload:                 string(payload),
-					SkipIfAlreadyTerminated: false,
+					CreatorID: api.SystemBotID,
+					TaskID:    task.ID,
+					Type:      api.TaskCheckDatabaseStatementType,
+					Payload:   string(payload),
 				}); err != nil {
 					// It's OK if we failed to trigger a check, just emit an error log
 					log.Error("Failed to trigger statement type check after changing the task statement",
@@ -508,7 +486,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		}
 	}
 
-	// create an activity and trigger task check for earliest allowed time update
+	// earliest allowed time update.
+	// - create an activity.
+	// - dismiss stale approval.
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
 		if issue == nil {
@@ -552,29 +532,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			taskPatched = t
 		}
-
-		// trigger task check
-		payload, err = json.Marshal(api.TaskCheckEarliestAllowedTimePayload{
-			EarliestAllowedTs: *taskPatch.EarliestAllowedTs,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
-		}
-		_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               api.SystemBotID,
-			TaskID:                  task.ID,
-			Type:                    api.TaskCheckGeneralEarliestAllowedTime,
-			Payload:                 string(payload),
-			SkipIfAlreadyTerminated: false,
-		})
-		if err != nil {
-			// It's OK if we failed to trigger a check, just emit an error log
-			log.Error("Failed to trigger timing check after changing task earliest allowed time",
-				zap.Int("task_id", task.ID),
-				zap.String("task_name", task.Name),
-				zap.Error(err),
-			)
-		}
 	}
 	return taskPatched, nil
 }
@@ -592,9 +549,9 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 			break
 		}
 	}
-	if groupValue == nil {
+	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
 		// no value is set, fallback to default.
-		// the assignee group is the workspace owner and DBA.
+		// the assignee group is the workspace owner or DBA.
 		principal, err := s.store.GetPrincipalByID(ctx, principalID)
 		if err != nil {
 			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
@@ -718,6 +675,27 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 	}
 
+	if taskStatusPatch.Status == api.TaskCanceled {
+		if !taskCancellationImplemented[task.Type] {
+			return nil, common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
+		}
+		s.TaskScheduler.runningExecutorsMutex.Lock()
+		cancel, ok := s.TaskScheduler.runningExecutorsCancel[task.ID]
+		s.TaskScheduler.runningExecutorsMutex.Unlock()
+		if !ok {
+			return nil, errors.New("failed to cancel task")
+		}
+		cancel()
+		result, err := json.Marshal(api.TaskRunResultPayload{
+			Detail: "Task cancellation requested.",
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal TaskRunResultPayload")
+		}
+		resultStr := string(result)
+		taskStatusPatch.Result = &resultStr
+	}
+
 	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
@@ -778,7 +756,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	}
 
 	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
-	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
+	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
@@ -788,6 +766,13 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 				zap.String("instance", instance.Name),
 				zap.String("databaseName", taskPatched.Database.Name),
 			)
+		}
+	}
+
+	// Cancel every task depending on the canceled task.
+	if taskPatched.Status == api.TaskCanceled {
+		if err := s.cancelDependingTasks(ctx, taskPatched); err != nil {
+			return nil, errors.Wrapf(err, "failed to cancel depending tasks for task %d", taskPatched.ID)
 		}
 	}
 
@@ -852,11 +837,10 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 	}
 
 	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID:               api.SystemBotID,
-		TaskID:                  task.ID,
-		Type:                    api.TaskCheckDatabaseStatementAdvise,
-		Payload:                 string(payload),
-		SkipIfAlreadyTerminated: false,
+		CreatorID: api.SystemBotID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckDatabaseStatementAdvise,
+		Payload:   string(payload),
 	}); err != nil {
 		// It's OK if we failed to trigger a check, just emit an error log
 		log.Error("Failed to trigger statement advise task after changing task statement",
@@ -886,7 +870,7 @@ func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, pr
 			break
 		}
 	}
-	if groupValue == nil {
+	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
 		member, err := s.getAnyWorkspaceOwnerOrDBA(ctx)
 		if err != nil {
 			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")
@@ -912,4 +896,33 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 		}
 	}
 	return true
+}
+
+func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error {
+	queue := []int{task.ID}
+	seen := map[int]bool{task.ID: true}
+	for len(queue) != 0 {
+		fromTaskID := queue[0]
+		queue = queue[1:]
+		dagList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: &fromTaskID})
+		if err != nil {
+			return err
+		}
+		for _, dag := range dagList {
+			if seen[dag.ToTaskID] {
+				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
+			}
+			seen[dag.ToTaskID] = true
+
+			if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+				ID:        dag.ToTaskID,
+				UpdaterID: api.SystemBotID,
+				Status:    api.TaskCanceled,
+			}); err != nil {
+				return err
+			}
+			queue = append(queue, dag.ToTaskID)
+		}
+	}
+	return nil
 }
