@@ -899,12 +899,13 @@ func isViewEqual(old, new *ast.CreateViewStmt) bool {
 	// 		[WITH [CASCADED | LOCAL] CHECK OPTION]
 	// We can easily replace view statement by using `CREATE OR REPLACE VIEW` statement to replace the old one.
 	// So we don't need to compare each part, just compare the restore string.
-	restoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, nil)
 	var oldBuf, newBuf bytes.Buffer
-	if err := old.Restore(restoreCtx); err != nil {
+	oldRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &oldBuf)
+	newRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &newBuf)
+	if err := old.Restore(oldRestoreCtx); err != nil {
 		return false
 	}
-	if err := new.Restore(restoreCtx); err != nil {
+	if err := new.Restore(newRestoreCtx); err != nil {
 		return false
 	}
 	return oldBuf.String() == newBuf.String()

@@ -270,3 +270,52 @@ func TestTableOption(t *testing.T) {
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
 }
+
+func TestView(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
+		{
+			old:  `CREATE VIEW book AS SELECT * FROM book;`,
+			new:  `CREATE VIEW book AS SELECT * FROM book2;`,
+			want: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `book` AS SELECT * FROM `book2`;\n",
+		},
+		{
+			old: `CREATE VIEW order_incomes AS
+			SELECT
+				order_id,
+				customer_name,
+				SUM(ordered_quantity * product_price) total
+			FROM
+				order_details
+			INNER JOIN orders USING (order_id)
+			INNER JOIN customers USING (customer_name)
+			GROUP BY order_id;`,
+
+			new: `CREATE VIEW order_incomes AS
+			SELECT
+				order_id,
+				customer_name,
+				SUM(ordered_quantity * product_price) + 1 total
+			FROM
+				order_details
+			INNER JOIN orders USING (order_id)
+			INNER JOIN customers USING (customer_name)
+			GROUP BY order_id;`,
+
+			want: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `order_incomes` AS " +
+				"SELECT `order_id`,`customer_name`,SUM(`ordered_quantity`*`product_price`)+1 AS `total` " +
+				"FROM (`order_details` JOIN `orders` USING (`order_id`)) JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;\n",
+		},
+	}
+	t.Parallel()
+	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
+	for _, test := range tests {
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
