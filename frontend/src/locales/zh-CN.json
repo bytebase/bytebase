@@ -939,6 +939,7 @@
     "sql-review-ci-setup-modal": "我们为您的代码仓库创建了一个{pr}来配置 SQL 审核 CI。请审核并合并该{pr}。",
     "sql-review-ci-remove": "清除 SQL 审核 CI",
     "sql-review-ci-remove-modal": "SQL 审核 CI 已禁用。您还需手动删除代码仓库中的 SQL 审核 CI 文件。",
+    "sql-review-ci-restore-modal": "恢复到 UI 工作流后，SQL 审核 CI 将会被禁用，您可手动删除代码仓库中的 SQL 审核 CI 文件。",
     "git-provider": "Git 提供方",
     "version-control-status": "@.capitalize:common.version-control 已{status}",
     "version-control-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",

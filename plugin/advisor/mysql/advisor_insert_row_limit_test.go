@@ -37,7 +37,7 @@ func TestInsertRowLimit(t *testing.T) {
 			},
 		},
 	}
-	payload, err := json.Marshal(advisor.NumberLimitRulePayload{
+	payload, err := json.Marshal(advisor.NumberTypeRulePayload{
 		Number: 5,
 	})
 	require.NoError(t, err)

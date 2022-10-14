@@ -18,6 +18,7 @@ export type TaskType =
   | "bb.task.general"
   | "bb.task.database.create"
   | "bb.task.database.schema.update"
+  | "bb.task.database.schema.update-sdl"
   | "bb.task.database.data.update"
   | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
@@ -50,6 +51,12 @@ export type TaskDatabaseCreatePayload = {
 };
 
 export type TaskDatabaseSchemaUpdatePayload = {
+  migrationType: MigrationType;
+  statement: string;
+  pushEvent?: VCSPushEvent;
+};
+
+export type TaskDatabaseSchemaUpdateSDLPayload = {
   migrationType: MigrationType;
   statement: string;
   pushEvent?: VCSPushEvent;
