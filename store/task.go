@@ -758,6 +758,14 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 			return nil, FormatError(err)
 		}
 
+		taskRawList = append(taskRawList, &taskRaw)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	for _, taskRaw := range taskRawList {
 		taskRunRawList, err := s.findTaskRunImpl(ctx, tx, &api.TaskRunFind{
 			TaskID: &taskRaw.ID,
 		})
@@ -774,12 +782,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 			return nil, err
 		}
 		taskRaw.TaskCheckRunRawList = taskCheckRunRawList
-
-		taskRawList = append(taskRawList, &taskRaw)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
 	return taskRawList, nil
 }
