@@ -35,15 +35,22 @@
         <button
           v-if="state.editing"
           type="button"
-          class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 relative"
+          class="cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         >
-          {{ $t("issue.upload-sql") }}
-          <input
-            type="file"
-            accept=".sql,.txt,application/sql,text/plain"
-            class="absolute inset-0 z-1 opacity-0"
-            @change="handleUploadFile"
-          />
+          <label
+            for="sql-file-input"
+            class="px-3 py-1 w-full flex flex-row justify-center items-center cursor-pointer"
+          >
+            <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
+            {{ $t("issue.upload-sql") }}
+            <input
+              id="sql-file-input"
+              type="file"
+              accept=".sql,.txt,application/sql,text/plain"
+              class="hidden"
+              @change="handleUploadFile"
+            />
+          </label>
         </button>
       </template>
       <template v-else>
