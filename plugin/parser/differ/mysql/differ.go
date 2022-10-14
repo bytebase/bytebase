@@ -36,6 +36,7 @@ type SchemaDiffer struct {
 type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
+// It only supports schema information from mysqldump.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldNodes, _, err := parser.New().Parse(oldStmt, "", "")
 	if err != nil {
