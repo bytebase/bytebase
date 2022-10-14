@@ -251,17 +251,17 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 			newNodeList = append(newNodeList, createViewStmt)
 		}
-	}
-	var viewNames []*ast.TableName
-	// Drop the remaining views in the oldViewMap.
-	for _, view := range oldViewMap {
-		viewNames = append(viewNames, view.ViewName)
-	}
-	if len(viewNames) > 0 {
-		dropNodeList = append(dropNodeList, &ast.DropTableStmt{
-			Tables: viewNames,
-			IsView: true,
-		})
+		var viewNames []*ast.TableName
+		// Drop the remaining views in the oldViewMap.
+		for _, view := range oldViewMap {
+			viewNames = append(viewNames, view.ViewName)
+		}
+		if len(viewNames) > 0 {
+			dropNodeList = append(dropNodeList, &ast.DropTableStmt{
+				Tables: viewNames,
+				IsView: true,
+			})
+		}
 	}
 	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
@@ -595,10 +595,6 @@ func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
 	if (old.OnUpdate == nil) != (new.OnUpdate == nil) {
 		return false
 	}
-	if old.OnUpdate != nil && new.OnUpdate != nil && old.OnUpdate.ReferOpt != new.OnUpdate.ReferOpt {
-		return false
-	}
-
 	return true
 }
 

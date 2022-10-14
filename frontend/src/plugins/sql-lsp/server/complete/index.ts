@@ -3,16 +3,18 @@ import type {
   CompletionItem,
   CompletionParams,
 } from "vscode-languageserver/browser";
-import type { SQLDialect, Schema } from "@sql-lsp/types";
+import type { SQLDialect, Schema, Table } from "@sql-lsp/types";
 import {
   createColumnCandidates,
   createDatabaseCandidates,
   createKeywordCandidates,
+  createSubQueryCandidates,
   createTableCandidates,
 } from "./candidates";
 import { getFromClauses } from "./utils";
 import { simpleTokenize } from "./tokenizer";
 import { AliasMapping } from "./alias";
+import { SubQueryMapping } from "./sub-query";
 
 export const complete = (
   params: CompletionParams,
@@ -30,7 +32,8 @@ export const complete = (
   const lastToken = tokens[tokens.length - 1].toLowerCase();
   const tableList = schema.databases.flatMap((db) => db.tables);
 
-  const { fromTables } = getFromClauses(sql);
+  const { fromTables, subQueries } = getFromClauses(sql);
+  const subQueryMapping = new SubQueryMapping(tableList, subQueries, dialect);
   const aliasMapping = new AliasMapping(tableList, fromTables, dialect);
 
   let suggestions: CompletionItem[] = [];
@@ -42,7 +45,10 @@ export const complete = (
       .split(".")
       .map((word) => word.replace(/[`'"]/g, "")); // remove quotes
 
-    const provideTableAutoCompletion = (databaseName: string) => {
+    const provideTableAutoCompletion = (
+      databaseName: string,
+      tableList: Table[]
+    ) => {
       // provide auto completion items for its tables
       const tableListOfDatabase = createTableCandidates(
         tableList.filter((table) => table.database === databaseName),
@@ -62,6 +68,7 @@ export const complete = (
 
     const provideColumnAutoCompletion = (
       tableName: string,
+      tableList: Table[],
       databaseName?: string
     ) => {
       const tables = tableList.filter((table) => {
@@ -87,17 +94,21 @@ export const complete = (
       // - "{database_name}." (mysql)
       if (dialect === "mysql") {
         const maybeDatabaseName = tokenListBeforeDot[0];
-        provideTableAutoCompletion(maybeDatabaseName);
+        provideTableAutoCompletion(maybeDatabaseName, tableList);
       }
       // - "{table_name}." (mysql)
       const maybeTableName = tokenListBeforeDot[0];
       if (dialect === "mysql") {
-        provideColumnAutoCompletion(maybeTableName);
+        provideColumnAutoCompletion(maybeTableName, tableList);
+        provideColumnAutoCompletion(
+          maybeTableName,
+          subQueryMapping.virtualTableList
+        );
       }
       if (dialect === "postgresql") {
         // for postgresql, we also try "public.{table_name}."
         // since "public" schema can be omitted by default
-        provideColumnAutoCompletion(`public.${maybeTableName}`);
+        provideColumnAutoCompletion(`public.${maybeTableName}`, tableList);
       }
       // TODO: "{schema_name}." (postgresql)
     }
@@ -108,11 +119,15 @@ export const complete = (
       // - "{schema_name}.{table_name}." (postgresql)
       const [maybeDatabaseName, maybeTableName] = tokenListBeforeDot;
       if (dialect === "mysql") {
-        provideColumnAutoCompletion(maybeTableName, maybeDatabaseName);
+        provideColumnAutoCompletion(
+          maybeTableName,
+          tableList,
+          maybeDatabaseName
+        );
       }
       if (dialect === "postgresql") {
         const maybeTableNameWithSchema = tokenListBeforeDot.join(".");
-        provideColumnAutoCompletion(maybeTableNameWithSchema);
+        provideColumnAutoCompletion(maybeTableNameWithSchema, tableList);
       }
       // TODO: "{database_name}.{schema_name}." (postgresql)
     }
@@ -124,7 +139,11 @@ export const complete = (
       const [maybeDatabaseName, maybeSchemaName, maybeTableName] =
         tokenListBeforeDot;
       const maybeTableNameWithSchema = `${maybeSchemaName}.${maybeTableName}`;
-      provideColumnAutoCompletion(maybeTableNameWithSchema, maybeDatabaseName);
+      provideColumnAutoCompletion(
+        maybeTableNameWithSchema,
+        tableList,
+        maybeDatabaseName
+      );
     }
   } else {
     // The auto-completion trigger is SPACE
@@ -140,12 +159,16 @@ export const complete = (
       tableList,
       dialect === "mysql" // Add database prefix to table candidates only for MySQL.
     );
+    const suggestionsForSubQueryVirtualTable = createSubQueryCandidates(
+      subQueryMapping.virtualTableList
+    );
     const suggestionsForKeyword = createKeywordCandidates();
 
     suggestions = [
       ...suggestionsForAliases,
       ...suggestionsForKeyword,
       ...suggestionsForTable,
+      ...suggestionsForSubQueryVirtualTable,
       ...suggestionsForDatabase,
     ];
   }
