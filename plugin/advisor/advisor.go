@@ -213,7 +213,7 @@ const (
 	// PostgreSQLColumnRequirement is an advisor type for PostgreSQL column requirement.
 	PostgreSQLColumnRequirement Type = "bb.plugin.advisor.postgresql.column.require"
 
-	// PostgreSQLColumnCommentConvention is an advisor type for PostgreSQL comment convention.
+	// PostgreSQLCommentConvention is an advisor type for PostgreSQL comment convention.
 	PostgreSQLCommentConvention Type = "bb.plugin.advisor.postgresql.comment"
 
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.

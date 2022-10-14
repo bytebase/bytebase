@@ -134,6 +134,8 @@ const (
 	// SchemaRuleInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 	SchemaRuleInsertDisallowOrderByRand SQLReviewRuleType = "insert.disallow-order-by-rand"
 
+	SchemaRuleCommentLength SQLReviewRuleType = "comment.length"
+
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list.

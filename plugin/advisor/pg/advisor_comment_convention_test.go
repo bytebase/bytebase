@@ -29,7 +29,7 @@ func TestCommentConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCommentTooLong,
+					Code:    advisor.CommentTooLong,
 					Title:   "column.comment",
 					Content: "The length of comment should be within 20 characters",
 					Line:    1,
@@ -52,7 +52,7 @@ func TestCommentConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCommentTooLong,
+					Code:    advisor.CommentTooLong,
 					Title:   "column.comment",
 					Content: "The length of comment should be within 20 characters",
 					Line:    1,
@@ -66,8 +66,8 @@ func TestCommentConvention(t *testing.T) {
 		MaxLength: 20,
 	})
 	require.NoError(t, err)
-	advisor.RunSQLReviewRuleTests(t, tests, &ColumnCommentConventionAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleColumnCommentConvention,
+	advisor.RunSQLReviewRuleTests(t, tests, &CommentConventionAdvisor{}, &advisor.SQLReviewRule{
+		Type:    advisor.SchemaRuleCommentLength,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, advisor.MockPostgreSQLDatabase)

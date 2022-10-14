@@ -11,20 +11,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*ColumnCommentConventionAdvisor)(nil)
+	_ advisor.Advisor = (*CommentConventionAdvisor)(nil)
 	_ ast.Visitor     = (*commentConventionChecker)(nil)
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLCommentConvention, &CommentConventionAdvisor{})
 }
 
-// ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
-type ColumnCommentConventionAdvisor struct {
+// CommentConventionAdvisor is the advisor checking for column comment convention.
+type CommentConventionAdvisor struct {
 }
 
 // Check checks for column comment convention.
-func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*CommentConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -84,7 +84,7 @@ func (checker *commentConventionChecker) Visit(node ast.Node) ast.Visitor {
 	if checker.maxLength > 0 && len(column.comment) > checker.maxLength {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
-			Code:    advisor.ColumnCommentTooLong,
+			Code:    advisor.CommentTooLong,
 			Title:   checker.title,
 			Content: fmt.Sprintf("The length of comment should be within %d characters", checker.maxLength),
 			Line:    column.line,
