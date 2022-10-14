@@ -33,7 +33,7 @@ export const createColumnCandidatesByAlias = (
       const label = `${alias}.${column.name}`;
       return {
         label,
-        kind: ICONS.COLUMN,
+        kind: ICONS.ALIAS,
         detail: "<Column>",
         documentation: label,
         sortText: SortText.ALIAS,

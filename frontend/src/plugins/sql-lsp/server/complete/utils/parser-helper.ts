@@ -1,10 +1,12 @@
-import {
+import type {
+  ColumnListItemNode,
   IncompleteSubqueryNode,
-  parseFromClause,
+  SelectStatement,
   SubqueryNode,
   TableNode,
 } from "@joe-re/sql-parser";
-import { SQLDialect, Table } from "@/plugins/sql-lsp/types";
+import { parseFromClause } from "@joe-re/sql-parser";
+import type { Column, SQLDialect, Table } from "@/plugins/sql-lsp/types";
 
 export const getFromClauses = (sql: string) => {
   const fromTables: TableNode[] = [];
@@ -66,4 +68,44 @@ export const getTableNameFromTableNode = (
   // format: "x"
   // should be "{table}"
   return { name: table, database: undefined };
+};
+
+export const getColumnsFromSelectStatement = (
+  select: SelectStatement
+): Column[] => {
+  const selectedColumns = select.columns;
+  if (Array.isArray(selectedColumns)) {
+    // e.g. "SELECT a, b, c FROM xxx"
+    // parse the selected column nodes one-by-one
+    return selectedColumns
+      .map((columnNode) => getColumnNameFromColumnListItemNode(columnNode))
+      .filter((columnName) => columnName !== "")
+      .map((name) => ({ name }));
+  } else if (selectedColumns.type === "star") {
+    // e.g. "SELECT * FROM xxx"
+    // --
+    // TODO: "xxx" might be complex, we need to parse the clause recursively,
+    // and expand "SELECT *" as if SELECT every column one-by-one
+    return [];
+  }
+  // And the parser cannot handle mixed select star and columns yet.
+  // e.g. SELECT a.*, b.col FROM a, b;
+  // We will get nothing here.
+
+  return [];
+};
+
+export const getColumnNameFromColumnListItemNode = (
+  node: ColumnListItemNode
+): string => {
+  const { as, expr } = node;
+  if (expr.type === "column_ref") {
+    // If the node is a column_ref, use the alias (if available) or the column name
+    return as || expr.column || "";
+  } else if (expr.type === "aggr_func") {
+    // e.g. "MAX(hire_date) as latest_date"
+    // We cannot reference a aggr_func directly without alias
+    return as || "";
+  }
+  return "";
 };

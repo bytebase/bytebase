@@ -24,3 +24,22 @@ export const createTableCandidates = (
 
   return uniqBy(suggestions, (item) => item.label);
 };
+
+export const createSubQueryCandidates = (
+  virtualTableList: Table[]
+): CompletionItem[] => {
+  const suggestions: CompletionItem[] = [];
+
+  virtualTableList.forEach((table) => {
+    const label = table.name;
+    suggestions.push({
+      label,
+      kind: ICONS.SUBQUERY,
+      detail: "<SubQuery>",
+      sortText: SortText.SUBQUERY,
+      insertText: label,
+    });
+  });
+
+  return uniqBy(suggestions, (item) => item.label);
+};

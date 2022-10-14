@@ -3,8 +3,9 @@ import { CompletionItemKind } from "vscode-languageserver-types";
 export const ICONS = {
   DATABASE: CompletionItemKind.Class,
   TABLE: CompletionItemKind.Field,
-  ALIAS: CompletionItemKind.Variable, // Not used yet
+  SUBQUERY: CompletionItemKind.Field, // Same as TABLE
   COLUMN: CompletionItemKind.Interface,
+  ALIAS: CompletionItemKind.Interface, // Same as COLUMN
   KEYWORD: CompletionItemKind.Keyword,
   FUNCTION: CompletionItemKind.Function,
   OPERATOR: CompletionItemKind.Operator,
