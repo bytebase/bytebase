@@ -265,22 +265,21 @@ const reviewPolicy = computed((): SQLReviewPolicy => {
   );
 });
 
-const ruleTemplateMap: Map<RuleType, RuleTemplate> = TEMPLATE_LIST.reduce(
-  (map, template) => {
-    for (const rule of template.ruleList) {
-      map.set(rule.type, rule);
-    }
-    return map;
-  },
-  new Map<RuleType, RuleTemplate>()
-);
-
 const selectedRuleList = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
     return [];
   }
 
   const ruleTemplateList: RuleTemplate[] = [];
+  const ruleTemplateMap: Map<RuleType, RuleTemplate> = TEMPLATE_LIST.reduce(
+    (map, template) => {
+      for (const rule of template.ruleList) {
+        map.set(rule.type, rule);
+      }
+      return map;
+    },
+    new Map<RuleType, RuleTemplate>()
+  );
 
   for (const policyRule of reviewPolicy.value.ruleList) {
     const rule = ruleTemplateMap.get(policyRule.type);
