@@ -86,6 +86,14 @@ func (c *Context) getMetaList() []meta {
 			Name:  "Issue",
 			Value: c.Issue.Name,
 		})
+		description := c.Issue.Description
+		if len(description) > 200 {
+			description = description[:200] + "... (view details in Bytebase)"
+		}
+		m = append(m, meta{
+			Name:  "Issue Description",
+			Value: description,
+		})
 	}
 
 	return m

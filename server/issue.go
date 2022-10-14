@@ -251,6 +251,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Level:       api.ActivityInfo,
 				Payload:     string(payload),
 			}
+			// FIXME(dragonly): Post the patched issue.
 			_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
 				issue: issue,
 			})
