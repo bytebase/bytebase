@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/pingcap/tidb/parser/ast"
@@ -504,7 +503,6 @@ func TestForeignKeyDefination(t *testing.T) {
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
 	for _, test := range tests {
-		fmt.Println(test.old)
 		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
 		a.NoError(err)
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
