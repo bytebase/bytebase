@@ -273,7 +273,6 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.
 		if _, err := buf.Write([]byte(";\n")); err != nil {
 			return "", err
 		}
-
 	}
 
 	for i := len(inplaceAdd) - 1; i >= 0; i-- {
