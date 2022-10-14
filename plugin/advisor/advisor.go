@@ -224,6 +224,9 @@ const (
 
 	// PostgreSQLIndexKeyNumberLimit is an advisor type for postgresql index key number limit.
 	PostgreSQLIndexKeyNumberLimit Type = "bb.plugin.advisor.postgresql.index.key-number-limit"
+
+	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
+	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
 )
 
 // Advice is the result of an advisor.

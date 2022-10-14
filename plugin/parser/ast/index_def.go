@@ -9,3 +9,11 @@ type IndexDef struct {
 	Unique  bool
 	KeyList []*IndexKeyDef
 }
+
+func (id IndexDef) GetKeyNameList() []string {
+	nameList := []string{}
+	for _, key := range id.KeyList {
+		nameList = append(nameList, key.Key)
+	}
+	return nameList
+}
