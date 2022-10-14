@@ -888,10 +888,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		Type:              taskType,
 		Statement:         d.Statement,
 		EarliestAllowedTs: d.EarliestAllowedTs,
-<<<<<<< HEAD
-		MigrationType:     d.MigrationType,
-=======
->>>>>>> 178e3b420145935ac488d3b1e153d8939d31c651
 		Payload:           payloadString,
 	}, nil
 }
