@@ -10,13 +10,14 @@ import {
   IssueStatusTransition,
 } from "@/types";
 import {
+  activeStage,
   allTaskList,
-  applicableStageTransition,
   applicableTaskTransition,
   isDBAOrOwner,
   isOwnerOfProject,
   StageStatusTransition,
   TaskStatusTransition,
+  TASK_STATUS_TRANSITION_LIST,
 } from "@/utils";
 import { useAllowProjectOwnerToApprove, useIssueLogic } from ".";
 
@@ -118,11 +119,24 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
         return [];
       case "OPEN": {
         if (isAllowedToApplyTaskTransition.value) {
-          const currentTask = activeTaskOfPipeline(issue.pipeline);
-          return applicableStageTransition(issue.pipeline).filter(
-            (transition) =>
-              allowApplyTaskStatusTransition(currentTask, transition.to)
+          // Only "Approve" can be applied to current stage by now.
+          const APPROVE = TASK_STATUS_TRANSITION_LIST.get("APPROVE")!;
+          const currentStage = activeStage(issue.pipeline);
+
+          const pendingApprovalTaskList = currentStage.taskList.filter(
+            (task) => {
+              return (
+                task.status === "PENDING_APPROVAL" &&
+                allowApplyTaskStatusTransition(task, APPROVE.to)
+              );
+            }
           );
+
+          // Allowing "Approve" a stage when it has TWO OR MORE tasks
+          // are "PENDING_APPROVAL" (including the "activeTask" itself)
+          if (pendingApprovalTaskList.length >= 2) {
+            return [APPROVE];
+          }
         }
 
         return [];

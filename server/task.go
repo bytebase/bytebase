@@ -285,9 +285,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			payloadStr := string(bytes)
 			taskPatch.Payload = &payloadStr
 		case api.TaskDatabaseSchemaUpdateSDL:
-			payload := &api.TaskDatabaseSchemaUpdatePayload{}
+			payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update sdl payload").SetInternal(err)
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement

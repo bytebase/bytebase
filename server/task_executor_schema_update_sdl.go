@@ -27,7 +27,7 @@ type SchemaUpdateSDLTaskExecutor struct {
 // RunOnce will run the schema update (SDL) task executor once.
 func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer atomic.StoreInt32(&exec.completed, 1)
-	payload := &api.TaskDatabaseSchemaUpdatePayload{}
+	payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}

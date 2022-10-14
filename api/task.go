@@ -103,6 +103,13 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
 }
 
+// TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
+type TaskDatabaseSchemaUpdateSDLPayload struct {
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+}
+
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
 type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	Statement     string         `json:"statement,omitempty"`
