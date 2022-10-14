@@ -180,7 +180,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
-					Specs: alterTableDropConstraintSpecs,
+					Specs: alterTableAddConstraintSpecs,
 				})
 			}
 
@@ -190,7 +190,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						Table: &ast.TableName{
 							Name: model.NewCIStr(tableName),
 						},
-						Specs: alterTableAddConstraintSpecs,
+						Specs: alterTableDropConstraintSpecs,
 					},
 				})
 			}

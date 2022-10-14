@@ -419,7 +419,72 @@ func TestKeyPart(t *testing.T) {
 	}
 }
 
-func TestIndex(t *testing.T) {
+func TestForeignKeyDefination(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
+		// {
+		// 	old: `CREATE TABLE department(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(department));
+		// 	CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY employee_ibfk_1(department_id) REFERENCES department(id));`,
+		// 	new: `CREATE TABLE department(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(department));
+		// 	CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY fk_2(department_id) REFERENCES department(id));`,
+		// 	want: "ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n" + "ALTER TABLE `employee` ADD CONSTRAINT `fk_2` FOREIGN KEY (`department_id`) REFERENCES `department`(`id`);\n",
+		// },
+		// {
+		// 	old: `CREATE TABLE department(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(department));
+		// 	CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY employee_ibfk_1(department_id) REFERENCES department(id));`,
+		// 	new: `CREATE TABLE department(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(department));
+		// 	CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY fk_2(department_id) REFERENCES department(id));`,
+		// 	want: "ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n" + "ALTER TABLE `employee` ADD CONSTRAINT `fk_2` FOREIGN KEY (`department_id`) REFERENCES `department`(`id`);\n",
+		// },
+		{
+			old: "CREATE TABLE `department` (" +
+				"	`id` int NOT NULL," +
+				"	`name` varchar(50) NOT NULL," +
+				"	PRIMARY KEY (`id`)," +
+				"	KEY `id_name_idx` (`id`,`name`)" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;" +
+				"CREATE TABLE `employee` (" +
+				"	`id` int NOT NULL," +
+				"	`name` varchar(50) NOT NULL," +
+				"	`department_id` int DEFAULT NULL," +
+				"	`department_name` varchar(50) DEFAULT NULL," +
+				"	PRIMARY KEY (`id`)," +
+				"	KEY `fk_2` (`department_id`,`department_name`)," +
+				"	CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`, `department_name`) REFERENCES `department` (`id`, `name`)" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;",
+			new: "CREATE TABLE `department` (" +
+				"	`id` int NOT NULL," +
+				"	`name` varchar(50) NOT NULL," +
+				"	PRIMARY KEY (`id`)," +
+				"	KEY `id_idx` (`id`)" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;" +
+				"CREATE TABLE `employee` (" +
+				"	`id` int NOT NULL," +
+				"	`name` varchar(50) NOT NULL," +
+				"	`department_id` int DEFAULT NULL," +
+				"	`department_name` varchar(50) DEFAULT NULL," +
+				"	PRIMARY KEY (`id`)," +
+				"	KEY `fk_2` (`department_id`)," +
+				"	CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`)" +
+				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;",
+			want: "ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n" +
+				"ALTER TABLE `employee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`);\n",
+		},
+	}
+
+	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
+	for _, test := range tests {
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
+
+func TestConstraint(t *testing.T) {
 	tests := []struct {
 		old  string
 		new  string
