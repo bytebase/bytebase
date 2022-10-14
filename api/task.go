@@ -216,7 +216,6 @@ type TaskCreate struct {
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *vcs.PushEvent
-	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 
 // TaskFind is the API message for finding tasks.
