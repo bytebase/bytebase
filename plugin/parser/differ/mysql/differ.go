@@ -52,7 +52,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 	var newNodeList []ast.Node
 	var inplaceUpdate []ast.Node
-	var dropNodeList [][]ast.Node
+	// inplaceDropNodeList and inplaceAddNodeList are used to handle destructive node updates.
+	// For example, we should drop the old index named 'id_idx' and then add a new index named 'id_idx' in the same table.
+	var inplaceDropNodeList []ast.Node
+	var inplaceAddNodeList []ast.Node
+	var dropNodeList []ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
 
@@ -73,8 +77,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
-			var alterTableAddConstraintSpecs []*ast.AlterTableSpec
-			var alterTableDropConstraintSpecs []*ast.AlterTableSpec
+			var alterTableAddNewConstraintSpecs []*ast.AlterTableSpec
+			var alterTableDropExcessConstraintSpecs []*ast.AlterTableSpec
+			var alterTableInplaceAddConstraintSpecs []*ast.AlterTableSpec
+			var alterTableInplaceDropConstraintSpecs []*ast.AlterTableSpec
 
 			oldColumnMap := buildColumnMap(oldNodes, newStmt.Table.Name)
 			for _, columnDef := range newStmt.Cols {
@@ -102,23 +108,40 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
 					indexName := getIndexName(constraint)
 					if oldConstraint, ok := indexMap[indexName]; ok {
-						if isIndexEqual(constraint, oldConstraint) {
-							delete(indexMap, indexName)
-							continue
+						if !isIndexEqual(constraint, oldConstraint) {
+							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
+								Tp:   ast.AlterTableDropIndex,
+								Name: indexName,
+							})
+							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableAddConstraint,
+								Constraint: constraint,
+							})
 						}
+						delete(indexMap, indexName)
+						continue
 					}
-					alterTableAddConstraintSpecs = append(alterTableAddConstraintSpecs, &ast.AlterTableSpec{
+					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableAddConstraint,
 						Constraint: constraint,
 					})
 				case ast.ConstraintPrimaryKey:
-					if oldConstraint, ok := indexMap["PRIMARY"]; ok {
-						if isIndexEqual(constraint, oldConstraint) {
-							delete(indexMap, "PRIMARY")
-							continue
+					primaryKeyName := "PRIMARY"
+					if oldConstraint, ok := indexMap[primaryKeyName]; ok {
+						if !isIndexEqual(constraint, oldConstraint) {
+							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableDropPrimaryKey,
+								Constraint: oldConstraint,
+							})
+							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableAddConstraint,
+								Constraint: constraint,
+							})
 						}
+						delete(indexMap, primaryKeyName)
+						continue
 					}
-					alterTableAddConstraintSpecs = append(alterTableAddConstraintSpecs, &ast.AlterTableSpec{
+					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableAddConstraint,
 						Constraint: constraint,
 					})
@@ -143,41 +166,57 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			// We should drop the remaining indices in the indexMap.
 			for indexName := range indexMap {
 				if indexName == "PRIMARY" {
-					alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
+					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
 						Tp: ast.AlterTableDropPrimaryKey,
 					})
 					continue
 				}
-				alterTableDropConstraintSpecs = append(alterTableDropConstraintSpecs, &ast.AlterTableSpec{
+				alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
 					Tp:   ast.AlterTableDropIndex,
 					Name: indexName,
 				})
 			}
 
-			if len(alterTableAddConstraintSpecs) > 0 {
+			if len(alterTableAddNewConstraintSpecs) > 0 {
 				newNodeList = append(newNodeList, &ast.AlterTableStmt{
 					Table: &ast.TableName{
 						Name: model.NewCIStr(tableName),
 					},
-					Specs: alterTableDropConstraintSpecs,
+					Specs: alterTableAddNewConstraintSpecs,
 				})
 			}
 
-			if len(alterTableDropConstraintSpecs) > 0 {
-				dropNodeList = append(dropNodeList, []ast.Node{
-					&ast.AlterTableStmt{
-						Table: &ast.TableName{
-							Name: model.NewCIStr(tableName),
-						},
-						Specs: alterTableAddConstraintSpecs,
+			if len(alterTableDropExcessConstraintSpecs) > 0 {
+				dropNodeList = append(dropNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
 					},
+					Specs: alterTableDropExcessConstraintSpecs,
+				})
+			}
+
+			if len(alterTableInplaceDropConstraintSpecs) > 0 {
+				inplaceDropNodeList = append(inplaceDropNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableInplaceDropConstraintSpecs,
+				})
+			}
+
+			if len(alterTableInplaceAddConstraintSpecs) > 0 {
+				inplaceAddNodeList = append(inplaceAddNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableInplaceAddConstraintSpecs,
 				})
 			}
 		default:
 		}
 	}
 
-	return deparse(newNodeList, inplaceUpdate, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
 // We're not supporting all the MySQL statements for now.
@@ -201,7 +240,7 @@ func validateStmtNodes(nodes []ast.StmtNode) error {
 	return nil
 }
 
-func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -227,22 +266,30 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, dropNodeList [][]
 		}
 	}
 
-	var reDropNodes [][]ast.Node
-	for i := len(dropNodeList) - 1; i >= 0; i-- {
-		var nodes []ast.Node
-		for j := len(dropNodeList[i]) - 1; j >= 0; j-- {
-			nodes = append(nodes, dropNodeList[i][j])
+	for i := len(inplaceDrop) - 1; i >= 0; i-- {
+		if err := inplaceDrop[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
 		}
-		reDropNodes = append(reDropNodes, nodes)
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
 	}
-	for _, nodes := range reDropNodes {
-		for _, node := range nodes {
-			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
+
+	for i := len(inplaceAdd) - 1; i >= 0; i-- {
+		if err := inplaceAdd[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+
+	for i := len(dropNodeList) - 1; i >= 0; i-- {
+		if err := dropNodeList[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
 		}
 	}
 	return buf.String(), nil
