@@ -148,7 +148,7 @@ func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task,
 	return task, nil
 }
 
-// PatchTaskStatus patches an instance of TaskStatus.
+// PatchTaskStatus patches a list of TaskStatus.
 func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) ([]*api.Task, error) {
 	taskRawList, err := s.patchTaskRawStatus(ctx, patch)
 	if err != nil {
@@ -359,8 +359,8 @@ func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRa
 	return task, nil
 }
 
-// patchTaskRawStatus updates an existing task status and the corresponding task run status atomically.
-// Returns ENOTFOUND if task does not exist.
+// patchTaskRawStatus updates existing task statuses and the corresponding task run statuses atomically.
+// Returns ENOTFOUND if tasks do not exist.
 func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPatch) ([]*taskRaw, error) {
 	// Without using serializable isolation transaction, we will get race condition and have multiple task runs inserted because
 	// we do a read and write on task, without guaranteed consistency on task runs.
@@ -644,7 +644,7 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (
 	return &taskRaw, nil
 }
 
-// patchTaskStatusImpl updates a task status by ID. Returns the new state of the task after update.
+// patchTaskStatusImpl updates task status by IDList. Returns the new state of the tasks after update.
 func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.TaskStatusPatch) ([]*taskRaw, error) {
 	// Updates the corresponding task run if applicable.
 	// We update the task run first because updating task below returns row and it's a bit complicated to
