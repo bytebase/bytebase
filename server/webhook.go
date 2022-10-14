@@ -689,7 +689,6 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	}
 
 	// Create one issue per push event for DDL project, or non-schema files for SDL project.
-	// issueName := pushEvent.CommitList[0].Title
 	migrateType := "Change data"
 	for _, d := range migrationDetailList {
 		if d.MigrationType == db.Migrate {
