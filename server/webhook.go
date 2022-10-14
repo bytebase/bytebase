@@ -51,7 +51,7 @@ const (
 	// sqlReviewDocs is the URL for SQL review doc.
 	sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
 
-	// issueNameTemplate should similar to the UI issue names generated from the frontend, except for the time.
+	// issueNameTemplate should be consistent with UI issue names generated from the frontend except for the timestamp.
 	// Because we cannot get the correct timezone of the client here.
 	// Example: "[db-5] Alter schema".
 	issueNameTemplate = "[%s] %s"
