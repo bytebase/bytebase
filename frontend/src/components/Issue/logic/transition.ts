@@ -132,8 +132,8 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
             }
           );
 
-          // Allowing "Approve" a stage when it has TWO OR MORE tasks applicable
-          // by this type of transition (including the "activeTask" itself)
+          // Allowing "Approve" a stage when it has TWO OR MORE tasks
+          // are "PENDING_APPROVAL" (including the "activeTask" itself)
           if (pendingApprovalTaskList.length >= 2) {
             return [APPROVE];
           }
