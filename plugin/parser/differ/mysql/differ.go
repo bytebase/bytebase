@@ -54,9 +54,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var inplaceUpdate []ast.Node
 	// inplaceDropNodeList and inplaceAddNodeList are used to handle destructive node updates.
 	// For example, we should drop the old index named 'id_idx' and then add a new index named 'id_idx' in the same table.
-	var inplaceDropNodeList [][]ast.Node
-	var inplaceAddNodeList [][]ast.Node
-	var dropNodeList [][]ast.Node
+	var inplaceDropNodeList []ast.Node
+	var inplaceAddNodeList []ast.Node
+	var dropNodeList []ast.Node
 
 	oldTableMap := buildTableMap(oldNodes)
 
@@ -187,35 +187,29 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 
 			if len(alterTableDropExcessConstraintSpecs) > 0 {
-				dropNodeList = append(dropNodeList, []ast.Node{
-					&ast.AlterTableStmt{
-						Table: &ast.TableName{
-							Name: model.NewCIStr(tableName),
-						},
-						Specs: alterTableDropExcessConstraintSpecs,
+				dropNodeList = append(dropNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
 					},
+					Specs: alterTableDropExcessConstraintSpecs,
 				})
 			}
 
 			if len(alterTableInplaceDropConstraintSpecs) > 0 {
-				inplaceDropNodeList = append(inplaceDropNodeList, []ast.Node{
-					&ast.AlterTableStmt{
-						Table: &ast.TableName{
-							Name: model.NewCIStr(tableName),
-						},
-						Specs: alterTableInplaceDropConstraintSpecs,
+				inplaceDropNodeList = append(inplaceDropNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
 					},
+					Specs: alterTableInplaceDropConstraintSpecs,
 				})
 			}
 
 			if len(alterTableInplaceAddConstraintSpecs) > 0 {
-				inplaceAddNodeList = append(inplaceAddNodeList, []ast.Node{
-					&ast.AlterTableStmt{
-						Table: &ast.TableName{
-							Name: model.NewCIStr(tableName),
-						},
-						Specs: alterTableInplaceAddConstraintSpecs,
+				inplaceAddNodeList = append(inplaceAddNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
 					},
+					Specs: alterTableInplaceAddConstraintSpecs,
 				})
 			}
 		default:
@@ -246,7 +240,7 @@ func validateStmtNodes(nodes []ast.StmtNode) error {
 	return nil
 }
 
-func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd [][]ast.Node, inplaceDrop [][]ast.Node, dropNodeList [][]ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -273,43 +267,30 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd [][]as
 	}
 
 	for i := len(inplaceDrop) - 1; i >= 0; i-- {
-		for j := len(inplaceDrop[i]) - 1; j >= 0; j-- {
-			if err := inplaceDrop[i][j].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
+		if err := inplaceDrop[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
 		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+
 	}
 
 	for i := len(inplaceAdd) - 1; i >= 0; i-- {
-		for j := len(inplaceAdd[i]) - 1; j >= 0; j-- {
-			if err := inplaceAdd[i][j].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
+		if err := inplaceAdd[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
 		}
 	}
 
-	var reDropNodes [][]ast.Node
 	for i := len(dropNodeList) - 1; i >= 0; i-- {
-		var nodes []ast.Node
-		for j := len(dropNodeList[i]) - 1; j >= 0; j-- {
-			nodes = append(nodes, dropNodeList[i][j])
+		if err := dropNodeList[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
 		}
-		reDropNodes = append(reDropNodes, nodes)
-	}
-	for _, nodes := range reDropNodes {
-		for _, node := range nodes {
-			if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-				return "", err
-			}
-			if _, err := buf.Write([]byte(";\n")); err != nil {
-				return "", err
-			}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
 		}
 	}
 	return buf.String(), nil
