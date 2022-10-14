@@ -184,7 +184,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		taskStatusPatch := &api.TaskStatusPatch{
-			ID:        taskID,
+			IDList:    []int{taskID},
 			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
@@ -401,7 +401,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			// updated statement, dismiss stale approvals and transfer the status to PendingApproval.
 			if taskPatched.Status != api.TaskPendingApproval {
 				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-					ID:        taskPatch.ID,
+					IDList:    []int{taskPatch.ID},
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
 				})
@@ -523,7 +523,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval.
 		if taskPatched.Status != api.TaskPendingApproval {
 			t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-				ID:        taskPatch.ID,
+				IDList:    []int{taskPatch.ID},
 				UpdaterID: taskPatch.UpdaterID,
 				Status:    api.TaskPendingApproval,
 			})
@@ -696,10 +696,14 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		taskStatusPatch.Result = &resultStr
 	}
 
-	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
+	taskPatchedList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
 	}
+	if len(taskPatchedList) != 1 {
+		return nil, errors.Errorf("expect to patch 1 task, get %d", len(taskPatchedList))
+	}
+	taskPatched := taskPatchedList[0]
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
 	// behaves differently depending on whether the task is wrapped in an issue.
@@ -915,7 +919,7 @@ func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error
 			seen[dag.ToTaskID] = true
 
 			if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
-				ID:        dag.ToTaskID,
+				IDList:    []int{dag.ToTaskID},
 				UpdaterID: api.SystemBotID,
 				Status:    api.TaskCanceled,
 			}); err != nil {

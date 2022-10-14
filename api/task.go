@@ -122,8 +122,7 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 }
 
 // TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
-type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
-}
+type TaskDatabaseSchemaUpdateGhostCutoverPayload struct{}
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
@@ -261,7 +260,7 @@ type TaskPatch struct {
 
 // TaskStatusPatch is the API message for patching a task status.
 type TaskStatusPatch struct {
-	ID int
+	IDList []int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

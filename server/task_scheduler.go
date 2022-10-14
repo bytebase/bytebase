@@ -215,7 +215,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							code := common.ErrorCode(err)
 							result := string(bytes)
 							taskStatusPatch := &api.TaskStatusPatch{
-								ID:        task.ID,
+								IDList:    []int{task.ID},
 								UpdaterID: api.SystemBotID,
 								Status:    api.TaskFailed,
 								Code:      &code,
@@ -244,7 +244,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							code := common.Ok
 							result := string(bytes)
 							taskStatusPatch := &api.TaskStatusPatch{
-								ID:        task.ID,
+								IDList:    []int{task.ID},
 								UpdaterID: api.SystemBotID,
 								Status:    api.TaskDone,
 								Code:      &code,
@@ -328,7 +328,7 @@ func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 	}
 	for _, task := range runningTasks {
 		if _, err := s.server.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
-			ID:        task.ID,
+			IDList:    []int{task.ID},
 			UpdaterID: api.SystemBotID,
 			Status:    api.TaskCanceled,
 		}); err != nil {
@@ -465,7 +465,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	}
 
 	updatedTask, err := s.server.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
-		ID:        task.ID,
+		IDList:    []int{task.ID},
 		UpdaterID: api.SystemBotID,
 		Status:    api.TaskRunning,
 	})
