@@ -164,6 +164,7 @@ func TestIsKeyPartEqual(t *testing.T) {
 		a.Equalf(test.eq, got, "old: %v, new: %v", test.old, test.new)
 	}
 }
+
 func TestIsIndexOptionEqual(t *testing.T) {
 	tests := []struct {
 		old *ast.IndexOption
@@ -481,13 +482,21 @@ func TestIndex(t *testing.T) {
 				"ALTER TABLE `book` DROP PRIMARY KEY;\n" +
 				"ALTER TABLE `book` ADD PRIMARY KEY(`id`, `address`);\n",
 		},
-		// ADD COLUMN -> DROP INDEX -> ADD INDEX
+		// ADD COLUMN -> ADD INDEX WITH ANOTHER NAME-> DROP INDEX
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX id_name_idx (id, name));`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX id_address_idx (id, address));`,
 			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
-				"ALTER TABLE `book` DROP INDEX `id_name_idx`;\n" +
-				"ALTER TABLE `book` ADD INDEX `id_address_idx`(`id`, `address`);\n",
+				"ALTER TABLE `book` ADD INDEX `id_address_idx`(`id`, `address`);\n" +
+				"ALTER TABLE `book` DROP INDEX `id_name_idx`;\n",
+		},
+		// ADD COLUMN -> ADD INDEX WITH SAME NAME -> DROP INDEX
+		{
+			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX idx (id, name));`,
+			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX idx (id, address));`,
+			want: "ALTER TABLE `book` ADD COLUMN (`address` VARCHAR(50) NOT NULL);\n" +
+				"ALTER TABLE `book` DROP INDEX `idx`;\n" +
+				"ALTER TABLE `book` ADD INDEX `idx`(`id`, `address`);\n",
 		},
 	}
 	a := require.New(t)
