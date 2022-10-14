@@ -30,7 +30,7 @@ func TestCommentConvention(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CommentTooLong,
-					Title:   "column.comment",
+					Title:   "comment.length",
 					Content: "The length of comment should be within 20 characters",
 					Line:    1,
 				},
@@ -53,7 +53,7 @@ func TestCommentConvention(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.CommentTooLong,
-					Title:   "column.comment",
+					Title:   "comment.length",
 					Content: "The length of comment should be within 20 characters",
 					Line:    1,
 				},
