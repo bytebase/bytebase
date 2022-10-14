@@ -595,6 +595,9 @@ func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
 	if (old.OnUpdate == nil) != (new.OnUpdate == nil) {
 		return false
 	}
+	if old.OnUpdate != nil && new.OnUpdate != nil && old.OnUpdate.ReferOpt != new.OnUpdate.ReferOpt {
+		return false
+	}
 	return true
 }
 
