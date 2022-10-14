@@ -857,7 +857,7 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 			if task.Status == api.TaskPendingApproval {
 				if _, err := ctl.patchTaskStatus(
 					api.TaskStatusPatch{
-						ID:     task.ID,
+						IDList: []int{task.ID},
 						Status: api.TaskPending,
 					},
 					issue.Pipeline.ID); err != nil {
