@@ -41,7 +41,7 @@
             for="sql-file-input"
             class="px-3 py-1 w-full flex flex-row justify-center items-center cursor-pointer"
           >
-            <heroicons-outline:document-text class="w-4 h-auto mr-1" />
+            <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
             {{ $t("issue.upload-sql") }}
             <input
               id="sql-file-input"
