@@ -36,6 +36,7 @@ type SchemaDiffer struct {
 type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
+// It only supports schema information from mysqldump.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldNodes, _, err := parser.New().Parse(oldStmt, "", "")
 	if err != nil {
@@ -44,10 +45,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	newNodes, _, err := parser.New().Parse(newStmt, "", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
-	}
-
-	if err := validateStmtNodes(newNodes); err != nil {
-		return "", errors.Wrapf(err, "failed to validate the statement %q", newStmt)
 	}
 
 	var newNodeList []ast.Node
@@ -74,7 +71,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
 				inplaceUpdate = append(inplaceUpdate, alterTableOptionStmt)
 			}
-			indexMap := buildIndexMap(oldStmt)
+			constraintMap := buildConstraintMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var alterTableAddNewConstraintSpecs []*ast.AlterTableSpec
@@ -106,8 +103,8 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			for _, constraint := range newStmt.Constraints {
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
-					indexName := getIndexName(constraint)
-					if oldConstraint, ok := indexMap[indexName]; ok {
+					indexName := constraint.Name
+					if oldConstraint, ok := constraintMap[indexName]; ok {
 						if !isIndexEqual(constraint, oldConstraint) {
 							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
 								Tp:   ast.AlterTableDropIndex,
@@ -118,7 +115,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 								Constraint: constraint,
 							})
 						}
-						delete(indexMap, indexName)
+						delete(constraintMap, indexName)
 						continue
 					}
 					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
@@ -127,18 +124,40 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 				case ast.ConstraintPrimaryKey:
 					primaryKeyName := "PRIMARY"
-					if oldConstraint, ok := indexMap[primaryKeyName]; ok {
+					if oldConstraint, ok := constraintMap[primaryKeyName]; ok {
 						if !isIndexEqual(constraint, oldConstraint) {
 							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
-								Tp:         ast.AlterTableDropPrimaryKey,
-								Constraint: oldConstraint,
+								Tp: ast.AlterTableDropPrimaryKey,
 							})
 							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
 								Tp:         ast.AlterTableAddConstraint,
 								Constraint: constraint,
 							})
 						}
-						delete(indexMap, primaryKeyName)
+						delete(constraintMap, primaryKeyName)
+						continue
+					}
+					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddConstraint,
+						Constraint: constraint,
+					})
+				// The parent column in the foreign key always needs an index, so in the case of referencing itself,
+				// we need to drop the foreign key before dropping the primary key.
+				// Since the mysqldump statement always puts the primary key in front of the foreign key, and we will reverse the drop statements order.
+				// TODO(zp): So we don't have to worry about this now until one of the statements doesn't come from mysqldump.
+				case ast.ConstraintForeignKey:
+					if oldConstraint, ok := constraintMap[constraint.Name]; ok {
+						if !isForeignKeyConstraintEqual(constraint, oldConstraint) {
+							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
+								Tp:   ast.AlterTableDropForeignKey,
+								Name: constraint.Name,
+							})
+							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableAddConstraint,
+								Constraint: constraint,
+							})
+						}
+						delete(constraintMap, constraint.Name)
 						continue
 					}
 					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
@@ -164,17 +183,23 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 			// We should drop the remaining indices in the indexMap.
-			for indexName := range indexMap {
-				if indexName == "PRIMARY" {
+			for indexName, constraint := range constraintMap {
+				switch constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
+					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
+						Tp:   ast.AlterTableDropIndex,
+						Name: indexName,
+					})
+				case ast.ConstraintPrimaryKey:
 					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
 						Tp: ast.AlterTableDropPrimaryKey,
 					})
-					continue
+				case ast.ConstraintForeignKey:
+					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
+						Tp:   ast.AlterTableDropForeignKey,
+						Name: constraint.Name,
+					})
 				}
-				alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
-					Tp:   ast.AlterTableDropIndex,
-					Name: indexName,
-				})
 			}
 
 			if len(alterTableAddNewConstraintSpecs) > 0 {
@@ -215,29 +240,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		default:
 		}
 	}
-
 	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
-}
-
-// We're not supporting all the MySQL statements for now.
-// validateStmtNodes validates the stmt nodes, return nil if they are valid.
-func validateStmtNodes(nodes []ast.StmtNode) error {
-	// TODO(zp): validate more statements.
-	for _, node := range nodes {
-		switch stmt := node.(type) {
-		case *ast.CreateTableStmt:
-			for _, columnDef := range stmt.Cols {
-				for _, option := range columnDef.Options {
-					if option.Tp == ast.ColumnOptionPrimaryKey {
-						return errors.New("unsupported column inline PK in CREATE TABLE statement likes `CREATE TABLE tbl(id INT PARIMARY KEY);`")
-					}
-				}
-			}
-		default:
-			return errors.Errorf("unsupported statement: %T", node)
-		}
-	}
-	return nil
 }
 
 func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, flag format.RestoreFlags) (string, error) {
@@ -327,17 +330,14 @@ func buildColumnMap(nodes []ast.StmtNode, tableName model.CIStr) map[string]*ast
 	return oldColumnMap
 }
 
-// buildIndexMap build a map of index name to constraint on given table name.
-func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
+// buildConstraintMap build a map of index name to constraint on given table name.
+func buildConstraintMap(stmt *ast.CreateTableStmt) constraintMap {
 	indexMap := make(constraintMap)
 	for _, constraint := range stmt.Constraints {
-		if constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintKey ||
-			constraint.Tp == ast.ConstraintUniq || constraint.Tp == ast.ConstraintUniqKey ||
-			constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintFulltext {
-			indexName := getIndexName(constraint)
-			indexMap[indexName] = constraint
-		}
-		if constraint.Tp == ast.ConstraintPrimaryKey {
+		switch constraint.Tp {
+		case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext, ast.ConstraintForeignKey:
+			indexMap[constraint.Name] = constraint
+		case ast.ConstraintPrimaryKey:
 			// A table can have only one PRIMARY KEY.
 			// The name of a PRIMARY KEY is always PRIMARY, which thus cannot be used as the name for any other kind of index.
 			// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
@@ -510,15 +510,61 @@ func isIndexOptionEqual(old, new *ast.IndexOption) bool {
 	return true
 }
 
-// getIndexName returns the name of the index.
-func getIndexName(index *ast.Constraint) string {
-	if index.Name != "" {
-		return index.Name
+// isForeignKeyEqual returns true if two foreign keys are the same.
+func isForeignKeyConstraintEqual(old, new *ast.Constraint) bool {
+	// FOREIGN KEY [index_name] (index_col_name,...) reference_definition
+	if old.Name != new.Name {
+		return false
 	}
-	// If the index name is empty, it will be generated by MySQL.
-	// https://dba.stackexchange.com/questions/160708/is-naming-an-index-required
-	// TODO(zp): handle the duplicated index name.
-	return index.Keys[0].Column.Name.O
+	if !isKeyPartEqual(old.Keys, new.Keys) {
+		return false
+	}
+	if !isReferenceDefinitionEqual(old.Refer, new.Refer) {
+		return false
+	}
+	return true
+}
+
+// isReferenceDefinitionEqual returns true if two reference definitions are the same.
+func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
+	// reference_definition:
+	// 	REFERENCES tbl_name (index_col_name,...)
+	//   [MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]
+	//   [ON DELETE reference_option]
+	//   [ON UPDATE reference_option]
+	if old.Table.Name.String() != new.Table.Name.String() {
+		return false
+	}
+
+	if len(old.IndexPartSpecifications) != len(new.IndexPartSpecifications) {
+		return false
+	}
+	for idx, oldIndexColName := range old.IndexPartSpecifications {
+		newIndexColName := new.IndexPartSpecifications[idx]
+		if oldIndexColName.Column.Name.String() != newIndexColName.Column.Name.String() {
+			return false
+		}
+	}
+
+	if old.Match != new.Match {
+		return false
+	}
+
+	if (old.OnDelete == nil) != (new.OnDelete == nil) {
+		return false
+	}
+	if old.OnDelete != nil && new.OnDelete != nil && old.OnDelete.ReferOpt != new.OnDelete.ReferOpt {
+		return false
+	}
+
+	if (old.OnUpdate == nil) != (new.OnUpdate == nil) {
+		return false
+	}
+	if old.OnUpdate != nil && new.OnUpdate != nil && old.OnUpdate.ReferOpt != new.OnUpdate.ReferOpt {
+		return false
+	}
+
+	return true
 }
 
 // diffTableOptions returns the diff of two table options, returns nil if they are the same.
