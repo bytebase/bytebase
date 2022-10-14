@@ -101,6 +101,8 @@ const (
 	SchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "column.maximum-character-length"
 	// SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
+	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -729,6 +731,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLAutoIncrementColumnInitialValue, nil
+		}
+	case SchemaRuleColumnAutoIncrementMustUnsigned:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
