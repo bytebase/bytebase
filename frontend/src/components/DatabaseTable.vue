@@ -294,7 +294,7 @@ const sortedDatabaseList = computed(() => {
     if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
       return 1;
     }
-    return a.id - b.id;
+    return b.createdTs - a.createdTs;
   });
   return list;
 });
