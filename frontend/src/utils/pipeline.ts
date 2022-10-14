@@ -1,5 +1,4 @@
 import { BBButtonType } from "@/bbkit/types";
-import { uniq } from "lodash-es";
 import {
   Database,
   empty,
@@ -173,7 +172,7 @@ export interface TaskStatusTransition {
   buttonType: BBButtonType;
 }
 
-const TASK_STATUS_TRANSITION_LIST: Map<
+export const TASK_STATUS_TRANSITION_LIST: Map<
   TaskStatusTransitionType,
   TaskStatusTransition
 > = new Map([
@@ -225,7 +224,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
 ]);
 
 // The transition button are displayed from left to right on the UI, and the right-most one is the primary button
-const APPLICABLE_TASK_TRANSITION_LIST: Map<
+export const APPLICABLE_TASK_TRANSITION_LIST: Map<
   TaskStatus,
   TaskStatusTransitionType[]
 > = new Map([
@@ -258,24 +257,3 @@ export function applicableTaskTransition(
 // The status transition applying to a stage is applying to all tasks in the
 // stage simultaneously.
 export type StageStatusTransition = TaskStatusTransition;
-
-export function applicableStageTransition(
-  pipeline: Pipeline
-): StageStatusTransition[] {
-  const task = activeTask(pipeline);
-  if (task.id === EMPTY_ID || task.id === UNKNOWN_ID) {
-    return [];
-  }
-  const stage = task.stage;
-  const statusList = uniq(stage.taskList.map((t) => t.status));
-
-  // Only allowed to apply status patch to a stage when all it's tasks' status
-  // are the same.
-  if (statusList.length > 1) {
-    return [];
-  }
-
-  const transitionTypes = APPLICABLE_TASK_TRANSITION_LIST.get(statusList[0])!;
-
-  return transitionTypes.map((type) => TASK_STATUS_TRANSITION_LIST.get(type)!);
-}
