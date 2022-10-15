@@ -253,7 +253,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		viewName := view.ViewName.Name.O
 		if newNode, ok := newViewMap[viewName]; ok {
 			if !isViewEqual(view, newNode) {
-				// skip predifined view(like temporary view in mysqldump).
+				// Skip predefined view such as the temporary view from mysqldump.
 				continue
 			}
 		}
