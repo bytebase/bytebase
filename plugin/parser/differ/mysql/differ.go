@@ -432,8 +432,10 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 			},
 		},
 		OrReplace: true,
-		Definer:   stmt.Definer,
-		Security:  stmt.Security,
+		// Avoid panic
+		// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/ast/ddl.go?L1398
+		Definer:  stmt.Definer,
+		Security: stmt.Security,
 	}
 }
 
