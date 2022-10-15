@@ -55,7 +55,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var inplaceDropNodeList []ast.Node
 	var inplaceAddNodeList []ast.Node
 	var dropNodeList []ast.Node
-	var viewStmts []ast.Node
+	var viewStmts []*ast.CreateViewStmt
 
 	oldTableMap := buildTableMap(oldNodes)
 	oldViewMap := buildViewMap(oldNodes)
@@ -276,12 +276,8 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			viewList = append(viewList, &createViewStmt)
 		}
 	}
-	for _, tempViewStmt := range tempViewList {
-		viewStmts = append(viewStmts, tempViewStmt)
-	}
-	for _, needRealViewStmt := range viewList {
-		viewStmts = append(viewStmts, needRealViewStmt)
-	}
+	viewStmts = append(viewStmts, tempViewList...)
+	viewStmts = append(viewStmts, viewList...)
 
 	// Remove the remaining views in the oldViewMap.
 	dropViewStmt := &ast.DropTableStmt{
@@ -297,7 +293,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, viewStmts, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, viewStmts []ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -389,14 +385,14 @@ func buildViewMap(nodes []ast.StmtNode) map[string]*ast.CreateViewStmt {
 
 // getTempView returns the temporary view name and the create statement.
 func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
-	// We create the temp view likes mysqldump does.
-	// Create a temporary view with the same name as the view and with columns of
-	// the same name in order to satisfy views that depend on this view.
+	// We create the temp view similar to what mysqldump does.
+	// Create a temporary view with the same name as the view. Its columns should
+	// have the same name in order to satisfy views that depend on this view.
 	// This temporary view will be removed when the actual view is created.
-	// The properties of each column, are not preserved in this temporary
-	// view. They are not necessary because other views only need to reference
-	// the column name, thus we generate SELECT 1 AS colName1, 1 AS colName2.
-	// TODO(zp): support SDL for gitops
+	// The column properties are unnecessary and not preserved in this temporary view.
+	// because other views only need to reference the column name.
+	//  Example: SELECT 1 AS colName1, 1 AS colName2.
+	// TODO(zp): support SDL for GitOps.
 	var selectFileds []*ast.SelectField
 	// mysqldump always show field list
 	if len(stmt.Cols) > 0 {
@@ -425,22 +421,20 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 		}
 	}
 
-	selectStmt := &ast.SelectStmt{
-		SelectStmtOpts: &ast.SelectStmtOpts{
-			SQLCache: true,
+	return &ast.CreateViewStmt{
+		ViewName: stmt.ViewName,
+		Select: &ast.SelectStmt{
+			SelectStmtOpts: &ast.SelectStmtOpts{
+				SQLCache: true,
+			},
+			Fields: &ast.FieldList{
+				Fields: selectFileds,
+			},
 		},
-		Fields: &ast.FieldList{
-			Fields: selectFileds,
-		},
-	}
-	tempViewStmts := &ast.CreateViewStmt{
-		ViewName:  stmt.ViewName,
-		Select:    selectStmt,
 		OrReplace: true,
 		Definer:   stmt.Definer,
 		Security:  stmt.Security,
 	}
-	return tempViewStmts
 }
 
 // buildColumnMap returns a map of column name to column definition on a given table.
