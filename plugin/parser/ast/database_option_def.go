@@ -5,7 +5,7 @@ type DatabaseOptionType int
 
 const (
 	// DatabaseOptionEncoding is the type for the database encoding option.
-	DatabaseOptionEncoding = iota
+	DatabaseOptionEncoding DatabaseOptionType = iota
 )
 
 // DatabaseOptionDef is the struct for database option.
