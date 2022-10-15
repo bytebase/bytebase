@@ -113,6 +113,9 @@ const (
 
 	// 1201 ~ 1299 collation error code.
 	DisabledCollation Code = 1201
+
+	// 1301 ~ 1399 comment error code.
+	CommentTooLong Code = 1301
 )
 
 // Int returns the int type of code.
