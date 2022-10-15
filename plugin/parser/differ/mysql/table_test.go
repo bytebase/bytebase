@@ -309,6 +309,37 @@ func TestView(t *testing.T) {
 				"SELECT `order_id`,`customer_name`,SUM(`ordered_quantity`*`product_price`)+1 AS `total` " +
 				"FROM (`order_details` JOIN `orders` USING (`order_id`)) JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;\n",
 		},
+		// mysqldump temporary view
+		{
+			old: `CREATE VIEW a AS SELECT 1 AS id, 1 AS name;
+				CREATE VIEW a AS SELECT id, name FROM book;
+			`,
+
+			new: `CREATE VIEW a AS SELECT 1 AS id;
+			CREATE VIEW a AS SELECT id FROM book;
+			`,
+
+			want: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT `id` FROM `book`;\n",
+		},
+		// SDL for gitops dependency view
+		{
+			old: `CREATE VIEW a AS SELECT id, name FROM book`,
+			new: `CREATE VIEW a AS SELECT id FROM book;
+				CREATE VIEW b AS SELECT id FROM a;
+			`,
+			want: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT 1 AS `id` WITH LOCAL CHECK OPTION;\n" +
+				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT `id` FROM `book`;\n" +
+				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT `id` FROM `a`;\n",
+		},
+		{
+			old: `CREATE VIEW a AS SELECT id, name FROM book`,
+			new: `CREATE VIEW a AS SELECT id AS a_id FROM book;
+				CREATE VIEW b AS SELECT a_id AS b_id FROM a;
+			`,
+			want: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT 1 AS `b_id` WITH LOCAL CHECK OPTION;\n" +
+				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT `id` AS `a_id` FROM `book`;\n" +
+				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT `a_id` AS `b_id` FROM `a`;\n",
+		},
 	}
 	t.Parallel()
 	a := require.New(t)
