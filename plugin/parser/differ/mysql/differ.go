@@ -248,37 +248,38 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 
 	var tempViewList []*ast.CreateViewStmt
-	var needRealViewList []*ast.CreateViewStmt
-	for _, needView := range newViewList {
-		viewName := needView.ViewName.Name.O
+	var viewList []*ast.CreateViewStmt
+	for _, view := range newViewList {
+		viewName := view.ViewName.Name.O
 		if newNode, ok := newViewMap[viewName]; ok {
-			if !isViewEqual(needView, newNode) {
+			if !isViewEqual(view, newNode) {
 				// skip predifined view(like temporary view in mysqldump).
 				continue
 			}
 		}
 		oldNode, ok := oldViewMap[viewName]
 		if ok {
-			if !isViewEqual(needView, oldNode) {
-				createViewStmt := needView
+			if !isViewEqual(view, oldNode) {
+				createViewStmt := view
 				createViewStmt.OrReplace = true
-				needRealViewList = append(needRealViewList, createViewStmt)
+				viewList = append(viewList, createViewStmt)
 			}
+			// We should delete the view in the oldViewMap, because we will drop the all views in the oldViewMap explicitly at last.
 			delete(oldViewMap, viewName)
 		} else {
 			// We should create the view.
 			// We create the temporary view first and replace it to avoid break the rependency like mysqldump does.
-			tempViewStmt := getTempView(needView)
+			tempViewStmt := getTempView(view)
 			tempViewList = append(tempViewList, tempViewStmt)
-			createViewStmt := needView
+			createViewStmt := view
 			createViewStmt.OrReplace = true
-			needRealViewList = append(needRealViewList, createViewStmt)
+			viewList = append(viewList, createViewStmt)
 		}
 	}
 	for _, tempViewStmt := range tempViewList {
 		viewStmts = append(viewStmts, tempViewStmt)
 	}
-	for _, needRealViewStmt := range needRealViewList {
+	for _, needRealViewStmt := range viewList {
 		viewStmts = append(viewStmts, needRealViewStmt)
 	}
 
