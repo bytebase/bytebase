@@ -425,6 +425,8 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 		ViewName: stmt.ViewName,
 		Select: &ast.SelectStmt{
 			SelectStmtOpts: &ast.SelectStmtOpts{
+				// Avoid generating SQL_NO_CACHE
+				// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/ast/dml.go?L1234
 				SQLCache: true,
 			},
 			Fields: &ast.FieldList{
