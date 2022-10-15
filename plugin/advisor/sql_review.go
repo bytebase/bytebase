@@ -804,6 +804,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLCharsetAllowlist, nil
+		case db.Postgres:
+			return PostgreSQLEncodingAllowlist, nil
 		}
 	case SchemaRuleCollationAllowlist:
 		switch engine {
