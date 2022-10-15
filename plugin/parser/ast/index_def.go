@@ -10,7 +10,7 @@ type IndexDef struct {
 	KeyList []*IndexKeyDef
 }
 
-// GetKeyNameList to get the name from KeyList
+// GetKeyNameList to get the name from KeyList.
 func (id IndexDef) GetKeyNameList() []string {
 	nameList := []string{}
 	for _, key := range id.KeyList {
