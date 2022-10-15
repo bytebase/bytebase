@@ -260,9 +260,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		oldNode, ok := oldViewMap[viewName]
 		if ok {
 			if !isViewEqual(view, oldNode) {
-				createViewStmt := view
+				createViewStmt := *view
 				createViewStmt.OrReplace = true
-				viewList = append(viewList, createViewStmt)
+				viewList = append(viewList, &createViewStmt)
 			}
 			// We should delete the view in the oldViewMap, because we will drop the all views in the oldViewMap explicitly at last.
 			delete(oldViewMap, viewName)
@@ -271,9 +271,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			// We create the temporary view first and replace it to avoid break the rependency like mysqldump does.
 			tempViewStmt := getTempView(view)
 			tempViewList = append(tempViewList, tempViewStmt)
-			createViewStmt := view
+			createViewStmt := *view
 			createViewStmt.OrReplace = true
-			viewList = append(viewList, createViewStmt)
+			viewList = append(viewList, &createViewStmt)
 		}
 	}
 	for _, tempViewStmt := range tempViewList {
