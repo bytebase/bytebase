@@ -3,9 +3,9 @@
     <main class="flex-1 relative overflow-y-auto">
       <!-- Highlight Panel -->
       <div
-        class="px-4 pb-4 space-y-2 md:space-y-0 md:flex md:items-center md:justify-between"
+        class="px-4 pb-4 space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between"
       >
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 shrink-0">
           <!-- Summary -->
           <div class="flex items-center">
             <div>
@@ -117,7 +117,7 @@
           </dl>
         </div>
         <div
-          class="flex items-center gap-x-2"
+          class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
           <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
@@ -141,7 +141,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowAlterSchemaOrChangeData"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.data.update')"
@@ -153,7 +153,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowAlterSchemaOrChangeData"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
@@ -447,6 +447,13 @@ const allowEdit = computed(() => {
   return false;
 });
 
+const allowAlterSchemaOrChangeData = computed(() => {
+  if (database.value.project.id === DEFAULT_PROJECT_ID) {
+    return false;
+  }
+  return allowEdit.value;
+});
+
 const allowEditDatabaseLabels = computed((): boolean => {
   // only allowed to edit database labels when allowAdmin
   return allowAdmin.value;
@@ -523,7 +530,9 @@ const createMigration = async (
           : `Change data`
       );
     }
-    issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+    const datetime = dayjs().format("@MM-DD HH:mm");
+    const tz = "UTC" + dayjs().format("ZZ");
+    issueNameParts.push(`${datetime} ${tz}`);
 
     const query: Record<string, any> = {
       template: type,

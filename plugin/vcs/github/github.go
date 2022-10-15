@@ -19,8 +19,10 @@ import (
 	"golang.org/x/crypto/nacl/box"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
@@ -783,6 +785,109 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 	return &file, nil
 }
 
+type githubPullRequestFile struct {
+	FileName string `json:"filename"`
+	SHA      string `json:"sha"`
+	// The file status in GitHub PR.
+	// Available values: "added", "removed", "modified", "renamed", "copied", "changed", "unchanged"
+	Status string `json:"status"`
+	// The file content API URL, which contains the ref value in the query.
+	// Example: https://api.github.com/repos/octocat/Hello-World/contents/file1.txt?ref=6dcb09b5b57875f334f61aebed695e2e4193db5e
+	ContentsURL string `json:"contents_url"`
+}
+
+// ListPullRequestFile lists the changed files in the pull request.
+//
+// Docs: https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+	var allPRFiles []githubPullRequestFile
+	page := 1
+	for {
+		fileList, err := p.listPaginatedPullRequestFile(ctx, oauthCtx, instanceURL, repositoryID, pullRequestID, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to list pull request file")
+		}
+
+		if len(fileList) == 0 {
+			break
+		}
+		allPRFiles = append(allPRFiles, fileList...)
+		page++
+	}
+
+	var res []*vcs.PullRequestFile
+	for _, file := range allPRFiles {
+		u, err := url.Parse(file.ContentsURL)
+		if err != nil {
+			log.Debug("Failed to parse content url for file",
+				zap.String("content_url", file.ContentsURL),
+				zap.String("file", file.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		m, _ := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			log.Debug("Failed to parse query for file",
+				zap.String("content_url", file.ContentsURL),
+				zap.String("file", file.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		refs, ok := m["ref"]
+		if !ok || len(refs) != 1 {
+			continue
+		}
+
+		res = append(res, &vcs.PullRequestFile{
+			Path:         file.FileName,
+			LastCommitID: refs[0],
+			IsDeleted:    file.Status == "removed",
+		})
+	}
+
+	return res, nil
+}
+
+// listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
+func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string, page int) ([]githubPullRequestFile, error) {
+	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		requestURL,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", requestURL)
+	}
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to list pull request file from URL %s", requestURL)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to list pull request file from URL %s, status code: %d, body: %s",
+			requestURL,
+			code,
+			body,
+		)
+	}
+
+	var prFiles []githubPullRequestFile
+	if err := json.Unmarshal([]byte(body), &prFiles); err != nil {
+		return nil, err
+	}
+	return prFiles, nil
+}
+
 type githubBranchCreate struct {
 	Ref string `json:"ref"`
 	SHA string `json:"sha"`
@@ -895,13 +1000,17 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 	return nil
 }
 
+type githubPullRequest struct {
+	HTMLURL string `json:"html_url"`
+}
+
 // CreatePullRequest creates the pull request in the repository.
 //
 // Docs: https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
 	body, err := json.Marshal(pullRequestCreate)
 	if err != nil {
-		return errors.Wrap(err, "marshal pull request create")
+		return nil, errors.Wrap(err, "marshal pull request create")
 	}
 
 	url := fmt.Sprintf("%s/repos/%s/pulls", p.APIURL(instanceURL), repositoryID)
@@ -922,20 +1031,27 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		),
 	)
 	if err != nil {
-		return errors.Wrapf(err, "GET %s", url)
+		return nil, errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
+		return nil, common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
 	} else if code >= 300 {
-		return errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
+		return nil, errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			resp,
 		)
 	}
 
-	return nil
+	var res githubPullRequest
+	if err := json.Unmarshal([]byte(resp), &res); err != nil {
+		return nil, err
+	}
+
+	return &vcs.PullRequest{
+		URL: res.HTMLURL,
+	}, nil
 }
 
 type environmentVariable struct {

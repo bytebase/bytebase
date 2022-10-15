@@ -759,6 +759,68 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
+type gitlabMergeRequestChange struct {
+	SHA     string                   `json:"sha"`
+	Changes []gitlabMergeRequestFile `json:"changes"`
+}
+
+type gitlabMergeRequestFile struct {
+	NewPath     string `json:"new_path"`
+	NewFile     bool   `json:"new_file"`
+	RenamedFile bool   `json:"renamed_file"`
+	DeletedFile bool   `json:"deleted_file"`
+}
+
+// ListPullRequestFile lists the changed files in the pull request.
+//
+// Docs: https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/changes", p.APIURL(instanceURL), repositoryID, pullRequestID)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to list merge request file from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to list merge request file from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	pr := new(gitlabMergeRequestChange)
+	if err := json.Unmarshal([]byte(body), pr); err != nil {
+		return nil, err
+	}
+
+	var res []*vcs.PullRequestFile
+	for _, file := range pr.Changes {
+		res = append(res, &vcs.PullRequestFile{
+			Path:         file.NewPath,
+			LastCommitID: pr.SHA,
+			IsDeleted:    file.DeletedFile,
+		})
+	}
+
+	return res, nil
+}
+
 type gitlabBranch struct {
 	Name   string `json:"name"`
 	Commit Commit `json:"commit"`
@@ -870,10 +932,14 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 	return nil
 }
 
+type gitlabMergeRequest struct {
+	WebURL string `json:"web_url"`
+}
+
 // CreatePullRequest creates the pull request in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) error {
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
 	body, err := json.Marshal(
 		gitlabMergeRequestCreate{
 			Title:              pullRequestCreate.Title,
@@ -884,7 +950,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		},
 	)
 	if err != nil {
-		return errors.Wrap(err, "marshal pull request create")
+		return nil, errors.Wrap(err, "marshal pull request create")
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/merge_requests", p.APIURL(instanceURL), repositoryID)
@@ -905,20 +971,27 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		),
 	)
 	if err != nil {
-		return errors.Wrapf(err, "GET %s", url)
+		return nil, errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
+		return nil, common.Errorf(common.NotFound, "failed to create merge request from URL %s", url)
 	} else if code >= 300 {
-		return errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
+		return nil, errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			resp,
 		)
 	}
 
-	return nil
+	var res gitlabMergeRequest
+	if err := json.Unmarshal([]byte(resp), &res); err != nil {
+		return nil, err
+	}
+
+	return &vcs.PullRequest{
+		URL: res.WebURL,
+	}, nil
 }
 
 type environmentVariable struct {
@@ -1202,8 +1275,9 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 // TODO: The same GitLab API endpoint supports using the HEAD request to only
 // get the file metadata.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
-	// Since GitLab of stale version doesn't support get large file content well, we move to use the raw api.
-	// See https://gitlab.com/gitlab-org/gitlab-pages/-/issues/315 for more details.
+	// GitLab is often deployed behind a reverse proxy, which may have compression enabled that is transparent to the GitLab instance.
+	// In such cases, the HTTP header "Content-Encoding" will, for example, be changed to "gzip" and makes the value of "Content-Length" untrustworthy.
+	// We can avoid dealing with this type of problem by using the raw API instead of the typical JSON API.
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s/raw?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
 	code, header, body, err := oauth.Get(
 		ctx,

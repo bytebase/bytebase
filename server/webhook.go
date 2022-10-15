@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -14,6 +13,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -23,22 +23,39 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/plugin/parser"
-	"github.com/bytebase/bytebase/plugin/parser/differ"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
-// nolint:unused
+// vcsSQLReviewResult the is SQL review result in VCS workflow.
 type vcsSQLReviewResult struct {
 	Status  advisor.Status `json:"status"`
 	Content []string       `json:"content"`
 }
 
-// sqlReviewDocs is the URL for SQL review doc.
-const sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
+// vcsSQLReviewRequest is the request from SQL review CI in VCS workflow.
+// In the VCS SQL review workflow, the CI will generate the request body then POST /hook/sql-review/:webhook_endpoint_id.
+type vcsSQLReviewRequest struct {
+	RepositoryID  string `json:"repositoryId"`
+	PullRequestID string `json:"pullRequestId"`
+	// WebURL is the server URL for GitOps CI.
+	// In GitHub, the URL should be "https://github.com". Docs: https://docs.github.com/en/actions/learn-github-actions/environment-variables
+	// In GitLab, the URL should be the base URL of the GitLab instance like "https://gitlab.bytebase.com". Docs: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+	WebURL string `json:"webURL"`
+}
+
+const (
+	// sqlReviewDocs is the URL for SQL review doc.
+	sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
+
+	// issueNameTemplate should be consistent with UI issue names generated from the frontend except for the timestamp.
+	// Because we cannot get the correct timezone of the client here.
+	// Example: "[db-5] Alter schema".
+	issueNameTemplate = "[%s] %s"
+)
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
@@ -58,10 +75,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
 
-		filter := func(token string) (bool, error) {
-			return c.Request().Header.Get("X-Gitlab-Token") == token, nil
+		filter := func(repo *api.Repository) (bool, error) {
+			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
+				return false, nil
+			}
+
+			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -107,14 +128,18 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		repositoryID := pushEvent.Repository.FullName
 
-		filter := func(token string) (bool, error) {
-			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), token, body)
+		filter := func(repo *api.Repository) (bool, error) {
+			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
 			}
-			return ok, nil
+			if !ok {
+				return false, nil
+			}
+
+			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), pushEvent.Ref, repositoryID, filter)
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
 			return err
 		}
@@ -131,11 +156,235 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
+
+	// id is the webhookEndpointID in repository
+	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
+	g.POST("/sql-review/:id", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
+		}
+		log.Debug("SQL review request received for VCS project",
+			zap.String("webhook_endpoint_id", c.Param("id")),
+			zap.String("request", string(body)),
+		)
+
+		var request vcsSQLReviewRequest
+		if err := json.Unmarshal(body, &request); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed SQL review request").SetInternal(err)
+		}
+
+		filter := func(repo *api.Repository) (bool, error) {
+			if repo.Project.RowStatus == api.Archived {
+				log.Debug("Skip repository as the associated project is archived",
+					zap.Int("repository_id", repo.ID),
+					zap.String("repository_external_id", repo.ExternalID),
+				)
+				return false, nil
+			}
+			if !repo.EnableSQLReviewCI {
+				log.Debug("Skip repository as the SQL review CI is not enabled.",
+					zap.Int("repository_id", repo.ID),
+					zap.String("repository_external_id", repo.ExternalID),
+				)
+				return false, nil
+			}
+			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(repo.WebURL, request.WebURL), nil
+		}
+		ctx := c.Request().Context()
+		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)
+		if err != nil {
+			return err
+		}
+		if len(repositoryList) == 0 {
+			log.Debug("Empty handle repo list. Ignore this request.")
+			return c.JSON(http.StatusOK, &vcsSQLReviewResult{
+				Status:  advisor.Success,
+				Content: []string{},
+			})
+		}
+
+		repo := repositoryList[0]
+		prFiles, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).ListPullRequestFile(
+			ctx,
+			common.OauthContext{
+				ClientID:     repo.VCS.ApplicationID,
+				ClientSecret: repo.VCS.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.WebURL),
+			},
+			repo.VCS.InstanceURL,
+			request.RepositoryID,
+			request.PullRequestID,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list pull request file").SetInternal(err)
+		}
+
+		distinctFileList := []vcs.DistinctFileItem{}
+		for _, prFile := range prFiles {
+			if prFile.IsDeleted {
+				continue
+			}
+			distinctFileList = append(distinctFileList, vcs.DistinctFileItem{
+				FileName: prFile.Path,
+				Commit: vcs.Commit{
+					ID: prFile.LastCommitID,
+				},
+			})
+		}
+
+		sqlCheckAdvice := map[string][]advisor.Advice{}
+		var wg sync.WaitGroup
+
+		repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
+		for _, fileInfoListInRepo := range repoID2FileItemList {
+			for _, file := range fileInfoListInRepo {
+				wg.Add(1)
+				go func(file fileInfo) {
+					defer wg.Done()
+					adviceList, err := s.sqlAdviceForFile(ctx, file)
+					if err != nil {
+						log.Debug(
+							"Failed to take SQL review for file",
+							zap.String("file", file.item.FileName),
+							zap.String("external_id", file.repository.ExternalID),
+							zap.Error(err),
+						)
+					} else if adviceList != nil {
+						sqlCheckAdvice[file.item.FileName] = adviceList
+					}
+				}(file)
+			}
+		}
+
+		wg.Wait()
+
+		response := &vcsSQLReviewResult{}
+		switch repo.VCS.Type {
+		case vcs.GitHubCom:
+			response = convertSQLAdiceToGitHubActionResult(sqlCheckAdvice)
+		case vcs.GitLabSelfHost:
+			response = convertSQLAdviceToGitLabCIResult(sqlCheckAdvice)
+		}
+
+		log.Debug("SQL review finished",
+			zap.String("pull_request", request.PullRequestID),
+			zap.String("status", string(response.Status)),
+			zap.String("content", strings.Join(response.Content, "\n")),
+			zap.String("repository_id", request.RepositoryID),
+			zap.String("vcs", string(repo.VCS.Type)),
+		)
+
+		return c.JSON(http.StatusOK, response)
+	})
 }
 
-type repositoryFilter func(string) (bool, error)
+func (s *Server) sqlAdviceForFile(
+	ctx context.Context,
+	fileInfo fileInfo,
+) ([]advisor.Advice, error) {
+	log.Debug("Processing file",
+		zap.String("file", fileInfo.item.FileName),
+		zap.String("vcs", string(fileInfo.repository.VCS.Type)),
+	)
 
-func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRef, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
+	// TODO: support tenant mode project
+	if fileInfo.repository.Project.TenantMode == api.TenantModeTenant {
+		return []advisor.Advice{
+			{
+				Status:  advisor.Warn,
+				Code:    advisor.Unsupported,
+				Title:   "Tenant mode is not supported",
+				Content: fmt.Sprintf("Project %s a tenant mode project.", fileInfo.repository.Project.Name),
+				Line:    1,
+			},
+		}, nil
+	}
+
+	// TODO(ed): findProjectDatabases doesn't support the tenant mode.
+	// We can use https://github.com/bytebase/bytebase/blob/main/server/issue.go#L691 to find databases in tenant mode project.
+	databases, err := s.findProjectDatabases(ctx, fileInfo.repository.ProjectID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
+	if err != nil {
+		log.Debug(
+			"Failed to list databse migration info",
+			zap.Int("project", fileInfo.repository.ProjectID),
+			zap.String("database", fileInfo.migrationInfo.Database),
+			zap.String("environment", fileInfo.migrationInfo.Environment),
+			zap.Error(err),
+		)
+		return nil, errors.Errorf("Failed to list databse with error: %v", err)
+	}
+
+	fileContent, err := vcs.Get(fileInfo.repository.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+		ctx,
+		common.OauthContext{
+			ClientID:     fileInfo.repository.VCS.ApplicationID,
+			ClientSecret: fileInfo.repository.VCS.Secret,
+			AccessToken:  fileInfo.repository.AccessToken,
+			RefreshToken: fileInfo.repository.RefreshToken,
+			Refresher:    s.refreshToken(ctx, fileInfo.repository.WebURL),
+		},
+		fileInfo.repository.VCS.InstanceURL,
+		fileInfo.repository.ExternalID,
+		fileInfo.item.FileName,
+		fileInfo.item.Commit.ID,
+	)
+	if err != nil {
+		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", fileInfo.item.FileName, err)
+	}
+
+	// There may exist many databases that match the file name.
+	// We just need to use the first one, which has the SQL review policy and can let us take the check.
+	for _, database := range databases {
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &database.Instance.EnvironmentID})
+		if err != nil {
+			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+				log.Debug("Cannot found SQL review policy in environment", zap.Int("Environment", database.Instance.EnvironmentID), zap.Error(err))
+				continue
+			}
+
+			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", database.Instance.EnvironmentID, err)
+		}
+
+		dbType, err := advisorDB.ConvertToAdvisorDBType(string(database.Instance.Engine))
+		if err != nil {
+			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", database.Instance.Engine, err)
+		}
+
+		catalog, err := s.store.NewCatalog(ctx, database.ID, database.Instance.Engine)
+		if err != nil {
+			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
+		}
+
+		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
+			Charset:   database.CharacterSet,
+			Collation: database.Collation,
+			DbType:    dbType,
+			Catalog:   catalog,
+		})
+		if err != nil {
+			return nil, errors.Errorf("Failed to exec the SQL check for database %v with error: %v", database.ID, err)
+		}
+
+		return adviceList, nil
+	}
+
+	return []advisor.Advice{
+		{
+			Status:  advisor.Warn,
+			Code:    advisor.NotFound,
+			Title:   "SQL review policy not found",
+			Content: fmt.Sprintf("You can configure the SQL review policy on %s/setting/sql-review", s.profile.ExternalURL),
+			Line:    1,
+		},
+	}, nil
+}
+
+type repositoryFilter func(*api.Repository) (bool, error)
+
+func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*api.Repository, error) {
 	repos, err := s.store.FindRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
@@ -144,17 +393,8 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
 	}
 
-	branch, err := parseBranchNameFromRefs(pushEventRef)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
-	}
-
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
-		if repo.BranchFilter != branch {
-			log.Debug("Skipping repo due to branch filter mismatch", zap.Int("repoID", repo.ID), zap.String("branch", branch), zap.String("filter", repo.BranchFilter))
-			continue
-		}
 		if repo.VCS == nil {
 			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 			continue
@@ -164,7 +404,7 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 			continue
 		}
 
-		ok, err := filter(repo.WebhookSecretToken)
+		ok, err := filter(repo)
 		if err != nil {
 			return nil, err
 		}
@@ -176,6 +416,19 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 		filteredRepos = append(filteredRepos, repo)
 	}
 	return filteredRepos, nil
+}
+
+func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+	branch, err := parseBranchNameFromRefs(pushEventRef)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
+	}
+	if branch != branchFilter {
+		log.Debug("Skipping repo due to branch filter mismatch", zap.String("branch", branch), zap.String("filter", branchFilter))
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
@@ -394,7 +647,9 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	var migrationDetailList []*api.MigrationDetail
 	var activityCreateList []*api.ActivityCreate
 	var createdIssueList []string
+	var fileNameList []string
 
+	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
 	for _, fileInfo := range fileInfoList {
 		if fileInfo.fType == schemaFileType {
 			if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
@@ -402,9 +657,10 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
-					issueName := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
-					creatorID := s.getIssueCreatorID(ctx, pushEvent.FileCommit.AuthorEmail)
-					if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationDetailListForFile); err != nil {
+					databaseName := fileInfo.migrationInfo.Database
+					issueName := fmt.Sprintf(issueNameTemplate, databaseName, "Alter schema")
+					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
+					if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailListForFile); err != nil {
 						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
@@ -422,6 +678,9 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo.item.FileName, fileInfo.item.ItemType, fileInfo.migrationInfo)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+			if len(migrationDetailListForFile) != 0 {
+				fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repo.BaseDirectory+"/"))
+			}
 		}
 	}
 
@@ -430,11 +689,21 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	}
 
 	// Create one issue per push event for DDL project, or non-schema files for SDL project.
-	issueName := pushEvent.CommitList[0].Title
-	creatorID := s.getIssueCreatorID(ctx, pushEvent.FileCommit.AuthorEmail)
-	if err := s.createIssueFromMigrationDetailList(ctx, issueName, pushEvent, creatorID, repo.ProjectID, migrationDetailList); err != nil {
+	migrateType := "Change data"
+	for _, d := range migrationDetailList {
+		if d.MigrationType == db.Migrate {
+			migrateType = "Alter schema"
+			break
+		}
+	}
+	// The files are grouped by database names before calling this function, so they have the same database name here.
+	databaseName := fileInfoList[0].migrationInfo.Database
+	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType)
+	issueDescription := fmt.Sprintf("By VCS files %s", strings.Join(fileNameList, ", "))
+	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
+	createdIssueList = append(createdIssueList, issueName)
 
 	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
 }
@@ -450,7 +719,7 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 	return ret
 }
 
-func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationDetailList []*api.MigrationDetail) error {
+func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID, projectID int, migrationDetailList []*api.MigrationDetail) error {
 	createContext, err := json.Marshal(
 		&api.MigrationContext{
 			VCSPushEvent: &pushEvent,
@@ -472,7 +741,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		ProjectID:     projectID,
 		Name:          issueName,
 		Type:          issueType,
-		Description:   pushEvent.FileCommit.Message,
+		Description:   issueDescription,
 		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	}
@@ -530,7 +799,7 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the `envName` is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenantMode api.ProjectTenantMode, dbName, envName string) ([]*api.Database, error) {
+func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*api.Database, error) {
 	// Retrieve the current schema from the database
 	foundDatabases, err := s.store.FindDatabase(ctx,
 		&api.DatabaseFind{
@@ -542,15 +811,6 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, tenant
 		return nil, errors.Wrap(err, "find database")
 	} else if len(foundDatabases) == 0 {
 		return nil, errors.Errorf("project %d does not have database %q", projectID, dbName)
-	}
-
-	// Tenant mode does not allow filtering databases by environment and expect
-	// multiple databases with the same name.
-	if tenantMode == api.TenantModeTenant {
-		if envName != "" {
-			return nil, errors.Errorf("non-empty environment is not allowed for tenant mode project")
-		}
-		return foundDatabases, nil
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -658,52 +918,42 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		return nil, nil
 	}
 
-	statement, err := s.readFileContent(ctx, pushEvent, repo, file)
+	sdl, err := s.readFileContent(ctx, pushEvent, repo, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
-	activityCreateList := []*api.ActivityCreate{}
-	envName := schemaInfo.Environment
 	var migrationDetailList []*api.MigrationDetail
 	if repo.Project.TenantMode == api.TenantModeTenant {
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				// TODO(d): make it to SDL migration.
-				MigrationType: db.Migrate,
+				MigrationType: db.MigrateSDL,
 				DatabaseName:  dbName,
-				Statement:     statement,
+				Statement:     sdl,
 			},
 		)
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, dbName, envName)
+	envName := schemaInfo.Environment
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, dbName, envName)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
 	for _, database := range databases {
-		diff, err := s.computeDatabaseSchemaDiff(ctx, database, statement)
-		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, file, errors.Wrap(err, "Failed to compute database schema diff"))
-			activityCreateList = append(activityCreateList, activityCreate)
-			continue
-		}
-
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
-				// TODO(d): make it to SDL migration.
-				MigrationType: db.Migrate,
+				MigrationType: db.MigrateSDL,
 				DatabaseID:    database.ID,
-				Statement:     diff,
+				Statement:     sdl,
 			},
 		)
 	}
 
-	return migrationDetailList, activityCreateList
+	return migrationDetailList, nil
 }
 
 // prepareIssueFromFile returns a list of update schema details derived
@@ -734,7 +984,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, repo.Project.TenantMode, migrationInfo.Database, migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, migrationInfo.Database, migrationInfo.Environment)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
@@ -803,41 +1053,6 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 	return nil
 }
 
-// computeDatabaseSchemaDiff computes the diff between current database schema
-// and the given schema. It returns an empty string if there is no applicable
-// diff.
-func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Database, newSchemaStr string) (string, error) {
-	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
-	if err != nil {
-		return "", errors.Wrap(err, "get admin driver")
-	}
-	defer func() {
-		_ = driver.Close(ctx)
-	}()
-
-	var schema bytes.Buffer
-	_, err = driver.Dump(ctx, database.Name, &schema, true /* schemaOnly */)
-	if err != nil {
-		return "", errors.Wrap(err, "dump old schema")
-	}
-
-	var engine parser.EngineType
-	switch database.Instance.Engine {
-	case db.Postgres:
-		engine = parser.Postgres
-	case db.MySQL:
-		engine = parser.MySQL
-	default:
-		return "", errors.Errorf("unsupported database engine %q", database.Instance.Engine)
-	}
-
-	diff, err := differ.SchemaDiff(engine, schema.String(), newSchemaStr)
-	if err != nil {
-		return "", errors.New("compute schema diff")
-	}
-	return diff, nil
-}
-
 // convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
 // GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
 // junit XML format: https://llg.cubic.org/docs/junit/
@@ -871,8 +1086,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 				status = advice.Status
 			}
 
-			content := fmt.Sprintf(`Error: %s
-You can check the docs at %s#%d`,
+			content := fmt.Sprintf("Error: %s.\nYou can check the docs at %s#%d",
 				advice.Content,
 				sqlReviewDocs,
 				advice.Code,

@@ -4,14 +4,14 @@
   >
     <div class="w-full flex-1 overflow-hidden">
       <div
+        class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50"
+      />
+
+      <div
         ref="scrollerRef"
         class="inner-wrapper max-h-full w-full overflow-auto border-y border-r border-block-border fix-scrollbar-z-index"
         :class="data.length === 0 && 'border-b-0 border-r-0'"
       >
-        <div
-          class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50"
-        />
-
         <table
           ref="tableRef"
           class="relative border-collapse table-fixed z-[1]"

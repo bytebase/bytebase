@@ -3,13 +3,18 @@ import type {
   CompletionItem,
   CompletionParams,
 } from "vscode-languageserver/browser";
-import { SQLDialect, Schema } from "@sql-lsp/types";
+import type { SQLDialect, Schema, Table } from "@sql-lsp/types";
 import {
   createColumnCandidates,
   createDatabaseCandidates,
   createKeywordCandidates,
+  createSubQueryCandidates,
   createTableCandidates,
 } from "./candidates";
+import { getFromClauses } from "./utils";
+import { simpleTokenize } from "./tokenizer";
+import { AliasMapping } from "./alias";
+import { SubQueryMapping } from "./sub-query";
 
 export const complete = (
   params: CompletionParams,
@@ -17,15 +22,19 @@ export const complete = (
   schema: Schema,
   dialect: SQLDialect
 ): CompletionItem[] => {
-  // const sql = document.getText(); // not used yet
+  const sql = document.getText();
   const textBeforeCursor = document.getText({
     start: { line: 0, character: 0 },
     end: params.position,
   });
 
-  const tokens = textBeforeCursor.trim().split(/\s+/);
+  const tokens = simpleTokenize(textBeforeCursor);
   const lastToken = tokens[tokens.length - 1].toLowerCase();
   const tableList = schema.databases.flatMap((db) => db.tables);
+
+  const { fromTables, subQueries } = getFromClauses(sql);
+  const subQueryMapping = new SubQueryMapping(tableList, subQueries, dialect);
+  const aliasMapping = new AliasMapping(tableList, fromTables, dialect);
 
   let suggestions: CompletionItem[] = [];
 
@@ -36,7 +45,10 @@ export const complete = (
       .split(".")
       .map((word) => word.replace(/[`'"]/g, "")); // remove quotes
 
-    const provideTableAutoCompletion = (databaseName: string) => {
+    const provideTableAutoCompletion = (
+      databaseName: string,
+      tableList: Table[]
+    ) => {
       // provide auto completion items for its tables
       const tableListOfDatabase = createTableCandidates(
         tableList.filter((table) => table.database === databaseName),
@@ -45,8 +57,18 @@ export const complete = (
       suggestions.push(...tableListOfDatabase);
     };
 
+    const provideColumnAutoCompletionByAlias = (alias: string) => {
+      const tables = aliasMapping.getTablesByAlias(alias);
+      // provide auto completion items for table columns with table alias
+      for (const table of tables) {
+        const columnListOfTable = createColumnCandidates(table, false);
+        suggestions.push(...columnListOfTable);
+      }
+    };
+
     const provideColumnAutoCompletion = (
       tableName: string,
+      tableList: Table[],
       databaseName?: string
     ) => {
       const tables = tableList.filter((table) => {
@@ -64,23 +86,31 @@ export const complete = (
 
     if (tokenListBeforeDot.length === 1) {
       // if the input is "x." x might be a
+
+      // - "{alias}." (mysql/postgresql)
+      const maybeAlias = tokenListBeforeDot[0];
+      provideColumnAutoCompletionByAlias(maybeAlias);
+
       // - "{database_name}." (mysql)
       if (dialect === "mysql") {
         const maybeDatabaseName = tokenListBeforeDot[0];
-        provideTableAutoCompletion(maybeDatabaseName);
+        provideTableAutoCompletion(maybeDatabaseName, tableList);
       }
       // - "{table_name}." (mysql)
       const maybeTableName = tokenListBeforeDot[0];
       if (dialect === "mysql") {
-        provideColumnAutoCompletion(maybeTableName);
+        provideColumnAutoCompletion(maybeTableName, tableList);
+        provideColumnAutoCompletion(
+          maybeTableName,
+          subQueryMapping.virtualTableList
+        );
       }
       if (dialect === "postgresql") {
         // for postgresql, we also try "public.{table_name}."
         // since "public" schema can be omitted by default
-        provideColumnAutoCompletion(`public.${maybeTableName}`);
+        provideColumnAutoCompletion(`public.${maybeTableName}`, tableList);
       }
-      // "{schema_name}." (postgresql) - will implement next time
-      // - alias (cannot recognize yet)
+      // TODO: "{schema_name}." (postgresql)
     }
 
     if (tokenListBeforeDot.length === 2) {
@@ -89,13 +119,17 @@ export const complete = (
       // - "{schema_name}.{table_name}." (postgresql)
       const [maybeDatabaseName, maybeTableName] = tokenListBeforeDot;
       if (dialect === "mysql") {
-        provideColumnAutoCompletion(maybeTableName, maybeDatabaseName);
+        provideColumnAutoCompletion(
+          maybeTableName,
+          tableList,
+          maybeDatabaseName
+        );
       }
       if (dialect === "postgresql") {
         const maybeTableNameWithSchema = tokenListBeforeDot.join(".");
-        provideColumnAutoCompletion(maybeTableNameWithSchema);
+        provideColumnAutoCompletion(maybeTableNameWithSchema, tableList);
       }
-      // "{database_name}.{schema_name}." (postgresql) - will implement next time
+      // TODO: "{database_name}.{schema_name}." (postgresql)
     }
 
     if (dialect === "postgresql" && tokenListBeforeDot.length === 3) {
@@ -105,12 +139,18 @@ export const complete = (
       const [maybeDatabaseName, maybeSchemaName, maybeTableName] =
         tokenListBeforeDot;
       const maybeTableNameWithSchema = `${maybeSchemaName}.${maybeTableName}`;
-      provideColumnAutoCompletion(maybeTableNameWithSchema, maybeDatabaseName);
+      provideColumnAutoCompletion(
+        maybeTableNameWithSchema,
+        tableList,
+        maybeDatabaseName
+      );
     }
   } else {
     // The auto-completion trigger is SPACE
     // We didn't walk the AST, so still we don't know which type of
     // clause we are in. So we provide some naive suggestions.
+
+    const suggestionsForAliases = aliasMapping.createAllAliasCandidates();
 
     // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
     const suggestionsForDatabase =
@@ -119,11 +159,16 @@ export const complete = (
       tableList,
       dialect === "mysql" // Add database prefix to table candidates only for MySQL.
     );
+    const suggestionsForSubQueryVirtualTable = createSubQueryCandidates(
+      subQueryMapping.virtualTableList
+    );
     const suggestionsForKeyword = createKeywordCandidates();
 
     suggestions = [
+      ...suggestionsForAliases,
       ...suggestionsForKeyword,
       ...suggestionsForTable,
+      ...suggestionsForSubQueryVirtualTable,
       ...suggestionsForDatabase,
     ];
   }

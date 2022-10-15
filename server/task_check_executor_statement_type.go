@@ -113,7 +113,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 				})
 			}
 		}
-	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhostSync:
+	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync:
 		for _, node := range stmts {
 			_, isDML := node.(tidbast.DMLNode)
 			_, isExplain := node.(*tidbast.ExplainStmt)
@@ -165,7 +165,7 @@ func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (resu
 				})
 			}
 		}
-	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhostSync:
+	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync:
 		for _, node := range stmts {
 			_, isDML := node.(ast.DMLNode)
 			_, isSelect := node.(*ast.SelectStmt)

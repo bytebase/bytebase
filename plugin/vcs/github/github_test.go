@@ -1280,7 +1280,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
       "received_events_url": "https://api.github.com/users/octocat/received_events",
       "type": "User",
       "site_admin": false
-    },
+    }
   },
   "base": {
     "label": "octocat:master",
@@ -1305,7 +1305,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
       "received_events_url": "https://api.github.com/users/octocat/received_events",
       "type": "User",
       "site_admin": false
-    },
+    }
   },
   "author_association": "OWNER",
   "auto_merge": null,
@@ -1331,7 +1331,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.CreatePullRequest(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
+	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
 		Title:                 "Amazing new feature",
 		Body:                  "Please pull these awesome changes in!",
 		Head:                  "new-topic",
@@ -1339,6 +1339,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 		RemoveHeadAfterMerged: true,
 	})
 	require.NoError(t, err)
+	assert.Equal(t, "https://github.com/octocat/Hello-World/pull/1347", res.URL)
 }
 
 func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
@@ -1379,4 +1380,56 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
 	ctx := context.Background()
 	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1", "new value")
 	require.NoError(t, err)
+}
+
+func TestProvider_ListPullRequestFile(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/octocat/Hello-World/pulls/1/files", r.URL.Path)
+						if r.URL.Query().Get("page") == "2" {
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								Body:       io.NopCloser(strings.NewReader(`[]`)),
+							}, nil
+						}
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
+							Body: io.NopCloser(strings.NewReader(`
+[
+  {
+    "sha": "bbcd538c8e72b8c175046e27cc8f907076331401",
+    "filename": "file1.txt",
+    "status": "added",
+    "additions": 103,
+    "deletions": 21,
+    "changes": 124,
+    "blob_url": "https://github.com/octocat/Hello-World/blob/6dcb09b5b57875f334f61aebed695e2e4193db5e/file1.txt",
+    "raw_url": "https://github.com/octocat/Hello-World/raw/6dcb09b5b57875f334f61aebed695e2e4193db5e/file1.txt",
+    "contents_url": "https://api.github.com/repos/octocat/Hello-World/contents/file1.txt?ref=6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "patch": "@@ -132,7 +132,7 @@ module Test @@ -1000,7 +1000,7 @@ module Test"
+  }
+]
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+	ctx := context.Background()
+	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1")
+	require.NoError(t, err)
+
+	want := []*vcs.PullRequestFile{
+		{
+			Path:         "file1.txt",
+			LastCommitID: "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			IsDeleted:    false,
+		},
+	}
+	assert.Equal(t, want, got)
 }
