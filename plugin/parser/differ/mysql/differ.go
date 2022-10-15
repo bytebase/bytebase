@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
+	"github.com/pingcap/tidb/types"
 	"github.com/pkg/errors"
 
 	bbparser "github.com/bytebase/bytebase/plugin/parser"
@@ -16,7 +17,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser/differ"
 
 	// Register pingcap parser driver.
-	_ "github.com/pingcap/tidb/types/parser_driver"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 var (
@@ -54,8 +55,12 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var inplaceDropNodeList []ast.Node
 	var inplaceAddNodeList []ast.Node
 	var dropNodeList []ast.Node
+	var viewStmts []*ast.CreateViewStmt
 
 	oldTableMap := buildTableMap(oldNodes)
+	oldViewMap := buildViewMap(oldNodes)
+	newViewMap := buildViewMap(newNodes)
+	var newViewList []*ast.CreateViewStmt
 
 	for _, node := range newNodes {
 		switch newStmt := node.(type) {
@@ -237,13 +242,58 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Specs: alterTableInplaceAddConstraintSpecs,
 				})
 			}
-		default:
+		case *ast.CreateViewStmt:
+			newViewList = append(newViewList, newStmt)
 		}
 	}
-	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+
+	var tempViewList []*ast.CreateViewStmt
+	var viewList []*ast.CreateViewStmt
+	for _, view := range newViewList {
+		viewName := view.ViewName.Name.O
+		if newNode, ok := newViewMap[viewName]; ok {
+			if !isViewEqual(view, newNode) {
+				// Skip predefined view such as the temporary view from mysqldump.
+				continue
+			}
+		}
+		oldNode, ok := oldViewMap[viewName]
+		if ok {
+			if !isViewEqual(view, oldNode) {
+				createViewStmt := *view
+				createViewStmt.OrReplace = true
+				viewList = append(viewList, &createViewStmt)
+			}
+			// We should delete the view in the oldViewMap, because we will drop the all views in the oldViewMap explicitly at last.
+			delete(oldViewMap, viewName)
+		} else {
+			// We should create the view.
+			// We create the temporary view first and replace it to avoid break the rependency like mysqldump does.
+			tempViewStmt := getTempView(view)
+			tempViewList = append(tempViewList, tempViewStmt)
+			createViewStmt := *view
+			createViewStmt.OrReplace = true
+			viewList = append(viewList, &createViewStmt)
+		}
+	}
+	viewStmts = append(viewStmts, tempViewList...)
+	viewStmts = append(viewStmts, viewList...)
+
+	// Remove the remaining views in the oldViewMap.
+	dropViewStmt := &ast.DropTableStmt{
+		IsView: true,
+	}
+	for _, oldView := range oldViewMap {
+		dropViewStmt.Tables = append(dropViewStmt.Tables, oldView.ViewName)
+	}
+	if len(dropViewStmt.Tables) > 0 {
+		dropNodeList = append(dropNodeList, dropViewStmt)
+	}
+
+	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, viewStmts, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -295,6 +345,15 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.
 			return "", err
 		}
 	}
+
+	for _, node := range viewStmts {
+		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
 	return buf.String(), nil
 }
 
@@ -310,6 +369,76 @@ func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
 		}
 	}
 	return tableMap
+}
+
+// buildViewMap returns a map of view name to create view statements.
+func buildViewMap(nodes []ast.StmtNode) map[string]*ast.CreateViewStmt {
+	viewMap := make(map[string]*ast.CreateViewStmt)
+	for _, node := range nodes {
+		if stmt, ok := node.(*ast.CreateViewStmt); ok {
+			viewName := stmt.ViewName.Name.O
+			viewMap[viewName] = stmt
+		}
+	}
+	return viewMap
+}
+
+// getTempView returns the temporary view name and the create statement.
+func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
+	// We create the temp view similar to what mysqldump does.
+	// Create a temporary view with the same name as the view. Its columns should
+	// have the same name in order to satisfy views that depend on this view.
+	// This temporary view will be removed when the actual view is created.
+	// The column properties are unnecessary and not preserved in this temporary view.
+	// because other views only need to reference the column name.
+	//  Example: SELECT 1 AS colName1, 1 AS colName2.
+	// TODO(zp): support SDL for GitOps.
+	var selectFileds []*ast.SelectField
+	// mysqldump always show field list
+	if len(stmt.Cols) > 0 {
+		for _, col := range stmt.Cols {
+			selectFileds = append(selectFileds, &ast.SelectField{
+				Expr: &driver.ValueExpr{
+					Datum: types.NewDatum(1),
+				},
+				AsName: col,
+			})
+		}
+	} else {
+		for _, field := range stmt.Select.(*ast.SelectStmt).Fields.Fields {
+			var fieldName string
+			if field.AsName.O != "" {
+				fieldName = field.AsName.O
+			} else {
+				fieldName = field.Expr.(*ast.ColumnNameExpr).Name.Name.O
+			}
+			selectFileds = append(selectFileds, &ast.SelectField{
+				Expr: &driver.ValueExpr{
+					Datum: types.NewDatum(1),
+				},
+				AsName: model.NewCIStr(fieldName),
+			})
+		}
+	}
+
+	return &ast.CreateViewStmt{
+		ViewName: stmt.ViewName,
+		Select: &ast.SelectStmt{
+			SelectStmtOpts: &ast.SelectStmtOpts{
+				// Avoid generating SQL_NO_CACHE
+				// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/ast/dml.go?L1234
+				SQLCache: true,
+			},
+			Fields: &ast.FieldList{
+				Fields: selectFileds,
+			},
+		},
+		OrReplace: true,
+		// Avoid nil pointer dereference panic.
+		// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/ast/ddl.go?L1398
+		Definer:  stmt.Definer,
+		Security: stmt.Security,
+	}
 }
 
 // buildColumnMap returns a map of column name to column definition on a given table.
@@ -563,7 +692,6 @@ func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
 	if old.OnUpdate != nil && new.OnUpdate != nil && old.OnUpdate.ReferOpt != new.OnUpdate.ReferOpt {
 		return false
 	}
-
 	return true
 }
 
@@ -850,6 +978,30 @@ func isTableOptionValEqual(old, new *ast.TableOption) bool {
 		return true
 	}
 	return true
+}
+
+// isViewEqual checks whether two views with same name are equal.
+func isViewEqual(old, new *ast.CreateViewStmt) bool {
+	// CREATE
+	// 		[OR REPLACE]
+	// 		[ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
+	// 		[DEFINER = user]
+	// 		[SQL SECURITY { DEFINER | INVOKER }]
+	// 		VIEW view_name [(column_list)]
+	// 		AS select_statement
+	// 		[WITH [CASCADED | LOCAL] CHECK OPTION]
+	// We can easily replace view statement by using `CREATE OR REPLACE VIEW` statement to replace the old one.
+	// So we don't need to compare each part, just compare the restore string.
+	var oldBuf, newBuf bytes.Buffer
+	oldRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &oldBuf)
+	newRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &newBuf)
+	if err := old.Restore(oldRestoreCtx); err != nil {
+		return false
+	}
+	if err := new.Restore(newRestoreCtx); err != nil {
+		return false
+	}
+	return oldBuf.String() == newBuf.String()
 }
 
 // buildTableOptionMap builds a map of table options.
