@@ -85,6 +85,7 @@ func (checker *encodingAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 			code = advisor.DisabledCharset
 			disabledEncoding = encoding
 		}
+	default:
 	}
 
 	if code != advisor.Ok {
