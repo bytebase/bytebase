@@ -76,7 +76,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
 				inplaceUpdate = append(inplaceUpdate, alterTableOptionStmt)
 			}
-			constraintMap := buildConstraintMap(oldStmt)
+			indexMap := buildIndexMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var alterTableAddNewConstraintSpecs []*ast.AlterTableSpec
@@ -109,7 +109,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
 					indexName := constraint.Name
-					if oldConstraint, ok := constraintMap[indexName]; ok {
+					if oldConstraint, ok := indexMap[indexName]; ok {
 						if !isIndexEqual(constraint, oldConstraint) {
 							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
 								Tp:   ast.AlterTableDropIndex,
@@ -120,7 +120,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 								Constraint: constraint,
 							})
 						}
-						delete(constraintMap, indexName)
+						delete(indexMap, indexName)
 						continue
 					}
 					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
@@ -129,7 +129,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					})
 				case ast.ConstraintPrimaryKey:
 					primaryKeyName := "PRIMARY"
-					if oldConstraint, ok := constraintMap[primaryKeyName]; ok {
+					if oldConstraint, ok := indexMap[primaryKeyName]; ok {
 						if !isIndexEqual(constraint, oldConstraint) {
 							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
 								Tp: ast.AlterTableDropPrimaryKey,
@@ -139,7 +139,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 								Constraint: constraint,
 							})
 						}
-						delete(constraintMap, primaryKeyName)
+						delete(indexMap, primaryKeyName)
 						continue
 					}
 					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
@@ -151,7 +151,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				// Since the mysqldump statement always puts the primary key in front of the foreign key, and we will reverse the drop statements order.
 				// TODO(zp): So we don't have to worry about this now until one of the statements doesn't come from mysqldump.
 				case ast.ConstraintForeignKey:
-					if oldConstraint, ok := constraintMap[constraint.Name]; ok {
+					if oldConstraint, ok := indexMap[constraint.Name]; ok {
 						if !isForeignKeyConstraintEqual(constraint, oldConstraint) {
 							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
 								Tp:   ast.AlterTableDropForeignKey,
@@ -162,7 +162,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 								Constraint: constraint,
 							})
 						}
-						delete(constraintMap, constraint.Name)
+						delete(indexMap, constraint.Name)
 						continue
 					}
 					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
@@ -188,7 +188,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				})
 			}
 			// We should drop the remaining indices in the indexMap.
-			for indexName, constraint := range constraintMap {
+			for indexName, constraint := range indexMap {
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintKey, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
 					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
@@ -459,8 +459,8 @@ func buildColumnMap(nodes []ast.StmtNode, tableName model.CIStr) map[string]*ast
 	return oldColumnMap
 }
 
-// buildConstraintMap build a map of index name to constraint on given table name.
-func buildConstraintMap(stmt *ast.CreateTableStmt) constraintMap {
+// buildIndexMap build a map of index name to constraint on given table name.
+func buildIndexMap(stmt *ast.CreateTableStmt) constraintMap {
 	indexMap := make(constraintMap)
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
