@@ -170,6 +170,25 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						Tp:         ast.AlterTableAddConstraint,
 						Constraint: constraint,
 					})
+				case ast.ConstraintCheck:
+					if oldConstraint, ok := constraintMap[constraint.Name]; ok {
+						if !isCheckConstraintEqual(constraint, oldConstraint) {
+							alterTableInplaceDropConstraintSpecs = append(alterTableInplaceDropConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableDropCheck,
+								Constraint: constraint,
+							})
+							alterTableInplaceAddConstraintSpecs = append(alterTableInplaceAddConstraintSpecs, &ast.AlterTableSpec{
+								Tp:         ast.AlterTableAddConstraint,
+								Constraint: constraint,
+							})
+						}
+						delete(constraintMap, constraint.Name)
+						continue
+					}
+					alterTableAddNewConstraintSpecs = append(alterTableAddNewConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableAddConstraint,
+						Constraint: constraint,
+					})
 				}
 			}
 			if len(alterTableAddColumnSpecs) > 0 {
@@ -210,7 +229,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						Tp:   ast.AlterTableDropForeignKey,
 						Name: constraintName,
 					})
-				default:
+				case ast.ConstraintCheck:
+					alterTableDropExcessConstraintSpecs = append(alterTableDropExcessConstraintSpecs, &ast.AlterTableSpec{
+						Tp:         ast.AlterTableDropCheck,
+						Constraint: constraint,
+					})
 				}
 			}
 
@@ -488,7 +511,7 @@ func buildConstraintMap(stmt *ast.CreateTableStmt) constraintMap {
 	constraintMap := make(constraintMap)
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
-		case ast.ConstraintForeignKey:
+		case ast.ConstraintForeignKey, ast.ConstraintCheck:
 			constraintMap[constraint.Name] = constraint
 		default:
 		}
@@ -709,6 +732,34 @@ func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
 		return false
 	}
 	if old.OnUpdate != nil && new.OnUpdate != nil && old.OnUpdate.ReferOpt != new.OnUpdate.ReferOpt {
+		return false
+	}
+	return true
+}
+
+// isCheckConstraintEqual returns true if two check constraints are the same.
+func isCheckConstraintEqual(old, new *ast.Constraint) bool {
+	// check_constraint_definition:
+	// 		[CONSTRAINT [symbol]] CHECK (expr) [[NOT] ENFORCED]
+	if old.Name != new.Name {
+		return false
+	}
+
+	var oldBuf bytes.Buffer
+	var newBuf bytes.Buffer
+	oldRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &oldBuf)
+	newRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &newBuf)
+	if err := old.Expr.Restore(oldRestoreCtx); err != nil {
+		return false
+	}
+	if err := new.Expr.Restore(newRestoreCtx); err != nil {
+		return false
+	}
+	if oldBuf.String() != newBuf.String() {
+		return false
+	}
+
+	if old.Enforced != new.Enforced {
 		return false
 	}
 	return true

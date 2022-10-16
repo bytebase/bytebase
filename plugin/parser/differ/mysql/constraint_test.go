@@ -509,6 +509,41 @@ func TestForeignKeyDefination(t *testing.T) {
 	}
 }
 
+func TestCheckConstraint(t *testing.T) {
+	tests := []struct {
+		old  string
+		new  string
+		want string
+	}{
+		{
+			old: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0));",
+			new: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 1));",
+			want: "ALTER TABLE `book` DROP CHECK `check_price`;\n" +
+				"ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK(`price`>1) ENFORCED;\n",
+		},
+		{
+			old: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0));",
+			new: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0) NOT ENFORCED);",
+			want: "ALTER TABLE `book` DROP CHECK `check_price`;\n" +
+				"ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK(`price`>0) NOT ENFORCED;\n",
+		},
+		{
+			old: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0), CONSTRAINT `check_price2` CHECK(price > 1));",
+			new: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0) NOT ENFORCED);",
+			want: "ALTER TABLE `book` DROP CHECK `check_price`;\n" +
+				"ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK(`price`>0) NOT ENFORCED;\n" +
+				"ALTER TABLE `book` DROP CHECK `check_price2`;\n",
+		},
+	}
+	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
+	for _, test := range tests {
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		a.NoError(err)
+		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
+
 func TestConstraint(t *testing.T) {
 	tests := []struct {
 		old  string
