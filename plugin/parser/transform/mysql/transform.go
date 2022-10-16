@@ -36,7 +36,7 @@ func transform(schema string) (string, error) {
 					indexList = append(indexList, &ast.CreateIndexStmt{
 						IndexName: constraint.Name,
 						Table: &ast.TableName{
-							Name: model.CIStr{O: newStmt.Table.Name.O},
+							Name: model.NewCIStr(newStmt.Table.Name.O),
 						},
 						IndexPartSpecifications: constraint.Keys,
 						IndexOption:             indexOption,
@@ -51,7 +51,7 @@ func transform(schema string) (string, error) {
 					indexList = append(indexList, &ast.CreateIndexStmt{
 						IndexName: constraint.Name,
 						Table: &ast.TableName{
-							Name: model.CIStr{O: newStmt.Table.Name.O},
+							Name: model.NewCIStr(newStmt.Table.Name.O),
 						},
 						IndexPartSpecifications: constraint.Keys,
 						IndexOption:             indexOption,
