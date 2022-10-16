@@ -1,0 +1,88 @@
+// Package transform converts the raw schema dump to standard schema style.
+package transform
+
+import (
+	"bytes"
+
+	"github.com/pingcap/tidb/parser"
+	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pingcap/tidb/parser/format"
+	"github.com/pingcap/tidb/parser/model"
+	"github.com/pkg/errors"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+)
+
+func transform(schema string) (string, error) {
+	nodes, _, err := parser.New().Parse(schema, "", "")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse schema %q", schema)
+	}
+	var newNodeList []ast.Node
+	for _, node := range nodes {
+		switch newStmt := node.(type) {
+		case *ast.CreateTableStmt:
+			var constraintList []*ast.Constraint
+			var indexList []*ast.CreateIndexStmt
+			for _, constraint := range newStmt.Constraints {
+				switch constraint.Tp {
+				case ast.ConstraintUniq:
+					// This becomes the unique index.
+					indexOption := constraint.Option
+					if indexOption == nil {
+						indexOption = &ast.IndexOption{}
+					}
+					indexList = append(indexList, &ast.CreateIndexStmt{
+						IndexName: constraint.Name,
+						Table: &ast.TableName{
+							Name: model.NewCIStr(newStmt.Table.Name.O),
+						},
+						IndexPartSpecifications: constraint.Keys,
+						IndexOption:             indexOption,
+						KeyType:                 ast.IndexKeyTypeUnique,
+					})
+				case ast.ConstraintIndex:
+					// This becomes the index.
+					indexOption := constraint.Option
+					if indexOption == nil {
+						indexOption = &ast.IndexOption{}
+					}
+					indexList = append(indexList, &ast.CreateIndexStmt{
+						IndexName: constraint.Name,
+						Table: &ast.TableName{
+							Name: model.NewCIStr(newStmt.Table.Name.O),
+						},
+						IndexPartSpecifications: constraint.Keys,
+						IndexOption:             indexOption,
+						KeyType:                 ast.IndexKeyTypeNone,
+					})
+				case ast.ConstraintPrimaryKey, ast.ConstraintKey, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintForeignKey, ast.ConstraintFulltext:
+					constraintList = append(constraintList, constraint)
+				}
+			}
+			newStmt.Constraints = constraintList
+			newNodeList = append(newNodeList, newStmt)
+			for _, node := range indexList {
+				newNodeList = append(newNodeList, node)
+			}
+		default:
+			newNodeList = append(newNodeList, node)
+		}
+	}
+
+	return deparse(newNodeList)
+}
+
+func deparse(newNodeList []ast.Node) (string, error) {
+	var buf bytes.Buffer
+	for _, node := range newNodeList {
+		if err := node.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags|format.RestoreStringWithoutCharset, &buf)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
