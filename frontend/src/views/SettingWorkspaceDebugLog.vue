@@ -67,7 +67,7 @@
         </div>
       </BBDialog>
     </div>
-    <DebugLogsEmptyView v-else />
+    <DebugLogEmptyView v-else />
   </div>
 </template>
 
