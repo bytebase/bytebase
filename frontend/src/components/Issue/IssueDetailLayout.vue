@@ -129,7 +129,6 @@ import type {
   IssueCreate,
   Instance,
   Task,
-  TaskDatabaseSchemaUpdatePayload,
   TaskCreate,
   MigrationType,
 } from "@/types";
@@ -226,14 +225,25 @@ const currentPipelineType = computed((): PipelineType => {
 });
 
 const selectedMigrateType = computed((): MigrationType => {
-  if (
-    !props.create &&
-    selectedTask.value.type == "bb.task.database.schema.update"
-  ) {
-    return (
-      (selectedTask.value as Task).payload as TaskDatabaseSchemaUpdatePayload
-    ).migrationType;
+  const taskType = selectedTask.value.type;
+  if (taskType === "bb.task.database.schema.baseline") {
+    // The new version of BASELINE tasks
+    return "BASELINE";
   }
+  if (!props.create && taskType === "bb.task.database.schema.update") {
+    // Legacy BASELINE task support
+    // Their `type`s are "bb.task.database.schema.update"
+    // And their `payload.migrationType`s are "BASELINE"
+    const { payload } = selectedTask.value as Task;
+    if ((payload as any).migrationType === "BASELINE") {
+      return "BASELINE";
+    }
+  }
+  if (taskType === "bb.task.database.data.update") {
+    // A "Change data" task
+    return "DATA";
+  }
+  // Fall back to MIGRATE otherwise
   return "MIGRATE";
 });
 
@@ -264,7 +274,7 @@ const instance = computed((): Instance => {
 });
 
 const sqlHint = (): string | undefined => {
-  if (!props.create && selectedMigrateType.value == "BASELINE") {
+  if (selectedMigrateType.value == "BASELINE") {
     return `This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history`;
   }
   if (instance.value.engine === "SNOWFLAKE") {
