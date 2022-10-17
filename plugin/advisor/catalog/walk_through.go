@@ -59,6 +59,8 @@ const (
 	ErrorTypeColumnNotExists = 402
 	// ErrorTypeDropAllColumns is the error that dropping all columns in a table.
 	ErrorTypeDropAllColumns = 403
+	// ErrorTypeAutoIncrementExists is the error that auto_increment exists.
+	ErrorTypeAutoIncrementExists = 404
 
 	// 501 ~ 599 index error type.
 
@@ -1033,8 +1035,19 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		indexSet:  make(indexStateMap),
 	}
 	schema.tableSet[table.name] = table
+	hasAutoIncrement := false
 
 	for _, column := range node.Cols {
+		if isAutoIncrement(column) {
+			if hasAutoIncrement {
+				return &WalkThroughError{
+					Type: ErrorTypeAutoIncrementExists,
+					// The content comes from MySQL error content.
+					Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
+				}
+			}
+			hasAutoIncrement = true
+		}
 		if err := table.createColumn(d.ctx, column, nil /* position */); err != nil {
 			err.Line = column.OriginTextPosition()
 			return err
@@ -1127,6 +1140,15 @@ func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*
 		}
 	}
 	return res, nil
+}
+
+func isAutoIncrement(column *tidbast.ColumnDef) bool {
+	for _, option := range column.Options {
+		if option.Tp == tidbast.ColumnOptionAutoIncrement {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
