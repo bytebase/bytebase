@@ -114,7 +114,6 @@ export class IssueCreateHelper {
             instanceId: task.instance.id,
             databaseId: task.database?.id,
             databaseName: task.database?.name,
-            migrationType: payload.migrationType,
             statement,
             earliestAllowedTs: task.earliestAllowedTs,
           };
