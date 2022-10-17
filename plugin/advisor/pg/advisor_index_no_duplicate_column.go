@@ -129,7 +129,7 @@ func (checker *indexNoDuplicateColumnChecker) Visit(node ast.Node) ast.Visitor {
 			Status:  checker.level,
 			Code:    advisor.DuplicateColumnInIndex,
 			Title:   checker.title,
-			Content: fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", column.constraintType, column.index, column.table, column.column),
+			Content: fmt.Sprintf("%s \"%s\" has duplicate column \"%s\".\"%s\"", column.constraintType, column.index, column.table, column.column),
 			Line:    column.line,
 		})
 	}
