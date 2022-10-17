@@ -11,7 +11,9 @@
     "table": "Table",
     "column": "Column",
     "schema": "Schema",
-    "database": "Database"
+    "database": "Database",
+    "index": "Index",
+    "insert": "Insert"
   },
   "template": {
     "bb-sql-review-prod": "Template for Prod Environment",
@@ -38,6 +40,10 @@
           "title": "Table name format (regex)"
         }
       }
+    },
+    "table-disallow-partition": {
+      "title": "Disallow partition",
+      "description": ""
     },
     "naming-table": {
       "title": "Table naming check",
@@ -142,6 +148,34 @@
       "title": "Disallow NULL",
       "description": "Columns cannot have NULL value."
     },
+    "column-disallow-set-charset": {
+      "title": "Disallow set charset",
+      "description": "Disallow set charset for column."
+    },
+    "column-disallow-change-type": {
+      "title": "Disallow changing type",
+      "description": "Disallow change column type."
+    },
+    "column-disallow-change": {
+      "title": "Disallow changing",
+      "description": "Disallow \"CHANGE COLUMN\" statement."
+    },
+    "column-disallow-changing-order": {
+      "title": "Disallow changing order",
+      "description": "Disallow changing column order."
+    },
+    "column-set-default-for-not-null": {
+      "title": "Set default value",
+      "description": "Require default value for not NULL column."
+    },
+    "column-auto-increment-must-integer": {
+      "title": "Use integer for auto-increment column",
+      "description": "Auto-increment column must be integer."
+    },
+    "column-auto-increment-must-unsigned": {
+      "title": "Set unsigned for auto-increment column",
+      "description": "Auto-increment column must be unsigned."
+    },
     "statement-select-no-select-all": {
       "title": "Disallow \"SELECT *\"",
       "description": "Disallow 'SELECT *' statement."
@@ -158,6 +192,22 @@
       "title": "Disallow commit",
       "description": "Disallow using commit in the issue."
     },
+    "statement-create-table-no-create-table-as": {
+      "title": "Disallow \"CREATE TABLE AS\"",
+      "description": ""
+    },
+    "statement-disallow-limit": {
+      "title": "Disallow \"LIMIT\"",
+      "description": "Disallow \"LIMIT\" for \"INSERT\", \"UPDATE\", \"DELETE\" statement"
+    },
+    "statement-disallow-order-by": {
+      "title": "Disallow \"ORDER BY\"",
+      "description": "Disallow \"ORDER BY\" for \"UPDATE\", \"DELETE\" statement"
+    },
+    "statement-merge-alter-table": {
+      "title": "Merge \"ALTER TABLE\"",
+      "description": "Disallow using multiply \"ALTER TABLE\" statement for same table."
+    },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
       "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
@@ -165,6 +215,26 @@
     "database-drop-empty-database": {
       "title": "Drop database restriction",
       "description": "Can only drop the database if there's no table in it."
+    },
+    "index-no-duplicate-column": {
+      "title": "Disallow duplicate column",
+      "description": ""
+    },
+    "index-type-no-blob": {
+      "title": "Disallow BLOB",
+      "description": "Disallow using BLOB type column in index."
+    },
+    "index-pk-type": {
+      "title": "Primary key type limit",
+      "description": "Primary key must be INT or BIGINT."
+    },
+    "insert-must-specify-column": {
+      "title": "\"INSERT\" statement must specify column",
+      "description": "Must specify the column to insert. For example, \"INSERT INTO t (id,name) VALUES(...)\""
+    },
+    "insert-disallow-order-by-rand": {
+      "title": "Disallow \"ORDER BY rand()\" statement",
+      "description": ""
     }
   },
   "level": {
