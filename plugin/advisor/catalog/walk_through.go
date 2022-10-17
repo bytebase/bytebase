@@ -61,6 +61,8 @@ const (
 	ErrorTypeDropAllColumns = 403
 	// ErrorTypeAutoIncrementExists is the error that auto_increment exists.
 	ErrorTypeAutoIncrementExists = 404
+	// ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp is the error that the ON UPDATE column is not datetime or timestamp.
+	ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp = 405
 
 	// 501 ~ 599 index error type.
 
@@ -1207,6 +1209,12 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			col.nullable = newTruePointer()
 		case tidbast.ColumnOptionOnUpdate:
 			// we do not deal with ON UPDATE
+			if column.Tp.GetType() != mysql.TypeDatetime && column.Tp.GetType() != mysql.TypeTimestamp {
+				return &WalkThroughError{
+					Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+					Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
+				}
+			}
 		case tidbast.ColumnOptionComment:
 			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 			if err != nil {
