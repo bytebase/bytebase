@@ -117,6 +117,8 @@ https://github.com/bytebase/bytebase/tree/main/docs/version-management.md
 
 1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/?source=github), you can add/improve content there.
 
+1. Before creating a Pull Request, please follow the [Development Guide](https://github.com/bytebase/bytebase/blob/main/docs/dev-guide.md) for branch and commit message conventions.
+
 **Note**: We are quite disciplined on <a href="#installation">tech stack</a>. If you consider bringing a new programming language, framework and any non-trivial external dependency, please open a discussion first.
 
 ## 🏗 Development
