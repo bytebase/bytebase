@@ -12,8 +12,7 @@
     "column": "Column",
     "schema": "Schema",
     "database": "Database",
-    "index": "Index",
-    "insert": "Insert"
+    "index": "Index"
   },
   "template": {
     "bb-sql-review-prod": "Template for Prod Environment",
