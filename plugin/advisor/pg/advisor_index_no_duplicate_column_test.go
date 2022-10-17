@@ -28,7 +28,7 @@ func TestIndexNoDuplicateColumn(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.DuplicateColumnInIndex,
 					Title:   "index.no-duplicate-column",
-					Content: "PRIMARY KEY \"\" has duplicate column `t`.`a`",
+					Content: "PRIMARY KEY \"\" has duplicate column \"t\".\"a\"",
 					Line:    3,
 				},
 			},
