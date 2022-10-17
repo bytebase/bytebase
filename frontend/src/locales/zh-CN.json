@@ -451,7 +451,8 @@
     },
     "subject-prefix": {
       "task": "任务"
-    }
+    },
+    "n-similar-activities": "({count} 个相似的活动)"
   },
   "issue": {
     "waiting-approval": "等待批准",
