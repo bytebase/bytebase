@@ -485,7 +485,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
-			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql", issue.Description)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -550,7 +550,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
-			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql", issue.Description)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver4##data##insert_data.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
