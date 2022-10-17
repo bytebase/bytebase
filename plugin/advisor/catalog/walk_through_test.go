@@ -29,6 +29,20 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t(a int auto_increment, b int auto_increment);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeAutoIncrementExists,
+				Content: "There can be only one auto column for table `t`",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				UPDATE t SET a = 1;
 			`,
 			err: &WalkThroughError{
