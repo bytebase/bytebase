@@ -142,7 +142,20 @@
   >
     <div class="space-y-4 max-w-[32rem]">
       <div class="whitespace-pre-wrap">
-        {{ $t("repository.sql-review-ci-restore-modal") }}
+        <i18n-t keypath="repository.sql-review-ci-restore-modal">
+          <template #vcs>
+            {{
+              repository.vcs.type.startsWith("GITLAB")
+                ? "GitLab CI"
+                : "GitHub Action"
+            }}
+          </template>
+          <template #repository>
+            <a class="normal-link" :href="repository.webUrl" target="_blank">{{
+              repository.fullPath
+            }}</a>
+          </template>
+        </i18n-t>
       </div>
 
       <div class="flex justify-end pt-4 gap-x-2">
@@ -164,7 +177,20 @@
   >
     <div class="space-y-4 max-w-[32rem]">
       <div class="whitespace-pre-wrap">
-        {{ $t("repository.sql-review-ci-remove-modal") }}
+        <i18n-t keypath="repository.sql-review-ci-remove-modal">
+          <template #vcs>
+            {{
+              repository.vcs.type.startsWith("GITLAB")
+                ? "GitLab CI"
+                : "GitHub Action"
+            }}
+          </template>
+          <template #repository>
+            <a class="normal-link" :href="repository.webUrl" target="_blank">{{
+              repository.fullPath
+            }}</a>
+          </template>
+        </i18n-t>
       </div>
 
       <div class="flex justify-end pt-4 gap-x-2">
