@@ -11,7 +11,7 @@
       />
       <div v-if="selectedRuleList.length > 0" class="mb-5">
         <div
-          class="flex cursor-pointer items-center px-2 text-indigo-500"
+          class="flex cursor-pointer items-center text-indigo-500"
           @click="state.openTemplate = !state.openTemplate"
         >
           <heroicons-solid:chevron-right
