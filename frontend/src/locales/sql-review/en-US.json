@@ -194,11 +194,11 @@
     },
     "statement-disallow-limit": {
       "title": "Disallow \"LIMIT\"",
-      "description": "Disallow \"LIMIT\" for \"INSERT\", \"UPDATE\", \"DELETE\" statement"
+      "description": "Disallow \"LIMIT\" for \"INSERT\", \"UPDATE\", \"DELETE\" statement."
     },
     "statement-disallow-order-by": {
       "title": "Disallow \"ORDER BY\"",
-      "description": "Disallow \"ORDER BY\" for \"UPDATE\", \"DELETE\" statement"
+      "description": "Disallow \"ORDER BY\" for \"UPDATE\", \"DELETE\" statement."
     },
     "statement-merge-alter-table": {
       "title": "Merge \"ALTER TABLE\"",
@@ -206,7 +206,7 @@
     },
     "statement-insert-must-specify-column": {
       "title": "\"INSERT\" statement must specify column",
-      "description": "Must specify the column to insert. For example, \"INSERT INTO t (id,name) VALUES(...)\""
+      "description": "Must specify the column to insert. For example, \"INSERT INTO t (id,name) VALUES(...)\"."
     },
     "statement-insert-disallow-order-by-rand": {
       "title": "Disallow \"ORDER BY rand()\" statement",
