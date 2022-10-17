@@ -46,6 +46,8 @@ const (
 	SchemaRuleFKNaming SQLReviewRuleType = "naming.index.fk"
 	// SchemaRuleIDXNaming enforce the index name format.
 	SchemaRuleIDXNaming SQLReviewRuleType = "naming.index.idx"
+	// SchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
+	SchemaRuleAutoIncrementColumnNaming SQLReviewRuleType = "naming.column.auto-increment"
 
 	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 	SchemaRuleStatementNoSelectAll SQLReviewRuleType = "statement.select.no-select-all"
@@ -213,7 +215,7 @@ type SQLReviewRule struct {
 func (rule *SQLReviewRule) Validate() error {
 	// TODO(rebelice): add other SQL review rule validation.
 	switch rule.Type {
-	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
+	case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
 		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
@@ -670,6 +672,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLNamingColumnConvention, nil
 		case db.Postgres:
 			return PostgreSQLNamingColumnConvention, nil
+		}
+	case SchemaRuleAutoIncrementColumnNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNamingAutoIncrementColumnConvention, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
