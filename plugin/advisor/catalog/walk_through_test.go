@@ -301,7 +301,7 @@ func TestWalkThrough(t *testing.T) {
 				CREATE TABLE t(
 					a int PRIMARY KEY DEFAULT 1,
 					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
-					c int auto_increment NULL COMMENT 'This is a comment',
+					c int auto_increment NULL COMMENT 'This is a comment' DEFAULT NULL,
 					d varchar(10) COLLATE utf8mb4_polish_ci,
 					KEY idx_a (a),
 					INDEX (b, a),
