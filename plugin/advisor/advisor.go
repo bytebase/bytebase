@@ -79,6 +79,9 @@ const (
 	// MySQLNamingColumnConvention is an advisor type for MySQL column naming convention.
 	MySQLNamingColumnConvention Type = "bb.plugin.advisor.mysql.naming.column"
 
+	// MySQLNamingAutoIncrementColumnConvention is an advisor type for MySQL auto-increment naming convention.
+	MySQLNamingAutoIncrementColumnConvention Type = "bb.plugin.advisor.mysql.naming.auto-increment-column"
+
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 

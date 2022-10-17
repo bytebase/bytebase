@@ -45,6 +45,8 @@ const (
 	NamingFKConventionMismatch Code = 305
 	// 306 primary key naming advisor error code.
 	NamingPKConventionMismatch Code = 306
+	// 307 auto_increment  column naming advisor error code.
+	NamingAutoIncrementColumnConventionMismatch Code = 307
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn                        Code = 401
