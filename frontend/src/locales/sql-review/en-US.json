@@ -157,8 +157,8 @@
       "description": "Disallow change column type."
     },
     "column-disallow-change": {
-      "title": "Disallow changing",
-      "description": "Disallow \"CHANGE COLUMN\" statement."
+      "title": "Disallow \"CHANGE COLUMN\" statement",
+      "description": ""
     },
     "column-disallow-changing-order": {
       "title": "Disallow changing order",
@@ -170,11 +170,11 @@
     },
     "column-auto-increment-must-integer": {
       "title": "Use integer for auto-increment column",
-      "description": "Auto-increment column must be integer."
+      "description": "Auto-increment column requires integer type."
     },
     "column-auto-increment-must-unsigned": {
-      "title": "Set unsigned for auto-increment column",
-      "description": "Auto-increment column must be unsigned."
+      "title": "Set unsigned attribute on auto-increment column",
+      "description": "Auto-increment column must be the UNSIGNED type."
     },
     "statement-select-no-select-all": {
       "title": "Disallow \"SELECT *\"",
@@ -227,10 +227,6 @@
     "index-type-no-blob": {
       "title": "Disallow BLOB",
       "description": "Disallow using BLOB type column in index."
-    },
-    "index-pk-type": {
-      "title": "Primary key type limit",
-      "description": "Primary key must be INT or BIGINT."
     }
   },
   "level": {

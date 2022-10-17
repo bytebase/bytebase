@@ -227,10 +227,6 @@
     "index-type-no-blob": {
       "title": "BLOB 列不能建作为索引",
       "description": ""
-    },
-    "index-pk-type": {
-      "title": "主键类型限制",
-      "description": "主键只能为 INT 或者 BIGINT 类型。"
     }
   },
   "level": {
