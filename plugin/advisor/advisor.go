@@ -245,6 +245,9 @@ const (
 
 	// PostgreSQLEncodingAllowlist is an advisor type for PostgreSQL encoding allowlist.
 	PostgreSQLEncodingAllowlist Type = "bb.plugin.advisor.postgresql.charset.allowlist"
+
+	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
+	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
 )
 
 // Advice is the result of an advisor.
