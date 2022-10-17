@@ -29,6 +29,20 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t(a int ON UPDATE NOW())
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+				Content: "Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				UPDATE t SET a = 1;
 			`,
 			err: &WalkThroughError{
