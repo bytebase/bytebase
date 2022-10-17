@@ -1,0 +1,70 @@
+name: Bug Report
+description: Create a report to help us improve
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If you are reporting a new issue, make sure that we do not have any duplicates already open. You can ensure this by searching the issue list for this repository. If there is a duplicate, please close your issue and add a comment to the existing issue instead.
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: |
+        Briefly describe the problem you are having in a few paragraphs.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Provide the steps to reproduce the issue.
+      placeholder: |
+        1. Go to '...'
+        3. Click on '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: |
+        Describe what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Screenshots
+      description: |
+        If applicable, add screenshots to help explain your problem.
+  - type: textarea
+    attributes:
+      label: Provide the Bytebase version you are using
+      description: |
+        You can find the version in the footer of the Bytebase UI.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Provide the GitLab version you are using
+      description: |
+        Provide the GitLab version you are using (if related with VCS integration)
+  - type: textarea
+    attributes:
+      label: Provide the MySQL version you are using
+      description: |
+        Provide the MySQL version you are using (if related with MySQL integration)
+  - type: textarea
+    attributes:
+      label: Provide the PostgreSQL version you are using
+      description: |
+        Provide the PostgreSQL version you are using (if related with PostgreSQL integration)
+  - type: textarea
+    attributes:
+      label: Desktop
+      description: |
+        Desktop (please complete the following information)
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: |
+        Add any other context about the problem here.
