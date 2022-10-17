@@ -1,7 +1,6 @@
 categoryList:
   - ENGINE
   - INDEX
-  - INSERT
   - NAMING
   - STATEMENT
   - TABLE
@@ -72,12 +71,6 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  - type: statement.create-table.no-create-table-as
-    category: STATEMENT
-    engineList:
-      - MYSQL
-      - TIDB
-    componentList: []
   - type: statement.disallow-limit
     category: STATEMENT
     engineList:
@@ -92,6 +85,19 @@ ruleList:
     componentList: []
   - tpye: statement.merge-alter-table
     category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  # TODO: - type: statement.insert.row-limit
+  - type: statement.insert.must-specify-column
+    category: INSERT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.insert.disallow-order-by-rand
+    category: INSERT
     engineList:
       - MYSQL
       - TIDB
@@ -287,12 +293,7 @@ ruleList:
       - TIDB
     componentList: []
   # TODO: - type: index.key-number-limit
-  - type: index.pk-type
-    category: INDEX
-    engineList:
-      - MYSQL
-      - TIDB
-    componentList: []
+  # TODO: - type: index.pk-type
   - type: index.type-no-blob
     category: INDEX
     engineList:
@@ -302,16 +303,3 @@ ruleList:
   # TODO: - type: index.total-number-limit
   # TODO: - type: charset.allowlist
   # TODO: - type: collation.allowlist
-  # TODO: - type: insert.row-limit
-  - type: insert.must-specify-column
-    category: INSERT
-    engineList:
-      - MYSQL
-      - TIDB
-    componentList: []
-  - type: insert.disallow-order-by-rand
-    category: INSERT
-    engineList:
-      - MYSQL
-      - TIDB
-    componentList: []

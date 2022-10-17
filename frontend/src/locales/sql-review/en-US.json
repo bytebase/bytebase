@@ -192,10 +192,6 @@
       "title": "Disallow commit",
       "description": "Disallow using commit in the issue."
     },
-    "statement-create-table-no-create-table-as": {
-      "title": "Disallow \"CREATE TABLE AS\"",
-      "description": ""
-    },
     "statement-disallow-limit": {
       "title": "Disallow \"LIMIT\"",
       "description": "Disallow \"LIMIT\" for \"INSERT\", \"UPDATE\", \"DELETE\" statement"
@@ -207,6 +203,14 @@
     "statement-merge-alter-table": {
       "title": "Merge \"ALTER TABLE\"",
       "description": "Disallow using multiply \"ALTER TABLE\" statement for same table."
+    },
+    "statement-insert-must-specify-column": {
+      "title": "\"INSERT\" statement must specify column",
+      "description": "Must specify the column to insert. For example, \"INSERT INTO t (id,name) VALUES(...)\""
+    },
+    "statement-insert-disallow-order-by-rand": {
+      "title": "Disallow \"ORDER BY rand()\" statement",
+      "description": ""
     },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
@@ -227,14 +231,6 @@
     "index-pk-type": {
       "title": "Primary key type limit",
       "description": "Primary key must be INT or BIGINT."
-    },
-    "insert-must-specify-column": {
-      "title": "\"INSERT\" statement must specify column",
-      "description": "Must specify the column to insert. For example, \"INSERT INTO t (id,name) VALUES(...)\""
-    },
-    "insert-disallow-order-by-rand": {
-      "title": "Disallow \"ORDER BY rand()\" statement",
-      "description": ""
     }
   },
   "level": {

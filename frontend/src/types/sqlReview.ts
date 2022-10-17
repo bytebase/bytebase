@@ -20,8 +20,7 @@ export type CategoryType =
   | "COLUMN"
   | "SCHEMA"
   | "DATABASE"
-  | "INDEX"
-  | "INSERT";
+  | "INDEX";
 
 // The rule level
 export enum RuleLevel {

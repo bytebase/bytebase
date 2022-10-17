@@ -20,13 +20,15 @@ ruleList:
     level: WARNING
   - type: statement.disallow-commit
     level: WARNING
-  - type: statement.create-table.no-create-table-as
-    level: WARNING
   - type: statement.disallow-limit
     level: WARNING
   - type: statement.disallow-order-by
     level: WARNING
   - type: statement.merge-alter-table
+    level: WARNING
+  - type: statement.insert.must-specify-column
+    level: WARNING
+  - type: statement.insert.disallow-order-by-rand
     level: WARNING
   - type: naming.table
     level: WARNING
@@ -89,11 +91,5 @@ ruleList:
     level: ERROR
   - type: index.no-duplicate-column
     level: ERROR
-  - type: index.pk-type
-    level: ERROR
   - type: index.type-no-blob
     level: ERROR
-  - type: insert.must-specify-column
-    level: WARNING
-  - type: insert.disallow-order-by-rand
-    level: WARNING
