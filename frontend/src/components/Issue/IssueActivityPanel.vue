@@ -455,7 +455,7 @@ const activityList = computed((): DistinctActivity[] => {
   const list = activityStore
     .getActivityListByIssue(issue.value.id)
     .filter((activity: Activity) => {
-      if (activity.type == "bb.issue.field.update") {
+      if (activity.type === "bb.issue.field.update") {
         const containUserVisibleChange =
           (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
           IssueBuiltinFieldId.SUBSCRIBER_LIST;
