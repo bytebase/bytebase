@@ -1192,11 +1192,13 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		case tidbast.ColumnOptionAutoIncrement:
 			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
-			defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
-			if err != nil {
-				return err
+			if option.Expr.GetType().GetType() != mysql.TypeNull {
+				defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
+				if err != nil {
+					return err
+				}
+				col.defaultValue = &defaultValue
 			}
-			col.defaultValue = &defaultValue
 		case tidbast.ColumnOptionUniqKey:
 			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
 				return err
