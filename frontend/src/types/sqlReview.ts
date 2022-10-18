@@ -406,7 +406,7 @@ export const convertPolicyRuleToRuleTemplate = (
     }
     case "column.type-disallow-list":
     case "system.charset.allowlist":
-    case "system.collation.allowlist":
+    case "system.collation.allowlist": {
       const stringArrayComponent = ruleTemplate.componentList[0];
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
@@ -421,6 +421,7 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    }
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -500,7 +501,7 @@ export const convertRuleTemplateToPolicyRule = (
     case "column.required":
     case "column.type-disallow-list":
     case "system.charset.allowlist":
-    case "system.collation.allowlist":
+    case "system.collation.allowlist": {
       const stringArrayPayload = rule.componentList[0]
         .payload as StringArrayPayload;
       return {
@@ -509,6 +510,7 @@ export const convertRuleTemplateToPolicyRule = (
           list: stringArrayPayload.value ?? stringArrayPayload.default,
         },
       };
+    }
   }
 
   throw new Error(`Invalid rule ${rule.type}`);
