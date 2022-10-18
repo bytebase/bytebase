@@ -20,10 +20,10 @@ var (
 )
 
 // Register makes a schema transformer available by the provided id.
-// If Register is called twice with the same name or if differ is nil,
+// If Register is called twice with the same name or if transformer is nil,
 // it panics.
-func Register(engineType parser.EngineType, d SchemaTransformer) {
-	if d == nil {
+func Register(engineType parser.EngineType, t SchemaTransformer) {
+	if t == nil {
 		panic("parser: Register parser is nil")
 	}
 	transformMu.Lock()
@@ -31,7 +31,7 @@ func Register(engineType parser.EngineType, d SchemaTransformer) {
 	if _, dup := transformers[engineType]; dup {
 		panic("parser: Register called twice for schema transformer " + engineType)
 	}
-	transformers[engineType] = d
+	transformers[engineType] = t
 }
 
 // SchemaTransform returns the transformed schema.
