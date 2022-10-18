@@ -1231,7 +1231,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
 					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						ID:        task.ID,
+						IDList:    []int{task.ID},
 						UpdaterID: updaterID,
 						Status:    api.TaskCanceled,
 					}); err != nil {
