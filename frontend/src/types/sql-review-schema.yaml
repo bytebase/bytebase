@@ -38,7 +38,20 @@ ruleList:
         payload:
           type: STRING
           default: _del$
-  # TODO: - type: table.comment
+  - type: table.comment
+    category: TABLE
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: required
+        payload:
+          type: BOOLEAN
+          default: false
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
   - type: table.disallow-partition
     category: TABLE
     engineList:
@@ -252,7 +265,20 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  # TODO: - type: column.comment
+  - type: column.comment
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: required
+        payload:
+          type: BOOLEAN
+          default: false
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
   - type: column.auto-increment-must-integer
     category: COLUMN
     engineList:

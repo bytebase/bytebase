@@ -12,6 +12,11 @@ ruleList:
       format: _del$
   - type: table.disallow-partition
     level: ERROR
+  - type: table.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
   - type: statement.select.no-select-all
     level: ERROR
   - type: statement.where.require
@@ -90,6 +95,11 @@ ruleList:
     level: ERROR
   - type: column.auto-increment-must-unsigned
     level: ERROR
+  - type: column.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
   - type: schema.backward-compatibility
     level: WARNING
   - type: database.drop-empty-database
