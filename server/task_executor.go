@@ -184,11 +184,13 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 			if task.Type == api.TaskDatabaseSchemaBaseline {
 				writeBack = true
 				// Transform the schema to standard style for SDL mode.
-				standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
-				if err != nil {
-					return true, nil, errors.Errorf("failed to transform to standard schema for database %q", task.Database.Name)
+				if task.Database.Instance.Engine == db.MySQL {
+					standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+					if err != nil {
+						return true, nil, errors.Errorf("failed to transform to standard schema for database %q", task.Database.Name)
+					}
+					schema = standardSchema
 				}
-				schema = standardSchema
 			}
 		} else {
 			writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
