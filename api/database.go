@@ -124,3 +124,61 @@ type DatabasePatch struct {
 	SyncStatus           *SyncStatus
 	LastSuccessfulSyncTs *int64
 }
+
+// DatabaseEdit is the API message for updating a database in UI editor.
+type DatabaseEdit struct {
+	DatabaseID int
+
+	CreateTableList []*CreateTableContext
+	AlterTableList  []*AlterTableContext
+	DropTableList   []*DropTableContext
+}
+
+// CreateTableContext is the edit database context to create a table.
+type CreateTableContext struct {
+	Name             string
+	Type             string
+	Engine           string
+	Collation        string
+	Comment          string
+	ColumnCreateList []*ColumnCreate
+}
+
+// AlterTableContext is the edit database context to alter a table.
+type AlterTableContext struct {
+	TableID         int
+	AddColumnList   []*AddColumnContext
+	AlterColumnList []*AlterColumnContext
+	DropColumnList  []*DropColumnContext
+}
+
+// DropTableContext is the edit database context to drop a table.
+type DropTableContext struct {
+	TableID int
+}
+
+// AddColumnContext is the create/alter table context to add a column.
+type AddColumnContext struct {
+	Name         string
+	Type         string
+	CharacterSet string
+	Collation    string
+	Comment      string
+	Nullable     bool
+	Default      *string
+}
+
+// AlterColumnContext is the alter table context to alter a column.
+type AlterColumnContext struct {
+	Type         *string
+	CharacterSet *string
+	Collation    *string
+	Comment      *string
+	Nullable     *bool
+	Default      *string
+}
+
+// DropColumnContext is the alter table context to drop a column.
+type DropColumnContext struct {
+	Name string
+}
