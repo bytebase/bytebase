@@ -91,7 +91,7 @@ export type RuleType =
   | "naming.index.idx"
   | "column.required"
   | "column.no-null"
-  | "column.type-restriction"
+  | "column.type-disallow-list"
   | "column.disallow-change-type"
   | "column.set-default-for-not-null"
   | "column.disallow-change"
@@ -404,7 +404,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     }
-    case "column.type-restriction":
+    case "column.type-disallow-list":
     case "system.charset.allowlist":
     case "system.collation.allowlist":
       const stringArrayComponent = ruleTemplate.componentList[0];
@@ -498,7 +498,7 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "column.required":
-    case "column.type-restriction":
+    case "column.type-disallow-list":
     case "system.charset.allowlist":
     case "system.collation.allowlist":
       const stringArrayPayload = rule.componentList[0]
