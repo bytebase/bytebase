@@ -69,6 +69,10 @@ ruleList:
         - updated_ts
         - creator_id
         - updater_id
+  - type: column.type-restriction
+    level: WARNING
+    payload:
+      allowList: []
   - type: column.no-null
     level: WARNING
   - type: column.disallow-change-type
@@ -93,3 +97,11 @@ ruleList:
     level: ERROR
   - type: index.type-no-blob
     level: ERROR
+  - type: system.charset.allowlist
+    level: WARNING
+    payload:
+      allowList: []
+  - type: system.collation.allowlist
+    level: WARNING
+    payload:
+      allowList: []

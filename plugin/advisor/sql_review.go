@@ -130,10 +130,10 @@ const (
 	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
-	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
+	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
 
 	// SchemaRuleCollationAllowlist enforce the collation allowlist.
-	SchemaRuleCollationAllowlist SQLReviewRuleType = "collation.allowlist"
+	SchemaRuleCollationAllowlist SQLReviewRuleType = "system.collation.allowlist"
 
 	// SchemaRuleCommentLength limit comment length.
 	SchemaRuleCommentLength SQLReviewRuleType = "comment.length"
