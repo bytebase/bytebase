@@ -805,7 +805,7 @@ func (t *tokenizer) skipBlank() {
 
 func (t *tokenizer) skipToBlank() {
 	r := t.char(0)
-	for r != ' ' && r != '\n' && r != '\r' && r != '\t' {
+	for r != ' ' && r != '\n' && r != '\r' && r != '\t' && r != eofRune {
 		t.skip(1)
 		r = t.char(0)
 	}
