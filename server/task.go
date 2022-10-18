@@ -656,6 +656,7 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 	return nil, nil
 }
 
+// patchTaskStatus patches a single task.
 func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
@@ -673,6 +674,10 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 			Code: common.Invalid,
 			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
 		}
+	}
+
+	if len(taskStatusPatch.IDList) != 1 {
+		return nil, errors.Errorf("expect to patch 1 task, get %d", len(taskStatusPatch.IDList))
 	}
 
 	if taskStatusPatch.Status == api.TaskCanceled {
@@ -699,9 +704,6 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	taskPatchedList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
-	}
-	if len(taskPatchedList) != 1 {
-		return nil, errors.Errorf("expect to patch 1 task, get %d", len(taskPatchedList))
 	}
 	taskPatched := taskPatchedList[0]
 
