@@ -306,6 +306,8 @@ export default defineComponent({
             createdRepository.sqlReviewCIPullRequestURL;
           state.showSetupSQLReviewCIModal = true;
           window.open(createdRepository.sqlReviewCIPullRequestURL, "_blank");
+        } else {
+          emit("finish");
         }
         allowFinishCallback();
       };
