@@ -111,6 +111,8 @@ const (
 	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
 	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
 	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
+	// SchemaRuleColumnBlobTextDisallowDefault enforce the BLOB and TEXT columns no default.
+	SchemaRuleColumnBlobTextDisallowDefault SQLReviewRuleType = "column.disallow-blob-text-default"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -751,6 +753,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLAutoIncrementColumnMustUnsigned, nil
+		}
+	case SchemaRuleColumnBlobTextDisallowDefault:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLBlobAndTextColumnDisallowDefault, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
