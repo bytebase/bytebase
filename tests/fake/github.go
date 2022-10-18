@@ -74,7 +74,7 @@ func NewGitHub(port int) VCSProvider {
 	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
 	g.POST("/repos/:owner/:repo/git/refs", gh.createRepositoryBranch)
-	g.POST("/repos/:owner/:repo/git/pulls", gh.createRepositoryPullRequest)
+	g.POST("/repos/:owner/:repo/pulls", gh.createRepositoryPullRequest)
 	g.GET(
 		fmt.Sprintf("/repos/:owner/:repo/actions/secrets/%s", publicKeyName),
 		gh.getRepositoryPublicKey,
@@ -218,19 +218,20 @@ func (gh *GitHub) createRepositoryFile(c echo.Context) error {
 }
 
 func (gh *GitHub) getRepositoryBranch(c echo.Context) error {
-	if _, err := gh.validRepository(c); err != nil {
+	r, err := gh.validRepository(c)
+	if err != nil {
 		return err
 	}
 
 	branchName := c.Param("branchName")
-	buf, err := json.Marshal(
-		github.Branch{
-			Ref: fmt.Sprintf("refs/heads/%s", branchName),
-			Object: github.ReferenceObject{
-				SHA: "fake_github_commit_sha",
-			},
+	r.refs[branchName] = &github.Branch{
+		Ref: fmt.Sprintf("refs/heads/%s", branchName),
+		Object: github.ReferenceObject{
+			SHA: "fake_github_commit_sha",
 		},
-	)
+	}
+
+	buf, err := json.Marshal(r.refs[branchName])
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository branch: %v", err))
 	}
@@ -283,7 +284,7 @@ func (gh *GitHub) createRepositoryPullRequest(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating repository pull request: %v", err))
 	}
 
-	if _, ok := r.refs[pullRequestCreate.Head]; !ok {
+	if _, ok := r.refs[fmt.Sprintf("refs/heads/%s", pullRequestCreate.Head)]; !ok {
 		return c.String(http.StatusBadRequest, fmt.Sprintf("the head branch not exists: %v", pullRequestCreate.Head))
 	}
 
@@ -383,9 +384,12 @@ func (gh *GitHub) CreateRepository(id string) {
 		secrets: map[string]*github.RepositorySecret{
 			publicKeyName: {
 				KeyID: fmt.Sprintf("publickeyid_%d", time.Now().Unix()),
-				Key:   fmt.Sprintf("publickeyval_%d", time.Now().Unix()),
+				// mock public key
+				Key: "YJf3Ojcv8TSEBCtR0wtTR/F2bD3nBl1lxiwkfV/TYQk=",
 			},
 		},
+		refs:         map[string]*github.Branch{},
+		pullRequests: map[int]*github.PullRequest{},
 	}
 }
 

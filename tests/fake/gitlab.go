@@ -104,7 +104,10 @@ func (*GitLab) APIURL(instanceURL string) string {
 // CreateRepository creates a GitLab project with given ID.
 func (gl *GitLab) CreateRepository(id string) {
 	gl.projects[id] = &projectData{
-		files: map[string]string{},
+		files:         map[string]string{},
+		branches:      map[string]*gitlab.Branch{},
+		variables:     map[string]*gitlab.EnvironmentVariable{},
+		mergeRequests: map[int]*gitlab.MergeRequest{},
 	}
 }
 
@@ -248,21 +251,22 @@ func (gl *GitLab) validProject(c echo.Context) (*projectData, error) {
 }
 
 func (gl *GitLab) getProjectBranch(c echo.Context) error {
-	if _, err := gl.validProject(c); err != nil {
+	pd, err := gl.validProject(c)
+	if err != nil {
 		return err
 	}
 
 	branchName := c.Param("branchName")
-	buf, err := json.Marshal(
-		gitlab.Branch{
-			Name: branchName,
-			Commit: gitlab.Commit{
-				ID:         "fake_gitlab_commit_id",
-				AuthorName: "fake_gitlab_bot",
-				CreatedAt:  time.Now(),
-			},
+	pd.branches[branchName] = &gitlab.Branch{
+		Name: branchName,
+		Commit: gitlab.Commit{
+			ID:         "fake_gitlab_commit_id",
+			AuthorName: "fake_gitlab_bot",
+			CreatedAt:  time.Now(),
 		},
-	)
+	}
+
+	buf, err := json.Marshal(pd.branches[branchName])
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting project branch: %v", err))
 	}
@@ -323,6 +327,7 @@ func (gl *GitLab) createProjectPullRequest(c echo.Context) error {
 
 	mrID := len(pd.mergeRequests) + 1
 	pd.mergeRequests[mrID] = &gitlab.MergeRequest{
+		// TODO: the URL for merge request is invalid.
 		WebURL: fmt.Sprintf("http://gitlab.example.com/my-group/my-project/merge_requests/%d", mrID),
 	}
 
