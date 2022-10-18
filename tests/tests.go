@@ -836,13 +836,13 @@ func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (
 }
 
 // patchTaskStatus patches the status of a task in the pipeline stage.
-func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int) (*api.Task, error) {
+func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int, taskID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &taskStatusPatch); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal patchTaskStatus")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d/status", pipelineID, taskStatusPatch.ID), buf)
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d/status", pipelineID, taskID), buf)
 	if err != nil {
 		return nil, err
 	}
@@ -888,10 +888,9 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 			if task.Status == api.TaskPendingApproval {
 				if _, err := ctl.patchTaskStatus(
 					api.TaskStatusPatch{
-						ID:     task.ID,
 						Status: api.TaskPending,
 					},
-					issue.Pipeline.ID); err != nil {
+					issue.Pipeline.ID, task.ID); err != nil {
 					return errors.Wrapf(err, "failed to patch task status for task %d", task.ID)
 				}
 				return nil
