@@ -151,7 +151,7 @@
       "title": "Required columns",
       "description": "Enforce the required columns in each table.",
       "component": {
-        "columnList": {
+        "list": {
           "title": "Required column names"
         }
       }
@@ -160,7 +160,7 @@
       "title": "Type disallow list",
       "description": "Set the disallow list for column type.",
       "component": {
-        "disallowList": {
+        "list": {
           "title": "Disallow list"
         }
       }
@@ -209,6 +209,24 @@
         }
       }
     },
+    "column-maximum-character-length": {
+      "title": "Maximum CHAR length",
+      "description": "Force to change CHAR to VARCHAR if maximum length is reached.",
+      "component": {
+        "required": {
+          "number": "Maximum length"
+        }
+      }
+    },
+    "column-auto-increment-initial-value": {
+      "title": "Auto-increment initial value",
+      "description": "Set initial value for auto-increment column.",
+      "component": {
+        "required": {
+          "number": "Initial value"
+        }
+      }
+    },
     "statement-select-no-select-all": {
       "title": "Disallow \"SELECT *\"",
       "description": "Disallow 'SELECT *' statement."
@@ -245,6 +263,15 @@
       "title": "Disallow \"ORDER BY rand()\" statement",
       "description": ""
     },
+    "statement-insert-row-limit": {
+      "title": "Insert row limit",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "Maximum insert amount"
+        }
+      }
+    },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
       "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
@@ -261,11 +288,29 @@
       "title": "Disallow BLOB",
       "description": "Disallow using BLOB type column in index."
     },
+    "index-key-number-limit": {
+      "title": "Column count limit in index",
+      "description": "Limit the related row count in a single index.",
+      "component": {
+        "number": {
+          "title": "Maximum column count"
+        }
+      }
+    },
+    "index-total-number-limit": {
+      "title": "Index count limit",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "Maximum index count"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "Charset allow list",
       "description": "",
       "component": {
-        "allowList": {
+        "list": {
           "title": "Allow list"
         }
       }
@@ -274,7 +319,7 @@
       "title": "Collation allow list",
       "description": "",
       "component": {
-        "allowList": {
+        "list": {
           "title": "Allow list"
         }
       }

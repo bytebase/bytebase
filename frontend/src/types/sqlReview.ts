@@ -114,6 +114,8 @@ export type RuleType =
   | "column.auto-increment-must-integer"
   | "column.disallow-set-charset"
   | "column.auto-increment-must-unsigned"
+  | "column.maximum-character-length"
+  | "column.auto-increment-initial-value"
   | "statement.select.no-select-all"
   | "statement.where.require"
   | "statement.where.no-leading-wildcard-like"
@@ -123,12 +125,15 @@ export type RuleType =
   | "statement.merge-alter-table"
   | "statement.insert.must-specify-column"
   | "statement.insert.disallow-order-by-rand"
+  | "statement.insert.row-limit"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
   | "system.collation.allowlist"
   | "index.no-duplicate-column"
-  | "index.type-no-blob";
+  | "index.type-no-blob"
+  | "index.key-number-limit"
+  | "index.total-number-limit";
 
 export const availableRulesForFreePlan: RuleType[] = [
   "statement.where.require",
@@ -155,6 +160,12 @@ interface CommentFormatPayload {
   maxLength: number;
 }
 
+// The number limit rule payload.
+// Used by the backend.
+interface NumberLimitPayload {
+  number: number;
+}
+
 // The SchemaPolicyRule stores the rule configuration by users.
 // Used by the backend
 export interface SchemaPolicyRule {
@@ -163,7 +174,8 @@ export interface SchemaPolicyRule {
   payload?:
     | NamingFormatPayload
     | StringArrayLimitPayload
-    | CommentFormatPayload;
+    | CommentFormatPayload
+    | NumberLimitPayload;
 }
 
 // The API for SQL review policy in backend.
@@ -475,6 +487,27 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    case "statement.insert.row-limit":
+    case "column.maximum-character-length":
+    case "column.auto-increment-initial-value":
+    case "index.key-number-limit":
+    case "index.total-number-limit":
+      if (!numberComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
+      return {
+        ...res,
+        componentList: [
+          {
+            ...numberComponent,
+            payload: {
+              ...numberComponent.payload,
+              value: (policyRule.payload as NumberLimitPayload).number,
+            } as NumberPayload,
+          },
+        ],
+      };
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -577,6 +610,20 @@ export const convertRuleTemplateToPolicyRule = (
         payload: {
           required: booleanPayload.value ?? booleanPayload.default,
           maxLength: numberPayload.value ?? numberPayload.default,
+        },
+      };
+    case "statement.insert.row-limit":
+    case "column.maximum-character-length":
+    case "column.auto-increment-initial-value":
+    case "index.key-number-limit":
+    case "index.total-number-limit":
+      if (!numberPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          number: numberPayload.value ?? numberPayload.default,
         },
       };
   }
