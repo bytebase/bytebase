@@ -27,7 +27,7 @@ ruleList:
   - type: column.required
     level: ERROR
     payload:
-      columnList:
+      list:
         - name
 `
 
@@ -68,12 +68,12 @@ func TestConfigOverride(t *testing.T) {
 		case "column.required":
 			assert.Equal(t, SchemaRuleLevelError, rule.Level)
 
-			var payload RequiredColumnRulePayload
+			var payload StringArrayTypeRulePayload
 			err := json.Unmarshal([]byte(rule.Payload), &payload)
 			require.NoError(t, err)
 
-			assert.Equal(t, 1, len(payload.ColumnList))
-			assert.Equal(t, "name", payload.ColumnList[0])
+			assert.Equal(t, 1, len(payload.List))
+			assert.Equal(t, "name", payload.List[0])
 		}
 	}
 }
