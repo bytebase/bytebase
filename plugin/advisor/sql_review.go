@@ -46,6 +46,8 @@ const (
 	SchemaRuleFKNaming SQLReviewRuleType = "naming.index.fk"
 	// SchemaRuleIDXNaming enforce the index name format.
 	SchemaRuleIDXNaming SQLReviewRuleType = "naming.index.idx"
+	// SchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
+	SchemaRuleAutoIncrementColumnNaming SQLReviewRuleType = "naming.column.auto-increment"
 
 	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 	SchemaRuleStatementNoSelectAll SQLReviewRuleType = "statement.select.no-select-all"
@@ -63,6 +65,12 @@ const (
 	SchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "statement.disallow-order-by"
 	// SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
 	SchemaRuleStatementMergeAlterTable SQLReviewRuleType = "statement.merge-alter-table"
+	// SchemaRuleStatementInsertRowLimit enforce the insert row limit.
+	SchemaRuleStatementInsertRowLimit SQLReviewRuleType = "statement.insert.row-limit"
+	// SchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
+	SchemaRuleStatementInsertMustSpecifyColumn SQLReviewRuleType = "statement.insert.must-specify-column"
+	// SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+	SchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "statement.insert.disallow-order-by-rand"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -93,12 +101,16 @@ const (
 	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
 	// SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
 	SchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "column.auto-increment-must-integer"
-	// SchemaRuleColumnTypeRestriction enforce the column type restriction.
-	SchemaRuleColumnTypeRestriction SQLReviewRuleType = "column.type-restriction"
+	// SchemaRuleColumnTypeDisallowList enforce the column type disallow list.
+	SchemaRuleColumnTypeDisallowList SQLReviewRuleType = "column.type-disallow-list"
 	// SchemaRuleColumnDisallowSetCharset disallow set column charset.
 	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
 	// SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 	SchemaRuleColumnMaximumCharacterLength SQLReviewRuleType = "column.maximum-character-length"
+	// SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
+	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
+	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -118,17 +130,13 @@ const (
 	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
-	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
+	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
 
 	// SchemaRuleCollationAllowlist enforce the collation allowlist.
-	SchemaRuleCollationAllowlist SQLReviewRuleType = "collation.allowlist"
+	SchemaRuleCollationAllowlist SQLReviewRuleType = "system.collation.allowlist"
 
-	// SchemaRuleInsertRowLimit enforce the insert row limit.
-	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
-	// SchemaRuleInsertMustSpecifyColumn enforce the insert column specified.
-	SchemaRuleInsertMustSpecifyColumn SQLReviewRuleType = "insert.must-specify-column"
-	// SchemaRuleInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
-	SchemaRuleInsertDisallowOrderByRand SQLReviewRuleType = "insert.disallow-order-by-rand"
+	// SchemaRuleCommentLength limit comment length.
+	SchemaRuleCommentLength SQLReviewRuleType = "comment.length"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -197,7 +205,7 @@ func (policy *SQLReviewPolicy) Validate() error {
 type SQLReviewRule struct {
 	Type  SQLReviewRuleType  `json:"type"`
 	Level SQLReviewRuleLevel `json:"level"`
-	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, RequiredColumnRulePayload)
+	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, StringArrayTypeRulePayload)
 	// If the rule doesn't have any payload configuration, the payload would be "{}"
 	Payload string `json:"payload"`
 }
@@ -206,7 +214,7 @@ type SQLReviewRule struct {
 func (rule *SQLReviewRule) Validate() error {
 	// TODO(rebelice): add other SQL review rule validation.
 	switch rule.Type {
-	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
+	case SchemaRuleTableNaming, SchemaRuleColumnNaming, SchemaRuleAutoIncrementColumnNaming:
 		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
@@ -215,19 +223,19 @@ func (rule *SQLReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRuleRequiredColumn:
-		if _, err := UnmarshalRequiredColumnRulePayload(rule.Payload); err != nil {
+		if _, err := UnmarshalRequiredColumnList(rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaximumCharacterLength:
-		if _, err := UnmarshalNumberLimitRulePayload(rule.Payload); err != nil {
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue:
+		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleColumnTypeRestriction:
-		if _, err := UnmarshalTypeRestrictionRulePayload(rule.Payload); err != nil {
+	case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist:
+		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
 	}
@@ -238,6 +246,11 @@ func (rule *SQLReviewRule) Validate() error {
 type NamingRulePayload struct {
 	MaxLength int    `json:"maxLength"`
 	Format    string `json:"format"`
+}
+
+// StringArrayTypeRulePayload is the payload for rules with string array value.
+type StringArrayTypeRulePayload struct {
+	List []string `json:"list"`
 }
 
 // RequiredColumnRulePayload is the payload for required column rule.
@@ -251,19 +264,9 @@ type CommentConventionRulePayload struct {
 	MaxLength int  `json:"maxLength"`
 }
 
-// NumberLimitRulePayload is the payload for number limit rule.
-type NumberLimitRulePayload struct {
+// NumberTypeRulePayload is the number type payload.
+type NumberTypeRulePayload struct {
 	Number int `json:"number"`
-}
-
-// TypeRestrictionRulePayload is the payload for type restriction rule.
-type TypeRestrictionRulePayload struct {
-	TypeList []string `json:"typeList"`
-}
-
-// AllowlistRulePayload is the payload for allowlist rules.
-type AllowlistRulePayload struct {
-	Allowlist []string `json:"allowlist"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -335,8 +338,28 @@ func parseTemplateTokens(template string) ([]string, []string) {
 	return nil, nil
 }
 
-// UnmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
-func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
+// UnmarshalRequiredColumnList will unmarshal payload and parse the required column list.
+func UnmarshalRequiredColumnList(payload string) ([]string, error) {
+	stringArrayRulePayload, err := UnmarshalStringArrayTypeRulePayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	if len(stringArrayRulePayload.List) != 0 {
+		return stringArrayRulePayload.List, nil
+	}
+
+	// The RequiredColumnRulePayload is deprecated.
+	// Just keep it to compatible with old data, and we can remove this later.
+	columnRulePayload, err := unmarshalRequiredColumnRulePayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return columnRulePayload.ColumnList, nil
+}
+
+// unmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
+func unmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
 	var rcr RequiredColumnRulePayload
 	if err := json.Unmarshal([]byte(payload), &rcr); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal required column rule payload %q", payload)
@@ -356,31 +379,22 @@ func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRu
 	return &ccr, nil
 }
 
-// UnmarshalNumberLimitRulePayload will unmarshal payload to NumberLimitRulePayload.
-func UnmarshalNumberLimitRulePayload(payload string) (*NumberLimitRulePayload, error) {
-	var nlr NumberLimitRulePayload
+// UnmarshalNumberTypeRulePayload will unmarshal payload to NumberTypeRulePayload.
+func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, error) {
+	var nlr NumberTypeRulePayload
 	if err := json.Unmarshal([]byte(payload), &nlr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal number limit rule payload %q", payload)
+		return nil, errors.Wrapf(err, "failed to unmarshal number type rule payload %q", payload)
 	}
 	return &nlr, nil
 }
 
-// UnmarshalTypeRestrictionRulePayload will unmarshal payload to TypeRestrictionRulePayload.
-func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePayload, error) {
-	var trr TypeRestrictionRulePayload
+// UnmarshalStringArrayTypeRulePayload will unmarshal payload to StringArrayTypeRulePayload.
+func UnmarshalStringArrayTypeRulePayload(payload string) (*StringArrayTypeRulePayload, error) {
+	var trr StringArrayTypeRulePayload
 	if err := json.Unmarshal([]byte(payload), &trr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal type restriction rule payload %q", payload)
+		return nil, errors.Wrapf(err, "failed to unmarshal string array rule payload %q", payload)
 	}
 	return &trr, nil
-}
-
-// UnmarshalAllowlistRulePayload will unmarshal payload to AllowlistRulePayload.
-func UnmarshalAllowlistRulePayload(payload string) (*AllowlistRulePayload, error) {
-	var allowlist AllowlistRulePayload
-	if err := json.Unmarshal([]byte(payload), &allowlist); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal allowlist rule payload %q", payload)
-	}
-	return &allowlist, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
@@ -664,6 +678,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.Postgres:
 			return PostgreSQLNamingColumnConvention, nil
 		}
+	case SchemaRuleAutoIncrementColumnNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNamingAutoIncrementColumnConvention, nil
+		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -708,7 +727,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLAutoIncrementColumnMustInteger, nil
 		}
-	case SchemaRuleColumnTypeRestriction:
+	case SchemaRuleColumnTypeDisallowList:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnTypeRestriction, nil
@@ -722,6 +741,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnMaximumCharacterLength, nil
+		}
+	case SchemaRuleColumnAutoIncrementInitialValue:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLAutoIncrementColumnInitialValue, nil
+		}
+	case SchemaRuleColumnAutoIncrementMustUnsigned:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
@@ -790,6 +819,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLCharsetAllowlist, nil
+		case db.Postgres:
+			return PostgreSQLEncodingAllowlist, nil
 		}
 	case SchemaRuleCollationAllowlist:
 		switch engine {
@@ -806,17 +837,19 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTypeNoBlob, nil
 		}
-	case SchemaRuleInsertRowLimit:
+	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertRowLimit, nil
+		case db.Postgres:
+			return PostgreSQLInsertRowLimit, nil
 		}
-	case SchemaRuleInsertMustSpecifyColumn:
+	case SchemaRuleStatementInsertMustSpecifyColumn:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertMustSpecifyColumn, nil
 		}
-	case SchemaRuleInsertDisallowOrderByRand:
+	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertDisallowOrderByRand, nil

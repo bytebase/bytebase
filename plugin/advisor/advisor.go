@@ -79,6 +79,9 @@ const (
 	// MySQLNamingColumnConvention is an advisor type for MySQL column naming convention.
 	MySQLNamingColumnConvention Type = "bb.plugin.advisor.mysql.naming.column"
 
+	// MySQLNamingAutoIncrementColumnConvention is an advisor type for MySQL auto-increment naming convention.
+	MySQLNamingAutoIncrementColumnConvention Type = "bb.plugin.advisor.mysql.naming.auto-increment-column"
+
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 
@@ -111,6 +114,12 @@ const (
 
 	// MySQLColumnMaximumCharacterLength is an advisor type for MySQL maximum character length.
 	MySQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.mysql.column.maximum-character-length"
+
+	// MySQLAutoIncrementColumnInitialValue is an advisor type for MySQL auto-increment column initial value.
+	MySQLAutoIncrementColumnInitialValue Type = "bb.plugin.advisor.mysql.column.auto-increment-initial-value"
+
+	// MySQLAutoIncrementColumnMustUnsigned is an advisor type for MySQL unsigned auto-increment column.
+	MySQLAutoIncrementColumnMustUnsigned Type = "bb.plugin.advisor.mysql.column.auto-increment-must-unsigned"
 
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
@@ -207,6 +216,9 @@ const (
 	// PostgreSQLColumnRequirement is an advisor type for PostgreSQL column requirement.
 	PostgreSQLColumnRequirement Type = "bb.plugin.advisor.postgresql.column.require"
 
+	// PostgreSQLCommentConvention is an advisor type for PostgreSQL comment convention.
+	PostgreSQLCommentConvention Type = "bb.plugin.advisor.postgresql.comment"
+
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
 	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
 
@@ -230,6 +242,12 @@ const (
 
 	// PostgreSQLIndexKeyNumberLimit is an advisor type for postgresql index key number limit.
 	PostgreSQLIndexKeyNumberLimit Type = "bb.plugin.advisor.postgresql.index.key-number-limit"
+
+	// PostgreSQLEncodingAllowlist is an advisor type for PostgreSQL encoding allowlist.
+	PostgreSQLEncodingAllowlist Type = "bb.plugin.advisor.postgresql.charset.allowlist"
+
+	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
+	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
 )
 
 // Advice is the result of an advisor.

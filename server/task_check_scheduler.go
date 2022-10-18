@@ -245,9 +245,9 @@ func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 		}
 		return taskPayload.Statement, nil
 	case api.TaskDatabaseSchemaUpdateSDL:
-		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
+		taskPayload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdatePayload")
+			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdateSDLPayload")
 		}
 		return taskPayload.Statement, nil
 	case api.TaskDatabaseDataUpdate:

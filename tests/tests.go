@@ -41,6 +41,16 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
+	migrationStatement2 = `
+	CREATE TABLE book2 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);`
+	migrationStatement3 = `
+	CREATE TABLE book3 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);`
 	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
 	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],["TEXT","TEXT","TEXT","INT","TEXT"],[["table","book","book",2,"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]]]`
 	bookDataQuery       = `SELECT * FROM book;`
@@ -52,8 +62,29 @@ var (
 		("byte"),
 		(NULL);
 	`
-	dumpedSchema = "" +
-		`CREATE TABLE book (
+	dumpedSchema = `CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+`
+	dumpedSchema2 = `CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book2 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+`
+	dumpedSchema3 = `CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book2 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book3 (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);
@@ -805,13 +836,13 @@ func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (
 }
 
 // patchTaskStatus patches the status of a task in the pipeline stage.
-func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int) (*api.Task, error) {
+func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int, taskID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &taskStatusPatch); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal patchTaskStatus")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d/status", pipelineID, taskStatusPatch.ID), buf)
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d/status", pipelineID, taskID), buf)
 	if err != nil {
 		return nil, err
 	}
@@ -857,10 +888,9 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 			if task.Status == api.TaskPendingApproval {
 				if _, err := ctl.patchTaskStatus(
 					api.TaskStatusPatch{
-						ID:     task.ID,
 						Status: api.TaskPending,
 					},
-					issue.Pipeline.ID); err != nil {
+					issue.Pipeline.ID, task.ID); err != nil {
 					return errors.Wrapf(err, "failed to patch task status for task %d", task.ID)
 				}
 				return nil
@@ -1616,8 +1646,8 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
 		})
 	case advisor.SchemaRuleRequiredColumn:
-		payload, err = json.Marshal(advisor.RequiredColumnRulePayload{
-			ColumnList: []string{
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{
 				"id",
 				"created_ts",
 				"updated_ts",

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -34,6 +33,8 @@ const (
 	TaskGeneral TaskType = "bb.task.general"
 	// TaskDatabaseCreate is the task type for creating databases.
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
+	// TaskDatabaseSchemaBaseline is the task type for database schema baseline.
+	TaskDatabaseSchemaBaseline TaskType = "bb.task.database.schema.baseline"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
 	// TaskDatabaseSchemaUpdateSDL is the task type for updating database schemas via state-based migration.
@@ -95,12 +96,26 @@ type TaskDatabaseCreatePayload struct {
 	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
+// TaskDatabaseSchemaBaselinePayload is the task payload for database schema baseline.
+type TaskDatabaseSchemaBaselinePayload struct {
+	Statement     string `json:"statement,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
+	// TODO(d): remove this vcs pushevent since it should not be passed in from frontend.
+	VCSPushEvent *vcs.PushEvent `json:"pushEvent,omitempty"`
+}
+
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
-	MigrationType db.MigrationType `json:"migrationType,omitempty"`
-	Statement     string           `json:"statement,omitempty"`
-	SchemaVersion string           `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+}
+
+// TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
+type TaskDatabaseSchemaUpdateSDLPayload struct {
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
@@ -115,8 +130,7 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 }
 
 // TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
-type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
-}
+type TaskDatabaseSchemaUpdateGhostCutoverPayload struct{}
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
@@ -209,7 +223,6 @@ type TaskCreate struct {
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *vcs.PushEvent
-	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 
 // TaskFind is the API message for finding tasks.
@@ -254,7 +267,7 @@ type TaskPatch struct {
 
 // TaskStatusPatch is the API message for patching a task status.
 type TaskStatusPatch struct {
-	ID int
+	IDList []int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

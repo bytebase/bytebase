@@ -30,19 +30,19 @@ func TestInsertRowLimit(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.InsertTooManyRows,
-					Title:   "insert.row-limit",
+					Title:   "statement.insert.row-limit",
 					Content: "The value rows in one INSERT statement should be no more than 5, but found 6",
 					Line:    1,
 				},
 			},
 		},
 	}
-	payload, err := json.Marshal(advisor.NumberLimitRulePayload{
+	payload, err := json.Marshal(advisor.NumberTypeRulePayload{
 		Number: 5,
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &InsertRowLimitAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleInsertRowLimit,
+		Type:    advisor.SchemaRuleStatementInsertRowLimit,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, advisor.MockMySQLDatabase)

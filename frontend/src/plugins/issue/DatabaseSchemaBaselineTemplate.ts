@@ -31,7 +31,6 @@ const template: IssueTemplate = {
             instanceId: ctx.databaseList[i].instance.id,
             databaseId: ctx.databaseList[i].id,
             statement: "/* Establish baseline using current schema */",
-            migrationType: "BASELINE",
             earliestAllowedTs: 0,
           },
         ],

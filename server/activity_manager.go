@@ -107,19 +107,19 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	link := fmt.Sprintf("%s/issue/%s", m.s.profile.ExternalURL, api.IssueSlug(meta.issue))
 	switch activity.Type {
 	case api.ActivityIssueCreate:
-		title = "Issue created - " + meta.issue.Name
+		title = fmt.Sprintf("Issue created - %s", meta.issue.Name)
 	case api.ActivityIssueStatusUpdate:
 		switch meta.issue.Status {
 		case "OPEN":
-			title = "Issue reopened - " + meta.issue.Name
+			title = fmt.Sprintf("Issue reopened - %s", meta.issue.Name)
 		case "DONE":
 			level = webhook.WebhookSuccess
-			title = "Issue resolved - " + meta.issue.Name
+			title = fmt.Sprintf("Issue resolved - %s", meta.issue.Name)
 		case "CANCELED":
-			title = "Issue canceled - " + meta.issue.Name
+			title = fmt.Sprintf("Issue canceled - %s", meta.issue.Name)
 		}
 	case api.ActivityIssueCommentCreate:
-		title = "Comment created"
+		title = fmt.Sprintf("Comment created - %s", meta.issue.Name)
 		link += fmt.Sprintf("#activity%d", activity.ID)
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
@@ -187,20 +187,20 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					}
 
 					if oldAssignee != nil && newAssignee != nil {
-						title = fmt.Sprintf("Reassigned issue from %s to %s", oldAssignee.Name, newAssignee.Name)
+						title = fmt.Sprintf("Reassigned issue from %s to %s - %s", oldAssignee.Name, newAssignee.Name, meta.issue.Name)
 					} else if newAssignee != nil {
-						title = fmt.Sprintf("Assigned issue to %s", newAssignee.Name)
+						title = fmt.Sprintf("Assigned issue to %s - %s", newAssignee.Name, meta.issue.Name)
 					} else if oldAssignee != nil {
-						title = fmt.Sprintf("Unassigned issue from %s", newAssignee.Name)
+						title = fmt.Sprintf("Unassigned issue from %s - %s", newAssignee.Name, meta.issue.Name)
 					}
 				}
 			}
 		case api.IssueFieldDescription:
-			title = "Changed issue description"
+			title = fmt.Sprintf("Changed issue description - %s", meta.issue.Name)
 		case api.IssueFieldName:
-			title = "Changed issue name"
+			title = fmt.Sprintf("Changed issue name - %s", meta.issue.Name)
 		default:
-			title = "Updated issue"
+			title = fmt.Sprintf("Updated issue - %s", meta.issue.Name)
 		}
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}

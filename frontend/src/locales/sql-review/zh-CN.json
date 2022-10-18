@@ -11,7 +11,10 @@
     "table": "表",
     "column": "列",
     "schema": "Schema",
-    "database": "数据库"
+    "database": "数据库",
+    "index": "索引",
+    "insert": "插入",
+    "system": "系统"
   },
   "template": {
     "bb-sql-review-prod": "针对生产环境的审核策略模板",
@@ -36,6 +39,22 @@
       "component": {
         "format": {
           "title": "命名规则（正则）"
+        }
+      }
+    },
+    "table-disallow-partition": {
+      "title": "禁止分区",
+      "description": ""
+    },
+    "table-comment": {
+      "title": "注释检查",
+      "description": "配置表是否需要注释和最大注释长度。",
+      "component": {
+        "required": {
+          "title": "必须注释"
+        },
+        "maxLength": {
+          "title": "长度限制"
         }
       }
     },
@@ -138,17 +157,66 @@
         }
       }
     },
+    "column-type-disallow-list": {
+      "title": "类型约束",
+      "description": "为字段设置类型黑名单。",
+      "component": {
+        "disallowList": {
+          "title": "禁止的类型"
+        }
+      }
+    },
     "column-no-null": {
       "title": "禁止字段为 NULL",
       "description": "表中的字段不允许存在 NULL 值。"
     },
+    "column-disallow-set-charset": {
+      "title": "禁止设置字符集",
+      "description": "禁止为字段设置字符集。"
+    },
+    "column-disallow-change-type": {
+      "title": "禁止改变类型",
+      "description": "不允许改变字段的类型。"
+    },
+    "column-disallow-change": {
+      "title": "禁止改变字段",
+      "description": "不允许 \"CHANGE COLUMN\" 语句。"
+    },
+    "column-disallow-changing-order": {
+      "title": "禁止改变字段顺序",
+      "description": "不允许列的顺序变更。"
+    },
+    "column-set-default-for-not-null": {
+      "title": "为字段设置默认值",
+      "description": "不允许为 NULL 的字段必须设定默认值。"
+    },
+    "column-auto-increment-must-integer": {
+      "title": "自增字段必须为数字类型",
+      "description": ""
+    },
+    "column-auto-increment-must-unsigned": {
+      "title": "自增列需要设置无符号",
+      "description": ""
+    },
+    "column-comment": {
+      "title": "注释检查",
+      "description": "配置字段是否需要注释和最大注释长度。",
+      "component": {
+        "required": {
+          "title": "必须注释"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
     "statement-select-no-select-all": {
       "title": "禁止 \"SELECT *\"",
-      "description": "不允许使用 \"SELECT *\" 语句"
+      "description": "不允许使用 \"SELECT *\" 语句。"
     },
     "statement-where-require": {
       "title": "强制 \"WHERE\"",
-      "description": "必须使用 \"WHERE\" 语句"
+      "description": "必须使用 \"WHERE\" 语句。"
     },
     "statement-where-no-leading-wildcard-like": {
       "title": "禁止左模糊",
@@ -158,13 +226,59 @@
       "title": "禁止使用提交",
       "description": "禁止在工单中使用提交。"
     },
+    "statement-disallow-limit": {
+      "title": "不允许使用 \"LIMIT\"",
+      "description": "在 INSERT, UPDATE, DELETE 语句中禁止使用 \"LIMIT\"。"
+    },
+    "statement-disallow-order-by": {
+      "title": "不允许使用 \"ORDER BY\"",
+      "description": "在 UPDATE, DELETE 语句中禁止使用 \"ORDER BY\"。"
+    },
+    "statement-merge-alter-table": {
+      "title": "合并 \"ALTER TABLE\" 语句",
+      "description": "禁止在工单中对同一张表使用多个 \"ALTER TABLE\" 语句。"
+    },
+    "statement-insert-must-specify-column": {
+      "title": "\"INSERT\" 语句必须指定字段",
+      "description": "必须指定插入的字段，也就是要写入哪些列，如 \"INSERT INTO t (id,name) VALUES(...)\"。"
+    },
+    "statement-insert-disallow-order-by-rand": {
+      "title": "不能有 \"ORDER BY rand()\" 语句",
+      "description": ""
+    },
     "schema-backward-compatibility": {
       "title": "向后兼容",
-      "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容"
+      "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容。"
     },
     "database-drop-empty-database": {
       "title": "数据库删除限制",
       "description": "只有当数据库内没有表时，才可以被删除。"
+    },
+    "index-no-duplicate-column": {
+      "title": "索引中的列不能重复",
+      "description": ""
+    },
+    "index-type-no-blob": {
+      "title": "BLOB 列不能建作为索引",
+      "description": ""
+    },
+    "system-charset-allowlist": {
+      "title": "字符集限制",
+      "description": "",
+      "component": {
+        "allowList": {
+          "title": "允许的字符集"
+        }
+      }
+    },
+    "system-collation-allowlist": {
+      "title": "排序规则限制",
+      "description": "",
+      "component": {
+        "allowList": {
+          "title": "允许的规则限制"
+        }
+      }
     }
   },
   "level": {

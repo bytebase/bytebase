@@ -27,7 +27,7 @@ func TestInsertMustSpecifyColumn(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.InsertNotSpecifyColumn,
-					Title:   "insert.must-specify-column",
+					Title:   "statement.insert.must-specify-column",
 					Content: "The INSERT statement must specify columns but \"INSERT INTO tech_book VALUES (1, '1')\" does not",
 					Line:    1,
 				},
@@ -36,7 +36,7 @@ func TestInsertMustSpecifyColumn(t *testing.T) {
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &InsertMustSpecifyColumnAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleInsertMustSpecifyColumn,
+		Type:    advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, advisor.MockMySQLDatabase)

@@ -21,12 +21,15 @@ import {
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdatePayload,
+  TaskDatabaseSchemaUpdateSDLPayload,
   TaskGeneralPayload,
   TaskId,
   TaskPatch,
   TaskType,
   MigrationContext,
   MigrationDetail,
+  MigrationType,
+  TaskDatabaseSchemaBaselinePayload,
 } from "@/types";
 import { useIssueLogic } from "./index";
 import { taskCheckRunSummary } from "./utils";
@@ -182,11 +185,10 @@ export const useCommonLogic = () => {
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
     const taskList = flattenTaskList<TaskCreate>(issueCreate);
-    const migrationType = taskList[0].migrationType!;
     const detailList: MigrationDetail[] = taskList.map((task) => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
-        migrationType: migrationType,
+        migrationType: getMigrationTypeFromTask(task),
         databaseId: task.databaseId!,
         databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement: maybeFormatStatementOnSave(task.statement, db),
@@ -200,7 +202,7 @@ export const useCommonLogic = () => {
 
     // If the database is within VCS project, try to find its latest and done migration history from VCS.
     // If not found, keep the vcsPushEvent field empty and check in backend.
-    if (migrationType === "BASELINE" && detailList.length === 1) {
+    if (detailList.length === 1 && detailList[0].migrationType === "BASELINE") {
       const databaseId = detailList[0].databaseId;
       const database = databaseStore.getDatabaseById(databaseId);
       if (database.project.workflowType === "VCS") {
@@ -231,10 +233,24 @@ export const useCommonLogic = () => {
   };
 };
 
+const getMigrationTypeFromTask = (task: Task | TaskCreate) => {
+  let migrationType: MigrationType;
+  if (task.type === "bb.task.database.schema.baseline") {
+    migrationType = "BASELINE";
+  } else if (task.type === "bb.task.database.data.update") {
+    migrationType = "DATA";
+  } else {
+    migrationType = "MIGRATE";
+  }
+  return migrationType;
+};
+
 export const TaskTypeWithStatement: TaskType[] = [
   "bb.task.general",
   "bb.task.database.create",
+  "bb.task.database.schema.baseline",
   "bb.task.database.schema.update",
+  "bb.task.database.schema.update-sdl",
   "bb.task.database.schema.update.ghost.sync",
   "bb.task.database.data.update",
 ];
@@ -295,10 +311,20 @@ const statementOfTask = (task: Task) => {
       return (
         ((task as Task).payload as TaskDatabaseCreatePayload).statement || ""
       );
+    case "bb.task.database.schema.baseline":
+      return (
+        ((task as Task).payload as TaskDatabaseSchemaBaselinePayload)
+          .statement || ""
+      );
     case "bb.task.database.schema.update":
       return (
         ((task as Task).payload as TaskDatabaseSchemaUpdatePayload).statement ||
         ""
+      );
+    case "bb.task.database.schema.update-sdl":
+      return (
+        ((task as Task).payload as TaskDatabaseSchemaUpdateSDLPayload)
+          .statement || ""
       );
     case "bb.task.database.data.update":
       return (

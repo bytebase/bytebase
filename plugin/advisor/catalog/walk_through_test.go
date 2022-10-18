@@ -29,6 +29,92 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t(a TEXT);
+				ALTER TABLE t ALTER COLUMN a SET DEFAULT '1';
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
+				Content: "BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a TEXT DEFAULT '1')
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
+				Content: "BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a INT NOT NULL);
+				ALTER TABLE t ALTER COLUMN a SET DEFAULT NULL;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeSetNullDefaultForNotNullColumn,
+				Content: "Invalid default value for column `a`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a INT NOT NULL DEFAULT NULL)
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeSetNullDefaultForNotNullColumn,
+				Content: "Invalid default value for column `a`",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int ON UPDATE NOW())
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+				Content: "Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a int auto_increment, b int auto_increment);
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeAutoIncrementExists,
+				Content: "There can be only one auto column for table `t`",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				UPDATE t SET a = 1;
 			`,
 			err: &WalkThroughError{
@@ -287,7 +373,7 @@ func TestWalkThrough(t *testing.T) {
 				CREATE TABLE t(
 					a int PRIMARY KEY DEFAULT 1,
 					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
-					c int auto_increment NULL COMMENT 'This is a comment',
+					c int auto_increment NULL COMMENT 'This is a comment' DEFAULT NULL,
 					d varchar(10) COLLATE utf8mb4_polish_ci,
 					KEY idx_a (a),
 					INDEX (b, a),

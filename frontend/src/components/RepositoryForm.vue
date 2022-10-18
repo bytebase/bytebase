@@ -239,16 +239,19 @@
             pr: vcsType.startsWith("GITLAB")
               ? $t("repository.merge-request")
               : $t("repository.pull-request"),
+            pathTemplate:
+              schemaChangeType == "DDL"
+                ? $t("repository.file-path-template")
+                : $t("repository.schema-path-template"),
           })
         }}
       </div>
       <div class="flex space-x-4 mt-2">
         <BBCheckbox
-          :title="$t('repository.sql-review-ci-enable')"
+          :title="enableSQLReviewTitle"
           :value="repositoryConfig.enableSQLReviewCI"
           @toggle="(on: boolean) => {
-            repositoryConfig.enableSQLReviewCI = on;
-          }"
+        repositoryConfig.enableSQLReviewCI = on; }"
         />
       </div>
     </div>
@@ -257,6 +260,7 @@
 
 <script lang="ts">
 import { reactive, PropType, defineComponent, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   ExternalRepositoryInfo,
   Project,
@@ -314,6 +318,8 @@ export default defineComponent({
   },
   emits: ["change-repository", "change-schema-change-type"],
   setup(props) {
+    const { t } = useI18n();
+
     const state = reactive<LocalState>({});
 
     const isTenantProject = computed(() => {
@@ -321,6 +327,11 @@ export default defineComponent({
     });
     const isProjectSchemaChangeTypeDDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "DDL";
+    });
+    const enableSQLReviewTitle = computed(() => {
+      return props.vcsType.startsWith("GITLAB")
+        ? t("repository.sql-review-ci-enable-gitlab")
+        : t("repository.sql-review-ci-enable-github");
     });
 
     const sampleFilePath = (
@@ -410,6 +421,7 @@ export default defineComponent({
       schemaOptionalTagPlaceholder,
       state,
       isProjectSchemaChangeTypeDDL,
+      enableSQLReviewTitle,
       sampleFilePath,
       sampleSchemaPath,
     };

@@ -45,23 +45,27 @@ const (
 	NamingFKConventionMismatch Code = 305
 	// 306 primary key naming advisor error code.
 	NamingPKConventionMismatch Code = 306
+	// 307 auto_increment  column naming advisor error code.
+	NamingAutoIncrementColumnConventionMismatch Code = 307
 
 	// 401 ~ 499 column error code.
-	NoRequiredColumn              Code = 401
-	ColumnCannotNull              Code = 402
-	ChangeColumnType              Code = 403
-	NotNullColumnWithNullDefault  Code = 404
-	ColumnNotExists               Code = 405
-	UseChangeColumnStatement      Code = 406
-	ChangeColumnOrder             Code = 407
-	NoColumnComment               Code = 408
-	ColumnCommentTooLong          Code = 409
-	AutoIncrementColumnNotInteger Code = 410
-	DisabledColumnType            Code = 411
-	ColumnExists                  Code = 412
-	DropAllColumns                Code = 413
-	SetColumnCharset              Code = 414
-	CharLengthExceedsLimit        Code = 415
+	NoRequiredColumn                        Code = 401
+	ColumnCannotNull                        Code = 402
+	ChangeColumnType                        Code = 403
+	NotNullColumnWithNullDefault            Code = 404
+	ColumnNotExists                         Code = 405
+	UseChangeColumnStatement                Code = 406
+	ChangeColumnOrder                       Code = 407
+	NoColumnComment                         Code = 408
+	ColumnCommentTooLong                    Code = 409
+	AutoIncrementColumnNotInteger           Code = 410
+	DisabledColumnType                      Code = 411
+	ColumnExists                            Code = 412
+	DropAllColumns                          Code = 413
+	SetColumnCharset                        Code = 414
+	CharLengthExceedsLimit                  Code = 415
+	AutoIncrementColumnInitialValueNotMatch Code = 416
+	AutoIncrementColumnSigned               Code = 417
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -111,6 +115,9 @@ const (
 
 	// 1201 ~ 1299 collation error code.
 	DisabledCollation Code = 1201
+
+	// 1301 ~ 1399 comment error code.
+	CommentTooLong Code = 1301
 )
 
 // Int returns the int type of code.

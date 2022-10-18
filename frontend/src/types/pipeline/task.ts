@@ -8,7 +8,7 @@ import {
   TaskId,
   TaskRunId,
 } from "../id";
-import { Instance, MigrationType } from "../instance";
+import { Instance } from "../instance";
 import { Principal } from "../principal";
 import { VCSPushEvent } from "../vcs";
 import { Pipeline } from "./pipeline";
@@ -17,7 +17,9 @@ import { Stage } from "./stage";
 export type TaskType =
   | "bb.task.general"
   | "bb.task.database.create"
+  | "bb.task.database.schema.baseline"
   | "bb.task.database.schema.update"
+  | "bb.task.database.schema.update-sdl"
   | "bb.task.database.data.update"
   | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
@@ -49,8 +51,18 @@ export type TaskDatabaseCreatePayload = {
   collation: string;
 };
 
+export type TaskDatabaseSchemaBaselinePayload = {
+  statement: string;
+  schemaVersion: string;
+  pushEvent?: VCSPushEvent;
+};
+
 export type TaskDatabaseSchemaUpdatePayload = {
-  migrationType: MigrationType;
+  statement: string;
+  pushEvent?: VCSPushEvent;
+};
+
+export type TaskDatabaseSchemaUpdateSDLPayload = {
   statement: string;
   pushEvent?: VCSPushEvent;
 };
@@ -95,6 +107,7 @@ export type TaskDatabaseRestorePayload = {
 export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
+  | TaskDatabaseSchemaBaselinePayload
   | TaskDatabaseSchemaUpdatePayload
   | TaskDatabaseSchemaUpdateGhostSyncPayload
   | TaskDatabaseSchemaUpdateGhostCutoverPayload
@@ -161,7 +174,6 @@ export type TaskCreate = {
   characterSet?: string;
   collation?: string;
   backupId?: BackupId;
-  migrationType?: MigrationType;
   earliestAllowedTs: number;
 };
 

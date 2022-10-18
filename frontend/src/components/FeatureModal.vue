@@ -22,7 +22,7 @@
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          {{ $t("subscription.trial", { plan: requiredPlan }) }}*
+          {{ $t("subscription.trial-with-plan", { plan: requiredPlan }) }}*
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">

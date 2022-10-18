@@ -480,7 +480,9 @@ export default defineComponent({
           isAlterSchema.value ? `Alter schema` : `Change data`
         );
       }
-      issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+      const datetime = dayjs().format("@MM-DD HH:mm");
+      const tz = "UTC" + dayjs().format("ZZ");
+      issueNameParts.push(`${datetime} ${tz}`);
 
       return issueNameParts.join(" ");
     };

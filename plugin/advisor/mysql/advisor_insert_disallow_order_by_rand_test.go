@@ -27,7 +27,7 @@ func TestInsertDisallowOrderByRand(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.InsertUseOrderByRand,
-					Title:   "insert.disallow-order-by-rand",
+					Title:   "statement.insert.disallow-order-by-rand",
 					Content: "\"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand()\" uses ORDER BY RAND in the INSERT statement",
 					Line:    1,
 				},
@@ -36,7 +36,7 @@ func TestInsertDisallowOrderByRand(t *testing.T) {
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &InsertDisallowOrderByRandAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleInsertDisallowOrderByRand,
+		Type:    advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, advisor.MockMySQLDatabase)

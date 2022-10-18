@@ -12,6 +12,7 @@ import (
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
+	"github.com/pingcap/tidb/parser/types"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -59,6 +60,14 @@ const (
 	ErrorTypeColumnNotExists = 402
 	// ErrorTypeDropAllColumns is the error that dropping all columns in a table.
 	ErrorTypeDropAllColumns = 403
+	// ErrorTypeAutoIncrementExists is the error that auto_increment exists.
+	ErrorTypeAutoIncrementExists = 404
+	// ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp is the error that the ON UPDATE column is not datetime or timestamp.
+	ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp = 405
+	// ErrorTypeSetNullDefaultForNotNullColumn is the error that setting NULL default value for the NOT NULL column.
+	ErrorTypeSetNullDefaultForNotNullColumn = 406
+	// ErrorTypeInvalidColumnTypeForDefaultValue is the error that invalid column type for default value.
+	ErrorTypeInvalidColumnTypeForDefaultValue = 407
 
 	// 501 ~ 599 index error type.
 
@@ -657,11 +666,36 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 
 	if len(column.Options) == 1 {
 		// SET DEFAULT
-		defaultValue, err := restoreNode(column.Options[0].Expr, format.RestoreStringWithoutCharset)
-		if err != nil {
-			return err
+		if column.Options[0].Expr.GetType().GetType() != mysql.TypeNull {
+			if colState.columnType != nil {
+				switch strings.ToLower(*colState.columnType) {
+				case "blob", "tinyblob", "mediumblob", "longblob",
+					"text", "tinytext", "mediumtext", "longtext",
+					"json",
+					"geometry":
+					return &WalkThroughError{
+						Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+						// Content comes from MySQL Error content.
+						Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+					}
+				}
+			}
+
+			defaultValue, err := restoreNode(column.Options[0].Expr, format.RestoreStringWithoutCharset)
+			if err != nil {
+				return err
+			}
+			colState.defaultValue = &defaultValue
+		} else {
+			if colState.nullable != nil && !*colState.nullable {
+				return &WalkThroughError{
+					Type: ErrorTypeSetNullDefaultForNotNullColumn,
+					// Content comes from MySQL Error content.
+					Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
+				}
+			}
+			colState.defaultValue = nil
 		}
-		colState.defaultValue = &defaultValue
 	} else {
 		// DROP DEFAULT
 		colState.defaultValue = nil
@@ -1033,8 +1067,19 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		indexSet:  make(indexStateMap),
 	}
 	schema.tableSet[table.name] = table
+	hasAutoIncrement := false
 
 	for _, column := range node.Cols {
+		if isAutoIncrement(column) {
+			if hasAutoIncrement {
+				return &WalkThroughError{
+					Type: ErrorTypeAutoIncrementExists,
+					// The content comes from MySQL error content.
+					Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
+				}
+			}
+			hasAutoIncrement = true
+		}
 		if err := table.createColumn(d.ctx, column, nil /* position */); err != nil {
 			err.Line = column.OriginTextPosition()
 			return err
@@ -1129,6 +1174,29 @@ func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*
 	return res, nil
 }
 
+func isAutoIncrement(column *tidbast.ColumnDef) bool {
+	for _, option := range column.Options {
+		if option.Tp == tidbast.ColumnOptionAutoIncrement {
+			return true
+		}
+	}
+	return false
+}
+
+func checkDefault(columnName string, columnType *types.FieldType, valueType *types.FieldType) *WalkThroughError {
+	if valueType.GetType() != mysql.TypeNull {
+		switch columnType.GetType() {
+		case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob, mysql.TypeJSON, mysql.TypeGeometry:
+			return &WalkThroughError{
+				Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+				// Content comes from MySQL Error content.
+				Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+			}
+		}
+	}
+	return nil
+}
+
 func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.O]; exists {
 		return &WalkThroughError{
@@ -1157,6 +1225,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		collation:    newStringPointer(column.Tp.GetCollate()),
 		comment:      newEmptyStringPointer(),
 	}
+	setNullDefault := false
 
 	for _, option := range column.Options {
 		switch option.Tp {
@@ -1170,11 +1239,18 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		case tidbast.ColumnOptionAutoIncrement:
 			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
-			defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
-			if err != nil {
+			if err := checkDefault(col.name, column.Tp, option.Expr.GetType()); err != nil {
 				return err
 			}
-			col.defaultValue = &defaultValue
+			if option.Expr.GetType().GetType() != mysql.TypeNull {
+				defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
+				if err != nil {
+					return err
+				}
+				col.defaultValue = &defaultValue
+			} else {
+				setNullDefault = true
+			}
 		case tidbast.ColumnOptionUniqKey:
 			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
 				return err
@@ -1183,6 +1259,12 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			col.nullable = newTruePointer()
 		case tidbast.ColumnOptionOnUpdate:
 			// we do not deal with ON UPDATE
+			if column.Tp.GetType() != mysql.TypeDatetime && column.Tp.GetType() != mysql.TypeTimestamp {
+				return &WalkThroughError{
+					Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+					Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
+				}
+			}
 		case tidbast.ColumnOptionComment:
 			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 			if err != nil {
@@ -1204,6 +1286,14 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			// we do not deal with STORAGE
 		case tidbast.ColumnOptionAutoRandom:
 			// we do not deal with AUTO_RANDOM
+		}
+	}
+
+	if col.nullable != nil && !*col.nullable && setNullDefault {
+		return &WalkThroughError{
+			Type: ErrorTypeSetNullDefaultForNotNullColumn,
+			// Content comes from MySQL Error content.
+			Content: fmt.Sprintf("Invalid default value for column `%s`", col.name),
 		}
 	}
 
