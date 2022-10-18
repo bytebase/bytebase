@@ -1,5 +1,6 @@
 categoryList:
   - ENGINE
+  - INDEX
   - NAMING
   - STATEMENT
   - TABLE
@@ -36,6 +37,13 @@ ruleList:
         payload:
           type: STRING
           default: _del$
+  # TODO: - type: table.comment
+  - type: table.disallow-partition
+    category: TABLE
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -59,6 +67,37 @@ ruleList:
     componentList: []
   - type: statement.disallow-commit
     category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.disallow-limit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.disallow-order-by
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - tpye: statement.merge-alter-table
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  # TODO: - type: statement.insert.row-limit
+  - type: statement.insert.must-specify-column
+    category: INSERT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.insert.disallow-order-by-rand
+    category: INSERT
     engineList:
       - MYSQL
       - TIDB
@@ -188,6 +227,52 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
+  - type: column.disallow-change-type
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.set-default-for-not-null
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.disallow-change
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.disallow-changing-order
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  # TODO: - type: column.comment
+  - type: column.auto-increment-must-integer
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  # TODO: - type: column.type-restriction
+  - type: column.disallow-set-charset
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  # TODO: - type: column.maximum-character-length
+  # TODO: - type: column.auto-increment-initial-value
+  - type: column.auto-increment-must-unsigned
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
   - type: schema.backward-compatibility
     category: SCHEMA
     engineList:
@@ -201,3 +286,20 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
+  - type: index.no-duplicate-column
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  # TODO: - type: index.key-number-limit
+  # TODO: - type: index.pk-type
+  - type: index.type-no-blob
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  # TODO: - type: index.total-number-limit
+  # TODO: - type: charset.allowlist
+  # TODO: - type: collation.allowlist
