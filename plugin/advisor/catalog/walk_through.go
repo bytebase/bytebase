@@ -12,6 +12,7 @@ import (
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
+	"github.com/pingcap/tidb/parser/types"
 )
 
 // WalkThroughErrorType is the type of WalkThroughError.
@@ -65,6 +66,8 @@ const (
 	ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp = 405
 	// ErrorTypeSetNullDefaultForNotNullColumn is the error that setting NULL default value for the NOT NULL column.
 	ErrorTypeSetNullDefaultForNotNullColumn = 406
+	// ErrorTypeInvalidColumnTypeForDefaultValue is the error that invalid column type for default value.
+	ErrorTypeInvalidColumnTypeForDefaultValue = 407
 
 	// 501 ~ 599 index error type.
 
@@ -663,11 +666,36 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 
 	if len(column.Options) == 1 {
 		// SET DEFAULT
-		defaultValue, err := restoreNode(column.Options[0].Expr, format.RestoreStringWithoutCharset)
-		if err != nil {
-			return err
+		if column.Options[0].Expr.GetType().GetType() != mysql.TypeNull {
+			if colState.columnType != nil {
+				switch strings.ToLower(*colState.columnType) {
+				case "blob", "tinyblob", "mediumblob", "longblob",
+					"text", "tinytext", "mediumtext", "longtext",
+					"json",
+					"geometry":
+					return &WalkThroughError{
+						Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+						// Content comes from MySQL Error content.
+						Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+					}
+				}
+			}
+
+			defaultValue, err := restoreNode(column.Options[0].Expr, format.RestoreStringWithoutCharset)
+			if err != nil {
+				return err
+			}
+			colState.defaultValue = &defaultValue
+		} else {
+			if colState.nullable != nil && !*colState.nullable {
+				return &WalkThroughError{
+					Type: ErrorTypeSetNullDefaultForNotNullColumn,
+					// Content comes from MySQL Error content.
+					Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
+				}
+			}
+			colState.defaultValue = nil
 		}
-		colState.defaultValue = &defaultValue
 	} else {
 		// DROP DEFAULT
 		colState.defaultValue = nil
@@ -1155,6 +1183,20 @@ func isAutoIncrement(column *tidbast.ColumnDef) bool {
 	return false
 }
 
+func checkDefault(columnName string, columnType *types.FieldType, valueType *types.FieldType) *WalkThroughError {
+	if valueType.GetType() != mysql.TypeNull {
+		switch columnType.GetType() {
+		case mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob, mysql.TypeJSON, mysql.TypeGeometry:
+			return &WalkThroughError{
+				Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+				// Content comes from MySQL Error content.
+				Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+			}
+		}
+	}
+	return nil
+}
+
 func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.O]; exists {
 		return &WalkThroughError{
@@ -1197,6 +1239,9 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		case tidbast.ColumnOptionAutoIncrement:
 			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
+			if err := checkDefault(col.name, column.Tp, option.Expr.GetType()); err != nil {
+				return err
+			}
 			if option.Expr.GetType().GetType() != mysql.TypeNull {
 				defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 				if err != nil {
