@@ -29,6 +29,20 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t(a INT NOT NULL DEFAULT NULL)
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeSetNullDefaultForNotNullColumn,
+				Content: "Invalid default value for column `a`",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				CREATE TABLE t(a int ON UPDATE NOW())
 			`,
 			err: &WalkThroughError{
