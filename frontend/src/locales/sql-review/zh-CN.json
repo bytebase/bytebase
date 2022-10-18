@@ -152,7 +152,7 @@
       "title": "必须包含的字段",
       "description": "强制要求表中必须包含某些字段。",
       "component": {
-        "columnList": {
+        "list": {
           "title": "必须包含的字段名"
         }
       }
@@ -161,7 +161,7 @@
       "title": "类型约束",
       "description": "为字段设置类型黑名单。",
       "component": {
-        "disallowList": {
+        "list": {
           "title": "禁止的类型"
         }
       }
@@ -210,6 +210,24 @@
         }
       }
     },
+    "column-maximum-character-length": {
+      "title": "CHAR 长度限制",
+      "description": "CHAR 长度大于指定值的时候需要改为 VARCHAR 类型。",
+      "component": {
+        "required": {
+          "number": "最大长度"
+        }
+      }
+    },
+    "column-auto-increment-initial-value": {
+      "title": "自增初始值",
+      "description": "配置自增字段的初始值。",
+      "component": {
+        "required": {
+          "number": "初始值"
+        }
+      }
+    },
     "statement-select-no-select-all": {
       "title": "禁止 \"SELECT *\"",
       "description": "不允许使用 \"SELECT *\" 语句。"
@@ -246,6 +264,15 @@
       "title": "不能有 \"ORDER BY rand()\" 语句",
       "description": ""
     },
+    "statement-insert-row-limit": {
+      "title": "插入行数限制",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "最大插入行数"
+        }
+      }
+    },
     "schema-backward-compatibility": {
       "title": "向后兼容",
       "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容。"
@@ -262,11 +289,29 @@
       "title": "BLOB 列不能建作为索引",
       "description": ""
     },
+    "index-key-number-limit": {
+      "title": "索引包含的字段数量限制",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "字段数量上限"
+        }
+      }
+    },
+    "index-total-number-limit": {
+      "title": "索引数量限制",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "索引数量上限"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "字符集限制",
       "description": "",
       "component": {
-        "allowList": {
+        "list": {
           "title": "允许的字符集"
         }
       }
@@ -275,7 +320,7 @@
       "title": "排序规则限制",
       "description": "",
       "component": {
-        "allowList": {
+        "list": {
           "title": "允许的规则限制"
         }
       }

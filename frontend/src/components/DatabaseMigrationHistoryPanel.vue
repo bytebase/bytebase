@@ -85,7 +85,7 @@ import {
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { instanceSlug, isDBAOrOwner } from "../utils";
-import { pushNotification, useCurrentUser, useInstanceStore } from "@/store";
+import { useCurrentUser, useInstanceStore } from "@/store";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -216,25 +216,6 @@ export default defineComponent({
 
     const doCreateBaseline = () => {
       state.showBaselineModal = false;
-
-      // If the database is within VCS project, try to find its latest and done migration history from VCS.
-      // If not found, show error notification.
-      if (props.database.project.workflowType === "VCS") {
-        const latestDoneVCSMigrationHistory =
-          instanceStore.getLatestDoneVCSMigrationHistory(
-            props.database.instance.id,
-            props.database.name
-          );
-
-        if (!latestDoneVCSMigrationHistory) {
-          pushNotification({
-            module: "bytebase",
-            style: "CRITICAL",
-            title: t("migration-history.no-succeed-vcs-migration-record"),
-          });
-          return;
-        }
-      }
 
       router.push({
         name: "workspace.issue.detail",
