@@ -63,6 +63,8 @@ const (
 	ErrorTypeAutoIncrementExists = 404
 	// ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp is the error that the ON UPDATE column is not datetime or timestamp.
 	ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp = 405
+	// ErrorTypeSetNullDefaultForNotNullColumn is the error that setting NULL default value for the NOT NULL column.
+	ErrorTypeSetNullDefaultForNotNullColumn = 406
 
 	// 501 ~ 599 index error type.
 
@@ -1181,6 +1183,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		collation:    newStringPointer(column.Tp.GetCollate()),
 		comment:      newEmptyStringPointer(),
 	}
+	setNullDefault := false
 
 	for _, option := range column.Options {
 		switch option.Tp {
@@ -1200,6 +1203,8 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 					return err
 				}
 				col.defaultValue = &defaultValue
+			} else {
+				setNullDefault = true
 			}
 		case tidbast.ColumnOptionUniqKey:
 			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
@@ -1236,6 +1241,14 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			// we do not deal with STORAGE
 		case tidbast.ColumnOptionAutoRandom:
 			// we do not deal with AUTO_RANDOM
+		}
+	}
+
+	if col.nullable != nil && !*col.nullable && setNullDefault {
+		return &WalkThroughError{
+			Type: ErrorTypeSetNullDefaultForNotNullColumn,
+			// Content comes from MySQL Error content.
+			Content: fmt.Sprintf("Invalid default value for column `%s`", col.name),
 		}
 	}
 
