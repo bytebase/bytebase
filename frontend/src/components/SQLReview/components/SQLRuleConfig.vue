@@ -115,7 +115,7 @@
           :placeholder="config.payload.default"
         />
         <input
-          v-if="config.payload.type == 'NUMBER'"
+          v-else-if="config.payload.type == 'NUMBER'"
           v-model="state.payload[index]"
           type="number"
           :disabled="disabled"
@@ -124,6 +124,20 @@
             disabled ? 'cursor-not-allowed' : '',
           ]"
           :placeholder="`${config.payload.default}`"
+        />
+        <BBCheckbox
+          v-else-if="config.payload.type == 'BOOLEAN'"
+          :title="
+            $t(
+              `sql-review.rule.${getRuleLocalizationKey(
+                selectedRule.type
+              )}.component.${config.key}.title`
+            )
+          "
+          :value="state.payload[index]"
+          @toggle="(on: boolean) => {
+            state.payload[index] = on;
+          }"
         />
         <div
           v-else-if="
@@ -187,7 +201,7 @@ import {
 import { useSubscriptionStore } from "@/store";
 import { planTypeToString } from "@/types/plan";
 
-type PayloadValueList = (string | number | string[])[];
+type PayloadValueList = (boolean | string | number | string[])[];
 interface LocalState {
   payload: PayloadValueList;
 }

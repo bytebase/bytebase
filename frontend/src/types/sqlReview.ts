@@ -52,6 +52,14 @@ interface StringPayload {
   value?: string;
 }
 
+// BooleanPayload is the boolean type payload configuration options and default value.
+// Used by the frontend.
+interface BooleanPayload {
+  type: "BOOLEAN";
+  default: boolean;
+  value?: boolean;
+}
+
 // StringArrayPayload is the string array type payload configuration options and default value.
 // Used by the frontend.
 interface StringArrayPayload {
@@ -73,7 +81,12 @@ interface TemplatePayload {
 // Used by the frontend.
 export interface RuleConfigComponent {
   key: string;
-  payload: StringPayload | NumberPayload | TemplatePayload | StringArrayPayload;
+  payload:
+    | StringPayload
+    | NumberPayload
+    | TemplatePayload
+    | StringArrayPayload
+    | BooleanPayload;
 }
 
 // The identifier for rule template
@@ -83,6 +96,7 @@ export type RuleType =
   | "table.no-foreign-key"
   | "table.drop-naming-convention"
   | "table.disallow-partition"
+  | "table.comment"
   | "naming.table"
   | "naming.column"
   | "naming.index.uk"
@@ -91,6 +105,7 @@ export type RuleType =
   | "naming.index.idx"
   | "column.required"
   | "column.no-null"
+  | "column.comment"
   | "column.type-disallow-list"
   | "column.disallow-change-type"
   | "column.set-default-for-not-null"
@@ -133,12 +148,22 @@ interface StringArrayLimitPayload {
   list: string[];
 }
 
+// The comment format rule payload.
+// Used by the backend.
+interface CommentFormatPayload {
+  required: boolean;
+  maxLength: number;
+}
+
 // The SchemaPolicyRule stores the rule configuration by users.
 // Used by the backend
 export interface SchemaPolicyRule {
   type: RuleType;
   level: RuleLevel;
-  payload?: NamingFormatPayload | StringArrayLimitPayload;
+  payload?:
+    | NamingFormatPayload
+    | StringArrayLimitPayload
+    | CommentFormatPayload;
 }
 
 // The API for SQL review policy in backend.
@@ -292,6 +317,9 @@ export const convertPolicyRuleToRuleTemplate = (
   const numberComponent = ruleTemplate.componentList.find(
     (c) => c.payload.type === "NUMBER"
   );
+  const booleanComponent = ruleTemplate.componentList.find(
+    (c) => c.payload.type === "BOOLEAN"
+  );
   const templateComponent = ruleTemplate.componentList.find(
     (c) => c.payload.type === "TEMPLATE"
   );
@@ -422,6 +450,31 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     }
+    case "column.comment":
+    case "table.comment":
+      if (!booleanComponent || !numberComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
+      return {
+        ...res,
+        componentList: [
+          {
+            ...booleanComponent,
+            payload: {
+              ...booleanComponent.payload,
+              value: (policyRule.payload as CommentFormatPayload).required,
+            } as BooleanPayload,
+          },
+          {
+            ...numberComponent,
+            payload: {
+              ...numberComponent.payload,
+              value: (policyRule.payload as CommentFormatPayload).maxLength,
+            } as NumberPayload,
+          },
+        ],
+      };
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -449,6 +502,9 @@ export const convertRuleTemplateToPolicyRule = (
   const templatePayload = rule.componentList.find(
     (c) => c.payload.type === "TEMPLATE"
   )?.payload as TemplatePayload | undefined;
+  const booleanPayload = rule.componentList.find(
+    (c) => c.payload.type === "BOOLEAN"
+  )?.payload as BooleanPayload | undefined;
 
   switch (rule.type) {
     case "table.drop-naming-convention":
@@ -511,6 +567,18 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     }
+    case "column.comment":
+    case "table.comment":
+      if (!booleanPayload || !numberPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          required: booleanPayload.value ?? booleanPayload.default,
+          maxLength: numberPayload.value ?? numberPayload.default,
+        },
+      };
   }
 
   throw new Error(`Invalid rule ${rule.type}`);
