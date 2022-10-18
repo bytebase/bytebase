@@ -45,6 +45,18 @@
       "title": "Disallow partition",
       "description": ""
     },
+    "table-comment": {
+      "title": "Comment convention",
+      "description": "Configure whether the table requires comments and the maximum comment length.",
+      "component": {
+        "required": {
+          "title": "Require comment"
+        },
+        "maxLength": {
+          "title": "Max length"
+        }
+      }
+    },
     "naming-table": {
       "title": "Table naming check",
       "description": "Enforce the table name format and length limit. Default snake_lower_case with 63 characters.",
@@ -184,6 +196,18 @@
     "column-auto-increment-must-unsigned": {
       "title": "Set unsigned attribute on auto-increment column",
       "description": "Auto-increment column must be the UNSIGNED type."
+    },
+    "column-comment": {
+      "title": "Comment convention",
+      "description": "Configure whether the column requires comments and the maximum comment length.",
+      "component": {
+        "required": {
+          "title": "Require comment"
+        },
+        "maxLength": {
+          "title": "Max length"
+        }
+      }
     },
     "statement-select-no-select-all": {
       "title": "Disallow \"SELECT *\"",
