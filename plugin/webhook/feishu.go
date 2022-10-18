@@ -119,6 +119,7 @@ func (*FeishuReceiver) post(context Context) error {
 		Card: &FeishuWebhookCard{
 			Config: FeishuWebhookCardConfig{
 				WideScreenMode: true,
+				EnableForward:  true,
 			},
 			Header: FeishuWebhookCardHeader{
 				Title: FeishuWebhookCardHeaderTitle{
