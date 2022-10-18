@@ -930,7 +930,9 @@
     "sheet-path-template-description": "Bytebase 仅跟踪文件路径匹配模版 (相对于指定根目录）的文件。匹配的文件将被同步到 SQL Editor 以供使用。",
     "sql-review-ci": "SQL 审核 CI",
     "sql-review-ci-enable": "开启 SQL 审核 CI",
-    "sql-review-ci-description": "Bytebase 会通过{pr}自动为您的代码仓库创建 SQL 审核 CI。创建完成后，将会在仓库{pr}中对变动的 SQL 文件进行审核。",
+    "sql-review-ci-enable-gitlab": "基于 GitLab CI 开启 SQL 审核",
+    "sql-review-ci-enable-github": "基于 GitHub Action 开启 SQL 审核",
+    "sql-review-ci-description": "Bytebase 会发起{pr}为您的代码仓库配置 SQL 审核 CI。配置完成后，在每一个{pr}中，SQL 审核策略将应用于任何匹配上「{pathTemplate}」的文件修改。",
     "sql-review-ci-setup": "配置 SQL 审核 CI",
     "sql-review-ci-setup-pr": "查看{pr}",
     "merge-request": "合并请求",
@@ -938,8 +940,8 @@
     "sql-review-ci-loading-modal": "我们正在为您准备{pr}来配置 SQL 审核 CI。完成之后您将会被重定向到{pr}页面。",
     "sql-review-ci-setup-modal": "我们为您的代码仓库创建了一个{pr}来配置 SQL 审核 CI。请审核并合并该{pr}。",
     "sql-review-ci-remove": "清除 SQL 审核 CI",
-    "sql-review-ci-remove-modal": "SQL 审核 CI 已禁用。您还需手动删除代码仓库中的 SQL 审核 CI 文件。",
-    "sql-review-ci-restore-modal": "恢复到 UI 工作流后，SQL 审核 CI 将会被禁用，您可手动删除代码仓库中的 SQL 审核 CI 文件。",
+    "sql-review-ci-remove-modal": "SQL 审核 CI 已禁用。您可以手动删除 {repository} 的 {vcs} 文件。",
+    "sql-review-ci-restore-modal": "恢复到 UI 工作流后，SQL 审核 CI 将会被禁用，您可以手动删除 {repository} 的 {vcs} 文件。",
     "git-provider": "Git 提供方",
     "version-control-status": "@.capitalize:common.version-control 已{status}",
     "version-control-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
@@ -1400,7 +1402,7 @@
       },
       "bb-feature-vcs-sql-review": {
         "title": "GitOps 工作流中的 SQL 审核",
-        "desc": "为您的 GitOps 工作流创建 SQL 审核 CI，以便在拉取请求中对变动的 SQL 文件进行审核。"
+        "desc": "在您的 VCS 仓库流水线上添加 SQL 审核 CI，以便在拉取请求中对变动的 SQL 文件进行自动审核。"
       },
       "bb-feature-rbac": {
         "title": "角色管理",

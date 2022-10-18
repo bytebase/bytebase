@@ -59,6 +59,10 @@ const (
 	ErrorTypeColumnNotExists = 402
 	// ErrorTypeDropAllColumns is the error that dropping all columns in a table.
 	ErrorTypeDropAllColumns = 403
+	// ErrorTypeAutoIncrementExists is the error that auto_increment exists.
+	ErrorTypeAutoIncrementExists = 404
+	// ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp is the error that the ON UPDATE column is not datetime or timestamp.
+	ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp = 405
 
 	// 501 ~ 599 index error type.
 
@@ -1033,8 +1037,19 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		indexSet:  make(indexStateMap),
 	}
 	schema.tableSet[table.name] = table
+	hasAutoIncrement := false
 
 	for _, column := range node.Cols {
+		if isAutoIncrement(column) {
+			if hasAutoIncrement {
+				return &WalkThroughError{
+					Type: ErrorTypeAutoIncrementExists,
+					// The content comes from MySQL error content.
+					Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
+				}
+			}
+			hasAutoIncrement = true
+		}
 		if err := table.createColumn(d.ctx, column, nil /* position */); err != nil {
 			err.Line = column.OriginTextPosition()
 			return err
@@ -1129,6 +1144,15 @@ func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*
 	return res, nil
 }
 
+func isAutoIncrement(column *tidbast.ColumnDef) bool {
+	for _, option := range column.Options {
+		if option.Tp == tidbast.ColumnOptionAutoIncrement {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[column.Name.Name.O]; exists {
 		return &WalkThroughError{
@@ -1170,11 +1194,13 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		case tidbast.ColumnOptionAutoIncrement:
 			// we do not deal with AUTO-INCREMENT
 		case tidbast.ColumnOptionDefaultValue:
-			defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
-			if err != nil {
-				return err
+			if option.Expr.GetType().GetType() != mysql.TypeNull {
+				defaultValue, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
+				if err != nil {
+					return err
+				}
+				col.defaultValue = &defaultValue
 			}
-			col.defaultValue = &defaultValue
 		case tidbast.ColumnOptionUniqKey:
 			if err := t.createIndex("", []string{col.name}, true /* unique */, model.IndexTypeBtree.String(), nil); err != nil {
 				return err
@@ -1183,6 +1209,12 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			col.nullable = newTruePointer()
 		case tidbast.ColumnOptionOnUpdate:
 			// we do not deal with ON UPDATE
+			if column.Tp.GetType() != mysql.TypeDatetime && column.Tp.GetType() != mysql.TypeTimestamp {
+				return &WalkThroughError{
+					Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
+					Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
+				}
+			}
 		case tidbast.ColumnOptionComment:
 			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
 			if err != nil {

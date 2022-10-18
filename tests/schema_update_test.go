@@ -273,7 +273,7 @@ func TestVCS(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(added []string, modified []string) interface{}
+		newWebhookPushEvent func(added [][]string, modified [][]string) interface{}
 	}{
 		{
 			name:               "GitLab",
@@ -281,20 +281,22 @@ func TestVCS(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(added []string, modified []string) interface{} {
+			newWebhookPushEvent: func(added [][]string, modified [][]string) interface{} {
+				var commitList []gitlab.WebhookCommit
+				for i := range commitList {
+					commitList = append(commitList, gitlab.WebhookCommit{
+						Timestamp:    time.Now().Format(time.RFC3339),
+						AddedList:    added[i],
+						ModifiedList: modified[i],
+					})
+				}
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
-					CommitList: []gitlab.WebhookCommit{
-						{
-							Timestamp:    "2021-01-13T13:14:00Z",
-							AddedList:    added,
-							ModifiedList: modified,
-						},
-					},
+					CommitList: commitList,
 				}
 			},
 		},
@@ -304,7 +306,23 @@ func TestVCS(t *testing.T) {
 			vcsType:            vcs.GitHubCom,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(added []string, modified []string) interface{} {
+			newWebhookPushEvent: func(added [][]string, modified [][]string) interface{} {
+				var commits []github.WebhookCommit
+				for i := range added {
+					commits = append(commits, github.WebhookCommit{
+						ID:        "fake_github_commit_id",
+						Distinct:  true,
+						Message:   "Fake GitHub commit message",
+						Timestamp: time.Now(),
+						URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+						Author: github.WebhookCommitAuthor{
+							Name:  "fake_github_author",
+							Email: "fake_github_author@localhost",
+						},
+						Added:    added[i],
+						Modified: modified[i],
+					})
+				}
 				return github.WebhookPushEvent{
 					Ref: "refs/heads/feature/foo",
 					Repository: github.WebhookRepository{
@@ -315,21 +333,7 @@ func TestVCS(t *testing.T) {
 					Sender: github.WebhookSender{
 						Login: "fake_github_author",
 					},
-					Commits: []github.WebhookCommit{
-						{
-							ID:        "fake_github_commit_id",
-							Distinct:  true,
-							Message:   "Fake GitHub commit message",
-							Timestamp: time.Now(),
-							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
-							Author: github.WebhookCommitAuthor{
-								Name:  "fake_github_author",
-								Email: "fake_github_author@localhost",
-							},
-							Added:    added,
-							Modified: modified,
-						},
-					},
+					Commits: commits,
 				}
 			},
 		},
@@ -419,11 +423,18 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Simulate Git commits for schema update.
-			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql"
-			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
+			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
+			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement3})
+			a.NoError(err)
+			gitFile2 := "bbtest/Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2})
+			a.NoError(err)
+			gitFile3 := "bbtest/Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile3: migrationStatement})
 			a.NoError(err)
 
-			payload, err := json.Marshal(test.newWebhookPushEvent([]string{gitFile}, nil))
+			payload, err := json.Marshal(test.newWebhookPushEvent([][]string{{gitFile}, {gitFile2}, {gitFile3}}, [][]string{nil, nil, nil}))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -446,7 +457,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
-			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql", issue.Description)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -461,11 +472,11 @@ func TestVCS(t *testing.T) {
 			a.Equal(bookSchemaSQLResult, result)
 
 			// Simulate Git commits for failed data update.
-			gitFile = "bbtest/Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql"
+			gitFile = "bbtest/Prod/testVCSSchemaUpdate##ver4##data##insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatementWrong})
 			a.NoError(err)
 
-			payload, err = json.Marshal(test.newWebhookPushEvent([]string{gitFile}, nil))
+			payload, err = json.Marshal(test.newWebhookPushEvent([][]string{{gitFile}}, [][]string{nil}))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -488,7 +499,7 @@ func TestVCS(t *testing.T) {
 			// Simulate Git commits for a correct modified date update.
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: dataUpdateStatement})
 			a.NoError(err)
-			payload, err = json.Marshal(test.newWebhookPushEvent(nil, []string{gitFile}))
+			payload, err = json.Marshal(test.newWebhookPushEvent([][]string{nil}, [][]string{{gitFile}}))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -511,7 +522,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
-			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql", issue.Description)
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver4##data##insert_data.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -529,7 +540,23 @@ func TestVCS(t *testing.T) {
 					Source:     db.VCS,
 					Type:       db.Data,
 					Status:     db.Done,
-					Schema:     dumpedSchema,
+					Schema:     dumpedSchema3,
+					SchemaPrev: dumpedSchema3,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     dumpedSchema3,
+					SchemaPrev: dumpedSchema2,
+				},
+				{
+					Database:   databaseName,
+					Source:     db.VCS,
+					Type:       db.Migrate,
+					Status:     db.Done,
+					Schema:     dumpedSchema2,
 					SchemaPrev: dumpedSchema,
 				},
 				{
@@ -563,8 +590,8 @@ func TestVCS(t *testing.T) {
 				a.Equal(wantHistories[i], got)
 				a.NotEmpty(history.Version)
 			}
-			a.Equal(histories[0].Version, "ver2")
-			a.Equal(histories[1].Version, "ver1")
+			a.Equal("ver4", histories[0].Version)
+			a.Equal("ver3", histories[1].Version)
 		})
 	}
 }
