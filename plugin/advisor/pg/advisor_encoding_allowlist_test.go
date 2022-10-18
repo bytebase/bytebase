@@ -39,7 +39,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"\" used disabled encoding 'latin1'",
 				},
 			},
