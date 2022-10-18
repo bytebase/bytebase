@@ -15,8 +15,8 @@ type SchemaTransformer interface {
 }
 
 var (
-	differMu sync.RWMutex
-	differs  = make(map[parser.EngineType]SchemaTransformer)
+	transformMu  sync.RWMutex
+	transformers = make(map[parser.EngineType]SchemaTransformer)
 )
 
 // Register makes a schema transformer available by the provided id.
@@ -26,19 +26,19 @@ func Register(engineType parser.EngineType, d SchemaTransformer) {
 	if d == nil {
 		panic("parser: Register parser is nil")
 	}
-	differMu.Lock()
-	defer differMu.Unlock()
-	if _, dup := differs[engineType]; dup {
+	transformMu.Lock()
+	defer transformMu.Unlock()
+	if _, dup := transformers[engineType]; dup {
 		panic("parser: Register called twice for schema transformer " + engineType)
 	}
-	differs[engineType] = d
+	transformers[engineType] = d
 }
 
 // SchemaTransform returns the transformed schema.
 func SchemaTransform(engineType parser.EngineType, schema string) (string, error) {
-	differMu.RLock()
-	p, ok := differs[engineType]
-	differMu.RUnlock()
+	transformMu.RLock()
+	p, ok := transformers[engineType]
+	transformMu.RUnlock()
 	if !ok {
 		return "", errors.Errorf("engine: unknown engine type %v", engineType)
 	}
