@@ -205,7 +205,7 @@ func (policy *SQLReviewPolicy) Validate() error {
 type SQLReviewRule struct {
 	Type  SQLReviewRuleType  `json:"type"`
 	Level SQLReviewRuleLevel `json:"level"`
-	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, RequiredColumnRulePayload)
+	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, StringArrayTypeRulePayload)
 	// If the rule doesn't have any payload configuration, the payload would be "{}"
 	Payload string `json:"payload"`
 }
@@ -223,7 +223,7 @@ func (rule *SQLReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRuleRequiredColumn:
-		if _, err := UnmarshalRequiredColumnRulePayload(rule.Payload); err != nil {
+		if _, err := UnmarshalRequiredColumnList(rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleColumnCommentConvention, SchemaRuleTableCommentConvention:
@@ -234,8 +234,8 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleColumnTypeRestriction:
-		if _, err := UnmarshalTypeRestrictionRulePayload(rule.Payload); err != nil {
+	case SchemaRuleColumnTypeRestriction, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist:
+		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
 	}
@@ -246,6 +246,11 @@ func (rule *SQLReviewRule) Validate() error {
 type NamingRulePayload struct {
 	MaxLength int    `json:"maxLength"`
 	Format    string `json:"format"`
+}
+
+// StringArrayTypeRulePayload is the payload for rules with string array value.
+type StringArrayTypeRulePayload struct {
+	List []string `json:"list"`
 }
 
 // RequiredColumnRulePayload is the payload for required column rule.
@@ -262,16 +267,6 @@ type CommentConventionRulePayload struct {
 // NumberTypeRulePayload is the number type payload.
 type NumberTypeRulePayload struct {
 	Number int `json:"number"`
-}
-
-// TypeRestrictionRulePayload is the payload for type restriction rule.
-type TypeRestrictionRulePayload struct {
-	TypeList []string `json:"typeList"`
-}
-
-// AllowlistRulePayload is the payload for allowlist rules.
-type AllowlistRulePayload struct {
-	Allowlist []string `json:"allowlist"`
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
@@ -343,8 +338,28 @@ func parseTemplateTokens(template string) ([]string, []string) {
 	return nil, nil
 }
 
-// UnmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
-func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
+// UnmarshalRequiredColumnList will unmarshal payload and parse the required column list.
+func UnmarshalRequiredColumnList(payload string) ([]string, error) {
+	stringArrayRulePayload, err := UnmarshalStringArrayTypeRulePayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	if len(stringArrayRulePayload.List) != 0 {
+		return stringArrayRulePayload.List, nil
+	}
+
+	// The RequiredColumnRulePayload is deprecated.
+	// Just keep it to compatible with old data, and we can remove this later.
+	columnRulePayload, err := unmarshalRequiredColumnRulePayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return columnRulePayload.ColumnList, nil
+}
+
+// unmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
+func unmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
 	var rcr RequiredColumnRulePayload
 	if err := json.Unmarshal([]byte(payload), &rcr); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal required column rule payload %q", payload)
@@ -373,22 +388,13 @@ func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, err
 	return &nlr, nil
 }
 
-// UnmarshalTypeRestrictionRulePayload will unmarshal payload to TypeRestrictionRulePayload.
-func UnmarshalTypeRestrictionRulePayload(payload string) (*TypeRestrictionRulePayload, error) {
-	var trr TypeRestrictionRulePayload
+// UnmarshalStringArrayTypeRulePayload will unmarshal payload to StringArrayTypeRulePayload.
+func UnmarshalStringArrayTypeRulePayload(payload string) (*StringArrayTypeRulePayload, error) {
+	var trr StringArrayTypeRulePayload
 	if err := json.Unmarshal([]byte(payload), &trr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal type restriction rule payload %q", payload)
+		return nil, errors.Wrapf(err, "failed to unmarshal string array rule payload %q", payload)
 	}
 	return &trr, nil
-}
-
-// UnmarshalAllowlistRulePayload will unmarshal payload to AllowlistRulePayload.
-func UnmarshalAllowlistRulePayload(payload string) (*AllowlistRulePayload, error) {
-	var allowlist AllowlistRulePayload
-	if err := json.Unmarshal([]byte(payload), &allowlist); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal allowlist rule payload %q", payload)
-	}
-	return &allowlist, nil
 }
 
 // SQLReviewCheckContext is the context for SQL review check.
