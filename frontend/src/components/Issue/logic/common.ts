@@ -4,7 +4,6 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
   useCurrentUser,
   useDatabaseStore,
-  useInstanceStore,
   useIssueStore,
   useTaskStore,
   useUIStateStore,
@@ -26,7 +25,6 @@ import {
   TaskId,
   TaskPatch,
   TaskType,
-  MigrationContext,
   MigrationDetail,
   MigrationType,
   TaskDatabaseSchemaBaselinePayload,
@@ -199,24 +197,6 @@ export const useCommonLogic = () => {
     issueCreate.createContext = {
       detailList: detailList,
     };
-
-    // If the database is within VCS project, try to find its latest and done migration history from VCS.
-    // If not found, keep the vcsPushEvent field empty and check in backend.
-    if (detailList.length === 1 && detailList[0].migrationType === "BASELINE") {
-      const databaseId = detailList[0].databaseId;
-      const database = databaseStore.getDatabaseById(databaseId);
-      if (database.project.workflowType === "VCS") {
-        const migrationHistory =
-          useInstanceStore().getLatestDoneVCSMigrationHistory(
-            database.instance.id,
-            database.name
-          );
-        if (migrationHistory) {
-          (issueCreate.createContext as MigrationContext).vcsPushEvent =
-            migrationHistory.payload?.pushEvent;
-        }
-      }
-    }
 
     createIssue(issueCreate);
   };
