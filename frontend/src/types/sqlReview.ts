@@ -19,7 +19,8 @@ export type CategoryType =
   | "TABLE"
   | "COLUMN"
   | "SCHEMA"
-  | "DATABASE";
+  | "DATABASE"
+  | "INDEX";
 
 // The rule level
 export enum RuleLevel {
