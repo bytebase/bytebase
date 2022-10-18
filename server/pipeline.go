@@ -29,7 +29,7 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 				}
 				if ok {
 					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						ID:        task.ID,
+						IDList:    []int{task.ID},
 						UpdaterID: api.SystemBotID,
 						Status:    api.TaskPending,
 					}); err != nil {
