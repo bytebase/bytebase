@@ -30,7 +30,7 @@ func TestInsertRowLimit(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.InsertTooManyRows,
-					Title:   "insert.row-limit",
+					Title:   "statement.insert.row-limit",
 					Content: "The value rows in \"INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f')\" should be no more than 5, but found 6",
 					Line:    1,
 				},
@@ -42,7 +42,7 @@ func TestInsertRowLimit(t *testing.T) {
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &InsertRowLimitAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleInsertRowLimit,
+		Type:    advisor.SchemaRuleStatementInsertRowLimit,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, advisor.MockPostgreSQLDatabase)

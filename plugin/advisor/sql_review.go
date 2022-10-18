@@ -65,6 +65,12 @@ const (
 	SchemaRuleStatementDisallowOrderBy SQLReviewRuleType = "statement.disallow-order-by"
 	// SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
 	SchemaRuleStatementMergeAlterTable SQLReviewRuleType = "statement.merge-alter-table"
+	// SchemaRuleStatementInsertRowLimit enforce the insert row limit.
+	SchemaRuleStatementInsertRowLimit SQLReviewRuleType = "statement.insert.row-limit"
+	// SchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
+	SchemaRuleStatementInsertMustSpecifyColumn SQLReviewRuleType = "statement.insert.must-specify-column"
+	// SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+	SchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "statement.insert.disallow-order-by-rand"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -128,13 +134,6 @@ const (
 
 	// SchemaRuleCollationAllowlist enforce the collation allowlist.
 	SchemaRuleCollationAllowlist SQLReviewRuleType = "collation.allowlist"
-
-	// SchemaRuleInsertRowLimit enforce the insert row limit.
-	SchemaRuleInsertRowLimit SQLReviewRuleType = "insert.row-limit"
-	// SchemaRuleInsertMustSpecifyColumn enforce the insert column specified.
-	SchemaRuleInsertMustSpecifyColumn SQLReviewRuleType = "insert.must-specify-column"
-	// SchemaRuleInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
-	SchemaRuleInsertDisallowOrderByRand SQLReviewRuleType = "insert.disallow-order-by-rand"
 
 	// SchemaRuleCommentLength limit comment length.
 	SchemaRuleCommentLength SQLReviewRuleType = "comment.length"
@@ -231,7 +230,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue:
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit, SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue:
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -832,17 +831,19 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTypeNoBlob, nil
 		}
-	case SchemaRuleInsertRowLimit:
+	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertRowLimit, nil
+		case db.Postgres:
+			return PostgreSQLInsertRowLimit, nil
 		}
-	case SchemaRuleInsertMustSpecifyColumn:
+	case SchemaRuleStatementInsertMustSpecifyColumn:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertMustSpecifyColumn, nil
 		}
-	case SchemaRuleInsertDisallowOrderByRand:
+	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertDisallowOrderByRand, nil

@@ -11,7 +11,7 @@
       />
       <div v-if="selectedRuleList.length > 0" class="mb-5">
         <div
-          class="flex cursor-pointer items-center px-2 text-indigo-500"
+          class="flex cursor-pointer items-center text-indigo-500"
           @click="state.openTemplate = !state.openTemplate"
         >
           <heroicons-solid:chevron-right
@@ -32,38 +32,47 @@
         />
       </div>
       <div
-        :class="selectedRuleList.length > 0 ? 'border-b-1 border-gray-200' : ''"
+        :class="[
+          'space-y-5',
+          selectedRuleList.length > 0 ? 'border-b-1 border-gray-200' : '',
+        ]"
       >
-        <ul role="list" class="divide-y divide-gray-200">
-          <li v-for="rule in selectedRuleList" :key="rule.type">
-            <SQLRuleConfig
-              :selected-rule="rule"
-              :active="rule.type === state.activeRuleType"
-              :disabled="
-                !ruleIsAvailableInSubscription(
-                  rule.type,
-                  subscriptionStore.currentPlan
-                )
-              "
-              @activate="onRuleActivate"
-              @level-change="(level) => onLevelChange(rule, level)"
-              @payload-change="(val) => onPayloadChange(rule, val)"
-            />
-          </li>
-        </ul>
+        <div v-for="(category, index) in categoryList" :key="index">
+          <div class="block text-2xl text-indigo-600 font-semibold px-2 mb-3">
+            {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
+          </div>
+          <ul role="list" class="divide-y divide-gray-200">
+            <li v-for="rule in category.ruleList" :key="rule.type">
+              <SQLRuleConfig
+                :selected-rule="rule"
+                :active="rule.type === state.activeRuleType"
+                :disabled="
+                  !ruleIsAvailableInSubscription(
+                    rule.type,
+                    subscriptionStore.currentPlan
+                  )
+                "
+                @activate="onRuleActivate"
+                @level-change="(level) => onLevelChange(rule, level)"
+                @payload-change="(val) => onPayloadChange(rule, val)"
+              />
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive } from "vue";
+import { PropType, reactive, computed } from "vue";
 import {
   RuleType,
   RuleLevel,
   RuleTemplate,
   RuleConfigComponent,
   SQLReviewPolicyTemplate,
+  convertToCategoryList,
   ruleIsAvailableInSubscription,
 } from "@/types/sqlReview";
 import { useSubscriptionStore } from "@/store";
@@ -73,7 +82,7 @@ interface LocalState {
   openTemplate: boolean;
 }
 
-defineProps({
+const props = defineProps({
   selectedRuleList: {
     required: true,
     type: Object as PropType<RuleTemplate[]>,
@@ -95,6 +104,10 @@ const subscriptionStore = useSubscriptionStore();
 const state = reactive<LocalState>({
   activeRuleType: null,
   openTemplate: false,
+});
+
+const categoryList = computed(() => {
+  return convertToCategoryList(props.selectedRuleList);
 });
 
 const onTemplateApply = (index: number) => {
