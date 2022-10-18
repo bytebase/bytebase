@@ -29,6 +29,50 @@ func TestWalkThrough(t *testing.T) {
 				DbType: db.MySQL,
 			},
 			statement: `
+				CREATE TABLE t(a TEXT);
+				ALTER TABLE t ALTER COLUMN a SET DEFAULT '1';
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
+				Content: "BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a TEXT DEFAULT '1')
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
+				Content: "BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value",
+				Line:    2,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
+				CREATE TABLE t(a INT NOT NULL);
+				ALTER TABLE t ALTER COLUMN a SET DEFAULT NULL;
+			`,
+			err: &WalkThroughError{
+				Type:    ErrorTypeSetNullDefaultForNotNullColumn,
+				Content: "Invalid default value for column `a`",
+				Line:    3,
+			},
+		},
+		{
+			origin: &Database{
+				Name:   "test",
+				DbType: db.MySQL,
+			},
+			statement: `
 				CREATE TABLE t(a INT NOT NULL DEFAULT NULL)
 			`,
 			err: &WalkThroughError{
