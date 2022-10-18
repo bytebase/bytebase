@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -44,10 +45,46 @@ type FeishuWebhookContent struct {
 	Post FeishuWebhookPostLanguage `json:"post"`
 }
 
+// FeishuWebhookCardConfig is the API message for Feishu webhook card config.
+type FeishuWebhookCardConfig struct {
+	WideScreenMode bool `json:"wide_screen_mode,omitempty"`
+	EnableForward  bool `json:"enable_forward,omitempty"`
+}
+
+// FeishuWebhookMarkdownSection is the API message for Feishu webhook card i18n content markdown.
+type FeishuWebhookMarkdownSection struct {
+	Tag     string `json:"tag,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
+// FeishuWebhookCardI18nElements is the API message for Feishu webhook card i18n content.
+type FeishuWebhookCardI18nElements struct {
+	English []FeishuWebhookMarkdownSection `json:"en_us"`
+}
+
+// FeishuWebhookCardHeaderTitle is the API message for Feishu webhook card header title.
+type FeishuWebhookCardHeaderTitle struct {
+	Content string `json:"content"`
+	Tag     string `json:"tag"`
+}
+
+// FeishuWebhookCardHeader is the API message for Feishu webhook card header.
+type FeishuWebhookCardHeader struct {
+	Title FeishuWebhookCardHeaderTitle `json:"title"`
+}
+
+// FeishuWebhookCard is the API message for Feishu webhook card.
+type FeishuWebhookCard struct {
+	Config       FeishuWebhookCardConfig       `json:"config"`
+	Header       FeishuWebhookCardHeader       `json:"header"`
+	I18nElements FeishuWebhookCardI18nElements `json:"i18n_elements"`
+}
+
 // FeishuWebhook is the API message for Feishu webhook.
 type FeishuWebhook struct {
-	MessageType string               `json:"msg_type"`
-	Content     FeishuWebhookContent `json:"content"`
+	MessageType string                `json:"msg_type"`
+	Content     *FeishuWebhookContent `json:"content,omitempty"`
+	Card        *FeishuWebhookCard    `json:"card,omitempty"`
 }
 
 func init() {
@@ -59,58 +96,43 @@ type FeishuReceiver struct {
 }
 
 func (*FeishuReceiver) post(context Context) error {
-	contentList := [][]FeishuWebhookPostSection{}
-	if context.Description != "" {
-		sectionList := []FeishuWebhookPostSection{}
-		sectionList = append(sectionList, FeishuWebhookPostSection{
-			Tag:  "text",
-			Text: context.Description,
-		})
-		contentList = append(contentList, sectionList)
+	var markdownBuf strings.Builder
 
-		sectionList = []FeishuWebhookPostSection{}
-		sectionList = append(sectionList, FeishuWebhookPostSection{
-			Tag:  "text",
-			Text: "",
-		})
-		contentList = append(contentList, sectionList)
+	if context.Description != "" {
+		if _, err := markdownBuf.WriteString(fmt.Sprintf("%s\n", context.Description)); err != nil {
+			return err
+		}
 	}
 
 	for _, meta := range context.getMetaList() {
-		sectionList := []FeishuWebhookPostSection{}
-		sectionList = append(sectionList, FeishuWebhookPostSection{
-			Tag:  "text",
-			Text: fmt.Sprintf("%s: %s", meta.Name, meta.Value),
-		})
-		contentList = append(contentList, sectionList)
+		if _, err := markdownBuf.WriteString(fmt.Sprintf("**%s**: %s\n", meta.Name, meta.Value)); err != nil {
+			return err
+		}
 	}
 
-	{
-		sectionList := []FeishuWebhookPostSection{}
-		sectionList = append(sectionList, FeishuWebhookPostSection{
-			Tag:  "text",
-			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
-		})
-		contentList = append(contentList, sectionList)
-	}
-
-	{
-		sectionList := []FeishuWebhookPostSection{}
-		sectionList = append(sectionList, FeishuWebhookPostSection{
-			Tag:  "a",
-			Text: "View in Bytebase",
-			Href: context.Link,
-		})
-		contentList = append(contentList, sectionList)
+	if _, err := markdownBuf.WriteString(fmt.Sprintf("**By**: %s (%s)\n[View in Bytebase](%s)", context.CreatorName, context.CreatorEmail, context.Link)); err != nil {
+		return err
 	}
 
 	post := FeishuWebhook{
-		MessageType: "post",
-		Content: FeishuWebhookContent{
-			Post: FeishuWebhookPostLanguage{
-				English: FeishuWebhookPost{
-					Title:       context.Title,
-					ContentList: contentList,
+		MessageType: "interactive",
+		Card: &FeishuWebhookCard{
+			Config: FeishuWebhookCardConfig{
+				WideScreenMode: true,
+				EnableForward:  true,
+			},
+			Header: FeishuWebhookCardHeader{
+				Title: FeishuWebhookCardHeaderTitle{
+					Content: context.Title,
+					Tag:     "plain_text",
+				},
+			},
+			I18nElements: FeishuWebhookCardI18nElements{
+				English: []FeishuWebhookMarkdownSection{
+					{
+						Tag:     "markdown",
+						Content: markdownBuf.String(),
+					},
 				},
 			},
 		},
