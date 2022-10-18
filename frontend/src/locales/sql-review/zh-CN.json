@@ -145,12 +145,12 @@
         }
       }
     },
-    "column-type-restriction": {
+    "column-type-disallow-list": {
       "title": "类型约束",
-      "description": "设置字段的类型约束",
+      "description": "为字段设置类型黑名单。",
       "component": {
-        "allowList": {
-          "title": "允许的类型"
+        "disallowList": {
+          "title": "禁止的类型"
         }
       }
     },

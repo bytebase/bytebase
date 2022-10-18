@@ -144,12 +144,12 @@
         }
       }
     },
-    "column-type-restriction": {
-      "title": "Type restriction",
-      "description": "Set the column type limit.",
+    "column-type-disallow-list": {
+      "title": "Type disallow list",
+      "description": "Set the disallow list for column type.",
       "component": {
-        "allowList": {
-          "title": "Allow list"
+        "disallowList": {
+          "title": "Disallow list"
         }
       }
     },

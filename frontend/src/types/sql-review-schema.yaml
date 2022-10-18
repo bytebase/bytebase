@@ -259,13 +259,13 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  - type: column.type-restriction
+  - type: column.type-disallow-list
     category: COLUMN
     engineList:
       - MYSQL
       - TIDB
     componentList:
-      - key: allowList
+      - key: disallowList
         payload:
           type: STRING_ARRAY
           default: []

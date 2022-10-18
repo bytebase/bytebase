@@ -41,7 +41,7 @@ func TestCollationAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCollation,
-					Title:   "collation.allowlist",
+					Title:   "system.collation.allowlist",
 					Content: "\"CREATE TABLE t(a int) COLLATE latin1_bin\" used disabled collation 'latin1_bin'",
 					Line:    1,
 				},
@@ -55,7 +55,7 @@ func TestCollationAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCollation,
-					Title:   "collation.allowlist",
+					Title:   "system.collation.allowlist",
 					Content: "\"ALTER TABLE t COLLATE latin1_bin\" used disabled collation 'latin1_bin'",
 					Line:    3,
 				},
@@ -67,7 +67,7 @@ func TestCollationAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCollation,
-					Title:   "collation.allowlist",
+					Title:   "system.collation.allowlist",
 					Content: "\"ALTER DATABASE test COLLATE latin1_bin\" used disabled collation 'latin1_bin'",
 					Line:    1,
 				},
@@ -79,7 +79,7 @@ func TestCollationAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCollation,
-					Title:   "collation.allowlist",
+					Title:   "system.collation.allowlist",
 					Content: "\"CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin)\" used disabled collation 'latin1_bin'",
 					Line:    1,
 				},
@@ -93,7 +93,7 @@ func TestCollationAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCollation,
-					Title:   "collation.allowlist",
+					Title:   "system.collation.allowlist",
 					Content: "\"ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin\" used disabled collation 'latin1_bin'",
 					Line:    3,
 				},
@@ -107,7 +107,7 @@ func TestCollationAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCollation,
-					Title:   "collation.allowlist",
+					Title:   "system.collation.allowlist",
 					Content: "\"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin\" used disabled collation 'latin1_bin'",
 					Line:    3,
 				},
@@ -121,7 +121,7 @@ func TestCollationAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCollation,
-					Title:   "collation.allowlist",
+					Title:   "system.collation.allowlist",
 					Content: "\"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin\" used disabled collation 'latin1_bin'",
 					Line:    3,
 				},
