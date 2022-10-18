@@ -1647,8 +1647,8 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
 		})
 	case advisor.SchemaRuleRequiredColumn:
-		payload, err = json.Marshal(advisor.RequiredColumnRulePayload{
-			ColumnList: []string{
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{
 				"id",
 				"created_ts",
 				"updated_ts",

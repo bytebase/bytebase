@@ -205,7 +205,7 @@ func (policy *SQLReviewPolicy) Validate() error {
 type SQLReviewRule struct {
 	Type  SQLReviewRuleType  `json:"type"`
 	Level SQLReviewRuleLevel `json:"level"`
-	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, RequiredColumnRulePayload)
+	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, StringArrayTypeRulePayload)
 	// If the rule doesn't have any payload configuration, the payload would be "{}"
 	Payload string `json:"payload"`
 }
@@ -341,7 +341,10 @@ func parseTemplateTokens(template string) ([]string, []string) {
 // UnmarshalRequiredColumnList will unmarshal payload and parse the required column list.
 func UnmarshalRequiredColumnList(payload string) ([]string, error) {
 	stringArrayRulePayload, err := UnmarshalStringArrayTypeRulePayload(payload)
-	if err == nil {
+	if err != nil {
+		return nil, err
+	}
+	if len(stringArrayRulePayload.List) != 0 {
 		return stringArrayRulePayload.List, nil
 	}
 
