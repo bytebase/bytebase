@@ -34,7 +34,7 @@ func (*EncodingAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalAllowlistRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (*EncodingAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([
 		allowlist: make(map[string]bool),
 	}
 
-	for _, encoding := range payload.Allowlist {
+	for _, encoding := range payload.List {
 		checker.allowlist[strings.ToLower(encoding)] = true
 	}
 

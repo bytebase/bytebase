@@ -108,10 +108,10 @@ interface NamingFormatPayload {
   maxLength?: number;
 }
 
-// The naming format rule payload.
+// The string array rule payload.
 // Used by the backend.
-interface RequiredColumnPayload {
-  columnList: string[];
+interface StringArrayLimitPayload {
+  list: string[];
 }
 
 // The SchemaPolicyRule stores the rule configuration by users.
@@ -119,7 +119,7 @@ interface RequiredColumnPayload {
 export interface SchemaPolicyRule {
   type: RuleType;
   level: RuleLevel;
-  payload?: NamingFormatPayload | RequiredColumnPayload;
+  payload?: NamingFormatPayload | StringArrayLimitPayload;
 }
 
 // The API for SQL review policy in backend.
@@ -365,9 +365,15 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     case "column.required": {
       const requiredColumnComponent = ruleTemplate.componentList[0];
+      // The columnList payload is deprecated.
+      // Just keep it to compatible with old data, we can remove this later.
+      let value: string[] = (policyRule.payload as any)["columnList"];
+      if (!value) {
+        value = (policyRule.payload as StringArrayLimitPayload).list;
+      }
       const requiredColumnPayload = {
         ...requiredColumnComponent.payload,
-        value: (policyRule.payload as RequiredColumnPayload).columnList,
+        value,
       } as StringArrayPayload;
       return {
         ...res,
@@ -461,7 +467,7 @@ export const convertRuleTemplateToPolicyRule = (
       return {
         ...base,
         payload: {
-          columnList: stringArrayPayload.value ?? stringArrayPayload.default,
+          list: stringArrayPayload.value ?? stringArrayPayload.default,
         },
       };
     }

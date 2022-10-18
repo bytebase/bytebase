@@ -101,8 +101,8 @@ func TestColumnTypeRestriction(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(advisor.TypeRestrictionRulePayload{
-		TypeList: []string{"JSON", "BLOB", "TEXT"},
+	payload, err := json.Marshal(advisor.StringArrayTypeRulePayload{
+		List: []string{"JSON", "BLOB", "TEXT"},
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &ColumnTypeRestrictionAdvisor{}, &advisor.SQLReviewRule{

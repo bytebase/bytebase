@@ -57,8 +57,8 @@ func TestCharsetAllowlist(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(advisor.AllowlistRulePayload{
-		Allowlist: []string{"utf8"},
+	payload, err := json.Marshal(advisor.StringArrayTypeRulePayload{
+		List: []string{"utf8"},
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &EncodingAllowlistAdvisor{}, &advisor.SQLReviewRule{

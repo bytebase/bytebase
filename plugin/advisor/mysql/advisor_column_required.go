@@ -36,12 +36,12 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalRequiredColumnRulePayload(ctx.Rule.Payload)
+	columnList, err := advisor.UnmarshalRequiredColumnList(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	requiredColumns := make(columnSet)
-	for _, column := range payload.ColumnList {
+	for _, column := range columnList {
 		requiredColumns[column] = true
 	}
 	checker := &columnRequirementChecker{
