@@ -184,7 +184,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		taskStatusPatch := &api.TaskStatusPatch{
-			ID:        taskID,
+			IDList:    []int{taskID},
 			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
@@ -401,7 +401,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			// updated statement, dismiss stale approvals and transfer the status to PendingApproval.
 			if taskPatched.Status != api.TaskPendingApproval {
 				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-					ID:        taskPatch.ID,
+					IDList:    []int{taskPatch.ID},
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
 				})
@@ -523,7 +523,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval.
 		if taskPatched.Status != api.TaskPendingApproval {
 			t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-				ID:        taskPatch.ID,
+				IDList:    []int{taskPatch.ID},
 				UpdaterID: taskPatch.UpdaterID,
 				Status:    api.TaskPendingApproval,
 			})
@@ -656,6 +656,7 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 	return nil, nil
 }
 
+// patchTaskStatus patches a single task.
 func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
@@ -673,6 +674,10 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 			Code: common.Invalid,
 			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
 		}
+	}
+
+	if len(taskStatusPatch.IDList) != 1 {
+		return nil, errors.Errorf("expect to patch 1 task, get %d", len(taskStatusPatch.IDList))
 	}
 
 	if taskStatusPatch.Status == api.TaskCanceled {
@@ -696,10 +701,11 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		taskStatusPatch.Result = &resultStr
 	}
 
-	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
+	taskPatchedList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
 	}
+	taskPatched := taskPatchedList[0]
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
 	// behaves differently depending on whether the task is wrapped in an issue.
@@ -901,6 +907,7 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error {
 	queue := []int{task.ID}
 	seen := map[int]bool{task.ID: true}
+	var idList []int
 	for len(queue) != 0 {
 		fromTaskID := queue[0]
 		queue = queue[1:]
@@ -913,16 +920,16 @@ func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error
 				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
 			}
 			seen[dag.ToTaskID] = true
-
-			if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
-				ID:        dag.ToTaskID,
-				UpdaterID: api.SystemBotID,
-				Status:    api.TaskCanceled,
-			}); err != nil {
-				return err
-			}
+			idList = append(idList, dag.ToTaskID)
 			queue = append(queue, dag.ToTaskID)
 		}
+	}
+	if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+		IDList:    idList,
+		UpdaterID: api.SystemBotID,
+		Status:    api.TaskCanceled,
+	}); err != nil {
+		return err
 	}
 	return nil
 }
