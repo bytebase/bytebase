@@ -905,10 +905,7 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error {
 	queue := []int{task.ID}
 	seen := map[int]bool{task.ID: true}
-	taskStatusPatch := api.TaskStatusPatch{
-		UpdaterID: api.SystemBotID,
-		Status:    api.TaskCanceled,
-	}
+	var idList []int
 	for len(queue) != 0 {
 		fromTaskID := queue[0]
 		queue = queue[1:]
@@ -921,11 +918,15 @@ func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error
 				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
 			}
 			seen[dag.ToTaskID] = true
-			taskStatusPatch.IDList = append(taskStatusPatch.IDList, dag.ToTaskID)
+			idList = append(idList, dag.ToTaskID)
 			queue = append(queue, dag.ToTaskID)
 		}
 	}
-	if _, err := s.store.PatchTaskStatus(ctx, &taskStatusPatch); err != nil {
+	if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+		IDList:    idList,
+		UpdaterID: api.SystemBotID,
+		Status:    api.TaskCanceled,
+	}); err != nil {
 		return err
 	}
 	return nil
