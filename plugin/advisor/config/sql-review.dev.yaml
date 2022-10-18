@@ -35,6 +35,10 @@ ruleList:
     level: WARNING
   - type: statement.insert.disallow-order-by-rand
     level: WARNING
+  - type: statement.insert.row-limit
+    level: WARNING
+    payload:
+      number: 5
   - type: naming.table
     level: WARNING
     payload:
@@ -68,7 +72,7 @@ ruleList:
   - type: column.required
     level: WARNING
     payload:
-      columnList:
+      list:
         - id
         - created_ts
         - updated_ts
@@ -77,7 +81,7 @@ ruleList:
   - type: column.type-disallow-list
     level: WARNING
     payload:
-      disallowList:
+      list:
         - JSON
   - type: column.no-null
     level: WARNING
@@ -100,6 +104,14 @@ ruleList:
     payload:
       required: true
       maxLength: 64
+  - type: column.maximum-character-length
+    level: WARNING
+    payload:
+      number: 5
+  - type: column.auto-increment-initial-value
+    level: WARNING
+    payload:
+      number: 1
   - type: schema.backward-compatibility
     level: WARNING
   - type: database.drop-empty-database
@@ -108,13 +120,21 @@ ruleList:
     level: ERROR
   - type: index.type-no-blob
     level: ERROR
+  - type: index.key-number-limit
+    level: WARNING
+    payload:
+      number: 5
+  - type: index.total-number-limit
+    level: WARNING
+    payload:
+      number: 5
   - type: system.charset.allowlist
     level: WARNING
     payload:
-      allowList:
+      list:
         - utf8mb4
   - type: system.collation.allowlist
     level: WARNING
     payload:
-      allowList:
+      list:
         - utf8mb4_0900_ai_ci

@@ -103,7 +103,17 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  # TODO: - type: statement.insert.row-limit
+  - type: statement.insert.row-limit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 5
   - type: statement.insert.must-specify-column
     category: STATEMENT
     engineList:
@@ -225,7 +235,7 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList:
-      - key: columnList
+      - key: list
         payload:
           type: STRING_ARRAY
           default:
@@ -291,7 +301,7 @@ ruleList:
       - MYSQL
       - TIDB
     componentList:
-      - key: disallowList
+      - key: list
         payload:
           type: STRING_ARRAY
           default: []
@@ -301,8 +311,26 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  # TODO: - type: column.maximum-character-length
-  # TODO: - type: column.auto-increment-initial-value
+  - type: column.maximum-character-length
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 5
+  - type: column.auto-increment-initial-value
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 1
   - type: column.auto-increment-must-unsigned
     category: COLUMN
     engineList:
@@ -328,7 +356,17 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  # TODO: - type: index.key-number-limit
+  - type: index.key-number-limit
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 5
   # TODO: - type: index.pk-type
   - type: index.type-no-blob
     category: INDEX
@@ -336,7 +374,16 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  # TODO: - type: index.total-number-limit
+  - type: index.total-number-limit
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 5
   - type: system.charset.allowlist
     category: SYSTEM
     engineList:
@@ -344,7 +391,7 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList:
-      - key: allowList
+      - key: list
         payload:
           type: STRING_ARRAY
           default: []
@@ -354,7 +401,7 @@ ruleList:
       - MYSQL
       - TIDB
     componentList:
-      - key: allowList
+      - key: list
         payload:
           type: STRING_ARRAY
           default: []
