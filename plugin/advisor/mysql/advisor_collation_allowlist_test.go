@@ -129,8 +129,8 @@ func TestCollationAllowlist(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(advisor.AllowlistRulePayload{
-		Allowlist: []string{"utf8mb4_polish_ci"},
+	payload, err := json.Marshal(advisor.StringArrayTypeRulePayload{
+		List: []string{"utf8mb4_polish_ci"},
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &CollationAllowlistAdvisor{}, &advisor.SQLReviewRule{
