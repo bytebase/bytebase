@@ -149,6 +149,9 @@ type CreateTableContext struct {
 type AlterTableContext struct {
 	TableID int
 
+	// ColumnNameList should be the final order of columns in UI editor and is used to confirm column positions.
+	ColumnNameList []string
+
 	AddColumnList   []*AddColumnContext
 	AlterColumnList []*AlterColumnContext
 	DropColumnList  []*DropColumnContext
@@ -172,6 +175,7 @@ type AddColumnContext struct {
 
 // AlterColumnContext is the alter table context to alter a column.
 type AlterColumnContext struct {
+	Name         string
 	Type         *string
 	CharacterSet *string
 	Collation    *string
