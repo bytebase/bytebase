@@ -46,6 +46,18 @@
       "title": "禁止分区",
       "description": ""
     },
+    "table-comment": {
+      "title": "注释检查",
+      "description": "配置表是否需要注释和最大注释长度。",
+      "component": {
+        "required": {
+          "title": "必须注释"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
     "naming-table": {
       "title": "表名命名检查",
       "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 63 个字符。",
@@ -185,6 +197,18 @@
     "column-auto-increment-must-unsigned": {
       "title": "自增列需要设置无符号",
       "description": ""
+    },
+    "column-comment": {
+      "title": "注释检查",
+      "description": "配置字段是否需要注释和最大注释长度。",
+      "component": {
+        "required": {
+          "title": "必须注释"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
     },
     "statement-select-no-select-all": {
       "title": "禁止 \"SELECT *\"",
