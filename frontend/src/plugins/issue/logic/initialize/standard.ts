@@ -1,11 +1,5 @@
 import { TemplateType } from "@/plugins";
-import { useInstanceStore } from "@/store";
-import {
-  IssueCreate,
-  IssueCreateContext,
-  MigrationType,
-  MigrationContext,
-} from "@/types";
+import { IssueCreate, IssueCreateContext, MigrationType } from "@/types";
 import {
   findDatabaseListByQuery,
   BuildNewIssueContext,
@@ -45,24 +39,6 @@ export const buildNewStandardIssue = async (
       };
     }),
   };
-
-  // If the database is within VCS project, try to find its latest and done migration history from VCS.
-  // If not found, keep the vcsPushEvent field empty and check in backend.
-  // (Validate only)
-  if (migrationType === "BASELINE" && databaseList.length === 1) {
-    const database = databaseList[0];
-    if (database.project.workflowType === "VCS") {
-      const migrationHistory =
-        useInstanceStore().getLatestDoneVCSMigrationHistory(
-          database.instance.id,
-          database.name
-        );
-      if (migrationHistory) {
-        (createContext as MigrationContext).vcsPushEvent =
-          migrationHistory.payload?.pushEvent;
-      }
-    }
-  }
 
   helper.issueCreate!.createContext = createContext;
   await helper.validate();
