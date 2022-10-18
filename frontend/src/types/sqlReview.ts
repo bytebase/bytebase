@@ -364,6 +364,8 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     case "column.required": {
       const requiredColumnComponent = ruleTemplate.componentList[0];
+      // The columnList payload is deprecated.
+      // Just keep it to compatible with old data, we can remove this later.
       let value: string[] = (policyRule.payload as any)["columnList"];
       if (!value) {
         value = (policyRule.payload as StringArrayLimitPayload).list;

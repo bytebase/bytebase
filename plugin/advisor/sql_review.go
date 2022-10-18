@@ -341,17 +341,19 @@ func parseTemplateTokens(template string) ([]string, []string) {
 
 // UnmarshalRequiredColumnList will unmarshal payload and parse the required column list.
 func UnmarshalRequiredColumnList(payload string) ([]string, error) {
-	columnRulePayload, err := unmarshalRequiredColumnRulePayload(payload)
+	stringArrayRulePayload, err := UnmarshalStringArrayTypeRulePayload(payload)
 	if err == nil {
-		return columnRulePayload.ColumnList, nil
+		return stringArrayRulePayload.List, nil
 	}
 
-	stringArrayRulePayload, err := UnmarshalStringArrayTypeRulePayload(payload)
+	// The RequiredColumnRulePayload is deprecated.
+	// Just keep it to compatible with old data, and we can remove this later.
+	columnRulePayload, err := unmarshalRequiredColumnRulePayload(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	return stringArrayRulePayload.List, nil
+	return columnRulePayload.ColumnList, nil
 }
 
 // unmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
