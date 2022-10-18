@@ -238,6 +238,53 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []testData{
 		{
+			statement: "DELIMITER ;;\n" +
+				"CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
+				`BEGIN
+
+		   DECLARE income INT;
+
+		   SET income = 0;
+
+		   label1: WHILE income <= 3000 DO
+			 SET income = income + starting_value;
+		   END WHILE label1;
+
+		   RETURN income;
+
+		END ;;
+		DELIMITER ;`,
+			want: resData{
+				res: []SingleSQL{
+					{
+						Text:     "DELIMITER ;;",
+						LastLine: 1,
+					},
+					{
+						Text: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
+							`BEGIN
+
+		   DECLARE income INT;
+
+		   SET income = 0;
+
+		   label1: WHILE income <= 3000 DO
+			 SET income = income + starting_value;
+		   END WHILE label1;
+
+		   RETURN income;
+
+		END ;;`,
+						LastLine: 15,
+					},
+					{
+						Text:     "DELIMITER ;",
+						LastLine: 16,
+					},
+				},
+			},
+		},
+		{
 			statement: bigSQL,
 			want: resData{
 				res: []SingleSQL{
