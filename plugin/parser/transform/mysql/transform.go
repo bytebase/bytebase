@@ -1,5 +1,5 @@
-// Package transform converts the raw schema dump to standard schema style.
-package transform
+// Package mysql provides the MySQL transformer plugin.
+package mysql
 
 import (
 	"bytes"
@@ -10,11 +10,28 @@ import (
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pkg/errors"
 
+	bbparser "github.com/bytebase/bytebase/plugin/parser"
+
+	"github.com/bytebase/bytebase/plugin/parser/transform"
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
-func transform(schema string) (string, error) {
+var (
+	_ transform.SchemaTransformer = (*SchemaTransformer)(nil)
+)
+
+func init() {
+	transform.Register(bbparser.MySQL, &SchemaTransformer{})
+	transform.Register(bbparser.TiDB, &SchemaTransformer{})
+}
+
+// SchemaTransformer it the transformer for MySQL dialect.
+type SchemaTransformer struct {
+}
+
+// Transform returns the transformed schema.
+func (*SchemaTransformer) Transform(schema string) (string, error) {
 	nodes, _, err := parser.New().Parse(schema, "", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse schema %q", schema)

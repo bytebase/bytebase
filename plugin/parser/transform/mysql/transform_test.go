@@ -1,4 +1,4 @@
-package transform
+package mysql
 
 import (
 	"testing"
@@ -21,7 +21,8 @@ func TestCreateTableSeparateIndex(t *testing.T) {
 		"CREATE INDEX `t1` ON `t1` (`c1`);\n"
 
 	a := require.New(t)
-	got, err := transform(input)
+	mysqlTransformer := &SchemaTransformer{}
+	got, err := mysqlTransformer.Transform(input)
 	a.NoError(err)
 	a.Equal(want, got)
 }
