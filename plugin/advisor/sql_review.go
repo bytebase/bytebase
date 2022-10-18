@@ -101,8 +101,8 @@ const (
 	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
 	// SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
 	SchemaRuleColumnAutoIncrementMustInteger SQLReviewRuleType = "column.auto-increment-must-integer"
-	// SchemaRuleColumnTypeRestriction enforce the column type restriction.
-	SchemaRuleColumnTypeRestriction SQLReviewRuleType = "column.type-restriction"
+	// SchemaRuleColumnTypeDisallowList enforce the column type disallow list.
+	SchemaRuleColumnTypeDisallowList SQLReviewRuleType = "column.type-disallow-list"
 	// SchemaRuleColumnDisallowSetCharset disallow set column charset.
 	SchemaRuleColumnDisallowSetCharset SQLReviewRuleType = "column.disallow-set-charset"
 	// SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
@@ -130,10 +130,10 @@ const (
 	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
-	SchemaRuleCharsetAllowlist SQLReviewRuleType = "charset.allowlist"
+	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
 
 	// SchemaRuleCollationAllowlist enforce the collation allowlist.
-	SchemaRuleCollationAllowlist SQLReviewRuleType = "collation.allowlist"
+	SchemaRuleCollationAllowlist SQLReviewRuleType = "system.collation.allowlist"
 
 	// SchemaRuleCommentLength limit comment length.
 	SchemaRuleCommentLength SQLReviewRuleType = "comment.length"
@@ -234,7 +234,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleColumnTypeRestriction, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist:
+	case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist:
 		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -727,7 +727,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLAutoIncrementColumnMustInteger, nil
 		}
-	case SchemaRuleColumnTypeRestriction:
+	case SchemaRuleColumnTypeDisallowList:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnTypeRestriction, nil

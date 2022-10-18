@@ -12,7 +12,8 @@
     "column": "Column",
     "schema": "Schema",
     "database": "Database",
-    "index": "Index"
+    "index": "Index",
+    "system": "System"
   },
   "template": {
     "bb-sql-review-prod": "Template for Prod Environment",
@@ -143,6 +144,15 @@
         }
       }
     },
+    "column-type-disallow-list": {
+      "title": "Type disallow list",
+      "description": "Set the disallow list for column type.",
+      "component": {
+        "disallowList": {
+          "title": "Disallow list"
+        }
+      }
+    },
     "column-no-null": {
       "title": "Disallow NULL",
       "description": "Columns cannot have NULL value."
@@ -226,6 +236,24 @@
     "index-type-no-blob": {
       "title": "Disallow BLOB",
       "description": "Disallow using BLOB type column in index."
+    },
+    "system-charset-allowlist": {
+      "title": "Charset allow list",
+      "description": "",
+      "component": {
+        "allowList": {
+          "title": "Allow list"
+        }
+      }
+    },
+    "system-collation-allowlist": {
+      "title": "Collation allow list",
+      "description": "",
+      "component": {
+        "allowList": {
+          "title": "Allow list"
+        }
+      }
     }
   },
   "level": {
