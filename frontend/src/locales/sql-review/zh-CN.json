@@ -13,7 +13,8 @@
     "schema": "Schema",
     "database": "数据库",
     "index": "索引",
-    "insert": "插入"
+    "insert": "插入",
+    "system": "系统"
   },
   "template": {
     "bb-sql-review-prod": "针对生产环境的审核策略模板",
@@ -144,6 +145,15 @@
         }
       }
     },
+    "column-type-disallow-list": {
+      "title": "类型约束",
+      "description": "为字段设置类型黑名单。",
+      "component": {
+        "disallowList": {
+          "title": "禁止的类型"
+        }
+      }
+    },
     "column-no-null": {
       "title": "禁止字段为 NULL",
       "description": "表中的字段不允许存在 NULL 值。"
@@ -227,6 +237,24 @@
     "index-type-no-blob": {
       "title": "BLOB 列不能建作为索引",
       "description": ""
+    },
+    "system-charset-allowlist": {
+      "title": "字符集限制",
+      "description": "",
+      "component": {
+        "allowList": {
+          "title": "允许的字符集"
+        }
+      }
+    },
+    "system-collation-allowlist": {
+      "title": "排序规则限制",
+      "description": "",
+      "component": {
+        "allowList": {
+          "title": "允许的规则限制"
+        }
+      }
     }
   },
   "level": {

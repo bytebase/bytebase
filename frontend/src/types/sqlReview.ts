@@ -20,7 +20,8 @@ export type CategoryType =
   | "COLUMN"
   | "SCHEMA"
   | "DATABASE"
-  | "INDEX";
+  | "INDEX"
+  | "SYSTEM";
 
 // The rule level
 export enum RuleLevel {
@@ -81,6 +82,7 @@ export type RuleType =
   | "table.require-pk"
   | "table.no-foreign-key"
   | "table.drop-naming-convention"
+  | "table.disallow-partition"
   | "naming.table"
   | "naming.column"
   | "naming.index.uk"
@@ -89,12 +91,29 @@ export type RuleType =
   | "naming.index.idx"
   | "column.required"
   | "column.no-null"
+  | "column.type-disallow-list"
+  | "column.disallow-change-type"
+  | "column.set-default-for-not-null"
+  | "column.disallow-change"
+  | "column.disallow-changing-order"
+  | "column.auto-increment-must-integer"
+  | "column.disallow-set-charset"
+  | "column.auto-increment-must-unsigned"
   | "statement.select.no-select-all"
   | "statement.where.require"
   | "statement.where.no-leading-wildcard-like"
   | "statement.disallow-commit"
+  | "statement.disallow-limit"
+  | "statement.disallow-order-by"
+  | "statement.merge-alter-table"
+  | "statement.insert.must-specify-column"
+  | "statement.insert.disallow-order-by-rand"
   | "schema.backward-compatibility"
-  | "database.drop-empty-database";
+  | "database.drop-empty-database"
+  | "system.charset.allowlist"
+  | "system.collation.allowlist"
+  | "index.no-duplicate-column"
+  | "index.type-no-blob";
 
 export const availableRulesForFreePlan: RuleType[] = [
   "statement.where.require",
@@ -385,6 +404,24 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     }
+    case "column.type-disallow-list":
+    case "system.charset.allowlist":
+    case "system.collation.allowlist": {
+      const stringArrayComponent = ruleTemplate.componentList[0];
+      const stringArrayPayload = {
+        ...stringArrayComponent.payload,
+        value: (policyRule.payload as StringArrayLimitPayload).list,
+      } as StringArrayPayload;
+      return {
+        ...res,
+        componentList: [
+          {
+            ...stringArrayComponent,
+            payload: stringArrayPayload,
+          },
+        ],
+      };
+    }
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -461,7 +498,10 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
-    case "column.required": {
+    case "column.required":
+    case "column.type-disallow-list":
+    case "system.charset.allowlist":
+    case "system.collation.allowlist": {
       const stringArrayPayload = rule.componentList[0]
         .payload as StringArrayPayload;
       return {

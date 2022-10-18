@@ -6,6 +6,7 @@ categoryList:
   - TABLE
   - SCHEMA
   - COLUMN
+  - SYSTEM
   - DATABASE
 ruleList:
   - type: engine.mysql.use-innodb
@@ -91,13 +92,13 @@ ruleList:
     componentList: []
   # TODO: - type: statement.insert.row-limit
   - type: statement.insert.must-specify-column
-    category: INSERT
+    category: STATEMENT
     engineList:
       - MYSQL
       - TIDB
     componentList: []
   - type: statement.insert.disallow-order-by-rand
-    category: INSERT
+    category: STATEMENT
     engineList:
       - MYSQL
       - TIDB
@@ -258,7 +259,16 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  # TODO: - type: column.type-restriction
+  - type: column.type-disallow-list
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: disallowList
+        payload:
+          type: STRING_ARRAY
+          default: []
   - type: column.disallow-set-charset
     category: COLUMN
     engineList:
@@ -301,5 +311,24 @@ ruleList:
       - TIDB
     componentList: []
   # TODO: - type: index.total-number-limit
-  # TODO: - type: charset.allowlist
-  # TODO: - type: collation.allowlist
+  - type: system.charset.allowlist
+    category: SYSTEM
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
+    componentList:
+      - key: allowList
+        payload:
+          type: STRING_ARRAY
+          default: []
+  - type: system.collation.allowlist
+    category: SYSTEM
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: allowList
+        payload:
+          type: STRING_ARRAY
+          default: []

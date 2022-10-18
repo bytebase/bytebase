@@ -41,7 +41,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"CREATE TABLE t(a int) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -55,7 +55,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    3,
 				},
@@ -67,7 +67,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER DATABASE test CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -79,7 +79,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"CREATE TABLE t(a varchar(255) CHARSET ascii)\" used disabled charset 'ascii'",
 					Line:    1,
 				},
@@ -93,7 +93,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    3,
 				},
@@ -107,7 +107,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    3,
 				},
@@ -121,7 +121,7 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    3,
 				},

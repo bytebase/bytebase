@@ -69,6 +69,11 @@ ruleList:
         - updated_ts
         - creator_id
         - updater_id
+  - type: column.type-disallow-list
+    level: ERROR
+    payload:
+      disallowList:
+        - JSON
   - type: column.no-null
     level: WARNING
   - type: column.disallow-change-type
@@ -93,3 +98,13 @@ ruleList:
     level: ERROR
   - type: index.type-no-blob
     level: ERROR
+  - type: system.charset.allowlist
+    level: ERROR
+    payload:
+      allowList:
+        - utf8mb4
+  - type: system.collation.allowlist
+    level: ERROR
+    payload:
+      allowList:
+        - utf8mb4_0900_ai_ci

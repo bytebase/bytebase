@@ -30,21 +30,21 @@ func TestColumnTypeRestriction(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type JSON but column `t`.`a` is",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type BLOB but column `t`.`b` is",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type TEXT but column `t`.`c` is",
 					Line:    1,
 				},
@@ -58,21 +58,21 @@ func TestColumnTypeRestriction(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type JSON but column `t`.`a` is",
 					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type BLOB but column `t`.`b` is",
 					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type TEXT but column `t`.`c` is",
 					Line:    3,
 				},
@@ -86,14 +86,14 @@ func TestColumnTypeRestriction(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type JSON but column `t`.`a` is",
 					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledColumnType,
-					Title:   "column.type-restriction",
+					Title:   "column.type-disallow-list",
 					Content: "Disallow column type BLOB but column `t`.`b` is",
 					Line:    3,
 				},
@@ -106,7 +106,7 @@ func TestColumnTypeRestriction(t *testing.T) {
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &ColumnTypeRestrictionAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleColumnTypeRestriction,
+		Type:    advisor.SchemaRuleColumnTypeDisallowList,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, advisor.MockMySQLDatabase)
