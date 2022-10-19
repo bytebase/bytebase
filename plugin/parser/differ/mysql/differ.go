@@ -56,10 +56,24 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from old statements %q", oldStmt)
 	}
+	var oldUnsupportFilterStmts []string
+	for _, stmt := range oldUnsupportStmts {
+		if !bbparser.IsDelimiter(stmt) {
+			oldUnsupportFilterStmts = append(oldUnsupportFilterStmts, stmt)
+		}
+	}
+
 	newUnsupportStmts, newSupportStmts, err := bbparser.ExtractTiDBUnsupportStmts(newStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from old statements %q", oldStmt)
 	}
+	var newUnsupportFilterStmts []string
+	for _, stmt := range newUnsupportStmts {
+		if !bbparser.IsDelimiter(stmt) {
+			newUnsupportFilterStmts = append(newUnsupportFilterStmts, stmt)
+		}
+	}
+
 	oldNodes, _, err := parser.New().Parse(oldSupportStmts, "", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
@@ -303,23 +317,23 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var inplaceDropStmt []string
 	var inplaceAddStmt []string
 
-	functionMap, err := buildUnsupportObjectMap(oldUnsupportStmts, function)
+	functionMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, function)
 	if err != nil {
 		return "", err
 	}
-	procedureMap, err := buildUnsupportObjectMap(oldUnsupportStmts, procedure)
+	procedureMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, procedure)
 	if err != nil {
 		return "", err
 	}
-	triggerMap, err := buildUnsupportObjectMap(oldUnsupportStmts, trigger)
+	triggerMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, trigger)
 	if err != nil {
 		return "", err
 	}
-	eventMap, err := buildUnsupportObjectMap(oldUnsupportStmts, event)
+	eventMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, event)
 	if err != nil {
 		return "", err
 	}
-	for _, stmt := range newUnsupportStmts {
+	for _, stmt := range newUnsupportFilterStmts {
 		name, tp, err := extractUnsupportObjNameAndType(stmt)
 		if err != nil {
 			return "", err
@@ -1231,14 +1245,27 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 
 // extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
 func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
-	objects := []objectType{
-		trigger,
-		event,
+	fs := []objectType{
 		function,
 		procedure,
 	}
-	regexFmt := "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)\\s+"
+	regexFmt := "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)*\\("
 	namingRegex := "`[^\\\\/?%*:|\\\"`<>]+`"
+	for _, obj := range fs {
+		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
+		re := regexp.MustCompile(regex)
+		matchList := re.FindStringSubmatch(stmt)
+		index := re.SubexpIndex("OBJECT_NAME")
+		if index >= 0 && index < len(matchList) {
+			objectName := strings.Trim(matchList[index], "`")
+			return objectName, obj, nil
+		}
+	}
+	objects := []objectType{
+		trigger,
+		event,
+	}
+	regexFmt = "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)+"
 	for _, obj := range objects {
 		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
 		re := regexp.MustCompile(regex)
