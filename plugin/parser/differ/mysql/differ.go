@@ -361,7 +361,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if oldStmt, ok := triggerMap[name]; ok {
 				if strings.Compare(oldStmt, stmt) != 0 {
 					// We should drop the old trigger and create the new trigger.
-					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP TRIGGER IF EXISTS `%s`;\n", name))
+					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP TRIGGER IF EXISTS `%s`;", name))
 					inplaceAddStmt = append(inplaceAddStmt, stmt)
 				}
 				delete(triggerMap, name)
@@ -1178,7 +1178,7 @@ func extractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 	}
 	for _, sql := range singleSQLs {
 		content := sql.Text
-		if !isTiDBUnsupportStmt(content) {
+		if isTiDBUnsupportStmt(content) {
 			unsupportStmts = append(unsupportStmts, content)
 			continue
 		}
@@ -1200,7 +1200,7 @@ func isTiDBUnsupportStmt(stmt string) bool {
 		"FUNCTION",
 		"PROCEDURE",
 	}
-	regexFmt := "(?i)^CREATE DEFINER=`.+`@`.+`%s\\s+"
+	regexFmt := "(?i)^CREATE DEFINER=`.+`@`.+` %s\\s+"
 	for _, obj := range objects {
 		regex := fmt.Sprintf(regexFmt, obj)
 		re := regexp.MustCompile(regex)
@@ -1230,7 +1230,8 @@ func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
 		matchList := re.FindStringSubmatch(stmt)
 		index := re.SubexpIndex("OBJECT_NAME")
 		if index >= 0 {
-			return matchList[index], obj, nil
+			objectName := strings.Trim(matchList[index], "`")
+			return objectName, obj, nil
 		}
 	}
 	return "", "", errors.Errorf("cannot extract object name and type from %q", stmt)
@@ -1246,8 +1247,7 @@ func buildTriggerMap(stmts []string) (map[string]string, error) {
 		}
 		if objType == trigger {
 			// We only need to extract the trigger name from the CREATE TRIGGER statement.
-			trimStmt := strings.Trim(objName, "`")
-			m[objName] = trimStmt
+			m[objName] = stmt
 		}
 	}
 	return m, nil
