@@ -1082,8 +1082,8 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 	return repository, nil
 }
 
-// getRepositories gets the repository list.
-func (ctl *controller) getRepositories(projectID int) ([]*api.Repository, error) {
+// listRepository gets the repository list.
+func (ctl *controller) listRepository(projectID int) ([]*api.Repository, error) {
 	body, err := ctl.get(fmt.Sprintf("/project/%d/repository", projectID), nil)
 	if err != nil {
 		return nil, err
