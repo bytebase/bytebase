@@ -121,6 +121,9 @@ const (
 	// MySQLAutoIncrementColumnMustUnsigned is an advisor type for MySQL unsigned auto-increment column.
 	MySQLAutoIncrementColumnMustUnsigned Type = "bb.plugin.advisor.mysql.column.auto-increment-must-unsigned"
 
+	// MySQLDatetimeColumnCountLimit is an advisor type for MySQL datetime column count limit.
+	MySQLDatetimeColumnCountLimit Type = "bb.plugin.advisor.mysql.column.datetime-count-limit"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
