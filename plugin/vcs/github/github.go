@@ -785,7 +785,8 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 	return &file, nil
 }
 
-type githubPullRequestFile struct {
+// PullRequestFile is the API message for files in GitHub pull request.
+type PullRequestFile struct {
 	FileName string `json:"filename"`
 	SHA      string `json:"sha"`
 	// The file status in GitHub PR.
@@ -800,7 +801,7 @@ type githubPullRequestFile struct {
 //
 // Docs: https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
 func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
-	var allPRFiles []githubPullRequestFile
+	var allPRFiles []PullRequestFile
 	page := 1
 	for {
 		fileList, err := p.listPaginatedPullRequestFile(ctx, oauthCtx, instanceURL, repositoryID, pullRequestID, page)
@@ -826,7 +827,8 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 			)
 			continue
 		}
-		m, _ := url.ParseQuery(u.RawQuery)
+
+		m, err := url.ParseQuery(u.RawQuery)
 		if err != nil {
 			log.Debug("Failed to parse query for file",
 				zap.String("content_url", file.ContentsURL),
@@ -851,7 +853,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 }
 
 // listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
-func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string, page int) ([]githubPullRequestFile, error) {
+func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string, page int) ([]PullRequestFile, error) {
 	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -881,7 +883,7 @@ func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx co
 		)
 	}
 
-	var prFiles []githubPullRequestFile
+	var prFiles []PullRequestFile
 	if err := json.Unmarshal([]byte(body), &prFiles); err != nil {
 		return nil, err
 	}
