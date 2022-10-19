@@ -759,12 +759,14 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
-type gitlabMergeRequestChange struct {
-	SHA     string                   `json:"sha"`
-	Changes []gitlabMergeRequestFile `json:"changes"`
+// MergeRequestChange is the API message for GitLab merge request changes.
+type MergeRequestChange struct {
+	SHA     string             `json:"sha"`
+	Changes []MergeRequestFile `json:"changes"`
 }
 
-type gitlabMergeRequestFile struct {
+// MergeRequestFile is the API message for files in GitLab merge request.
+type MergeRequestFile struct {
 	NewPath     string `json:"new_path"`
 	NewFile     bool   `json:"new_file"`
 	RenamedFile bool   `json:"renamed_file"`
@@ -804,7 +806,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 		)
 	}
 
-	pr := new(gitlabMergeRequestChange)
+	pr := new(MergeRequestChange)
 	if err := json.Unmarshal([]byte(body), pr); err != nil {
 		return nil, err
 	}

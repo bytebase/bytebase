@@ -17,7 +17,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -41,7 +41,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -53,14 +53,14 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    1,
 				},
@@ -97,7 +97,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    3,
 				},
@@ -125,7 +125,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    3,
 				},
@@ -139,14 +139,14 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    3,
 				},
@@ -187,7 +187,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    2,
 				},
@@ -201,14 +201,14 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    2,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    2,
 				},
@@ -249,7 +249,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    3,
 				},
@@ -277,7 +277,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    3,
 				},
@@ -299,7 +299,7 @@ func TestIndexPkType(t *testing.T) {
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &IndexPkTypeAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleIndexPKType,
+		Type:    advisor.SchemaRuleIndexPKTypeLimit,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, advisor.MockMySQLDatabase)

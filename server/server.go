@@ -541,3 +541,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 func (s *Server) GetEcho() *echo.Echo {
 	return s.e
 }
+
+// GetWorkspaceID returns the workspace id.
+func (s *Server) GetWorkspaceID() string {
+	return s.workspaceID
+}

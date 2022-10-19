@@ -111,8 +111,8 @@ const (
 	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
 	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
 	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
-	// SchemaRuleDatetimeColumnCountLimit enforce the datetime column count limit.
-	SchemaRuleDatetimeColumnCountLimit SQLReviewRuleType = "column.datetime-count-limit"
+	// SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+	SchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "column.current-time-count-limit"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -124,8 +124,8 @@ const (
 	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
 	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
-	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
-	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
+	// SchemaRuleIndexPKTypeLimit enforce the type restriction of columns in primary key.
+	SchemaRuleIndexPKTypeLimit SQLReviewRuleType = "index.pk-type-limit"
 	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
 	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
 	// SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
@@ -233,7 +233,7 @@ func (rule *SQLReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleDatetimeColumnCountLimit:
+		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue:
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -755,10 +755,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
-	case SchemaRuleDatetimeColumnCountLimit:
+	case SchemaRuleCurrentTimeColumnCountLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLDatetimeColumnCountLimit, nil
+			return MySQLCurrentTimeColumnCountLimit, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
@@ -835,7 +835,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLCollationAllowlist, nil
 		}
-	case SchemaRuleIndexPKType:
+	case SchemaRuleIndexPKTypeLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexPKType, nil
