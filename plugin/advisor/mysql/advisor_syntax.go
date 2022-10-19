@@ -3,6 +3,7 @@ package mysql
 import (
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/bytebase/bytebase/plugin/parser"
 )
 
 var (
@@ -20,9 +21,23 @@ type SyntaxAdvisor struct {
 
 // Check parses the given statement and checks for warnings and errors.
 func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
+	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
+	_, supportStmt, err := parser.ExtractTiDBUnsupportStmts(statement)
+	if err != nil {
+		//nolint:nilerr
+		return []advisor.Advice{
+			{
+				Status:  advisor.Error,
+				Code:    advisor.StatementSyntaxError,
+				Title:   "Syntax error",
+				Content: err.Error(),
+			},
+		}, nil
+	}
 	p := newParser()
 
-	_, warns, err := p.Parse(statement, ctx.Charset, ctx.Collation)
+	_, warns, err := p.Parse(supportStmt, ctx.Charset, ctx.Collation)
 	if err != nil {
 		//nolint:nilerr
 		return []advisor.Advice{

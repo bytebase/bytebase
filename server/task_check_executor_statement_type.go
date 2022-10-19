@@ -77,15 +77,46 @@ func (*TaskCheckStatementTypeExecutor) Run(ctx context.Context, server *Server, 
 }
 
 func mysqlStatementTypeCheck(statement string, charset string, collation string, taskType api.TaskType) (result []api.TaskCheckResult, err error) {
-	p := tidbparser.New()
+	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
+	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
+	unsupportStmt, supportStmt, err := parser.ExtractTiDBUnsupportStmts(statement)
+	if err != nil {
+		//nolint:nilerr
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.StatementSyntaxError.Int(),
+				Title:     "Syntax error",
+				Content:   err.Error(),
+			},
+		}, nil
+	}
+	// TODO(zp): We regard the DELIMITER statement as a DDL statement here.
+	// But we should ban the DELIMITER statement because go-sql-driver doesn't support it.
+	hasUnsupportDDL := len(unsupportStmt) > 0
 
+	p := tidbparser.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	stmts, _, err := p.Parse(statement, charset, collation)
+	stmts, _, err := p.Parse(supportStmt, charset, collation)
 	if err != nil {
-		//nolint:nilerr
+		//nolint: nilerr
+		return []api.TaskCheckResult{
+			{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.AdvisorNamespace,
+				Code:      advisor.StatementSyntaxError.Int(),
+				Title:     "Syntax error",
+				Content:   err.Error(),
+			},
+		}, nil
+	}
+
+	if err != nil {
+		//nolint: nilerr
 		return []api.TaskCheckResult{
 			{
 				Status:    api.TaskCheckStatusError,
@@ -103,7 +134,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 			_, isDDL := node.(tidbast.DDLNode)
 			// We only want to disallow DDL statements in CHANGE DATA.
 			// We need to run some common statements, e.g. COMMIT.
-			if isDDL {
+			if isDDL || hasUnsupportDDL {
 				result = append(result, api.TaskCheckResult{
 					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.BBNamespace,
