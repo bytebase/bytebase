@@ -46,6 +46,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/parser/differ/pg"
 	// Register postgres parser driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
+	// Register mysql transform driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------.

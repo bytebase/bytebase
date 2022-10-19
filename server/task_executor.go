@@ -15,6 +15,8 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/transform"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -179,7 +181,17 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	writeBack := false
 	if repo != nil && repo.SchemaPathTemplate != "" {
 		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-			writeBack = (task.Type == api.TaskDatabaseSchemaBaseline)
+			if task.Type == api.TaskDatabaseSchemaBaseline {
+				writeBack = true
+				// Transform the schema to standard style for SDL mode.
+				if task.Database.Instance.Engine == db.MySQL {
+					standardSchema, err := transform.SchemaTransform(parser.MySQL, schema)
+					if err != nil {
+						return true, nil, errors.Errorf("failed to transform to standard schema for database %q", task.Database.Name)
+					}
+					schema = standardSchema
+				}
+			}
 		} else {
 			writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
 		}
