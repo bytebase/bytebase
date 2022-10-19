@@ -83,6 +83,9 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 			for _, node := range indexList {
 				newNodeList = append(newNodeList, node)
 			}
+		case *ast.SetStmt:
+			// Skip these spammy set session variable statements.
+			continue
 		default:
 			newNodeList = append(newNodeList, node)
 		}
