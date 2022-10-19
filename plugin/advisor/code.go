@@ -66,6 +66,7 @@ const (
 	CharLengthExceedsLimit                  Code = 415
 	AutoIncrementColumnInitialValueNotMatch Code = 416
 	AutoIncrementColumnSigned               Code = 417
+	DatetimeCountExceedsLimit               Code = 418
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
