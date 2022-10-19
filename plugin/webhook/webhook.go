@@ -90,13 +90,15 @@ func (c *Context) getMetaList() []meta {
 		// So the description could be long, which is hard to display if merged into the issue name.
 		// We also trim it to 200 bytes to limit the message size in the webhook body, so that users can
 		// view it easily in the corresponding webhook client.
-		description := c.Issue.Description
-		if len(description) > 200 {
-			description = description[:200] + "... (view details in Bytebase)"
+		// The issue description may contain unicode characters, so we use rune here.
+		descriptionRune := []rune(c.Issue.Description)
+		if len(descriptionRune) > 200 {
+			descriptionRune = descriptionRune[:200]
+			descriptionRune = append(descriptionRune, []rune("... (view details in Bytebase)")...)
 		}
 		m = append(m, meta{
 			Name:  "Issue Description",
-			Value: description,
+			Value: string(descriptionRune),
 		})
 	}
 
