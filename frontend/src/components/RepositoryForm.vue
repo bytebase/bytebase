@@ -250,7 +250,10 @@
         <BBCheckbox
           :title="enableSQLReviewTitle"
           :value="repositoryConfig.enableSQLReviewCI"
-          @toggle="onSQLReviewCIToggle"
+          @toggle="(on: boolean) => {
+            repositoryConfig.enableSQLReviewCI = on;
+            onSQLReviewCIToggle(on);
+          }"
         />
       </div>
     </div>
@@ -425,10 +428,7 @@ export default defineComponent({
     const onSQLReviewCIToggle = (on: boolean) => {
       if (on && !hasFeature("bb.feature.vcs-sql-review")) {
         state.showFeatureModal = true;
-        return;
       }
-
-      props.repositoryConfig.enableSQLReviewCI = on;
     };
 
     return {
