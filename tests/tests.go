@@ -1082,18 +1082,26 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 	return repository, nil
 }
 
-// getRepository gets the repository.
-func (ctl *controller) getRepository(projectID int) (*api.Repository, error) {
+// getRepositories gets the repository list.
+func (ctl *controller) getRepositories(projectID int) ([]*api.Repository, error) {
 	body, err := ctl.get(fmt.Sprintf("/project/%d/repository", projectID), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	repository := new(api.Repository)
-	if err = jsonapi.UnmarshalPayload(body, repository); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal repository response")
+	var repositories []*api.Repository
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Repository)))
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal get repository response")
 	}
-	return repository, nil
+	for _, p := range ps {
+		repository, ok := p.(*api.Repository)
+		if !ok {
+			return nil, errors.Errorf("fail to convert repository")
+		}
+		repositories = append(repositories, repository)
+	}
+	return repositories, nil
 }
 
 // createSQLReviewCI set up the SQL review CI.

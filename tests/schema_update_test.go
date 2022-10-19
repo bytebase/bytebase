@@ -1534,10 +1534,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 			a.NotNil(sqlReviewCI)
 
-			updatedRepository, err := ctl.getRepository(project.ID)
+			repositoryList, err := ctl.listRepository(project.ID)
 			a.NoError(err)
-			a.NotNil(updatedRepository)
-			a.Equal(true, updatedRepository.EnableSQLReviewCI)
+			a.NotNil(repositoryList)
+			a.Equal(1, len(repositoryList))
+			a.Equal(true, repositoryList[0].EnableSQLReviewCI)
 
 			// Simulate Git commits and pull request for SQL review.
 			prID := rand.Int()
