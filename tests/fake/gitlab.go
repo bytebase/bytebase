@@ -45,7 +45,10 @@ type projectData struct {
 	variables map[string]*gitlab.EnvironmentVariable
 	// mergeRequests is the map for project merge request.
 	// the map key is the merge request id.
-	mergeRequests map[int]*gitlab.MergeRequest
+	mergeRequests map[int]struct {
+		*gitlab.MergeRequestChange
+		*gitlab.MergeRequest
+	}
 }
 
 // NewGitLab creates a new fake implementation of GitLab VCS provider.
@@ -77,6 +80,7 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup.GET("/projects/:id/variables/:variableKey", gl.getProjectEnvironmentVariable)
 	projectGroup.POST("/projects/:id/variables", gl.createProjectEnvironmentVariable)
 	projectGroup.PUT("/projects/:id/variables/:variableKey", gl.updateProjectEnvironmentVariable)
+	projectGroup.GET("/projects/:id/merge_requests/:mrID/changes", gl.getMergeRequestChanges)
 
 	return gl
 }
@@ -104,10 +108,13 @@ func (*GitLab) APIURL(instanceURL string) string {
 // CreateRepository creates a GitLab project with given ID.
 func (gl *GitLab) CreateRepository(id string) {
 	gl.projects[id] = &projectData{
-		files:         map[string]string{},
-		branches:      map[string]*gitlab.Branch{},
-		variables:     map[string]*gitlab.EnvironmentVariable{},
-		mergeRequests: map[int]*gitlab.MergeRequest{},
+		files:     map[string]string{},
+		branches:  map[string]*gitlab.Branch{},
+		variables: map[string]*gitlab.EnvironmentVariable{},
+		mergeRequests: map[int]struct {
+			*gitlab.MergeRequestChange
+			*gitlab.MergeRequest
+		}{},
 	}
 }
 
@@ -326,9 +333,15 @@ func (gl *GitLab) createProjectPullRequest(c echo.Context) error {
 	}
 
 	mrID := len(pd.mergeRequests) + 1
-	pd.mergeRequests[mrID] = &gitlab.MergeRequest{
-		// TODO: the URL for merge request is invalid.
-		WebURL: fmt.Sprintf("http://gitlab.example.com/my-group/my-project/merge_requests/%d", mrID),
+	pd.mergeRequests[mrID] = struct {
+		*gitlab.MergeRequestChange
+		*gitlab.MergeRequest
+	}{
+		MergeRequestChange: &gitlab.MergeRequestChange{},
+		MergeRequest: &gitlab.MergeRequest{
+			// TODO: the URL for merge request is invalid.
+			WebURL: fmt.Sprintf("http://gitlab.example.com/my-group/my-project/merge_requests/%d", mrID),
+		},
 	}
 
 	buf, err := json.Marshal(
@@ -411,6 +424,29 @@ func (gl *GitLab) updateProjectEnvironmentVariable(c echo.Context) error {
 	return c.String(http.StatusOK, "")
 }
 
+func (gl *GitLab) getMergeRequestChanges(c echo.Context) error {
+	pd, err := gl.validProject(c)
+	if err != nil {
+		return err
+	}
+
+	mrNumber, err := strconv.Atoi(c.Param("mrID"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("The merge request id is invalid: %v", c.Param("mrID")))
+	}
+
+	mergeRequest, ok := pd.mergeRequests[mrNumber]
+	if !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("Cannot found the merge request: %v", c.Param("mrID")))
+	}
+
+	buf, err := json.Marshal(mergeRequest.MergeRequestChange)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
 // SendWebhookPush sends out a webhook for a push event for the GitLab project
 // using given payload.
 func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
@@ -474,4 +510,41 @@ func (gl *GitLab) GetFiles(projectID string, filePaths ...string) (map[string]st
 		}
 	}
 	return files, nil
+}
+
+// AddPullRequest creates a new merge request and add changed files to it.
+func (gl *GitLab) AddPullRequest(projectID string, mrID int, files []*vcs.PullRequestFile) error {
+	pd, ok := gl.projects[projectID]
+	if !ok {
+		return errors.Errorf("gitlab project %q doesn't exist", projectID)
+	}
+
+	if len(files) == 0 {
+		return nil
+	}
+
+	changes := []gitlab.MergeRequestFile{}
+	for _, file := range files {
+		changes = append(changes, gitlab.MergeRequestFile{
+			NewPath:     file.Path,
+			NewFile:     true,
+			RenamedFile: false,
+			DeletedFile: file.IsDeleted,
+		})
+	}
+
+	pd.mergeRequests[mrID] = struct {
+		*gitlab.MergeRequestChange
+		*gitlab.MergeRequest
+	}{
+		MergeRequestChange: &gitlab.MergeRequestChange{
+			SHA:     files[0].LastCommitID,
+			Changes: changes,
+		},
+		MergeRequest: &gitlab.MergeRequest{
+			// TODO: the URL for merge request is invalid.
+			WebURL: fmt.Sprintf("http://gitlab.example.com/my-group/my-project/merge_requests/%d", mrID),
+		},
+	}
+	return nil
 }
