@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -1430,7 +1430,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		},
 	}
 
-	for i, test := range tests {
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
@@ -1534,10 +1534,8 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NotNil(repository)
 
 			// Simulate Git commits and pull request for SQL review.
-			id, err := findPullRequestID(repository)
-			a.NoError(err)
-			prID := id + i
 
+			prID := rand.Int()
 			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book.sql"
 			fileContent := "CREATE TABLE book (id serial PRIMARY KEY, name TEXT);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: fileContent})
@@ -1624,17 +1622,4 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 	}
 
 	return res, nil
-}
-
-func findPullRequestID(repo *api.Repository) (int, error) {
-	if repo.SQLReviewCIPullRequestURL == "" {
-		return 0, errors.Errorf("cannot find pull request url in repository %s", repo.ExternalID)
-	}
-
-	sections := strings.Split(repo.SQLReviewCIPullRequestURL, "/")
-	if len(sections) == 0 {
-		return 0, errors.Errorf("invalid pull request url %s", repo.SQLReviewCIPullRequestURL)
-	}
-
-	return strconv.Atoi(sections[len(sections)-1])
 }
