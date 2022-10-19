@@ -116,7 +116,7 @@ func isTiDBUnsupportDDLStmt(stmt string) bool {
 		"FUNCTION",
 		"PROCEDURE",
 	}
-	regexFmt := "(?i)^CREATE DEFINER=`.+`@`.+` %s\\s+"
+	regexFmt := "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+"
 	for _, obj := range objects {
 		regex := fmt.Sprintf(regexFmt, obj)
 		re := regexp.MustCompile(regex)
