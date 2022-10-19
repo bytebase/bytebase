@@ -35,6 +35,10 @@ export type Repository = {
   externalId: string;
 };
 
+export type SQLReviewCISetup = {
+  pullRequestURL: string;
+};
+
 export type RepositoryCreate = {
   // Related fields
   vcsId: VCSId;
@@ -48,7 +52,6 @@ export type RepositoryCreate = {
   filePathTemplate: string;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
-  enableSQLReviewCI: boolean;
   externalId: string;
   accessToken: string;
   expiresTs: number;
