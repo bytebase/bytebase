@@ -375,7 +375,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repoPatch := &api.RepositoryPatch{
 			ID:                &repository.ID,
 			UpdaterID:         c.Get(getPrincipalIDContextKey()).(int),
-			EnableSQLReviewCI: &enableCI,
+			EnableSQLReviewCI: &enabledCI,
 		}
 		if _, err := s.store.PatchRepository(ctx, repoPatch); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository: %d", repository.ID)).SetInternal(err)
