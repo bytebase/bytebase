@@ -113,6 +113,8 @@ const (
 	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
 	// SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
 	SchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "column.current-time-count-limit"
+	// SchemaRuleColumnRequireDefault enforce the column default.
+	SchemaRuleColumnRequireDefault SQLReviewRuleType = "column.require-default"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -759,6 +761,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLCurrentTimeColumnCountLimit, nil
+		}
+	case SchemaRuleColumnRequireDefault:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {

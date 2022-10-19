@@ -124,6 +124,9 @@ const (
 	// MySQLCurrentTimeColumnCountLimit is an advisor type for MySQL current time column count limit.
 	MySQLCurrentTimeColumnCountLimit Type = "bb.plugin.advisor.mysql.column.current-time-count-limit"
 
+	// MySQLRequireColumnDefault is an advisor type for MySQL column default requirement.
+	MySQLRequireColumnDefault Type = "bb.plugin.advisor.mysql.colum.require-default"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
