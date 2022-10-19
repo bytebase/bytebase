@@ -68,6 +68,7 @@ const (
 	AutoIncrementColumnSigned                  Code = 417
 	DefaultCurrentTimeColumnCountExceedsLimit  Code = 418
 	OnUpdateCurrentTimeColumnCountExceedsLimit Code = 419
+	NoDefault                                  Code = 420
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
