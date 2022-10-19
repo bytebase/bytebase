@@ -120,6 +120,8 @@ ruleList:
     level: ERROR
   - type: index.type-no-blob
     level: ERROR
+  - type: index.pk-type-limit
+    level: ERROR
   - type: index.key-number-limit
     level: WARNING
     payload:
