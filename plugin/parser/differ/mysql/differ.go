@@ -1223,13 +1223,13 @@ func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
 		procedure,
 	}
 	regexFmt := "(?i)^CREATE DEFINER=`.+`@`.+` %s (?P<OBJECT_NAME>%s)\\s+"
-	namingRegex := "`[^\\\\/?%*:|\\\"<>]+`"
+	namingRegex := "`[^\\\\/?%*:|\\\"`<>]+`"
 	for _, obj := range objects {
 		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
 		re := regexp.MustCompile(regex)
 		matchList := re.FindStringSubmatch(stmt)
 		index := re.SubexpIndex("OBJECT_NAME")
-		if index >= 0 {
+		if index >= 0 && index < len(matchList) {
 			objectName := strings.Trim(matchList[index], "`")
 			return objectName, obj, nil
 		}
