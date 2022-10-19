@@ -5,6 +5,8 @@ package catalog
 //   2. the underlying implementation of Finder
 
 import (
+	"strings"
+
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
@@ -211,6 +213,32 @@ func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 		}
 	}
 	return nil
+}
+
+// ColumnCount is for counting columns.
+type ColumnCount struct {
+	SchemaName string
+	TableName  string
+	ColumnType string
+}
+
+// CountColumn counts columns.
+func (d *DatabaseState) CountColumn(count *ColumnCount) int {
+	schema, exists := d.schemaSet[count.SchemaName]
+	if !exists {
+		return 0
+	}
+	table, exists := schema.tableSet[count.TableName]
+	if !exists {
+		return 0
+	}
+	res := 0
+	for _, column := range table.columnSet {
+		if column.columnType != nil && strings.EqualFold(*column.columnType, count.ColumnType) {
+			res++
+		}
+	}
+	return res
 }
 
 // ColumnFind is for finding column.
