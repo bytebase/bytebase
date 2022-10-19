@@ -49,24 +49,25 @@ const (
 	NamingAutoIncrementColumnConventionMismatch Code = 307
 
 	// 401 ~ 499 column error code.
-	NoRequiredColumn                        Code = 401
-	ColumnCannotNull                        Code = 402
-	ChangeColumnType                        Code = 403
-	NotNullColumnWithNullDefault            Code = 404
-	ColumnNotExists                         Code = 405
-	UseChangeColumnStatement                Code = 406
-	ChangeColumnOrder                       Code = 407
-	NoColumnComment                         Code = 408
-	ColumnCommentTooLong                    Code = 409
-	AutoIncrementColumnNotInteger           Code = 410
-	DisabledColumnType                      Code = 411
-	ColumnExists                            Code = 412
-	DropAllColumns                          Code = 413
-	SetColumnCharset                        Code = 414
-	CharLengthExceedsLimit                  Code = 415
-	AutoIncrementColumnInitialValueNotMatch Code = 416
-	AutoIncrementColumnSigned               Code = 417
-	DatetimeCountExceedsLimit               Code = 418
+	NoRequiredColumn                           Code = 401
+	ColumnCannotNull                           Code = 402
+	ChangeColumnType                           Code = 403
+	NotNullColumnWithNullDefault               Code = 404
+	ColumnNotExists                            Code = 405
+	UseChangeColumnStatement                   Code = 406
+	ChangeColumnOrder                          Code = 407
+	NoColumnComment                            Code = 408
+	ColumnCommentTooLong                       Code = 409
+	AutoIncrementColumnNotInteger              Code = 410
+	DisabledColumnType                         Code = 411
+	ColumnExists                               Code = 412
+	DropAllColumns                             Code = 413
+	SetColumnCharset                           Code = 414
+	CharLengthExceedsLimit                     Code = 415
+	AutoIncrementColumnInitialValueNotMatch    Code = 416
+	AutoIncrementColumnSigned                  Code = 417
+	DefaultCurrentTimeColumnCountExceedsLimit  Code = 418
+	OnUpdateCurrentTimeColumnCountExceedsLimit Code = 419
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
