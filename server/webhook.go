@@ -172,7 +172,22 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				)
 				return false, nil
 			}
-			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken && strings.HasPrefix(repo.WebURL, request.WebURL), nil
+
+			if !strings.HasPrefix(repo.WebURL, request.WebURL) {
+				log.Debug("Skip repository as the web URL is not matched.",
+					zap.String("request_web_url", request.WebURL),
+					zap.String("repo_web_url", repo.WebURL),
+				)
+				return false, nil
+			}
+
+			token := c.Request().Header.Get("X-SQL-Review-Token")
+			if token == s.workspaceID && s.profile.Mode == common.ReleaseModeDev {
+				// We will use workspace id as token in integration test.
+				return true, nil
+			}
+
+			return c.Request().Header.Get("X-SQL-Review-Token") == repo.WebhookSecretToken, nil
 		}
 		ctx := c.Request().Context()
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)

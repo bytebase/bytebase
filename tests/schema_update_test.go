@@ -1605,7 +1605,7 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a new POST request to %q", url)
 	}
-	req.Header.Set("X-SQL-Review-Token", repo.WebhookSecretToken)
+	req.Header.Set("X-SQL-Review-Token", ctl.server.GetWorkspaceID())
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
