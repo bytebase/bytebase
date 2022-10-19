@@ -367,7 +367,12 @@ ruleList:
         payload:
           type: NUMBER
           default: 5
-  # TODO: - type: index.pk-type
+  - type: index.pk-type-limit
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
   - type: index.type-no-blob
     category: INDEX
     engineList:
