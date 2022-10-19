@@ -3,7 +3,10 @@ package mysql
 
 import (
 	"bytes"
+	"fmt"
+	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
@@ -29,6 +32,15 @@ func init() {
 	differ.Register(bbparser.TiDB, &SchemaDiffer{})
 }
 
+type objectType string
+
+const (
+	event     objectType = "EVENT"
+	function  objectType = "FUNCTION"
+	procedure objectType = "PROCEDURE"
+	trigger   objectType = "TRIGGER"
+)
+
 // SchemaDiffer it the parser for MySQL dialect.
 type SchemaDiffer struct {
 }
@@ -39,13 +51,23 @@ type constraintMap map[string]*ast.Constraint
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
-	oldNodes, _, err := parser.New().Parse(oldStmt, "", "")
+	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
+	oldUnsupportStmts, oldSupportStmts, err := extractTiDBUnsupportStmts(oldStmt)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
+		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from old statements %q", oldStmt)
 	}
-	newNodes, _, err := parser.New().Parse(newStmt, "", "")
+	newUnsupportStmts, newSupportStmts, err := extractTiDBUnsupportStmts(newStmt)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
+		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from new statements %q", newStmt)
+	}
+
+	oldNodes, _, err := parser.New().Parse(oldSupportStmts, "", "")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse old statement %q", oldSupportStmts)
+	}
+	newNodes, _, err := parser.New().Parse(newSupportStmts, "", "")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse new statement %q", newSupportStmts)
 	}
 
 	var newNodeList []ast.Node
@@ -320,10 +342,45 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		dropNodeList = append(dropNodeList, dropViewStmt)
 	}
 
-	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, viewStmts, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	// We compare the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statements based on strcmp.
+	var newNodeStmt []string
+	var inplaceDropStmt []string
+	var inplaceAddStmt []string
+	// TRIGGER
+	triggerMap, err := buildTriggerMap(oldUnsupportStmts)
+	if err != nil {
+		return "", err
+	}
+	for _, stmt := range newUnsupportStmts {
+		name, tp, err := extractUnsupportObjNameAndType(stmt)
+		if err != nil {
+			return "", err
+		}
+		switch tp {
+		case trigger:
+			if oldStmt, ok := triggerMap[name]; ok {
+				if strings.Compare(oldStmt, stmt) != 0 {
+					// We should drop the old trigger and create the new trigger.
+					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP TRIGGER IF EXISTS `%s`;\n", name))
+					inplaceAddStmt = append(inplaceAddStmt, stmt)
+				}
+				delete(triggerMap, name)
+				continue
+			}
+			// We should create the new trigger.
+			newNodeStmt = append(newNodeStmt, stmt)
+		default:
+		}
+	}
+	return deparse(newNodeList, newNodeStmt, inplaceUpdate,
+		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,
+		inplaceDropStmt, dropNodeList, viewStmts,
+		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.Node,
+	inplaceAdd []ast.Node, inplaceAddStmt []string, inplaceDrop []ast.Node,
+	inplaceDropStmt []string, dropNodeList []ast.Node, viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -336,6 +393,14 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	for _, stmt := range newNodeStmt {
+		if _, err := buf.Write([]byte(stmt)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
 			return "", err
 		}
 	}
@@ -357,12 +422,28 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.
 			return "", err
 		}
 	}
+	for _, stmt := range inplaceDropStmt {
+		if _, err := buf.Write([]byte(stmt)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
+			return "", err
+		}
+	}
 
 	for i := len(inplaceAdd) - 1; i >= 0; i-- {
 		if err := inplaceAdd[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	for _, stmt := range inplaceAddStmt {
+		if _, err := buf.Write([]byte(stmt)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
 			return "", err
 		}
 	}
@@ -1081,4 +1162,96 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 		m[option.Tp] = option
 	}
 	return m
+}
+
+// extractTiDBUnsupportStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
+// and returns the remaining statements supported by TiDB from `stmts`.
+func extractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
+	var (
+		unsupportStmts []string
+		supportedStmts string
+	)
+	// We use our bb tokenizer to help us split the multi-statements into statement list.
+	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, stmts)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "cannot split multi sql %q via bytebase parser", stmts)
+	}
+	for _, sql := range singleSQLs {
+		content := sql.Text
+		if !isTiDBUnsupportStmt(content) {
+			unsupportStmts = append(unsupportStmts, content)
+			continue
+		}
+		supportedStmts += content + "\n"
+	}
+	return unsupportStmts, supportedStmts, nil
+}
+
+// isTiDBUnsupportStmt checks whether the `stmt` is unsupported in TiDB, the following statements are unsupported:
+// 1. `CREATE TRIGGER`
+// 2. `CREATE EVENT`
+// 3. `CREATE FUNCTION`
+// 4. `CREATE PROCEDURE`
+// 5. `DELIMITER`.
+func isTiDBUnsupportStmt(stmt string) bool {
+	objects := []string{
+		"TRIGGER",
+		"EVENT",
+		"FUNCTION",
+		"PROCEDURE",
+	}
+	regexFmt := "(?i)^CREATE DEFINER=`.+`@`.+`%s\\s+"
+	for _, obj := range objects {
+		regex := fmt.Sprintf(regexFmt, obj)
+		re := regexp.MustCompile(regex)
+		if re.MatchString(stmt) {
+			return true
+		}
+	}
+	// Match DELIMITER statement
+	// Now, we assume that all input comes from our mysqldump, and the tokenizer can split the mysqldump DELIMITER statement
+	// in one singleSQL correctly, so we can handle it easily here by checking the prefix.
+	if strings.HasPrefix(stmt, "DELIMITER ") {
+		return true
+	}
+	return false
+}
+
+// extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
+func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
+	objects := []objectType{
+		trigger,
+		event,
+		function,
+		procedure,
+	}
+	regexFmt := "(?i)^CREATE DEFINER=`.+`@`.+` %s (?P<OBJECT_NAME>%s)\\s+"
+	namingRegex := "`[^\\\\/?%*:|\\\"<>]+`"
+	for _, obj := range objects {
+		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
+		re := regexp.MustCompile(regex)
+		matchList := re.FindStringSubmatch(stmt)
+		index := re.SubexpIndex("OBJECT_NAME")
+		if index >= 0 {
+			return matchList[index], obj, nil
+		}
+	}
+	return "", "", errors.Errorf("cannot extract object name and type from %q", stmt)
+}
+
+// buildTriggerMap builds a map of triggers.
+func buildTriggerMap(stmts []string) (map[string]string, error) {
+	m := make(map[string]string)
+	for _, stmt := range stmts {
+		objName, objType, err := extractUnsupportObjNameAndType(stmt)
+		if err != nil {
+			return nil, err
+		}
+		if objType == trigger {
+			// We only need to extract the trigger name from the CREATE TRIGGER statement.
+			trimStmt := strings.Trim(objName, "`")
+			m[objName] = trimStmt
+		}
+	}
+	return m, nil
 }
