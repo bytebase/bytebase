@@ -124,8 +124,8 @@ const (
 	SchemaRuleIndexNoDuplicateColumn SQLReviewRuleType = "index.no-duplicate-column"
 	// SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 	SchemaRuleIndexKeyNumberLimit SQLReviewRuleType = "index.key-number-limit"
-	// SchemaRuleIndexPKType enforce the type restriction of columns in primary key.
-	SchemaRuleIndexPKType SQLReviewRuleType = "index.pk-type"
+	// SchemaRuleIndexPKTypeLimit enforce the type restriction of columns in primary key.
+	SchemaRuleIndexPKTypeLimit SQLReviewRuleType = "index.pk-type-limit"
 	// SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
 	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
 	// SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
@@ -835,7 +835,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		case db.MySQL, db.TiDB:
 			return MySQLCollationAllowlist, nil
 		}
-	case SchemaRuleIndexPKType:
+	case SchemaRuleIndexPKTypeLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexPKType, nil
