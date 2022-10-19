@@ -45,8 +45,9 @@ type Repository struct {
 	ExternalID                string `jsonapi:"attr,externalId"`
 	ExternalWebhookID         string
 	WebhookURLHost            string
-	WebhookEndpointID         string
-	WebhookSecretToken        string
+	WebhookEndpointID         string `jsonapi:"attr,webhookEndpointID"`
+	// TODO: shouldn't expose the token
+	WebhookSecretToken string `jsonapi:"attr,webhookSecretToken"`
 	// These will be exclusively used on the server side and we don't return it to the client.
 	AccessToken  string
 	ExpiresTs    int64

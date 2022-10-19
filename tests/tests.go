@@ -153,6 +153,8 @@ func getTestPort(testName string) int {
 		"TestSchemaAndDataUpdate",
 		"TestVCS/GitLab",
 		"TestVCS/GitHub",
+		"TestVCS_SQL_Review/GitLab",
+		"TestVCS_SQL_Review/GitHub",
 		"TestVCS_SDL/GitLab",
 		"TestVCS_SDL/GitHub",
 		"TestWildcardInVCSFilePathTemplate/emptyBaseAndMixAsterisks",

@@ -30,23 +30,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
-// vcsSQLReviewResult the is SQL review result in VCS workflow.
-type vcsSQLReviewResult struct {
-	Status  advisor.Status `json:"status"`
-	Content []string       `json:"content"`
-}
-
-// vcsSQLReviewRequest is the request from SQL review CI in VCS workflow.
-// In the VCS SQL review workflow, the CI will generate the request body then POST /hook/sql-review/:webhook_endpoint_id.
-type vcsSQLReviewRequest struct {
-	RepositoryID  string `json:"repositoryId"`
-	PullRequestID string `json:"pullRequestId"`
-	// WebURL is the server URL for GitOps CI.
-	// In GitHub, the URL should be "https://github.com". Docs: https://docs.github.com/en/actions/learn-github-actions/environment-variables
-	// In GitLab, the URL should be the base URL of the GitLab instance like "https://gitlab.bytebase.com". Docs: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
-	WebURL string `json:"webURL"`
-}
-
 const (
 	// sqlReviewDocs is the URL for SQL review doc.
 	sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
@@ -169,7 +152,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("request", string(body)),
 		)
 
-		var request vcsSQLReviewRequest
+		var request api.VCSSQLReviewRequest
 		if err := json.Unmarshal(body, &request); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed SQL review request").SetInternal(err)
 		}
@@ -198,7 +181,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		if len(repositoryList) == 0 {
 			log.Debug("Empty handle repo list. Ignore this request.")
-			return c.JSON(http.StatusOK, &vcsSQLReviewResult{
+			return c.JSON(http.StatusOK, &api.VCSSQLReviewResult{
 				Status:  advisor.Success,
 				Content: []string{},
 			})
@@ -261,7 +244,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		wg.Wait()
 
-		response := &vcsSQLReviewResult{}
+		response := &api.VCSSQLReviewResult{}
 		switch repo.VCS.Type {
 		case vcs.GitHubCom:
 			response = convertSQLAdiceToGitHubActionResult(sqlCheckAdvice)
@@ -1057,7 +1040,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 // GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
 // junit XML format: https://llg.cubic.org/docs/junit/
 // nolint:unused
-func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
+func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
 	testsuiteList := []string{}
 	status := advisor.Success
 
@@ -1112,7 +1095,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 		}
 	}
 
-	return &vcsSQLReviewResult{
+	return &api.VCSSQLReviewResult{
 		Status: status,
 		Content: []string{
 			fmt.Sprintf(
@@ -1126,7 +1109,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *vc
 // convertSQLAdiceToGitHubActionResult will convert SQL advice map to GitHub action output format.
 // GitHub action output message: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
 // nolint:unused
-func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *vcsSQLReviewResult {
+func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
 	messageList := []string{}
 	status := advisor.Success
 
@@ -1174,7 +1157,7 @@ func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) 
 			messageList = append(messageList, strings.ReplaceAll(msg, "\n", "%0A"))
 		}
 	}
-	return &vcsSQLReviewResult{
+	return &api.VCSSQLReviewResult{
 		Status:  status,
 		Content: messageList,
 	}

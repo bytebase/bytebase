@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -49,7 +50,10 @@ type repositoryData struct {
 	secrets map[string]*github.RepositorySecret
 	// pullRequests is the map for repository pull request.
 	// the map key is the pull request id.
-	pullRequests map[int]*github.PullRequest
+	pullRequests map[int]struct {
+		Files []*github.PullRequestFile
+		*github.PullRequest
+	}
 }
 
 // NewGitHub creates a new fake implementation of GitHub VCS provider.
@@ -80,6 +84,7 @@ func NewGitHub(port int) VCSProvider {
 		gh.getRepositoryPublicKey,
 	)
 	g.PUT("/repos/:owner/:repo/actions/secrets/:keyName", gh.updateRepositoryPublicKey)
+	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
 	return gh
 }
 
@@ -289,8 +294,14 @@ func (gh *GitHub) createRepositoryPullRequest(c echo.Context) error {
 	}
 
 	prID := len(r.pullRequests) + 1
-	r.pullRequests[prID] = &github.PullRequest{
-		HTMLURL: fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.Param("owner"), c.Param("repo"), prID),
+	r.pullRequests[prID] = struct {
+		Files []*github.PullRequestFile
+		*github.PullRequest
+	}{
+		Files: []*github.PullRequestFile{},
+		PullRequest: &github.PullRequest{
+			HTMLURL: fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.Param("owner"), c.Param("repo"), prID),
+		},
 	}
 
 	buf, err := json.Marshal(
@@ -347,6 +358,39 @@ func (gh *GitHub) updateRepositoryPublicKey(c echo.Context) error {
 	return c.String(http.StatusOK, "")
 }
 
+func (gh *GitHub) listPullRequestFile(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	prNumber, err := strconv.Atoi(c.Param("prID"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("The pull request id is invalid: %v", c.Param("prID")))
+	}
+
+	pullRequest, ok := r.pullRequests[prNumber]
+	if !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("Cannot found the pull request: %v", c.Param("prID")))
+	}
+
+	page, err := strconv.Atoi(c.QueryParam("page"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("Invalid page parameter %v", c.Param("page")))
+	}
+
+	prFiles := []*github.PullRequestFile{}
+	if page == 1 {
+		prFiles = pullRequest.Files
+	}
+
+	buf, err := json.Marshal(prFiles)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
 func (gh *GitHub) validRepository(c echo.Context) (*repositoryData, error) {
 	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
 	r, ok := gh.repositories[repositoryID]
@@ -388,8 +432,11 @@ func (gh *GitHub) CreateRepository(id string) {
 				Key: "YJf3Ojcv8TSEBCtR0wtTR/F2bD3nBl1lxiwkfV/TYQk=",
 			},
 		},
-		refs:         map[string]*github.Branch{},
-		pullRequests: map[int]*github.PullRequest{},
+		refs: map[string]*github.Branch{},
+		pullRequests: map[int]struct {
+			Files []*github.PullRequestFile
+			*github.PullRequest
+		}{},
 	}
 }
 
@@ -462,4 +509,38 @@ func (gh *GitHub) GetFiles(repositoryID string, filePaths ...string) (map[string
 		}
 	}
 	return files, nil
+}
+
+// AddPullRequest creates a new pull request and add changed files to it.
+func (gh *GitHub) AddPullRequest(repositoryID string, prID int, files []*vcs.PullRequestFile) error {
+	r, ok := gh.repositories[repositoryID]
+	if !ok {
+		return errors.Errorf("github repository %q does not exist", repositoryID)
+	}
+
+	pullRequestFiles := []*github.PullRequestFile{}
+	for _, file := range files {
+		status := ""
+		if file.IsDeleted {
+			status = "removed"
+		}
+		pullRequestFiles = append(pullRequestFiles, &github.PullRequestFile{
+			FileName:    file.Path,
+			Status:      status,
+			SHA:         file.LastCommitID,
+			ContentsURL: fmt.Sprintf("https://github.com/%s/%s?ref=%s", repositoryID, url.QueryEscape(file.Path), file.LastCommitID),
+		})
+	}
+
+	r.pullRequests[prID] = struct {
+		Files []*github.PullRequestFile
+		*github.PullRequest
+	}{
+		Files: pullRequestFiles,
+		PullRequest: &github.PullRequest{
+			HTMLURL: fmt.Sprintf("https://github.com/%s/pull/%d", repositoryID, prID),
+		},
+	}
+
+	return nil
 }
