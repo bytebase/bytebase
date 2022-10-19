@@ -113,6 +113,8 @@ const (
 	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
 	// SchemaRuleDatetimeColumnCountLimit enforce the datetime column count limit.
 	SchemaRuleDatetimeColumnCountLimit SQLReviewRuleType = "column.datetime-count-limit"
+	// SchemaRuleTimestampColumnCountLimit enforce the timestamp column count limit.
+	SchemaRuleTimestampColumnCountLimit SQLReviewRuleType = "column.timestamp-count-limit"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -233,7 +235,8 @@ func (rule *SQLReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleDatetimeColumnCountLimit:
+		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleDatetimeColumnCountLimit,
+		SchemaRuleTimestampColumnCountLimit:
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -759,6 +762,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLDatetimeColumnCountLimit, nil
+		}
+	case SchemaRuleTimestampColumnCountLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTimestampColumnCountLimit, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {

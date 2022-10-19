@@ -67,6 +67,7 @@ const (
 	AutoIncrementColumnInitialValueNotMatch Code = 416
 	AutoIncrementColumnSigned               Code = 417
 	DatetimeCountExceedsLimit               Code = 418
+	TimestampCountExceedsLimit              Code = 419
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501

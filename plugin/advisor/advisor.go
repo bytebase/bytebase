@@ -124,6 +124,9 @@ const (
 	// MySQLDatetimeColumnCountLimit is an advisor type for MySQL datetime column count limit.
 	MySQLDatetimeColumnCountLimit Type = "bb.plugin.advisor.mysql.column.datetime-count-limit"
 
+	// MySQLTimestampColumnCountLimit is an advisor type for MySQL timestamp column count limit.
+	MySQLTimestampColumnCountLimit Type = "bb.plugin.advisor.mysql.column.timestamp-count-limit"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 
