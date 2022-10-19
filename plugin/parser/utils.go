@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"regexp"
@@ -74,7 +75,7 @@ func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
 // and returns the remaining statements supported by TiDB from `stmts`.
 func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 	var unsupportStmts []string
-	var supportedStmts string
+	var supportedStmts bytes.Buffer
 	// We use our bb tokenizer to help us split the multi-statements into statement list.
 	singleSQLs, err := SplitMultiSQL(MySQL, stmts)
 	if err != nil {
@@ -86,9 +87,10 @@ func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
 			unsupportStmts = append(unsupportStmts, content)
 			continue
 		}
-		supportedStmts += content + "\n"
+		_, _ = supportedStmts.Write([]byte(content))
+		_, _ = supportedStmts.Write([]byte("\n"))
 	}
-	return unsupportStmts, supportedStmts, nil
+	return unsupportStmts, supportedStmts.String(), nil
 }
 
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
