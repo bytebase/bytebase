@@ -821,17 +821,20 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 	return res, nil
 }
 
-type gitlabBranch struct {
+// Branch is the API message for GitLab branch.
+type Branch struct {
 	Name   string `json:"name"`
 	Commit Commit `json:"commit"`
 }
 
-type gitlabBranchCreate struct {
+// BranchCreate is the API message to create the branch.
+type BranchCreate struct {
 	Branch string `json:"branch"`
 	Ref    string `json:"ref"`
 }
 
-type gitlabMergeRequestCreate struct {
+// MergeRequestCreate is the API message to create the merge request.
+type MergeRequestCreate struct {
 	Title              string `json:"title"`
 	Description        string `json:"description"`
 	SourceBranch       string `json:"source_branch"`
@@ -873,7 +876,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 		)
 	}
 
-	branch := new(gitlabBranch)
+	branch := new(Branch)
 	if err := json.Unmarshal([]byte(body), branch); err != nil {
 		return nil, err
 	}
@@ -889,7 +892,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 // Docs: https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
 func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
 	body, err := json.Marshal(
-		gitlabBranchCreate{
+		BranchCreate{
 			Branch: branch.Name,
 			Ref:    branch.LastCommitID,
 		},
@@ -932,7 +935,8 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 	return nil
 }
 
-type gitlabMergeRequest struct {
+// MergeRequest is the API message for GitLab merge request.
+type MergeRequest struct {
 	WebURL string `json:"web_url"`
 }
 
@@ -941,7 +945,7 @@ type gitlabMergeRequest struct {
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
 func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
 	body, err := json.Marshal(
-		gitlabMergeRequestCreate{
+		MergeRequestCreate{
 			Title:              pullRequestCreate.Title,
 			Description:        pullRequestCreate.Body,
 			SourceBranch:       pullRequestCreate.Head,
@@ -984,7 +988,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 		)
 	}
 
-	var res gitlabMergeRequest
+	var res MergeRequest
 	if err := json.Unmarshal([]byte(resp), &res); err != nil {
 		return nil, err
 	}
@@ -994,7 +998,8 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 	}, nil
 }
 
-type environmentVariable struct {
+// EnvironmentVariable is the API message for environment variable in GitLab project.
+type EnvironmentVariable struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
@@ -1016,7 +1021,7 @@ func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx commo
 // getEnvironmentVariable gets the environment variable in the repository.
 //
 // https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
-func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key string) (*environmentVariable, error) {
+func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key string) (*EnvironmentVariable, error) {
 	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -1048,7 +1053,7 @@ func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.O
 			)
 	}
 
-	variable := new(environmentVariable)
+	variable := new(EnvironmentVariable)
 	if err := json.Unmarshal([]byte(body), variable); err != nil {
 		return nil, err
 	}
@@ -1062,7 +1067,7 @@ func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.O
 func (p *Provider) createEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
 	url := fmt.Sprintf("%s/projects/%s/variables", p.APIURL(instanceURL), repositoryID)
 	body, err := json.Marshal(
-		environmentVariable{
+		EnvironmentVariable{
 			Key:   key,
 			Value: value,
 		},
@@ -1107,7 +1112,7 @@ func (p *Provider) createEnvironmentVariable(ctx context.Context, oauthCtx commo
 func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
 	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
 	body, err := json.Marshal(
-		environmentVariable{
+		EnvironmentVariable{
 			Key:   key,
 			Value: value,
 		},
