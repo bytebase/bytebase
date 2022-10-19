@@ -2,6 +2,8 @@ package fake
 
 import (
 	"net"
+
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // VCSProvider is a fake implementation of a VCS provider.
@@ -24,6 +26,8 @@ type VCSProvider interface {
 	AddFiles(repositoryID string, files map[string]string) error
 	// GetFiles returns files with given paths from the repository.
 	GetFiles(repositoryID string, filePaths ...string) (map[string]string, error)
+	// AddPullRequest creates a new pull request and add changed files to it.
+	AddPullRequest(repositoryID string, prID int, files []*vcs.PullRequestFile) error
 }
 
 // VCSProviderCreator a function to create a new VCSProvider.

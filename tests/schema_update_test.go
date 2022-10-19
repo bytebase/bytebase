@@ -1,19 +1,25 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math/rand"
+	"net/http"
 	"os"
 	"path"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
@@ -1334,4 +1340,286 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVCS_SQL_Review(t *testing.T) {
+	tests := []struct {
+		name                    string
+		vcsProviderCreator      fake.VCSProviderCreator
+		vcsType                 vcs.Type
+		externalID              string
+		repositoryFullPath      string
+		getEmptySQLReviewResult func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult
+		getSQLReviewResult      func(repo *api.Repository, filePath string) *api.VCSSQLReviewResult
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
+				return &api.VCSSQLReviewResult{
+					Status: advisor.Warn,
+					Content: []string{
+						fmt.Sprintf(
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"SQL review policy not found\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: You can configure the SQL review policy on %s/setting/sql-review.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#2\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							filePath,
+							filePath,
+							filePath,
+							rootURL,
+						),
+					},
+				}
+			},
+			getSQLReviewResult: func(repo *api.Repository, filePath string) *api.VCSSQLReviewResult {
+				return &api.VCSSQLReviewResult{
+					Status: advisor.Warn,
+					Content: []string{
+						fmt.Sprintf(
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"naming.index.pk\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Primary key in table \"book\" mismatches the naming convention, expect \"^pk_book_id$\" but found \"\".\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#306\n</failure>\n</testcase>\n<testcase name=\"column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+						),
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			getEmptySQLReviewResult: func(repo *api.Repository, filePath, rootURL string) *api.VCSSQLReviewResult {
+				return &api.VCSSQLReviewResult{
+					Status: advisor.Warn,
+					Content: []string{
+						fmt.Sprintf(
+							"::warning file=%s,line=1,col=1,endColumn=2,title=SQL review policy not found (2)::You can configure the SQL review policy on %s/setting/sql-review%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#2",
+							filePath,
+							rootURL,
+						),
+					},
+				}
+			},
+			getSQLReviewResult: func(repo *api.Repository, filePath string) *api.VCSSQLReviewResult {
+				return &api.VCSSQLReviewResult{
+					Status: advisor.Warn,
+					Content: []string{
+						fmt.Sprintf(
+							"::warning file=%s,line=1,col=1,endColumn=2,title=naming.index.pk (306)::Primary key in table \"book\" mismatches the naming convention, expect \"^pk_book_id$\" but found \"\"%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#306",
+							filePath,
+						),
+						fmt.Sprintf(
+							"::warning file=%s,line=1,col=1,endColumn=2,title=column.required (401)::Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#401",
+							filePath,
+						),
+						fmt.Sprintf(
+							"::warning file=%s,line=1,col=1,endColumn=2,title=column.no-null (402)::Column \"name\" in \"public\".\"book\" cannot have NULL value%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#402",
+							filePath,
+						),
+					},
+				}
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a PostgreSQL instance.
+			port := getTestPort(t.Name()) + 3
+			_, stopInstance := postgres.SetupTestInstance(t, port)
+			defer stopInstance()
+
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=127.0.0.1 port=%d user=root database=postgres", port))
+			a.NoError(err)
+			defer func() {
+				_ = pgDB.Close()
+			}()
+
+			err = pgDB.Ping()
+			a.NoError(err)
+
+			const databaseName = "testVCSSchemaUpdate"
+			_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+			a.NoError(err)
+			_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
+			a.NoError(err)
+			_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
+			a.NoError(err)
+
+			// Create a VCS.
+			vcsData, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VCS Project",
+					Key:  "TestVCSSchemaUpdate",
+				},
+			)
+			a.NoError(err)
+
+			environments, err := ctl.getEnvironments()
+			a.NoError(err)
+			prodEnvironment, err := findEnvironment(environments, "Prod")
+			a.NoError(err)
+
+			// Add an instance.
+			instance, err := ctl.addInstance(api.InstanceCreate{
+				EnvironmentID: prodEnvironment.ID,
+				Name:          "pgInstance",
+				Engine:        db.Postgres,
+				Host:          "127.0.0.1",
+				Port:          strconv.Itoa(port),
+				Username:      "bytebase",
+				Password:      "bytebase",
+			})
+			a.NoError(err)
+
+			// Create an issue that creates a database.
+			err = ctl.createDatabase(project, instance, databaseName, "bytebase", nil)
+			a.NoError(err)
+
+			// Create a repository.
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			repository, err := ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcsData.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+					EnableSQLReviewCI:  true,
+				},
+			)
+			a.NoError(err)
+			a.NotNil(repository)
+
+			// Simulate Git commits and pull request for SQL review.
+
+			prID := rand.Int()
+			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book.sql"
+			fileContent := "CREATE TABLE book (id serial PRIMARY KEY, name TEXT);"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: fileContent})
+			a.NoError(err)
+
+			err = ctl.vcsProvider.AddPullRequest(
+				test.externalID,
+				prID,
+				[]*vcs.PullRequestFile{
+					{
+						Path:         gitFile,
+						LastCommitID: "last_commit_id",
+						IsDeleted:    false,
+					},
+				},
+			)
+			a.NoError(err)
+
+			// trigger SQL review with empty policy.
+			res, err := postVCSSQLReview(ctl, repository, &api.VCSSQLReviewRequest{
+				RepositoryID:  repository.ExternalID,
+				PullRequestID: fmt.Sprintf("%d", prID),
+				WebURL:        repository.WebURL,
+			})
+			a.NoError(err)
+
+			emptySQLReview := test.getEmptySQLReviewResult(repository, gitFile, ctl.rootURL)
+			a.Equal(emptySQLReview.Status, res.Status)
+			a.Equal(emptySQLReview.Content, res.Content)
+
+			// create the SQL review policy then re-trigger the VCS SQL review.
+			policyPayload, err := prodTemplateSQLReviewPolicy()
+			a.NoError(err)
+
+			err = ctl.upsertPolicy(api.PolicyUpsert{
+				EnvironmentID: prodEnvironment.ID,
+				Type:          api.PolicyTypeSQLReview,
+				Payload:       &policyPayload,
+			})
+			a.NoError(err)
+
+			reviewResult, err := postVCSSQLReview(ctl, repository, &api.VCSSQLReviewRequest{
+				RepositoryID:  repository.ExternalID,
+				PullRequestID: fmt.Sprintf("%d", prID),
+				WebURL:        repository.WebURL,
+			})
+			a.NoError(err)
+
+			expectResult := test.getSQLReviewResult(repository, gitFile)
+			a.Equal(expectResult.Status, reviewResult.Status)
+			a.Equal(expectResult.Content, reviewResult.Content)
+		})
+	}
+}
+
+// postVCSSQLReview will creates the VCS SQL review and get the response.
+func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
+	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, repo.WebhookEndpointID)
+
+	payload, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create a new POST request to %q", url)
+	}
+	req.Header.Set("X-SQL-Review-Token", ctl.server.GetWorkspaceID())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read response body")
+	}
+
+	res := new(api.VCSSQLReviewResult)
+	if err := json.Unmarshal([]byte(body), res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
