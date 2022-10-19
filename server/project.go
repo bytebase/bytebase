@@ -493,7 +493,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
 		}
 
-		// DONOT enable the EnableSQLReviewCI field.
+		// DO NOT enable the EnableSQLReviewCI field.
 		// We will update it through POST /project/:projectID/repository/:repositoryID/sql-review-ci endpoint
 		if repoPatch.EnableSQLReviewCI != nil && *repoPatch.EnableSQLReviewCI && !repo.EnableSQLReviewCI {
 			repoPatch.EnableSQLReviewCI = &repo.EnableSQLReviewCI
