@@ -1211,10 +1211,7 @@ func isTiDBUnsupportStmt(stmt string) bool {
 	// Match DELIMITER statement
 	// Now, we assume that all input comes from our mysqldump, and the tokenizer can split the mysqldump DELIMITER statement
 	// in one singleSQL correctly, so we can handle it easily here by checking the prefix.
-	if strings.HasPrefix(stmt, "DELIMITER ") {
-		return true
-	}
-	return false
+	return strings.HasPrefix(stmt, "DELIMITER ")
 }
 
 // extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
