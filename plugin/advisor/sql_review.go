@@ -111,7 +111,7 @@ const (
 	SchemaRuleColumnAutoIncrementInitialValue SQLReviewRuleType = "column.auto-increment-initial-value"
 	// SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
 	SchemaRuleColumnAutoIncrementMustUnsigned SQLReviewRuleType = "column.auto-increment-must-unsigned"
-	// SchemaRuleCurrenttimeColumnCountLimit enforce the current column count limit.
+	// SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
 	SchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "column.current-time-count-limit"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
