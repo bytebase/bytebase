@@ -73,10 +73,8 @@ func SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt) error {
 // ExtractTiDBUnsupportStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
 // and returns the remaining statements supported by TiDB from `stmts`.
 func ExtractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
-	var (
-		unsupportStmts []string
-		supportedStmts string
-	)
+	var unsupportStmts []string
+	var supportedStmts string
 	// We use our bb tokenizer to help us split the multi-statements into statement list.
 	singleSQLs, err := SplitMultiSQL(MySQL, stmts)
 	if err != nil {
