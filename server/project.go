@@ -371,7 +371,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			PullRequestURL: pullRequest.URL,
 		}
 
-		enableCI := true
+		enabledCI := true
 		repoPatch := &api.RepositoryPatch{
 			ID:                &repository.ID,
 			UpdaterID:         c.Get(getPrincipalIDContextKey()).(int),
