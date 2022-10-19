@@ -52,11 +52,11 @@ type constraintMap map[string]*ast.Constraint
 // It only supports schema information from mysqldump.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
-	oldUnsupportStmts, oldSupportStmts, err := extractTiDBUnsupportStmts(oldStmt)
+	oldUnsupportStmts, oldSupportStmts, err := bbparser.ExtractTiDBUnsupportStmts(oldStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from old statements %q", oldStmt)
 	}
-	newUnsupportStmts, newSupportStmts, err := extractTiDBUnsupportStmts(newStmt)
+	newUnsupportStmts, newSupportStmts, err := bbparser.ExtractTiDBUnsupportStmts(newStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from new statements %q", newStmt)
 	}
@@ -1162,56 +1162,6 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 		m[option.Tp] = option
 	}
 	return m
-}
-
-// extractTiDBUnsupportStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
-// and returns the remaining statements supported by TiDB from `stmts`.
-func extractTiDBUnsupportStmts(stmts string) ([]string, string, error) {
-	var (
-		unsupportStmts []string
-		supportedStmts string
-	)
-	// We use our bb tokenizer to help us split the multi-statements into statement list.
-	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, stmts)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "cannot split multi sql %q via bytebase parser", stmts)
-	}
-	for _, sql := range singleSQLs {
-		content := sql.Text
-		if isTiDBUnsupportStmt(content) {
-			unsupportStmts = append(unsupportStmts, content)
-			continue
-		}
-		supportedStmts += content + "\n"
-	}
-	return unsupportStmts, supportedStmts, nil
-}
-
-// isTiDBUnsupportStmt checks whether the `stmt` is unsupported in TiDB, the following statements are unsupported:
-// 1. `CREATE TRIGGER`
-// 2. `CREATE EVENT`
-// 3. `CREATE FUNCTION`
-// 4. `CREATE PROCEDURE`
-// 5. `DELIMITER`.
-func isTiDBUnsupportStmt(stmt string) bool {
-	objects := []string{
-		"TRIGGER",
-		"EVENT",
-		"FUNCTION",
-		"PROCEDURE",
-	}
-	regexFmt := "(?i)^CREATE DEFINER=`.+`@`.+` %s\\s+"
-	for _, obj := range objects {
-		regex := fmt.Sprintf(regexFmt, obj)
-		re := regexp.MustCompile(regex)
-		if re.MatchString(stmt) {
-			return true
-		}
-	}
-	// Match DELIMITER statement
-	// Now, we assume that all input comes from our mysqldump, and the tokenizer can split the mysqldump DELIMITER statement
-	// in one singleSQL correctly, so we can handle it easily here by checking the prefix.
-	return strings.HasPrefix(stmt, "DELIMITER ")
 }
 
 // extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
