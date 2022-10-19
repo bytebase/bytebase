@@ -1082,6 +1082,34 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 	return repository, nil
 }
 
+// getRepository gets the repository.
+func (ctl *controller) getRepository(projectID int) (*api.Repository, error) {
+	body, err := ctl.get(fmt.Sprintf("/project/%d/repository", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	repository := new(api.Repository)
+	if err = jsonapi.UnmarshalPayload(body, repository); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal repository response")
+	}
+	return repository, nil
+}
+
+// createSQLReviewCI set up the SQL review CI.
+func (ctl *controller) createSQLReviewCI(projectID, repositoryID int) (*api.SQLReviewCISetup, error) {
+	body, err := ctl.post(fmt.Sprintf("/project/%d/repository/%d/sql-review-ci", projectID, repositoryID), new(bytes.Buffer))
+	if err != nil {
+		return nil, err
+	}
+
+	sqlReviewCISetup := new(api.SQLReviewCISetup)
+	if err = jsonapi.UnmarshalPayload(body, sqlReviewCISetup); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal SQL reivew CI response")
+	}
+	return sqlReviewCISetup, nil
+}
+
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.Name)
 	if err != nil {
