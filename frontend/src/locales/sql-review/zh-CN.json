@@ -289,6 +289,10 @@
       "title": "BLOB 列不能建作为索引",
       "description": ""
     },
+    "index-pk-type-limit": {
+      "title": "主键类型限制",
+      "description": "限制主键类型必须是 INT 或 BIGINT。"
+    },
     "index-key-number-limit": {
       "title": "索引包含的字段数量限制",
       "description": "",

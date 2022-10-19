@@ -133,7 +133,8 @@ export type RuleType =
   | "index.no-duplicate-column"
   | "index.type-no-blob"
   | "index.key-number-limit"
-  | "index.total-number-limit";
+  | "index.total-number-limit"
+  | "index.pk-type-limit";
 
 export const availableRulesForFreePlan: RuleType[] = [
   "statement.where.require",

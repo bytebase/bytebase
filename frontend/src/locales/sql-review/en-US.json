@@ -288,6 +288,10 @@
       "title": "Disallow BLOB",
       "description": "Disallow using BLOB type column in index."
     },
+    "index-pk-type-limit": {
+      "title": "Primary key type limit",
+      "description": "Enforce the primary key type to be INT or BIGINT."
+    },
     "index-key-number-limit": {
       "title": "Column count limit in index",
       "description": "Limit the related row count in a single index.",
