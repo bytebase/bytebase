@@ -394,6 +394,7 @@ func TestVCS(t *testing.T) {
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
+					EnableSQLReviewCI:  true,
 				},
 			)
 			a.NoError(err)
@@ -748,6 +749,7 @@ func TestVCS_SDL(t *testing.T) {
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
+					EnableSQLReviewCI:  true,
 				},
 			)
 			a.NoError(err)
@@ -1266,6 +1268,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					ExternalID:         externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
+					EnableSQLReviewCI:  true,
 				},
 			)
 			a.NoError(err)
