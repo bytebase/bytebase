@@ -1374,8 +1374,19 @@ func TestVCS_SQL_Review(t *testing.T) {
 			},
 			getSQLReviewResult: func(repo *api.Repository, filePath string) *api.VCSSQLReviewResult {
 				return &api.VCSSQLReviewResult{
-					Status:  advisor.Warn,
-					Content: []string{},
+					Status: advisor.Warn,
+					Content: []string{
+						fmt.Sprintf(
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"naming.index.pk\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Primary key in table \"book\" mismatches the naming convention, expect \"^pk_book_id$\" but found \"\".\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#306\n</failure>\n</testcase>\n<testcase name=\"column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+							filePath,
+						),
+					},
 				}
 			},
 		},
@@ -1421,8 +1432,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// t.Parallel()
-
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
@@ -1457,11 +1466,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 			_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
 			a.NoError(err)
 			_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
-			a.NoError(err)
-
-			// Create a table in the database
-			schemaFileContent := `CREATE TABLE projects (id serial PRIMARY KEY);`
-			_, err = pgDB.Exec(schemaFileContent)
 			a.NoError(err)
 
 			// Create a VCS.
