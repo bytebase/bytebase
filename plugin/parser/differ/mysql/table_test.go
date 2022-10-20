@@ -4,15 +4,10 @@ import (
 	"testing"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTable(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: ``,
 			new: `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));
@@ -35,30 +30,12 @@ func TestTable(t *testing.T) {
 			`,
 			want: "",
 		},
-		{
-			old: `CREATE TABLE book(id INT);`,
-			new: `CREATE TABLE book(id INT, price_id DECIMAL(10,2), CONSTRAINT FOREIGN KEY fk_price (price_id) REFERENCES price(amount));
-			CREATE TABLE price(id INT PRIMARY KEY, amount DECIMAL(10,2));`,
-			want: "CREATE TABLE IF NOT EXISTS `price` (`id` INT PRIMARY KEY,`amount` DECIMAL(10,2));\n" +
-				"ALTER TABLE `book` ADD COLUMN (`price_id` DECIMAL(10,2));\n" +
-				"ALTER TABLE `book` ADD CONSTRAINT `fk_price` FOREIGN KEY (`price_id`) REFERENCES `price`(`amount`);\n",
-		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equal(test.want, out)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestTableOption(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		// AUTO_INCREMENT
 		{
 			old:  `CREATE TABLE book(id INT AUTO_INCREMENT, CONSTRAINT PRIMARY KEY(id)) AUTO_INCREMENT = 4;`,
@@ -269,22 +246,11 @@ func TestTableOption(t *testing.T) {
 			want: "ALTER TABLE `book` UNION = (`book2`,`book3`);\n",
 		},
 	}
-	t.Parallel()
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestView(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old:  `CREATE VIEW book AS SELECT * FROM book;`,
 			new:  `CREATE VIEW book AS SELECT * FROM book2;`,
@@ -349,12 +315,5 @@ func TestView(t *testing.T) {
 				"CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT `a_id` AS `b_id` FROM `a`;\n",
 		},
 	}
-	t.Parallel()
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }

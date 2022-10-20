@@ -2,16 +2,10 @@ package mysql
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestTrigger(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: `CREATE TABLE account(acct_num INT, amount DECIMAL(10,2));` +
 				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = @sum + NEW.amount;",
@@ -22,21 +16,11 @@ func TestTrigger(t *testing.T) {
 				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;\n",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestFunction(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: "DELIMITER ;;\n" +
 				"CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(v INT) RETURNS int\n" +
@@ -51,21 +35,11 @@ func TestFunction(t *testing.T) {
 				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END ;;\n",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestProcedure(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: "DELIMITER ;;\n" +
 				"CREATE DEFINER=`admin`@`localhost` PROCEDURE `account_count`()\n" +
@@ -89,21 +63,11 @@ func TestProcedure(t *testing.T) {
 				"END ;;\n",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestEvent(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: "DELIMITER ;;\n" +
 				"CREATE DEFINER=`root`@`%` EVENT `e_daily` ON SCHEDULE EVERY 1 DAY STARTS '2022-10-19 10:10:42' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Saves total number of sessions then clears the table each day' DO BEGIN\n" +
@@ -126,11 +90,5 @@ func TestEvent(t *testing.T) {
 				"END ;;\n",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
