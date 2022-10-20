@@ -234,11 +234,7 @@ func TestIsIndexOptionEqual(t *testing.T) {
 }
 
 func TestIndexType(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE(name));`,
 			new: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx USING HASH(name));`,
@@ -257,21 +253,11 @@ func TestIndexType(t *testing.T) {
 		},
 	}
 
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestIndexOption(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		// KEY_BLOCK_SIZE not match.
 		{
 			old: `CREATE TABLE book(name VARCHAR(50) NOT NULL, INDEX book_idx(name) KEY_BLOCK_SIZE=30);`,
@@ -338,21 +324,11 @@ func TestIndexOption(t *testing.T) {
 		},
 	}
 
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestKeyPart(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id, name) COMMENT 'comment_a');`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50) NOT NULL, INDEX book_idx USING BTREE (id) COMMENT 'comment_a');`,
@@ -411,21 +387,11 @@ func TestKeyPart(t *testing.T) {
 		},
 	}
 
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestForeignKeyDefination(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: `CREATE TABLE department(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(department));
 			CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY employee_ibfk_1(department_id) REFERENCES department(id));`,
@@ -500,21 +466,11 @@ func TestForeignKeyDefination(t *testing.T) {
 		},
 	}
 
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestCheckConstraint(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 0));",
 			new: "CREATE TABLE book(id INT, price INT, PRIMARY KEY(id), CONSTRAINT `check_price` CHECK (price > 1));",
@@ -535,21 +491,11 @@ func TestCheckConstraint(t *testing.T) {
 				"ALTER TABLE `book` DROP CHECK `check_price2`;\n",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestConstraint(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		// ADD COLUMN -> DROP PRIMARY KEY -> ADD PRIMARY KEY
 		{
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), CONSTRAINT PRIMARY KEY(id, name));`,
@@ -575,11 +521,5 @@ func TestConstraint(t *testing.T) {
 				"ALTER TABLE `book` ADD INDEX `idx`(`id`, `address`);\n",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }

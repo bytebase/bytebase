@@ -4,15 +4,10 @@ import (
 	"testing"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	"github.com/stretchr/testify/require"
 )
 
 func TestColumnExist(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		// Missing columns
 		{
 			old:  `CREATE TABLE book(id INT, PRIMARY KEY(id));`,
@@ -35,21 +30,11 @@ func TestColumnExist(t *testing.T) {
 			want: "",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestColumnType(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		// Different types.
 		{
 			old:  `CREATE TABLE book(id INT);`,
@@ -68,21 +53,11 @@ func TestColumnType(t *testing.T) {
 			want: "",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestColumnOption(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		// NULL option not match.
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
@@ -125,21 +100,11 @@ func TestColumnOption(t *testing.T) {
 			want: "",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestColumnComment(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) COMMENT 'Author Name' NOT NULL);`,
 			new:  `CREATE TABLE book(name VARCHAR(50) COMMENT 'Book Name' NOT NULL);`,
@@ -171,21 +136,11 @@ func TestColumnComment(t *testing.T) {
 			want: "",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestColumnDefaultValue(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);`,
 			new:  `CREATE TABLE book(name VARCHAR(50) NOT NULL);`,
@@ -227,21 +182,11 @@ func TestColumnDefaultValue(t *testing.T) {
 			want: "",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
 
 func TestColumnCollate(t *testing.T) {
-	tests := []struct {
-		old  string
-		new  string
-		want string
-	}{
+	tests := []testCase{
 		{
 			old:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Harry Potter' NOT NULL);`,
 			new:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL);`,
@@ -263,11 +208,5 @@ func TestColumnCollate(t *testing.T) {
 			want: "",
 		},
 	}
-	a := require.New(t)
-	mysqlDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
-		a.NoError(err)
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
-	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
