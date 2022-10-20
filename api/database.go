@@ -182,6 +182,7 @@ type AlterColumnContext struct {
 	Comment      *string
 	Nullable     *bool
 	Default      *string
+	DropDefault  *bool
 }
 
 // DropColumnContext is the alter table context to drop a column.
