@@ -11,7 +11,7 @@ import (
 func TestStatementDmlDryRun(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
-			Statement: ``,
+			Statement: `INSERT INTO tech_book values(1, 'a')`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -21,9 +21,22 @@ func TestStatementDmlDryRun(t *testing.T) {
 				},
 			},
 		},
+		{
+			Statement: `DELETE FROM tech_book`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.StatementDMLDryRunFailed,
+					Title:   "statement.dml-dry-run",
+					Content: "\"DELETE FROM tech_book\" dry runs failed: MockDriver disallows it",
+					Line:    1,
+				},
+			},
+		},
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &StatementDmlDryRunAdvisor{}, &advisor.SQLReviewRule{
+		Type:    advisor.SchemaRuleStatementDMLDryRun,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, advisor.MockMySQLDatabase)

@@ -1,15 +1,24 @@
 package advisor
 
 import (
+	"context"
+	"database/sql"
+	"io"
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	database "github.com/bytebase/bytebase/plugin/db"
+)
+
+var (
+	_ database.Driver = (*MockDriver)(nil)
 )
 
 const (
@@ -125,6 +134,8 @@ func RunSQLReviewRuleTests(
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
+		Driver:    &MockDriver{},
+		Context:   context.Background(),
 	}
 	for _, tc := range tests {
 		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true})
@@ -149,4 +160,82 @@ func RandomString(length int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+// MockDriver is the driver for test only.
+type MockDriver struct {
+}
+
+// Open implements the Driver interface.
+func (d *MockDriver) Open(_ context.Context, _ database.Type, _ database.ConnectionConfig, _ database.ConnectionContext) (database.Driver, error) {
+	return d, nil
+}
+
+// Close implements the Driver interface.
+func (*MockDriver) Close(_ context.Context) error {
+	return nil
+}
+
+// Ping implements the Driver interface.
+func (*MockDriver) Ping(_ context.Context) error {
+	return nil
+}
+
+// GetDBConnection implements the Driver interface.
+func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
+	return nil, nil
+}
+
+// Execute implements the Driver interface.
+func (*MockDriver) Execute(_ context.Context, _ string) error {
+	return nil
+}
+
+// Query implements the Driver interface.
+func (*MockDriver) Query(_ context.Context, statement string, _ int) ([]interface{}, error) {
+	// For TestStatementDMLDryRun
+	if statement == "EXPLAIN DELETE FROM tech_book" {
+		return nil, errors.Errorf("MockDriver disallows it")
+	}
+	return nil, nil
+}
+
+// SyncInstance implements the Driver interface.
+func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMeta, error) {
+	return nil, nil
+}
+
+// SyncDBSchema implements the Driver interface.
+func (*MockDriver) SyncDBSchema(_ context.Context, _ string) (*database.Schema, error) {
+	return nil, nil
+}
+
+// NeedsSetupMigration implements the Driver interface.
+func (*MockDriver) NeedsSetupMigration(_ context.Context) (bool, error) {
+	return false, nil
+}
+
+// SetupMigrationIfNeeded implements the Driver interface.
+func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
+	return nil
+}
+
+// ExecuteMigration implements the Driver interface.
+func (*MockDriver) ExecuteMigration(_ context.Context, _ *database.MigrationInfo, _ string) (int64, string, error) {
+	return 0, "", nil
+}
+
+// FindMigrationHistoryList implements the Driver interface.
+func (*MockDriver) FindMigrationHistoryList(_ context.Context, _ *database.MigrationHistoryFind) ([]*database.MigrationHistory, error) {
+	return nil, nil
+}
+
+// Dump implements the Driver interface.
+func (*MockDriver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
+	return "", nil
+}
+
+// Restore implements the Driver interface.
+func (*MockDriver) Restore(_ context.Context, _ io.Reader) error {
+	return nil
 }
