@@ -73,6 +73,8 @@ const (
 	SchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "statement.insert.disallow-order-by-rand"
 	// SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
 	SchemaRuleStatementAffectedRowLimit SQLReviewRuleType = "statement.affected-row-limit"
+	// SchemaRuleStatementDMLDryRun dry run the dml.
+	SchemaRuleStatementDMLDryRun SQLReviewRuleType = "statement.dml-dry-run"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -890,6 +892,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLStatementAffectedRowLimit, nil
+		}
+	case SchemaRuleStatementDMLDryRun:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLStatementDMLDryRun, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
