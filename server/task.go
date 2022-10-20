@@ -769,8 +769,9 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		}
 		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
 			log.Error("failed to sync database schema",
-				zap.String("instance", instance.Name),
+				zap.String("instanceName", instance.Name),
 				zap.String("databaseName", taskPatched.Database.Name),
+				zap.Error(err),
 			)
 		}
 	}
