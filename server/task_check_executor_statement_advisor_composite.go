@@ -67,11 +67,19 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		return nil, err
 	}
 
+	driver, err := tryGetReadOnlyDatabaseDriver(ctx, task.Instance, task.Database.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer driver.Close(ctx)
+
 	adviceList, err := advisor.SQLReviewCheck(payload.Statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   payload.Charset,
 		Collation: payload.Collation,
 		DbType:    dbType,
 		Catalog:   catalog,
+		Driver:    driver,
+		Context:   ctx,
 	})
 	if err != nil {
 		return nil, err

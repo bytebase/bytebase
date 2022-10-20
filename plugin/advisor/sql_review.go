@@ -1,6 +1,7 @@
 package advisor
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"regexp"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	database "github.com/bytebase/bytebase/plugin/db"
 )
 
 // How to add a SQL review rule:
@@ -412,6 +414,8 @@ type SQLReviewCheckContext struct {
 	Collation string
 	DbType    db.Type
 	Catalog   catalog.Catalog
+	Driver    database.Driver
+	Context   context.Context
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
@@ -445,6 +449,8 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 				Collation: checkContext.Collation,
 				Rule:      rule,
 				Catalog:   finder,
+				Driver:    checkContext.Driver,
+				Context:   checkContext.Context,
 			},
 			statements,
 		)

@@ -90,6 +90,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	ctx := c.Request().Context()
 	var databaseType string
 	var catalog catalog.Catalog
+	var driver db.Driver
 
 	if request.DatabaseName != "" && request.Host != "" && request.Port != "" {
 		database, err := s.findDatabase(ctx, request.Host, request.Port, request.DatabaseName)
@@ -102,6 +103,11 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		if err != nil {
 			return err
 		}
+		driver, err = tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
+		}
+		defer driver.Close(ctx)
 	} else {
 		databaseType = request.DatabaseType
 		if databaseType == "" {
@@ -135,6 +141,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		envList[0].ID,
 		request.Statement,
 		catalog,
+		driver,
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)

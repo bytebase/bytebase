@@ -210,6 +210,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
+			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
+			}
+			defer driver.Close(ctx)
+
 			adviceLevel, adviceList, err = s.sqlCheck(
 				ctx,
 				dbType,
@@ -218,6 +224,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				instance.EnvironmentID,
 				exec.Statement,
 				catalog,
+				driver,
 			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check SQL review policy").SetInternal(err)
@@ -674,6 +681,7 @@ func (s *Server) sqlCheck(
 	environmentID int,
 	statement string,
 	catalog catalog.Catalog,
+	driver db.Driver,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
 	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
@@ -697,6 +705,8 @@ func (s *Server) sqlCheck(
 		Collation: dbCollation,
 		DbType:    dbType,
 		Catalog:   catalog,
+		Driver:    driver,
+		Context:   ctx,
 	})
 	if err != nil {
 		return advisor.Error, nil, err
