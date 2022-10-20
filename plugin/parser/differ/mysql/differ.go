@@ -4,6 +4,7 @@ package mysql
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -392,109 +393,115 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		dropNodeList = append(dropNodeList, dropViewStmt)
 	}
 
-	return deparse(newNodeList, newNodeStmt, inplaceUpdate,
+	var buf bytes.Buffer
+	_, _ = buf.Write([]byte("SET FOREIGN_KEY_CHECKS=0;\n"))
+
+	if err := deparse(&buf, newNodeList, newNodeStmt, inplaceUpdate,
 		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,
 		inplaceDropStmt, dropNodeList, dropStmt, viewStmts,
-		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset); err != nil {
+		return "", errors.Wrapf(err, "deparse failed")
+	}
+	return buf.String(), nil
 }
 
-func deparse(newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.Node,
+func deparse(out io.Writer, newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.Node,
 	inplaceAdd []ast.Node, inplaceAddStmt []string, inplaceDrop []ast.Node,
 	inplaceDropStmt []string, dropNodeList []ast.Node, dropStmt []string,
-	viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
-	var buf bytes.Buffer
+	viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) error {
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
 	// Updates for in-place node updates.
 	// Deletions for destructive (none in-place) node updates (in reverse order).
 	// Additions for destructive node updates.
 	// Deletions for deleted nodes (in reverse order).
+	restoreCtx := format.NewRestoreCtx(flag, out)
 	for _, node := range newNodeList {
-		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
+		if err := node.Restore(restoreCtx); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(";\n")); err != nil {
+			return err
 		}
 	}
 	for _, stmt := range newNodeStmt {
-		if _, err := buf.Write([]byte(stmt)); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(stmt)); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte("\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte("\n")); err != nil {
+			return err
 		}
 	}
 
 	for _, node := range inplaceUpdate {
-		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
+		if err := node.Restore(restoreCtx); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(";\n")); err != nil {
+			return err
 		}
 	}
 
 	for i := len(inplaceDrop) - 1; i >= 0; i-- {
-		if err := inplaceDrop[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
+		if err := inplaceDrop[i].Restore(restoreCtx); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(";\n")); err != nil {
+			return err
 		}
 	}
 	for i := len(inplaceDropStmt) - 1; i >= 0; i-- {
-		if _, err := buf.Write([]byte(inplaceDropStmt[i])); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(inplaceDropStmt[i])); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte("\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte("\n")); err != nil {
+			return err
 		}
 	}
 
 	for i := len(inplaceAdd) - 1; i >= 0; i-- {
-		if err := inplaceAdd[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
+		if err := inplaceAdd[i].Restore(restoreCtx); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(";\n")); err != nil {
+			return err
 		}
 	}
 	for _, stmt := range inplaceAddStmt {
-		if _, err := buf.Write([]byte(stmt)); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(stmt)); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte("\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte("\n")); err != nil {
+			return err
 		}
 	}
 
 	for i := len(dropNodeList) - 1; i >= 0; i-- {
-		if err := dropNodeList[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
+		if err := dropNodeList[i].Restore(restoreCtx); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(";\n")); err != nil {
+			return err
 		}
 	}
 	for i := len(dropStmt) - 1; i >= 0; i-- {
-		if _, err := buf.Write([]byte(dropStmt[i])); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(dropStmt[i])); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte("\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte("\n")); err != nil {
+			return err
 		}
 	}
 
 	for _, node := range viewStmts {
-		if err := node.Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
-			return "", err
+		if err := node.Restore(restoreCtx); err != nil {
+			return err
 		}
-		if _, err := buf.Write([]byte(";\n")); err != nil {
-			return "", err
+		if _, err := out.Write([]byte(";\n")); err != nil {
+			return err
 		}
 	}
-	return buf.String(), nil
+	return nil
 }
 
 // buildTableMap returns a map of table name to create table statements.
