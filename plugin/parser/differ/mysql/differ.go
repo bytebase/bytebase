@@ -397,17 +397,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 
 	var buf bytes.Buffer
-	_, _ = buf.Write([]byte(disableFKCheckStmt))
 	if err := deparse(&buf, newNodeList, newNodeStmt, inplaceUpdate,
 		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,
 		inplaceDropStmt, dropNodeList, dropStmt, viewStmts,
 		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset); err != nil {
 		return "", errors.Wrapf(err, "deparse failed")
 	}
-	if buf.Len() == len(disableFKCheckStmt) {
-		return "", nil
+	if buf.Len() > 0 {
+		return fmt.Sprintf("%s%s", disableFKCheckStmt, buf.String()), nil
 	}
-	return buf.String(), nil
+	return "", nil
 }
 
 // deparse deparses the ast node list and stmt list to sql string and write it to the out.
