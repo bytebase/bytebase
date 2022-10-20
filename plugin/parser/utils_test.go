@@ -81,7 +81,7 @@ func TestIsTiDBUnsupportStmt(t *testing.T) {
 			want: true,
 		},
 		{
-			stmt: "CREATE DEFINER=`root`@`%` FUNCTION `hello` (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC\n" +
+			stmt: "CREATE DEFINER=`root`@`%` FUNCTION `hello`(s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC\n" +
 				"RETURN CONCAT('Hello, ',s,'!');",
 			want: true,
 		},

@@ -101,9 +101,7 @@ func isTiDBUnsupportStmt(stmt string) bool {
 	// Match DELIMITER statement
 	// Now, we assume that all input comes from our mysqldump, and the tokenizer can split the mysqldump DELIMITER statement
 	// in one singleSQL correctly, so we can handle it easily here by checking the prefix.
-	delimiterRegex := `(?i)^DELIMITER\s+`
-	re := regexp.MustCompile(delimiterRegex)
-	return re.MatchString(stmt)
+	return IsDelimiter(stmt)
 }
 
 // isTiDBUnsupportStmt checks whether the `stmt` is unsupported DDL statement in TiDB, the following statements are unsupported:
@@ -127,4 +125,11 @@ func isTiDBUnsupportDDLStmt(stmt string) bool {
 		}
 	}
 	return false
+}
+
+// IsDelimiter returns true if the statement is a delimiter statement.
+func IsDelimiter(stmt string) bool {
+	delimiterRegex := `(?i)^DELIMITER\s+`
+	re := regexp.MustCompile(delimiterRegex)
+	return re.MatchString(stmt)
 }
