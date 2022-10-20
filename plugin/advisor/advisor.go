@@ -3,6 +3,7 @@
 package advisor
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	database "github.com/bytebase/bytebase/plugin/db"
 )
 
 // Status is the advisor result status.
@@ -304,6 +306,8 @@ type Context struct {
 	// SQL review rule special fields.
 	Rule    *SQLReviewRule
 	Catalog *catalog.Finder
+	Driver  database.Driver
+	Context context.Context
 }
 
 // Advisor is the interface for advisor.

@@ -31,6 +31,7 @@ const (
 	StatementCreateTableAs       Code = 205
 	StatementDisallowCommit      Code = 206
 	StatementRedundantAlterTable Code = 207
+	StatementDMLDryRunFailed     Code = 208
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
