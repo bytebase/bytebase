@@ -251,10 +251,17 @@
           :title="enableSQLReviewTitle"
           :value="repositoryConfig.enableSQLReviewCI"
           @toggle="(on: boolean) => {
-        repositoryConfig.enableSQLReviewCI = on; }"
+            repositoryConfig.enableSQLReviewCI = on;
+            onSQLReviewCIToggle(on);
+          }"
         />
       </div>
     </div>
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      feature="bb.feature.vcs-sql-review"
+      @cancel="state.showFeatureModal = false"
+    />
   </div>
 </template>
 
@@ -269,6 +276,7 @@ import {
   VCSType,
 } from "@/types";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
+import { hasFeature } from "@/store";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -277,7 +285,9 @@ const SINGLE_ASTERISK_REGEX = /\/\*\//g;
 const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState {
+  showFeatureModal: boolean;
+}
 
 export default defineComponent({
   name: "RepositoryForm",
@@ -320,7 +330,9 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
 
-    const state = reactive<LocalState>({});
+    const state = reactive<LocalState>({
+      showFeatureModal: false,
+    });
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
@@ -413,6 +425,12 @@ export default defineComponent({
       return tags;
     });
 
+    const onSQLReviewCIToggle = (on: boolean) => {
+      if (on && !hasFeature("bb.feature.vcs-sql-review")) {
+        state.showFeatureModal = true;
+      }
+    };
+
     return {
       FILE_REQUIRED_PLACEHOLDER,
       SCHEMA_REQUIRED_PLACEHOLDER,
@@ -424,6 +442,7 @@ export default defineComponent({
       enableSQLReviewTitle,
       sampleFilePath,
       sampleSchemaPath,
+      onSQLReviewCIToggle,
     };
   },
 });

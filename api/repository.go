@@ -36,21 +36,25 @@ type Repository struct {
 	// The file path template for matching the sql files for sheet.
 	SheetPathTemplate string `jsonapi:"attr,sheetPathTemplate"`
 	// Setup CI to do SQL review for all PRs.
-	EnableSQLReviewCI bool `jsonapi:"attr,enableSQLReviewCI"`
-	// SQLReviewCIPullRequestURL is the pull request URL to setup the SQL review CI.
-	// This field is used by the frontend to redirect users to the pull request.
-	// We don't need to persist it in the storage,
-	// only return this value if we need to auto-create the pull request for users.
-	SQLReviewCIPullRequestURL string `jsonapi:"attr,sqlReviewCIPullRequestURL"`
-	ExternalID                string `jsonapi:"attr,externalId"`
-	ExternalWebhookID         string
-	WebhookURLHost            string
-	WebhookEndpointID         string `jsonapi:"attr,webhookEndpointID"`
-	WebhookSecretToken        string
+	EnableSQLReviewCI  bool   `jsonapi:"attr,enableSQLReviewCI"`
+	ExternalID         string `jsonapi:"attr,externalId"`
+	ExternalWebhookID  string
+	WebhookURLHost     string
+	WebhookEndpointID  string `jsonapi:"attr,webhookEndpointID"`
+	WebhookSecretToken string
 	// These will be exclusively used on the server side and we don't return it to the client.
 	AccessToken  string
 	ExpiresTs    int64
 	RefreshToken string
+}
+
+// SQLReviewCISetup is the API message for set up repository SQL review CI.
+type SQLReviewCISetup struct {
+	// PullRequestURL is the pull request URL to setup the SQL review CI.
+	// This field is used by the frontend to redirect users to the pull request.
+	// We don't need to persist it in the storage,
+	// only return this value if we need to auto-create the pull request for users.
+	PullRequestURL string `jsonapi:"attr,pullRequestURL"`
 }
 
 // RepositoryCreate is the API message for creating a repository.
@@ -72,7 +76,6 @@ type RepositoryCreate struct {
 	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
-	EnableSQLReviewCI  bool   `jsonapi:"attr,enableSQLReviewCI"`
 	ExternalID         string `jsonapi:"attr,externalId"`
 	// Token belonged by the user linking the project to the VCS repository. We store this token together
 	// with the refresh token in the new repository record so we can use it to call VCS API on

@@ -317,18 +317,73 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to link project repository").SetInternal(err)
 		}
 
-		//	Setup SQL review CI for VCS
-		if repository.EnableSQLReviewCI && s.flight(api.FeatureVCSSQLReviewWorkflow) && s.feature(api.FeatureVCSSQLReviewWorkflow) {
-			pullRequest, err := s.setupVCSSQLReviewCI(ctx, repository)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
-			}
-			repository.SQLReviewCIPullRequestURL = pullRequest.URL
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, repository); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal link project repository response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.POST("/project/:projectID/repository/:repositoryID/sql-review-ci", func(c echo.Context) error {
+		if !s.flight(api.FeatureVCSSQLReviewWorkflow) {
+			return echo.NewHTTPError(http.StatusBadRequest, "SQL review CI feature is not enabled")
+		}
+
+		ctx := c.Request().Context()
+		projectID, err := strconv.Atoi(c.Param("projectID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
+		}
+		repositoryID, err := strconv.Atoi(c.Param("repositoryID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Repository ID is not a number: %s", c.Param("repositoryID"))).SetInternal(err)
+		}
+
+		repository, err := s.store.GetRepository(ctx, &api.RepositoryFind{
+			ID:        &repositoryID,
+			ProjectID: &projectID,
+		})
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found repository %d in project %d", repositoryID, projectID)).SetInternal(err)
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find repository %d in project %d", repositoryID, projectID)).SetInternal(err)
+		}
+
+		if repository.Project.RowStatus == api.Archived {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project %d is archived", projectID))
+		}
+
+		if !s.feature(api.FeatureVCSSQLReviewWorkflow) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureVCSSQLReviewWorkflow.AccessErrorMessage())
+		}
+
+		if repository.EnableSQLReviewCI {
+			return echo.NewHTTPError(http.StatusBadRequest, "SQL review CI is already enabled")
+		}
+
+		pullRequest, err := s.setupVCSSQLReviewCI(ctx, repository)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
+		}
+
+		response := &api.SQLReviewCISetup{
+			PullRequestURL: pullRequest.URL,
+		}
+
+		enabledCI := true
+		repoPatch := &api.RepositoryPatch{
+			ID:                &repository.ID,
+			UpdaterID:         c.Get(getPrincipalIDContextKey()).(int),
+			EnableSQLReviewCI: &enabledCI,
+		}
+		if _, err := s.store.PatchRepository(ctx, repoPatch); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository: %d", repository.ID)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, response); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response").SetInternal(err)
 		}
 		return nil
 	})
@@ -438,18 +493,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "Invalid base directory and filepath template combination").Error())
 		}
 
+		// DO NOT enable the EnableSQLReviewCI field.
+		// We will update it through POST /project/:projectID/repository/:repositoryID/sql-review-ci endpoint
+		if repoPatch.EnableSQLReviewCI != nil && *repoPatch.EnableSQLReviewCI && !repo.EnableSQLReviewCI {
+			repoPatch.EnableSQLReviewCI = &repo.EnableSQLReviewCI
+		}
+
 		updatedRepo, err := s.store.PatchRepository(ctx, repoPatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update repository for project ID: %d", projectID)).SetInternal(err)
-		}
-
-		//	Setup SQL review CI for VCS
-		if !repo.EnableSQLReviewCI && updatedRepo.EnableSQLReviewCI && s.flight(api.FeatureVCSSQLReviewWorkflow) && s.feature(api.FeatureVCSSQLReviewWorkflow) {
-			pullRequest, err := s.setupVCSSQLReviewCI(ctx, updatedRepo)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create SQL review CI").SetInternal(err)
-			}
-			updatedRepo.SQLReviewCIPullRequestURL = pullRequest.URL
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

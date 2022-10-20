@@ -80,6 +80,25 @@
         </div>
       </div>
     </BBModal>
+    <BBAlert
+      v-if="state.showSetupSQLReviewCIFailureModal"
+      :style="'CRITICAL'"
+      :ok-text="$t('common.retry')"
+      :title="$t('repository.sql-review-ci-setup-failed')"
+      @ok="
+        () => {
+          state.showSetupSQLReviewCIFailureModal = false;
+          createSQLReviewCI();
+        }
+      "
+      @cancel="
+        () => {
+          state.showSetupSQLReviewCIFailureModal = false;
+          $emit('finish');
+        }
+      "
+    >
+    </BBAlert>
     <BBModal
       v-if="state.showLoadingSQLReviewPRModal"
       class="relative overflow-hidden"
@@ -154,6 +173,7 @@ interface LocalState {
   currentStep: number;
   showFeatureModal: boolean;
   showSetupSQLReviewCIModal: boolean;
+  showSetupSQLReviewCIFailureModal: boolean;
   showLoadingSQLReviewPRModal: boolean;
   sqlReviewCIPullRequestURL: string;
 }
@@ -227,6 +247,7 @@ export default defineComponent({
       currentStep: CHOOSE_PROVIDER_STEP,
       showFeatureModal: false,
       showSetupSQLReviewCIModal: false,
+      showSetupSQLReviewCIFailureModal: false,
       showLoadingSQLReviewPRModal: false,
       sqlReviewCIPullRequestURL: "",
     });
@@ -250,6 +271,31 @@ export default defineComponent({
       allowChangeCallback();
     };
 
+    const createSQLReviewCI = async () => {
+      const repository = repositoryStore.getRepositoryByProjectId(
+        props.project.id
+      );
+      state.showLoadingSQLReviewPRModal = true;
+
+      try {
+        const sqlReviewCISetup = await repositoryStore.createSQLReviewCI({
+          projectId: props.project.id,
+          repositoryId: repository.id,
+        });
+        state.sqlReviewCIPullRequestURL = sqlReviewCISetup.pullRequestURL;
+        state.showSetupSQLReviewCIModal = true;
+        window.open(sqlReviewCISetup.pullRequestURL, "_blank");
+        repositoryStore.setRepositorySQLReviewCIEnabled({
+          projectId: props.project.id,
+          sqlReviewCIEnabled: true,
+        });
+      } catch {
+        state.showSetupSQLReviewCIFailureModal = true;
+      } finally {
+        state.showLoadingSQLReviewPRModal = false;
+      }
+    };
+
     const tryFinishSetup = (allowFinishCallback: () => void) => {
       if (
         state.config.repositoryConfig.enableSQLReviewCI &&
@@ -260,10 +306,6 @@ export default defineComponent({
       }
 
       const createFunc = async () => {
-        if (state.config.repositoryConfig.enableSQLReviewCI) {
-          state.showLoadingSQLReviewPRModal = true;
-        }
-
         let externalId = state.config.repositoryInfo.externalId;
         if (state.config.vcs.type == "GITHUB_COM") {
           externalId = state.config.repositoryInfo.fullPath;
@@ -290,25 +332,22 @@ export default defineComponent({
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
           schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
           sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
-          enableSQLReviewCI: state.config.repositoryConfig.enableSQLReviewCI,
           externalId: externalId,
           accessToken: state.config.token.accessToken,
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
         };
-        const createdRepository = await repositoryStore.createRepository({
+        await repositoryStore.createRepository({
           projectId: props.project.id,
           repositoryCreate,
         });
-        if (createdRepository.sqlReviewCIPullRequestURL) {
-          state.showLoadingSQLReviewPRModal = false;
-          state.sqlReviewCIPullRequestURL =
-            createdRepository.sqlReviewCIPullRequestURL;
-          state.showSetupSQLReviewCIModal = true;
-          window.open(createdRepository.sqlReviewCIPullRequestURL, "_blank");
+
+        if (state.config.repositoryConfig.enableSQLReviewCI) {
+          createSQLReviewCI();
         } else {
           emit("finish");
         }
+
         allowFinishCallback();
       };
 
@@ -369,6 +408,7 @@ export default defineComponent({
       setVCS,
       setToken,
       setRepository,
+      createSQLReviewCI,
       closeSetupSQLReviewModal,
     };
   },
