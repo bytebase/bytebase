@@ -193,6 +193,9 @@ const (
 	// MySQLMergeAlterTable is an advisor type for MySQL no redundant ALTER TABLE statements.
 	MySQLMergeAlterTable Type = "bb.plugin.advisor.mysql.statement.merge-alter-table"
 
+	// MySQLStatementAffectedRowLimit is an advisor type for MySQL UPDATE/DELETE affected row limit.
+	MySQLStatementAffectedRowLimit Type = "bb.plugin.advisor.mysql.statement.affected-row-limit"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
