@@ -196,6 +196,9 @@ const (
 	// MySQLStatementAffectedRowLimit is an advisor type for MySQL UPDATE/DELETE affected row limit.
 	MySQLStatementAffectedRowLimit Type = "bb.plugin.advisor.mysql.statement.affected-row-limit"
 
+	// MySQLStatementDMLDryRun is an advisor type for MySQL DML dry run.
+	MySQLStatementDMLDryRun Type = "bb.plugin.advisor.mysql.statement.dml-dry-run"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
