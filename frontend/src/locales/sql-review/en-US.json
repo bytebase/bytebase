@@ -213,8 +213,8 @@
       "title": "Maximum CHAR length",
       "description": "Force to change CHAR to VARCHAR if maximum length is reached.",
       "component": {
-        "required": {
-          "number": "Maximum length"
+        "number": {
+          "title": "Maximum length"
         }
       }
     },
@@ -222,8 +222,8 @@
       "title": "Auto-increment initial value",
       "description": "Set initial value for auto-increment column.",
       "component": {
-        "required": {
-          "number": "Initial value"
+        "number": {
+          "title": "Initial value"
         }
       }
     },
