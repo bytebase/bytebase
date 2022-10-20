@@ -3,7 +3,10 @@ package mysql
 
 import (
 	"bytes"
+	"fmt"
+	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
@@ -29,6 +32,15 @@ func init() {
 	differ.Register(bbparser.TiDB, &SchemaDiffer{})
 }
 
+type objectType string
+
+const (
+	event     objectType = "EVENT"
+	function  objectType = "FUNCTION"
+	procedure objectType = "PROCEDURE"
+	trigger   objectType = "TRIGGER"
+)
+
 // SchemaDiffer it the parser for MySQL dialect.
 type SchemaDiffer struct {
 }
@@ -39,11 +51,34 @@ type constraintMap map[string]*ast.Constraint
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
-	oldNodes, _, err := parser.New().Parse(oldStmt, "", "")
+	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
+	oldUnsupportStmts, oldSupportStmts, err := bbparser.ExtractTiDBUnsupportStmts(oldStmt)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from old statements %q", oldStmt)
+	}
+	var oldUnsupportFilterStmts []string
+	for _, stmt := range oldUnsupportStmts {
+		if !bbparser.IsDelimiter(stmt) {
+			oldUnsupportFilterStmts = append(oldUnsupportFilterStmts, stmt)
+		}
+	}
+
+	newUnsupportStmts, newSupportStmts, err := bbparser.ExtractTiDBUnsupportStmts(newStmt)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to extract TiDB unsupport statements from old statements %q", oldStmt)
+	}
+	var newUnsupportFilterStmts []string
+	for _, stmt := range newUnsupportStmts {
+		if !bbparser.IsDelimiter(stmt) {
+			newUnsupportFilterStmts = append(newUnsupportFilterStmts, stmt)
+		}
+	}
+
+	oldNodes, _, err := parser.New().Parse(oldSupportStmts, "", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
 	}
-	newNodes, _, err := parser.New().Parse(newStmt, "", "")
+	newNodes, _, err := parser.New().Parse(newSupportStmts, "", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
@@ -277,6 +312,43 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		}
 	}
 
+	// We compare the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statements based on strcmp.
+	var newNodeStmt []string
+	var inplaceDropStmt []string
+	var inplaceAddStmt []string
+	var dropStmt []string
+
+	oldUnsupportMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts)
+	if err != nil {
+		return "", err
+	}
+	newUnsupportMap, err := buildUnsupportObjectMap(newUnsupportFilterStmts)
+	if err != nil {
+		return "", err
+	}
+	for tp, objs := range newUnsupportMap {
+		for newName, newStmt := range objs {
+			if oldStmt, ok := oldUnsupportMap[tp][newName]; ok {
+				if strings.Compare(oldStmt, newStmt) != 0 {
+					// We should drop the old function and create the new function.
+					// https://dev.mysql.com/doc/refman/8.0/en/drop-procedure.html
+					// https://dev.mysql.com/doc/refman/5.7/en/drop-procedure.html
+					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, newName))
+					inplaceAddStmt = append(inplaceAddStmt, newStmt)
+				}
+				delete(oldUnsupportMap[tp], newName)
+				continue
+			}
+			newNodeStmt = append(newNodeStmt, newStmt)
+		}
+	}
+	// drop remaining TiDB unsupported objects
+	for tp, objs := range oldUnsupportMap {
+		for name := range objs {
+			dropStmt = append(dropStmt, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, name))
+		}
+	}
+
 	var tempViewList []*ast.CreateViewStmt
 	var viewList []*ast.CreateViewStmt
 	for _, view := range newViewList {
@@ -320,10 +392,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		dropNodeList = append(dropNodeList, dropViewStmt)
 	}
 
-	return deparse(newNodeList, inplaceUpdate, inplaceAddNodeList, inplaceDropNodeList, dropNodeList, viewStmts, format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
+	return deparse(newNodeList, newNodeStmt, inplaceUpdate,
+		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,
+		inplaceDropStmt, dropNodeList, dropStmt, viewStmts,
+		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
-func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.Node, inplaceDrop []ast.Node, dropNodeList []ast.Node, viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
+func deparse(newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.Node,
+	inplaceAdd []ast.Node, inplaceAddStmt []string, inplaceDrop []ast.Node,
+	inplaceDropStmt []string, dropNodeList []ast.Node, dropStmt []string,
+	viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -336,6 +414,14 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	for _, stmt := range newNodeStmt {
+		if _, err := buf.Write([]byte(stmt)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
 			return "", err
 		}
 	}
@@ -357,6 +443,14 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.
 			return "", err
 		}
 	}
+	for i := len(inplaceDropStmt) - 1; i >= 0; i-- {
+		if _, err := buf.Write([]byte(inplaceDropStmt[i])); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
+			return "", err
+		}
+	}
 
 	for i := len(inplaceAdd) - 1; i >= 0; i-- {
 		if err := inplaceAdd[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
@@ -366,12 +460,28 @@ func deparse(newNodeList []ast.Node, inplaceUpdate []ast.Node, inplaceAdd []ast.
 			return "", err
 		}
 	}
+	for _, stmt := range inplaceAddStmt {
+		if _, err := buf.Write([]byte(stmt)); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
+			return "", err
+		}
+	}
 
 	for i := len(dropNodeList) - 1; i >= 0; i-- {
 		if err := dropNodeList[i].Restore(format.NewRestoreCtx(flag, &buf)); err != nil {
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	for i := len(dropStmt) - 1; i >= 0; i-- {
+		if _, err := buf.Write([]byte(dropStmt[i])); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
 			return "", err
 		}
 	}
@@ -411,6 +521,23 @@ func buildViewMap(nodes []ast.StmtNode) map[string]*ast.CreateViewStmt {
 		}
 	}
 	return viewMap
+}
+
+// buildUnsupportObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
+func buildUnsupportObjectMap(stmts []string) (map[objectType]map[string]string, error) {
+	m := make(map[objectType]map[string]string)
+	m[trigger] = make(map[string]string)
+	m[function] = make(map[string]string)
+	m[procedure] = make(map[string]string)
+	m[event] = make(map[string]string)
+	for _, stmt := range stmts {
+		objName, objType, err := extractUnsupportObjNameAndType(stmt)
+		if err != nil {
+			return nil, err
+		}
+		m[objType][objName] = stmt
+	}
+	return m, nil
 }
 
 // getTempView returns the temporary view name and the create statement.
@@ -1081,4 +1208,40 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 		m[option.Tp] = option
 	}
 	return m
+}
+
+// extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
+func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
+	fs := []objectType{
+		function,
+		procedure,
+	}
+	regexFmt := "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)*\\("
+	namingRegex := "`[^\\\\/?%*:|\\\"`<>]+`"
+	for _, obj := range fs {
+		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
+		re := regexp.MustCompile(regex)
+		matchList := re.FindStringSubmatch(stmt)
+		index := re.SubexpIndex("OBJECT_NAME")
+		if index >= 0 && index < len(matchList) {
+			objectName := strings.Trim(matchList[index], "`")
+			return objectName, obj, nil
+		}
+	}
+	objects := []objectType{
+		trigger,
+		event,
+	}
+	regexFmt = "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)+"
+	for _, obj := range objects {
+		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
+		re := regexp.MustCompile(regex)
+		matchList := re.FindStringSubmatch(stmt)
+		index := re.SubexpIndex("OBJECT_NAME")
+		if index >= 0 && index < len(matchList) {
+			objectName := strings.Trim(matchList[index], "`")
+			return objectName, obj, nil
+		}
+	}
+	return "", "", errors.Errorf("cannot extract object name and type from %q", stmt)
 }
