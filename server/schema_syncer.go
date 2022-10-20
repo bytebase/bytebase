@@ -142,7 +142,7 @@ func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 						zap.Int("instanceID", instance.ID),
 						zap.String("instanceName", instance.Name),
 						zap.String("databaseName", database.Name),
-						zap.String("error", err.Error()))
+						zap.Error(err))
 				}
 			}
 		}(databaseList)
