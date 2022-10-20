@@ -71,6 +71,8 @@ const (
 	SchemaRuleStatementInsertMustSpecifyColumn SQLReviewRuleType = "statement.insert.must-specify-column"
 	// SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 	SchemaRuleStatementInsertDisallowOrderByRand SQLReviewRuleType = "statement.insert.disallow-order-by-rand"
+	// SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
+	SchemaRuleStatementAffectedRowLimit SQLReviewRuleType = "statement.affected-row-limit"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -235,7 +237,7 @@ func (rule *SQLReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRuleIndexKeyNumberLimit, SchemaRuleStatementInsertRowLimit, SchemaRuleIndexTotalNumberLimit,
-		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue:
+		SchemaRuleColumnMaximumCharacterLength, SchemaRuleColumnAutoIncrementInitialValue, SchemaRuleStatementAffectedRowLimit:
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -883,6 +885,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLMergeAlterTable, nil
+		}
+	case SchemaRuleStatementAffectedRowLimit:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLStatementAffectedRowLimit, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
