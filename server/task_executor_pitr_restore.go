@@ -159,8 +159,9 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	// Sync database schema after restore is completed.
 	if err := server.syncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
 		log.Error("failed to sync database schema",
-			zap.String("instance", targetDatabase.Instance.Name),
+			zap.String("instanceName", targetDatabase.Instance.Name),
 			zap.String("databaseName", targetDatabase.Name),
+			zap.Error(err),
 		)
 	}
 
