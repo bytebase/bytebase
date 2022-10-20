@@ -41,25 +41,14 @@ func TestFunction(t *testing.T) {
 			old: "DELIMITER ;;\n" +
 				"CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(v INT) RETURNS int\n" +
 				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a + 1;   RETURN a; END ;;\n" +
-				"DELIMITER ;\n" +
-				"DELIMITER ;;\n" +
-				"CREATE DEFINER=`root`@`%` FUNCTION `AddTwo`(v INT) RETURNS int\n" +
-				"BEGIN   DECLARE a INT;   SET a = v;   SET a = AddOne(a); SET a = AddOne(a);   RETURN a; END ;;\n" +
 				"DELIMITER ;\n",
 			new: "DELIMITER ;;\n" +
 				"CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(v INT) RETURNS int\n" +
-				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1;   RETURN a; END ;;\n" +
-				"DELIMITER ;\n" +
-				"DELIMITER ;;\n" +
-				"CREATE DEFINER=`root`@`%` FUNCTION `AddTwo`(v INT) RETURNS int\n" +
-				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * AddOne(a); SET a = a * AddOne(a);   RETURN a; END ;;\n" +
+				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END ;;\n" +
 				"DELIMITER ;\n",
 			want: "DROP FUNCTION IF EXISTS `AddOne`;\n" +
-				"DROP FUNCTION IF EXISTS `AddTwo`;\n" +
 				"CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(v INT) RETURNS int\n" +
-				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1;   RETURN a; END ;;\n" +
-				"CREATE DEFINER=`root`@`%` FUNCTION `AddTwo`(v INT) RETURNS int\n" +
-				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * AddOne(a); SET a = a * AddOne(a);   RETURN a; END ;;\n",
+				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END ;;\n",
 		},
 	}
 	a := require.New(t)

@@ -316,79 +316,36 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var newNodeStmt []string
 	var inplaceDropStmt []string
 	var inplaceAddStmt []string
+	var dropStmt []string
 
-	functionMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, function)
+	oldUnsupportMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts)
 	if err != nil {
 		return "", err
 	}
-	procedureMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, procedure)
+	newUnsupportMap, err := buildUnsupportObjectMap(newUnsupportFilterStmts)
 	if err != nil {
 		return "", err
 	}
-	triggerMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, trigger)
-	if err != nil {
-		return "", err
-	}
-	eventMap, err := buildUnsupportObjectMap(oldUnsupportFilterStmts, event)
-	if err != nil {
-		return "", err
-	}
-	for _, stmt := range newUnsupportFilterStmts {
-		name, tp, err := extractUnsupportObjNameAndType(stmt)
-		if err != nil {
-			return "", err
-		}
-		switch tp {
-		case function:
-			if oldStmt, ok := functionMap[name]; ok {
-				if strings.Compare(oldStmt, stmt) != 0 {
+	for tp, objs := range newUnsupportMap {
+		for newName, newStmt := range objs {
+			if oldStmt, ok := oldUnsupportMap[tp][newName]; ok {
+				if strings.Compare(oldStmt, newStmt) != 0 {
 					// We should drop the old function and create the new function.
 					// https://dev.mysql.com/doc/refman/8.0/en/drop-procedure.html
 					// https://dev.mysql.com/doc/refman/5.7/en/drop-procedure.html
-					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP FUNCTION IF EXISTS `%s`;", name))
-					inplaceAddStmt = append(inplaceAddStmt, stmt)
+					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, newName))
+					inplaceAddStmt = append(inplaceAddStmt, newStmt)
 				}
-				delete(functionMap, name)
+				delete(oldUnsupportMap[tp], newName)
 				continue
 			}
-			newNodeStmt = append(newNodeStmt, stmt)
-		case procedure:
-			if oldStmt, ok := procedureMap[name]; ok {
-				if strings.Compare(oldStmt, stmt) != 0 {
-					// We should drop the old procedure and create the new procedure.
-					// https://dev.mysql.com/doc/refman/8.0/en/drop-procedure.html
-					// https://dev.mysql.com/doc/refman/5.7/en/drop-procedure.html
-					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP PROCEDURE IF EXISTS `%s`;", name))
-					inplaceAddStmt = append(inplaceAddStmt, stmt)
-				}
-				delete(procedureMap, name)
-				continue
-			}
-			newNodeStmt = append(newNodeStmt, stmt)
-		case trigger:
-			if oldStmt, ok := triggerMap[name]; ok {
-				if strings.Compare(oldStmt, stmt) != 0 {
-					// We should drop the old trigger and create the new trigger.
-					// https://dev.mysql.com/doc/refman/5.7/en/drop-trigger.html
-					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP TRIGGER IF EXISTS `%s`;", name))
-					inplaceAddStmt = append(inplaceAddStmt, stmt)
-				}
-				delete(triggerMap, name)
-				continue
-			}
-			newNodeStmt = append(newNodeStmt, stmt)
-		case event:
-			if oldStmt, ok := eventMap[name]; ok {
-				if strings.Compare(oldStmt, stmt) != 0 {
-					// We should drop the old event and create the new event.
-					// https://dev.mysql.com/doc/refman/8.0/en/drop-event.html
-					inplaceDropStmt = append(inplaceDropStmt, fmt.Sprintf("DROP EVENT IF EXISTS `%s`;", name))
-					inplaceAddStmt = append(inplaceAddStmt, stmt)
-				}
-				delete(eventMap, name)
-				continue
-			}
-			newNodeStmt = append(newNodeStmt, stmt)
+			newNodeStmt = append(newNodeStmt, newStmt)
+		}
+	}
+	// drop remaining TiDB unsupported objects
+	for tp, objs := range oldUnsupportMap {
+		for name := range objs {
+			dropStmt = append(dropStmt, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, name))
 		}
 	}
 
@@ -437,13 +394,14 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 	return deparse(newNodeList, newNodeStmt, inplaceUpdate,
 		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,
-		inplaceDropStmt, dropNodeList, viewStmts,
+		inplaceDropStmt, dropNodeList, dropStmt, viewStmts,
 		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset)
 }
 
 func deparse(newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.Node,
 	inplaceAdd []ast.Node, inplaceAddStmt []string, inplaceDrop []ast.Node,
-	inplaceDropStmt []string, dropNodeList []ast.Node, viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
+	inplaceDropStmt []string, dropNodeList []ast.Node, dropStmt []string,
+	viewStmts []*ast.CreateViewStmt, flag format.RestoreFlags) (string, error) {
 	var buf bytes.Buffer
 	// We should following the right order to avoid break the dependency:
 	// Additions for new nodes.
@@ -485,8 +443,8 @@ func deparse(newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.N
 			return "", err
 		}
 	}
-	for _, stmt := range inplaceDropStmt {
-		if _, err := buf.Write([]byte(stmt)); err != nil {
+	for i := len(inplaceDropStmt) - 1; i >= 0; i-- {
+		if _, err := buf.Write([]byte(inplaceDropStmt[i])); err != nil {
 			return "", err
 		}
 		if _, err := buf.Write([]byte("\n")); err != nil {
@@ -516,6 +474,14 @@ func deparse(newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.N
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {
+			return "", err
+		}
+	}
+	for i := len(dropStmt) - 1; i >= 0; i-- {
+		if _, err := buf.Write([]byte(dropStmt[i])); err != nil {
+			return "", err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
 			return "", err
 		}
 	}
@@ -557,18 +523,19 @@ func buildViewMap(nodes []ast.StmtNode) map[string]*ast.CreateViewStmt {
 	return viewMap
 }
 
-// buildUnsupportObjectMap builds a map of TiDB unsupported object name to create object string statements.
-func buildUnsupportObjectMap(stmts []string, tp objectType) (map[string]string, error) {
-	m := make(map[string]string)
+// buildUnsupportObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
+func buildUnsupportObjectMap(stmts []string) (map[objectType]map[string]string, error) {
+	m := make(map[objectType]map[string]string)
+	m[trigger] = make(map[string]string)
+	m[function] = make(map[string]string)
+	m[procedure] = make(map[string]string)
+	m[event] = make(map[string]string)
 	for _, stmt := range stmts {
 		objName, objType, err := extractUnsupportObjNameAndType(stmt)
 		if err != nil {
 			return nil, err
 		}
-		if objType == tp {
-			// We only need to extract the trigger name from the CREATE TRIGGER statement.
-			m[objName] = stmt
-		}
+		m[objType][objName] = stmt
 	}
 	return m, nil
 }
