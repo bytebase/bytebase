@@ -214,8 +214,8 @@
       "title": "CHAR 长度限制",
       "description": "CHAR 长度大于指定值的时候需要改为 VARCHAR 类型。",
       "component": {
-        "required": {
-          "number": "最大长度"
+        "number": {
+          "title": "最大长度"
         }
       }
     },
@@ -223,8 +223,8 @@
       "title": "自增初始值",
       "description": "配置自增字段的初始值。",
       "component": {
-        "required": {
-          "number": "初始值"
+        "number": {
+          "title": "初始值"
         }
       }
     },
