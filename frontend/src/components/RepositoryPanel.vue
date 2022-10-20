@@ -114,6 +114,24 @@
       </div>
     </div>
   </BBModal>
+  <BBAlert
+    v-if="state.showSetupSQLReviewCIFailureModal"
+    :style="'CRITICAL'"
+    :ok-text="$t('common.retry')"
+    :title="$t('repository.sql-review-ci-setup-failed')"
+    @ok="
+      () => {
+        state.showSetupSQLReviewCIFailureModal = false;
+        createSQLReviewCI();
+      }
+    "
+    @cancel="
+      () => {
+        state.showSetupSQLReviewCIFailureModal = false;
+      }
+    "
+  >
+  </BBAlert>
   <BBModal
     v-if="state.showLoadingSQLReviewPRModal"
     class="relative overflow-hidden"
@@ -238,6 +256,7 @@ interface LocalState {
   schemaChangeType: SchemaChangeType;
   showFeatureModal: boolean;
   showSetupSQLReviewCIModal: boolean;
+  showSetupSQLReviewCIFailureModal: boolean;
   showLoadingSQLReviewPRModal: boolean;
   showDisableSQLReviewCIModal: boolean;
   showRestoreSQLReviewCIModal: boolean;
@@ -277,6 +296,7 @@ export default defineComponent({
       schemaChangeType: props.project.schemaChangeType,
       showFeatureModal: false,
       showSetupSQLReviewCIModal: false,
+      showSetupSQLReviewCIFailureModal: false,
       showLoadingSQLReviewPRModal: false,
       showDisableSQLReviewCIModal: false,
       showRestoreSQLReviewCIModal: false,
@@ -352,6 +372,32 @@ export default defineComponent({
       });
     };
 
+    const createSQLReviewCI = async () => {
+      const repository = repositoryStore.getRepositoryByProjectId(
+        props.project.id
+      );
+
+      state.showLoadingSQLReviewPRModal = true;
+
+      try {
+        const sqlReviewCISetup = await repositoryStore.createSQLReviewCI({
+          projectId: props.project.id,
+          repositoryId: repository.id,
+        });
+        state.sqlReviewCIPullRequestURL = sqlReviewCISetup.pullRequestURL;
+        state.showSetupSQLReviewCIModal = true;
+        window.open(sqlReviewCISetup.pullRequestURL, "_blank");
+        repositoryStore.setRepositorySQLReviewCIEnabled({
+          projectId: props.project.id,
+          sqlReviewCIEnabled: true,
+        });
+      } catch {
+        state.showSetupSQLReviewCIFailureModal = true;
+      } finally {
+        state.showLoadingSQLReviewPRModal = false;
+      }
+    };
+
     const doUpdate = async () => {
       if (
         state.repositoryConfig.enableSQLReviewCI &&
@@ -362,12 +408,9 @@ export default defineComponent({
         return;
       }
 
-      if (
+      const needSetupCI =
         !props.repository.enableSQLReviewCI &&
-        state.repositoryConfig.enableSQLReviewCI
-      ) {
-        state.showLoadingSQLReviewPRModal = true;
-      }
+        state.repositoryConfig.enableSQLReviewCI;
 
       const repositoryPatch: RepositoryPatch = {};
       if (
@@ -425,20 +468,17 @@ export default defineComponent({
 
       const disableSQLReview = disableSQLReviewCI.value;
 
-      const updatedRepository =
-        await repositoryStore.updateRepositoryByProjectId({
-          projectId: props.project.id,
-          repositoryPatch,
-        });
-      if (updatedRepository.sqlReviewCIPullRequestURL) {
-        state.sqlReviewCIPullRequestURL =
-          updatedRepository.sqlReviewCIPullRequestURL;
-        state.showLoadingSQLReviewPRModal = false;
-        state.showSetupSQLReviewCIModal = true;
-        window.open(updatedRepository.sqlReviewCIPullRequestURL, "_blank");
+      await repositoryStore.updateRepositoryByProjectId({
+        projectId: props.project.id,
+        repositoryPatch,
+      });
+
+      if (needSetupCI) {
+        createSQLReviewCI();
       } else if (disableSQLReview) {
         state.showDisableSQLReviewCIModal = true;
       }
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -453,6 +493,7 @@ export default defineComponent({
       restoreToUIWorkflowType,
       onSQLReviewCIModalClose,
       doUpdate,
+      createSQLReviewCI,
     };
   },
 });

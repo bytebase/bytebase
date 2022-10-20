@@ -400,7 +400,6 @@ func TestVCS(t *testing.T) {
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
-					EnableSQLReviewCI:  true,
 				},
 			)
 			a.NoError(err)
@@ -755,7 +754,6 @@ func TestVCS_SDL(t *testing.T) {
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
-					EnableSQLReviewCI:  true,
 				},
 			)
 			a.NoError(err)
@@ -1274,7 +1272,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					ExternalID:         externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
-					EnableSQLReviewCI:  true,
 				},
 			)
 			a.NoError(err)
@@ -1527,14 +1524,23 @@ func TestVCS_SQL_Review(t *testing.T) {
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
 					RefreshToken:       "refreshToken1",
-					EnableSQLReviewCI:  true,
 				},
 			)
 			a.NoError(err)
 			a.NotNil(repository)
+			a.Equal(false, repository.EnableSQLReviewCI)
+
+			sqlReviewCI, err := ctl.createSQLReviewCI(project.ID, repository.ID)
+			a.NoError(err)
+			a.NotNil(sqlReviewCI)
+
+			repositoryList, err := ctl.listRepository(project.ID)
+			a.NoError(err)
+			a.NotNil(repositoryList)
+			a.Equal(1, len(repositoryList))
+			a.Equal(true, repositoryList[0].EnableSQLReviewCI)
 
 			// Simulate Git commits and pull request for SQL review.
-
 			prID := rand.Int()
 			gitFile := "bbtest/Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book.sql"
 			fileContent := "CREATE TABLE book (id serial PRIMARY KEY, name TEXT);"
