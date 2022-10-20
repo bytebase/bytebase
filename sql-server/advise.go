@@ -1,6 +1,7 @@
 package sqlserver
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -145,6 +146,8 @@ func sqlCheck(
 		Collation: dbCollation,
 		DbType:    dbType,
 		Catalog:   catalog,
+		Driver:    nil,
+		Context:   context.Background(),
 	})
 	if err != nil {
 		return nil, err

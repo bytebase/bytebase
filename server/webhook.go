@@ -356,12 +356,20 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
 		}
 
+		driver, err := tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		if err != nil {
+			return nil, err
+		}
+
 		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
 			Charset:   database.CharacterSet,
 			Collation: database.Collation,
 			DbType:    dbType,
 			Catalog:   catalog,
+			Driver:    driver,
+			Context:   ctx,
 		})
+		driver.Close(ctx)
 		if err != nil {
 			return nil, errors.Errorf("Failed to exec the SQL check for database %v with error: %v", database.ID, err)
 		}
