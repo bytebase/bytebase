@@ -83,6 +83,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
+	var newTableList []ast.Node
 	var newNodeList []ast.Node
 	var inplaceUpdate []ast.Node
 	// inplaceDropNodeList and inplaceAddNodeList are used to handle destructive node updates.
@@ -105,7 +106,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if !ok {
 				stmt := *newStmt
 				stmt.IfNotExists = true
-				newNodeList = append(newNodeList, &stmt)
+				newTableList = append(newTableList, &stmt)
 				continue
 			}
 			if alterTableOptionStmt := diffTableOptions(newStmt.Table, oldStmt.Options, newStmt.Options); alterTableOptionStmt != nil {
@@ -391,6 +392,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	if len(dropViewStmt.Tables) > 0 {
 		dropNodeList = append(dropNodeList, dropViewStmt)
 	}
+
+	// We should create table first and then add the constraint such as add foreign key on an other table,
+	// becase mysqldump have not topology sort.
+	newNodeList = append(newTableList, newNodeList...)
 
 	return deparse(newNodeList, newNodeStmt, inplaceUpdate,
 		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,

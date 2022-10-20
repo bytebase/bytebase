@@ -35,6 +35,14 @@ func TestTable(t *testing.T) {
 			`,
 			want: "",
 		},
+		{
+			old: `CREATE TABLE book(id INT);`,
+			new: `CREATE TABLE book(id INT, price_id DECIMAL(10,2), CONSTRAINT FOREIGN KEY fk_price (price_id) REFERENCES price(amount));
+			CREATE TABLE price(id INT PRIMARY KEY, amount DECIMAL(10,2));`,
+			want: "CREATE TABLE IF NOT EXISTS `price` (`id` INT PRIMARY KEY,`amount` DECIMAL(10,2));\n" +
+				"ALTER TABLE `book` ADD COLUMN (`price_id` DECIMAL(10,2));\n" +
+				"ALTER TABLE `book` ADD CONSTRAINT `fk_price` FOREIGN KEY (`price_id`) REFERENCES `price`(`amount`);\n",
+		},
 	}
 	a := require.New(t)
 	mysqlDiffer := &SchemaDiffer{}
