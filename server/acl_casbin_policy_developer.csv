@@ -10,6 +10,7 @@ p, DEVELOPER, /project/{id}/repository, GET
 p, DEVELOPER, /project/{id}/repository, POST
 p, DEVELOPER, /project/{id}/repository, PATCH
 p, DEVELOPER, /project/{id}/repository, DELETE
+p, DEVELOPER, /project/{projectID}/repository/{repositoryID}/sql-review-ci, POST
 p, DEVELOPER, /project/{id}/deployment, GET
 p, DEVELOPER, /project/{id}/deployment, PATCH
 p, DEVELOPER, /project/{projectID}/sync-member, POST
