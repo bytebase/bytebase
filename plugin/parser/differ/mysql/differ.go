@@ -41,6 +41,9 @@ const (
 	procedure objectType = "PROCEDURE"
 	trigger   objectType = "TRIGGER"
 )
+const (
+	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n"
+)
 
 // SchemaDiffer it the parser for MySQL dialect.
 type SchemaDiffer struct {
@@ -394,17 +397,19 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 
 	var buf bytes.Buffer
-	_, _ = buf.Write([]byte("SET FOREIGN_KEY_CHECKS=0;\n"))
-
 	if err := deparse(&buf, newNodeList, newNodeStmt, inplaceUpdate,
 		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,
 		inplaceDropStmt, dropNodeList, dropStmt, viewStmts,
 		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset); err != nil {
 		return "", errors.Wrapf(err, "deparse failed")
 	}
-	return buf.String(), nil
+	if buf.Len() > 0 {
+		return fmt.Sprintf("%s%s", disableFKCheckStmt, buf.String()), nil
+	}
+	return "", nil
 }
 
+// deparse deparses the ast node list and stmt list to sql string and write it to the out.
 func deparse(out io.Writer, newNodeList []ast.Node, newNodeStmt []string, inplaceUpdate []ast.Node,
 	inplaceAdd []ast.Node, inplaceAddStmt []string, inplaceDrop []ast.Node,
 	inplaceDropStmt []string, dropNodeList []ast.Node, dropStmt []string,
