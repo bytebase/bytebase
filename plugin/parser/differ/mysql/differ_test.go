@@ -78,3 +78,22 @@ func TestExtractUnsupportObjNameAndType(t *testing.T) {
 		a.Equal(test.wantName, gotName)
 	}
 }
+
+type testCase struct {
+	old  string
+	new  string
+	want string
+}
+
+func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
+	a := require.New(t)
+	mysqlDiffer := &SchemaDiffer{}
+	disableFK := "SET FOREIGN_KEY_CHECKS=0;\n"
+	for _, test := range testCases {
+		out, err := mysqlDiffer.SchemaDiff(test.old, test.new)
+		a.NoError(err)
+		a.Equal(disableFK, out[:len(disableFK)])
+		trimPrefix := out[len(disableFK):]
+		a.Equalf(test.want, trimPrefix, "old: %s\nnew: %s\n", test.old, test.new)
+	}
+}
