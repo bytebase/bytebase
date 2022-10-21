@@ -266,9 +266,8 @@ func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []
 			status,
 			type,
 			comment,
-			payload
-      VALUES
-		)`)
+			payload) VALUES
+      `)
 	for i, create := range creates {
 		if create.Payload == "" {
 			create.Payload = "{}"
@@ -281,7 +280,11 @@ func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []
 			create.Comment,
 			create.Payload,
 		)
-		fmt.Fprintf(&query, "($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)\n", i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6)
+		delimiter := ","
+		if i == len(creates)-1 {
+			delimiter = ""
+		}
+		fmt.Fprintf(&query, "($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)%s\n", i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6, delimiter)
 	}
 	query.WriteString(`RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`)
 
