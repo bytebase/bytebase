@@ -185,29 +185,29 @@ func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, c
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
-	createList = append(createList, create)
+	createList = append(createList, create...)
 
 	create, err = s.getPITRTaskCheck(ctx, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
 	}
-	createList = append(createList, create)
+	createList = append(createList, create...)
 
 	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateSDL && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return createList, nil
 	}
 
-	creates, err := s.getGeneralTaskCheck(ctx, task, creatorID)
+	create, err = s.getGeneralTaskCheck(ctx, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule general task check")
 	}
-	createList = append(createList, creates...)
+	createList = append(createList, create...)
 
 	create, err = s.getGhostTaskCheck(ctx, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule gh-ost task check")
 	}
-	createList = append(createList, create)
+	createList = append(createList, create...)
 
 	statement, err := s.getStatement(task)
 	if err != nil {
@@ -225,19 +225,19 @@ func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, c
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
-	createList = append(createList, create)
+	createList = append(createList, create...)
 
 	create, err = s.getSQLReviewTaskCheck(ctx, task, creatorID, database, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
-	createList = append(createList, create)
+	createList = append(createList, create...)
 
 	create, err = s.getStmtTypeTaskCheck(ctx, task, creatorID, database, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
-	createList = append(createList, create)
+	createList = append(createList, create...)
 
 	var res []*api.TaskCheckRunCreate
 	for _, create := range createList {
@@ -293,7 +293,7 @@ func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	}
 }
 
-func (*TaskCheckScheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) (*api.TaskCheckRunCreate, error) {
+func (*TaskCheckScheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsStatementTypeCheckSupported(database.Instance.Engine) {
 		return nil, nil
 	}
@@ -306,15 +306,17 @@ func (*TaskCheckScheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Tas
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
 	}
-	return &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseStatementType,
-		Payload:   string(payload),
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementType,
+			Payload:   string(payload),
+		},
 	}, nil
 }
 
-func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) (*api.TaskCheckRunCreate, error) {
+func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
 		return nil, nil
 	}
@@ -332,15 +334,17 @@ func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *ap
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
-	return &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseStatementAdvise,
-		Payload:   string(payload),
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementAdvise,
+			Payload:   string(payload),
+		},
 	}, nil
 }
 
-func (s *TaskCheckScheduler) getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) (*api.TaskCheckRunCreate, error) {
+func (s *TaskCheckScheduler) getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
 		return nil, nil
 	}
@@ -353,11 +357,13 @@ func (s *TaskCheckScheduler) getSyntaxCheckTaskCheck(_ context.Context, task *ap
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
-	return &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseStatementSyntax,
-		Payload:   string(payload),
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementSyntax,
+			Payload:   string(payload),
+		},
 	}, nil
 }
 
@@ -376,29 +382,33 @@ func (*TaskCheckScheduler) getGeneralTaskCheck(_ context.Context, task *api.Task
 	}, nil
 }
 
-func (*TaskCheckScheduler) getGhostTaskCheck(_ context.Context, task *api.Task, creatorID int) (*api.TaskCheckRunCreate, error) {
+func (*TaskCheckScheduler) getGhostTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return nil, nil
 	}
-	return &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckGhostSync,
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckGhostSync,
+		},
 	}, nil
 }
 
-func (*TaskCheckScheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID int) (*api.TaskCheckRunCreate, error) {
+func (*TaskCheckScheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseRestorePITRRestore {
 		return nil, nil
 	}
-	return &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckPITRMySQL,
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckPITRMySQL,
+		},
 	}, nil
 }
 
-func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) (*api.TaskCheckRunCreate, error) {
+func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if !s.server.feature(api.FeatureLGTM) {
 		return nil, nil
 	}
@@ -414,10 +424,12 @@ func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Tas
 		// don't schedule LGTM check if it's disabled.
 		return nil, nil
 	}
-	return &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckIssueLGTM,
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckIssueLGTM,
+		},
 	}, nil
 }
 
