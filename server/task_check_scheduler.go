@@ -178,27 +178,36 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 	s.executors[taskType] = executor
 }
 
-// ScheduleCheckIfNeeded schedules a check if needed.
-func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
-	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID); err != nil {
+func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+	var createList []*api.TaskCheckRunCreate
+
+	create, err := s.getLGTMTaskCheck(ctx, task, creatorID)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
+	createList = append(createList, create...)
 
-	if err := s.schedulePITRTaskCheck(ctx, task, creatorID); err != nil {
+	create, err = s.getPITRTaskCheck(ctx, task, creatorID)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
 	}
+	createList = append(createList, create...)
 
 	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateSDL && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
-		return task, nil
+		return createList, nil
 	}
 
-	if err := s.scheduleGeneralTaskCheck(ctx, task, creatorID); err != nil {
+	create, err = s.getGeneralTaskCheck(ctx, task, creatorID)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule general task check")
 	}
+	createList = append(createList, create...)
 
-	if err := s.scheduleGhostTaskCheck(ctx, task, creatorID); err != nil {
+	create, err = s.getGhostTaskCheck(ctx, task, creatorID)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule gh-ost task check")
 	}
+	createList = append(createList, create...)
 
 	statement, err := s.getStatement(task)
 	if err != nil {
@@ -212,27 +221,38 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
 	}
 
-	if err := s.scheduleSyntaxCheckTaskCheck(ctx, task, creatorID, database, statement); err != nil {
+	create, err = s.getSyntaxCheckTaskCheck(ctx, task, creatorID, database, statement)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
+	createList = append(createList, create...)
 
-	if err := s.scheduleSQLReviewTaskCheck(ctx, task, creatorID, database, statement); err != nil {
+	create, err = s.getSQLReviewTaskCheck(ctx, task, creatorID, database, statement)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
+	createList = append(createList, create...)
 
-	if err := s.scheduleStmtTypeTaskCheck(ctx, task, creatorID, database, statement); err != nil {
+	create, err = s.getStmtTypeTaskCheck(ctx, task, creatorID, database, statement)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
+	createList = append(createList, create...)
 
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID: &task.ID,
+	return createList, nil
+}
+
+// ScheduleCheck schedules variouse task checks depending on the task type.
+func (s *TaskCheckScheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
+	createList, err := s.getTaskCheck(ctx, task, creatorID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to getTaskCheck")
 	}
-	taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+	taskCheckRunList, err := s.server.store.BulkCreateTaskCheckRun(ctx, createList)
 	if err != nil {
 		return nil, err
 	}
 	task.TaskCheckRunList = taskCheckRunList
-
 	return task, err
 }
 
@@ -267,9 +287,9 @@ func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	}
 }
 
-func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) error {
+func (*TaskCheckScheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsStatementTypeCheckSupported(database.Instance.Engine) {
-		return nil
+		return nil, nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
 		Statement: statement,
@@ -278,26 +298,25 @@ func (s *TaskCheckScheduler) scheduleStmtTypeTaskCheck(ctx context.Context, task
 		Collation: database.Collation,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
+		return nil, errors.Wrapf(err, "failed to marshal statement type payload: %v", task.Name)
 	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseStatementType,
-		Payload:   string(payload),
-	}); err != nil {
-		return err
-	}
-	return nil
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementType,
+			Payload:   string(payload),
+		},
+	}, nil
 }
 
-func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) error {
+func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
-		return nil
+		return nil, nil
 	}
 	policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
+		return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 		Statement: statement,
@@ -307,22 +326,21 @@ func (s *TaskCheckScheduler) scheduleSQLReviewTaskCheck(ctx context.Context, tas
 		PolicyID:  policyID,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
+		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseStatementAdvise,
-		Payload:   string(payload),
-	}); err != nil {
-		return err
-	}
-	return nil
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementAdvise,
+			Payload:   string(payload),
+		},
+	}, nil
 }
 
-func (s *TaskCheckScheduler) scheduleSyntaxCheckTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) error {
+func (s *TaskCheckScheduler) getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
-		return nil
+		return nil, nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 		Statement: statement,
@@ -331,91 +349,82 @@ func (s *TaskCheckScheduler) scheduleSyntaxCheckTaskCheck(ctx context.Context, t
 		Collation: database.Collation,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
+		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
 	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseStatementSyntax,
-		Payload:   string(payload),
-	}); err != nil {
-		return err
-	}
-	return nil
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseStatementSyntax,
+			Payload:   string(payload),
+		},
+	}, nil
 }
 
-func (s *TaskCheckScheduler) scheduleGeneralTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckDatabaseConnect,
-	}); err != nil {
-		return err
-	}
-
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckInstanceMigrationSchema,
-	}); err != nil {
-		return err
-	}
-
-	return nil
+func (*TaskCheckScheduler) getGeneralTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckDatabaseConnect,
+		},
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckInstanceMigrationSchema,
+		},
+	}, nil
 }
 
-func (s *TaskCheckScheduler) scheduleGhostTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
+func (*TaskCheckScheduler) getGhostTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
-		return nil
+		return nil, nil
 	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckGhostSync,
-	}); err != nil {
-		return err
-	}
-	return nil
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckGhostSync,
+		},
+	}, nil
 }
 
-func (s *TaskCheckScheduler) schedulePITRTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
+func (*TaskCheckScheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseRestorePITRRestore {
-		return nil
+		return nil, nil
 	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckPITRMySQL,
-	}); err != nil {
-		return err
-	}
-	return nil
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckPITRMySQL,
+		},
+	}, nil
 }
 
-func (s *TaskCheckScheduler) scheduleLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) error {
+func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if !s.server.feature(api.FeatureLGTM) {
-		return nil
+		return nil, nil
 	}
 	issue, err := s.server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if issue == nil {
 		// skip if no containing issue.
-		return nil
+		return nil, nil
 	}
 	if issue.Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
 		// don't schedule LGTM check if it's disabled.
-		return nil
+		return nil, nil
 	}
-	if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-		CreatorID: creatorID,
-		TaskID:    task.ID,
-		Type:      api.TaskCheckIssueLGTM,
-	}); err != nil {
-		return err
-	}
-	return nil
+	return []*api.TaskCheckRunCreate{
+		{
+			CreatorID: creatorID,
+			TaskID:    task.ID,
+			Type:      api.TaskCheckIssueLGTM,
+		},
+	}, nil
 }
 
 // Returns true only if the task check run result is at least the minimum required level.

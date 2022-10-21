@@ -48,12 +48,18 @@ func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline
 }
 
 func (s *Server) schedulePipelineTaskCheck(ctx context.Context, pipeline *api.Pipeline) error {
+	var createList []*api.TaskCheckRunCreate
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
-			if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, api.SystemBotID); err != nil {
-				return errors.Wrapf(err, "failed to schedule task check for task %d", task.ID)
+			create, err := s.TaskCheckScheduler.getTaskCheck(ctx, task, api.SystemBotID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get task check for task %d", task.ID)
 			}
+			createList = append(createList, create...)
 		}
+	}
+	if _, err := s.store.BulkCreateTaskCheckRun(ctx, createList); err != nil {
+		return errors.Wrap(err, "failed to bulk insert TaskCheckRunCreate")
 	}
 	return nil
 }
