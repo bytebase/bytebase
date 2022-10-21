@@ -29,6 +29,13 @@ func TestColumnExist(t *testing.T) {
 			new:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
 			want: "",
 		},
+		// excess columns
+		{
+			old: `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
+			new: `CREATE TABLE book(price INT, code VARCHAR(50));`,
+			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n" +
+				"ALTER TABLE `book` DROP COLUMN `id`;\n",
+		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
