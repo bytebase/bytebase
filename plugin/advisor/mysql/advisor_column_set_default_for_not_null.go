@@ -123,7 +123,7 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 			Status:  checker.level,
 			Code:    advisor.NotNullColumnWithNullDefault,
 			Title:   checker.title,
-			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but has NULL default value", column.tableName, column.columnName),
+			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", column.tableName, column.columnName),
 			Line:    column.line,
 		})
 	}
