@@ -107,7 +107,6 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
-      - TIDB
       - POSTGRES
     componentList:
       - key: number
