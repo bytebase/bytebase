@@ -69,15 +69,23 @@
               class=""
               :selected-item="state.baseSchemaInfo.migrationHistory"
               :item-list="
-              databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
-            "
+                databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
+              "
               :placeholder="$t('migration-history.select')"
               :show-prefix-item="true"
-              @select-item="(migrationHistory: MigrationHistory) => state.baseSchemaInfo.migrationHistory = migrationHistory"
+              @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
             >
               <template #menuItem="{ item: migrationHistory }">
                 <div class="flex items-center">
                   {{ migrationHistory.version }}
+                </div>
+              </template>
+              <template #suffixItem>
+                <div
+                  class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
+                  @click="() => (state.showFeatureModal = true)"
+                >
+                  {{ $t("database.sync-schema.more-version") }}
                 </div>
               </template>
             </BBSelect>
@@ -239,11 +247,18 @@
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.sync-schema"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import axios from "axios";
 import dayjs from "dayjs";
+import { head } from "lodash-es";
 import { computed, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { useRouter } from "vue-router";
@@ -262,6 +277,7 @@ import {
   MigrationContext,
 } from "@/types";
 import {
+  hasFeature,
   pushNotification,
   useDatabaseStore,
   useInstanceStore,
@@ -289,6 +305,7 @@ type LocalState = {
   engineType?: EngineType;
   recommandStatement: string;
   editStatement: string;
+  showFeatureModal: boolean;
 };
 
 const props = withDefaults(
@@ -320,6 +337,11 @@ const state = reactive<LocalState>({
   targetSchemaInfo: {},
   recommandStatement: "",
   editStatement: "",
+  showFeatureModal: false,
+});
+
+const hasSyncSchemaFeature = computed(() => {
+  return hasFeature("bb.feature.sync-schema");
 });
 
 const allowSelectProject = computed(() => {
@@ -369,6 +391,9 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
     database.name
   );
 
+  if (!hasSyncSchemaFeature.value) {
+    return [head(list)];
+  }
   return list;
 };
 
@@ -381,6 +406,15 @@ const gotoTargetDatabaseMigrationHistoryDetailPageWithId = (
     targetDatabaseLatestMigrationHistory.value.version
   )}`;
   router.push(url);
+};
+
+const handleSchemaVersionSelect = (migrationHistory: MigrationHistory) => {
+  if (!hasSyncSchemaFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+
+  state.baseSchemaInfo.migrationHistory = migrationHistory;
 };
 
 const handleCancelButtonClick = () => {
@@ -505,10 +539,13 @@ watch(
     if (isValidId(databaseId)) {
       const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
       if (database) {
-        await instanceStore.fetchMigrationHistory({
+        const migrationHistoryList = await instanceStore.fetchMigrationHistory({
           instanceId: database.instance.id,
           databaseName: database.name,
         });
+        // Default select the first migration history.
+        state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
+        return;
       }
     }
     state.baseSchemaInfo.migrationHistory = undefined;
