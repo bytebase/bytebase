@@ -864,7 +864,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case db.MySQL:
 			return MySQLInsertRowLimit, nil
 		case db.Postgres:
 			return PostgreSQLInsertRowLimit, nil
