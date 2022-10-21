@@ -58,8 +58,8 @@ func (s *Server) schedulePipelineTaskCheck(ctx context.Context, pipeline *api.Pi
 			createList = append(createList, create...)
 		}
 	}
-	if _, err := s.store.BulkCreateTaskCheckRun(ctx, createList); err != nil {
-		return errors.Wrap(err, "failed to bulk insert TaskCheckRunCreate")
+	if _, err := s.store.BatchCreateTaskCheckRun(ctx, createList); err != nil {
+		return errors.Wrap(err, "failed to batch insert TaskCheckRunCreate")
 	}
 	return nil
 }

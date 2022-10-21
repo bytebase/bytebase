@@ -248,7 +248,7 @@ func (s *TaskCheckScheduler) ScheduleCheck(ctx context.Context, task *api.Task, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to getTaskCheck")
 	}
-	taskCheckRunList, err := s.server.store.BulkCreateTaskCheckRun(ctx, createList)
+	taskCheckRunList, err := s.server.store.BatchCreateTaskCheckRun(ctx, createList)
 	if err != nil {
 		return nil, err
 	}
