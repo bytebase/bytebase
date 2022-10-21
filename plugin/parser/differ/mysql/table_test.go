@@ -39,14 +39,6 @@ func TestTable(t *testing.T) {
 				"ALTER TABLE `book` DROP FOREIGN KEY `fk_price_id`;\n" +
 				"ALTER TABLE `book` DROP COLUMN `price_id`;\n",
 		},
-		// Drop excess table
-		{
-			old: `CREATE TABLE book(id INT, price_id INT, PRIMARY KEY(id), CONSTRAINT fk_price_id FOREIGN KEY (price_id) REFERENCES price(id));
-			CREATE TABLE price(id INT, PRIMARY KEY(id));`,
-			new: ``,
-			want: "DROP TABLE `book`;\n" +
-				"DROP TABLE `price`;\n",
-		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
