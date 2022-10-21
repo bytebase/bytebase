@@ -178,8 +178,8 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 	s.executors[taskType] = executor
 }
 
-// ScheduleCheckIfNeeded schedules a check if needed.
-func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
+// ScheduleCheck schedules variouse task checks depending on the task type.
+func (s *TaskCheckScheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
 	if err := s.scheduleLGTMTaskCheck(ctx, task, creatorID); err != nil {
 		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
