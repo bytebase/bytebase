@@ -288,8 +288,6 @@ func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []
 	}
 	query.WriteString(`RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`)
 
-	log.Debug("query", zap.String("query", query.String()))
-
 	var taskCheckRunRawList []*taskCheckRunRaw
 	rows, err := tx.QueryContext(ctx, query.String(), values...)
 	if err != nil {
