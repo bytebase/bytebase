@@ -210,9 +210,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 
 // FeatureFlight is the flight map for features.
 // We can disable the hidden feature here. After the feature is released, we can set the bool to true to enable the feature.
-var FeatureFlight = map[FeatureType]bool{
-	FeatureVCSSQLReviewWorkflow: false,
-}
+var FeatureFlight = map[FeatureType]bool{}
 
 // Plan is the API message for a plan.
 type Plan struct {
