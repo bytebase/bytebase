@@ -77,6 +77,9 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.Task
 
 // BulkCreateTaskCheckRun inserts many TaskCheckRun instances, which is too slow otherwise to insert one by one.
 func (s *Store) BulkCreateTaskCheckRun(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*api.TaskCheckRun, error) {
+	if len(creates) == 0 {
+		return nil, nil
+	}
 	taskCheckRunRawList, err := s.bulkCreateTaskCheckRunRaw(ctx, creates)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create TaskCheckRun with TaskCheckRunCreates[%+v]", creates)
