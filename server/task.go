@@ -722,42 +722,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	}
 
 	// Create an activity
-	issueName := ""
-	if issue != nil {
-		issueName = issue.Name
-	}
-	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
-		TaskID:    task.ID,
-		OldStatus: task.Status,
-		NewStatus: taskPatched.Status,
-		IssueName: issueName,
-		TaskName:  task.Name,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
-	}
-
-	level := api.ActivityInfo
-	if taskPatched.Status == api.TaskFailed {
-		level = api.ActivityError
-	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   taskStatusPatch.UpdaterID,
-		ContainerID: task.PipelineID,
-		Type:        api.ActivityPipelineTaskStatusUpdate,
-		Level:       level,
-		Payload:     string(payload),
-	}
-	if taskStatusPatch.Comment != nil {
-		activityCreate.Comment = *taskStatusPatch.Comment
-	}
-
-	activityMeta := ActivityMeta{}
-	if issue != nil {
-		activityMeta.issue = issue
-	}
-	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activityMeta)
-	if err != nil {
+	if err := s.createTaskStatusUpdateActivity(ctx, task, taskStatusPatch, issue); err != nil {
 		return nil, err
 	}
 
@@ -786,7 +751,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	// If every task in the pipeline completes, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
-	if taskPatched.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
+	if taskPatched.Status == api.TaskDone && (issue == nil || issue.AssigneeID == api.SystemBotID) {
 		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
 		if err != nil {
 			return nil, errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
@@ -817,6 +782,43 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 	}
 
 	return taskPatched, nil
+}
+
+func (s *Server) createTaskStatusUpdateActivity(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
+	var issueName string
+	if issue != nil {
+		issueName = issue.Name
+	}
+	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+		TaskID:    task.ID,
+		OldStatus: task.Status,
+		NewStatus: taskStatusPatch.Status,
+		IssueName: issueName,
+		TaskName:  task.Name,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
+	}
+
+	level := api.ActivityInfo
+	if taskStatusPatch.Status == api.TaskFailed {
+		level = api.ActivityError
+	}
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   taskStatusPatch.UpdaterID,
+		ContainerID: task.PipelineID,
+		Type:        api.ActivityPipelineTaskStatusUpdate,
+		Level:       level,
+		Payload:     string(payload),
+	}
+	if taskStatusPatch.Comment != nil {
+		activityCreate.Comment = *taskStatusPatch.Comment
+	}
+
+	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {

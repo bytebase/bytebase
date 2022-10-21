@@ -9,7 +9,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerStageRoutes(g *echo.Group) {
@@ -56,24 +55,32 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
-		var tasksPatched []*api.Task
+		var taskIDList []int
 		for _, task := range tasks {
-			taskPatched, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
-				IDList:    []int{task.ID},
-				UpdaterID: stageAllTaskStatusPatch.UpdaterID,
-				Status:    stageAllTaskStatusPatch.Status,
-			})
-			if err != nil {
-				if common.ErrorCode(err) == common.Invalid {
-					return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
-				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
+			taskIDList = append(taskIDList, task.ID)
+		}
+		taskStatusPatch := &api.TaskStatusPatch{
+			IDList:    taskIDList,
+			UpdaterID: stageAllTaskStatusPatch.UpdaterID,
+			Status:    api.TaskPending,
+		}
+		patchedTaskList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task %q status", taskIDList)).SetInternal(err)
+		}
+		issue, err := s.store.GetIssueByPipelineID(ctx, tasks[0].PipelineID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch containing issue").SetInternal(err)
+		}
+		// TODO(d): batch update activity.
+		for _, task := range tasks {
+			if err := s.createTaskStatusUpdateActivity(ctx, task, taskStatusPatch, issue); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create task status update activity").SetInternal(err)
 			}
-			tasksPatched = append(tasksPatched, taskPatched)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, tasksPatched); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, patchedTaskList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update tasks status response").SetInternal(err)
 		}
 		return nil
