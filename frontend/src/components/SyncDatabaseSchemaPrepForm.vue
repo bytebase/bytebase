@@ -24,7 +24,7 @@
           <div
             class="w-full mt-4 mb-2 flex flex-row justify-start items-center"
           >
-            <span>{{ $t("database.sync-schema.base-database") }}</span>
+            <span>{{ $t("database.sync-schema.select-schema") }}</span>
           </div>
           <div
             class="w-full flex flex-row justify-start items-center px-px relative"
@@ -51,6 +51,7 @@
               :environment-id="state.baseSchemaInfo.environmentId"
               :project-id="state.projectId"
               :customize-item="true"
+              :engine-type="state.engineType"
               @select-database-id="
                 (databaseId: DatabaseId) => {
                   state.baseSchemaInfo.databaseId = databaseId;
@@ -140,8 +141,8 @@
                 <div class="flex items-center">
                   <InstanceEngineIcon :instance="database.instance" />
                   <span class="mx-2">{{ database.name }}</span>
-                  <span class="text-gray-500">{{
-                    head(databaseMigrationHistoryList(database.id))?.version
+                  <span class="text-gray-400">{{
+                    database.instance.name
                   }}</span>
                 </div>
               </template>
@@ -154,11 +155,11 @@
     <!-- Schema diff statement editor container -->
     <div class="w-full flex flex-col justify-start items-start">
       <div class="w-full flex flex-row justify-start items-center mb-2">
-        <span>{{ $t("database.sync-schema.schema-comparison-result") }}</span>
+        <span>{{ $t("database.sync-schema.schema-diff") }}</span>
       </div>
       <div v-if="!shouldShowDiff" class="w-full border px-4 py-4">
         <p class="w-full text-left py-2">
-          {{ $t("database.sync-schema.select-base-and-target-database-tip") }}
+          {{ $t("database.sync-schema.select-schema-and-target-database-tip") }}
         </p>
       </div>
       <template v-else>
@@ -243,7 +244,6 @@
 <script lang="ts" setup>
 import axios from "axios";
 import dayjs from "dayjs";
-import { head } from "lodash-es";
 import { computed, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { useRouter } from "vue-router";
@@ -315,6 +315,7 @@ useEventListener(window, "keydown", (e) => {
 
 const state = reactive<LocalState>({
   projectId: props.projectId,
+  engineType: "MYSQL",
   baseSchemaInfo: {},
   targetSchemaInfo: {},
   recommandStatement: "",
@@ -504,14 +505,11 @@ watch(
     if (isValidId(databaseId)) {
       const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
       if (database) {
-        state.engineType = database.instance.engine;
         await instanceStore.fetchMigrationHistory({
           instanceId: database.instance.id,
           databaseName: database.name,
         });
       }
-    } else {
-      state.engineType = undefined;
     }
     state.baseSchemaInfo.migrationHistory = undefined;
   }

@@ -904,13 +904,13 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
-      "description": "将选定的源数据库 Schema 版本同步到目标数据库。",
-      "base-database": "源数据库",
+      "description": "将选定的 Schema 同步到目标数据库。",
+      "select-schema": "选择 Schema",
       "target-database": "目标数据库",
+      "schema-diff": "Schema 比较结果",
       "synchronize-statements": "生成的 Schema DDL 语句",
-      "schema-comparison-result": "Schema 比较结果",
-      "select-base-and-target-database-tip": "请先选择源数据库和目标数据库",
-      "no-difference-tip": "源数据库与目标数据库之间之间没有 Schema 区别。"
+      "select-schema-and-target-database-tip": "请先选择 Schema 和目标数据库",
+      "no-difference-tip": "选定的 Schema 与目标数据库 Schema 之间没有区别。"
     }
   },
   "repository": {
