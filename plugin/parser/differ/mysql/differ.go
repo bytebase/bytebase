@@ -418,8 +418,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 	// TODO(zp): Add an option to control whether to drop the excess table.
 	for _, oldTable := range oldTableMap {
-		dropTableStmt := &ast.DropTableStmt{}
-		dropTableStmt.Tables = append(dropTableStmt.Tables, oldTable.Table)
+		dropTableStmt := &ast.DropTableStmt{
+			Tables: []*ast.TableName{oldTable.Table},
+		}
 		dropNodeList = append(dropNodeList, dropTableStmt)
 	}
 
