@@ -587,10 +587,6 @@ func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.Reposi
 		set, args = append(set, fmt.Sprintf("enable_sql_review_ci = $%d", len(args)+1)), append(args, *v)
 	}
 
-	if v := patch.EnableSQLReviewCI; v != nil {
-		set, args = append(set, fmt.Sprintf("enable_sql_review_ci = $%d", len(args)+1)), append(args, *v)
-	}
-
 	var repository repositoryRaw
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, `
