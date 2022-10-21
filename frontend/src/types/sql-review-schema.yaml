@@ -360,7 +360,6 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
-      - POSTGRES
     componentList:
       - key: number
         payload:

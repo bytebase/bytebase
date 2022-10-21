@@ -822,7 +822,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		}
 	case SchemaRuleIndexKeyNumberLimit:
 		switch engine {
-		case db.MySQL, db.TiDB, db.Postgres:
+		case db.MySQL, db.TiDB:
 			return MySQLIndexKeyNumberLimit, nil
 		}
 	case SchemaRuleIndexTotalNumberLimit:
