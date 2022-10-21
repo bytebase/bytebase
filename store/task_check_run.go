@@ -258,6 +258,7 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, create *api.Ta
 func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
 	var query strings.Builder
 	var values []interface{}
+	var queryValues []string
 	if _, err := query.WriteString(
 		`INSERT INTO task_check_run (
 			creator_id,
@@ -282,16 +283,13 @@ func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []
 			create.Comment,
 			create.Payload,
 		)
-		delimiter := ","
-		if i == len(creates)-1 {
-			delimiter = ""
-		}
 		const count = 6
-		if _, err := fmt.Fprintf(&query, "($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)%s\n", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, delimiter); err != nil {
-			return nil, err
-		}
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
 	}
-	if _, err := query.WriteString(`RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`); err != nil {
+	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
+		return nil, err
+	}
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`); err != nil {
 		return nil, err
 	}
 
