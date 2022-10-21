@@ -118,6 +118,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			indexMap := buildIndexMap(oldStmt)
 			constraintMap := buildConstraintMap(oldStmt)
 			var alterTableAddColumnSpecs []*ast.AlterTableSpec
+			var alterTableDropColumnSpecs []*ast.AlterTableSpec
 			var alterTableModifyColumnSpecs []*ast.AlterTableSpec
 			var alterTableAddNewConstraintSpecs []*ast.AlterTableSpec
 			var alterTableDropExcessConstraintSpecs []*ast.AlterTableSpec
@@ -143,6 +144,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						Position:   &ast.ColumnPosition{Tp: ast.ColumnPositionNone},
 					})
 				}
+				delete(oldColumnMap, newColumnName)
+			}
+			// TODO(zp): add an option to control whether to drop the excess columns.
+			for _, columnDef := range oldColumnMap {
+				alterTableDropColumnSpecs = append(alterTableDropColumnSpecs, &ast.AlterTableSpec{
+					Tp: ast.AlterTableDropColumn,
+					OldColumnName: &ast.ColumnName{
+						Name: model.NewCIStr(columnDef.Name.Name.O),
+					},
+				})
 			}
 			// Compare the create definitions
 			for _, constraint := range newStmt.Constraints {
@@ -238,6 +249,14 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Specs: alterTableAddColumnSpecs,
 				})
 			}
+			if len(alterTableDropColumnSpecs) > 0 {
+				dropNodeList = append(dropNodeList, &ast.AlterTableStmt{
+					Table: &ast.TableName{
+						Name: model.NewCIStr(tableName),
+					},
+					Specs: alterTableDropColumnSpecs,
+				})
+			}
 			if len(alterTableModifyColumnSpecs) > 0 {
 				inplaceUpdate = append(inplaceUpdate, &ast.AlterTableStmt{
 					Table: &ast.TableName{
@@ -311,6 +330,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					Specs: alterTableInplaceAddConstraintSpecs,
 				})
 			}
+			delete(oldTableMap, tableName)
 		case *ast.CreateViewStmt:
 			newViewList = append(newViewList, newStmt)
 		}
@@ -394,6 +414,14 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	}
 	if len(dropViewStmt.Tables) > 0 {
 		dropNodeList = append(dropNodeList, dropViewStmt)
+	}
+
+	// TODO(zp): Add an option to control whether to drop the excess table.
+	for _, oldTable := range oldTableMap {
+		dropTableStmt := &ast.DropTableStmt{
+			Tables: []*ast.TableName{oldTable.Table},
+		}
+		dropNodeList = append(dropNodeList, dropTableStmt)
 	}
 
 	var buf bytes.Buffer
