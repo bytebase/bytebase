@@ -31,7 +31,19 @@ func TestInsertRowLimit(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.InsertTooManyRows,
 					Title:   "statement.insert.row-limit",
-					Content: "The value rows in one INSERT statement should be no more than 5, but found 6",
+					Content: "\"INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f')\" inserts 6 rows. The count exceeds 5.",
+					Line:    1,
+				},
+			},
+		},
+		{
+			Statement: `INSERT INTO tech_book SELECT * FROM tech_book`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.InsertTooManyRows,
+					Title:   "statement.insert.row-limit",
+					Content: "\"INSERT INTO tech_book SELECT * FROM tech_book\" inserts 1000 rows. The count exceeds 5.",
 					Line:    1,
 				},
 			},
