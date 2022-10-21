@@ -258,7 +258,7 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, create *api.Ta
 func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
 	var query strings.Builder
 	var values []interface{}
-	query.WriteString(
+	if _, err := query.WriteString(
 		`INSERT INTO task_check_run (
 			creator_id,
 			updater_id,
@@ -267,7 +267,9 @@ func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []
 			type,
 			comment,
 			payload) VALUES
-      `)
+      `); err != nil {
+		return nil, err
+	}
 	for i, create := range creates {
 		if create.Payload == "" {
 			create.Payload = "{}"
@@ -285,9 +287,13 @@ func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []
 			delimiter = ""
 		}
 		const count = 6
-		fmt.Fprintf(&query, "($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)%s\n", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, delimiter)
+		if _, err := fmt.Fprintf(&query, "($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)%s\n", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, delimiter); err != nil {
+			return nil, err
+		}
 	}
-	query.WriteString(`RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`)
+	if _, err := query.WriteString(`RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`); err != nil {
+		return nil, err
+	}
 
 	var taskCheckRunRawList []*taskCheckRunRaw
 	rows, err := tx.QueryContext(ctx, query.String(), values...)
