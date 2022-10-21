@@ -93,6 +93,9 @@
                 <heroicons-solid:check class="h-5 w-5" />
               </span>
             </li>
+            <div @click="close()">
+              <slot name="suffixItem"></slot>
+            </div>
           </ul>
         </div>
       </transition>

@@ -252,7 +252,6 @@ import { useRoute, useRouter } from "vue-router";
 import { ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import {
-  hasFeature,
   useCommandStore,
   useInstanceStore,
   useSubscriptionStore,
@@ -357,12 +356,6 @@ export default defineComponent({
     };
 
     const syncDatabaseSchema = () => {
-      if (!hasFeature("bb.feature.sync-schema")) {
-        state.featureName = "bb.feature.sync-schema";
-        state.showFeatureModal = true;
-        return;
-      }
-
       state.modalTitle = t("database.sync-schema.title");
       state.quickActionType = "quickaction.bb.database.schema.sync";
       state.showModal = true;
