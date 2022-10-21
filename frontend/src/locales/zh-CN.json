@@ -910,7 +910,8 @@
       "schema-diff": "Schema 比较结果",
       "synchronize-statements": "生成的 Schema DDL 语句",
       "select-schema-and-target-database-tip": "请先选择 Schema 和目标数据库",
-      "no-difference-tip": "选定的 Schema 与目标数据库 Schema 之间没有区别。"
+      "no-difference-tip": "选定的 Schema 与目标数据库 Schema 之间没有区别。",
+      "more-version": "更多..."
     }
   },
   "repository": {
