@@ -895,8 +895,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLMergeAlterTable, nil
 		}
 	case SchemaRuleStatementAffectedRowLimit:
-		switch engine {
-		case db.MySQL, db.TiDB:
+		if engine == db.MySQL {
 			return MySQLStatementAffectedRowLimit, nil
 		}
 	case SchemaRuleStatementDMLDryRun:

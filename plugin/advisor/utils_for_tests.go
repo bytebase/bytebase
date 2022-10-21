@@ -193,11 +193,27 @@ func (*MockDriver) Execute(_ context.Context, _ string) error {
 
 // Query implements the Driver interface.
 func (*MockDriver) Query(_ context.Context, statement string, _ int) ([]interface{}, error) {
+	switch statement {
 	// For TestStatementDMLDryRun
-	if statement == "EXPLAIN DELETE FROM tech_book" {
+	case "EXPLAIN DELETE FROM tech_book":
 		return nil, errors.Errorf("MockDriver disallows it")
+	// For TestStatementAffectedRowLimit
+	case "EXPLAIN UPDATE tech_book SET id = 1":
+		return []interface{}{
+			nil,
+			nil,
+			[]interface{}{
+				[]interface{}{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
+			},
+		}, nil
 	}
-	return nil, nil
+	return []interface{}{
+		nil,
+		nil,
+		[]interface{}{
+			[]interface{}{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1, nil, nil},
+		},
+	}, nil
 }
 
 // SyncInstance implements the Driver interface.
