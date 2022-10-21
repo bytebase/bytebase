@@ -910,7 +910,8 @@
       "schema-diff": "Schema diff",
       "synchronize-statements": "The generated DDL statements",
       "select-schema-and-target-database-tip": "Please select the schema and database firstly.",
-      "no-difference-tip": "There is no difference between the selected schema and target database schema."
+      "no-difference-tip": "There is no difference between the selected schema and target database schema.",
+      "more-version": "more..."
     }
   },
   "repository": {
