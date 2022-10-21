@@ -11,17 +11,8 @@
   <a href="#installation">Install</a> •
   <a href="#-docs">Help</a> •
   <a href="#-development">Development</a> •
-  <a href="https://github.com/bytebase/bytebase/tree/main/docs/design">Design Doc</a>
-</p>
-
-<p align="center">
-<a href="https://discord.gg/huyw7gRsyA"><img alt="Discord" src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4" /></a>
-</p>
-
-<p align="center" >
-  <a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
-    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
-  </a>
+  <a href="https://github.com/bytebase/bytebase/tree/main/docs/design">Design Doc</a> •
+  <a href="https://discord.gg/huyw7gRsyA">Discord</a>
 </p>
 
 <p align="center">
@@ -30,19 +21,19 @@
   </a>
 </p>
 
-[Bytebase](https://bytebase.com/?source=github) is a web-based, zero-config, dependency-free database schema change and version control management tool for the **DevOps** team.
+<p align="center">
+  <a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
+    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
+  </a>
+</p>
 
-## For Developer and DevOps Engineer - Holistic view of database schema changes
+<p align="center">
+  <a href="https://landscape.cncf.io/?selected=bytebase">
+    <image src="docs/assets/cncf.png" />
+  </a>
+</p>
 
-Regardless of working as an IC in a team or managing your own side project, developers using Bytebase will have a holistic view of all the related database info, the ongoing database schema change tasks and the past database migration history.
-
-## For DBA - 10x operational efficiency
-
-A collaborative web-console to allow DBAs to manage database tasks and handle developer tickets much more efficiently than traditonal tools.
-
-## For Tech Lead - Improve team velocity and reduce risk
-
-Teams using Bytebase will naturally adopt industry best practice for managing database schema changes. Tech leads will see an improved development velocity and reduced outages caused by database changes.
+[Bytebase](https://bytebase.com/?source=github) is a Database CI/CD tool for the Developers and DBAs. It's the **only database CI/CD tool** included in the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase).
 
 ## Supported Database
 
@@ -50,7 +41,7 @@ Teams using Bytebase will naturally adopt industry best practice for managing da
 
 ## VCS Integration
 
-Database-as-Code, login with VCS account, project membership sync.
+GitOps workflow, database-as-Code, login with VCS account, project membership sync.
 
 ✅ GitLab CE/EE ✅ GitHub.com
 
@@ -64,6 +55,7 @@ Database-as-Code, login with VCS account, project membership sync.
 - [x] Built-in SQL Editor
 - [x] Detailed migration history
 - [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
+- [x] Online schema change based on gh-ost
 - [x] Backup and restore
 - [x] Point-in-time recovery (PITR)
 - [x] Anomaly center
