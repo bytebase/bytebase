@@ -228,7 +228,7 @@
         </template>
       </div>
     </div>
-    <div v-if="isDev">
+    <div>
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.sql-review-ci") }}
         <FeatureBadge feature="bb.feature.vcs-sql-review" class="text-accent" />
