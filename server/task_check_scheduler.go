@@ -239,7 +239,13 @@ func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, c
 		createList = append(createList, create)
 	}
 
-	return createList, nil
+	var res []*api.TaskCheckRunCreate
+	for _, create := range createList {
+		if create != nil {
+			res = append(res, create)
+		}
+	}
+	return res, nil
 }
 
 // ScheduleCheck schedules variouse task checks depending on the task type.
