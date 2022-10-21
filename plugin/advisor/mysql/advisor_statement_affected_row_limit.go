@@ -82,7 +82,7 @@ type statementAffectedRowLimitChecker struct {
 func (checker *statementAffectedRowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.UpdateStmt, *ast.DeleteStmt:
-		res, err := checker.driver.Query(checker.ctx, fmt.Sprintf("EXPLAIN %s", node.Text()), 1)
+		res, err := checker.driver.Query(checker.ctx, fmt.Sprintf("EXPLAIN %s", node.Text()), 0)
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,

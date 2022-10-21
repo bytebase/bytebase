@@ -206,6 +206,16 @@ func (*MockDriver) Query(_ context.Context, statement string, _ int) ([]interfac
 				[]interface{}{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
 			},
 		}, nil
+	// For TestInsertRowLimit
+	case "EXPLAIN INSERT INTO tech_book SELECT * FROM tech_book":
+		return []interface{}{
+			nil,
+			nil,
+			[]interface{}{
+				nil,
+				[]interface{}{nil, nil, nil, nil, nil, nil, nil, nil, nil, 1000, nil, nil},
+			},
+		}, nil
 	}
 	return []interface{}{
 		nil,
