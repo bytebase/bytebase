@@ -29,11 +29,10 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 			)`,
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
-					Title:   "column.set-default-for-not-null",
-					Content: "Column `book`.`id` is NOT NULL but has NULL default value",
-					Line:    2,
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
@@ -72,11 +71,10 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 				ALTER TABLE book ADD COLUMN id int PRIMARY KEY`,
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
-					Title:   "column.set-default-for-not-null",
-					Content: "Column `book`.`id` is NOT NULL but has NULL default value",
-					Line:    3,
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
@@ -114,11 +112,10 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 				ALTER TABLE book MODIFY COLUMN id int PRIMARY KEY`,
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
-					Title:   "column.set-default-for-not-null",
-					Content: "Column `book`.`id` is NOT NULL but has NULL default value",
-					Line:    3,
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
@@ -128,11 +125,10 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 				ALTER TABLE book CHANGE COLUMN uid id int PRIMARY KEY`,
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
-					Title:   "column.set-default-for-not-null",
-					Content: "Column `book`.`id` is NOT NULL but has NULL default value",
-					Line:    3,
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
