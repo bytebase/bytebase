@@ -284,7 +284,8 @@ func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []
 		if i == len(creates)-1 {
 			delimiter = ""
 		}
-		fmt.Fprintf(&query, "($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)%s\n", i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6, delimiter)
+		const count = 6
+		fmt.Fprintf(&query, "($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)%s\n", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, delimiter)
 	}
 	query.WriteString(`RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`)
 
