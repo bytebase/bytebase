@@ -910,7 +910,7 @@
       "synchronize-statements": "The SQL statements to synchronize",
       "schema-comparison-result": "The schema comparison result",
       "select-base-and-target-database-tip": "Please select the base and target database firstly",
-      "no-difference-tip": "There is no different between these base and target database schemas."
+      "no-difference-tip": "There is no difference between the base and target database schema."
     }
   },
   "repository": {
