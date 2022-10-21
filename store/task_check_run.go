@@ -75,12 +75,12 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.Task
 	return taskCheckRun, nil
 }
 
-// BulkCreateTaskCheckRun inserts many TaskCheckRun instances, which is too slow otherwise to insert one by one.
-func (s *Store) BulkCreateTaskCheckRun(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*api.TaskCheckRun, error) {
+// BatchCreateTaskCheckRun inserts many TaskCheckRun instances, which is too slow otherwise to insert one by one.
+func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*api.TaskCheckRun, error) {
 	if len(creates) == 0 {
 		return nil, nil
 	}
-	taskCheckRunRawList, err := s.bulkCreateTaskCheckRunRaw(ctx, creates)
+	taskCheckRunRawList, err := s.batchCreateTaskCheckRunRaw(ctx, creates)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create TaskCheckRun with TaskCheckRunCreates[%+v]", creates)
 	}
@@ -191,14 +191,14 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 	return taskCheckRun, nil
 }
 
-func (s *Store) bulkCreateTaskCheckRunRaw(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
+func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	taskCheckRunList, err := s.bulkCreateTaskCheckRunImpl(ctx, tx, creates)
+	taskCheckRunList, err := s.batchCreateTaskCheckRunImpl(ctx, tx, creates)
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +258,7 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, create *api.Ta
 	return &taskCheckRunRaw, nil
 }
 
-func (*Store) bulkCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
+func (*Store) batchCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
 	var query strings.Builder
 	var values []interface{}
 	var queryValues []string
