@@ -4,7 +4,6 @@ import { computed, unref, watch } from "vue";
 import {
   Backup,
   Database,
-  DatabaseCreate,
   DatabaseFind,
   DatabaseId,
   DatabaseLabel,
@@ -378,23 +377,6 @@ export const useDatabaseStore = defineStore("database", {
         return storedDatabase;
       }
       return this.fetchDatabaseById(databaseId);
-    },
-    async createDatabase(newDatabase: DatabaseCreate) {
-      const data = (
-        await axios.post(`/api/database`, {
-          data: {
-            type: "DatabaseCreate",
-            attributes: newDatabase,
-          },
-        })
-      ).data;
-      const createdDatabase: Database = convert(data.data, data.included);
-
-      this.upsertDatabaseList({
-        databaseList: [createdDatabase],
-      });
-
-      return createdDatabase;
     },
     async transferProject({
       databaseId,
