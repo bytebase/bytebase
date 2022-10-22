@@ -4,7 +4,7 @@
 
 import { Backup } from "./backup";
 import { DataSource } from "./dataSource";
-import { DatabaseId, InstanceId, IssueId, ProjectId } from "./id";
+import { DatabaseId, InstanceId, ProjectId } from "./id";
 import { Instance } from "./instance";
 import { Principal } from "./principal";
 import { Project } from "./project";
@@ -39,19 +39,6 @@ export type Database = {
   collation: string;
   schemaVersion: string;
   labels: DatabaseLabel[];
-};
-
-export type DatabaseCreate = {
-  // Related fields
-  instanceId: InstanceId;
-  projectId: ProjectId;
-
-  // Domain specific fields
-  name: string;
-  characterSet: string;
-  collation: string;
-  issueId?: IssueId;
-  labels?: DatabaseLabel[];
 };
 
 export type DatabaseFind = {
