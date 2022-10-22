@@ -61,6 +61,14 @@ func TestIsTiDBUnsupportStmt(t *testing.T) {
 			want: true,
 		},
 		{
+			stmt: "DROP TRIGGER `ins_sum`;",
+			want: true,
+		},
+		{
+			stmt: "DROP TRIGGER IF EXISTS `ins_sum`;",
+			want: true,
+		},
+		{
 			stmt: "CREATE TABLE t1(id INT, name VARCHAR(50), price DECIMAL(10,2), CONSTRAINT PRIMARY KEY(50), INDEX idx_name(name);",
 			want: false,
 		},
