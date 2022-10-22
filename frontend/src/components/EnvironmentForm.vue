@@ -25,6 +25,16 @@
             class="text-accent"
           />
         </label>
+        <p class="mt-2 text-sm flex items-center text-gray-600">
+          {{ $t("policy.environment-tier.description") }}
+          <a
+            class="flex items-center text-blue-600 ml-1 hover:underline"
+            href="https://www.bytebase.com/docs/administration/environment-policy/tier"
+            target="_blank"
+            >{{ $t("common.learn-more")
+            }}<heroicons-outline:external-link class="w-4 h-4"
+          /></a>
+        </p>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <BBCheckbox
