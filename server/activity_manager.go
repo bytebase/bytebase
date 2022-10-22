@@ -58,9 +58,6 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 			Level:       level,
 			Payload:     string(payload),
 		}
-		if taskStatusPatch.Comment != nil {
-			activityCreate.Comment = *taskStatusPatch.Comment
-		}
 		createList = append(createList, activityCreate)
 	}
 
@@ -112,21 +109,7 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 		CreatorEmail: anyActivity.Creator.Email,
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go func(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook) {
-		for _, hook := range webhookList {
-			webhookCtx.URL = hook.URL
-			webhookCtx.CreatedTs = time.Now().Unix()
-			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
-				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				log.Warn("Failed to post webhook event after changing the issue status",
-					zap.String("webhook_type", hook.Type),
-					zap.String("webhook_name", hook.Name),
-					zap.String("issue_name", issue.Name),
-					zap.String("status", string(issue.Status)),
-					zap.Error(err))
-			}
-		}
-	}(webhookCtx, webhookList)
+	go postWebhookList(webhookCtx, webhookList, issue)
 
 	return nil
 }
@@ -172,30 +155,33 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	}
 
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go func() {
-		webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
-		if err != nil {
-			return
-		}
-
-		for _, hook := range webhookList {
-			webhookCtx.URL = hook.URL
-			webhookCtx.CreatedTs = time.Now().Unix()
-			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
-				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				log.Warn("Failed to post webhook event after changing the issue status",
-					zap.String("webhook_type", hook.Type),
-					zap.String("webhook_name", hook.Name),
-					zap.String("issue_name", meta.issue.Name),
-					zap.String("status", string(meta.issue.Status)),
-					zap.Error(err))
-			}
-		}
-	}()
+	webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
+	if err != nil {
+		log.Warn("Failed to get webhook context",
+			zap.String("issue_name", meta.issue.Name),
+			zap.Error(err))
+		return activity, nil
+	}
+	go postWebhookList(webhookCtx, webhookList, meta.issue)
 
 	return activity, nil
 }
 
+func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook, issue *api.Issue) {
+	for _, hook := range webhookList {
+		webhookCtx.URL = hook.URL
+		webhookCtx.CreatedTs = time.Now().Unix()
+		if err := webhook.Post(hook.Type, webhookCtx); err != nil {
+			// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
+			log.Warn("Failed to post webhook event after changing the issue status",
+				zap.String("webhook_type", hook.Type),
+				zap.String("webhook_name", hook.Name),
+				zap.String("issue_name", issue.Name),
+				zap.String("status", string(issue.Status)),
+				zap.Error(err))
+		}
+	}
+}
 func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.Context, error) {
 	var webhookCtx webhook.Context
 	level := webhook.WebhookInfo
