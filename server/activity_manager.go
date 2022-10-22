@@ -50,12 +50,11 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
 		}
 
-		level := api.ActivityInfo
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   taskStatusPatch.UpdaterID,
 			ContainerID: task.PipelineID,
 			Type:        api.ActivityPipelineTaskStatusUpdate,
-			Level:       level,
+			Level:       api.ActivityInfo,
 			Payload:     string(payload),
 		}
 		createList = append(createList, activityCreate)
