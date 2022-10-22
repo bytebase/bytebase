@@ -19,64 +19,6 @@ import (
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
-	g.POST("/database", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		databaseCreate := &api.DatabaseCreate{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, databaseCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create database request").SetInternal(err)
-		}
-
-		databaseCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		instance, err := s.store.GetInstanceByID(ctx, databaseCreate.InstanceID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
-		}
-		if instance == nil {
-			err := errors.Errorf("instance ID not found %v", databaseCreate.InstanceID)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-		databaseCreate.EnvironmentID = instance.EnvironmentID
-		project, err := s.store.GetProjectByID(ctx, databaseCreate.ProjectID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", databaseCreate.ProjectID)).SetInternal(err)
-		}
-		if project == nil {
-			err := errors.Errorf("project ID not found %v", databaseCreate.ProjectID)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-		if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
-			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-		// Pre-validate database labels.
-		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
-			}
-		}
-
-		db, err := s.store.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Database name already exists: %s", databaseCreate.Name))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
-		}
-
-		// Set database labels, except bb.environment is immutable and must match instance environment.
-		// This needs to be after we compose database relationship.
-		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, db, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
-			}
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, db); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create database response").SetInternal(err)
-		}
-		return nil
-	})
-
 	g.GET("/database", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		databaseFind := new(api.DatabaseFind)
