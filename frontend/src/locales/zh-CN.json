@@ -761,6 +761,7 @@
     },
     "environment-tier": {
       "name": "环境级别",
+      "description": "使该环境在显示上不同于其他环境。",
       "mark-env-as-protected": "标记为受保护的环境"
     }
   },

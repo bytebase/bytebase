@@ -761,6 +761,7 @@
     },
     "environment-tier": {
       "name": "Environment tier",
+      "description": "The environment will appear differently from other environments.",
       "mark-env-as-protected": "Mark as protected environment"
     }
   },
