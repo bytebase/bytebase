@@ -315,22 +315,6 @@
       </div>
     </div>
   </div>
-  <BBAlert
-    v-if="state.showDeleteCommentModal"
-    :style="'INFO'"
-    :ok-text="'Delete'"
-    :title="'Are you sure to delete this comment?'"
-    :description="'You cannot undo this action.'"
-    @ok="
-      () => {
-        doDeleteComment(state.activeActivity!);
-        state.showDeleteCommentModal = false;
-        state.activeActivity = undefined;
-      }
-    "
-    @cancel="state.showDeleteCommentModal = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -372,7 +356,6 @@ import ActivityActionSentence from "./activity/ActionSentence.vue";
 import { isSimilarActivity } from "./activity/utils";
 
 interface LocalState {
-  showDeleteCommentModal: boolean;
   editCommentMode: boolean;
   activeActivity?: Activity;
 }
@@ -417,7 +400,6 @@ const issue = logic.issue as Ref<Issue>;
 const { addSubscriberId } = useExtraIssueLogic();
 
 const state = reactive<LocalState>({
-  showDeleteCommentModal: false,
   editCommentMode: false,
 });
 
@@ -579,10 +561,6 @@ const doUpdateComment = () => {
 const allowUpdateComment = computed(() => {
   return editComment.value != state.activeActivity!.comment;
 });
-
-const doDeleteComment = (activity: Activity) => {
-  activityStore.deleteActivity(activity);
-};
 
 const actionIcon = (activity: Activity): ActionIconType => {
   if (activity.type == "bb.issue.create") {

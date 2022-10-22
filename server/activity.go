@@ -20,32 +20,29 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create activity request").SetInternal(err)
 		}
+		if activityCreate.Type != api.ActivityIssueCommentCreate {
+			return echo.NewHTTPError(http.StatusBadRequest, "Only allow to create activity for issue comment")
+		}
 
 		activityCreate.Level = api.ActivityInfo
 		activityCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		var foundIssue *api.Issue
-		if activityCreate.Type == api.ActivityIssueCommentCreate {
-			issue, err := s.store.GetIssueByID(ctx, activityCreate.ContainerID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerID)).SetInternal(err)
-			}
-			if issue == nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerID))
-			}
-
-			bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
-				IssueName: issue.Name,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
-			}
-			activityCreate.Payload = string(bytes)
-			foundIssue = issue
+		issue, err := s.store.GetIssueByID(ctx, activityCreate.ContainerID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerID)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerID))
 		}
 
-		activity, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-			issue: foundIssue,
+		bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
+			IssueName: issue.Name,
 		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+		}
+		activityCreate.Payload = string(bytes)
+
+		activity, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
 		}
@@ -121,7 +118,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch activity request").SetInternal(err)
 		}
-
+		// We only allow to update comment from frontend.
 		activity, err := s.store.PatchActivity(ctx, activityPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
