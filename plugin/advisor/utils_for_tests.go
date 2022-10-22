@@ -134,7 +134,7 @@ func RunSQLReviewRuleTests(
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
-		Driver:    &MockDriver{},
+		Driver:    nil,
 		Context:   context.Background(),
 	}
 	for _, tc := range tests {

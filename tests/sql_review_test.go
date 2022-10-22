@@ -378,16 +378,16 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		databaseName = "testSQLReview"
 		statements   = []string{
 			"CREATE TABLE user(" +
-				"id INT PRIMARY KEY," +
-				"name VARCHAR(255) NOT NULL," +
-				"room_id INT NOT NULL," +
-				"creator_id INT NOT NULL," +
-				"created_ts TIMESTAMP NOT NULL," +
-				"updater_id INT NOT NULL," +
-				"updated_ts TIMESTAMP NOT NULL," +
+				"id INT PRIMARY KEY COMMENT 'comment'," +
+				"name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment'," +
+				"room_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+				"creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+				"created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment'," +
+				"updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+				"updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment'," +
 				"INDEX idx_user_name(name)," +
 				"UNIQUE KEY uk_user_id_name(id, name)" +
-				") ENGINE = INNODB",
+				") ENGINE = INNODB COMMENT 'comment'",
 			"CREATE TABLE userTable(" +
 				"id INT," +
 				"name VARCHAR(255)," +
@@ -484,6 +484,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoTableComment.Int(),
+						Title:     "table.comment",
+						Content:   "Table `userTable` requires comments",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
 						Code:      advisor.NoRequiredColumn.Int(),
 						Title:     "column.required",
 						Content:   "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id",
@@ -509,18 +516,31 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Title:     "column.no-null",
 						Content:   "`userTable`.`roomId` cannot have NULL value",
 					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoColumnComment.Int(),
+						Title:     "column.comment",
+						Content:   "Column `userTable`.`id` requires comments",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoColumnComment.Int(),
+						Title:     "column.comment",
+						Content:   "Column `userTable`.`name` requires comments",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoColumnComment.Int(),
+						Title:     "column.comment",
+						Content:   "Column `userTable`.`roomId` requires comments",
+					},
 				},
 			},
 			{
 				statement: `
-					CREATE TABLE tech_book(
-						id int NOT NULL,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_user_id PRIMARY KEY (id)
-					);
 					DELETE FROM tech_book`,
 				result: []api.TaskCheckResult{
 					{
@@ -530,21 +550,24 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Title:     "statement.where.require",
 						Content:   "\"DELETE FROM tech_book\" requires WHERE clause",
 					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
+						Title:     "statement.affected-row-limit",
+						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
+					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementDMLDryRunFailed.Int(),
+						Title:     "statement.dml-dry-run",
+						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
+					},
 				},
 			},
 			{
-				statement: `
-					CREATE TABLE tech_book(
-						id int NOT NULL,
-						name varchar(220) NOT NULL,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_user_id PRIMARY KEY (id)
-					);
-					` +
-					"DELETE FROM tech_book WHERE name like `%abc`",
+				statement: "DELETE FROM tech_book WHERE name like `%abc`",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
@@ -553,26 +576,24 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Title:     "statement.where.no-leading-wildcard-like",
 						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" uses leading wildcard LIKE",
 					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
+						Title:     "statement.affected-row-limit",
+						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
+					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementDMLDryRunFailed.Int(),
+						Title:     "statement.dml-dry-run",
+						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
+					},
 				},
 			},
 			{
 				statement: `
-					CREATE TABLE t(
-						id int NOT NULL,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_user_id PRIMARY KEY (id)
-					);
-					CREATE TABLE t_copy(
-						id int NOT NULL,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_user_id PRIMARY KEY (id)
-					);
 					INSERT INTO t_copy SELECT * FROM t`,
 				result: []api.TaskCheckResult{
 					{
@@ -589,21 +610,73 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Title:     "statement.where.require",
 						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" requires WHERE clause",
 					},
+
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.InsertTooManyRows.Int(),
+						Title:     "statement.insert.row-limit",
+						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.InsertNotSpecifyColumn.Int(),
+						Title:     "statement.insert.must-specify-column",
+						Content:   "The INSERT statement must specify columns but \"INSERT INTO t_copy SELECT * FROM t\" does not",
+					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementDMLDryRunFailed.Int(),
+						Title:     "statement.dml-dry-run",
+						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
+					},
 				},
 			},
 			{
 				statement: `
-					CREATE TABLE t(
-						id int NOT NULL,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_user_id PRIMARY KEY (id)
-					);
 					INSERT INTO t VALUES (1, 1, now(), 1, now())`,
 				result: []api.TaskCheckResult{
 					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.InsertNotSpecifyColumn.Int(),
+						Title:     "statement.insert.must-specify-column",
+						Content:   "The INSERT statement must specify columns but \"INSERT INTO t VALUES (1, 1, now(), 1, now())\" does not",
+					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementDMLDryRunFailed.Int(),
+						Title:     "statement.dml-dry-run",
+						Content:   "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146: Table 'testsqlreview.t' doesn't exist",
+					},
+				},
+			},
+			{
+				statement: "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
+						Title:     "statement.affected-row-limit",
+						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
+					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementDMLDryRunFailed.Int(),
+						Title:     "statement.dml-dry-run",
+						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
+					},
+				},
+			},
+			{
+				statement: statements[0],
+				result: []api.TaskCheckResult{
+					{
 						Status:    api.TaskCheckStatusSuccess,
 						Namespace: api.BBNamespace,
 						Code:      common.Ok.Int(),
@@ -611,20 +684,23 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Content:   "",
 					},
 				},
+				run: true,
 			},
 			{
-				statement: `
-					CREATE TABLE tech_book(
-						id int NOT NULL,
-						name varchar(220) NOT NULL,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_user_id PRIMARY KEY (id)
-					);
-					` +
-					"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
+				statement: `INSERT INTO user(id, name) values (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e')`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusSuccess,
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
+						Title:     "OK",
+						Content:   "",
+					},
+				},
+				run: true,
+			},
+			{
+				statement: `DELETE FROM user WHERE id < 10`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
@@ -636,15 +712,20 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
+				statement: `INSERT INTO user(id, name) values (6, 'f'), (7, 'g'), (8, 'h'), (9, 'i'), (10, 'j')`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusSuccess,
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
+						Title:     "OK",
+						Content:   "",
+					},
+				},
+				run: true,
+			},
+			{
 				statement: `
-					CREATE TABLE user(
-						id int NOT NULL,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_user_id PRIMARY KEY (id)
-					);
 					DROP TABLE user;
 					`,
 				result: []api.TaskCheckResult{
@@ -766,7 +847,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	for _, t := range tests {
 		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement, t.run)
-		a.Equal(t.result, result)
+		a.Equal(t.result, result, t.statement)
 	}
 
 	// disable the SQL review policy

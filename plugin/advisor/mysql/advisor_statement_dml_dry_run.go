@@ -4,13 +4,13 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/pingcap/tidb/parser/ast"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	database "github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -70,7 +70,7 @@ type statementDmlDryRunChecker struct {
 	title      string
 	text       string
 	line       int
-	driver     database.Driver
+	driver     *sql.DB
 	ctx        context.Context
 }
 
@@ -78,7 +78,7 @@ type statementDmlDryRunChecker struct {
 func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		if _, err := checker.driver.Query(checker.ctx, fmt.Sprintf("EXPLAIN %s", node.Text()), 1); err != nil {
+		if _, err := query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementDMLDryRunFailed,

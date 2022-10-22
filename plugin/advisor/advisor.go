@@ -4,6 +4,7 @@ package advisor
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 
@@ -12,7 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	database "github.com/bytebase/bytebase/plugin/db"
 )
 
 // Status is the advisor result status.
@@ -143,9 +143,6 @@ const (
 
 	// MySQLTableCommentConvention is an advisor for MySQL table comment convention.
 	MySQLTableCommentConvention Type = "bb.plugin.advisor.mysql.table.comment"
-
-	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
-	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
 
 	// MySQLTableDisallowPartition is an advisor type for MySQL disallow table partition.
 	MySQLTableDisallowPartition Type = "bb.plugin.advisor.mysql.table.disallow-partition"
@@ -306,7 +303,7 @@ type Context struct {
 	// SQL review rule special fields.
 	Rule    *SQLReviewRule
 	Catalog *catalog.Finder
-	Driver  database.Driver
+	Driver  *sql.DB
 	Context context.Context
 }
 

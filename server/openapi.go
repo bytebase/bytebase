@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -91,6 +92,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	var databaseType string
 	var catalog catalog.Catalog
 	var driver db.Driver
+	var connection *sql.DB
 
 	if request.DatabaseName != "" && request.Host != "" && request.Port != "" {
 		database, err := s.findDatabase(ctx, request.Host, request.Port, request.DatabaseName)
@@ -108,6 +110,10 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
 		defer driver.Close(ctx)
+		connection, err = driver.GetDBConnection(ctx, database.Name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
+		}
 	} else {
 		databaseType = request.DatabaseType
 		if databaseType == "" {
@@ -141,7 +147,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		envList[0].ID,
 		request.Statement,
 		catalog,
-		driver,
+		connection,
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
