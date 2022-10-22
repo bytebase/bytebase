@@ -43,6 +43,7 @@ const (
 )
 const (
 	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n"
+	enableFKCheckStmt  string = "SET FOREIGN_KEY_CHECKS=1;\n"
 )
 
 // SchemaDiffer it the parser for MySQL dialect.
@@ -432,7 +433,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "deparse failed")
 	}
 	if buf.Len() > 0 {
-		return fmt.Sprintf("%s%s", disableFKCheckStmt, buf.String()), nil
+		return fmt.Sprintf("%s%s%s", disableFKCheckStmt, buf.String(), enableFKCheckStmt), nil
 	}
 	return "", nil
 }
