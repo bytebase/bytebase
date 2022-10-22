@@ -34,7 +34,6 @@ p, DEVELOPER, /instance/{id}/migration/status, GET
 p, DEVELOPER, /instance/{id}/migration/history, GET
 p, DEVELOPER, /instance/{id}/migration/history/{historyID}, GET
 p, DEVELOPER, /instance/{id}, GET
-p, DEVELOPER, /database, POST
 p, DEVELOPER, /database, GET
 p, DEVELOPER, /database/{id}, GET
 p, DEVELOPER, /database/{id}, PATCH
