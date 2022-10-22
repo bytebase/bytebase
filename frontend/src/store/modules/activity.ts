@@ -265,15 +265,5 @@ export const useActivityStore = defineStore("activity", {
 
       return updatedActivity;
     },
-    async deleteActivity(activity: Activity) {
-      await axios.delete(`/api/activity/${activity.id}`);
-
-      if (activity.type.startsWith("bb.issue.")) {
-        this.fetchActivityListByIssueId(activity.containerId);
-      }
-    },
-    async deleteActivityById(id: number) {
-      await axios.delete(`/api/activity/${id}`);
-    },
   },
 });
