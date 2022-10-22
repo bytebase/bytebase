@@ -94,6 +94,8 @@ func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
 		if len(out) > 0 {
 			a.Equal(disableFKCheckStmt, out[:len(disableFKCheckStmt)])
 			out = out[len(disableFKCheckStmt):]
+			a.Equal(enableFKCheckStmt, out[len(out)-len(enableFKCheckStmt):])
+			out = out[:len(out)-len(enableFKCheckStmt)]
 		}
 		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
 	}
