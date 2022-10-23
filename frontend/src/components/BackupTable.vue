@@ -148,7 +148,7 @@
 
   <FeatureModal
     v-if="state.showFeatureModal"
-    feature="bb.feature.disaster-recovery-pitr"
+    feature="bb.feature.pitr"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -223,7 +223,7 @@ export default defineComponent({
       return props.database.instance.engine === "POSTGRES";
     });
 
-    const hasPITRFeature = featureToRef("bb.feature.disaster-recovery-pitr");
+    const hasPITRFeature = featureToRef("bb.feature.pitr");
 
     const EDIT_COLUMN_LIST: BBTableColumn[] = [
       {
