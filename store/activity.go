@@ -165,7 +165,7 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 	}
 	defer tx.Rollback()
 
-	activityRawList, err := batchCreateActivityImpl(ctx, tx, create)
+	activityRaw, err := createActivityImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -174,11 +174,7 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 		return nil, FormatError(err)
 	}
 
-	if len(activityRawList) != 1 {
-		return nil, errors.Errorf("invalid number of activity raw returned %v but expecting one", len(activityRawList))
-	}
-
-	return activityRawList[0], nil
+	return activityRaw, nil
 }
 
 // findActivityRaw retrieves a list of activities based on the find condition.
@@ -329,6 +325,54 @@ func batchCreateActivityImpl(ctx context.Context, tx *Tx, creates ...*api.Activi
 		return nil, FormatError(err)
 	}
 	return activityRawList, nil
+}
+
+// createActivityImpl creates a new activity.
+func createActivityImpl(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*activityRaw, error) {
+	// Insert row into activity.
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
+	query := `
+		INSERT INTO activity (
+			creator_id,
+			updater_id,
+			container_id,
+			type,
+			level,
+			comment,
+			payload
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
+	`
+	var activityRaw activityRaw
+	if err := tx.QueryRowContext(ctx, query,
+		create.CreatorID,
+		create.CreatorID,
+		create.ContainerID,
+		create.Type,
+		create.Level,
+		create.Comment,
+		create.Payload,
+	).Scan(
+		&activityRaw.ID,
+		&activityRaw.CreatorID,
+		&activityRaw.CreatedTs,
+		&activityRaw.UpdaterID,
+		&activityRaw.UpdatedTs,
+		&activityRaw.ContainerID,
+		&activityRaw.Type,
+		&activityRaw.Level,
+		&activityRaw.Comment,
+		&activityRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, FormatError(err)
+	}
+	return &activityRaw, nil
 }
 
 func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*activityRaw, error) {
