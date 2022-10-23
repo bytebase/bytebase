@@ -512,8 +512,6 @@ func (*Store) batchCreateTaskImpl(ctx context.Context, tx *Tx, creates []*api.Ta
 
 // createTaskImpl creates a new task.
 func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate) (*taskRaw, error) {
-	var row *sql.Row
-
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
