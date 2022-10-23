@@ -47,6 +47,7 @@
         </div>
         <BBSelect
           id="schemamigrationtype"
+          :disabled="!allowEdit"
           :selected-item="state.schemaChangeType"
           :item-list="['DDL', 'SDL']"
           class="mt-1"
