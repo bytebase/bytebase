@@ -165,7 +165,7 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 	}
 	defer tx.Rollback()
 
-	activityRaw, err := createActivityImpl(ctx, tx, create)
+	activity, err := createActivityImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 		return nil, FormatError(err)
 	}
 
-	return activityRaw, nil
+	return activity, nil
 }
 
 // findActivityRaw retrieves a list of activities based on the find condition.
