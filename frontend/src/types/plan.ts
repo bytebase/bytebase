@@ -3,29 +3,29 @@ import planData from "./plan.yaml";
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
+  // Admin & Security
+  | "bb.feature.3rd-party-auth"
+  | "bb.feature.rbac"
+  // Branding
+  | "bb.feature.branding"
+  // Change Workflow
+  | "bb.feature.data-source"
+  | "bb.feature.dba-workflow"
+  | "bb.feature.lgtm"
+  | "bb.feature.multi-tenancy"
+  | "bb.feature.online-migration"
+  | "bb.feature.schema-drift"
+  | "bb.feature.sql-review"
+  | "bb.feature.task-schedule-time"
+  | "bb.feature.vcs-sql-review"
   // Database management
   | "bb.feature.pitr"
+  | "bb.feature.read-replica-connection"
   | "bb.feature.sync-schema"
-  // Change Workflow
-  | "bb.feature.sql-review"
-  | "bb.feature.schema-drift"
-  | "bb.feature.task-schedule-time"
-  | "bb.feature.multi-tenancy"
-  | "bb.feature.dba-workflow"
-  | "bb.feature.data-source"
-  | "bb.feature.online-migration"
-  | "bb.feature.vcs-sql-review"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
-  | "bb.feature.environment-tier-policy"
-  | "bb.feature.lgtm"
-  // Admin & Security
-  | "bb.feature.rbac"
-  | "bb.feature.3rd-party-auth"
-  | "bb.feature.read-replica-connection"
-  // Branding
-  | "bb.feature.branding";
+  | "bb.feature.environment-tier-policy";
 
 export enum PlanType {
   FREE = 0,
