@@ -692,7 +692,6 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 			taskRunStatusPatch := &api.TaskRunStatusPatch{
 				ID:        &taskRunRaw.ID,
 				UpdaterID: patch.UpdaterID,
-				TaskID:    &id,
 				Code:      patch.Code,
 				Result:    patch.Result,
 				Comment:   patch.Comment,
