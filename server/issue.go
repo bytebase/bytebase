@@ -771,8 +771,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 }
 
 func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
-	if !s.feature(api.FeatureGhost) {
-		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureGhost.AccessErrorMessage())
+	if !s.feature(api.FeatureOnlineMigration) {
+		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureOnlineMigration.AccessErrorMessage())
 	}
 	c := api.UpdateSchemaGhostContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
