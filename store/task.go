@@ -535,7 +535,9 @@ func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 			RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 		`
-	row = tx.QueryRowContext(ctx, query,
+	var taskRaw taskRaw
+	var databaseID sql.NullInt32
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.PipelineID,
@@ -547,11 +549,7 @@ func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate
 		create.Type,
 		create.Payload,
 		create.EarliestAllowedTs,
-	)
-
-	var taskRaw taskRaw
-	var databaseID sql.NullInt32
-	if err := row.Scan(
+	).Scan(
 		&taskRaw.ID,
 		&taskRaw.CreatorID,
 		&taskRaw.CreatedTs,
