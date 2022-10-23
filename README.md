@@ -1,9 +1,15 @@
 <p align="center">
-<a href="https://bytebase.com?source=github"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/banner.webp" /></a>
+<a href="https://bytebase.com?source=github"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.webp" /></a>
 </p>
 
 <p align="center" >
 <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/db-and-vcs.png" width="60%" />
+</p>
+
+<p align="center">
+  <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
+    <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
+  </a>
 </p>
 
 <p align="center">
@@ -15,25 +21,15 @@
   <a href="https://discord.gg/huyw7gRsyA">Discord</a>
 </p>
 
-<p align="center">
-  <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
-    <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
-  </a>
-</p>
+<hr />
 
-<p align="center">
-  <a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
-    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
-  </a>
-</p>
+## What is Bytebase?
 
-<p align="center">
-  <a href="https://landscape.cncf.io/?selected=bytebase">
-    <image src="docs/assets/cncf.png" />
-  </a>
-</p>
+Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included in the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase). The Bytebase family consists of these tools:
 
-[Bytebase](https://bytebase.com/?source=github) is a Database CI/CD tool for the Developers and DBAs. It's the **only database CI/CD tool** included in the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase).
+- [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
+- [Bytebase CLI (bb)](https://www.bytebase.com/docs/cli/overview): The CLI to help developers integrate MySQL and PostgreSQL schema change into the existing CI/CD workflow.
+- [Bytebase GitHub App](https://github.com/marketplace/bytebase) and [SQL Review GitHub Action](https://github.com/marketplace/actions/sql-review): The GitHub App and GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
 
 ## Supported Database
 
@@ -130,17 +126,17 @@ working on the code:
 
 ### Learn the codebase
 
-* [Interactive code walkthrough](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
+- [Interactive code walkthrough](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
 
-* [Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)
+- [Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)
 
-* Tech Stack
+- Tech Stack
 
-   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
+  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
 
-* Data Model
+- Data Model
 
-   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
+  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
 
 ### Prerequisites
 
@@ -188,13 +184,14 @@ working on the code:
 
    Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
-1. (*Optional*) Install [pre-commit](https://pre-commit.com/index.html#install).
+1. (_Optional_) Install [pre-commit](https://pre-commit.com/index.html#install).
 
    ```bash
    cd bytebase
    pre-commit install
    pre-commit install --hook-type commit-msg
    ```
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)
