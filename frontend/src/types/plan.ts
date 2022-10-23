@@ -3,29 +3,29 @@ import planData from "./plan.yaml";
 
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
-  // Database management
-  | "bb.feature.disaster-recovery-pitr"
-  | "bb.feature.sync-schema"
+  // Admin & Security
+  | "bb.feature.3rd-party-auth"
+  | "bb.feature.rbac"
+  // Branding
+  | "bb.feature.branding"
   // Change Workflow
-  | "bb.feature.sql-review"
-  | "bb.feature.schema-drift"
-  | "bb.feature.task-schedule-time"
-  | "bb.feature.multi-tenancy"
-  | "bb.feature.dba-workflow"
   | "bb.feature.data-source"
+  | "bb.feature.dba-workflow"
+  | "bb.feature.lgtm"
+  | "bb.feature.multi-tenancy"
   | "bb.feature.online-migration"
+  | "bb.feature.schema-drift"
+  | "bb.feature.sql-review"
+  | "bb.feature.task-schedule-time"
   | "bb.feature.vcs-sql-review"
+  // Database management
+  | "bb.feature.pitr"
+  | "bb.feature.read-replica-connection"
+  | "bb.feature.sync-schema"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
-  | "bb.feature.environment-tier-policy"
-  | "bb.feature.lgtm"
-  // Admin & Security
-  | "bb.feature.rbac"
-  | "bb.feature.3rd-party-auth"
-  | "bb.feature.read-replica-connection"
-  // Branding
-  | "bb.feature.branding";
+  | "bb.feature.environment-tier-policy";
 
 export enum PlanType {
   FREE = 0,
@@ -73,29 +73,29 @@ export interface Plan {
 // TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
 // so that it can be shared between frontend/backend.
 export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
-  // Database management
-  ["bb.feature.disaster-recovery-pitr", [false, true, true]],
-  ["bb.feature.sync-schema", [false, false, true]],
+  // Admin & Security
+  ["bb.feature.3rd-party-auth", [false, true, true]],
+  ["bb.feature.rbac", [false, true, true]],
+  // Branding
+  ["bb.feature.branding", [false, false, true]],
   // Change Workflow
-  ["bb.feature.sql-review", [false, true, true]],
-  ["bb.feature.schema-drift", [false, true, true]],
-  ["bb.feature.task-schedule-time", [false, true, true]],
-  ["bb.feature.multi-tenancy", [false, false, true]],
-  ["bb.feature.dba-workflow", [false, false, true]],
   ["bb.feature.data-source", [false, false, false]],
+  ["bb.feature.dba-workflow", [false, false, true]],
+  ["bb.feature.lgtm", [false, false, true]],
+  ["bb.feature.multi-tenancy", [false, false, true]],
   ["bb.feature.online-migration", [false, true, true]],
+  ["bb.feature.schema-drift", [false, true, true]],
+  ["bb.feature.sql-review", [false, true, true]],
+  ["bb.feature.task-schedule-time", [false, true, true]],
   ["bb.feature.vcs-sql-review", [false, false, true]],
+  // Database management
+  ["bb.feature.pitr", [false, true, true]],
+  ["bb.feature.read-replica-connection", [false, false, true]],
+  ["bb.feature.sync-schema", [false, false, true]],
   // Policy Control
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],
   ["bb.feature.environment-tier-policy", [false, false, true]],
-  ["bb.feature.lgtm", [false, false, true]],
-  // Admin & Security
-  ["bb.feature.rbac", [false, true, true]],
-  ["bb.feature.3rd-party-auth", [false, true, true]],
-  ["bb.feature.read-replica-connection", [false, false, true]],
-  // Branding
-  ["bb.feature.branding", [false, false, true]],
 ]);
 
 export const FEATURE_SECTIONS: { type: string; featureList: string[] }[] =
