@@ -80,6 +80,7 @@
       </div>
       <BBSelect
         id="schemamigrationtype"
+        :disabled="!allowEdit"
         :selected-item="schemaChangeType"
         :item-list="['DDL', 'SDL']"
         class="mt-1"
@@ -248,6 +249,7 @@
       </div>
       <div class="flex space-x-4 mt-2">
         <BBCheckbox
+          :disabled="!allowEdit"
           :title="enableSQLReviewTitle"
           :value="repositoryConfig.enableSQLReviewCI"
           @toggle="(on: boolean) => {
