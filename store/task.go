@@ -82,6 +82,23 @@ func (raw *taskRaw) toTask() *api.Task {
 	return task
 }
 
+// BatchCreateTask creates tasks in batch.
+func (s *Store) BatchCreateTask(ctx context.Context, creates []*api.TaskCreate) ([]*api.Task, error) {
+	taskRawList, err := s.batchCreateTaskRaw(ctx, creates)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create Task with TaskCreate %+v", creates)
+	}
+	var taskList []*api.Task
+	for _, taskRaw := range taskRawList {
+		task, err := s.composeTask(ctx, taskRaw)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to compose Task with taskRaw[%+v]", taskRaw)
+		}
+		taskList = append(taskList, task)
+	}
+	return taskList, nil
+}
+
 // CreateTask creates an instance of Task.
 func (s *Store) CreateTask(ctx context.Context, create *api.TaskCreate) (*api.Task, error) {
 	taskRaw, err := s.createTaskRaw(ctx, create)
@@ -276,6 +293,26 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 	return task, nil
 }
 
+// batchCreateTaskRaw creates tasks in batch.
+func (s *Store) batchCreateTaskRaw(ctx context.Context, creates []*api.TaskCreate) ([]*taskRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	taskList, err := s.batchCreateTaskImpl(ctx, tx, creates)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return taskList, nil
+}
+
 // createTaskRaw creates a new task.
 func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*taskRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -383,44 +420,103 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 	return taskList, nil
 }
 
-// createTaskImpl creates a new task.
-func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate) (*taskRaw, error) {
-	var row *sql.Row
+// batchCreateTaskImpl creates tasks in batch.
+func (*Store) batchCreateTaskImpl(ctx context.Context, tx *Tx, creates []*api.TaskCreate) ([]*taskRaw, error) {
+	var query strings.Builder
+	var values []interface{}
+	var queryValues []string
 
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
-	query := `
-		INSERT INTO task (
+	if _, err := query.WriteString(
+		`INSERT INTO task (
 			creator_id,
 			updater_id,
 			pipeline_id,
 			stage_id,
 			instance_id,
+			database_id,
 			name,
 			status,
 			type,
 			payload,
 			earliest_allowed_ts
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
-	`
-	if create.DatabaseID == nil {
-		row = tx.QueryRowContext(ctx, query,
+		VALUES
+    `); err != nil {
+		return nil, err
+	}
+	for i, create := range creates {
+		if create.Payload == "" {
+			create.Payload = "{}"
+		}
+		values = append(values,
 			create.CreatorID,
 			create.CreatorID,
 			create.PipelineID,
 			create.StageID,
 			create.InstanceID,
+			create.DatabaseID,
 			create.Name,
 			create.Status,
 			create.Type,
 			create.Payload,
 			create.EarliestAllowedTs,
 		)
-	} else {
-		query = `
+		const count = 11
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8, i*count+9, i*count+10, i*count+11))
+	}
+	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
+		return nil, err
+	}
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts`); err != nil {
+		return nil, err
+	}
+
+	var taskRawList []*taskRaw
+	rows, err := tx.QueryContext(ctx, query.String(), values...)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var taskRaw taskRaw
+		var databaseID sql.NullInt32
+		if err := rows.Scan(
+			&taskRaw.ID,
+			&taskRaw.CreatorID,
+			&taskRaw.CreatedTs,
+			&taskRaw.UpdaterID,
+			&taskRaw.UpdatedTs,
+			&taskRaw.PipelineID,
+			&taskRaw.StageID,
+			&taskRaw.InstanceID,
+			&databaseID,
+			&taskRaw.Name,
+			&taskRaw.Status,
+			&taskRaw.Type,
+			&taskRaw.Payload,
+			&taskRaw.EarliestAllowedTs,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if databaseID.Valid {
+			val := int(databaseID.Int32)
+			taskRaw.DatabaseID = &val
+		}
+		taskRawList = append(taskRawList, &taskRaw)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return taskRawList, nil
+}
+
+// createTaskImpl creates a new task.
+func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate) (*taskRaw, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
+
+	query := `
 			INSERT INTO task (
 				creator_id,
 				updater_id,
@@ -437,24 +533,21 @@ func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 			RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 		`
-		row = tx.QueryRowContext(ctx, query,
-			create.CreatorID,
-			create.CreatorID,
-			create.PipelineID,
-			create.StageID,
-			create.InstanceID,
-			create.DatabaseID,
-			create.Name,
-			create.Status,
-			create.Type,
-			create.Payload,
-			create.EarliestAllowedTs,
-		)
-	}
-
 	var taskRaw taskRaw
 	var databaseID sql.NullInt32
-	if err := row.Scan(
+	if err := tx.QueryRowContext(ctx, query,
+		create.CreatorID,
+		create.CreatorID,
+		create.PipelineID,
+		create.StageID,
+		create.InstanceID,
+		create.DatabaseID,
+		create.Name,
+		create.Status,
+		create.Type,
+		create.Payload,
+		create.EarliestAllowedTs,
+	).Scan(
 		&taskRaw.ID,
 		&taskRaw.CreatorID,
 		&taskRaw.CreatedTs,
