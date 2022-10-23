@@ -18,7 +18,7 @@
           <template #default="{ action }">
             <span>{{ action.text }}</span>
             <FeatureBadge
-              feature="bb.feature.disaster-recovery-pitr"
+              feature="bb.feature.pitr"
               class="text-accent ml-2 -mr-1"
             />
           </template>
@@ -175,7 +175,7 @@
 
   <FeatureModal
     v-if="state.showFeatureModal"
-    feature="bb.feature.disaster-recovery-pitr"
+    feature="bb.feature.pitr"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -238,7 +238,7 @@ const state = reactive<LocalState>({
 
 const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
-const hasPITRFeature = featureToRef("bb.feature.disaster-recovery-pitr");
+const hasPITRFeature = featureToRef("bb.feature.pitr");
 
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
