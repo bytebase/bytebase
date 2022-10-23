@@ -82,7 +82,7 @@ const (
 	// underlying database schema, then tenant mode will help the studio to track the
 	// schema change across all databases.
 	FeatureMultiTenancy FeatureType = "bb.feature.multi-tenancy"
-	// FeatureMultiTenancy allows user to perform online-migration.
+	// FeatureOnlineMigration allows user to perform online-migration.
 	FeatureOnlineMigration FeatureType = "bb.feature.online-migration"
 	// FeatureSchemaDrift detects if there occurs schema drift.
 	// See https://bytebase.com/docs/features/drift-detection
