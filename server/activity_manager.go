@@ -60,14 +60,9 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 		createList = append(createList, activityCreate)
 	}
 
-	// TODO(d): change to batch create.
-	var activityList []*api.Activity
-	for _, create := range createList {
-		activity, err := m.store.CreateActivity(ctx, create)
-		if err != nil {
-			return err
-		}
-		activityList = append(activityList, activity)
+	activityList, err := m.store.BatchCreateActivity(ctx, createList)
+	if err != nil {
+		return err
 	}
 	if len(activityList) == 0 {
 		return errors.Errorf("failed to create any activity")
