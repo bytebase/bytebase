@@ -424,6 +424,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
 
+	// TODO(p0ny): create stages in batch.
 	for _, stageCreate := range pipelineCreate.StageList {
 		stageCreate.CreatorID = creatorID
 		stageCreate.PipelineID = pipelineCreated.ID
@@ -432,23 +433,24 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 			return nil, errors.Wrap(err, "failed to create stage for issue")
 		}
 
-		taskID := make(map[int]int)
-
-		for index, taskCreate := range stageCreate.TaskList {
-			taskCreate.CreatorID = creatorID
-			taskCreate.PipelineID = pipelineCreated.ID
-			taskCreate.StageID = createdStage.ID
-			task, err := s.store.CreateTask(ctx, &taskCreate)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create task for issue")
-			}
-			taskID[index] = task.ID
+		var taskCreateList []*api.TaskCreate
+		for _, taskCreate := range stageCreate.TaskList {
+			c := taskCreate
+			c.CreatorID = creatorID
+			c.PipelineID = pipelineCreated.ID
+			c.StageID = createdStage.ID
+			taskCreateList = append(taskCreateList, &c)
+		}
+		taskList, err := s.store.BatchCreateTask(ctx, taskCreateList)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create tasks for issue")
 		}
 
+		// TODO(p0ny): create task dags in batch.
 		for _, indexDAG := range stageCreate.TaskIndexDAGList {
 			taskDAGCreate := api.TaskDAGCreate{
-				FromTaskID: taskID[indexDAG.FromIndex],
-				ToTaskID:   taskID[indexDAG.ToIndex],
+				FromTaskID: taskList[indexDAG.FromIndex].ID,
+				ToTaskID:   taskList[indexDAG.ToIndex].ID,
 				Payload:    "{}",
 			}
 			if _, err := s.store.CreateTaskDAG(ctx, &taskDAGCreate); err != nil {
