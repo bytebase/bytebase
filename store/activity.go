@@ -145,7 +145,7 @@ func (s *Store) batchCreateActivityRaw(ctx context.Context, creates []*api.Activ
 	}
 	defer tx.Rollback()
 
-	activityRawList, err := batchCreateActivityImpl(ctx, tx, creates...)
+	activityRawList, err := createActivityImpl(ctx, tx, creates...)
 	if err != nil {
 		return nil, err
 	}
@@ -165,16 +165,20 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 	}
 	defer tx.Rollback()
 
-	activity, err := createActivityImpl(ctx, tx, create)
+	activityRawList, err := createActivityImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(activityRawList) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityRawList))}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return activity, nil
+	return activityRawList[0], nil
 }
 
 // findActivityRaw retrieves a list of activities based on the find condition.
@@ -255,8 +259,8 @@ func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Act
 	return activity, nil
 }
 
-// batchCreateActivityImpl creates new activities in batch.
-func batchCreateActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCreate) ([]*activityRaw, error) {
+// createActivityImpl creates activities.
+func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCreate) ([]*activityRaw, error) {
 	var query strings.Builder
 	var values []interface{}
 	var queryValues []string
@@ -325,54 +329,6 @@ func batchCreateActivityImpl(ctx context.Context, tx *Tx, creates ...*api.Activi
 		return nil, FormatError(err)
 	}
 	return activityRawList, nil
-}
-
-// createActivityImpl creates a new activity.
-func createActivityImpl(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*activityRaw, error) {
-	// Insert row into activity.
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
-	query := `
-		INSERT INTO activity (
-			creator_id,
-			updater_id,
-			container_id,
-			type,
-			level,
-			comment,
-			payload
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
-	`
-	var activityRaw activityRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.ContainerID,
-		create.Type,
-		create.Level,
-		create.Comment,
-		create.Payload,
-	).Scan(
-		&activityRaw.ID,
-		&activityRaw.CreatorID,
-		&activityRaw.CreatedTs,
-		&activityRaw.UpdaterID,
-		&activityRaw.UpdatedTs,
-		&activityRaw.ContainerID,
-		&activityRaw.Type,
-		&activityRaw.Level,
-		&activityRaw.Comment,
-		&activityRaw.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &activityRaw, nil
 }
 
 func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*activityRaw, error) {
