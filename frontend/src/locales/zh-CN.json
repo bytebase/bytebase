@@ -1434,7 +1434,7 @@
       },
       "bb-feature-sync-schema": {
         "title": "库表同步",
-        "desc": "选择任意数据库的某个 Schema 版本，并将其同步到目标数据库。"
+        "desc": "选择某个数据库的任意一个 Schema 版本，并将其同步到目标数据库。"
       },
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",
