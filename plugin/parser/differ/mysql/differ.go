@@ -906,12 +906,12 @@ func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 		return false
 	}
 
-	oldStr, err := toString(old.Expr)
+	oldStr, err := toString(old)
 	if err != nil {
 		log.Error("failed to convert old check constraint to string", zap.Error(err))
 		return false
 	}
-	newStr, err := toString(new.Expr)
+	newStr, err := toString(new)
 	if err != nil {
 		log.Error("failed to convert new check constraint to string", zap.Error(err))
 		return false
