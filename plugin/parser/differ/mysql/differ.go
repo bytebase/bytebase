@@ -707,11 +707,13 @@ func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 	for idx, oldOption := range oldNormalizeOptions {
 		oldOptionStr, err := toString(oldOption)
 		if err != nil {
+			log.Error("failed to convert old column option to string", zap.Error(err))
 			return false
 		}
 		newOption := newNormalizeOptions[idx]
 		newOptionStr, err := toString(newOption)
 		if err != nil {
+			log.Error("failed to convert new column option to string", zap.Error(err))
 			return false
 		}
 		if oldOptionStr != newOptionStr {
