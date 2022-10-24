@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -706,67 +705,17 @@ func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 		return false
 	}
 	for idx, oldOption := range oldNormalizeOptions {
-		newOption := newNormalizeOptions[idx]
-		if oldOption.Tp != newOption.Tp {
+		oldOptionStr, err := toString(oldOption)
+		if err != nil {
 			return false
 		}
-		// TODO(zp): it's not enough to compare the type for some options.
-		switch oldOption.Tp {
-		case ast.ColumnOptionComment:
-			if oldOption.Expr.(ast.ValueExpr).GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
-				return false
-			}
-		case ast.ColumnOptionDefaultValue:
-			if reflect.TypeOf(oldOption.Expr) != reflect.TypeOf(newOption.Expr) {
-				return false
-			}
-			if oldExpr, ok := oldOption.Expr.(*ast.FuncCallExpr); ok {
-				newExpr := newOption.Expr.(*ast.FuncCallExpr)
-				if oldExpr.FnName.O != newExpr.FnName.O {
-					return false
-				}
-				if len(oldExpr.Args) != len(newExpr.Args) {
-					return false
-				}
-				for idx, oldArg := range oldExpr.Args {
-					newArg := newExpr.Args[idx]
-					// The type of the argumen is either ast.ValueExpr or ast.TableNameExpr.
-					if reflect.TypeOf(oldArg) != reflect.TypeOf(newArg) {
-						return false
-					}
-					if oldArg, ok := oldArg.(ast.ValueExpr); ok {
-						if oldArg.GetValue() != newArg.(ast.ValueExpr).GetValue() {
-							return false
-						}
-					}
-					if oldArg, ok := oldArg.(*ast.TableNameExpr); ok {
-						if oldArg.Name.Name.O != newArg.(*ast.TableNameExpr).Name.Name.O {
-							return false
-						}
-					}
-				}
-				continue
-			}
-			if oldExpr, ok := oldOption.Expr.(ast.ValueExpr); ok {
-				if oldExpr.GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
-					return false
-				}
-				continue
-			}
-			if oldExpr, ok := oldOption.Expr.(*ast.UnaryOperationExpr); ok {
-				if oldExpr.Op != newOption.Expr.(*ast.UnaryOperationExpr).Op {
-					return false
-				}
-				if oldExpr.V.(ast.ValueExpr).GetValue() != newOption.Expr.(*ast.UnaryOperationExpr).V.(ast.ValueExpr).GetValue() {
-					return false
-				}
-			}
-
-		case ast.ColumnOptionCollate:
-			if oldOption.StrValue != newOption.StrValue {
-				return false
-			}
-		default:
+		newOption := newNormalizeOptions[idx]
+		newOptionStr, err := toString(newOption)
+		if err != nil {
+			return false
+		}
+		if oldOptionStr != newOptionStr {
+			return false
 		}
 	}
 	return true
