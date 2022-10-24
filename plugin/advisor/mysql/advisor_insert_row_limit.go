@@ -4,14 +4,15 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strconv"
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	database "github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -76,7 +77,7 @@ type insertRowLimitChecker struct {
 	text       string
 	line       int
 	maxRow     int
-	driver     database.Driver
+	driver     *sql.DB
 	ctx        context.Context
 }
 
@@ -93,12 +94,12 @@ func (checker *insertRowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Line:    checker.line,
 				})
 			}
-		} else {
-			res, err := checker.driver.Query(checker.ctx, fmt.Sprintf("EXPLAIN %s", node.Text()), 0)
+		} else if checker.driver != nil {
+			res, err := query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
 			if err != nil {
 				checker.adviceList = append(checker.adviceList, advisor.Advice{
 					Status:  checker.level,
-					Code:    advisor.StatementDMLDryRunFailed,
+					Code:    advisor.InsertTooManyRows,
 					Title:   checker.title,
 					Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
 					Line:    checker.line,
@@ -168,6 +169,12 @@ func getInsertRows(res []interface{}) (int64, error) {
 		return int64(rows), nil
 	case int64:
 		return rows, nil
+	case string:
+		v, err := strconv.ParseInt(rows, 10, 64)
+		if err != nil {
+			return 0, errors.Errorf("expected int or int64 but got string(%s)", rows)
+		}
+		return v, nil
 	default:
 		return 0, errors.Errorf("expected int or in64 but got %t", rowTwo[9])
 	}

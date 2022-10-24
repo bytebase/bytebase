@@ -54,7 +54,7 @@ const (
 	NoRequiredColumn                           Code = 401
 	ColumnCannotNull                           Code = 402
 	ChangeColumnType                           Code = 403
-	NotNullColumnWithNullDefault               Code = 404
+	NotNullColumnWithNoDefault                 Code = 404
 	ColumnNotExists                            Code = 405
 	UseChangeColumnStatement                   Code = 406
 	ChangeColumnOrder                          Code = 407

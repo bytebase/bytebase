@@ -121,7 +121,7 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 	for _, column := range notNullColumnWithNoDefault {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
-			Code:    advisor.NotNullColumnWithNullDefault,
+			Code:    advisor.NotNullColumnWithNoDefault,
 			Title:   checker.title,
 			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", column.tableName, column.columnName),
 			Line:    column.line,

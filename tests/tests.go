@@ -1649,14 +1649,35 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 	var payload []byte
 	var err error
 	switch ruleTp {
-	case advisor.SchemaRuleMySQLEngine:
-	case advisor.SchemaRuleStatementNoSelectAll:
-	case advisor.SchemaRuleStatementRequireWhere:
-	case advisor.SchemaRuleStatementNoLeadingWildcardLike:
-	case advisor.SchemaRuleTableRequirePK:
-	case advisor.SchemaRuleTableNoFK:
-	case advisor.SchemaRuleColumnNotNull:
-	case advisor.SchemaRuleSchemaBackwardCompatibility:
+	case advisor.SchemaRuleMySQLEngine,
+		advisor.SchemaRuleStatementNoSelectAll,
+		advisor.SchemaRuleStatementRequireWhere,
+		advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		advisor.SchemaRuleStatementDisallowCommit,
+		advisor.SchemaRuleStatementDisallowLimit,
+		advisor.SchemaRuleStatementDisallowOrderBy,
+		advisor.SchemaRuleStatementMergeAlterTable,
+		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+		advisor.SchemaRuleStatementDMLDryRun,
+		advisor.SchemaRuleTableRequirePK,
+		advisor.SchemaRuleTableNoFK,
+		advisor.SchemaRuleTableDisallowPartition,
+		advisor.SchemaRuleColumnNotNull,
+		advisor.SchemaRuleColumnDisallowChangeType,
+		advisor.SchemaRuleColumnSetDefaultForNotNull,
+		advisor.SchemaRuleColumnDisallowChange,
+		advisor.SchemaRuleColumnDisallowChangingOrder,
+		advisor.SchemaRuleColumnAutoIncrementMustInteger,
+		advisor.SchemaRuleColumnDisallowSetCharset,
+		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
+		advisor.SchemaRuleColumnRequireDefault,
+		advisor.SchemaRuleSchemaBackwardCompatibility,
+		advisor.SchemaRuleDropEmptyDatabase,
+		advisor.SchemaRuleIndexNoDuplicateColumn,
+		advisor.SchemaRuleIndexPKTypeLimit,
+		advisor.SchemaRuleIndexTypeNoBlob:
 	case advisor.SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "_delete$",
@@ -1665,23 +1686,42 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 		fallthrough
 	case advisor.SchemaRuleColumnNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^[a-z]+(_[a-z]+)*$",
+			Format:    "^[a-z]+(_[a-z]+)*$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRuleIDXNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^idx_{{table}}_{{column_list}}$",
+			Format:    "^idx_{{table}}_{{column_list}}$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRulePKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^pk_{{table}}_{{column_list}}$",
+			Format:    "^pk_{{table}}_{{column_list}}$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRuleUKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^uk_{{table}}_{{column_list}}$",
+			Format:    "^uk_{{table}}_{{column_list}}$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRuleFKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+			Format:    "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+			MaxLength: 64,
+		})
+	case advisor.SchemaRuleAutoIncrementColumnNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
+			Format:    "^id$",
+			MaxLength: 64,
+		})
+	case advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleStatementAffectedRowLimit:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 5,
+		})
+	case advisor.SchemaRuleTableCommentConvention, advisor.SchemaRuleColumnCommentConvention:
+		payload, err = json.Marshal(advisor.CommentConventionRulePayload{
+			Required:  true,
+			MaxLength: 10,
 		})
 	case advisor.SchemaRuleRequiredColumn:
 		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
@@ -1692,6 +1732,30 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 				"creator_id",
 				"updater_id",
 			},
+		})
+	case advisor.SchemaRuleColumnTypeDisallowList:
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{"JSON"},
+		})
+	case advisor.SchemaRuleColumnMaximumCharacterLength:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 20,
+		})
+	case advisor.SchemaRuleColumnAutoIncrementInitialValue:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 20,
+		})
+	case advisor.SchemaRuleIndexKeyNumberLimit, advisor.SchemaRuleIndexTotalNumberLimit:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 5,
+		})
+	case advisor.SchemaRuleCharsetAllowlist:
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{"utf8mb4"},
+		})
+	case advisor.SchemaRuleCollationAllowlist:
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{"utf8mb4_0900_ai_ci"},
 		})
 	default:
 		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)
@@ -1708,10 +1772,12 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
 		RuleList: []*advisor.SQLReviewRule{
+			// Engine
 			{
 				Type:  advisor.SchemaRuleMySQLEngine,
 				Level: advisor.SchemaRuleLevelError,
 			},
+			// Naming
 			{
 				Type:  advisor.SchemaRuleTableNaming,
 				Level: advisor.SchemaRuleLevelWarning,
@@ -1737,6 +1803,11 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
+				Type:  advisor.SchemaRuleAutoIncrementColumnNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// Statement
+			{
 				Type:  advisor.SchemaRuleStatementNoSelectAll,
 				Level: advisor.SchemaRuleLevelError,
 			},
@@ -1748,6 +1819,43 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Type:  advisor.SchemaRuleStatementNoLeadingWildcardLike,
 				Level: advisor.SchemaRuleLevelError,
 			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowCommit,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowOrderBy,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementMergeAlterTable,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertRowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementAffectedRowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDMLDryRun,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			// TABLE
 			{
 				Type:  advisor.SchemaRuleTableRequirePK,
 				Level: advisor.SchemaRuleLevelError,
@@ -1761,6 +1869,15 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
+				Type:  advisor.SchemaRuleTableCommentConvention,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleTableDisallowPartition,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// COLUMN
+			{
 				Type:  advisor.SchemaRuleRequiredColumn,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
@@ -1769,7 +1886,95 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
+				Type:  advisor.SchemaRuleColumnDisallowChangeType,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnSetDefaultForNotNull,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowChange,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowChangingOrder,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnCommentConvention,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementMustInteger,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnTypeDisallowList,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowSetCharset,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnMaximumCharacterLength,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementInitialValue,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleCurrentTimeColumnCountLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnRequireDefault,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// SCHEMA
+			{
 				Type:  advisor.SchemaRuleSchemaBackwardCompatibility,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// DATABASE
+			{
+				Type:  advisor.SchemaRuleDropEmptyDatabase,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			// INDEX
+			{
+				Type:  advisor.SchemaRuleIndexNoDuplicateColumn,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexKeyNumberLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexPKTypeLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexTypeNoBlob,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexTotalNumberLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// SYSTEM
+			{
+				Type:  advisor.SchemaRuleCharsetAllowlist,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleCollationAllowlist,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 		},

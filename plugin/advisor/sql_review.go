@@ -2,6 +2,7 @@ package advisor
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"regexp"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	database "github.com/bytebase/bytebase/plugin/db"
 )
 
 // How to add a SQL review rule:
@@ -57,8 +57,6 @@ const (
 	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
-	// SchemaRuleStatementNoCreateTableAs disallow 'CREATE TABLE ... [AS] SELECT.
-	SchemaRuleStatementNoCreateTableAs SQLReviewRuleType = "statement.create-table.no-create-table-as"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
 	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
@@ -86,8 +84,6 @@ const (
 	SchemaRuleTableDropNamingConvention SQLReviewRuleType = "table.drop-naming-convention"
 	// SchemaRuleTableCommentConvention enforce the table comment convention.
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
-	// SchemaRuleTableNotExists check the table name conflict.
-	SchemaRuleTableNotExists SQLReviewRuleType = "table.not-exists"
 	// SchemaRuleTableDisallowPartition disallow the table partition.
 	SchemaRuleTableDisallowPartition SQLReviewRuleType = "table.disallow-partition"
 
@@ -414,7 +410,7 @@ type SQLReviewCheckContext struct {
 	Collation string
 	DbType    db.Type
 	Catalog   catalog.Catalog
-	Driver    database.Driver
+	Driver    *sql.DB
 	Context   context.Context
 }
 
@@ -775,7 +771,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 	case SchemaRuleColumnRequireDefault:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return MySQLColumnSetDefaultForNotNull, nil
+			return MySQLRequireColumnDefault, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
@@ -829,11 +825,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTotalNumberLimit, nil
-		}
-	case SchemaRuleStatementNoCreateTableAs:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return MySQLTableDisallowCreateTableAs, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {

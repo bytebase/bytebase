@@ -360,13 +360,17 @@ func (s *Server) sqlAdviceForFile(
 		if err != nil {
 			return nil, err
 		}
+		connection, err := driver.GetDBConnection(ctx, database.Name)
+		if err != nil {
+			return nil, err
+		}
 
 		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
 			Charset:   database.CharacterSet,
 			Collation: database.Collation,
 			DbType:    dbType,
 			Catalog:   catalog,
-			Driver:    driver,
+			Driver:    connection,
 			Context:   ctx,
 		})
 		driver.Close(ctx)
