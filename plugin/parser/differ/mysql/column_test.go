@@ -188,6 +188,14 @@ func TestColumnDefaultValue(t *testing.T) {
 			new:  `CREATE TABLE book(id INT DEFAULT 0 NOT NULL);`,
 			want: "",
 		},
+		// Function Call
+		{
+			old: "CREATE TABLE action(action_id smallint(5) unsigned NOT NULL AUTO_INCREMENT," +
+				"`last_update` timestamp not null default current_timestamp);",
+			new: "CREATE TABLE action(action_id smallint(5) unsigned NOT NULL AUTO_INCREMENT," +
+				"`last_update` timestamp not null default current_timestamp(1));",
+			want: "ALTER TABLE `action` MODIFY COLUMN `last_update` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(1);\n",
+		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }
