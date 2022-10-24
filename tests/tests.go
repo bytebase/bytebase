@@ -1711,7 +1711,7 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 		})
 	case advisor.SchemaRuleAutoIncrementColumnNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format:    "id",
+			Format:    "^id$",
 			MaxLength: 64,
 		})
 	case advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleStatementAffectedRowLimit:

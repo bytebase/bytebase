@@ -392,9 +392,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				"id INT NOT NULL," +
 				"name VARCHAR(255) CHARSET ascii," +
 				"roomId INT," +
+				"time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment'," +
+				"time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment'," +
+				"content BLOB NOT NULL COMMENT 'comment'," +
+				"json_content JSON NOT NULL COMMENT 'comment'," +
 				"INDEX idx1(name)," +
 				"UNIQUE KEY uk1(id, name)," +
-				"FOREIGN KEY fk1(roomId) REFERENCES room(id)" +
+				"FOREIGN KEY fk1(roomId) REFERENCES room(id)," +
+				"INDEX idx_userTable_content(content)" +
 				") ENGINE = CSV COLLATE latin1_bin",
 		}
 		tests = []test{
@@ -538,11 +543,25 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Content:   "Column `userTable`.`roomId` requires comments",
 					},
 					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.DisabledColumnType.Int(),
+						Title:     "column.type-disallow-list",
+						Content:   "Disallow column type JSON but column `userTable`.`json_content` is",
+					},
+					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.SetColumnCharset.Int(),
 						Title:     "column.disallow-set-charset",
-						Content:   "Disallow set column charset but \"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id)) ENGINE = CSV COLLATE latin1_bin\" does",
+						Content:   fmt.Sprintf("Disallow set column charset but \"%s\" does", statements[1]),
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int(),
+						Title:     "column.current-time-count-limit",
+						Content:   "Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
@@ -568,6 +587,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
+						Code:      advisor.IndexTypeNoBlob.Int(),
+						Title:     "index.type-no-blob",
+						Content:   "Columns in index must not be BLOB but `userTable`.`content` is blob",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
 						Code:      advisor.DisabledCharset.Int(),
 						Title:     "system.charset.allowlist",
 						Content:   fmt.Sprintf("\"%s\" used disabled charset 'ascii'", statements[1]),
@@ -584,6 +610,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			{
 				statement: `CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'`,
 				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NamingAutoIncrementColumnConventionMismatch.Int(),
+						Title:     "naming.column.auto-increment",
+						Content:   "`t_auto`.`auto_id` mismatches auto_increment column naming convention, naming format should be \"^id$\"",
+					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -871,7 +904,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			{
 				statement: `
 					ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
-					ALTER TABLE user ADD COLUMN c1 int NOT NULL DEFAULT 0 COMMENT 'comment';
+					ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
 				`,
 				result: []api.TaskCheckResult{
 					{
@@ -901,6 +934,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Code:      advisor.ChangeColumnOrder.Int(),
 						Title:     "column.disallow-changing-order",
 						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column order",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.CompatibilityAlterColumn.Int(),
+						Title:     "schema.backward-compatibility",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" may cause incompatibility with the existing data and code",
 					},
 				},
 			},
