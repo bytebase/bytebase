@@ -390,12 +390,12 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				") ENGINE = INNODB COMMENT 'comment'",
 			"CREATE TABLE userTable(" +
 				"id INT NOT NULL," +
-				"name VARCHAR(255)," +
+				"name VARCHAR(255) CHARSET ascii," +
 				"roomId INT," +
 				"INDEX idx1(name)," +
 				"UNIQUE KEY uk1(id, name)," +
 				"FOREIGN KEY fk1(roomId) REFERENCES room(id)" +
-				") ENGINE = CSV",
+				") ENGINE = CSV COLLATE latin1_bin",
 		}
 		tests = []test{
 			{
@@ -540,6 +540,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
+						Code:      advisor.SetColumnCharset.Int(),
+						Title:     "column.disallow-set-charset",
+						Content:   "Disallow set column charset but \"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id)) ENGINE = CSV COLLATE latin1_bin\" does",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
 						Code:      advisor.NoDefault.Int(),
 						Title:     "column.require-default",
 						Content:   "Column `userTable`.`id` doesn't have DEFAULT.",
@@ -557,6 +564,20 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Code:      advisor.NoDefault.Int(),
 						Title:     "column.require-default",
 						Content:   "Column `userTable`.`roomId` doesn't have DEFAULT.",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.DisabledCharset.Int(),
+						Title:     "system.charset.allowlist",
+						Content:   fmt.Sprintf("\"%s\" used disabled charset 'ascii'", statements[1]),
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.DisabledCollation.Int(),
+						Title:     "system.collation.allowlist",
+						Content:   fmt.Sprintf("\"%s\" used disabled collation 'latin1_bin'", statements[1]),
 					},
 				},
 			},
@@ -809,7 +830,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			},
 			{
 				statement: `
-					ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';
+					ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
 					ALTER TABLE user drop column id;
 				`,
 				result: []api.TaskCheckResult{
@@ -818,21 +839,21 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.ChangeColumnType.Int(),
 						Title:     "statement.disallow-change-type",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';\" changes column type",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column type",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.ChangeColumnOrder.Int(),
 						Title:     "statement.disallow-changing-order",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';\" changes column order",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column order",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.UseChangeColumnStatement.Int(),
 						Title:     "statement.disallow-change",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';\" contains CHANGE COLUMN statement",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" contains CHANGE COLUMN statement",
 					},
 				},
 			},
