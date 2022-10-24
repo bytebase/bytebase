@@ -761,14 +761,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "INSERT INTO user(id, name) SELECT id, name FROM user LIMIT 1",
+				statement: "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1",
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.InsertUseLimit.Int(),
 						Title:     "statement.disallow-limit",
-						Content:   "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user LIMIT 1\" uses",
+						Content:   "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1\" uses",
 					},
 				},
 			},
@@ -783,6 +783,35 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Code:      advisor.CreateTablePartition.Int(),
 						Title:     "statement.disallow-partition",
 						Content:   "Table partition is forbidden, but \"ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;\" creates",
+					},
+				},
+			},
+			{
+				statement: `
+					ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';
+					ALTER TABLE user drop column id;
+				`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.ChangeColumnType.Int(),
+						Title:     "statement.disallow-change-type",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';\" changes column type",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.ChangeColumnOrder.Int(),
+						Title:     "statement.disallow-changing-order",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';\" changes column order",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.UseChangeColumnStatement.Int(),
+						Title:     "statement.disallow-change",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' FIRST COMMENT 'COMMENT';\" contains CHANGE COLUMN statement",
 					},
 				},
 			},
