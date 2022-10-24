@@ -725,6 +725,30 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				run: true,
 			},
 			{
+				statement: `DELETE FROM user WHERE id <= 10`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
+						Title:     "statement.affected-row-limit",
+						Content:   "\"DELETE FROM user WHERE id <= 10\" affected 10 rows. The count exceeds 5.",
+					},
+				},
+			},
+			{
+				statement: `INSERT INTO user SELECT * FROM user`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.InsertTooManyRows.Int(),
+						Title:     "statement.insert.row-limit",
+						Content:   "\"INSERT INTO user SELECT * FROM user\" inserts 10 rows. The count exceeds 5.",
+					},
+				},
+			},
+			{
 				statement: `
 					DROP TABLE user;
 					`,
