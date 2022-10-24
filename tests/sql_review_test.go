@@ -582,6 +582,46 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
+				statement: `CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoRequiredColumn.Int(),
+						Title:     "column.required",
+						Content:   "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id",
+					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.AutoIncrementColumnNotInteger.Int(),
+						Title:     "column.auto-increment-must-integer",
+						Content:   "Auto-increment column `t_auto`.`auto_id` requires integer type",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.AutoIncrementColumnInitialValueNotMatch.Int(),
+						Title:     "column.auto-increment-initial-value",
+						Content:   "The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.AutoIncrementColumnSigned.Int(),
+						Title:     "column.auto-increment-must-unsigned",
+						Content:   "Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.IndexPKType.Int(),
+						Title:     "index.pk-type-limit",
+						Content:   "Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)",
+					},
+				},
+			},
+			{
 				statement: `
 					DELETE FROM tech_book`,
 				result: []api.TaskCheckResult{
@@ -831,29 +871,36 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			{
 				statement: `
 					ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
-					ALTER TABLE user drop column id;
+					ALTER TABLE user ADD COLUMN c1 int NOT NULL DEFAULT 0 COMMENT 'comment';
 				`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementRedundantAlterTable.Int(),
+						Title:     "statement.merge-alter-table",
+						Content:   "There are 2 statements to modify table `user`",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
 						Code:      advisor.ChangeColumnType.Int(),
-						Title:     "statement.disallow-change-type",
+						Title:     "column.disallow-change-type",
 						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column type",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ChangeColumnOrder.Int(),
-						Title:     "statement.disallow-changing-order",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column order",
+						Code:      advisor.UseChangeColumnStatement.Int(),
+						Title:     "column.disallow-change",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" contains CHANGE COLUMN statement",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.UseChangeColumnStatement.Int(),
-						Title:     "statement.disallow-change",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" contains CHANGE COLUMN statement",
+						Code:      advisor.ChangeColumnOrder.Int(),
+						Title:     "column.disallow-changing-order",
+						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column order",
 					},
 				},
 			},
