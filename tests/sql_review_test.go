@@ -756,7 +756,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.InsertTooManyRows.Int(),
 						Title:     "statement.insert.row-limit",
-						Content:   "\"INSERT INTO user SELECT * FROM user\" inserts 10 rows. The count exceeds 5.",
+						Content:   "\"INSERT INTO user(id, name) SELECT id, name FROM user WHERE 1=1\" inserts 10 rows. The count exceeds 5.",
 					},
 				},
 			},
@@ -768,7 +768,21 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.InsertUseLimit.Int(),
 						Title:     "statement.disallow-limit",
-						Content:   "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user SELECT * FROM user LIMIT 1\" uses",
+						Content:   "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user LIMIT 1\" uses",
+					},
+				},
+			},
+			{
+				statement: `
+					ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;
+				`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.CreateTablePartition.Int(),
+						Title:     "statement.disallow-partition",
+						Content:   "Table partition is forbidden, but \"ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;\" creates",
 					},
 				},
 			},
