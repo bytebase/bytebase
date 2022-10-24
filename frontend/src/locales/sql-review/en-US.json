@@ -147,6 +147,18 @@
         }
       }
     },
+    "naming-column-auto-increment": {
+      "title": "Auto-increment column naming check",
+      "description": "Enforce the auto-increment column name format and length limit. Default id within 63 characters.",
+      "component": {
+        "format": {
+          "title": "Auto-increment column name format (regex)"
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
     "column-required": {
       "title": "Required columns",
       "description": "Enforce the required columns in each table.",
@@ -186,7 +198,7 @@
       "description": "Disallow changing column order."
     },
     "column-set-default-for-not-null": {
-      "title": "Set default value",
+      "title": "Set default value for NOT NULL column",
       "description": "Require default value for not NULL column."
     },
     "column-auto-increment-must-integer": {
@@ -226,6 +238,14 @@
           "title": "Initial value"
         }
       }
+    },
+    "column-current-time-count-limit": {
+      "title": "Limit the count of current time columns",
+      "description": "Limit the count of NOW(), CURRENT_TIME() and CURRENT_TIMESTAMP() columns."
+    },
+    "column-require-default": {
+      "title": "Require column default value",
+      "description": ""
     },
     "statement-select-no-select-all": {
       "title": "Disallow \"SELECT *\"",
@@ -271,6 +291,19 @@
           "title": "Maximum insert amount"
         }
       }
+    },
+    "statement-affected-row-limit": {
+      "title": "Affected row limit",
+      "description": "Limit the \"DELETE\" and \"UPDATE\" affected row",
+      "component": {
+        "number": {
+          "title": "Maximum affected rows"
+        }
+      }
+    },
+    "statement-dml-dry-run": {
+      "title": "Dry run DML statements",
+      "description": "Dry run DML statements by EXPLAIN."
     },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
