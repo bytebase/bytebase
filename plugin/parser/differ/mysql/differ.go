@@ -5,9 +5,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"regexp"
 	"sort"
 	"strings"
+
+	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common/log"
 
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
@@ -33,14 +36,6 @@ func init() {
 	differ.Register(bbparser.TiDB, &SchemaDiffer{})
 }
 
-type objectType string
-
-const (
-	event     objectType = "EVENT"
-	function  objectType = "FUNCTION"
-	procedure objectType = "PROCEDURE"
-	trigger   objectType = "TRIGGER"
-)
 const (
 	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n"
 	enableFKCheckStmt  string = "SET FOREIGN_KEY_CHECKS=1;\n"
@@ -710,21 +705,19 @@ func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
 		return false
 	}
 	for idx, oldOption := range oldNormalizeOptions {
-		newOption := newNormalizeOptions[idx]
-		if oldOption.Tp != newOption.Tp {
+		oldOptionStr, err := toString(oldOption)
+		if err != nil {
+			log.Error("failed to convert old column option to string", zap.Error(err))
 			return false
 		}
-		// TODO(zp): it's not enough to compare the type for some options.
-		switch oldOption.Tp {
-		case ast.ColumnOptionComment, ast.ColumnOptionDefaultValue:
-			if oldOption.Expr.(ast.ValueExpr).GetValue() != newOption.Expr.(ast.ValueExpr).GetValue() {
-				return false
-			}
-		case ast.ColumnOptionCollate:
-			if oldOption.StrValue != newOption.StrValue {
-				return false
-			}
-		default:
+		newOption := newNormalizeOptions[idx]
+		newOptionStr, err := toString(newOption)
+		if err != nil {
+			log.Error("failed to convert new column option to string", zap.Error(err))
+			return false
+		}
+		if oldOptionStr != newOptionStr {
+			return false
 		}
 	}
 	return true
@@ -794,18 +787,17 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 			return false
 		}
 		if oldKeyPart.Expr != nil && newKeyPart.Expr != nil {
-			var oldExpr bytes.Buffer
-			var newExpr bytes.Buffer
-			if err := oldKeyPart.Expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &oldExpr)); err != nil {
-				// Return error will cause the logic to be more complicated, so we just return false here.
+			oldKeyPartStr, err := toString(oldKeyPart.Expr)
+			if err != nil {
+				log.Error("failed to convert old key part to string", zap.Error(err))
 				return false
 			}
-			if err := newKeyPart.Expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &newExpr)); err != nil {
+			newKeyPartStr, err := toString(newKeyPart.Expr)
+			if err != nil {
+				log.Error("failed to convert new key part to string", zap.Error(err))
 				return false
 			}
-			if oldExpr.String() != newExpr.String() {
-				return false
-			}
+			return oldKeyPartStr == newKeyPartStr
 		}
 		// TODO(zp): TiDB MySQL parser doesn't record the index order field in go struct, but it can parse correctly.
 		// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/parser.y?L3688
@@ -914,24 +906,17 @@ func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 		return false
 	}
 
-	var oldBuf bytes.Buffer
-	var newBuf bytes.Buffer
-	oldRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &oldBuf)
-	newRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &newBuf)
-	if err := old.Expr.Restore(oldRestoreCtx); err != nil {
+	oldStr, err := toString(old)
+	if err != nil {
+		log.Error("failed to convert old check constraint to string", zap.Error(err))
 		return false
 	}
-	if err := new.Expr.Restore(newRestoreCtx); err != nil {
+	newStr, err := toString(new)
+	if err != nil {
+		log.Error("failed to convert new check constraint to string", zap.Error(err))
 		return false
 	}
-	if oldBuf.String() != newBuf.String() {
-		return false
-	}
-
-	if old.Enforced != new.Enforced {
-		return false
-	}
-	return true
+	return oldStr == newStr
 }
 
 // diffTableOptions returns the diff of two table options, returns nil if they are the same.
@@ -1231,16 +1216,17 @@ func isViewEqual(old, new *ast.CreateViewStmt) bool {
 	// 		[WITH [CASCADED | LOCAL] CHECK OPTION]
 	// We can easily replace view statement by using `CREATE OR REPLACE VIEW` statement to replace the old one.
 	// So we don't need to compare each part, just compare the restore string.
-	var oldBuf, newBuf bytes.Buffer
-	oldRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &oldBuf)
-	newRestoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &newBuf)
-	if err := old.Restore(oldRestoreCtx); err != nil {
+	oldViewStr, err := toString(old)
+	if err != nil {
+		log.Error("fail to convert old view to string", zap.Error(err))
 		return false
 	}
-	if err := new.Restore(newRestoreCtx); err != nil {
+	newViewStr, err := toString(new)
+	if err != nil {
+		log.Error("fail to convert new view to string", zap.Error(err))
 		return false
 	}
-	return oldBuf.String() == newBuf.String()
+	return oldViewStr == newViewStr
 }
 
 // buildTableOptionMap builds a map of table options.
@@ -1250,40 +1236,4 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 		m[option.Tp] = option
 	}
 	return m
-}
-
-// extractUnsupportObjNameAndType extract the object name from the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statement and returns the object name and type.
-func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
-	fs := []objectType{
-		function,
-		procedure,
-	}
-	regexFmt := "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)*\\("
-	namingRegex := "`[^\\\\/?%*:|\\\"`<>]+`"
-	for _, obj := range fs {
-		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
-		re := regexp.MustCompile(regex)
-		matchList := re.FindStringSubmatch(stmt)
-		index := re.SubexpIndex("OBJECT_NAME")
-		if index >= 0 && index < len(matchList) {
-			objectName := strings.Trim(matchList[index], "`")
-			return objectName, obj, nil
-		}
-	}
-	objects := []objectType{
-		trigger,
-		event,
-	}
-	regexFmt = "(?i)^CREATE\\s+(DEFINER=`(.)+`@`(.)+`(\\s)+)?%s\\s+(?P<OBJECT_NAME>%s)(\\s)+"
-	for _, obj := range objects {
-		regex := fmt.Sprintf(regexFmt, string(obj), namingRegex)
-		re := regexp.MustCompile(regex)
-		matchList := re.FindStringSubmatch(stmt)
-		index := re.SubexpIndex("OBJECT_NAME")
-		if index >= 0 && index < len(matchList) {
-			objectName := strings.Trim(matchList[index], "`")
-			return objectName, obj, nil
-		}
-	}
-	return "", "", errors.Errorf("cannot extract object name and type from %q", stmt)
 }
