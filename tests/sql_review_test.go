@@ -389,7 +389,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				"UNIQUE KEY uk_user_id_name(id, name)" +
 				") ENGINE = INNODB COMMENT 'comment'",
 			"CREATE TABLE userTable(" +
-				"id INT," +
+				"id INT NOT NULL," +
 				"name VARCHAR(255)," +
 				"roomId INT," +
 				"INDEX idx1(name)," +
@@ -500,13 +500,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
-						Content:   "`userTable`.`id` cannot have NULL value",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
 						Content:   "`userTable`.`name` cannot have NULL value",
 					},
 					{
@@ -515,6 +508,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Code:      advisor.ColumnCannotNull.Int(),
 						Title:     "column.no-null",
 						Content:   "`userTable`.`roomId` cannot have NULL value",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NotNullColumnWithNoDefault.Int(),
+						Title:     "column.set-default-for-not-null",
+						Content:   "Column `userTable`.`id` is NOT NULL but doesn't have DEFAULT",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
@@ -536,6 +536,27 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Code:      advisor.NoColumnComment.Int(),
 						Title:     "column.comment",
 						Content:   "Column `userTable`.`roomId` requires comments",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoDefault.Int(),
+						Title:     "column.require-default",
+						Content:   "Column `userTable`.`id` doesn't have DEFAULT",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoDefault.Int(),
+						Title:     "column.require-default",
+						Content:   "Column `userTable`.`name` doesn't have DEFAULT.",
+					},
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NoDefault.Int(),
+						Title:     "column.require-default",
+						Content:   "Column `userTable`.`roomId` doesn't have DEFAULT.",
 					},
 				},
 			},
@@ -781,7 +802,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.CreateTablePartition.Int(),
-						Title:     "statement.disallow-partition",
+						Title:     "table.disallow-partition",
 						Content:   "Table partition is forbidden, but \"ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;\" creates",
 					},
 				},
