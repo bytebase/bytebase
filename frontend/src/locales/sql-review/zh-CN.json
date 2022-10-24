@@ -148,6 +148,18 @@
         }
       }
     },
+    "naming-column-auto-increment": {
+      "title": "自增列命名检查",
+      "description": "限制自增列命名风格和长度，默认为 id ，且不超过 63 个字符。",
+      "component": {
+        "format": {
+          "title": "自增列命名规则（正则）"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
     "column-required": {
       "title": "必须包含的字段",
       "description": "强制要求表中必须包含某些字段。",
@@ -187,7 +199,7 @@
       "description": "不允许列的顺序变更。"
     },
     "column-set-default-for-not-null": {
-      "title": "为字段设置默认值",
+      "title": "为 NOT NULL 字段设置默认值",
       "description": "不允许为 NULL 的字段必须设定默认值。"
     },
     "column-auto-increment-must-integer": {
@@ -227,6 +239,14 @@
           "title": "初始值"
         }
       }
+    },
+    "column-current-time-count-limit": {
+      "title": "限制 NOW() 列的数量",
+      "description": "限制列默认值或 ON UPDATE 值为 NOW(), CURRENT_TIME() 和 CURRENT_TIMESTAMP() 的数量。"
+    },
+    "column-require-default": {
+      "title": "强制设置列默认值",
+      "description": ""
     },
     "statement-select-no-select-all": {
       "title": "禁止 \"SELECT *\"",
@@ -272,6 +292,19 @@
           "title": "最大插入行数"
         }
       }
+    },
+    "statement-affected-row-limit": {
+      "title": "限制影响行数",
+      "description": "限制 \"DELETE\" and \"UPDATE\" 语句影响的行数。",
+      "component": {
+        "number": {
+          "title": "最大影响行数"
+        }
+      }
+    },
+    "statement-dml-dry-run": {
+      "title": "试运行 DML 语句",
+      "description": "使用 EXPLAIN 语句试运行 DML。"
     },
     "schema-backward-compatibility": {
       "title": "向后兼容",

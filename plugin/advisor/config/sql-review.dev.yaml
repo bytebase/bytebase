@@ -38,7 +38,13 @@ ruleList:
   - type: statement.insert.row-limit
     level: WARNING
     payload:
-      number: 5
+      number: 1000
+  - type: statement.affected-row-limit
+    level: WARNING
+    payload:
+      number: 1000
+  - type: statement.dml-dry-run
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:
@@ -68,6 +74,11 @@ ruleList:
     level: WARNING
     payload:
       format: "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$"
+      maxLength: 63
+  - type: naming.column.auto-increment
+    level: WARNING
+    payload:
+      format: "^id$"
       maxLength: 63
   - type: column.required
     level: WARNING
@@ -107,11 +118,17 @@ ruleList:
   - type: column.maximum-character-length
     level: WARNING
     payload:
-      number: 5
+      number: 20
   - type: column.auto-increment-initial-value
     level: WARNING
     payload:
       number: 1
+  - type: column.current-time-count-limit
+    level: WARNING
+    payload:
+      number: 1000
+  - type: column.require-default
+    level: WARNING
   - type: schema.backward-compatibility
     level: WARNING
   - type: database.drop-empty-database
