@@ -1,7 +1,7 @@
 <template>
   <NTooltip>
     <template #trigger>
-      <div class="relative">
+      <div class="relative" v-bind="$attrs">
         <img class="h-4 w-auto" :src="SelectedEngineIconPath" />
         <div
           v-if="showStatus"
