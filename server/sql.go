@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -215,6 +216,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
 			defer driver.Close(ctx)
+			connection, err := driver.GetDBConnection(ctx, exec.DatabaseName)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
+			}
 
 			adviceLevel, adviceList, err = s.sqlCheck(
 				ctx,
@@ -224,7 +229,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				instance.EnvironmentID,
 				exec.Statement,
 				catalog,
-				driver,
+				connection,
 			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check SQL review policy").SetInternal(err)
@@ -681,7 +686,7 @@ func (s *Server) sqlCheck(
 	environmentID int,
 	statement string,
 	catalog catalog.Catalog,
-	driver db.Driver,
+	driver *sql.DB,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
 	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})

@@ -43,7 +43,7 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
+					Code:    advisor.NotNullColumnWithNoDefault,
 					Title:   "column.set-default-for-not-null",
 					Content: "Column `book`.`id` is NOT NULL but doesn't have DEFAULT",
 					Line:    2,
@@ -58,7 +58,7 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
+					Code:    advisor.NotNullColumnWithNoDefault,
 					Title:   "column.set-default-for-not-null",
 					Content: "Column `book`.`id` is NOT NULL but doesn't have DEFAULT",
 					Line:    2,
@@ -85,7 +85,7 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
+					Code:    advisor.NotNullColumnWithNoDefault,
 					Title:   "column.set-default-for-not-null",
 					Content: "Column `book`.`id` is NOT NULL but doesn't have DEFAULT",
 					Line:    3,
@@ -99,7 +99,7 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
+					Code:    advisor.NotNullColumnWithNoDefault,
 					Title:   "column.set-default-for-not-null",
 					Content: "Column `book`.`id` is NOT NULL but doesn't have DEFAULT",
 					Line:    3,
@@ -139,7 +139,7 @@ func TestColumnSetDefaultForNotNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.NotNullColumnWithNullDefault,
+					Code:    advisor.NotNullColumnWithNoDefault,
 					Title:   "column.set-default-for-not-null",
 					Content: "Column `book`.`id` is NOT NULL but doesn't have DEFAULT",
 					Line:    3,

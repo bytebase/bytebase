@@ -4,14 +4,16 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
-	database "github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -50,10 +52,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, statement st
 		ctx:    ctx.Context,
 	}
 
-	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+	if checker.driver != nil {
+		for _, stmt := range stmtList {
+			checker.text = stmt.Text()
+			checker.line = stmt.OriginTextPosition()
+			(stmt).Accept(checker)
+		}
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -74,7 +78,7 @@ type statementAffectedRowLimitChecker struct {
 	text       string
 	line       int
 	maxRow     int
-	driver     database.Driver
+	driver     *sql.DB
 	ctx        context.Context
 }
 
@@ -82,11 +86,11 @@ type statementAffectedRowLimitChecker struct {
 func (checker *statementAffectedRowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.UpdateStmt, *ast.DeleteStmt:
-		res, err := checker.driver.Query(checker.ctx, fmt.Sprintf("EXPLAIN %s", node.Text()), 0)
+		res, err := query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementDMLDryRunFailed,
+				Code:    advisor.StatementAffectedRowExceedsLimit,
 				Title:   checker.title,
 				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
 				Line:    checker.line,
@@ -119,6 +123,96 @@ func (checker *statementAffectedRowLimitChecker) Enter(in ast.Node) (ast.Node, b
 // Leave implements the ast.Visitor interface.
 func (*statementAffectedRowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
+}
+
+func query(ctx context.Context, connection *sql.DB, statement string) ([]interface{}, error) {
+	tx, err := connection.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	colCount := len(columnTypes)
+
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+
+	data := []interface{}{}
+	for rows.Next() {
+		scanArgs := make([]interface{}, colCount)
+		for i, v := range columnTypeNames {
+			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
+			switch v {
+			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+				scanArgs[i] = new(sql.NullString)
+			case "BOOL":
+				scanArgs[i] = new(sql.NullBool)
+			case "INT", "INTEGER":
+				scanArgs[i] = new(sql.NullInt64)
+			case "FLOAT":
+				scanArgs[i] = new(sql.NullFloat64)
+			default:
+				scanArgs[i] = new(sql.NullString)
+			}
+		}
+
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+
+		rowData := []interface{}{}
+		for i := range columnTypes {
+			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
+				rowData = append(rowData, v.Bool)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
+				rowData = append(rowData, v.String)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
+				rowData = append(rowData, v.Int64)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
+				rowData = append(rowData, v.Int32)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
+				rowData = append(rowData, v.Float64)
+				continue
+			}
+			// If none of them match, set nil to its value.
+			rowData = append(rowData, nil)
+		}
+
+		data = append(data, rowData)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return []interface{}{columnNames, columnTypeNames, data}, nil
 }
 
 func getRows(res []interface{}) (int64, error) {
@@ -154,7 +248,13 @@ func getRows(res []interface{}) (int64, error) {
 		return int64(rows), nil
 	case int64:
 		return rows, nil
+	case string:
+		v, err := strconv.ParseInt(rows, 10, 64)
+		if err != nil {
+			return 0, errors.Errorf("expected int or int64 but got string(%s)", rows)
+		}
+		return v, nil
 	default:
-		return 0, errors.Errorf("expected int or in64 but got %t", rowOne[9])
+		return 0, errors.Errorf("expected int or int64 but got %t", rowOne[9])
 	}
 }

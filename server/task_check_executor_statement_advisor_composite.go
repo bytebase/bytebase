@@ -72,13 +72,17 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		return nil, err
 	}
 	defer driver.Close(ctx)
+	connection, err := driver.GetDBConnection(ctx, task.Database.Name)
+	if err != nil {
+		return nil, err
+	}
 
 	adviceList, err := advisor.SQLReviewCheck(payload.Statement, policy.RuleList, advisor.SQLReviewCheckContext{
 		Charset:   payload.Charset,
 		Collation: payload.Collation,
 		DbType:    dbType,
 		Catalog:   catalog,
-		Driver:    driver,
+		Driver:    connection,
 		Context:   ctx,
 	})
 	if err != nil {
