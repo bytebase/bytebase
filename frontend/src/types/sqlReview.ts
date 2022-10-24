@@ -103,6 +103,7 @@ export type RuleType =
   | "naming.index.pk"
   | "naming.index.fk"
   | "naming.index.idx"
+  | "naming.column.auto-increment"
   | "column.required"
   | "column.no-null"
   | "column.comment"
@@ -116,6 +117,8 @@ export type RuleType =
   | "column.auto-increment-must-unsigned"
   | "column.maximum-character-length"
   | "column.auto-increment-initial-value"
+  | "column.current-time-count-limit"
+  | "column.require-default"
   | "statement.select.no-select-all"
   | "statement.where.require"
   | "statement.where.no-leading-wildcard-like"
@@ -126,6 +129,8 @@ export type RuleType =
   | "statement.insert.must-specify-column"
   | "statement.insert.disallow-order-by-rand"
   | "statement.insert.row-limit"
+  | "statement.affected-row-limit"
+  | "statement.dml-dry-run"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
@@ -356,6 +361,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     case "naming.column":
+    case "naming.column.auto-increment":
     case "naming.table":
       if (!stringComponent || !numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -489,6 +495,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     case "statement.insert.row-limit":
+    case "statement.affected-row-limit":
     case "column.maximum-character-length":
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":
@@ -553,6 +560,7 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "naming.column":
+    case "naming.column.auto-increment":
     case "naming.table":
       if (!stringPayload || !numberPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
@@ -614,6 +622,7 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "statement.insert.row-limit":
+    case "statement.affected-row-limit":
     case "column.maximum-character-length":
     case "column.auto-increment-initial-value":
     case "index.key-number-limit":

@@ -112,7 +112,7 @@ ruleList:
       - key: number
         payload:
           type: NUMBER
-          default: 5
+          default: 1000
   - type: statement.insert.must-specify-column
     category: STATEMENT
     engineList:
@@ -124,6 +124,20 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
+    componentList: []
+  - type: statement.affected-row-limit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 1000
+  - type: statement.dml-dry-run
+    category: STATEMENT
+    engineList:
+      - MYSQL
     componentList: []
   - type: naming.table
     category: NAMING
@@ -227,6 +241,20 @@ ruleList:
         payload:
           type: NUMBER
           default: 63
+  - type: naming.column.auto-increment
+    category: NAMING
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: format
+        payload:
+          type: STRING
+          default: "^id$"
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
   - type: column.required
     category: COLUMN
     engineList:
@@ -319,7 +347,7 @@ ruleList:
       - key: number
         payload:
           type: NUMBER
-          default: 5
+          default: 20
   - type: column.auto-increment-initial-value
     category: COLUMN
     engineList:
@@ -331,6 +359,18 @@ ruleList:
           type: NUMBER
           default: 1
   - type: column.auto-increment-must-unsigned
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.current-time-count-limit
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.require-default
     category: COLUMN
     engineList:
       - MYSQL
