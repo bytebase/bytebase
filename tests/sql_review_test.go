@@ -674,6 +674,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
+				statement: `COMMIT;`,
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementDisallowCommit.Int(),
+						Title:     "statement.disallow-commit",
+						Content:   "Commit is not allowed, related statement: \"COMMIT;\"",
+					},
+				},
+			},
+			{
 				statement: statements[0],
 				result: []api.TaskCheckResult{
 					{
@@ -737,7 +749,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `INSERT INTO user SELECT * FROM user`,
+				statement: `INSERT INTO user(id, name) SELECT id, name FROM user WHERE 1=1`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
@@ -745,6 +757,18 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Code:      advisor.InsertTooManyRows.Int(),
 						Title:     "statement.insert.row-limit",
 						Content:   "\"INSERT INTO user SELECT * FROM user\" inserts 10 rows. The count exceeds 5.",
+					},
+				},
+			},
+			{
+				statement: "INSERT INTO user(id, name) SELECT id, name FROM user LIMIT 1",
+				result: []api.TaskCheckResult{
+					{
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.InsertUseLimit.Int(),
+						Title:     "statement.disallow-limit",
+						Content:   "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user SELECT * FROM user LIMIT 1\" uses",
 					},
 				},
 			},
