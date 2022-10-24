@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
@@ -168,6 +169,12 @@ func getInsertRows(res []interface{}) (int64, error) {
 		return int64(rows), nil
 	case int64:
 		return rows, nil
+	case string:
+		v, err := strconv.ParseInt(rows, 10, 64)
+		if err != nil {
+			return 0, errors.Errorf("expected int or int64 but got string(%s)", rows)
+		}
+		return v, nil
 	default:
 		return 0, errors.Errorf("expected int or in64 but got %t", rowTwo[9])
 	}
