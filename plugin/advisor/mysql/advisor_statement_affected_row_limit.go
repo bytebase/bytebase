@@ -51,10 +51,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, statement st
 		ctx:    ctx.Context,
 	}
 
-	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+	if checker.driver != nil {
+		for _, stmt := range stmtList {
+			checker.text = stmt.Text()
+			checker.line = stmt.OriginTextPosition()
+			(stmt).Accept(checker)
+		}
 	}
 
 	if len(checker.adviceList) == 0 {
