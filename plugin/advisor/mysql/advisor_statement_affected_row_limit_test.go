@@ -28,11 +28,10 @@ func TestStatementAffectedRowLimit(t *testing.T) {
 			Statement: `UPDATE tech_book SET id = 1`,
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
-					Code:    advisor.StatementAffectedRowExceedsLimit,
-					Title:   "statement.affected-row-limit",
-					Content: "\"UPDATE tech_book SET id = 1\" affected 1000 rows. The count exceeds 5.",
-					Line:    1,
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},

@@ -25,11 +25,10 @@ func TestStatementDmlDryRun(t *testing.T) {
 			Statement: `DELETE FROM tech_book`,
 			Want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
-					Code:    advisor.StatementDMLDryRunFailed,
-					Title:   "statement.dml-dry-run",
-					Content: "\"DELETE FROM tech_book\" dry runs failed: MockDriver disallows it",
-					Line:    1,
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},
