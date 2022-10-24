@@ -907,7 +907,7 @@
       "title": "Synchronize Schema",
       "description": "Synchronize the selected schema to target database.",
       "select-schema": "Select Schema",
-      "target-database": "Database",
+      "target-database": "Select Target Database",
       "schema-diff": "Schema diff",
       "synchronize-statements": "The generated DDL statements",
       "select-schema-and-target-database-tip": "Please select the schema and database firstly.",
@@ -1433,7 +1433,7 @@
       },
       "bb-feature-sync-schema": {
         "title": "Synchronize Schema",
-        "desc": "Synchronize schema from the base database to the target database with the selected migration version."
+        "desc": "Select any arbitrary migration version from the base database and synchronize it from to the target database."
       },
       "bb-feature-read-replica-connection": {
         "title": "Read replica connection",

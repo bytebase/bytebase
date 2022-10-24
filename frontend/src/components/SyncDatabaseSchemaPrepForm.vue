@@ -3,7 +3,7 @@
     <p class="w-full">{{ $t("database.sync-schema.description") }}</p>
 
     <!-- Project and base, target database selectors -->
-    <div class="w-144 flex flex-col justify-start items-start">
+    <div class="w-160 flex flex-col justify-start items-start">
       <div class="w-full">
         <div class="w-full mb-2">
           <span>{{ $t("common.project") }}</span>
@@ -39,29 +39,28 @@
               name="environment"
               :selected-id="state.baseSchemaInfo.environmentId"
               :select-default="false"
-              @select-environment-id="
-                (environmentId) =>
-                  (state.baseSchemaInfo.environmentId = environmentId)
-              "
+              @select-environment-id="handleBaseEnvironmentSelect"
             />
             <DatabaseSelect
-              class="!w-48 mr-2 shrink-0"
+              class="!w-64 mr-2 shrink-0"
               :selected-id="(state.baseSchemaInfo.databaseId as DatabaseId)"
               :mode="'USER'"
               :environment-id="state.baseSchemaInfo.environmentId"
               :project-id="state.projectId"
               :customize-item="true"
               :engine-type="state.engineType"
-              @select-database-id="
-                (databaseId: DatabaseId) => {
-                  state.baseSchemaInfo.databaseId = databaseId;
-                }
-              "
+              @select-database-id="handleBaseDatabaseSelect"
             >
               <template #customizeItem="{ database }">
-                <div class="flex items-center">
-                  <InstanceEngineIcon :instance="database.instance" />
-                  <span class="ml-2">{{ database.name }}</span>
+                <div class="w-full flex items-center truncate">
+                  <InstanceEngineIcon
+                    class="shrink-0"
+                    :instance="database.instance"
+                  />
+                  <span class="mx-2">{{ database.name }}</span>
+                  <span class="text-gray-400">{{
+                    database.instance.name
+                  }}</span>
                 </div>
               </template>
             </DatabaseSelect>
@@ -80,7 +79,7 @@
                   {{ migrationHistory.version }}
                 </div>
               </template>
-              <template #suffixItem>
+              <template v-if="!hasSyncSchemaFeature" #suffixItem>
                 <div
                   class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
                   @click="() => (state.showFeatureModal = true)"
@@ -126,10 +125,7 @@
               name="environment"
               :selected-id="state.targetSchemaInfo.environmentId"
               :select-default="false"
-              @select-environment-id="
-                (environmentId) =>
-                  (state.targetSchemaInfo.environmentId = environmentId)
-              "
+              @select-environment-id="handleTargetEnvironmentSelect"
             />
             <DatabaseSelect
               class="!grow !w-full"
@@ -139,11 +135,7 @@
               :project-id="state.projectId"
               :engine-type="state.engineType"
               :customize-item="true"
-              @select-database-id="
-                (databaseId: DatabaseId) => {
-                  state.targetSchemaInfo.databaseId = databaseId;
-                }
-              "
+              @select-database-id="handleTargetDatabaseSelect"
             >
               <template #customizeItem="{ database }">
                 <div class="flex items-center">
@@ -408,6 +400,46 @@ const gotoTargetDatabaseMigrationHistoryDetailPageWithId = (
   router.push(url);
 };
 
+const handleBaseEnvironmentSelect = async (environmentId: EnvironmentId) => {
+  if (environmentId !== state.baseSchemaInfo.environmentId) {
+    state.baseSchemaInfo.databaseId = undefined;
+  }
+  state.baseSchemaInfo.environmentId = environmentId;
+};
+
+const handleTargetEnvironmentSelect = async (environmentId: EnvironmentId) => {
+  if (environmentId !== state.targetSchemaInfo.environmentId) {
+    state.targetSchemaInfo.databaseId = undefined;
+  }
+  state.targetSchemaInfo.environmentId = environmentId;
+};
+
+const handleBaseDatabaseSelect = async (databaseId: DatabaseId) => {
+  if (isValidId(databaseId)) {
+    const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
+    if (database) {
+      state.baseSchemaInfo.environmentId = database.instance.environment.id;
+      state.baseSchemaInfo.databaseId = databaseId;
+      const migrationHistoryList = await instanceStore.fetchMigrationHistory({
+        instanceId: database.instance.id,
+        databaseName: database.name,
+      });
+      // Default select the first migration history.
+      state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
+    }
+  }
+};
+
+const handleTargetDatabaseSelect = async (databaseId: DatabaseId) => {
+  if (isValidId(databaseId)) {
+    const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
+    if (database) {
+      state.targetSchemaInfo.environmentId = database.instance.environment.id;
+      state.targetSchemaInfo.databaseId = databaseId;
+    }
+  }
+};
+
 const handleSchemaVersionSelect = (migrationHistory: MigrationHistory) => {
   if (!hasSyncSchemaFeature.value) {
     state.showFeatureModal = true;
@@ -450,9 +482,11 @@ const handleConfirmButtonClick = async () => {
   };
 
   const newIssue: IssueCreate = {
-    name: `[${targetDatabase.name}] Sync Schema from ${
-      sourceDatabase.name
-    } @ ${dayjs().format("MM-DD HH:mm")}`,
+    name: `[${targetDatabase.name}] Sync Schema from ${sourceDatabase.name}(${
+      state.baseSchemaInfo.migrationHistory?.version || ""
+    }) in ${sourceDatabase.instance.environment.name} @ ${dayjs().format(
+      "MM-DD HH:mm"
+    )}`,
     type: "bb.issue.database.schema.update",
     description: "",
     assigneeId: SYSTEM_BOT_ID,
@@ -532,31 +566,28 @@ watch(
 );
 
 watch(
-  () => [state.baseSchemaInfo.environmentId, state.baseSchemaInfo.databaseId],
+  () => [state.baseSchemaInfo.databaseId],
   async () => {
     const databaseId = state.baseSchemaInfo.databaseId;
-
-    if (isValidId(databaseId)) {
-      const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
-      if (database) {
-        const migrationHistoryList = await instanceStore.fetchMigrationHistory({
-          instanceId: database.instance.id,
-          databaseName: database.name,
-        });
-        // Default select the first migration history.
-        state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
-        return;
-      }
+    if (!isValidId(databaseId)) {
+      state.baseSchemaInfo.migrationHistory = undefined;
+      return;
     }
-    state.baseSchemaInfo.migrationHistory = undefined;
+
+    const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
+    if (database) {
+      const migrationHistoryList = await instanceStore.fetchMigrationHistory({
+        instanceId: database.instance.id,
+        databaseName: database.name,
+      });
+      // Default select the first migration history.
+      state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
+    }
   }
 );
 
 watch(
-  () => [
-    state.targetSchemaInfo.environmentId,
-    state.targetSchemaInfo.databaseId,
-  ],
+  () => [state.targetSchemaInfo.databaseId],
   async () => {
     const databaseId = state.targetSchemaInfo.databaseId;
     if (!isValidId(databaseId)) {
