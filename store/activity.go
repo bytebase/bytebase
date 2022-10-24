@@ -170,13 +170,14 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 		return nil, err
 	}
 
+	if len(activityRawList) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityRawList))}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if len(activityRawList) != 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityRawList))}
-	}
 	return activityRawList[0], nil
 }
 

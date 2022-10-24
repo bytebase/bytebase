@@ -184,13 +184,14 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return nil, err
 	}
 
+	if len(list) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d task check runs, expect 1", len(list))}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if len(list) != 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d task check runs, expect 1", len(list))}
-	}
 	return list[0], nil
 }
 

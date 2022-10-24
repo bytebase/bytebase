@@ -326,12 +326,12 @@ func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*tas
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
 	if len(taskRawList) != 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d tasks, expect 1", len(taskRawList))}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
 	}
 	return taskRawList[0], nil
 }
