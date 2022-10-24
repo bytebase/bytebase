@@ -301,7 +301,7 @@ func (s *Store) batchCreateTaskRaw(ctx context.Context, creates []*api.TaskCreat
 	}
 	defer tx.Rollback()
 
-	taskList, err := s.batchCreateTaskImpl(ctx, tx, creates)
+	taskList, err := s.createTaskImpl(ctx, tx, creates...)
 	if err != nil {
 		return nil, err
 	}
@@ -321,16 +321,19 @@ func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*tas
 	}
 	defer tx.Rollback()
 
-	task, err := s.createTaskImpl(ctx, tx, create)
+	taskRawList, err := s.createTaskImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(taskRawList) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d tasks, expect 1", len(taskRawList))}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return task, nil
+	return taskRawList[0], nil
 }
 
 // findTaskRaw retrieves a list of tasks based on find.
@@ -420,8 +423,8 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 	return taskList, nil
 }
 
-// batchCreateTaskImpl creates tasks in batch.
-func (*Store) batchCreateTaskImpl(ctx context.Context, tx *Tx, creates []*api.TaskCreate) ([]*taskRaw, error) {
+// createTaskImpl creates tasks.
+func (*Store) createTaskImpl(ctx context.Context, tx *Tx, creates ...*api.TaskCreate) ([]*taskRaw, error) {
 	var query strings.Builder
 	var values []interface{}
 	var queryValues []string
@@ -508,71 +511,6 @@ func (*Store) batchCreateTaskImpl(ctx context.Context, tx *Tx, creates []*api.Ta
 		return nil, FormatError(err)
 	}
 	return taskRawList, nil
-}
-
-// createTaskImpl creates a new task.
-func (*Store) createTaskImpl(ctx context.Context, tx *Tx, create *api.TaskCreate) (*taskRaw, error) {
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
-
-	query := `
-			INSERT INTO task (
-				creator_id,
-				updater_id,
-				pipeline_id,
-				stage_id,
-				instance_id,
-				database_id,
-				name,
-				status,
-				type,
-				payload,
-				earliest_allowed_ts
-			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
-		`
-	var taskRaw taskRaw
-	var databaseID sql.NullInt32
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.PipelineID,
-		create.StageID,
-		create.InstanceID,
-		create.DatabaseID,
-		create.Name,
-		create.Status,
-		create.Type,
-		create.Payload,
-		create.EarliestAllowedTs,
-	).Scan(
-		&taskRaw.ID,
-		&taskRaw.CreatorID,
-		&taskRaw.CreatedTs,
-		&taskRaw.UpdaterID,
-		&taskRaw.UpdatedTs,
-		&taskRaw.PipelineID,
-		&taskRaw.StageID,
-		&taskRaw.InstanceID,
-		&databaseID,
-		&taskRaw.Name,
-		&taskRaw.Status,
-		&taskRaw.Type,
-		&taskRaw.Payload,
-		&taskRaw.EarliestAllowedTs,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	if databaseID.Valid {
-		val := int(databaseID.Int32)
-		taskRaw.DatabaseID = &val
-	}
-	return &taskRaw, nil
 }
 
 func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([]*taskRaw, error) {

@@ -179,16 +179,20 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return taskCheckRunList[0], nil
 	}
 
-	taskCheckRun, err := s.createTaskCheckRunImpl(ctx, tx, create)
+	list, err := s.createTaskCheckRunImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(list) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d task check runs, expect 1", len(list))}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return taskCheckRun, nil
+	return list[0], nil
 }
 
 func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
@@ -198,7 +202,7 @@ func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*api.T
 	}
 	defer tx.Rollback()
 
-	taskCheckRunList, err := s.batchCreateTaskCheckRunImpl(ctx, tx, creates)
+	taskCheckRunList, err := s.createTaskCheckRunImpl(ctx, tx, creates...)
 	if err != nil {
 		return nil, err
 	}
@@ -210,55 +214,7 @@ func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*api.T
 	return taskCheckRunList, nil
 }
 
-// createTaskCheckRunImpl creates a new taskCheckRun.
-func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
-	query := `
-		INSERT INTO task_check_run (
-			creator_id,
-			updater_id,
-			task_id,
-			status,
-			type,
-			comment,
-			payload
-		)
-		VALUES ($1, $2, $3, 'RUNNING', $4, $5, $6)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
-	`
-	var taskCheckRunRaw taskCheckRunRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.TaskID,
-		create.Type,
-		create.Comment,
-		create.Payload,
-	).Scan(
-		&taskCheckRunRaw.ID,
-		&taskCheckRunRaw.CreatorID,
-		&taskCheckRunRaw.CreatedTs,
-		&taskCheckRunRaw.UpdaterID,
-		&taskCheckRunRaw.UpdatedTs,
-		&taskCheckRunRaw.TaskID,
-		&taskCheckRunRaw.Status,
-		&taskCheckRunRaw.Type,
-		&taskCheckRunRaw.Code,
-		&taskCheckRunRaw.Comment,
-		&taskCheckRunRaw.Result,
-		&taskCheckRunRaw.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &taskCheckRunRaw, nil
-}
-
-func (*Store) batchCreateTaskCheckRunImpl(ctx context.Context, tx *Tx, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
+func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
 	var query strings.Builder
 	var values []interface{}
 	var queryValues []string
