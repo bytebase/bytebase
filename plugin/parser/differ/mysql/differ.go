@@ -634,8 +634,9 @@ func getTempView(stmt *ast.CreateViewStmt) *ast.CreateViewStmt {
 		OrReplace: true,
 		// Avoid nil pointer dereference panic.
 		// https://sourcegraph.com/github.com/pingcap/tidb/-/blob/parser/ast/ddl.go?L1398
-		Definer:  stmt.Definer,
-		Security: stmt.Security,
+		Definer:     stmt.Definer,
+		Security:    stmt.Security,
+		CheckOption: model.CheckOptionCascaded,
 	}
 }
 
