@@ -542,7 +542,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.NoDefault.Int(),
 						Title:     "column.require-default",
-						Content:   "Column `userTable`.`id` doesn't have DEFAULT",
+						Content:   "Column `userTable`.`id` doesn't have DEFAULT.",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
