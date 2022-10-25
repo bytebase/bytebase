@@ -97,7 +97,7 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
-  - tpye: statement.merge-alter-table
+  - type: statement.merge-alter-table
     category: STATEMENT
     engineList:
       - MYSQL
