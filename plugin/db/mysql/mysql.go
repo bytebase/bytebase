@@ -155,7 +155,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	if err := transformDelimiter(&buf, statement); err != nil {
 		return err
 	}
-	handledStatement := buf.String()
+	transformedStatement := buf.String()
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
