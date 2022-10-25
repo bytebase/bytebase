@@ -402,16 +402,16 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				"INDEX idx_userTable_content(content)" +
 				") ENGINE = CSV COLLATE latin1_bin",
 		}
-		valueTable = `(SELECT 1 AS id, 'a' AS name UNION ALL
-			SELECT 2 AS id, 'b' AS name UNION ALL
-			SELECT 3 AS id, 'c' AS name UNION ALL
-			SELECT 4 AS id, 'd' AS name UNION ALL
-			SELECT 5 AS id, 'e' AS name UNION ALL
-			SELECT 6 AS id, 'f' AS name UNION ALL
-			SELECT 7 AS id, 'g' AS name UNION ALL
-			SELECT 8 AS id, 'h' AS name UNION ALL
-			SELECT 9 AS id, 'i' AS name UNION ALL
-			SELECT 10 AS id, 'j' AS name) value_table`
+		valueTable = `(SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
+			SELECT 2 AS id, 'b' AS name WHERE 1=1 UNION ALL
+			SELECT 3 AS id, 'c' AS name WHERE 1=1 UNION ALL
+			SELECT 4 AS id, 'd' AS name WHERE 1=1 UNION ALL
+			SELECT 5 AS id, 'e' AS name WHERE 1=1 UNION ALL
+			SELECT 6 AS id, 'f' AS name WHERE 1=1 UNION ALL
+			SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL
+			SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL
+			SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
+			SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table`
 		tests = []test{
 			{
 				statement: statements[0],
@@ -1082,7 +1082,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// test for dry-run-dml
 	countSQL := "SELECT * FROM user;"
-	dmlSQL := "INSERT INTO user SELECT * FROM user;"
+	dmlSQL := "INSERT INTO user SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	fmt.Println("[query-result-origin] ", origin)
 	fmt.Println("[query-result-error-origin] ", err)
