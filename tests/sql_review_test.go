@@ -375,7 +375,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 func TestSQLReviewForMySQL(t *testing.T) {
 	var (
-		databaseName = "testSQLReview"
+		databaseName = "testsqlreview"
 		statements   = []string{
 			"CREATE TABLE user(" +
 				"id INT PRIMARY KEY COMMENT 'comment'," +
@@ -1098,13 +1098,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	for _, stmt := range initialStmts {
 		createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, stmt, true /* wait */)
 	}
-	countSQL := "SELECT count(*), 1 FROM test;"
+	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
-	fmt.Println("[query-result-origin] ", origin)
-	fmt.Println("[query-result-error-origin] ", err)
 	a.NoError(err)
-	a.Equal("", origin)
+	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]]]", origin)
 	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
