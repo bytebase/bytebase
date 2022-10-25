@@ -65,7 +65,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 				CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
 				)`,
 		}
-		databaseName = "testSQLReview"
+		databaseName = "testsqlreview"
 		tests        = []test{
 			{
 				statement: statements[0],
@@ -680,14 +680,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
 						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 				},
 			},
@@ -706,14 +706,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
 						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 				},
 			},
@@ -741,7 +741,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.InsertTooManyRows.Int(),
 						Title:     "statement.insert.row-limit",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testSQLReview.t_copy' doesn't exist",
+						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
@@ -755,7 +755,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testSQLReview.t_copy' doesn't exist",
+						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
 					},
 				},
 			},
@@ -775,7 +775,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146: Table 'testSQLReview.t' doesn't exist",
+						Content:   "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146: Table 'testsqlreview.t' doesn't exist",
 					},
 				},
 			},
@@ -787,14 +787,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
 						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 				},
 			},
