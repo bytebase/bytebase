@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
@@ -150,26 +151,9 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
-	if err != nil {
-		return errors.Wrapf(err, "failed to split SQL statements")
-	}
 	var buf bytes.Buffer
-	delimiter := `;`
-	for _, singleSQL := range statements {
-		stmt := singleSQL.Text
-		if bbparser.IsDelimiter(stmt) {
-			delimiter, err = bbparser.ExtractDelimiter(stmt)
-			if err != nil {
-				return errors.Wrapf(err, "failed to extract delimiter")
-			}
-			continue
-		}
-		if delimiter != ";" {
-			// Trim delimiter
-			stmt = fmt.Sprintf("%s;", stmt[:len(stmt)-len(delimiter)])
-		}
-		_, _ = buf.WriteString(stmt)
+	if err := transformDelimiter(&buf, statement); err != nil {
+		return err
 	}
 	handledStatement := buf.String()
 	tx, err := driver.db.BeginTx(ctx, nil)
@@ -192,4 +176,31 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
 	return util.Query(ctx, driver.dbType, driver.db, statement, limit)
+}
+
+// transformDelimiter transform the delimiter to the MySQL default delimiter.
+func transformDelimiter(out io.Writer, statement string) error {
+	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	if err != nil {
+		return errors.Wrapf(err, "failed to split SQL statements")
+	}
+	delimiter := `;`
+	for _, singleSQL := range statements {
+		stmt := singleSQL.Text
+		if bbparser.IsDelimiter(stmt) {
+			delimiter, err = bbparser.ExtractDelimiter(stmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to extract delimiter")
+			}
+			continue
+		}
+		if delimiter != ";" {
+			// Trim delimiter
+			stmt = fmt.Sprintf("%s;", stmt[:len(stmt)-len(delimiter)])
+		}
+		if _, err = out.Write([]byte(stmt)); err != nil {
+			return errors.Wrapf(err, "failed to write SQL statement")
+		}
+	}
+	return nil
 }
