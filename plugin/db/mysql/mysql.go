@@ -2,6 +2,7 @@
 package mysql
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	bbparser "github.com/bytebase/bytebase/plugin/parser"
 )
 
 var (
@@ -148,13 +150,35 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
+	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	if err != nil {
+		return errors.Wrapf(err, "failed to split SQL statements")
+	}
+	var buf bytes.Buffer
+	delimiter := `;`
+	for _, singleSQL := range statements {
+		stmt := singleSQL.Text
+		if bbparser.IsDelimiter(stmt) {
+			delimiter, err = bbparser.ExtractDelimiter(stmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to extract delimiter")
+			}
+			continue
+		}
+		if delimiter != ";" {
+			// Trim delimiter
+			stmt = fmt.Sprintf("%s;", stmt[:len(stmt)-len(delimiter)])
+		}
+		_, _ = buf.WriteString(stmt)
+	}
+	handledStatement := buf.String()
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, statement)
+	_, err = tx.ExecContext(ctx, handledStatement)
 
 	if err == nil {
 		if err := tx.Commit(); err != nil {
