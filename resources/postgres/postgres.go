@@ -109,7 +109,7 @@ func Start(port int, baseDir string, dataDir string, stdout, stderr io.Writer) (
 	// https://www.postgresql.org/docs/current/app-postgres.html
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -h ""`, port, common.GetPostgresSocketDir()))
+		"-o", fmt.Sprintf(`-p %d -k %s -h "" -c stats_temp_directory=/tmp`, port, common.GetPostgresSocketDir()))
 
 	p.Stdout = stdout
 	p.Stderr = stderr
