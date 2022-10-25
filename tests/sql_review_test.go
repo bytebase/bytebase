@@ -1070,6 +1070,17 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		a.Equal(t.result, result, t.statement)
 	}
 
+	// test for dry-run-dml
+	countSQL := "SELECT COUNT(*) FROM user;"
+	dmlSQL := "INSERT INTO user SELECT * FROM user;"
+	origin, err := ctl.query(instance, databaseName, countSQL)
+	a.NoError(err)
+	a.Equal(origin, "")
+	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, dmlSQL, false /* wait */)
+	finial, err := ctl.query(instance, databaseName, countSQL)
+	a.NoError(err)
+	a.Equal(origin, finial)
+
 	// disable the SQL review policy
 	disable := string(api.Archived)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
