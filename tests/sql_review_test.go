@@ -402,6 +402,16 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				"INDEX idx_userTable_content(content)" +
 				") ENGINE = CSV COLLATE latin1_bin",
 		}
+		valueTable = `(SELECT 1 AS id, 'a' AS name UNION ALL
+			SELECT 2 AS id, 'b' AS name UNION ALL
+			SELECT 3 AS id, 'c' AS name UNION ALL
+			SELECT 4 AS id, 'd' AS name UNION ALL
+			SELECT 5 AS id, 'e' AS name UNION ALL
+			SELECT 6 AS id, 'f' AS name UNION ALL
+			SELECT 7 AS id, 'g' AS name UNION ALL
+			SELECT 8 AS id, 'h' AS name UNION ALL
+			SELECT 9 AS id, 'i' AS name UNION ALL
+			SELECT 10 AS id, 'j' AS name) value_table`
 		tests = []test{
 			{
 				statement: statements[0],
@@ -864,14 +874,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `INSERT INTO user(id, name) SELECT id, name FROM user WHERE 1=1`,
+				statement: `INSERT INTO user(id, name) SELECT id, name FROM ` + valueTable + ` WHERE 1=1`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.InsertTooManyRows.Int(),
 						Title:     "statement.insert.row-limit",
-						Content:   "\"INSERT INTO user(id, name) SELECT id, name FROM user WHERE 1=1\" inserts 10 rows. The count exceeds 5.",
+						Content:   "\"INSERT INTO user(id, name) SELECT id, name FROM " + valueTable + " WHERE 1=1\" inserts 10 rows. The count exceeds 5.",
 					},
 				},
 			},
@@ -1071,10 +1081,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	}
 
 	// test for dry-run-dml
-	countSQL := "SELECT COUNT(*) FROM user;"
+	countSQL := "SELECT * FROM user;"
 	dmlSQL := "INSERT INTO user SELECT * FROM user;"
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	fmt.Println("[query-result-origin] ", origin)
+	fmt.Println("[query-result-error-origin] ", err)
 	a.NoError(err)
 	a.Equal("", origin)
 	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, dmlSQL, false /* wait */)
