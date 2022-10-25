@@ -1461,6 +1461,7 @@
   },
   "sql-review": {
     "title": "SQL Review",
+    "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "Disabled",
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
