@@ -162,7 +162,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, handledStatement)
+	_, err = tx.ExecContext(ctx, transformedStatement)
 
 	if err == nil {
 		if err := tx.Commit(); err != nil {
