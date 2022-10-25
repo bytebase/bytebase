@@ -359,7 +359,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				delete(oldUnsupportMap[tp], newName)
 				continue
 			}
-			newNodeStmt = append(newNodeStmt, newStmt)
+			// Now, the input of differ comes from the our mysqldump, mysqldump use ;; to separate the CREATE TRIGGER/FUNCTION/PROCEDURE/EVENT statements;
+			// So we should append DELIMITER statement to the newStmt.
+			delimiterNewStmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", newStmt)
+			newNodeStmt = append(newNodeStmt, delimiterNewStmt)
 		}
 	}
 	// drop remaining TiDB unsupported objects
