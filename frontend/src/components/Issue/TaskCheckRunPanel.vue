@@ -155,11 +155,21 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.PK_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
         case SQLReviewPolicyErrorCode.COLUMN_CANBE_NULL:
+        case SQLReviewPolicyErrorCode.NOT_NULL_COLUMN_WITH_NO_DEFAULT:
+        case SQLReviewPolicyErrorCode.NO_COLUMN_COMMENT:
+        case SQLReviewPolicyErrorCode.DISABLED_COLUMN_TYPE:
+        case SQLReviewPolicyErrorCode.SET_COLUMN_CHARSET:
+        case SQLReviewPolicyErrorCode.ON_UPDATE_CURRENT_TIME_COLUMN_COUNT_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.NO_DEFAULT:
         case SQLReviewPolicyErrorCode.NOT_INNODB_ENGINE:
         case SQLReviewPolicyErrorCode.NO_PK_IN_TABLE:
         case SQLReviewPolicyErrorCode.FK_IN_TABLE:
         case SQLReviewPolicyErrorCode.TABLE_DROP_NAMING_CONVENTION:
+        case SQLReviewPolicyErrorCode.NO_TABLE_COMMENT:
         case SQLReviewPolicyErrorCode.DATABASE_NOT_EMPTY:
+        case SQLReviewPolicyErrorCode.INDEX_TYPE_NO_BLOB:
+        case SQLReviewPolicyErrorCode.DISABLED_CHARSET:
+        case SQLReviewPolicyErrorCode.DISABLED_COLLATION:
         case CompatibilityErrorCode.COMPATIBILITY_DROP_DATABASE:
         case CompatibilityErrorCode.COMPATIBILITY_RENAME_TABLE:
         case CompatibilityErrorCode.COMPATIBILITY_DROP_TABLE:
