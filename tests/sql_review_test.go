@@ -1081,8 +1081,25 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	}
 
 	// test for dry-run-dml
-	countSQL := "SELECT count(*), 1 FROM user;"
-	dmlSQL := "INSERT INTO user SELECT * FROM " + valueTable
+	initialStmts := []string{
+		"CREATE TABLE test(" +
+			"id INT PRIMARY KEY COMMENT 'comment'," +
+			"name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment'," +
+			"room_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+			"creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+			"created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment'," +
+			"updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+			"updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment'," +
+			"INDEX idx_test_name(name)," +
+			"UNIQUE KEY uk_test_id_name(id, name)" +
+			") ENGINE = INNODB COMMENT 'comment';",
+		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
+	}
+	for _, stmt := range initialStmts {
+		createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, stmt, true /* wait */)
+	}
+	countSQL := "SELECT count(*), 1 FROM test;"
+	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	fmt.Println("[query-result-origin] ", origin)
 	fmt.Println("[query-result-error-origin] ", err)
