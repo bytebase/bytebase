@@ -1074,8 +1074,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	countSQL := "SELECT COUNT(*) FROM user;"
 	dmlSQL := "INSERT INTO user SELECT * FROM user;"
 	origin, err := ctl.query(instance, databaseName, countSQL)
+	fmt.Println("[query-result-origin] ", origin)
 	a.NoError(err)
-	a.Equal(origin, "")
+	a.Equal("", origin)
 	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
