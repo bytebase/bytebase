@@ -65,7 +65,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 				CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
 				)`,
 		}
-		databaseName = "testSQLReview"
+		databaseName = "testsqlreview"
 		tests        = []test{
 			{
 				statement: statements[0],
@@ -375,7 +375,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 func TestSQLReviewForMySQL(t *testing.T) {
 	var (
-		databaseName = "testSQLReview"
+		databaseName = "testsqlreview"
 		statements   = []string{
 			"CREATE TABLE user(" +
 				"id INT PRIMARY KEY COMMENT 'comment'," +
@@ -402,6 +402,16 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				"INDEX idx_userTable_content(content)" +
 				") ENGINE = CSV COLLATE latin1_bin",
 		}
+		valueTable = `(SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
+			SELECT 2 AS id, 'b' AS name WHERE 1=1 UNION ALL
+			SELECT 3 AS id, 'c' AS name WHERE 1=1 UNION ALL
+			SELECT 4 AS id, 'd' AS name WHERE 1=1 UNION ALL
+			SELECT 5 AS id, 'e' AS name WHERE 1=1 UNION ALL
+			SELECT 6 AS id, 'f' AS name WHERE 1=1 UNION ALL
+			SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL
+			SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL
+			SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
+			SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table`
 		tests = []test{
 			{
 				statement: statements[0],
@@ -670,14 +680,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
 						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 				},
 			},
@@ -696,14 +706,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
 						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 				},
 			},
@@ -731,7 +741,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.InsertTooManyRows.Int(),
 						Title:     "statement.insert.row-limit",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testSQLReview.t_copy' doesn't exist",
+						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
@@ -745,7 +755,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testSQLReview.t_copy' doesn't exist",
+						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
 					},
 				},
 			},
@@ -765,7 +775,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146: Table 'testSQLReview.t' doesn't exist",
+						Content:   "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146: Table 'testsqlreview.t' doesn't exist",
 					},
 				},
 			},
@@ -777,14 +787,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
 						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.StatementDMLDryRunFailed.Int(),
 						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testSQLReview.tech_book' doesn't exist",
+						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
 					},
 				},
 			},
@@ -864,14 +874,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `INSERT INTO user(id, name) SELECT id, name FROM user WHERE 1=1`,
+				statement: `INSERT INTO user(id, name) SELECT id, name FROM ` + valueTable + ` WHERE 1=1`,
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.InsertTooManyRows.Int(),
 						Title:     "statement.insert.row-limit",
-						Content:   "\"INSERT INTO user(id, name) SELECT id, name FROM user WHERE 1=1\" inserts 10 rows. The count exceeds 5.",
+						Content:   "\"INSERT INTO user(id, name) SELECT id, name FROM " + valueTable + " WHERE 1=1\" inserts 10 rows. The count exceeds 5.",
 					},
 				},
 			},
@@ -1069,6 +1079,34 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement, t.run)
 		a.Equal(t.result, result, t.statement)
 	}
+
+	// test for dry-run-dml
+	initialStmts := []string{
+		"CREATE TABLE test(" +
+			"id INT PRIMARY KEY COMMENT 'comment'," +
+			"name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment'," +
+			"room_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+			"creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+			"created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment'," +
+			"updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment'," +
+			"updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment'," +
+			"INDEX idx_test_name(name)," +
+			"UNIQUE KEY uk_test_id_name(id, name)" +
+			") ENGINE = INNODB COMMENT 'comment';",
+		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
+	}
+	for _, stmt := range initialStmts {
+		createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, stmt, true /* wait */)
+	}
+	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
+	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
+	origin, err := ctl.query(instance, databaseName, countSQL)
+	a.NoError(err)
+	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]]]", origin)
+	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, dmlSQL, false /* wait */)
+	finial, err := ctl.query(instance, databaseName, countSQL)
+	a.NoError(err)
+	a.Equal(origin, finial)
 
 	// disable the SQL review policy
 	disable := string(api.Archived)
