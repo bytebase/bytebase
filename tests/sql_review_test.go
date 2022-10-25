@@ -1081,7 +1081,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	}
 
 	// test for dry-run-dml
-	countSQL := "SELECT * FROM user;"
+	countSQL := "SELECT count(*), 1 FROM user;"
 	dmlSQL := "INSERT INTO user SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	fmt.Println("[query-result-origin] ", origin)
