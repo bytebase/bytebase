@@ -24,7 +24,7 @@
           <div
             class="w-full mt-4 mb-2 flex flex-row justify-start items-center"
           >
-            <span>{{ $t("database.sync-schema.select-schema") }}</span>
+            <span>{{ $t("database.sync-schema.select-schema-version") }}</span>
           </div>
           <div
             class="w-full flex flex-row justify-start items-center px-px relative"
@@ -183,9 +183,7 @@
           data-label="bb-migration-history-code-diff-block"
         />
       </template>
-      <div
-        class="w-full flex flex-row justify-start items-center mt-4 mb-2 leading-8"
-      >
+      <div class="w-full flex flex-col justify-start mt-4 mb-2 leading-8">
         <div class="flex flex-row justify-start items-center">
           <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
           <button
@@ -195,6 +193,9 @@
           >
             <heroicons-outline:clipboard class="h-5 w-5" />
           </button>
+        </div>
+        <div v-if="shouldShowDiff" class="textinfolabel">
+          {{ $t("database.sync-schema.synchronize-statements-description") }}
         </div>
       </div>
       <div
