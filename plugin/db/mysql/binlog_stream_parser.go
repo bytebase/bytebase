@@ -8,11 +8,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-type binlogEventType int
+// BinlogEventType is the enumeration of binlog event types.
+type BinlogEventType int
 
 const (
 	// DeleteRowsEvent is the binlog event for DELETE.
-	DeleteRowsEvent binlogEventType = iota
+	DeleteRowsEvent BinlogEventType = iota
 	// UpdateRowsEvent is the binlog event for UPDATE.
 	UpdateRowsEvent
 	// WriteRowsEvent is the binlog event for INSERT.
@@ -26,19 +27,10 @@ const (
 
 // BinlogEvent contains the raw string of a single binlog event from the mysqlbinlog output stream.
 type BinlogEvent struct {
-	Type   binlogEventType
+	Type   BinlogEventType
 	Header string
 	Body   string
 }
-
-type binlogStreamLineType int
-
-const (
-	posLine binlogStreamLineType = iota
-	headerLine
-	bodyLine
-	otherLine
-)
 
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
 // Each transaction is a list of events, starting with Query (BEGIN).
@@ -122,7 +114,16 @@ func ParseBinlogStream(stream io.Reader) ([][]BinlogEvent, error) {
 	return txns, nil
 }
 
-func getEventType(header string) binlogEventType {
+type binlogStreamLineType int
+
+const (
+	posLine binlogStreamLineType = iota
+	headerLine
+	bodyLine
+	otherLine
+)
+
+func getEventType(header string) BinlogEventType {
 	if strings.Contains(header, "Query") {
 		return QueryEvent
 	} else if strings.Contains(header, "Write_rows") {
