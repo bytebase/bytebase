@@ -75,7 +75,4 @@ const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
 .current .body {
   @apply relative bg-white text-accent border-t-accent;
 }
-.admin.current .body {
-  @apply border-t-red-600 text-red-600;
-}
 </style>
