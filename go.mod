@@ -70,6 +70,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
@@ -135,7 +136,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a // indirect
-	github.com/tikv/client-go/v2 v2.0.1-0.20220614073425-1693f8c71524 // indirect
+	github.com/tikv/client-go/v2 v2.0.1-0.20220725090834-0cdc7c1d0fb9 // indirect
 	github.com/tikv/pd/client v0.0.0-20220929102544-1fc1ffb6f537 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
@@ -164,3 +165,7 @@ require (
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
 
 replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651
+
+replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20221026055853-b84d87cb3775
+
+replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20221026055853-b84d87cb3775
