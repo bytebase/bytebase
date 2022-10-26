@@ -5,6 +5,7 @@
       current: isCurrentTab,
       temp: isTempTab(tab),
       hovering: state.hovering,
+      admin: tab.mode === TabMode.Admin,
     }"
     @mousedown="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"
@@ -23,6 +24,7 @@ import { computed, PropType, reactive } from "vue";
 import { storeToRefs } from "pinia";
 
 import type { TabInfo } from "@/types";
+import { TabMode } from "@/types";
 import { isTempTab } from "@/utils";
 import { useTabStore } from "@/store";
 import Prefix from "./Prefix.vue";
@@ -72,5 +74,8 @@ const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
 }
 .current .body {
   @apply relative bg-white text-accent border-t-accent;
+}
+.admin.current .body {
+  @apply border-t-red-600 text-red-600;
 }
 </style>
