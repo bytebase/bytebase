@@ -64,7 +64,7 @@ func TestColumnTypeDisallowList(t *testing.T) {
 		{
 			Statement: `
 				CREATE TABLE t(c char(5));
-				ALTER TABLE t ALTER COLUMN c TYPE int`,
+				ALTER TABLE t ALTER COLUMN c TYPE int;`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
