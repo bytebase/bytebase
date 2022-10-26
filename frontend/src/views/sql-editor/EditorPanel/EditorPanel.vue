@@ -49,6 +49,7 @@ import SQLEditor from "./SQLEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
 import ConnectionHolder from "./ConnectionHolder.vue";
 import SaveSheetModal from "./SaveSheetModal.vue";
+import type { SheetUpsert } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 
 const tabStore = useTabStore();
@@ -98,17 +99,20 @@ const handleSaveSheet = async (sheetName?: string) => {
   }
   isShowSaveSheetModal.value = false;
 
-  const { name, statement, sheetId } = tabStore.currentTab;
+  const { name, statement, sheetId, mode } = tabStore.currentTab;
   sheetName = sheetName ? sheetName : name;
 
   const conn = tabStore.currentTab.connection;
   const database = await databaseStore.getOrFetchDatabaseById(conn.databaseId);
-  const sheetUpsert = {
+  const sheetUpsert: SheetUpsert = {
     id: sheetId,
     projectId: database.project.id,
     databaseId: conn.databaseId,
     name: sheetName,
     statement: statement,
+    payload: {
+      tabMode: mode,
+    },
   };
   const sheet = await sheetStore.upsertSheet(sheetUpsert);
 

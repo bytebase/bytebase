@@ -30,6 +30,7 @@ const PERSISTENT_TASK_FIELDS = [
   "savedAt",
   "statement",
   "sheetId",
+  "mode",
 ] as const;
 type PersistentTaskInfo = Pick<TabInfo, typeof PERSISTENT_TASK_FIELDS[number]>;
 

@@ -13,6 +13,11 @@ export type Connection = {
   databaseId: DatabaseId;
 };
 
+export enum TabMode {
+  ReadOnly = 1,
+  Admin = 2,
+}
+
 export interface TabInfo {
   id: string;
   name: string;
@@ -21,6 +26,7 @@ export interface TabInfo {
   savedAt: string;
   statement: string;
   selectedStatement: string;
+  mode: TabMode;
   executeParams?: {
     query: string;
     config: ExecuteConfig;
