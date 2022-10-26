@@ -317,7 +317,10 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int, readOnly bool) ([]interface{}, error) {
+	if !readOnly {
+		return queryAdmin(ctx, sqldb, statement, limit)
+	}
 	// Limit SQL query result size.
 	if dbType == db.MySQL {
 		// MySQL 5.7 doesn't support WITH clause.
@@ -326,8 +329,6 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		statement = getStatementWithResultLimit(statement, limit)
 	}
 
-	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
-	readOnly := true
 	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 	// https://github.com/pingcap/tidb/issues/34626
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
@@ -365,6 +366,92 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
+	data := []interface{}{}
+	for rows.Next() {
+		scanArgs := make([]interface{}, colCount)
+		for i, v := range columnTypeNames {
+			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
+			switch v {
+			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+				scanArgs[i] = new(sql.NullString)
+			case "BOOL":
+				scanArgs[i] = new(sql.NullBool)
+			case "INT", "INTEGER":
+				scanArgs[i] = new(sql.NullInt64)
+			case "FLOAT":
+				scanArgs[i] = new(sql.NullFloat64)
+			default:
+				scanArgs[i] = new(sql.NullString)
+			}
+		}
+
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, FormatError(err)
+		}
+
+		rowData := []interface{}{}
+		for i := range columnTypes {
+			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
+				rowData = append(rowData, v.Bool)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
+				rowData = append(rowData, v.String)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
+				rowData = append(rowData, v.Int64)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
+				rowData = append(rowData, v.Int32)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
+				rowData = append(rowData, v.Float64)
+				continue
+			}
+			// If none of them match, set nil to its value.
+			rowData = append(rowData, nil)
+		}
+
+		data = append(data, rowData)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return []interface{}{columnNames, columnTypeNames, data}, nil
+}
+
+// query will execute a query.
+func queryAdmin(ctx context.Context, sqldb *sql.DB, statement string, _ int) ([]interface{}, error) {
+	rows, err := sqldb.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	colCount := len(columnTypes)
+
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+
+	// TODO(d): share the common code.
 	data := []interface{}{}
 	for rows.Next() {
 		scanArgs := make([]interface{}, colCount)
