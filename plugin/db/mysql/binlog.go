@@ -53,7 +53,7 @@ func (t binlogEventType) MinBlockLen() int {
 	}
 }
 
-func (t binlogEventType) ParseDMLPayload(block []string) (beforeValue []string, afterValue []string, err error) {
+func (t binlogEventType) ParseDMLPayload(block []string) (dataOld []string, dataNew []string, err error) {
 	block = block[1:]
 	switch t {
 	case DeleteRowsEvent:
@@ -106,12 +106,10 @@ func (t binlogEventType) ParseDMLPayload(block []string) (beforeValue []string, 
 }
 
 type binlogEvent struct {
-	Type       binlogEventType
-	Database   string
-	Table      string
-	DataBefore [][]string
-	DataAfter  [][]string
-	ThreadID   string
+	Type     binlogEventType
+	DataOld  [][]string
+	DataNew  [][]string
+	ThreadID string
 }
 
 func parseBinlogEvent(binlogText string) (*binlogEvent, error) {
@@ -120,7 +118,7 @@ func parseBinlogEvent(binlogText string) (*binlogEvent, error) {
 		return nil, errors.Errorf("invalid mysqlbinlog dump string: must be at least 2 lines")
 	}
 	if !strings.HasPrefix(lines[0], "# at") {
-		return nil, errors.Errorf("invalid mysqlbinlog dump string: must starts with \"# at\"")
+		return nil, errors.Errorf("invalid mysqlbinlog dump string: must start with \"# at\"")
 	}
 
 	// The second line must contain the event header information.
@@ -171,7 +169,7 @@ func parseBinlogEventQuery(header string) (*binlogEvent, error) {
 
 func parseBinlogEventDML(eventType binlogEventType, body []string) (*binlogEvent, error) {
 	if len(body) < eventType.MinBlockLen() {
-		return nil, errors.Errorf("invalid %s event body, must be at least %d lines", eventType.String(), eventType.MinBlockLen())
+		return nil, errors.Errorf("invalid %s event body, must be at least %d lines, but got %q", eventType.String(), eventType.MinBlockLen(), strings.Join(body, "\n"))
 	}
 	groups, err := splitBinlogEventBody(body, eventType.String())
 	if err != nil {
@@ -181,27 +179,19 @@ func parseBinlogEventDML(eventType binlogEventType, body []string) (*binlogEvent
 	rowEvent := &binlogEvent{
 		Type: eventType,
 	}
-	for i, block := range groups {
+	for _, block := range groups {
 		if len(block) < eventType.MinBlockLen() {
-			return nil, errors.Errorf("binlog event payload must be at least %d lines, bot got %q", eventType.MinBlockLen(), strings.Join(block, "\n"))
+			return nil, errors.Errorf("binlog event payload must be at least %d lines, but got %q", eventType.MinBlockLen(), strings.Join(block, "\n"))
 		}
-		if i == 0 {
-			matches := regexpDatabaseTable.FindStringSubmatch(block[0])
-			if len(matches) != 3 {
-				return nil, errors.Wrapf(err, "failed to parse database and table names from the binlog event %q with regexp %s", block[0], regexpDatabaseTable.String())
-			}
-			rowEvent.Database = matches[1]
-			rowEvent.Table = matches[2]
-		}
-		beforeValue, afterValue, err := eventType.ParseDMLPayload(block)
+		dataOld, dataNew, err := eventType.ParseDMLPayload(block)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse the DML binlog event payload")
 		}
-		if beforeValue != nil {
-			rowEvent.DataBefore = append(rowEvent.DataBefore, beforeValue)
+		if dataOld != nil {
+			rowEvent.DataOld = append(rowEvent.DataOld, dataOld)
 		}
-		if afterValue != nil {
-			rowEvent.DataAfter = append(rowEvent.DataAfter, afterValue)
+		if dataNew != nil {
+			rowEvent.DataNew = append(rowEvent.DataNew, dataNew)
 		}
 	}
 
@@ -228,7 +218,7 @@ func splitBinlogEventBody(lines []string, prefix string) ([][]string, error) {
 	var group []string
 	for _, line := range lines {
 		if !strings.HasPrefix(line, "### ") {
-			return nil, errors.Errorf("invalid event payload line %q, must starts with \"### \"", line)
+			return nil, errors.Errorf("invalid event payload line %q, must start with \"### \"", line)
 		}
 		// Starts of a new group.
 		if strings.HasPrefix(line, fmt.Sprintf("### %s", prefix)) {

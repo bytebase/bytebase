@@ -45,10 +45,8 @@ func TestParseBinlogEventDelete(t *testing.T) {
 ### WHERE
 ###   @1=1`, "\n"),
 			want: &binlogEvent{
-				Type:       DeleteRowsEvent,
-				Database:   "binlog_test",
-				Table:      "user",
-				DataBefore: [][]string{{"1"}},
+				Type:    DeleteRowsEvent,
+				DataOld: [][]string{{"1"}},
 			},
 			err: false,
 		},
@@ -65,10 +63,8 @@ func TestParseBinlogEventDelete(t *testing.T) {
 ###   @2='bob'
 ###   @3=0`, "\n"),
 			want: &binlogEvent{
-				Type:     DeleteRowsEvent,
-				Database: "binlog_test",
-				Table:    "user",
-				DataBefore: [][]string{
+				Type: DeleteRowsEvent,
+				DataOld: [][]string{
 					{"1", "'alice'", "0"},
 					{"2", "'bob'", "0"},
 				},
@@ -166,14 +162,12 @@ func TestParseBinlogEventUpdate(t *testing.T) {
 ###   @2='bob'
 ###   @3=0`, "\n"),
 			want: &binlogEvent{
-				Type:     UpdateRowsEvent,
-				Database: "binlog_test",
-				Table:    "user",
-				DataBefore: [][]string{
+				Type: UpdateRowsEvent,
+				DataOld: [][]string{
 					{"1", "'alice'", "90"},
 					{"2", "'bob'", "110"},
 				},
-				DataAfter: [][]string{
+				DataNew: [][]string{
 					{"1", "'alice'", "0"},
 					{"2", "'bob'", "0"},
 				},
@@ -234,10 +228,8 @@ func TestParseBinlogEventInsert(t *testing.T) {
 ### SET
 ###   @1=1`, "\n"),
 			want: &binlogEvent{
-				Type:      WriteRowsEvent,
-				Database:  "binlog_test",
-				Table:     "user",
-				DataAfter: [][]string{{"1"}},
+				Type:    WriteRowsEvent,
+				DataNew: [][]string{{"1"}},
 			},
 			err: false,
 		},
@@ -259,10 +251,8 @@ func TestParseBinlogEventInsert(t *testing.T) {
 ###   @2='cindy'
 ###   @3=100`, "\n"),
 			want: &binlogEvent{
-				Type:     WriteRowsEvent,
-				Database: "binlog_test",
-				Table:    "user",
-				DataAfter: [][]string{
+				Type: WriteRowsEvent,
+				DataNew: [][]string{
 					{"1", "'alice'", "100"},
 					{"2", "'bob'", "100"},
 					{"3", "'cindy'", "100"},
@@ -373,10 +363,8 @@ func TestParseBinlogEvent(t *testing.T) {
 ###   @2='alice'
 ###   @3=100`,
 			want: &binlogEvent{
-				Type:      WriteRowsEvent,
-				Database:  "binlog_test",
-				Table:     "user",
-				DataAfter: [][]string{{"1", "'alice'", "100"}},
+				Type:    WriteRowsEvent,
+				DataNew: [][]string{{"1", "'alice'", "100"}},
 			},
 		},
 		{
@@ -393,11 +381,9 @@ func TestParseBinlogEvent(t *testing.T) {
 ###   @2='alice'
 ###   @3=90`,
 			want: &binlogEvent{
-				Type:       UpdateRowsEvent,
-				Database:   "binlog_test",
-				Table:      "user",
-				DataBefore: [][]string{{"1", "'alice'", "100"}},
-				DataAfter:  [][]string{{"1", "'alice'", "90"}},
+				Type:    UpdateRowsEvent,
+				DataOld: [][]string{{"1", "'alice'", "100"}},
+				DataNew: [][]string{{"1", "'alice'", "90"}},
 			},
 		},
 		{
@@ -410,10 +396,8 @@ func TestParseBinlogEvent(t *testing.T) {
 ###   @2='cindy'
 ###   @3=100`,
 			want: &binlogEvent{
-				Type:       DeleteRowsEvent,
-				Database:   "binlog_test",
-				Table:      "user",
-				DataBefore: [][]string{{"3", "'cindy'", "100"}},
+				Type:    DeleteRowsEvent,
+				DataOld: [][]string{{"3", "'cindy'", "100"}},
 			},
 		},
 		{
