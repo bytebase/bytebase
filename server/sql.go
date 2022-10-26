@@ -268,7 +268,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit)
+			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, true /* readOnly */)
 			if err != nil {
 				return nil, err
 			}
@@ -345,6 +345,92 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
 					zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
+				)
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.POST("/sql/execute/admin", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		exec := &api.SQLExecute{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request").SetInternal(err)
+		}
+
+		if exec.InstanceID == 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, missing instanceId")
+		}
+		if len(exec.Statement) == 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, missing sql statement")
+		}
+		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
+		}
+
+		// Admin API always executes with read-only off.
+		exec.Readonly = true
+		start := time.Now().UnixNano()
+
+		bytes, queryErr := func() ([]byte, error) {
+			driver, err := s.getAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
+			if err != nil {
+				return nil, err
+			}
+			defer driver.Close(ctx)
+
+			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, false /* readOnly */)
+			if err != nil {
+				return nil, err
+			}
+
+			return json.Marshal(rowSet)
+		}()
+
+		level := api.ActivityInfo
+		errMessage := ""
+		if queryErr != nil {
+			level = api.ActivityError
+			errMessage = queryErr.Error()
+		}
+		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
+			Statement:    exec.Statement,
+			DurationNs:   time.Now().UnixNano() - start,
+			InstanceName: instance.Name,
+			DatabaseName: exec.DatabaseName,
+			Error:        errMessage,
+		}); err != nil {
+			return err
+		}
+
+		resultSet := &api.SQLResultSet{
+			AdviceList: []advisor.Advice{},
+		}
+		if queryErr == nil {
+			resultSet.Data = string(bytes)
+			log.Debug("Query result advice",
+				zap.String("statement", exec.Statement),
+			)
+		} else {
+			resultSet.Error = queryErr.Error()
+			if s.profile.Mode == common.ReleaseModeDev {
+				log.Error("Failed to execute query",
+					zap.Error(err),
+					zap.String("statement", exec.Statement),
+				)
+			} else {
+				log.Debug("Failed to execute query",
+					zap.Error(err),
+					zap.String("statement", exec.Statement),
 				)
 			}
 		}
