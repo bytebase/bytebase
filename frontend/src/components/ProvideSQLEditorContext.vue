@@ -134,6 +134,7 @@ const prepareSheet = async () => {
         instanceId: sheet.database?.instanceId || UNKNOWN_ID,
         databaseId: sheet.databaseId || UNKNOWN_ID,
       },
+      mode: sheet.payload.tabMode,
     });
   }
 
