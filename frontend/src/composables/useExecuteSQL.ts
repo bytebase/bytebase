@@ -152,8 +152,6 @@ const useExecuteSQL = () => {
         statement,
       });
 
-      // we ignore SQL review advices here
-
       // use `markRaw` to prevent vue from monitoring the object change deeply
       const queryResult = sqlResultSet.data
         ? markRaw(sqlResultSet.data)
