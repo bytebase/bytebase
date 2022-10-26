@@ -226,7 +226,7 @@ func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError)
 	case *tidbast.DropDatabaseStmt:
 		return d.dropDatabase(node)
 	case *tidbast.CreateDatabaseStmt:
-		return NewAccessOtherDatabaseError(d.name, node.Name)
+		return NewAccessOtherDatabaseError(d.name, node.Name.O)
 	case *tidbast.RenameTableStmt:
 		return d.renameTable(node)
 	default:
@@ -297,8 +297,8 @@ func (d *DatabaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
 }
 
 func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroughError {
-	if node.Name != d.name {
-		return NewAccessOtherDatabaseError(d.name, node.Name)
+	if node.Name.O != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name.O)
 	}
 
 	d.deleted = true
@@ -306,8 +306,8 @@ func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroug
 }
 
 func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThroughError {
-	if !node.AlterDefaultDatabase && node.Name != d.name {
-		return NewAccessOtherDatabaseError(d.name, node.Name)
+	if !node.AlterDefaultDatabase && node.Name.O != d.name {
+		return NewAccessOtherDatabaseError(d.name, node.Name.O)
 	}
 
 	for _, option := range node.Options {
