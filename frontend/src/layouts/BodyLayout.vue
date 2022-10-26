@@ -38,10 +38,10 @@
             <router-link
               to="/setting/subscription"
               exact-active-class
-              class="text-sm text-accent flex"
+              class="text-sm flex"
               :class="isFreePlan ? 'text-accent' : ''"
             >
-              <heroicons-solid:sparkles class="w-5 h-5" />
+              <heroicons-solid:sparkles v-if="isFreePlan" class="w-5 h-5" />
               {{ $t(currentPlan) }}
             </router-link>
             <div class="text-sm ml-auto text-control-light tooltip-wrapper">
@@ -88,7 +88,7 @@
             class="text-sm flex whitespace-nowrap mr-1"
             :class="isFreePlan ? 'text-accent' : ''"
           >
-            <heroicons-outline:sparkles class="w-4 h-auto" />
+            <heroicons-outline:sparkles v-if="isFreePlan" class="w-4 h-auto" />
             {{ $t(currentPlan) }}
           </router-link>
           <div
