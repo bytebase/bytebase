@@ -1,4 +1,4 @@
-import { Principal, Sheet } from "@/types";
+import { Principal, Sheet, SheetPayload, TabMode } from "@/types";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
   // readable to
@@ -53,4 +53,10 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
   }
   // visibility === "PUBLIC"
   return false;
+};
+
+export const getDefaultSheetPayload = (): SheetPayload => {
+  return {
+    tabMode: TabMode.ReadOnly,
+  };
 };

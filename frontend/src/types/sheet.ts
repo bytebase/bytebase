@@ -7,6 +7,7 @@ import {
   ProjectId,
   RowStatus,
   PrincipalId,
+  TabMode,
 } from ".";
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
@@ -14,6 +15,10 @@ export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
 export type SheetSource = "BYTEBASE" | "GITLAB_SELF_HOST" | "GITHUB_COM";
 
 export type SheetType = "SQL";
+
+export type SheetPayload = {
+  tabMode: TabMode;
+};
 
 export interface Sheet {
   id: SheetId;
@@ -40,6 +45,7 @@ export interface Sheet {
   type: SheetType;
   starred: boolean;
   pinned: boolean;
+  payload: SheetPayload;
 }
 
 export interface SheetUpsert {
@@ -49,6 +55,7 @@ export interface SheetUpsert {
   name: string;
   statement: string;
   visibility?: SheetVisibility;
+  payload?: SheetPayload;
 }
 
 export interface SheetCreate {
@@ -57,6 +64,7 @@ export interface SheetCreate {
   name: string;
   statement: string;
   visibility: SheetVisibility;
+  payload: SheetPayload;
 }
 
 export interface SheetPatch {
@@ -65,6 +73,7 @@ export interface SheetPatch {
   statement?: string;
   visibility?: SheetVisibility;
   rowStatus?: RowStatus;
+  payload?: SheetPayload;
 }
 
 export interface SheetFind {

@@ -1325,7 +1325,11 @@
     "open-connection": "打开连接",
     "visualize-explain": "可视化 Explain",
     "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。",
-    "rows-upper-limit": "到达查询结果条数上限"
+    "rows-upper-limit": "到达查询结果条数上限",
+    "tab-mode": {
+      "readonly": "只读",
+      "admin": "管理员"
+    }
   },
   "label": {
     "empty-label-value": "<空值>",

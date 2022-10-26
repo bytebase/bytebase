@@ -105,6 +105,9 @@
           </div>
         </section>
       </NPopover>
+
+      <TabModeSelect />
+
       <NButton
         secondary
         strong
@@ -149,6 +152,7 @@ import { UNKNOWN_ID } from "@/types";
 import { instanceSlug } from "@/utils/slug";
 import SharePopover from "./SharePopover.vue";
 import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
+import TabModeSelect from "./TabModeSelect.vue";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
