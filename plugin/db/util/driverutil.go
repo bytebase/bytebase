@@ -425,7 +425,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 }
 
 // query will execute a query.
-func queryAdmin(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
+func queryAdmin(ctx context.Context, sqldb *sql.DB, statement string, _ int) ([]interface{}, error) {
 	rows, err := sqldb.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
