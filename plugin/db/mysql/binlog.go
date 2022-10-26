@@ -23,10 +23,8 @@ const (
 )
 
 var (
-	regexpDeleteRow = regexp.MustCompile("DELETE FROM `(.+)`\\.`(.+)`")
-	regexpUpdateRow = regexp.MustCompile("UPDATE `(.+)`\\.`(.+)`")
-	regexpWriteRow  = regexp.MustCompile("INSERT INTO `(.+)`\\.`(.+)`")
-	regexpThreadID  = regexp.MustCompile(`thread_id=(\d+)`)
+	regexpDatabaseTable = regexp.MustCompile("`(.+)`\\.`(.+)`")
+	regexpThreadID      = regexp.MustCompile(`thread_id=(\d+)`)
 )
 
 func (t binlogEventType) String() string {
@@ -39,19 +37,6 @@ func (t binlogEventType) String() string {
 		return "INSERT"
 	default:
 		return "UNKNOWN"
-	}
-}
-
-func (t binlogEventType) Regexp() *regexp.Regexp {
-	switch t {
-	case DeleteRowsEvent:
-		return regexpDeleteRow
-	case UpdateRowsEvent:
-		return regexpUpdateRow
-	case WriteRowsEvent:
-		return regexpWriteRow
-	default:
-		return nil
 	}
 }
 
@@ -196,19 +181,14 @@ func parseBinlogEventDML(eventType binlogEventType, body []string) (*binlogEvent
 	rowEvent := &binlogEvent{
 		Type: eventType,
 	}
-	re := eventType.Regexp()
-	if re == nil {
-		// Should not reach here.
-		return nil, errors.Errorf("invalid DML binlog event type %s", eventType.String())
-	}
 	for i, block := range groups {
 		if len(block) < eventType.MinBlockLen() {
 			return nil, errors.Errorf("binlog event payload must be at least %d lines, bot got %q", eventType.MinBlockLen(), strings.Join(block, "\n"))
 		}
 		if i == 0 {
-			matches := re.FindStringSubmatch(block[0])
+			matches := regexpDatabaseTable.FindStringSubmatch(block[0])
 			if len(matches) != 3 {
-				return nil, errors.Wrapf(err, "failed to parse database and table names from the binlog event %q with regexp %s", block[0], re.String())
+				return nil, errors.Wrapf(err, "failed to parse database and table names from the binlog event %q with regexp %s", block[0], regexpDatabaseTable.String())
 			}
 			rowEvent.Database = matches[1]
 			rowEvent.Table = matches[2]
