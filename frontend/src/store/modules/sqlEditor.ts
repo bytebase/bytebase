@@ -63,6 +63,19 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
 
       return queryResult;
     },
+    async executeAdminQuery({ statement }: Pick<QueryInfo, "statement">) {
+      const { instanceId, databaseId } = useTabStore().currentTab.connection;
+      const database = useDatabaseStore().getDatabaseById(databaseId);
+      const databaseName = database.id === UNKNOWN_ID ? "" : database.name;
+      const queryResult = await useSQLStore().adminQuery({
+        instanceId,
+        databaseName,
+        statement: statement,
+        limit: RESULT_ROWS_LIMIT,
+      });
+
+      return queryResult;
+    },
     async fetchConnectionByInstanceIdAndDatabaseId(
       instanceId: InstanceId,
       databaseId: DatabaseId

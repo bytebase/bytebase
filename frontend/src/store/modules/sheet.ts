@@ -17,13 +17,31 @@ import {
   SheetOrganizerUpsert,
   ProjectId,
   SheetUpsert,
+  SheetPayload,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { isSheetWritable } from "@/utils";
+import { getDefaultSheetPayload, isSheetWritable } from "@/utils";
+
+function convertSheetPayload(
+  resourceObj: ResourceObject,
+  includedList: ResourceObject[]
+): SheetPayload {
+  const payload = getDefaultSheetPayload();
+  try {
+    const payloadJSON = resourceObj.attributes.payload;
+    if (typeof payloadJSON === "string") {
+      Object.assign(payload, JSON.parse(payloadJSON));
+    }
+  } catch {
+    // nothing
+  }
+
+  return payload;
+}
 
 function convertSheet(
   sheet: ResourceObject,
@@ -46,6 +64,8 @@ function convertSheet(
     }
   }
 
+  const payload = convertSheetPayload(sheet, includedList);
+
   return {
     ...(sheet.attributes as Omit<Sheet, "id" | "creator" | "updater">),
     id: parseInt(sheet.id),
@@ -59,6 +79,7 @@ function convertSheet(
     ) as Principal,
     project,
     database,
+    payload,
   };
 }
 
@@ -135,10 +156,12 @@ export const useSheetStore = defineStore("sheet", {
           id: sheetUpsert.id,
           name: sheetUpsert.name,
           statement: sheetUpsert.statement,
+          payload: sheetUpsert.payload,
         });
       }
 
       return this.createSheet({
+        payload: getDefaultSheetPayload(),
         ...sheetUpsert,
         visibility: "PRIVATE",
       });
@@ -148,11 +171,16 @@ export const useSheetStore = defineStore("sheet", {
         sheetCreate.databaseId = undefined;
       }
 
+      const attributes: Record<string, any> = { ...sheetCreate };
+      if (typeof attributes.payload === "object") {
+        attributes.payload = JSON.stringify(attributes.payload);
+      }
+
       const resData = (
         await axios.post(`/api/sheet`, {
           data: {
             type: "createSheet",
-            attributes: sheetCreate,
+            attributes,
           },
         })
       ).data;
@@ -260,11 +288,16 @@ export const useSheetStore = defineStore("sheet", {
       return this.fetchSheetById(sheetId);
     },
     async patchSheetById(sheetPatch: SheetPatch): Promise<Sheet> {
+      const attributes: Record<string, any> = { ...sheetPatch };
+      if (typeof attributes.payload === "object") {
+        attributes.payload = JSON.stringify(attributes.payload);
+      }
+
       const resData = (
         await axios.patch(`/api/sheet/${sheetPatch.id}`, {
           data: {
             type: "sheetPatch",
-            attributes: sheetPatch,
+            attributes,
           },
         })
       ).data;

@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { v1 as uuidv1 } from "uuid";
 import { t } from "../plugins/i18n";
 import type { Connection, TabInfo } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, TabMode } from "@/types";
 
 export const defaultTabName = computed(() => t("sql-editor.untitled-sheet"));
 
@@ -23,6 +23,7 @@ export const getDefaultTab = (): TabInfo => {
     savedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     statement: "",
     selectedStatement: "",
+    mode: TabMode.ReadOnly,
     isExecutingSQL: false,
   };
 };

@@ -118,5 +118,31 @@ export const useSQLStore = defineStore("sql", {
 
       return resultSet;
     },
+    async adminQuery(queryInfo: QueryInfo): Promise<SQLResultSet> {
+      const res = (
+        await axios.post(
+          `/api/sql/execute/admin`,
+          {
+            data: {
+              type: "sqlExecute",
+              attributes: {
+                ...queryInfo,
+                readonly: true,
+              },
+            },
+          },
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data;
+
+      const resultSet = convert(res.data);
+      if (resultSet.error) {
+        throw new Error(resultSet.error);
+      }
+
+      return resultSet;
+    },
   },
 });
