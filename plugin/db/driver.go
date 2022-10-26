@@ -460,7 +460,7 @@ type Driver interface {
 	Execute(ctx context.Context, statement string) error
 	// Used for execute readonly SELECT statement
 	// limit is the maximum row count returned. No limit enforced if limit <= 0
-	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)
+	Query(ctx context.Context, statement string, limit int, readOnly bool) ([]interface{}, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
