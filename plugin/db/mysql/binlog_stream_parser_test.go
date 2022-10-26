@@ -260,7 +260,7 @@ DELIMITER ;
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
 			want: [][]BinlogEvent{
-				[]BinlogEvent{
+				{
 					{
 						Type:   QueryEvent,
 						Header: "#221017 11:59:35 server id 1  end_log_pos 363 CRC32 0x88a0af23 	Query	thread_id=53771	exec_time=0	error_code=0	Xid = 327575",
@@ -279,7 +279,7 @@ create database binlog_test
 /*!*/;`,
 					},
 				},
-				[]BinlogEvent{
+				{
 					{
 						Type:   QueryEvent,
 						Header: "#221017 14:20:07 server id 1  end_log_pos 611 CRC32 0x7a17ec03 	Query	thread_id=53771	exec_time=0	error_code=0	Xid = 327594",
@@ -290,7 +290,7 @@ create table user (id int primary key, name varchar(20), balance int)
 /*!*/;`,
 					},
 				},
-				[]BinlogEvent{
+				{
 					{
 						Type:   QueryEvent,
 						Header: "#221017 14:25:24 server id 1  end_log_pos 772 CRC32 0x37cb53f6 	Query	thread_id=53771	exec_time=0	error_code=0",
@@ -318,7 +318,7 @@ BEGIN
 ###   @3=100`,
 					},
 				},
-				[]BinlogEvent{
+				{
 					{
 						Type:   QueryEvent,
 						Header: "#221017 14:25:53 server id 1  end_log_pos 1117 CRC32 0x5842528e 	Query	thread_id=53771	exec_time=0	error_code=0",
@@ -353,7 +353,7 @@ BEGIN
 ###   @3=110`,
 					},
 				},
-				[]BinlogEvent{
+				{
 					{
 						Type:   QueryEvent,
 						Header: "#221017 14:31:53 server id 1  end_log_pos 1569 CRC32 0x04ff75ee 	Query	thread_id=53771	exec_time=0	error_code=0",
@@ -371,7 +371,7 @@ BEGIN
 ###   @3=100`,
 					},
 				},
-				[]BinlogEvent{
+				{
 					{
 						Type:   QueryEvent,
 						Header: "#221018 16:21:19 server id 1  end_log_pos 1886 CRC32 0xd95a1592 	Query	thread_id=58599	exec_time=0	error_code=0",
@@ -402,7 +402,7 @@ BEGIN
 ###   @3=0`,
 					},
 				},
-				[]BinlogEvent{
+				{
 					{
 						Type:   QueryEvent,
 						Header: "#221018 16:21:45 server id 1  end_log_pos 2236 CRC32 0x965db1d1 	Query	thread_id=58599	exec_time=0	error_code=0",
