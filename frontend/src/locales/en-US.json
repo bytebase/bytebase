@@ -77,11 +77,6 @@
       "developer": "Developer",
       "member": "Member"
     },
-    "role-switch": {
-      "dba": "Switch to DBA",
-      "owner": "Switch to Owner",
-      "developer": "Switch to Developer"
-    },
     "assignee": "Assignee",
     "revert": "Revert",
     "apply": "Apply",
