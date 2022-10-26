@@ -22,12 +22,62 @@ const (
 	QueryEvent
 )
 
+type binlogEvent struct {
+	Type     binlogEventType
+	DataOld  [][]string
+	DataNew  [][]string
+	ThreadID string
+}
+
 var (
-	regexpDatabaseTable = regexp.MustCompile("`(.+)`\\.`(.+)`")
-	regexpThreadID      = regexp.MustCompile(`thread_id=(\d+)`)
+	regexpThreadID = regexp.MustCompile(`thread_id=(\d+)`)
 )
 
-func (t binlogEventType) String() string {
+func parseBinlogEvent(binlogText string) (*binlogEvent, error) {
+	lines := strings.Split(binlogText, "\n")
+	if len(lines) < 2 {
+		return nil, errors.Errorf("invalid mysqlbinlog dump string: must be at least 2 lines")
+	}
+	if !strings.HasPrefix(lines[0], "# at") {
+		return nil, errors.Errorf("invalid mysqlbinlog dump string: must start with \"# at\"")
+	}
+
+	// The second line must contain the event header information.
+	// E.g., "#221017 14:25:24 server id 1  end_log_pos 916 CRC32 0x896854fc 	Write_rows: table id 259 flags: STMT_END_F"
+	header := lines[1]
+
+	var rowEvent *binlogEvent
+	var err error
+	body := lines[2:]
+	if strings.Contains(header, "Delete_rows") {
+		rowEvent, err = parseBinlogEventDML(DeleteRowsEvent, body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse DELETE event")
+		}
+	} else if strings.Contains(header, "Update_rows") {
+		rowEvent, err = parseBinlogEventDML(UpdateRowsEvent, body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse UPDATE event")
+		}
+	} else if strings.Contains(header, "Write_rows") {
+		rowEvent, err = parseBinlogEventDML(WriteRowsEvent, body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse INSERT event")
+		}
+	} else if strings.Contains(header, "Query") {
+		rowEvent, err = parseBinlogEventQuery(header)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse QUERY event")
+		}
+	} else {
+		// The binlog event type is none of DELETE/UPDATE/INSERT. Skip for now.
+		rowEvent = nil
+	}
+
+	return rowEvent, nil
+}
+
+func (t binlogEventType) string() string {
 	switch t {
 	case DeleteRowsEvent:
 		return "DELETE"
@@ -40,7 +90,7 @@ func (t binlogEventType) String() string {
 	}
 }
 
-func (t binlogEventType) MinBlockLen() int {
+func (t binlogEventType) minBlockLen() int {
 	switch t {
 	case DeleteRowsEvent:
 		return 3
@@ -53,7 +103,7 @@ func (t binlogEventType) MinBlockLen() int {
 	}
 }
 
-func (t binlogEventType) ParseDMLPayload(block []string) (dataOld []string, dataNew []string, err error) {
+func (t binlogEventType) parseDMLPayload(block []string) (dataOld []string, dataNew []string, err error) {
 	block = block[1:]
 	switch t {
 	case DeleteRowsEvent:
@@ -101,59 +151,8 @@ func (t binlogEventType) ParseDMLPayload(block []string) (dataOld []string, data
 		}
 		return nil, set, nil
 	default:
-		return nil, nil, errors.Errorf("invalid DML binlog event type %s", t.String())
+		return nil, nil, errors.Errorf("invalid DML binlog event type %s", t.string())
 	}
-}
-
-type binlogEvent struct {
-	Type     binlogEventType
-	DataOld  [][]string
-	DataNew  [][]string
-	ThreadID string
-}
-
-func parseBinlogEvent(binlogText string) (*binlogEvent, error) {
-	lines := strings.Split(binlogText, "\n")
-	if len(lines) < 2 {
-		return nil, errors.Errorf("invalid mysqlbinlog dump string: must be at least 2 lines")
-	}
-	if !strings.HasPrefix(lines[0], "# at") {
-		return nil, errors.Errorf("invalid mysqlbinlog dump string: must start with \"# at\"")
-	}
-
-	// The second line must contain the event header information.
-	// E.g., "#221017 14:25:24 server id 1  end_log_pos 916 CRC32 0x896854fc 	Write_rows: table id 259 flags: STMT_END_F"
-	header := lines[1]
-
-	var rowEvent *binlogEvent
-	var err error
-	body := lines[2:]
-	if strings.Contains(header, "Delete_rows") {
-		rowEvent, err = parseBinlogEventDML(DeleteRowsEvent, body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse DELETE event")
-		}
-	} else if strings.Contains(header, "Update_rows") {
-		rowEvent, err = parseBinlogEventDML(UpdateRowsEvent, body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse UPDATE event")
-		}
-	} else if strings.Contains(header, "Write_rows") {
-		rowEvent, err = parseBinlogEventDML(WriteRowsEvent, body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse INSERT event")
-		}
-	} else if strings.Contains(header, "Query") {
-		rowEvent, err = parseBinlogEventQuery(header)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse QUERY event")
-		}
-	} else {
-		// The binlog event type is none of DELETE/UPDATE/INSERT. Skip for now.
-		rowEvent = nil
-	}
-
-	return rowEvent, nil
 }
 
 func parseBinlogEventQuery(header string) (*binlogEvent, error) {
@@ -168,22 +167,22 @@ func parseBinlogEventQuery(header string) (*binlogEvent, error) {
 }
 
 func parseBinlogEventDML(eventType binlogEventType, body []string) (*binlogEvent, error) {
-	if len(body) < eventType.MinBlockLen() {
-		return nil, errors.Errorf("invalid %s event body, must be at least %d lines, but got %q", eventType.String(), eventType.MinBlockLen(), strings.Join(body, "\n"))
+	if len(body) < eventType.minBlockLen() {
+		return nil, errors.Errorf("invalid %s event body, must be at least %d lines, but got %q", eventType.string(), eventType.minBlockLen(), strings.Join(body, "\n"))
 	}
-	groups, err := splitBinlogEventBody(body, eventType.String())
+	groups, err := splitBinlogEventBody(body, eventType.string())
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split %s event body", eventType.String())
+		return nil, errors.Wrapf(err, "failed to split %s event body", eventType.string())
 	}
 
 	rowEvent := &binlogEvent{
 		Type: eventType,
 	}
 	for _, block := range groups {
-		if len(block) < eventType.MinBlockLen() {
-			return nil, errors.Errorf("binlog event payload must be at least %d lines, but got %q", eventType.MinBlockLen(), strings.Join(block, "\n"))
+		if len(block) < eventType.minBlockLen() {
+			return nil, errors.Errorf("binlog event payload must be at least %d lines, but got %q", eventType.minBlockLen(), strings.Join(block, "\n"))
 		}
-		dataOld, dataNew, err := eventType.ParseDMLPayload(block)
+		dataOld, dataNew, err := eventType.parseDMLPayload(block)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse the DML binlog event payload")
 		}
