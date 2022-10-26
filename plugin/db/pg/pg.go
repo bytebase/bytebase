@@ -365,8 +365,8 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, db.Postgres, driver.db, statement, limit)
+func (driver *Driver) Query(ctx context.Context, statement string, limit int, readOnly bool) ([]interface{}, error) {
+	return util.Query(ctx, db.Postgres, driver.db, statement, limit, readOnly)
 }
 
 func (driver *Driver) switchDatabase(dbName string) error {
