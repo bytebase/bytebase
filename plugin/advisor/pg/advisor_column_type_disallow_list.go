@@ -138,7 +138,6 @@ func (checker *columnTypeDisallowListChecker) Visit(in ast.Node) ast.Visitor {
 				}
 			}
 		}
-
 	}
 
 	for _, column := range columnList {
