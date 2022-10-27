@@ -32,7 +32,7 @@ func FormatErrorWithQuery(err error, query string) error {
 func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	// TODO(rebelice): use parser/tokenizer to split SQL statements.
 	reader := bufio.NewReader(sc)
-	s := ""
+	var sb strings.Builder
 	delimiter := false
 	comment := false
 	done := false
@@ -67,7 +67,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			}
 			comment = false
 			continue
-		case s == "" && line == "":
+		case sb.Len() == 0 && line == "":
 			continue
 		case strings.HasPrefix(line, "--"):
 			continue
@@ -78,25 +78,29 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			delimiter = false
 			execute = true
 		case strings.HasSuffix(line, ";"):
-			s = s + line + "\n"
+			_, _ = sb.WriteString(line)
+			_, _ = sb.WriteString("\n")
 			if !delimiter {
 				execute = true
 			}
 		default:
-			s = s + line + "\n"
+			_, _ = sb.WriteString(line)
+			_, _ = sb.WriteString("\n")
 			continue
 		}
 		if execute {
+			s := sb.String()
 			s = strings.Trim(s, "\n\t ")
 			if s != "" {
 				if err := f(s); err != nil {
 					return errors.Wrapf(err, "execute query %q failed", s)
 				}
 			}
-			s = ""
+			sb.Reset()
 		}
 	}
 	// Apply the remaining content.
+	s := sb.String()
 	s = strings.Trim(s, "\n\t ")
 	if s != "" {
 		if err := f(s); err != nil {
