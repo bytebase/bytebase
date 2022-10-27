@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func TestRestoreDatabaseEdit(t *testing.T) {
+func TestDeparseDatabaseEdit(t *testing.T) {
 	var defaultValue = "0"
 
 	tests := []struct {
@@ -97,7 +97,7 @@ func TestRestoreDatabaseEdit(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		stmt, err := restoreDatabaseEdit(test.databaseEdit)
+		stmt, err := deparseDatabaseEdit(test.databaseEdit)
 		assert.NoError(t, err)
 		assert.Equal(t, test.want, stmt)
 	}

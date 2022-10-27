@@ -18,7 +18,7 @@ import (
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
-func restoreDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
+func deparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
 	var stmtList []string
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		createTableStmt := transformCreateTableContext(createTableContext)
@@ -116,12 +116,12 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) *ast.Colu
 }
 
 func transformColumnType(typeStr string) *types.FieldType {
-	colType := types.NewFieldType(getColumnFieldType(typeStr))
+	colType := types.NewFieldType(getColumnType(typeStr))
 	return colType
 }
 
 // TODO(steven): Refine the type conversion.
-func getColumnFieldType(typeStr string) byte {
+func getColumnType(typeStr string) byte {
 	switch typeStr {
 	// Maybe it should be a regexp to match like `varchar(%d+)`.
 	case "varchar":
