@@ -41,9 +41,10 @@ type BinlogTransaction []BinlogEvent
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
 func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	reader := bufio.NewReader(stream)
-	prevLineType := unknownLineType
+	// prevLineType := unknownLineType
 	var event BinlogEvent
 	var txns []BinlogTransaction
+	seenEvent := false
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
@@ -53,12 +54,12 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 		switch {
 		case len(line) == 0 && err == io.EOF:
 			// The last line is empty. Skip the state machine.
-		case prevLineType == unknownLineType && !strings.HasPrefix(line, "# at "):
+		case !seenEvent && !strings.HasPrefix(line, "# at "):
 			// Skip the first non-binlog-event lines output of mysqlbinlog.
 			continue
 		case strings.HasPrefix(line, "# at "):
-			prevLineType = posLineType
-		case prevLineType == posLineType:
+			seenEvent = true
+		case strings.Contains(line, "server id"):
 			// Parse the header line.
 			// Examples:
 			// - Query:       #221020 15:45:58 server id 1  end_log_pos 2828 CRC32 0x5445bc77 	Query	thread_id=62592	exec_time=0	error_code=0
@@ -68,19 +69,17 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 			// - Xid:         #221026 15:35:51 server id 1  end_log_pos 1435 CRC32 0x3be8594f 	Xid = 46
 			event.Type = getEventType(line)
 			event.Header = line
-			prevLineType = headerLineType
 			continue
-		case prevLineType == headerLineType || prevLineType == bodyLineType:
+		default:
 			// Accumulate the body.
 			event.Body += line
-			prevLineType = bodyLineType
 			continue
 		}
 
-		if prevLineType == posLineType || err == io.EOF {
+		if event.Type != UnknownEventType {
 			txns = appendBinlogEvent(txns, event)
-			event = BinlogEvent{}
 		}
+		event = BinlogEvent{}
 		if err == io.EOF {
 			break
 		}
@@ -90,9 +89,6 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 }
 
 func appendBinlogEvent(txns []BinlogTransaction, event BinlogEvent) []BinlogTransaction {
-	if event.Type == UnknownEventType {
-		return txns
-	}
 	if len(txns) == 0 {
 		txns = append(txns, BinlogTransaction{event})
 		return txns
@@ -115,25 +111,6 @@ func appendBinlogEvent(txns []BinlogTransaction, event BinlogEvent) []BinlogTran
 
 	return txns
 }
-
-// binlogStreamLineType represents different line types in the process of parsing the binlog text stream.
-type binlogStreamLineType int
-
-const (
-	// unknownLineType is other line types we ignore.
-	// It's always at the beginning of a binlog file.
-	unknownLineType binlogStreamLineType = iota
-	// posLineType is the line containing "# at xxx".
-	// It is always the first line of an event.
-	posLineType
-	// headerLineType contains the metadata of the event.
-	// Example: "#221026 15:35:51 server id 1  end_log_pos 311 CRC32 0x8d4b5a5e 	Query	thread_id=10	exec_time=0	error_code=0".
-	headerLineType
-	// bodyLineType contains the body of the event.
-	// Query events contain valid SQL in the body, such as "BEGIN".
-	// INSERT/UPDATE/DELETE events contain the old (WHERE) and new (SET) data of the data change.
-	bodyLineType
-)
 
 func getEventType(header string) BinlogEventType {
 	if strings.Contains(header, "Query") {
