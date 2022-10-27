@@ -178,7 +178,7 @@ import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { PrincipalPatch } from "../types";
-import { isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { featureToRef, useCurrentUser, usePrincipalStore } from "@/store";
 
 interface LocalState {
@@ -248,7 +248,10 @@ export default defineComponent({
     const allowEdit = computed(() => {
       return (
         currentUser.value.id == principal.value.id ||
-        isOwner(currentUser.value.role)
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-user",
+          currentUser.value.role
+        )
       );
     });
 

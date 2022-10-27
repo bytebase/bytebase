@@ -67,7 +67,8 @@ export interface Plan {
   featureList: PlanFeature[];
 }
 
-// A map from the a particular feature to the respective enablement of a particular plan
+// A map from a particular feature to the respective enablement of a particular plan.
+// The key is the feature type and the value is the [FREE, TEAM, ENTERPRISE] triplet.
 // Make sure this is consistent with the matrix in plan.go
 //
 // TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
