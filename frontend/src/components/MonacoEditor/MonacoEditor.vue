@@ -88,6 +88,9 @@ const initEditorInstance = () => {
     },
     renderLineHighlight: "none",
     codeLens: false,
+    scrollbar: {
+      alwaysConsumeMouseWheel: false,
+    },
   });
 
   // add `Format SQL` action into context menu
