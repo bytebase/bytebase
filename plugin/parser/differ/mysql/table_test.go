@@ -13,14 +13,29 @@ func TestTable(t *testing.T) {
 			new: `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));
 			CREATE TABLE author(id INT, name VARCHAR(255), PRIMARY KEY(id));
 			`,
-			want: "CREATE TABLE IF NOT EXISTS `book` (`id` INT,`price` INT,PRIMARY KEY(`id`));\nCREATE TABLE IF NOT EXISTS `author` (`id` INT,`name` VARCHAR(255),PRIMARY KEY(`id`));\n",
+			want: "" +
+				"CREATE TABLE IF NOT EXISTS `book` (\n" +
+				"  `id` INT,\n" +
+				"  `price` INT,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				");\n" +
+				"CREATE TABLE IF NOT EXISTS `author` (\n" +
+				"  `id` INT,\n" +
+				"  `name` VARCHAR(255),\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				");\n",
 		},
 		{
 			old: `CREATE TABLE author(id INT, name VARCHAR(255), PRIMARY KEY(id))`,
 			new: `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));
 			CREATE TABLE author(id INT, name VARCHAR(255), PRIMARY KEY(id));
 			`,
-			want: "CREATE TABLE IF NOT EXISTS `book` (`id` INT,`price` INT,PRIMARY KEY(`id`));\n",
+			want: "" +
+				"CREATE TABLE IF NOT EXISTS `book` (\n" +
+				"  `id` INT,\n" +
+				"  `price` INT,\n" +
+				"  PRIMARY KEY (`id`)\n" +
+				");\n",
 		},
 		{
 			old: `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));
