@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 const (
@@ -128,6 +130,7 @@ type DatabasePatch struct {
 // DatabaseEdit is the API message for updating a database in UI editor.
 type DatabaseEdit struct {
 	DatabaseID int
+	EngineType db.Type
 
 	CreateTableList []*CreateTableContext
 	AlterTableList  []*AlterTableContext
@@ -136,11 +139,12 @@ type DatabaseEdit struct {
 
 // CreateTableContext is the edit database context to create a table.
 type CreateTableContext struct {
-	Name      string
-	Type      string
-	Engine    string
-	Collation string
-	Comment   string
+	Name         string
+	Type         string
+	Engine       string
+	CharacterSet string
+	Collation    string
+	Comment      string
 
 	AddColumnList []*AddColumnContext
 }
