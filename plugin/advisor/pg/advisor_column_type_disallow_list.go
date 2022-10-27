@@ -17,7 +17,6 @@ func init() {
 type ColumnTypeDisallowListAdvisor struct {
 }
 
-// Check checks for column type restriction.
 func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmtList, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
