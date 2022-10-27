@@ -48,6 +48,7 @@ p, DBA, /database/{id}/table, GET
 p, DBA, /database/{id}/table/{tableName}, GET
 p, DBA, /database/{id}/view, GET
 p, DBA, /database/{id}/extension, GET
+p, DBA, /database/{id}/schema, GET
 p, DBA, /database/{id}/backup, GET
 p, DBA, /database/{id}/backup, POST
 p, DBA, /database/{id}/backup-setting, GET
