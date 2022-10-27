@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -379,6 +380,38 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dbExtensionList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch dbExtension list response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/database/:id/schema", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+		}
+
+		driver, err := tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
+		}
+		defer driver.Close(ctx)
+		var schemaBuf bytes.Buffer
+		if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /*schemaOnly*/); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to dump database schema").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+		if _, err := c.Response().Write(schemaBuf.Bytes()); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
 		}
 		return nil
 	})
