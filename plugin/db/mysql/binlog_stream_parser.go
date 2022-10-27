@@ -104,8 +104,11 @@ func appendBinlogEvent(txns []BinlogTransaction, event BinlogEvent) []BinlogTran
 		// We should replace the existing Query event with the new one.
 		txns[len(txns)-1] = BinlogTransaction{event}
 	} else if len(lastTxn) > 1 && lastTxn[len(lastTxn)-1].Type == XidEventType {
+		// The previous transaction ends with an Xid event, which means it's a complete transaction.
+		// We should append a new transaction.
 		txns = append(txns, BinlogTransaction{event})
 	} else {
+		// The event is a DML event. Append it to the last transaction.
 		lastTxn = append(lastTxn, event)
 		txns[len(txns)-1] = lastTxn
 	}
