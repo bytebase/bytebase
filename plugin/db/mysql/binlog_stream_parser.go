@@ -47,12 +47,10 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	done := false
 	for !done {
 		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				done = true
-			} else {
-				return nil, errors.Wrap(err, "failed to read line from the stream")
-			}
+		if err == io.EOF {
+			done = true
+		} else if err != nil {
+			return nil, errors.Wrap(err, "failed to read line from the stream")
 		}
 
 		// Start of a new binlog event.
