@@ -74,6 +74,7 @@ import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table";
+import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
 
 type Position = {
   x: number;
@@ -212,9 +213,17 @@ const renderPrefix = ({ option }: { option: ConnectionAtom }) => {
   if (option.type === "instance") {
     const instanceId = option.id;
     const instance = instanceStore.getInstanceById(instanceId);
-    return h(InstanceEngineIcon, {
-      instance,
-    });
+    const children = [
+      h(InstanceEngineIcon, {
+        instance,
+      }),
+      h(ProtectedEnvironmentIcon, {
+        environment: instance.environment,
+        class: "w-4 h-4",
+      }),
+    ];
+
+    return h("span", { class: "flex items-center gap-x-1" }, children);
   } else if (option.type === "database") {
     return h(HeroiconsOutlineDatabase, {
       class: "w-4 h-4",
