@@ -23,6 +23,9 @@ const (
 	// QueryEventType is the binlog event for QUERY.
 	// The thread ID is parsed from QUERY events.
 	QueryEventType
+	// XidEventType is the binlog event for Xid.
+	// It is the last event of a transaction.
+	XidEventType
 )
 
 // BinlogEvent contains the raw string of a single binlog event from the mysqlbinlog output stream.
@@ -32,84 +35,98 @@ type BinlogEvent struct {
 	Body   string
 }
 
-// BinlogTransaction is a list of events, starting with Query (BEGIN).
+// BinlogTransaction is a list of events, starting with Query (BEGIN) and ending with Xid (COMMIT).
 type BinlogTransaction []BinlogEvent
 
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
 func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	reader := bufio.NewReader(stream)
 	prevLineType := unknownLineType
-	eventType := UnknownEventType
-	var eventHeader string
-	var bodyBuf strings.Builder
+	var event BinlogEvent
 	var txns []BinlogTransaction
 	var txn BinlogTransaction
-	done := false
-	for !done {
+	for {
 		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			done = true
-		} else if err != nil {
+		if err != nil && err != io.EOF {
 			return nil, errors.Wrap(err, "failed to read line from the stream")
 		}
 
-		// Start of a new binlog event.
-		if strings.HasPrefix(line, "# at ") {
-			if eventType != UnknownEventType {
-				txn = append(txn, BinlogEvent{
-					Type:   eventType,
-					Header: eventHeader,
-					Body:   bodyBuf.String(),
-				})
-			}
-			bodyBuf.Reset()
-			prevLineType = posLineType
+		switch {
+		case len(line) == 0 && err == io.EOF:
+			// The last line is empty. Skip the state machine.
+		case prevLineType == unknownLineType && !strings.HasPrefix(line, "# at "):
+			// Skip the first non-binlog-event lines output of mysqlbinlog.
 			continue
-		}
-
-		// Parse the header line.
-		// Examples:
-		// - Query:       #221020 15:45:58 server id 1  end_log_pos 2828 CRC32 0x5445bc77 	Query	thread_id=62592	exec_time=0	error_code=0
-		// - Write_rows:  #221017 14:25:24 server id 1  end_log_pos 1916 CRC32 0x896854fc 	Write_rows: table id 259 flags: STMT_END_F
-		// - Update_rows: #221018 16:21:19 server id 1  end_log_pos 2044 CRC32 0x9dbbb766 	Update_rows: table id 259 flags: STMT_END_F
-		// - Delete_rows: #221017 14:31:53 server id 1  end_log_pos 1685 CRC32 0x5ea4b2c4 	Delete_rows: table id 259 flags: STMT_END_F
-		if prevLineType == posLineType {
-			eventType = getEventType(line)
-			// Start of a new transaction.
-			if eventType == QueryEventType {
-				if len(txn) > 0 {
-					txns = append(txns, txn)
-					txn = nil
-				}
-			}
-			eventHeader = line
+		case strings.HasPrefix(line, "# at "):
+			prevLineType = posLineType
+		case prevLineType == posLineType:
+			// Parse the header line.
+			// Examples:
+			// - Query:       #221020 15:45:58 server id 1  end_log_pos 2828 CRC32 0x5445bc77 	Query	thread_id=62592	exec_time=0	error_code=0
+			// - Write_rows:  #221017 14:25:24 server id 1  end_log_pos 1916 CRC32 0x896854fc 	Write_rows: table id 259 flags: STMT_END_F
+			// - Update_rows: #221018 16:21:19 server id 1  end_log_pos 2044 CRC32 0x9dbbb766 	Update_rows: table id 259 flags: STMT_END_F
+			// - Delete_rows: #221017 14:31:53 server id 1  end_log_pos 1685 CRC32 0x5ea4b2c4 	Delete_rows: table id 259 flags: STMT_END_F
+			// - Xid:         #221026 15:35:51 server id 1  end_log_pos 1435 CRC32 0x3be8594f 	Xid = 46
+			event.Type = getEventType(line)
+			event.Header = line
 			prevLineType = headerLineType
 			continue
-		}
-
-		// Accumulate the body.
-		if prevLineType == headerLineType || prevLineType == bodyLineType {
-			if _, err := bodyBuf.WriteString(line); err != nil {
-				return nil, errors.Wrapf(err, "failed to write line %q to the bodyBuf", line)
-			}
+		case prevLineType == headerLineType || prevLineType == bodyLineType:
+			// Accumulate the body.
+			event.Body += line
 			prevLineType = bodyLineType
 			continue
 		}
-	}
 
-	// Deal with the last binlog event and transaction.
-	if eventType != UnknownEventType {
-		txn = append(txn, BinlogEvent{
-			Type:   eventType,
-			Header: eventHeader,
-			Body:   bodyBuf.String(),
-		})
-	}
-	if len(txn) > 0 {
-		txns = append(txns, txn)
+		if prevLineType == posLineType || err == io.EOF {
+			txn = appendBinlogEvent(txn, event)
+			if event.Type == XidEventType {
+				txns = append(txns, txn)
+				txn = nil
+			}
+			event = BinlogEvent{}
+		}
+
+		if err == io.EOF {
+			break
+		}
 	}
 
 	return txns, nil
+}
+
+func appendBinlogEvent2(txns []BinlogTransaction, event BinlogEvent) []BinlogTransaction {
+	if event.Type == UnknownEventType {
+		return txns
+	}
+	if len(txns) == 0 {
+		txns = append(txns, BinlogTransaction{event})
+		return txns
+	}
+	lastTxn := txns[len(txns)-1]
+	if len(lastTxn) == 1 && lastTxn[0].Type == QueryEventType && event.Type == QueryEventType {
+		// A Query event without a corresponding Xid event is not a start of a transaction.
+		// We should replace the existing Query event with the new one.
+		lastTxn[0] = event
+	} else {
+		lastTxn = append(lastTxn, event)
+	}
+	txns[len(txns)-1] = lastTxn
+	return txns
+}
+
+func appendBinlogEvent(txn BinlogTransaction, event BinlogEvent) BinlogTransaction {
+	if event.Type == UnknownEventType {
+		return txn
+	}
+	if len(txn) == 1 && txn[0].Type == QueryEventType && event.Type == QueryEventType {
+		// A Query event without a corresponding Xid event is not a start of a transaction.
+		// We should replace the existing Query event with the new one.
+		txn[0] = event
+		return txn
+	}
+	txn = append(txn, event)
+	return txn
 }
 
 // binlogStreamLineType represents different line types in the process of parsing the binlog text stream.
@@ -123,7 +140,7 @@ const (
 	// It is always the first line of an event.
 	posLineType
 	// headerLineType contains the metadata of the event.
-	// Example: #221026 15:35:51 server id 1  end_log_pos 311 CRC32 0x8d4b5a5e 	Query	thread_id=10	exec_time=0	error_code=0
+	// Example: "#221026 15:35:51 server id 1  end_log_pos 311 CRC32 0x8d4b5a5e 	Query	thread_id=10	exec_time=0	error_code=0".
 	headerLineType
 	// bodyLineType contains the body of the event.
 	// Query events contain valid SQL in the body, such as "BEGIN".
@@ -134,6 +151,8 @@ const (
 func getEventType(header string) BinlogEventType {
 	if strings.Contains(header, "Query") {
 		return QueryEventType
+	} else if strings.Contains(header, "Xid") {
+		return XidEventType
 	} else if strings.Contains(header, "Write_rows") {
 		return WriteRowsEventType
 	} else if strings.Contains(header, "Update_rows") {
