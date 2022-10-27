@@ -140,7 +140,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					continue
 				}
 
-				// Compare the column possitions.
+				// Compare the column positions.
 				columnPosition := &ast.ColumnPosition{Tp: ast.ColumnPositionNone}
 				columnPosInOld := oldColumnPositionMap[newColumnName]
 				if hasColumnsIntersection(oldStmt.Cols[:columnPosInOld], newStmt.Cols[idx+1:]) {
