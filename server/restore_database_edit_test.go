@@ -24,9 +24,8 @@ func TestRestoreDatabaseEdit(t *testing.T) {
 				EngineType: db.MySQL,
 				CreateTableList: []*api.CreateTableContext{
 					{
-						Name:   "t1",
-						Type:   "BASE TABLE",
-						Engine: "InnoDB",
+						Name: "t1",
+						Type: "BASE TABLE",
 						AddColumnList: []*api.AddColumnContext{
 							{
 								Name: "id",
@@ -36,7 +35,7 @@ func TestRestoreDatabaseEdit(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n) ENGINE = InnoDB;",
+			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n);",
 		},
 		{
 			name: "create table t1&t2",
