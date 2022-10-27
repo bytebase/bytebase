@@ -44,6 +44,7 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	var event BinlogEvent
 	var txns []BinlogTransaction
 	var txn BinlogTransaction
+	var bodyBuf strings.Builder
 	seenEvent := false
 	for {
 		line, err := reader.ReadString('\n')
@@ -72,11 +73,12 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 			continue
 		default:
 			// Accumulate the body.
-			event.Body += line
+			_, _ = bodyBuf.WriteString(line)
 			continue
 		}
 
 		if event.Type != UnknownEventType {
+			event.Body = bodyBuf.String()
 			if len(txn) == 0 {
 				txn = append(txn, event)
 			} else if event.Type == QueryEventType && txn[0].Type == QueryEventType {
@@ -94,6 +96,7 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 			}
 		}
 		event = BinlogEvent{}
+		bodyBuf.Reset()
 		if err == io.EOF {
 			if len(txn) > 0 {
 				txns = append(txns, txn)
