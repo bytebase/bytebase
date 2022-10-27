@@ -44,7 +44,6 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	prevLineType := unknownLineType
 	var event BinlogEvent
 	var txns []BinlogTransaction
-	var txn BinlogTransaction
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
@@ -79,14 +78,9 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 		}
 
 		if prevLineType == posLineType || err == io.EOF {
-			txn = appendBinlogEvent(txn, event)
-			if event.Type == XidEventType {
-				txns = append(txns, txn)
-				txn = nil
-			}
+			txns = appendBinlogEvent(txns, event)
 			event = BinlogEvent{}
 		}
-
 		if err == io.EOF {
 			break
 		}
@@ -95,7 +89,7 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	return txns, nil
 }
 
-func appendBinlogEvent2(txns []BinlogTransaction, event BinlogEvent) []BinlogTransaction {
+func appendBinlogEvent(txns []BinlogTransaction, event BinlogEvent) []BinlogTransaction {
 	if event.Type == UnknownEventType {
 		return txns
 	}
@@ -103,30 +97,20 @@ func appendBinlogEvent2(txns []BinlogTransaction, event BinlogEvent) []BinlogTra
 		txns = append(txns, BinlogTransaction{event})
 		return txns
 	}
+
 	lastTxn := txns[len(txns)-1]
 	if len(lastTxn) == 1 && lastTxn[0].Type == QueryEventType && event.Type == QueryEventType {
 		// A Query event without a corresponding Xid event is not a start of a transaction.
 		// We should replace the existing Query event with the new one.
-		lastTxn[0] = event
+		txns[len(txns)-1] = BinlogTransaction{event}
+	} else if len(lastTxn) > 1 && lastTxn[len(lastTxn)-1].Type == XidEventType {
+		txns = append(txns, BinlogTransaction{event})
 	} else {
 		lastTxn = append(lastTxn, event)
+		txns[len(txns)-1] = lastTxn
 	}
-	txns[len(txns)-1] = lastTxn
-	return txns
-}
 
-func appendBinlogEvent(txn BinlogTransaction, event BinlogEvent) BinlogTransaction {
-	if event.Type == UnknownEventType {
-		return txn
-	}
-	if len(txn) == 1 && txn[0].Type == QueryEventType && event.Type == QueryEventType {
-		// A Query event without a corresponding Xid event is not a start of a transaction.
-		// We should replace the existing Query event with the new one.
-		txn[0] = event
-		return txn
-	}
-	txn = append(txn, event)
-	return txn
+	return txns
 }
 
 // binlogStreamLineType represents different line types in the process of parsing the binlog text stream.
