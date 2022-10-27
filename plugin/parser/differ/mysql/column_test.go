@@ -255,11 +255,11 @@ func TestColumnOrder(t *testing.T) {
 		// Complicated case.
 		{
 			old: `CREATE TABLE book(c1 INT, c2 INT, c3 INT, c4 INT, c5 INT);`,
-			new: `CREATE TABLE book(c6 INT, c2 INT, c3 INT, c7 INT, c8 INT);`,
+			new: `CREATE TABLE book(c6 INT, c2 INT, c3 INT, c7 INT, c8 INT, c4 INT, c5 INT);`,
 			want: "ALTER TABLE `book` ADD COLUMN `c6` INT FIRST, " + // c6, c1, c2, c3, c4, c5
 				"ADD COLUMN `c7` INT AFTER `c3`, " + // c6, c1, c2, c3, c7, c4, c5
 				"ADD COLUMN `c8` INT AFTER `c7`;\n" + // c6, c1, c2, c3, c7, c8, c4, c5
-				"ALTER TABLE `book` DROP COLUMN `c4`, DROP COLUMN `c5`, DROP COLUMN `c1`;\n", // c6, c2, c3, c7, c8
+				"ALTER TABLE `book` DROP COLUMN `c1`;\n", // c6, c2, c3, c7, c8, c4, c5
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
