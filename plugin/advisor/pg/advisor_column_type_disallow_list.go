@@ -122,7 +122,7 @@ func (checker *columnTypeDisallowListChecker) Visit(in ast.Node) ast.Visitor {
 			case *ast.ChangeColumnStmt:
 				exist := false
 				typeDisallow := ""
-				for tp, _ := range checker.typeRestriction {
+				for tp := range checker.typeRestriction {
 					if exist = cmd.Column.Type.EquivalentType(tp); exist {
 						typeDisallow = tp
 						break
