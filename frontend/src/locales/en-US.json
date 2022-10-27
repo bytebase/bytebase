@@ -1321,7 +1321,7 @@
     "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment.",
     "rows-upper-limit": "reached the limit of query results",
     "tab-mode": {
-      "readonly": "Readonly",
+      "readonly": "Read-only",
       "admin": "Admin"
     }
   },
