@@ -3,14 +3,16 @@
     v-model:value="tabStore.currentTab.mode"
     :options="tabModeOptions"
     :consistent-menu-width="false"
+    :render-label="renderLabel"
     @update:value="onUpdate"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, h } from "vue";
 import { SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import WrenchIcon from "~icons/heroicons-outline/wrench";
 
 import { TabMode } from "@/types";
 import { useCurrentUser, useTabStore } from "@/store";
@@ -37,6 +39,22 @@ const tabModeOptions = computed((): SelectOption[] => {
     },
   ];
 });
+
+const renderLabel = (option: SelectOption) => {
+  if (option.value === TabMode.Admin) {
+    return h(
+      "span",
+      {
+        class: "flex items-center gap-x-1 text-error",
+      },
+      [
+        h(WrenchIcon, { class: "h-4 w-4 " }),
+        h("span", {}, String(option.label)),
+      ]
+    );
+  }
+  return option.label;
+};
 
 const onUpdate = () => {
   tabStore.currentTab.isSaved = false;
