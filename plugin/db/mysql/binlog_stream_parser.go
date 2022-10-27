@@ -41,9 +41,9 @@ type BinlogTransaction []BinlogEvent
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
 func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	reader := bufio.NewReader(stream)
-	// prevLineType := unknownLineType
 	var event BinlogEvent
 	var txns []BinlogTransaction
+	var txn BinlogTransaction
 	seenEvent := false
 	for {
 		line, err := reader.ReadString('\n')
@@ -77,39 +77,32 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 		}
 
 		if event.Type != UnknownEventType {
-			txns = appendBinlogEvent(txns, event)
+			if len(txn) == 0 {
+				txn = append(txn, event)
+			} else if event.Type == QueryEventType && txn[0].Type == QueryEventType {
+				// A Query event without a corresponding Xid event is not a start of a transaction.
+				// We should replace the existing Query event with the new one.
+				txn[0] = event
+			} else if event.Type == XidEventType {
+				// The current transaction ends with an Xid event, which means it's a complete transaction.
+				txn = append(txn, event)
+				txns = append(txns, txn)
+				txn = nil
+			} else {
+				// This is a DML event. Append it to the current transaction.
+				txn = append(txn, event)
+			}
 		}
 		event = BinlogEvent{}
 		if err == io.EOF {
+			if len(txn) > 0 {
+				txns = append(txns, txn)
+			}
 			break
 		}
 	}
 
 	return txns, nil
-}
-
-func appendBinlogEvent(txns []BinlogTransaction, event BinlogEvent) []BinlogTransaction {
-	if len(txns) == 0 {
-		txns = append(txns, BinlogTransaction{event})
-		return txns
-	}
-
-	lastTxn := txns[len(txns)-1]
-	if len(lastTxn) == 1 && lastTxn[0].Type == QueryEventType && event.Type == QueryEventType {
-		// A Query event without a corresponding Xid event is not a start of a transaction.
-		// We should replace the existing Query event with the new one.
-		txns[len(txns)-1] = BinlogTransaction{event}
-	} else if len(lastTxn) > 1 && lastTxn[len(lastTxn)-1].Type == XidEventType {
-		// The previous transaction ends with an Xid event, which means it's a complete transaction.
-		// We should append a new transaction.
-		txns = append(txns, BinlogTransaction{event})
-	} else {
-		// The event is a DML event. Append it to the last transaction.
-		lastTxn = append(lastTxn, event)
-		txns[len(txns)-1] = lastTxn
-	}
-
-	return txns
 }
 
 func getEventType(header string) BinlogEventType {

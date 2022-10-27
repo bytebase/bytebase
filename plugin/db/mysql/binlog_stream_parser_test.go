@@ -260,38 +260,6 @@ DELIMITER ;
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
 			want: []BinlogTransaction{
-				// 				{
-				// 					{
-				// 						Type:   QueryEventType,
-				// 						Header: "#221017 11:59:35 server id 1  end_log_pos 363 CRC32 0x88a0af23 	Query	thread_id=53771	exec_time=0	error_code=0	Xid = 327575\n",
-				// 						Body: `SET TIMESTAMP=1665979175/*!*/;
-				// SET @@session.pseudo_thread_id=53771/*!*/;
-				// SET @@session.foreign_key_checks=1, @@session.sql_auto_is_null=0, @@session.unique_checks=1, @@session.autocommit=1/*!*/;
-				// SET @@session.sql_mode=1168113696/*!*/;
-				// SET @@session.auto_increment_increment=1, @@session.auto_increment_offset=1/*!*/;
-				// /*!\C utf8mb3 *//*!*/;
-				// SET @@session.character_set_client=33,@@session.collation_connection=33,@@session.collation_server=255/*!*/;
-				// SET @@session.lc_time_names=0/*!*/;
-				// SET @@session.collation_database=DEFAULT/*!*/;
-				// /*!80011 SET @@session.default_collation_for_utf8mb4=255*//*!*/;
-				// /*!80016 SET @@session.default_table_encryption=0*//*!*/;
-				// create database binlog_test
-				// /*!*/;
-				// `,
-				// 					},
-				// 				},
-				// 				{
-				// 					{
-				// 						Type:   QueryEventType,
-				// 						Header: "#221017 14:20:07 server id 1  end_log_pos 611 CRC32 0x7a17ec03 	Query	thread_id=53771	exec_time=0	error_code=0	Xid = 327594\n",
-				// 						Body: `use ` + "`binlog_test`" + `/*!*/;
-				// SET TIMESTAMP=1665987607/*!*/;
-				// /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
-				// create table user (id int primary key, name varchar(20), balance int)
-				// /*!*/;
-				// `,
-				// 					},
-				// 				},
 				{
 					{
 						Type:   QueryEventType,
