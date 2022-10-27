@@ -952,7 +952,7 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*a
 }
 
 func restoreDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
-	stmtList := []string{}
+	var stmtList []string
 
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		createTableStmt := transformCreateTableContext(createTableContext, databaseEdit.EngineType)
