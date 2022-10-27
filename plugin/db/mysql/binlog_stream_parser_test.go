@@ -262,7 +262,7 @@ DELIMITER ;
 			want: [][]BinlogEvent{
 				{
 					{
-						Type:   QueryEvent,
+						Type:   QueryEventType,
 						Header: "#221017 11:59:35 server id 1  end_log_pos 363 CRC32 0x88a0af23 	Query	thread_id=53771	exec_time=0	error_code=0	Xid = 327575",
 						Body: `SET TIMESTAMP=1665979175/*!*/;
 SET @@session.pseudo_thread_id=53771/*!*/;
@@ -281,7 +281,7 @@ create database binlog_test
 				},
 				{
 					{
-						Type:   QueryEvent,
+						Type:   QueryEventType,
 						Header: "#221017 14:20:07 server id 1  end_log_pos 611 CRC32 0x7a17ec03 	Query	thread_id=53771	exec_time=0	error_code=0	Xid = 327594",
 						Body: `use ` + "`binlog_test`" + `/*!*/;
 SET TIMESTAMP=1665987607/*!*/;
@@ -292,14 +292,14 @@ create table user (id int primary key, name varchar(20), balance int)
 				},
 				{
 					{
-						Type:   QueryEvent,
+						Type:   QueryEventType,
 						Header: "#221017 14:25:24 server id 1  end_log_pos 772 CRC32 0x37cb53f6 	Query	thread_id=53771	exec_time=0	error_code=0",
 						Body: `SET TIMESTAMP=1665987924/*!*/;
 BEGIN
 /*!*/;`,
 					},
 					{
-						Type:   WriteRowsEvent,
+						Type:   WriteRowsEventType,
 						Header: "#221017 14:25:24 server id 1  end_log_pos 916 CRC32 0x896854fc 	Write_rows: table id 259 flags: STMT_END_F",
 						Body: `### INSERT INTO ` + "`binlog_test`.`user`" + `
 ### SET
@@ -320,14 +320,14 @@ BEGIN
 				},
 				{
 					{
-						Type:   QueryEvent,
+						Type:   QueryEventType,
 						Header: "#221017 14:25:53 server id 1  end_log_pos 1117 CRC32 0x5842528e 	Query	thread_id=53771	exec_time=0	error_code=0",
 						Body: `SET TIMESTAMP=1665987953/*!*/;
 BEGIN
 /*!*/;`,
 					},
 					{
-						Type:   UpdateRowsEvent,
+						Type:   UpdateRowsEventType,
 						Header: "#221017 14:25:53 server id 1  end_log_pos 1249 CRC32 0x3d8fa43e 	Update_rows: table id 259 flags: STMT_END_F",
 						Body: `### UPDATE ` + "`binlog_test`.`user`" + `
 ### WHERE
@@ -340,7 +340,7 @@ BEGIN
 ###   @3=90`,
 					},
 					{
-						Type:   UpdateRowsEvent,
+						Type:   UpdateRowsEventType,
 						Header: "#221017 14:26:08 server id 1  end_log_pos 1377 CRC32 0xd7bb3662 	Update_rows: table id 259 flags: STMT_END_F",
 						Body: `### UPDATE ` + "`binlog_test`.`user`" + `
 ### WHERE
@@ -355,14 +355,14 @@ BEGIN
 				},
 				{
 					{
-						Type:   QueryEvent,
+						Type:   QueryEventType,
 						Header: "#221017 14:31:53 server id 1  end_log_pos 1569 CRC32 0x04ff75ee 	Query	thread_id=53771	exec_time=0	error_code=0",
 						Body: `SET TIMESTAMP=1665988313/*!*/;
 BEGIN
 /*!*/;`,
 					},
 					{
-						Type:   DeleteRowsEvent,
+						Type:   DeleteRowsEventType,
 						Header: "#221017 14:31:53 server id 1  end_log_pos 1685 CRC32 0x5ea4b2c4 	Delete_rows: table id 259 flags: STMT_END_F",
 						Body: `### DELETE FROM ` + "`binlog_test`.`user`" + `
 ### WHERE
@@ -373,14 +373,14 @@ BEGIN
 				},
 				{
 					{
-						Type:   QueryEvent,
+						Type:   QueryEventType,
 						Header: "#221018 16:21:19 server id 1  end_log_pos 1886 CRC32 0xd95a1592 	Query	thread_id=58599	exec_time=0	error_code=0",
 						Body: `SET TIMESTAMP=1666081279/*!*/;
 BEGIN
 /*!*/;`,
 					},
 					{
-						Type:   UpdateRowsEvent,
+						Type:   UpdateRowsEventType,
 						Header: "#221018 16:21:19 server id 1  end_log_pos 2044 CRC32 0x9dbbb766 	Update_rows: table id 259 flags: STMT_END_F",
 						Body: `### UPDATE ` + "`binlog_test`.`user`" + `
 ### WHERE
@@ -404,14 +404,14 @@ BEGIN
 				},
 				{
 					{
-						Type:   QueryEvent,
+						Type:   QueryEventType,
 						Header: "#221018 16:21:45 server id 1  end_log_pos 2236 CRC32 0x965db1d1 	Query	thread_id=58599	exec_time=0	error_code=0",
 						Body: `SET TIMESTAMP=1666081305/*!*/;
 BEGIN
 /*!*/;`,
 					},
 					{
-						Type:   DeleteRowsEvent,
+						Type:   DeleteRowsEventType,
 						Header: "#221018 16:21:45 server id 1  end_log_pos 2365 CRC32 0xf759c90c 	Delete_rows: table id 259 flags: STMT_END_F",
 						Body: `### DELETE FROM ` + "`binlog_test`.`user`" + `
 ### WHERE
