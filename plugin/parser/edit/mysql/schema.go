@@ -86,7 +86,7 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) *ast.Colu
 		Tp:   transformColumnType(addColumnContext.Type),
 	}
 
-	columnOptionList := []*ast.ColumnOption{}
+	var columnOptionList []*ast.ColumnOption
 	if addColumnContext.Comment != "" {
 		columnOptionList = append(columnOptionList, &ast.ColumnOption{
 			Tp:   ast.ColumnOptionComment,
