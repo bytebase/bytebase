@@ -40,6 +40,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  options: {
+    type: Object as PropType<Editor.IStandaloneEditorConstructionOptions>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -88,6 +92,7 @@ const initEditorInstance = () => {
     },
     renderLineHighlight: "none",
     codeLens: false,
+    ...props.options,
   });
 
   // add `Format SQL` action into context menu
