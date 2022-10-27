@@ -155,9 +155,7 @@ func TestValidateDatabaseLabelList(t *testing.T) {
 }
 
 func TestRestoreDatabaseEdit(t *testing.T) {
-	var (
-		defaultValue = "0"
-	)
+	var defaultValue = "0"
 
 	tests := []struct {
 		name         string
