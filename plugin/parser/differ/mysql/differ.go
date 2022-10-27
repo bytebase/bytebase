@@ -1271,9 +1271,9 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 
 // hasColumnsIntersection returns true if two column slices have column name intersaction.
 func hasColumnsIntersection(a, b []*ast.ColumnDef) bool {
-	bMap := make(map[string]struct{})
+	bMap := make(map[string]bool)
 	for _, col := range b {
-		bMap[col.Name.Name.O] = struct{}{}
+		bMap[col.Name.Name.O] = true
 	}
 	for _, col := range a {
 		if _, ok := bMap[col.Name.Name.O]; ok {
