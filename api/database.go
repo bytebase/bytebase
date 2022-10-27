@@ -136,11 +136,12 @@ type DatabaseEdit struct {
 
 // CreateTableContext is the edit database context to create a table.
 type CreateTableContext struct {
-	Name      string
-	Type      string
-	Engine    string
-	Collation string
-	Comment   string
+	Name         string
+	Type         string
+	Engine       string
+	CharacterSet string
+	Collation    string
+	Comment      string
 
 	AddColumnList []*AddColumnContext
 }
