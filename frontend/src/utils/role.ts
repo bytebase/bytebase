@@ -1,12 +1,23 @@
 import { ProjectRoleType, RoleType } from "../types";
 import { hasFeature } from "@/store";
 
-export type WorkspacePermissionType = "bb.permission.workspace.manage-user";
+export type WorkspacePermissionType =
+  | "bb.permission.workspace.manage-user"
+  | "bb.permission.workspace.manage-environment"
+  | "bb.permission.workspace.manage-instance"
+  | "bb.permission.workspace.list-all-project"
+  | "bb.permission.workspace.debug";
 
 // A map from a particular workspace permission to the respective enablement of a particular workspace role.
 // The key is the workspace permission type and the value is the [DEVELOPER, DBA, OWNER] triplet.
 export const WORKSPACE_FEATURE_MATRIX: Map<WorkspacePermissionType, boolean[]> =
-  new Map([["bb.permission.workspace.manage-user", [false, false, true]]]);
+  new Map([
+    ["bb.permission.workspace.manage-user", [false, false, true]],
+    ["bb.permission.workspace.manage-environment", [false, false, true]],
+    ["bb.permission.workspace.manage-instance", [false, true, true]],
+    ["bb.permission.workspace.list-all-project", [false, true, true]],
+    ["bb.permission.workspace.debug", [false, true, true]],
+  ]);
 
 // Returns true if the particular role has the particular permission.
 export function hasWorkspacePermission(
