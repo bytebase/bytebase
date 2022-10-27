@@ -12,17 +12,17 @@ import (
 type BinlogEventType int
 
 const (
-	// DeleteRowsEvent is the binlog event for DELETE.
-	DeleteRowsEvent BinlogEventType = iota
-	// UpdateRowsEvent is the binlog event for UPDATE.
-	UpdateRowsEvent
+	// UnknownEvent represents other types of event that are ignored.
+	UnknownEvent BinlogEventType = iota
 	// WriteRowsEvent is the binlog event for INSERT.
 	WriteRowsEvent
+	// UpdateRowsEvent is the binlog event for UPDATE.
+	UpdateRowsEvent
+	// DeleteRowsEvent is the binlog event for DELETE.
+	DeleteRowsEvent
 	// QueryEvent is the binlog event for QUERY.
 	// The thread ID is parsed from QUERY events.
 	QueryEvent
-	// OtherEvent represents other types of event that are ignored.
-	OtherEvent
 )
 
 // BinlogEvent contains the raw string of a single binlog event from the mysqlbinlog output stream.
@@ -39,7 +39,7 @@ type BinlogTransaction []BinlogEvent
 func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	reader := bufio.NewReader(stream)
 	prevLineType := otherLine
-	eventType := OtherEvent
+	eventType := UnknownEvent
 	var eventHeader string
 	var bodyBuf strings.Builder
 	var txns []BinlogTransaction
@@ -57,7 +57,7 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 
 		// Start of a new binlog event.
 		if strings.HasPrefix(line, "# at ") {
-			if eventType != OtherEvent {
+			if eventType != UnknownEvent {
 				event := BinlogEvent{
 					Type:   eventType,
 					Header: strings.TrimSuffix(eventHeader, "\n"),
@@ -101,7 +101,7 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	}
 
 	// Deal with the last binlog event and transaction.
-	if eventType != OtherEvent {
+	if eventType != UnknownEvent {
 		event := BinlogEvent{
 			Type:   eventType,
 			Header: strings.TrimSuffix(eventHeader, "\n"),
@@ -136,6 +136,6 @@ func getEventType(header string) BinlogEventType {
 		return DeleteRowsEvent
 	} else {
 		// Ignore other events.
-		return OtherEvent
+		return UnknownEvent
 	}
 }
