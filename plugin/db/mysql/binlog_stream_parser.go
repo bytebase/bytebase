@@ -32,16 +32,18 @@ type BinlogEvent struct {
 	Body   string
 }
 
+// BinlogTransaction is a list of events, starting with Query (BEGIN).
+type BinlogTransaction []BinlogEvent
+
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
-// Each transaction is a list of events, starting with Query (BEGIN).
-func ParseBinlogStream(stream io.Reader) ([][]BinlogEvent, error) {
+func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	reader := bufio.NewReader(stream)
 	prevLineType := otherLine
 	eventType := OtherEvent
 	var eventHeader string
 	var bodyBuf strings.Builder
-	var txns [][]BinlogEvent
-	var txn []BinlogEvent
+	var txns []BinlogTransaction
+	var txn BinlogTransaction
 	done := false
 	for !done {
 		line, err := reader.ReadString('\n')
