@@ -122,22 +122,41 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			var alterTableInplaceDropConstraintSpecs []*ast.AlterTableSpec
 
 			oldColumnMap := buildColumnMap(oldNodes, newStmt.Table.Name)
-			for _, columnDef := range newStmt.Cols {
+			oldColumnPositionMap := buildColumnPositionMap(oldStmt)
+			for idx, columnDef := range newStmt.Cols {
 				newColumnName := columnDef.Name.Name.O
 				oldColumnDef, ok := oldColumnMap[newColumnName]
 				if !ok {
+					columnPosition := &ast.ColumnPosition{Tp: ast.ColumnPositionFirst}
+					if idx >= 1 {
+						columnPosition.Tp = ast.ColumnPositionAfter
+						columnPosition.RelativeColumn = &ast.ColumnName{Name: model.NewCIStr(newStmt.Cols[idx-1].Name.Name.O)}
+					}
 					alterTableAddColumnSpecs = append(alterTableAddColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableAddColumns,
 						NewColumns: []*ast.ColumnDef{columnDef},
+						Position:   columnPosition,
 					})
 					continue
 				}
-				// Compare the two column definitions.
-				if !isColumnEqual(oldColumnDef, columnDef) {
+
+				// Compare the column positions.
+				columnPosition := &ast.ColumnPosition{Tp: ast.ColumnPositionNone}
+				columnPosInOld := oldColumnPositionMap[newColumnName]
+				if hasColumnsIntersection(oldStmt.Cols[:columnPosInOld], newStmt.Cols[idx+1:]) {
+					if idx == 0 {
+						columnPosition.Tp = ast.ColumnPositionFirst
+					} else {
+						columnPosition.Tp = ast.ColumnPositionAfter
+						columnPosition.RelativeColumn = &ast.ColumnName{Name: model.NewCIStr(newStmt.Cols[idx-1].Name.Name.O)}
+					}
+				}
+				// Compare the column definitions.
+				if !isColumnEqual(oldColumnDef, columnDef) || columnPosition.Tp != ast.ColumnPositionNone {
 					alterTableModifyColumnSpecs = append(alterTableModifyColumnSpecs, &ast.AlterTableSpec{
 						Tp:         ast.AlterTableModifyColumn,
 						NewColumns: []*ast.ColumnDef{columnDef},
-						Position:   &ast.ColumnPosition{Tp: ast.ColumnPositionNone},
+						Position:   columnPosition,
 					})
 				}
 				delete(oldColumnMap, newColumnName)
@@ -654,6 +673,15 @@ func buildColumnMap(nodes []ast.StmtNode, tableName model.CIStr) map[string]*ast
 		}
 	}
 	return oldColumnMap
+}
+
+// buildColumnPositionMap returns a map of column name to column position.
+func buildColumnPositionMap(stmt *ast.CreateTableStmt) map[string]int {
+	m := make(map[string]int)
+	for i, col := range stmt.Cols {
+		m[col.Name.Name.O] = i
+	}
+	return m
 }
 
 // buildIndexMap build a map of index name to constraint on given table name.
@@ -1239,4 +1267,18 @@ func buildTableOptionMap(options []*ast.TableOption) map[ast.TableOptionType]*as
 		m[option.Tp] = option
 	}
 	return m
+}
+
+// hasColumnsIntersection returns true if two column slices have column name intersaction.
+func hasColumnsIntersection(a, b []*ast.ColumnDef) bool {
+	bMap := make(map[string]bool)
+	for _, col := range b {
+		bMap[col.Name.Name.O] = true
+	}
+	for _, col := range a {
+		if _, ok := bMap[col.Name.Name.O]; ok {
+			return true
+		}
+	}
+	return false
 }
