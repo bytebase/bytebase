@@ -1,4 +1,5 @@
-package server
+// Package mysql provides the MySQL schema edit plugin.
+package mysql
 
 import (
 	"bytes"
@@ -12,15 +13,16 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func restoreDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
 	var stmtList []string
-
 	for _, createTableContext := range databaseEdit.CreateTableList {
-		createTableStmt := transformCreateTableContext(createTableContext, databaseEdit.EngineType)
-		stmt, err := restoreASTNode(createTableStmt)
+		createTableStmt := transformCreateTableContext(createTableContext)
+		stmt, err := deparseASTNode(createTableStmt)
 		if err != nil {
 			return "", err
 		}
@@ -30,7 +32,7 @@ func restoreDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
 	return strings.Join(stmtList, "\n"), nil
 }
 
-func transformCreateTableContext(createTableContext *api.CreateTableContext, engineType db.Type) *ast.CreateTableStmt {
+func transformCreateTableContext(createTableContext *api.CreateTableContext) *ast.CreateTableStmt {
 	tableName := &ast.TableName{
 		Name: model.NewCIStr(createTableContext.Name),
 	}
@@ -67,7 +69,7 @@ func transformCreateTableContext(createTableContext *api.CreateTableContext, eng
 
 	var columnDefs []*ast.ColumnDef
 	for _, addColumnContext := range createTableContext.AddColumnList {
-		columnDef := transformAddColumnContext(addColumnContext, engineType)
+		columnDef := transformAddColumnContext(addColumnContext)
 		columnDefs = append(columnDefs, columnDef)
 	}
 	createTableStmt.Cols = columnDefs
@@ -75,23 +77,16 @@ func transformCreateTableContext(createTableContext *api.CreateTableContext, eng
 	return createTableStmt
 }
 
-func transformAddColumnContext(addColumnContext *api.AddColumnContext, engineType db.Type) *ast.ColumnDef {
+func transformAddColumnContext(addColumnContext *api.AddColumnContext) *ast.ColumnDef {
 	colName := &ast.ColumnName{
 		Name: model.NewCIStr(addColumnContext.Name),
 	}
 	columnDef := &ast.ColumnDef{
 		Name: colName,
+		Tp:   transformColumnType(addColumnContext.Type),
 	}
 
-	var colType *types.FieldType
-	if engineType == db.MySQL {
-		colType = types.NewFieldType(transformColumnTypeForMySQL(addColumnContext.Type))
-	} else {
-		types.DefaultTypeForValue(interface{}(addColumnContext.Type), colType, addColumnContext.CharacterSet, addColumnContext.Collation)
-	}
-	columnDef.Tp = colType
-
-	var columnOptionList []*ast.ColumnOption
+	columnOptionList := []*ast.ColumnOption{}
 	if addColumnContext.Comment != "" {
 		columnOptionList = append(columnOptionList, &ast.ColumnOption{
 			Tp:   ast.ColumnOptionComment,
@@ -120,7 +115,13 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext, engineTyp
 	return columnDef
 }
 
-func transformColumnTypeForMySQL(typeStr string) byte {
+func transformColumnType(typeStr string) *types.FieldType {
+	colType := types.NewFieldType(getColumnFieldType(typeStr))
+	return colType
+}
+
+// TODO(steven): Refine the type conversion.
+func getColumnFieldType(typeStr string) byte {
 	switch typeStr {
 	// Maybe it should be a regexp to match like `varchar(%d+)`.
 	case "varchar":
@@ -136,7 +137,7 @@ func transformColumnTypeForMySQL(typeStr string) byte {
 	return mysql.TypeUnspecified
 }
 
-func restoreASTNode(node ast.Node) (string, error) {
+func deparseASTNode(node ast.Node) (string, error) {
 	var buf bytes.Buffer
 	restoreFlag := format.DefaultRestoreFlags | format.RestorePrettyFormat
 	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {

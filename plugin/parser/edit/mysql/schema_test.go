@@ -1,4 +1,4 @@
-package server
+package mysql
 
 import (
 	"testing"
@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 func TestRestoreDatabaseEdit(t *testing.T) {
@@ -21,7 +20,6 @@ func TestRestoreDatabaseEdit(t *testing.T) {
 			name: "create table t1",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
-				EngineType: db.MySQL,
 				CreateTableList: []*api.CreateTableContext{
 					{
 						Name: "t1",
@@ -41,7 +39,6 @@ func TestRestoreDatabaseEdit(t *testing.T) {
 			name: "create table t1&t2",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
-				EngineType: db.MySQL,
 				CreateTableList: []*api.CreateTableContext{
 					{
 						Name:   "t1",
@@ -73,7 +70,6 @@ func TestRestoreDatabaseEdit(t *testing.T) {
 			name: "create table t1 with name",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
-				EngineType: db.MySQL,
 				CreateTableList: []*api.CreateTableContext{
 					{
 						Name:   "t1",
@@ -83,9 +79,9 @@ func TestRestoreDatabaseEdit(t *testing.T) {
 							{
 								Name:     "id",
 								Type:     "int",
+								Comment:  "ID",
 								Default:  &defaultValue,
 								Nullable: true,
-								Comment:  "ID",
 							},
 							{
 								Name:    "name",
