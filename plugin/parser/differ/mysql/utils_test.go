@@ -11,7 +11,7 @@ func TestTrigger(t *testing.T) {
 				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = @sum + NEW.amount;",
 			new: `CREATE TABLE account(acct_num INT, amount DECIMAL(10,2), price INT);` +
 				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;",
-			want: "ALTER TABLE `account` ADD COLUMN (`price` INT);\n" +
+			want: "ALTER TABLE `account` ADD COLUMN `price` INT AFTER `amount`;\n" +
 				"DROP TRIGGER IF EXISTS `ins_sum`;\n" +
 				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;\n",
 		},
