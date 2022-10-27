@@ -12,12 +12,12 @@ func TestColumnExist(t *testing.T) {
 		{
 			old:  `CREATE TABLE book(id INT, PRIMARY KEY(id));`,
 			new:  `CREATE TABLE book(id INT, price INT, PRIMARY KEY(id));`,
-			want: "ALTER TABLE `book` ADD COLUMN (`price` INT);\n",
+			want: "ALTER TABLE `book` ADD COLUMN `price` INT AFTER `id`;\n",
 		},
 		{
 			old:  `CREATE TABLE book(id INT, PRIMARY KEY(id))`,
 			new:  `CREATE TABLE book(id INT, price INT, code VARCHAR(50), PRIMARY KEY(id));`,
-			want: "ALTER TABLE `book` ADD COLUMN (`price` INT), ADD COLUMN (`code` VARCHAR(50));\n",
+			want: "ALTER TABLE `book` ADD COLUMN `price` INT AFTER `id`, ADD COLUMN `code` VARCHAR(50) AFTER `price`;\n",
 		},
 		{
 			old:  ``,
@@ -221,6 +221,45 @@ func TestColumnCollate(t *testing.T) {
 			old:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Holmes' NOT NULL);`,
 			new:  `CREATE TABLE book(name VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Holmes' NOT NULL);`,
 			want: "",
+		},
+	}
+	testDiffWithoutDisableForeignKeyCheck(t, tests)
+}
+
+func TestColumnOrder(t *testing.T) {
+	tests := []testCase{
+		// Append the column to the end of the table.
+		{
+			old:  `CREATE TABLE book(id INT PRIMARY KEY);`,
+			new:  `CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(50) NOT NULL, author VARCHAR(50) NOT NULL);`,
+			want: "ALTER TABLE `book` ADD COLUMN `name` VARCHAR(50) NOT NULL AFTER `id`, ADD COLUMN `author` VARCHAR(50) NOT NULL AFTER `name`;\n",
+		},
+		// Add the column at the beginning of the table.
+		{
+			old:  `CREATE TABLE book(author VARCHAR(50) NOT NULL);`,
+			new:  `CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(50) NOT NULL, author VARCHAR(50) NOT NULL);`,
+			want: "ALTER TABLE `book` ADD COLUMN `id` INT PRIMARY KEY FIRST, ADD COLUMN `name` VARCHAR(50) NOT NULL AFTER `id`;\n",
+		},
+		// Add the column in the middle of the table.
+		{
+			old:  `CREATE TABLE book(id INT PRIMARY KEY, author VARCHAR(50) NOT NULL);`,
+			new:  `CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(50) NOT NULL, author VARCHAR(50) NOT NULL);`,
+			want: "ALTER TABLE `book` ADD COLUMN `name` VARCHAR(50) NOT NULL AFTER `id`;\n",
+		},
+		// Modify the existing column order.
+		{
+			old:  `CREATE TABLE book(author VARCHAR(50) NOT NULL, id INT PRIMARY KEY, name VARCHAR(50) NOT NULL);`,
+			new:  `CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(50) NOT NULL, author VARCHAR(50) NOT NULL);`,
+			want: "ALTER TABLE `book` MODIFY COLUMN `id` INT PRIMARY KEY FIRST, MODIFY COLUMN `name` VARCHAR(50) NOT NULL AFTER `id`;\n",
+		},
+		// Complicated case.
+		{
+			old: `CREATE TABLE book(c1 INT, c2 INT, c3 INT, c4 INT, c5 INT);`,
+			new: `CREATE TABLE book(c6 INT, c2 INT, c3 INT, c7 INT, c8 INT, c4 INT, c5 INT);`,
+			want: "ALTER TABLE `book` ADD COLUMN `c6` INT FIRST, " + // c6, c1, c2, c3, c4, c5
+				"ADD COLUMN `c7` INT AFTER `c3`, " + // c6, c1, c2, c3, c7, c4, c5
+				"ADD COLUMN `c8` INT AFTER `c7`;\n" + // c6, c1, c2, c3, c7, c8, c4, c5
+				"ALTER TABLE `book` DROP COLUMN `c1`;\n", // c6, c2, c3, c7, c8, c4, c5
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
