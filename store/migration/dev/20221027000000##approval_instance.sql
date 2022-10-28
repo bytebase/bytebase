@@ -9,3 +9,5 @@ CREATE TABLE approval_instance (
     type TEXT NOT NULL CHECK (type LIKE 'bb.application.%'),
     payload JSONB NOT NULL
 );
+
+CREATE INDEX idx_approval_instance_issue_id ON approval_instance(issue_id); 
