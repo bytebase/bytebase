@@ -244,10 +244,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create linked repository request").SetInternal(err)
 		}
 
-		if strings.Contains(repositoryCreate.BranchFilter, "*") {
-			return echo.NewHTTPError(http.StatusBadRequest, "Wildcard isn't supported for branch setting")
-		}
-
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
 		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
@@ -430,9 +426,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repoPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch linked repository request").SetInternal(err)
-		}
-		if repoPatch.BranchFilter != nil && strings.Contains(*repoPatch.BranchFilter, "*") {
-			return echo.NewHTTPError(http.StatusBadRequest, "Wildcard isn't supported for branch setting")
 		}
 
 		project, err := s.store.GetProjectByID(ctx, projectID)
