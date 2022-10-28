@@ -593,11 +593,13 @@ func TestVCS(t *testing.T) {
 					Schema:     history.Schema,
 					SchemaPrev: history.SchemaPrev,
 				}
-				a.Equal(wantHistories[i], got)
+				a.Equalf(wantHistories[i], got, "got histories %v", histories)
 				a.NotEmpty(history.Version)
 			}
 			a.Equal("ver4", histories[0].Version)
 			a.Equal("ver3", histories[1].Version)
+			a.Equal("ver2", histories[2].Version)
+			a.Equal("ver1", histories[3].Version)
 		})
 	}
 }
