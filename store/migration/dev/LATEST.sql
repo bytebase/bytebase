@@ -1146,7 +1146,7 @@ CREATE TABLE approval_instance (
 
 CREATE INDEX idx_approval_instance_issue_id ON approval_instance(issue_id); 
 
-ALTER SEQUENCE approval_instance_seq RESTART WITH 101;
+ALTER SEQUENCE approval_instance_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_sheet_updated_ts
 BEFORE
