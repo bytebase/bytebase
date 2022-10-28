@@ -187,7 +187,7 @@ func (e *BinlogEvent) parseDMLBlock(block []string) (dataOld []string, dataNew [
 		return where, set, nil
 	case WriteRowsEventType:
 		// Example block:
-		// ## INSERT INTO `database`.`table`
+		// ### INSERT INTO `database`.`table`
 		// ### SET
 		// ###   @1=x
 		//       ...
