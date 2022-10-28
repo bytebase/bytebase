@@ -13,7 +13,7 @@ import {
   activeStage,
   allTaskList,
   applicableTaskTransition,
-  isDBAOrOwner,
+  hasWorkspacePermission,
   isOwnerOfProject,
   StageStatusTransition,
   TaskStatusTransition,
@@ -40,7 +40,12 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
 
     // Applying task transition is decoupled with the issue's Assignee.
     // But relative to the task's environment's approval policy.
-    if (isDBAOrOwner(currentUser.value.role)) {
+    if (
+      hasWorkspacePermission(
+        "bb.permission.workspace.manage-issue",
+        currentUser.value.role
+      )
+    ) {
       return true;
     }
     if (
@@ -63,11 +68,14 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
 
     const issueEntity = issue as Issue;
     const list: IssueStatusTransitionType[] = [];
-    // Allow assignee, or assignee is the system bot and current user is DBA or owner
+    // Allow assignee, or assignee is the system bot and current user can manage issue
     if (
       currentUser.value.id === issueEntity.assignee?.id ||
       (issueEntity.assignee?.id == SYSTEM_BOT_ID &&
-        isDBAOrOwner(currentUser.value.role))
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-issue",
+          currentUser.value.role
+        ))
     ) {
       list.push(...ASSIGNEE_APPLICABLE_ACTION_LIST.get(issueEntity.status)!);
     }

@@ -303,8 +303,8 @@ import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
-  isDBAOrOwner,
   connectionSlug,
+  hasWorkspacePermission,
   hidePrefix,
   allowGhostMigration,
   isPITRDatabase,
@@ -382,20 +382,21 @@ const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
 });
 
-const isCurrentUserDBAOrOwner = computed((): boolean => {
-  return isDBAOrOwner(currentUser.value.role);
-});
-
 // Project can be transferred if meets either of the condition below:
 // - Database is in default project
-// - Workspace owner, dba
+// - Can manage project
 // - db's project owner
 const allowChangeProject = computed(() => {
   if (database.value.project.id == DEFAULT_PROJECT_ID) {
     return true;
   }
 
-  if (isCurrentUserDBAOrOwner.value) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-project",
+      currentUser.value.role
+    )
+  ) {
     return true;
   }
 
@@ -409,14 +410,19 @@ const allowChangeProject = computed(() => {
 });
 
 // Database can be admined if meets either of the condition below:
-// - Workspace owner, dba
+// - Can manage instance
 // - db's project owner
 //
 // The admin operation includes
 // - Transfer project
 // - Enable/disable backup
 const allowAdmin = computed(() => {
-  if (isCurrentUserDBAOrOwner.value) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
+  ) {
     return true;
   }
 
@@ -429,13 +435,18 @@ const allowAdmin = computed(() => {
 });
 
 // Database can be edited if meets either of the condition below:
-// - Workspace owner, dba
+// - Can manage instance
 // - db's project member
 //
 // The edit operation includes
 // - Take manual backup
 const allowEdit = computed(() => {
-  if (isCurrentUserDBAOrOwner.value) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
+  ) {
     return true;
   }
 

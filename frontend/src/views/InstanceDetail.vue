@@ -140,7 +140,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { idFromSlug, isDBAOrOwner } from "../utils";
+import { idFromSlug, hasWorkspacePermission } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
@@ -235,7 +235,10 @@ const attentionText = computed((): string => {
       t(
         "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
       ) +
-      (isDBAOrOwner(currentUser.value.role)
+      (hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      )
         ? ""
         : " " + t("instance.please-contact-your-dba-to-configure-it"))
     );
@@ -244,7 +247,10 @@ const attentionText = computed((): string => {
       t(
         "instance.bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance"
       ) +
-      (isDBAOrOwner(currentUser.value.role)
+      (hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      )
         ? " " +
           t("instance.please-check-the-instance-connection-info-is-correct")
         : " " + t("instance.please-contact-your-dba-to-configure-it"))
@@ -254,7 +260,12 @@ const attentionText = computed((): string => {
 });
 
 const attentionActionText = computed((): string => {
-  if (isDBAOrOwner(currentUser.value.role)) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
+  ) {
     if (state.migrationSetupStatus == "NOT_EXIST") {
       return t("instance.create-migration-schema");
     } else if (state.migrationSetupStatus == "UNKNOWN") {
@@ -271,7 +282,12 @@ const databaseList = computed(() => {
     instance.value.id
   );
 
-  if (isDBAOrOwner(currentUser.value.role)) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
+  ) {
     return list;
   }
 
@@ -297,12 +313,19 @@ const instanceUserList = computed(() => {
 
 const allowEdit = computed(() => {
   return (
-    instance.value.rowStatus == "NORMAL" && isDBAOrOwner(currentUser.value.role)
+    instance.value.rowStatus == "NORMAL" &&
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
   );
 });
 
 const allowArchiveOrRestore = computed(() => {
-  return isDBAOrOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-instance",
+    currentUser.value.role
+  );
 });
 
 const tabItemList = computed((): BBTabFilterItem[] => {
