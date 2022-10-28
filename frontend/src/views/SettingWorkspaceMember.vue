@@ -79,7 +79,7 @@ export default defineComponent({
       // If current user has manage user permission, MemberAddOrInvite is in Add mode.
       // Otherwise, MemberAddOrInvite is in Invite mode.
       return hasWorkspacePermission(
-        "bb.permission.workspace.manage-user",
+        "bb.permission.workspace.manage-member",
         currentUser.value.role
       );
     });
@@ -88,7 +88,7 @@ export default defineComponent({
       return (
         !hasRBACFeature.value &&
         hasWorkspacePermission(
-          "bb.permission.workspace.manage-workspace",
+          "bb.permission.workspace.manage-general",
           currentUser.value.role
         )
       );

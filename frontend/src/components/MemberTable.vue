@@ -222,7 +222,7 @@ export default defineComponent({
 
     const allowEdit = computed(() => {
       return hasWorkspacePermission(
-        "bb.permission.workspace.manage-user",
+        "bb.permission.workspace.manage-member",
         currentUser.value.role
       );
     });

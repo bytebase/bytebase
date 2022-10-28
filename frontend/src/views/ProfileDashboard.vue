@@ -249,7 +249,7 @@ export default defineComponent({
       return (
         currentUser.value.id == principal.value.id ||
         hasWorkspacePermission(
-          "bb.permission.workspace.manage-user",
+          "bb.permission.workspace.manage-member",
           currentUser.value.role
         )
       );

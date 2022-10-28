@@ -170,7 +170,7 @@ import {
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
-import { hasWorkspacePermission, isProjectOwner } from "../utils";
+import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -245,7 +245,12 @@ export default defineComponent({
           // only member with the same role provider as that of the project will be consider a valid member
           member.roleProvider === props.project.roleProvider
         ) {
-          if (isProjectOwner(member.role)) {
+          if (
+            hasProjectPermission(
+              "bb.permission.project.manage-member",
+              member.role
+            )
+          ) {
             return true;
           }
         }
