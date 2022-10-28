@@ -17,8 +17,13 @@
         :to="`/u/${currentUser.id}`"
         role="menuitem"
       >
-        <p class="text-sm text-main font-medium">
-          {{ currentUser.name }}
+        <p class="text-sm flex justify-between">
+          <span class="text-main font-medium truncate">
+            {{ currentUser.name }}
+          </span>
+          <span class="text-control">
+            {{ $t(`common.role.${currentUser.role.toLowerCase()}`) }}
+          </span>
         </p>
         <p class="text-sm text-control truncate">
           {{ currentUser.email }}

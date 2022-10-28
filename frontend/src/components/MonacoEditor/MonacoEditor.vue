@@ -92,6 +92,9 @@ const initEditorInstance = () => {
     },
     renderLineHighlight: "none",
     codeLens: false,
+    scrollbar: {
+      alwaysConsumeMouseWheel: false,
+    },
     ...props.options,
   });
 

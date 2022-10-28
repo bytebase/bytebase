@@ -1,6 +1,28 @@
 import { ProjectRoleType, RoleType } from "../types";
 import { hasFeature } from "@/store";
 
+export type WorkspacePermissionType = "bb.permission.workspace.manage-user";
+
+// A map from a particular workspace permission to the respective enablement of a particular workspace role.
+// The key is the workspace permission type and the value is the [DEVELOPER, DBA, OWNER] triplet.
+export const WORKSPACE_FEATURE_MATRIX: Map<WorkspacePermissionType, boolean[]> =
+  new Map([["bb.permission.workspace.manage-user", [false, false, true]]]);
+
+// Returns true if the particular role has the particular permission.
+export function hasWorkspacePermission(
+  permission: WorkspacePermissionType,
+  role: RoleType
+): boolean {
+  switch (role) {
+    case "DEVELOPER":
+      return WORKSPACE_FEATURE_MATRIX.get(permission)![0];
+    case "DBA":
+      return WORKSPACE_FEATURE_MATRIX.get(permission)![1];
+    case "OWNER":
+      return WORKSPACE_FEATURE_MATRIX.get(permission)![2];
+  }
+}
+
 // Returns true if admin feature is NOT supported or the principal is OWNER
 export function isOwner(role: RoleType): boolean {
   return !hasFeature("bb.feature.rbac") || role == "OWNER";
