@@ -1130,3 +1130,16 @@ CREATE TABLE sheet_organizer (
 CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON sheet_organizer(sheet_id, principal_id);
 
 CREATE INDEX idx_sheet_organizer_principal_id ON sheet_organizer(principal_id);
+
+-- approval_instance stores plugin application approval instances.
+CREATE TABLE approval_instance ( 
+    id SERIAL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    issue_id INTEGER NOT NULL REFERENCES issue (id),
+    requester_id INTEGER NOT NULL REFERENCES principal (id),
+    approver_id INTEGER NOT NULL REFERENCES principal (id),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.application.%'),
+    payload JSONB NOT NULL
+);
