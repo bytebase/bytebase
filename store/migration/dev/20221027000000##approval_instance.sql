@@ -1,3 +1,4 @@
+-- approval_instance stores approval instances of third party applications.
 CREATE TABLE approval_instance ( 
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',

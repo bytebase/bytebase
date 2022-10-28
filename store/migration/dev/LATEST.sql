@@ -1131,7 +1131,7 @@ CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON sheet_or
 
 CREATE INDEX idx_sheet_organizer_principal_id ON sheet_organizer(principal_id);
 
--- approval_instance stores plugin application approval instances.
+-- approval_instance stores approval instances of third party applications.
 CREATE TABLE approval_instance ( 
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
