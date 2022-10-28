@@ -33,6 +33,7 @@ type projectMemberRaw struct {
 	Payload      string
 }
 
+// Project members are used widely. We need to cache them to optimize query latency.
 var projectMemberCache = map[int][]*api.ProjectMember{}
 
 // toProjectMember creates an instance of ProjectMember based on the projectMemberRaw.
