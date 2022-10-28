@@ -64,7 +64,7 @@ func TestDeparseDatabaseEdit(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n) ENGINE = InnoDB;\nCREATE TABLE `t2` (\n  `id` INT NOT NULL\n) ENGINE = InnoDB;",
+			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n) ENGINE=InnoDB;\nCREATE TABLE `t2` (\n  `id` INT NOT NULL\n) ENGINE=InnoDB;",
 		},
 		{
 			name: "create table t1 with name",
@@ -92,7 +92,7 @@ func TestDeparseDatabaseEdit(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `id` INT COMMENT 'ID' DEFAULT '0',\n  `name` VARCHAR CHARACTER SET UTF8MB4 COLLATE utf8mb4_bin COMMENT 'Name' NOT NULL\n) ENGINE = InnoDB;",
+			want: "CREATE TABLE `t1` (\n  `id` INT COMMENT 'ID' DEFAULT '0',\n  `name` VARCHAR CHARACTER SET UTF8MB4 COLLATE utf8mb4_bin COMMENT 'Name' NOT NULL\n) ENGINE=InnoDB;",
 		},
 	}
 
