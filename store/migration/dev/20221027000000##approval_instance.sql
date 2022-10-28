@@ -6,7 +6,7 @@ CREATE TABLE approval_instance (
     issue_id INTEGER NOT NULL REFERENCES issue (id),
     requester_id INTEGER NOT NULL REFERENCES principal (id),
     approver_id INTEGER NOT NULL REFERENCES principal (id),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.application.%'),
+    type TEXT NOT NULL CHECK (type LIKE 'bb.application.approval-instance.%'),
     payload JSONB NOT NULL
 );
 
