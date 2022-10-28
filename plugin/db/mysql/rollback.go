@@ -197,6 +197,7 @@ func (e *BinlogEvent) parseDMLBlock(block []string) (dataOld []string, dataNew [
 		}
 		return nil, set, nil
 	default:
+		// This is to make the compiler happy.
 		return nil, nil, errors.Errorf("invalid DML binlog event type %s", e.Type.String())
 	}
 }
@@ -250,7 +251,7 @@ func (e *BinlogEvent) minBlockLen() int {
 	case WriteRowsEventType:
 		return 3
 	default:
-		return -1
+		return 0
 	}
 }
 
@@ -262,6 +263,10 @@ func (t BinlogEventType) String() string {
 		return "UPDATE"
 	case WriteRowsEventType:
 		return "INSERT"
+	case QueryEventType:
+		return "QUERY"
+	case XidEventType:
+		return "XID"
 	default:
 		return "UNKNOWN"
 	}
