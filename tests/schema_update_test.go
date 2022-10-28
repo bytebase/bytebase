@@ -540,6 +540,12 @@ func TestVCS(t *testing.T) {
 			// Get migration history.
 			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
 			a.NoError(err)
+
+			var historiesDeref []api.MigrationHistory
+			for _, history := range histories {
+				historiesDeref = append(historiesDeref, *history)
+			}
+
 			wantHistories := []api.MigrationHistory{
 				{
 					Database:   databaseName,
@@ -593,7 +599,7 @@ func TestVCS(t *testing.T) {
 					Schema:     history.Schema,
 					SchemaPrev: history.SchemaPrev,
 				}
-				a.Equalf(wantHistories[i], got, "got histories %v", histories)
+				a.Equalf(wantHistories[i], got, "got histories %+v", historiesDeref)
 				a.NotEmpty(history.Version)
 			}
 			a.Equal("ver4", histories[0].Version)
