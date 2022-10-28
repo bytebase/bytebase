@@ -16,13 +16,18 @@ import WrenchIcon from "~icons/heroicons-outline/wrench";
 
 import { TabMode } from "@/types";
 import { useCurrentUser, useTabStore } from "@/store";
-import { isDBAOrOwner } from "@/utils";
+import { hasWorkspacePermission } from "@/utils";
 
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
 
-const allowAdmin = computed(() => isDBAOrOwner(currentUser.value.role));
+const allowAdmin = computed(() =>
+  hasWorkspacePermission(
+    "bb.permission.workspace.admin-sql-editor",
+    currentUser.value.role
+  )
+);
 
 const tabStore = useTabStore();
 

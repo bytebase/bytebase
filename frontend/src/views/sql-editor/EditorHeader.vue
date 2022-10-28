@@ -73,7 +73,7 @@
     </router-link>
 
     <router-link
-      v-if="showDBAItem"
+      v-if="showInstanceItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
       >{{ $t("common.instances") }}</router-link
@@ -101,7 +101,7 @@ import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
-import { isDBAOrOwner } from "@/utils";
+import { hasWorkspacePermission } from "@/utils";
 import { hasFeature, useCurrentUser, useInboxStore } from "@/store";
 
 interface LocalState {
@@ -122,10 +122,13 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
 
-    const showDBAItem = computed((): boolean => {
+    const showInstanceItem = computed((): boolean => {
       return (
         !hasFeature("bb.feature.dba-workflow") ||
-        isDBAOrOwner(currentUser.value.role)
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-instance",
+          currentUser.value.role
+        )
       );
     });
 
@@ -240,7 +243,7 @@ export default defineComponent({
 
     return {
       state,
-      showDBAItem,
+      showInstanceItem,
       inboxSummary,
       goBack,
     };

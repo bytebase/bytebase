@@ -85,7 +85,7 @@ import {
   useSQLReviewStore,
   useSubscriptionStore,
 } from "@/store";
-import { isOwner, isDBA } from "@/utils";
+import { hasWorkspacePermission } from "@/utils";
 
 interface LocalState {
   currentStep: number;
@@ -120,10 +120,6 @@ const router = useRouter();
 const store = useSQLReviewStore();
 const currentUser = useCurrentUser();
 const subscriptionStore = useSubscriptionStore();
-
-const hasPermission = computed(() => {
-  return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
-});
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
@@ -223,7 +219,12 @@ const tryChangeStep = (
 };
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
-  if (!hasPermission.value) {
+  if (
+    !hasWorkspacePermission(
+      "bb.permission.workspace.manage-sql-review-policy",
+      currentUser.value.role
+    )
+  ) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
