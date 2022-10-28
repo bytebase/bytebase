@@ -599,7 +599,7 @@ func TestVCS(t *testing.T) {
 					Schema:     history.Schema,
 					SchemaPrev: history.SchemaPrev,
 				}
-				a.Equalf(wantHistories[i], got, "got histories %v", historiesDeref)
+				a.Equalf(wantHistories[i], got, "got histories %+v", historiesDeref)
 				a.NotEmpty(history.Version)
 			}
 			a.Equal("ver4", histories[0].Version)
