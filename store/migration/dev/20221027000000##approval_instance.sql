@@ -15,8 +15,8 @@ CREATE INDEX idx_approval_instance_issue_id ON approval_instance(issue_id);
 
 ALTER SEQUENCE approval_instance_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_sheet_updated_ts
+CREATE TRIGGER update_approval_instance_updated_ts
 BEFORE
 UPDATE
-    ON sheet FOR EACH ROW
+    ON approval_instance FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
