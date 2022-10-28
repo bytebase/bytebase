@@ -20,7 +20,7 @@ func TestCreateTableSeparateIndex(t *testing.T) {
 		"  `id` INT DEFAULT NULL,\n" +
 		"  `c1` INT DEFAULT NULL,\n" +
 		"  `c2` INT DEFAULT NULL\n" +
-		") ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4 DEFAULT COLLATE = UTF8MB4_0900_AI_CI;\n" +
+		") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_0900_AI_CI;\n" +
 		"CREATE UNIQUE INDEX `c1` ON `t1` (`c1`, `c2`);\n" +
 		"CREATE UNIQUE INDEX `haha` ON `t1` (`c2`);\n" +
 		"CREATE INDEX `t1` ON `t1` (`c1`);\n"
