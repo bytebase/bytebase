@@ -115,20 +115,18 @@ export default defineComponent({
     const environmentList = useEnvironmentList(["ARCHIVED"]);
 
     const tabItemList = computed((): BBTabFilterItem[] => {
-      const list: BBTabFilterItem[] = [];
+      const list: BBTabFilterItem[] = [
+        { title: t("common.project"), alert: false },
+      ];
 
-      // TODO(tianzhou): revisit this since any project member should also view the project even it's archived.
       if (
         hasWorkspacePermission(
-          "bb.permission.workspace.manage-project",
+          "bb.permission.workspace.manage-instance",
           currentUser.value.role
         )
       ) {
-        list.push({ title: t("common.project"), alert: false });
+        list.push({ title: t("common.instance"), alert: false });
       }
-
-      // TODO(tianzhou): revisit this since Developer may not need to see archived instance.
-      list.push({ title: t("common.instance"), alert: false });
 
       if (
         hasWorkspacePermission(
