@@ -48,7 +48,7 @@
             Agents
           </router-link>-->
           <router-link
-            v-if="showOwnerOrDBAItem"
+            v-if="showProjectItem"
             to="/setting/project"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("common.projects") }}</router-link
@@ -68,7 +68,7 @@
             >{{ $t("settings.sidebar.labels") }}</router-link
           >
           <router-link
-            v-if="showOwnerItem"
+            v-if="showVCSItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.version-control") }}</router-link
@@ -84,7 +84,7 @@
             >{{ $t("settings.sidebar.subscription") }}</router-link
           >
           <router-link
-            v-if="showOwnerOrDBAItem"
+            v-if="showDebugItem"
             to="/setting/debug-log"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.debug-log") }}</router-link
@@ -107,7 +107,7 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { isOwner, isDBAOrOwner, isDev } from "../utils";
+import { hasWorkspacePermission, isDev } from "../utils";
 import { useCurrentUser, useRouterStore } from "@/store";
 
 interface LocalState {
@@ -136,12 +136,25 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
 
-    const showOwnerItem = computed((): boolean => {
-      return isOwner(currentUser.value.role);
+    const showDebugItem = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.debug",
+        currentUser.value.role
+      );
     });
 
-    const showOwnerOrDBAItem = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
+    const showProjectItem = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-project",
+        currentUser.value.role
+      );
+    });
+
+    const showVCSItem = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-vcs-provider",
+        currentUser.value.role
+      );
     });
 
     const goBack = () => {
@@ -163,8 +176,9 @@ export default defineComponent({
       state,
       isDev,
       integrationList,
-      showOwnerItem,
-      showOwnerOrDBAItem,
+      showDebugItem,
+      showProjectItem,
+      showVCSItem,
       goBack,
       toggleCollapse,
     };

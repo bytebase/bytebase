@@ -1,12 +1,37 @@
 import { ProjectRoleType, RoleType } from "../types";
 import { hasFeature } from "@/store";
 
-export type WorkspacePermissionType = "bb.permission.workspace.manage-user";
+export type WorkspacePermissionType =
+  | "bb.permission.workspace.debug"
+  | "bb.permission.workspace.manage-environment"
+  | "bb.permission.workspace.manage-instance"
+  // Change issue assignee, approve issue, view all issues
+  | "bb.permission.workspace.manage-issue"
+  | "bb.permission.workspace.manage-label"
+  | "bb.permission.workspace.manage-project"
+  | "bb.permission.workspace.manage-sql-review-policy"
+  | "bb.permission.workspace.manage-user"
+  | "bb.permission.workspace.manage-vcs-provider"
+  | "bb.permission.workspace.manage-workspace"
+  // Can execute admininstrive queries such as "SHOW PROCESSLIST"
+  | "bb.permission.workspace.admin-sql-editor";
 
 // A map from a particular workspace permission to the respective enablement of a particular workspace role.
 // The key is the workspace permission type and the value is the [DEVELOPER, DBA, OWNER] triplet.
 export const WORKSPACE_FEATURE_MATRIX: Map<WorkspacePermissionType, boolean[]> =
-  new Map([["bb.permission.workspace.manage-user", [false, false, true]]]);
+  new Map([
+    ["bb.permission.workspace.debug", [false, true, true]],
+    ["bb.permission.workspace.manage-environment", [false, true, true]],
+    ["bb.permission.workspace.manage-instance", [false, true, true]],
+    ["bb.permission.workspace.manage-issue", [false, true, true]],
+    ["bb.permission.workspace.manage-label", [false, true, true]],
+    ["bb.permission.workspace.manage-project", [false, true, true]],
+    ["bb.permission.workspace.manage-sql-review-policy", [false, true, true]],
+    ["bb.permission.workspace.manage-user", [false, false, true]],
+    ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
+    ["bb.permission.workspace.manage-workspace", [false, false, true]],
+    ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
+  ]);
 
 // Returns true if the particular role has the particular permission.
 export function hasWorkspacePermission(
@@ -31,10 +56,6 @@ export function isOwner(role: RoleType): boolean {
 // Returns true if admin feature is NOT supported or the principal is DBA
 export function isDBA(role: RoleType): boolean {
   return !hasFeature("bb.feature.rbac") || role == "DBA";
-}
-
-export function isDBAOrOwner(role: RoleType): boolean {
-  return isDBA(role) || isOwner(role);
 }
 
 // Returns true if admin feature is NOT supported or the principal is DEVELOPER
