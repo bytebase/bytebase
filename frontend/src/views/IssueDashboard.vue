@@ -91,7 +91,11 @@ import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
 import { EMPTY_ID, Environment, Issue, PrincipalId, ProjectId } from "../types";
 import { reactive, ref, computed, onMounted } from "vue";
-import { activeEnvironment, isDBAOrOwner, projectSlug } from "../utils";
+import {
+  activeEnvironment,
+  hasWorkspacePermission,
+  projectSlug,
+} from "../utils";
 import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
@@ -128,7 +132,10 @@ const selectedPrincipalId = computed((): PrincipalId => {
   if (id >= 0) {
     return id;
   }
-  return isDBAOrOwner(currentUser.value.role)
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-issue",
+    currentUser.value.role
+  )
     ? EMPTY_ID // default to 'All' if current user is owner or DBA
     : currentUser.value.id; // default to current user otherwise
 });
