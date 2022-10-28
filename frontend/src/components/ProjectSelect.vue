@@ -30,7 +30,7 @@ import {
   ProjectRoleType,
   unknown,
 } from "../types";
-import { isDBAOrOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { featureToRef, useCurrentUser, useProjectStore } from "@/store";
 
 interface LocalState {
@@ -106,7 +106,13 @@ export default defineComponent({
         return false;
       });
 
-      if (!hasRBACFeature.value || isDBAOrOwner(currentUser.value.role)) {
+      if (
+        !hasRBACFeature.value ||
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
         return list;
       }
 
