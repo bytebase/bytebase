@@ -30,12 +30,7 @@ import {
   QuickActionType,
   UNKNOWN_ID,
 } from "../types";
-import {
-  hasWorkspacePermission,
-  idFromSlug,
-  isOwner,
-  isProjectOwner,
-} from "../utils";
+import { hasWorkspacePermission, idFromSlug, isProjectOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
