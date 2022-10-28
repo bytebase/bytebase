@@ -77,8 +77,6 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 
 // FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
-	var projectMemberRawList []*projectMemberRaw
-
 	findCopy := *find
 	findCopy.ProjectID = nil
 	isListProjectMember := find.ProjectID != nil && findCopy == api.ProjectMemberFind{}
