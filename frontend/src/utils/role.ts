@@ -56,22 +56,32 @@ export function hasWorkspacePermission(
 export type ProjectPermissionType =
   | "bb.permission.project.manage-general"
   | "bb.permission.project.manage-member"
-  | "bb.permission.project.transfer-database";
+  | "bb.permission.project.change-database"
+  | "bb.permission.project.create-or-transfer-database";
 
-// A map from a particular project permission to the respective enablement of a particular project role.
-// The key is the project permission type and the value is the project [DEVELOPER, OWNER] triplet.
-export const PROJECT_PERMISSION_MATRIX: Map<ProjectPermissionType, boolean[]> =
-  new Map([
-    ["bb.permission.project.manage-general", [false, true]],
-    ["bb.permission.project.manage-member", [false, true]],
-    ["bb.permission.project.transfer-database", [false, true]],
-  ]);
-
-// Returns true if the particular project role has the particular project permission.
+// Returns true if RBAC is not enabled or the particular project role has the particular project permission.
 export function hasProjectPermission(
   permission: ProjectPermissionType,
   role: ProjectRoleType
 ): boolean {
+  if (!hasFeature("bb.feature.rbac")) {
+    return true;
+  }
+
+  // A map from a particular project permission to the respective enablement of a particular project role.
+  // The key is the project permission type and the value is the project [DEVELOPER, OWNER] triplet.
+  const PROJECT_PERMISSION_MATRIX: Map<ProjectPermissionType, boolean[]> =
+    new Map([
+      ["bb.permission.project.manage-general", [false, true]],
+      ["bb.permission.project.manage-member", [false, true]],
+      ["bb.permission.project.change-database", [true, true]],
+      // If dba-workflow is disabled, then project developer can also create or transfer database.
+      [
+        "bb.permission.project.create-or-transfer-database",
+        [!hasFeature("bb.feature.dba-workflow"), true],
+      ],
+    ]);
+
   switch (role) {
     case "DEVELOPER":
       return PROJECT_PERMISSION_MATRIX.get(permission)![0];
