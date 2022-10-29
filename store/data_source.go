@@ -104,22 +104,9 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 
 // findDataSource finds a list of DataSource instances.
 func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
-	findCopy := *find
-	findCopy.InstanceID = nil
-	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
-	cacheList, ok := dataSourceCache.Load(*find.InstanceID)
-	var dataSourceRawList []*dataSourceRaw
-	if ok && isListDataSource {
-		dataSourceRawList = cacheList.([]*dataSourceRaw)
-	} else {
-		list, err := s.findDataSourceRaw(ctx, find)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
-		}
-		dataSourceRawList = list
-		if isListDataSource {
-			dataSourceCache.Store(*find.InstanceID, dataSourceRawList)
-		}
+	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
 	}
 
 	var dataSourceList []*api.DataSource
@@ -223,6 +210,14 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 
 // findDataSourceRaw retrieves a list of data sources based on find.
 func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
+	findCopy := *find
+	findCopy.InstanceID = nil
+	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
+	cacheList, ok := dataSourceCache.Load(*find.InstanceID)
+	if ok && isListDataSource {
+		return cacheList.([]*dataSourceRaw), nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -233,7 +228,9 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 	if err != nil {
 		return nil, err
 	}
-
+	if isListDataSource {
+		dataSourceCache.Store(*find.InstanceID, list)
+	}
 	return list, nil
 }
 
