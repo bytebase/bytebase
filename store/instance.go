@@ -368,16 +368,13 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		SslCert:    create.SslCert,
 		SslCa:      create.SslCa,
 	}
-	dataSource, err := s.createDataSourceRawTx(ctx, tx, adminDataSourceCreate)
-	if err != nil {
+	if err := s.createDataSourceRawTx(ctx, tx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-	// Update data source cache.
-	dataSourceCache.Store(instance.ID, []*dataSourceRaw{dataSource})
 
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err

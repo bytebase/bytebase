@@ -160,12 +160,11 @@ func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.Data
 
 // createDataSourceRawTx creates an instance of DataSource.
 // This uses an existing transaction object.
-func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
-	dataSource, err := s.createDataSourceImpl(ctx, tx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
+func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) error {
+	if _, err := s.createDataSourceImpl(ctx, tx, create); err != nil {
+		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
-	return dataSource, nil
+	return nil
 }
 
 func (s *Store) composeDataSource(ctx context.Context, raw *dataSourceRaw) (*api.DataSource, error) {
