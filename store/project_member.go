@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -34,7 +35,7 @@ type projectMemberRaw struct {
 }
 
 // Project members are used widely. We need to cache them to optimize query latency.
-var projectMemberCache = map[int][]*api.ProjectMember{}
+var projectMemberCache = sync.Map{}
 
 // toProjectMember creates an instance of ProjectMember based on the projectMemberRaw.
 // This is intended to be called when we need to compose an ProjectMember relationship.
@@ -70,7 +71,7 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
 	// Invalidate the cache.
-	delete(projectMemberCache, create.ProjectID)
+	projectMemberCache.Delete(create.ProjectID)
 
 	return projectMember, nil
 }
@@ -80,9 +81,9 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 	findCopy := *find
 	findCopy.ProjectID = nil
 	isListProjectMember := find.ProjectID != nil && findCopy == api.ProjectMemberFind{}
-	cacheList, ok := projectMemberCache[*find.ProjectID]
+	cacheList, ok := projectMemberCache.Load(*find.ProjectID)
 	if ok && isListProjectMember {
-		return cacheList, nil
+		return cacheList.([]*api.ProjectMember), nil
 	}
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
 	if err != nil {
@@ -97,7 +98,7 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 		projectMemberList = append(projectMemberList, projectMember)
 	}
 	if isListProjectMember {
-		projectMemberCache[*find.ProjectID] = projectMemberList
+		projectMemberCache.Store(*find.ProjectID, projectMemberList)
 	}
 	return projectMemberList, nil
 }
@@ -139,7 +140,7 @@ func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMember
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
 	// Invalidate the cache.
-	delete(projectMemberCache, projectMemberRaw.ProjectID)
+	projectMemberCache.Delete(projectMemberRaw.ProjectID)
 	return projectMember, nil
 }
 
@@ -159,7 +160,7 @@ func (s *Store) DeleteProjectMember(ctx context.Context, pDelete *api.ProjectMem
 		return FormatError(err)
 	}
 	// Invalidate the cache.
-	delete(projectMemberCache, pDelete.ProjectID)
+	projectMemberCache.Delete(pDelete.ProjectID)
 
 	return nil
 }
