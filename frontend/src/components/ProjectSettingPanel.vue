@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { hasProjectPermission } from "../utils";
+import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import { ProjectAdvancedSettingPanel } from "../components/Project/ProjectSetting";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
@@ -72,15 +72,21 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    // Only the project with manage permission can archive/restore the project info.
-    // This means even the workspace owner won't be able to edit it.
-    // There seems to be no good reason that workspace owner needs to archive/restore the project.
     const allowArchiveOrRestore = computed(() => {
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
+        return true;
+      }
+
       for (const member of props.project.memberList) {
         if (member.principal.id == currentUser.value.id) {
           if (
             hasProjectPermission(
-              "bb.permission.project.manage-general",
+              "bb.permission.project.archive-restore",
               member.role
             )
           ) {
