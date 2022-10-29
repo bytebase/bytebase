@@ -58,6 +58,7 @@ export type ProjectPermissionType =
   | "bb.permission.project.manage-member"
   | "bb.permission.project.archive-restore"
   | "bb.permission.project.change-database"
+  | "bb.permission.project.admin-database"
   | "bb.permission.project.create-or-transfer-database";
 
 // Returns true if RBAC is not enabled or the particular project role has the particular project permission.
@@ -77,6 +78,7 @@ export function hasProjectPermission(
       ["bb.permission.project.manage-member", [false, true]],
       ["bb.permission.project.archive-restore", [false, true]],
       ["bb.permission.project.change-database", [true, true]],
+      ["bb.permission.project.admin-database", [false, true]],
       // If dba-workflow is disabled, then project developer can also create or transfer database.
       [
         "bb.permission.project.create-or-transfer-database",
