@@ -102,7 +102,7 @@ import { useLocalStorage } from "@vueuse/core";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
 import { hasWorkspacePermission } from "@/utils";
-import { hasFeature, useCurrentUser, useInboxStore } from "@/store";
+import { useCurrentUser, useInboxStore } from "@/store";
 
 interface LocalState {
   showMobileMenu: boolean;

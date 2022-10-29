@@ -200,7 +200,6 @@ import {
   useSettingStore,
   useSubscriptionStore,
   useInboxStore,
-  hasFeature,
 } from "@/store";
 import { storeToRefs } from "pinia";
 

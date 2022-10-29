@@ -58,9 +58,9 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, defineComponent, Ref } from "vue";
+import { computed, defineComponent, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasWorkspacePermission, isDBA, isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
 import { pushNotification, useCurrentUser, useUIStateStore } from "@/store";
 
