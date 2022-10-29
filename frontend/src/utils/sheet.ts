@@ -1,4 +1,5 @@
 import { Principal, Sheet, SheetPayload, TabMode } from "@/types";
+import { hasProjectPermission } from "../utils";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
   // readable to
@@ -29,11 +30,11 @@ export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
 export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
   // writable to
   // PRIVATE: the creator only
-  // PROJECT: the creator and the OWNER of project
-  // PUBLIC: no one but the creator
+  // PROJECT: the creator or project role can manage sheet
+  // PUBLIC: the creator only
 
   if (sheet.creator.id === currentUser.id) {
-    // Always readable to the creator
+    // Always writable to the creator
     return true;
   }
   const { visibility } = sheet;
@@ -47,7 +48,13 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
         return member.principal.id === currentUser.id;
       });
 
-      return memberInProject && memberInProject.role === "OWNER";
+      return (
+        memberInProject &&
+        hasProjectPermission(
+          "bb.permission.project.manage-sheet",
+          memberInProject.role
+        )
+      );
     };
     return isCurrentUserProjectOwner();
   }
