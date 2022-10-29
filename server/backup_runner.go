@@ -314,6 +314,18 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 			continue
 		}
 		backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
+		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{
+			DatabaseID: &db.ID,
+			Name:       &backupName,
+		})
+		if err != nil {
+			log.Error("Failed to find backup", zap.Error(err))
+			continue
+		}
+		if len(backupList) > 0 {
+			log.Debug("Skip creating backup because it already exists", zap.Int("database-id", db.ID), zap.String("name", backupName))
+			continue
+		}
 		go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
 			defer func() {
 				mu.Lock()
@@ -375,7 +387,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	backupNew, err := s.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			log.Debug("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.Name))
+			log.Error("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.Name))
 			return nil, nil
 		}
 		return nil, errors.Wrapf(err, "failed to create backup %q", backupName)
