@@ -200,7 +200,6 @@ import {
   useSettingStore,
   useSubscriptionStore,
   useInboxStore,
-  hasFeature,
 } from "@/store";
 import { storeToRefs } from "pinia";
 
@@ -247,13 +246,9 @@ export default defineComponent({
     });
 
     const shouldShowInstanceEntry = computed(() => {
-      // In enterprise version, we don't allow developers to view instance.
-      return (
-        !hasFeature("bb.feature.dba-workflow") ||
-        hasWorkspacePermission(
-          "bb.permission.workspace.manage-instance",
-          currentUser.value.role
-        )
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
       );
     });
 

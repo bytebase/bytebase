@@ -10,7 +10,7 @@
     </div>
     <nav class="flex justify-center" aria-label="Progress">
       <ol class="space-y-4 w-full">
-        <li v-for="(intro, index) in effectiveList" :key="index">
+        <li v-for="(intro, index) in introList" :key="index">
           <!-- Complete Task -->
           <!-- use <router-link> if intro.link is not empty -->
           <!-- use <span> otherwise -->
@@ -58,22 +58,15 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, defineComponent, Ref } from "vue";
+import { computed, defineComponent, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { isDBA, isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import {
-  hasFeature,
-  pushNotification,
-  useCurrentUser,
-  useUIStateStore,
-} from "@/store";
+import { pushNotification, useCurrentUser, useUIStateStore } from "@/store";
 
 type IntroItem = {
   name: string | Ref<string>;
   link: string;
-  allowDBA: boolean;
-  allowDeveloper: boolean;
   done: Ref<boolean>;
   click?: () => void;
 };
@@ -87,12 +80,10 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
 
-    const introList = reactive<IntroItem[]>([
+    const introList: IntroItem[] = [
       {
         name: computed(() => t("quick-start.bookmark-an-issue")),
         link: "/issue/hello-world-101",
-        allowDBA: true,
-        allowDeveloper: true,
         done: computed(() =>
           uiStateStore.getIntroStateByKey("bookmark.create")
         ),
@@ -100,82 +91,84 @@ export default defineComponent({
       {
         name: computed(() => t("quick-start.add-a-comment")),
         link: "/issue/hello-world-101#activity14001",
-        allowDBA: true,
-        allowDeveloper: true,
         done: computed(() => uiStateStore.getIntroStateByKey("comment.create")),
       },
       {
         name: computed(() => t("quick-start.visit-project")),
         link: "/project",
-        allowDBA: true,
-        allowDeveloper: true,
         done: computed(() => uiStateStore.getIntroStateByKey("project.visit")),
       },
-      {
+    ];
+
+    if (
+      hasWorkspacePermission(
+        "bb.permission.workspace.manage-environment",
+        currentUser.value.role
+      )
+    ) {
+      introList.push({
         name: computed(() => t("quick-start.visit-environment")),
         link: "/environment",
-        allowDBA: true,
-        allowDeveloper: false,
         done: computed(() =>
           uiStateStore.getIntroStateByKey("environment.visit")
         ),
-      },
-      {
+      });
+    }
+
+    if (
+      hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      )
+    ) {
+      introList.push({
         name: computed(() => t("quick-start.visit-instance")),
         link: "/instance",
-        allowDBA: true,
-        allowDeveloper: !hasFeature("bb.feature.dba-workflow"),
         done: computed(() => uiStateStore.getIntroStateByKey("instance.visit")),
-      },
-      {
-        name: computed(() => t("quick-start.visit-database")),
-        link: "/db",
-        allowDBA: true,
-        allowDeveloper: true,
-        done: computed(() => uiStateStore.getIntroStateByKey("database.visit")),
-      },
-      {
+      });
+    }
+
+    introList.push({
+      name: computed(() => t("quick-start.visit-database")),
+      link: "/db",
+      done: computed(() => uiStateStore.getIntroStateByKey("database.visit")),
+    });
+
+    if (
+      hasWorkspacePermission(
+        "bb.permission.workspace.manage-member",
+        currentUser.value.role
+      )
+    ) {
+      introList.push({
         name: computed(() => t("quick-start.add-a-member")),
         link: "/setting/member",
-        allowDBA: false,
-        allowDeveloper: false,
         done: computed(() =>
           uiStateStore.getIntroStateByKey("member.addOrInvite")
         ),
-      },
-      {
-        name: computed(() =>
-          t("quick-start.use-kbar", {
-            shortcut: `${navigator.platform.match(/mac/i) ? "cmd" : "ctrl"}-k`,
-          })
-        ),
-        link: "",
-        allowDBA: true,
-        allowDeveloper: true,
-        click: () => {
-          kbarHandler.value.show();
-        },
-        done: computed(() => uiStateStore.getIntroStateByKey("kbar.open")),
-      },
-    ]);
+      });
+    }
 
-    const effectiveList = computed(() => {
-      if (isOwner(currentUser.value.role)) {
-        return introList;
-      }
-      if (isDBA(currentUser.value.role)) {
-        return introList.filter((item) => item.allowDBA);
-      }
-      return introList.filter((item) => item.allowDeveloper);
+    introList.push({
+      name: computed(() =>
+        t("quick-start.use-kbar", {
+          shortcut: `${navigator.platform.match(/mac/i) ? "cmd" : "ctrl"}-k`,
+        })
+      ),
+      link: "",
+      click: () => {
+        kbarHandler.value.show();
+      },
+      done: computed(() => uiStateStore.getIntroStateByKey("kbar.open")),
     });
 
     const isTaskActive = (index: number): boolean => {
       for (let i = index - 1; i >= 0; i--) {
-        if (!effectiveList.value[i].done) {
+        if (!introList[i].done) {
           return false;
         }
       }
-      return !effectiveList.value[index].done;
+      return !introList[index].done;
     };
 
     const hideQuickstart = () => {
@@ -204,7 +197,7 @@ export default defineComponent({
     });
 
     return {
-      effectiveList,
+      introList,
       isTaskActive,
       hideQuickstart,
     };

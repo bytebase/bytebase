@@ -21,16 +21,18 @@ import {
   useIssueStore,
   usePrincipalStore,
   useRouterStore,
-  useSubscriptionStore,
 } from "../store";
 import {
   Database,
   DEFAULT_PROJECT_ID,
-  PlanType,
   QuickActionType,
   UNKNOWN_ID,
 } from "../types";
-import { hasWorkspacePermission, idFromSlug, isProjectOwner } from "../utils";
+import {
+  hasProjectPermission,
+  hasWorkspacePermission,
+  idFromSlug,
+} from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -546,7 +548,6 @@ const routes: Array<RouteRecordRaw> = [
                       currentUser.role
                     )
                   ) {
-                    // Yes to workspace owner and DBA
                     allowAlterSchemaOrChangeData = true;
                     allowCreateOrTransferDB = true;
                   } else {
@@ -554,21 +555,14 @@ const routes: Array<RouteRecordRaw> = [
                       (m) => m.principal.id === currentUser.id
                     );
                     if (memberOfProject) {
-                      // If current user is a member of this project
-                      // we are allowed to alter schema and change data.
-                      allowAlterSchemaOrChangeData = true;
-
-                      const plan = useSubscriptionStore().currentPlan;
-                      allowCreateOrTransferDB =
-                        plan === PlanType.ENTERPRISE
-                          ? // For ENTERPRISE plan, only
-                            //   - workspace owner and DBA
-                            //   - developers as the project owner
-                            // can create/transfer DB.
-                            // Other developers are not allowed.
-                            isProjectOwner(memberOfProject.role)
-                          : // For TEAM plan, all members of the project are allowed
-                            true;
+                      allowAlterSchemaOrChangeData = hasProjectPermission(
+                        "bb.permission.project.change-database",
+                        memberOfProject.role
+                      );
+                      allowCreateOrTransferDB = hasProjectPermission(
+                        "bb.permission.project.create-or-transfer-database",
+                        memberOfProject.role
+                      );
                     }
                   }
                   if (project.id === DEFAULT_PROJECT_ID) {
@@ -1048,20 +1042,17 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.instance") {
     if (
-      !hasFeature("bb.feature.dba-workflow") ||
-      hasWorkspacePermission(
+      !hasWorkspacePermission(
         "bb.permission.workspace.manage-instance",
         currentUser.role
       )
     ) {
-      next();
-    } else {
       next({
         name: "error.403",
         replace: false,
       });
+      return;
     }
-    return;
   }
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
@@ -1088,6 +1079,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
+    to.name === "workspace.instance" ||
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||

@@ -143,7 +143,7 @@ export default defineComponent({
 
     const isAdd = computed(() => {
       return hasWorkspacePermission(
-        "bb.permission.workspace.manage-user",
+        "bb.permission.workspace.manage-member",
         currentUser.value.role
       );
     });

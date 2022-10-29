@@ -10,41 +10,89 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.manage-label"
   | "bb.permission.workspace.manage-project"
   | "bb.permission.workspace.manage-sql-review-policy"
-  | "bb.permission.workspace.manage-user"
+  | "bb.permission.workspace.manage-member"
   | "bb.permission.workspace.manage-vcs-provider"
-  | "bb.permission.workspace.manage-workspace"
+  | "bb.permission.workspace.manage-general"
   // Can execute admininstrive queries such as "SHOW PROCESSLIST"
   | "bb.permission.workspace.admin-sql-editor";
 
 // A map from a particular workspace permission to the respective enablement of a particular workspace role.
-// The key is the workspace permission type and the value is the [DEVELOPER, DBA, OWNER] triplet.
-export const WORKSPACE_FEATURE_MATRIX: Map<WorkspacePermissionType, boolean[]> =
-  new Map([
-    ["bb.permission.workspace.debug", [false, true, true]],
-    ["bb.permission.workspace.manage-environment", [false, true, true]],
-    ["bb.permission.workspace.manage-instance", [false, true, true]],
-    ["bb.permission.workspace.manage-issue", [false, true, true]],
-    ["bb.permission.workspace.manage-label", [false, true, true]],
-    ["bb.permission.workspace.manage-project", [false, true, true]],
-    ["bb.permission.workspace.manage-sql-review-policy", [false, true, true]],
-    ["bb.permission.workspace.manage-user", [false, false, true]],
-    ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
-    ["bb.permission.workspace.manage-workspace", [false, false, true]],
-    ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
-  ]);
+// The key is the workspace permission type and the value is the workspace [DEVELOPER, DBA, OWNER] triplet.
+export const WORKSPACE_PERMISSION_MATRIX: Map<
+  WorkspacePermissionType,
+  boolean[]
+> = new Map([
+  ["bb.permission.workspace.debug", [false, true, true]],
+  ["bb.permission.workspace.manage-environment", [false, true, true]],
+  ["bb.permission.workspace.manage-instance", [false, true, true]],
+  ["bb.permission.workspace.manage-issue", [false, true, true]],
+  ["bb.permission.workspace.manage-label", [false, true, true]],
+  ["bb.permission.workspace.manage-project", [false, true, true]],
+  ["bb.permission.workspace.manage-sql-review-policy", [false, true, true]],
+  ["bb.permission.workspace.manage-member", [false, false, true]],
+  ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
+  ["bb.permission.workspace.manage-general", [false, false, true]],
+  ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
+]);
 
-// Returns true if the particular role has the particular permission.
+// Returns true if RBAC is not enabled or the particular role has the particular permission.
 export function hasWorkspacePermission(
   permission: WorkspacePermissionType,
   role: RoleType
 ): boolean {
+  if (!hasFeature("bb.feature.rbac")) {
+    return true;
+  }
   switch (role) {
     case "DEVELOPER":
-      return WORKSPACE_FEATURE_MATRIX.get(permission)![0];
+      return WORKSPACE_PERMISSION_MATRIX.get(permission)![0];
     case "DBA":
-      return WORKSPACE_FEATURE_MATRIX.get(permission)![1];
+      return WORKSPACE_PERMISSION_MATRIX.get(permission)![1];
     case "OWNER":
-      return WORKSPACE_FEATURE_MATRIX.get(permission)![2];
+      return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
+  }
+}
+
+export type ProjectPermissionType =
+  | "bb.permission.project.manage-general"
+  | "bb.permission.project.manage-member"
+  | "bb.permission.project.manage-sheet"
+  | "bb.permission.project.archive-restore"
+  | "bb.permission.project.change-database"
+  | "bb.permission.project.admin-database"
+  | "bb.permission.project.create-or-transfer-database";
+
+// Returns true if RBAC is not enabled or the particular project role has the particular project permission.
+export function hasProjectPermission(
+  permission: ProjectPermissionType,
+  role: ProjectRoleType
+): boolean {
+  if (!hasFeature("bb.feature.rbac")) {
+    return true;
+  }
+
+  // A map from a particular project permission to the respective enablement of a particular project role.
+  // The key is the project permission type and the value is the project [DEVELOPER, OWNER] triplet.
+  const PROJECT_PERMISSION_MATRIX: Map<ProjectPermissionType, boolean[]> =
+    new Map([
+      ["bb.permission.project.manage-general", [false, true]],
+      ["bb.permission.project.manage-member", [false, true]],
+      ["bb.permission.project.manage-sheet", [false, true]],
+      ["bb.permission.project.archive-restore", [false, true]],
+      ["bb.permission.project.change-database", [true, true]],
+      ["bb.permission.project.admin-database", [false, true]],
+      // If dba-workflow is disabled, then project developer can also create or transfer database.
+      [
+        "bb.permission.project.create-or-transfer-database",
+        [!hasFeature("bb.feature.dba-workflow"), true],
+      ],
+    ]);
+
+  switch (role) {
+    case "DEVELOPER":
+      return PROJECT_PERMISSION_MATRIX.get(permission)![0];
+    case "OWNER":
+      return PROJECT_PERMISSION_MATRIX.get(permission)![1];
   }
 }
 
@@ -75,14 +123,6 @@ export function roleName(role: RoleType): string {
 }
 
 // Project Role
-export function isProjectOwner(role: ProjectRoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role == "OWNER";
-}
-
-export function isProjectDeveloper(role: ProjectRoleType): boolean {
-  return !hasFeature("bb.feature.rbac") || role == "DEVELOPER";
-}
-
 export function projectRoleName(role: ProjectRoleType): string {
   switch (role) {
     case "OWNER":
