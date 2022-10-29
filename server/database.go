@@ -443,7 +443,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			Name:       &backupCreate.Name,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch backup Name %q", backupCreate.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch backup with name %q", backupCreate.Name)).SetInternal(err)
 		}
 		if len(storeBackupList) > 0 {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Backup %q already exists", backupCreate.Name))
