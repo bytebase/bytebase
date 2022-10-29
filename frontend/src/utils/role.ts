@@ -56,6 +56,7 @@ export function hasWorkspacePermission(
 export type ProjectPermissionType =
   | "bb.permission.project.manage-general"
   | "bb.permission.project.manage-member"
+  | "bb.permission.project.manage-sheet"
   | "bb.permission.project.archive-restore"
   | "bb.permission.project.change-database"
   | "bb.permission.project.admin-database"
@@ -76,6 +77,7 @@ export function hasProjectPermission(
     new Map([
       ["bb.permission.project.manage-general", [false, true]],
       ["bb.permission.project.manage-member", [false, true]],
+      ["bb.permission.project.manage-sheet", [false, true]],
       ["bb.permission.project.archive-restore", [false, true]],
       ["bb.permission.project.change-database", [true, true]],
       ["bb.permission.project.admin-database", [false, true]],
