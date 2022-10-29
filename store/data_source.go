@@ -82,6 +82,8 @@ func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCrea
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
 	}
+	// Invalidate the cache.
+	dataSourceCache.Delete(dataSourceRaw.InstanceID)
 	return dataSource, nil
 }
 
