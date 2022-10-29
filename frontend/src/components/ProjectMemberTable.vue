@@ -131,7 +131,7 @@ import {
   ProjectRoleProvider,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
-import { hasWorkspacePermission, isProjectOwner } from "../utils";
+import { hasWorkspacePermission, hasProjectPermission } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -281,7 +281,12 @@ export default defineComponent({
 
       for (const member of props.project.memberList) {
         if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
+          if (
+            hasProjectPermission(
+              "bb.permission.project.manage-member",
+              member.role
+            )
+          ) {
             return true;
           }
         }
