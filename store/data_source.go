@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -69,7 +70,7 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 }
 
 // Data sources are used widely. We need to cache them to optimize query latency.
-var dataSourceCache = map[int][]*api.DataSource{}
+var dataSourceCache = sync.Map{}
 
 // CreateDataSource creates an instance of DataSource.
 func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSource, error) {
@@ -105,9 +106,9 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 	findCopy := *find
 	findCopy.InstanceID = nil
 	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
-	cacheList, ok := dataSourceCache[*find.InstanceID]
+	cacheList, ok := dataSourceCache.Load(*find.InstanceID)
 	if ok && isListDataSource {
-		return cacheList, nil
+		return cacheList.([]*api.DataSource), nil
 	}
 
 	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
@@ -123,7 +124,7 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 		dataSourceList = append(dataSourceList, dataSource)
 	}
 	if isListDataSource {
-		dataSourceCache[*find.InstanceID] = dataSourceList
+		dataSourceCache.Store(*find.InstanceID, dataSourceList)
 	}
 	return dataSourceList, nil
 }
@@ -139,7 +140,7 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 		return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", dataSourceRaw)
 	}
 	// Invalidate the cache.
-	delete(dataSourceCache, dataSourceRaw.InstanceID)
+	dataSourceCache.Delete(dataSourceRaw.InstanceID)
 	return dataSource, nil
 }
 
@@ -160,7 +161,7 @@ func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.Data
 	}
 
 	// Invalidate the cache.
-	delete(dataSourceCache, deleteDataSource.InstanceID)
+	dataSourceCache.Delete(deleteDataSource.InstanceID)
 	return nil
 }
 
