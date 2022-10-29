@@ -247,7 +247,7 @@ func StartForTest(port int, pgBinDir, pgDataDir string, stdout, stderr io.Writer
 	// https://www.postgresql.org/docs/current/app-postgres.html
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", pgDataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -h 127.0.0.1`, port, common.GetPostgresSocketDir()))
+		"-o", fmt.Sprintf(`-p %d -k %s`, port, common.GetPostgresSocketDir()))
 
 	p.Stdout = stdout
 	p.Stderr = stderr
