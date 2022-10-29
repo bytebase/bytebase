@@ -30,7 +30,11 @@ import {
   QuickActionType,
   UNKNOWN_ID,
 } from "../types";
-import { hasWorkspacePermission, idFromSlug, isProjectOwner } from "../utils";
+import {
+  hasProjectPermission,
+  hasWorkspacePermission,
+  idFromSlug,
+} from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -561,12 +565,16 @@ const routes: Array<RouteRecordRaw> = [
                       const plan = useSubscriptionStore().currentPlan;
                       allowCreateOrTransferDB =
                         plan === PlanType.ENTERPRISE
-                          ? // For ENTERPRISE plan, only
+                          ? // TODO(tianzhou): revisit this logic, why enterprise and team is different here.
+                            // For ENTERPRISE plan, only
                             //   - workspace owner and DBA
-                            //   - developers as the project owner
+                            //   - project role has transfer db permission
                             // can create/transfer DB.
                             // Other developers are not allowed.
-                            isProjectOwner(memberOfProject.role)
+                            hasProjectPermission(
+                              "bb.permission.project.transfer-database",
+                              memberOfProject.role
+                            )
                           : // For TEAM plan, all members of the project are allowed
                             true;
                     }
