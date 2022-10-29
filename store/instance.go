@@ -375,6 +375,8 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+	// Invalidate data source cache.
+	dataSourceCache.Delete(instance.ID)
 
 	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
