@@ -1048,20 +1048,17 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.instance") {
     if (
-      !hasFeature("bb.feature.dba-workflow") ||
-      hasWorkspacePermission(
+      !hasWorkspacePermission(
         "bb.permission.workspace.manage-instance",
         currentUser.role
       )
     ) {
-      next();
-    } else {
       next({
         name: "error.403",
         replace: false,
       });
+      return;
     }
-    return;
   }
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
@@ -1088,6 +1085,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.inbox" ||
     to.name === "workspace.anomaly-center" ||
     to.name === "workspace.project" ||
+    to.name === "workspace.instance" ||
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
