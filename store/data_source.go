@@ -70,6 +70,7 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 }
 
 // Data sources are used widely. We need to cache them to optimize query latency.
+// The value has type []*dataSourceRaw.
 var dataSourceCache = sync.Map{}
 
 // CreateDataSource creates an instance of DataSource.
@@ -109,14 +110,20 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 	findCopy.InstanceID = nil
 	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
 	cacheList, ok := dataSourceCache.Load(*find.InstanceID)
+	var dataSourceRawList []*dataSourceRaw
 	if ok && isListDataSource {
-		return cacheList.([]*api.DataSource), nil
+		dataSourceRawList = cacheList.([]*dataSourceRaw)
+	} else {
+		list, err := s.findDataSourceRaw(ctx, find)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
+		}
+		dataSourceRawList = list
+		if isListDataSource {
+			dataSourceCache.Store(*find.InstanceID, dataSourceRawList)
+		}
 	}
 
-	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
-	}
 	var dataSourceList []*api.DataSource
 	for _, raw := range dataSourceRawList {
 		dataSource, err := s.composeDataSource(ctx, raw)
@@ -124,9 +131,6 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 			return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", raw)
 		}
 		dataSourceList = append(dataSourceList, dataSource)
-	}
-	if isListDataSource {
-		dataSourceCache.Store(*find.InstanceID, dataSourceList)
 	}
 	return dataSourceList, nil
 }
@@ -173,12 +177,12 @@ func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.Data
 
 // createDataSourceRawTx creates an instance of DataSource.
 // This uses an existing transaction object.
-func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) error {
-	_, err := s.createDataSourceImpl(ctx, tx, create)
+func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
+	dataSource, err := s.createDataSourceImpl(ctx, tx, create)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
+		return nil, errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
-	return nil
+	return dataSource, nil
 }
 
 func (s *Store) composeDataSource(ctx context.Context, raw *dataSourceRaw) (*api.DataSource, error) {
