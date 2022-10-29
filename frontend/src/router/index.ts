@@ -21,12 +21,10 @@ import {
   useIssueStore,
   usePrincipalStore,
   useRouterStore,
-  useSubscriptionStore,
 } from "../store";
 import {
   Database,
   DEFAULT_PROJECT_ID,
-  PlanType,
   QuickActionType,
   UNKNOWN_ID,
 } from "../types";
@@ -550,7 +548,6 @@ const routes: Array<RouteRecordRaw> = [
                       currentUser.role
                     )
                   ) {
-                    // Yes to workspace owner and DBA
                     allowAlterSchemaOrChangeData = true;
                     allowCreateOrTransferDB = true;
                   } else {
@@ -558,25 +555,14 @@ const routes: Array<RouteRecordRaw> = [
                       (m) => m.principal.id === currentUser.id
                     );
                     if (memberOfProject) {
-                      // If current user is a member of this project
-                      // we are allowed to alter schema and change data.
-                      allowAlterSchemaOrChangeData = true;
-
-                      const plan = useSubscriptionStore().currentPlan;
-                      allowCreateOrTransferDB =
-                        plan === PlanType.ENTERPRISE
-                          ? // TODO(tianzhou): revisit this logic, why enterprise and team is different here.
-                            // For ENTERPRISE plan, only
-                            //   - workspace owner and DBA
-                            //   - project role has transfer db permission
-                            // can create/transfer DB.
-                            // Other developers are not allowed.
-                            hasProjectPermission(
-                              "bb.permission.project.transfer-database",
-                              memberOfProject.role
-                            )
-                          : // For TEAM plan, all members of the project are allowed
-                            true;
+                      allowAlterSchemaOrChangeData = hasProjectPermission(
+                        "bb.permission.project.change-database",
+                        memberOfProject.role
+                      );
+                      allowCreateOrTransferDB = hasProjectPermission(
+                        "bb.permission.project.create-or-transfer-database",
+                        memberOfProject.role
+                      );
                     }
                   }
                   if (project.id === DEFAULT_PROJECT_ID) {
