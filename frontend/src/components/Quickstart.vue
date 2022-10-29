@@ -136,7 +136,7 @@ export default defineComponent({
 
     if (
       hasWorkspacePermission(
-        "bb.permission.workspace.manage-user",
+        "bb.permission.workspace.manage-member",
         currentUser.value.role
       )
     ) {
