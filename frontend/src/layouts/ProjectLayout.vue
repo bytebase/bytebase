@@ -46,7 +46,11 @@
 <script lang="ts">
 import { computed, defineComponent, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { idFromSlug, hasProjectPermission } from "../utils";
+import {
+  idFromSlug,
+  hasProjectPermission,
+  hasWorkspacePermission,
+} from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
@@ -139,6 +143,15 @@ export default defineComponent({
     const allowEdit = computed(() => {
       if (project.value.rowStatus == "ARCHIVED") {
         return false;
+      }
+
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
+        return true;
       }
 
       for (const member of project.value.memberList) {
