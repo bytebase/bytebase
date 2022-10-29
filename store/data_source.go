@@ -83,8 +83,6 @@ func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCrea
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
 	}
-	// Invalidate the cache.
-	dataSourceCache.Delete(dataSourceRaw.InstanceID)
 	return dataSource, nil
 }
 
@@ -145,8 +143,6 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", dataSourceRaw)
 	}
-	// Invalidate the cache.
-	dataSourceCache.Delete(dataSourceRaw.InstanceID)
 	return dataSource, nil
 }
 
@@ -219,6 +215,8 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+	// Invalidate the cache.
+	dataSourceCache.Delete(dataSource.InstanceID)
 
 	return dataSource, nil
 }
@@ -278,6 +276,8 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+	// Invalidate the cache.
+	dataSourceCache.Delete(dataSource.InstanceID)
 
 	return dataSource, nil
 }
