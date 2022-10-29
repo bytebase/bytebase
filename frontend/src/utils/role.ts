@@ -35,11 +35,14 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
 ]);
 
-// Returns true if the particular workspace role has the particular workspace permission.
+// Returns true if RBAC is not enabled or the particular role has the particular permission.
 export function hasWorkspacePermission(
   permission: WorkspacePermissionType,
   role: RoleType
 ): boolean {
+  if (!hasFeature("bb.feature.rbac")) {
+    return true;
+  }
   switch (role) {
     case "DEVELOPER":
       return WORKSPACE_PERMISSION_MATRIX.get(permission)![0];
