@@ -46,7 +46,7 @@
 <script lang="ts">
 import { computed, defineComponent, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
-import { idFromSlug, isProjectOwner } from "../utils";
+import { idFromSlug, hasProjectPermission } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
@@ -136,10 +136,6 @@ export default defineComponent({
       selectedIndex: findTabIndexByHash(router.currentRoute.value.hash),
     });
 
-    // Only the project owner can edit the project general info and configure version control.
-    // This means even the workspace owner won't be able to edit it.
-    // On the other hand, we allow workspace owner to change project membership in case
-    // project is locked somehow. See the relevant method in ProjectMemberTable for more info.
     const allowEdit = computed(() => {
       if (project.value.rowStatus == "ARCHIVED") {
         return false;
@@ -147,7 +143,12 @@ export default defineComponent({
 
       for (const member of project.value.memberList) {
         if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
+          if (
+            hasProjectPermission(
+              "bb.permission.project.manage-general",
+              member.role
+            )
+          ) {
             return true;
           }
         }

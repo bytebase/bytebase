@@ -146,7 +146,7 @@ const currentUser = useCurrentUser();
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermission(
-    "bb.permission.workspace.manage-workspace",
+    "bb.permission.workspace.manage-general",
     currentUser.value.role
   );
 });
