@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -33,7 +34,7 @@ type policyRaw struct {
 	Payload string
 }
 
-var tierPolicyCache = map[int]*policyRaw{}
+var tierPolicyCache = sync.Map{}
 
 // toPolicy creates an instance of Policy based on the PolicyRaw.
 // This is intended to be called when we need to compose an Policy relationship.
@@ -65,7 +66,7 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	}
 	// Cache environment tier policy as it is used widely.
 	if upsert.Type == api.PolicyTypeEnvironmentTier {
-		tierPolicyCache[upsert.EnvironmentID] = policyRaw
+		tierPolicyCache.Store(upsert.EnvironmentID, policyRaw)
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
@@ -126,7 +127,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 	}
 
 	if policyDelete.Type == api.PolicyTypeEnvironmentTier {
-		delete(tierPolicyCache, policyDelete.EnvironmentID)
+		tierPolicyCache.Delete(policyDelete.EnvironmentID)
 	}
 	return nil
 }
@@ -224,8 +225,11 @@ func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID i
 
 // GetEnvironmentTierPolicyByEnvID will get the environment tier policy for an environment.
 func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environmentID int) (*api.EnvironmentTierPolicy, error) {
-	policy, ok := tierPolicyCache[environmentID]
-	if !ok {
+	p, ok := tierPolicyCache.Load(environmentID)
+	var policy *policyRaw
+	if ok {
+		policy = p.(*policyRaw)
+	} else {
 		pType := api.PolicyTypeEnvironmentTier
 		p, err := s.getPolicyRaw(ctx, &api.PolicyFind{
 			EnvironmentID: &environmentID,
@@ -236,7 +240,7 @@ func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environment
 		}
 		policy = p
 		// Cache the tier policy.
-		tierPolicyCache[environmentID] = policy
+		tierPolicyCache.Store(environmentID, policy)
 	}
 	return api.UnmarshalEnvironmentTierPolicy(policy.Payload)
 }

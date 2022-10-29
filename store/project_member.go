@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -32,6 +33,9 @@ type projectMemberRaw struct {
 	RoleProvider api.ProjectRoleProvider
 	Payload      string
 }
+
+// Project members are used widely. We need to cache them to optimize query latency.
+var projectMemberCache = sync.Map{}
 
 // toProjectMember creates an instance of ProjectMember based on the projectMemberRaw.
 // This is intended to be called when we need to compose an ProjectMember relationship.
@@ -66,11 +70,21 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
+	// Invalidate the cache.
+	projectMemberCache.Delete(create.ProjectID)
+
 	return projectMember, nil
 }
 
 // FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
+	findCopy := *find
+	findCopy.ProjectID = nil
+	isListProjectMember := find.ProjectID != nil && findCopy == api.ProjectMemberFind{}
+	cacheList, ok := projectMemberCache.Load(*find.ProjectID)
+	if ok && isListProjectMember {
+		return cacheList.([]*api.ProjectMember), nil
+	}
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find ProjectMember list with ProjectMemberFind[%+v]", find)
@@ -82,6 +96,9 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 			return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", raw)
 		}
 		projectMemberList = append(projectMemberList, projectMember)
+	}
+	if isListProjectMember {
+		projectMemberCache.Store(*find.ProjectID, projectMemberList)
 	}
 	return projectMemberList, nil
 }
@@ -122,24 +139,28 @@ func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMember
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
+	// Invalidate the cache.
+	projectMemberCache.Delete(projectMemberRaw.ProjectID)
 	return projectMember, nil
 }
 
 // DeleteProjectMember deletes an existing projectMember by ID.
-func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemberDelete) error {
+func (s *Store) DeleteProjectMember(ctx context.Context, pDelete *api.ProjectMemberDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.Rollback()
 
-	if err := s.deleteProjectMemberImpl(ctx, tx, delete); err != nil {
+	if err := s.deleteProjectMemberImpl(ctx, tx, pDelete); err != nil {
 		return FormatError(err)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
+	// Invalidate the cache.
+	projectMemberCache.Delete(pDelete.ProjectID)
 
 	return nil
 }
