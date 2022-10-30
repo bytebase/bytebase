@@ -206,7 +206,9 @@ func checkDataDir() error {
 	}
 
 	// Trim trailing / in case user supplies
-	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
+	if len(flags.dataDir) > 1 {
+		flags.dataDir = strings.TrimRight(flags.dataDir, "/")
+	}
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
 		return errors.Wrapf(err, "unable to access --data directory %s", flags.dataDir)
