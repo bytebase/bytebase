@@ -19,6 +19,9 @@ const (
 	Postgres EngineType = "POSTGRES"
 	// TiDB is the engine type for TiDB.
 	TiDB EngineType = "TIDB"
+
+	// DeparseIndentString is the string for each indent level.
+	DeparseIndentString = "    "
 )
 
 // ParseContext is the context for parsing.
@@ -27,9 +30,9 @@ type ParseContext struct {
 
 // DeparseContext is the contxt for restoring.
 type DeparseContext struct {
-	// Indent is indent at the beginning of the line.
-	// The parser deparses statements with the indent for pretty format.
-	Indent string
+	// IndentLevel is indent level for current line.
+	// The parser deparses statements with the indent level for pretty format.
+	IndentLevel int
 }
 
 // Parser is the interface for parser.

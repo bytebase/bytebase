@@ -48,7 +48,7 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 		}
 	}
 	columnContext := parser.DeparseContext{
-		Indent: fmt.Sprintf("%s    ", context.Indent),
+		IndentLevel: context.IndentLevel + 1,
 	}
 	for i, column := range in.ColumnList {
 		if i != 0 {
@@ -76,8 +76,10 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 }
 
 func deparseColumnDef(context parser.DeparseContext, in *ast.ColumnDef, buf *strings.Builder) error {
-	if _, err := buf.WriteString(context.Indent); err != nil {
-		return err
+	for i := 0; i < context.IndentLevel; i++ {
+		if _, err := buf.WriteString(parser.DeparseIndentString); err != nil {
+			return err
+		}
 	}
 	if err := writeSurrounding(buf, in.ColumnName, "\""); err != nil {
 		return err
