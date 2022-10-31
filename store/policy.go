@@ -63,7 +63,7 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	}
 	// Cache environment tier policy as it is used widely.
 	if upsert.Type == api.PolicyTypeEnvironmentTier {
-		if err := s.cache.UpsertCache(api.ProjectMemberCache, upsert.EnvironmentID, policyRaw); err != nil {
+		if err := s.cache.UpsertCache(api.TierPolicyCache, upsert.EnvironmentID, policyRaw); err != nil {
 			return nil, err
 		}
 	}
@@ -240,7 +240,7 @@ func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environment
 		}
 		policy = p
 		// Cache the tier policy.
-		if err := s.cache.UpsertCache(api.ProjectMemberCache, environmentID, policy); err != nil {
+		if err := s.cache.UpsertCache(api.TierPolicyCache, environmentID, policy); err != nil {
 			return nil, err
 		}
 	}
