@@ -1,7 +1,5 @@
 <template>
   <div class="space-y-4 overflow-x-hidden w-208 max-w-full transition-all">
-    <p class="w-full">{{ $t("database.sync-schema.description") }}</p>
-
     <!-- Project and base, target database selectors -->
     <div class="w-full flex flex-col justify-start items-start">
       <div class="w-160">
@@ -214,7 +212,7 @@
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
           @click="handleConfirmButtonClick"
         >
-          {{ $t("common.confirm") }}
+          {{ $t("database.sync-schema.preview-issue") }}
         </button>
       </div>
     </div>
@@ -240,22 +238,17 @@ import {
   DatabaseId,
   EngineType,
   EnvironmentId,
-  IssueCreate,
   MigrationHistory,
   ProjectId,
   SQLDialect,
-  SYSTEM_BOT_ID,
   UNKNOWN_ID,
-  MigrationContext,
 } from "@/types";
 import {
   hasFeature,
   pushNotification,
   useDatabaseStore,
   useInstanceStore,
-  useIssueStore,
 } from "@/store";
-import { issueSlug } from "@/utils";
 import { isNullOrUndefined } from "@/plugins/demo/utils";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
@@ -426,38 +419,27 @@ const handleConfirmButtonClick = async () => {
   const targetDatabase = databaseStore.getDatabaseById(
     state.targetDatabaseInfo.databaseId as DatabaseId
   );
-  const migrationContext: MigrationContext = {
-    detailList: [
-      {
-        migrationType: "MIGRATE",
-        databaseId: targetDatabase.id,
-        databaseName: targetDatabase.name,
-        statement: state.editStatement,
-        earliestAllowedTs: 0,
-      },
-    ],
+  const issueName = `[${targetDatabase.name}] Sync Schema from ${
+    sourceDatabase.name
+  }(${state.baseSchemaInfo.migrationHistory?.version || ""}) in ${
+    sourceDatabase.instance.environment.name
+  } @ ${dayjs().format("MM-DD HH:mm")}`;
+
+  const query: Record<string, any> = {
+    template: "bb.issue.database.data.update",
+    name: issueName,
+    project: state.projectId,
+    databaseList: targetDatabase.id,
+    sql: state.editStatement,
   };
 
-  const newIssue: IssueCreate = {
-    name: `[${targetDatabase.name}] Sync Schema from ${sourceDatabase.name}(${
-      state.baseSchemaInfo.migrationHistory?.version || ""
-    }) in ${sourceDatabase.instance.environment.name} @ ${dayjs().format(
-      "MM-DD HH:mm"
-    )}`,
-    type: "bb.issue.database.schema.update",
-    description: "",
-    assigneeId: SYSTEM_BOT_ID,
-    projectId: targetDatabase.projectId,
-    pipeline: {
-      stageList: [],
-      name: "",
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
     },
-    createContext: migrationContext,
-    payload: {},
-  };
-  const createdIssue = await useIssueStore().createIssue(newIssue);
-
-  router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
+    query,
+  });
 };
 
 const getSchemaDiff = async (
