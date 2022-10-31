@@ -218,6 +218,30 @@ func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Buil
 		default:
 			return errors.Errorf("failed to deparse serial with %d size", node.Size)
 		}
+	case *ast.Character:
+		if _, err := buf.WriteString("character("); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+	case *ast.CharacterVarying:
+		if _, err := buf.WriteString("character varying("); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+	case *ast.Text:
+		if _, err := buf.WriteString("text"); err != nil {
+			return err
+		}
 	case *ast.UnconvertedDataType:
 		var nameList []string
 		for _, name := range node.Name {
