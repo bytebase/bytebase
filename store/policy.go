@@ -63,7 +63,9 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	}
 	// Cache environment tier policy as it is used widely.
 	if upsert.Type == api.PolicyTypeEnvironmentTier {
-		tierPolicyCache.Store(upsert.EnvironmentID, policyRaw)
+		if err := s.cache.UpsertCache(api.ProjectMemberCache, upsert.EnvironmentID, policyRaw); err != nil {
+			return nil, err
+		}
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
