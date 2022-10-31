@@ -17,8 +17,10 @@
     "system": "系统"
   },
   "template": {
-    "bb-sql-review-prod": "针对生产环境的审核策略模板",
-    "bb-sql-review-dev": "针对开发环境的审核策略模板"
+    "bb-sql-review-prod": "进阶模板",
+    "bb-sql-review-prod-desc": "建议用于生产环境",
+    "bb-sql-review-dev": "基础模板",
+    "bb-sql-review-dev-desc": "建议用于开发环境"
   },
   "rule": {
     "engine-mysql-use-innodb": {

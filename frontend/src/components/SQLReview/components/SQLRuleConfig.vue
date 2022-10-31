@@ -261,9 +261,13 @@ const pushToList = (i: number, e: any) => {
   }
 
   const val = e.target.value.trim();
-  (state.payload[i] as string[]).push(val);
-
-  e.target.value = "";
+  if (val) {
+    const existed = state.payload[i] as string[];
+    if (!new Set(existed).has(val)) {
+      existed.push(val);
+      e.target.value = "";
+    }
+  }
 };
 
 const getStringPayload = (i: number): string => {

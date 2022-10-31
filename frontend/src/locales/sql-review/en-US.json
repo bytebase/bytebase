@@ -16,8 +16,10 @@
     "system": "System"
   },
   "template": {
-    "bb-sql-review-prod": "Template for Prod Environment",
-    "bb-sql-review-dev": "Template for Dev Environment"
+    "bb-sql-review-prod": "Advanced Template",
+    "bb-sql-review-prod-desc": "Recommended for the production environment",
+    "bb-sql-review-dev": "Basic Template",
+    "bb-sql-review-dev-desc": "Recommended for the development environment"
   },
   "rule": {
     "engine-mysql-use-innodb": {

@@ -18,10 +18,23 @@
         "
         @click="$emit('select', index)"
       >
-        <img class="h-24" :src="getTemplateImage(template.id)" alt="" />
-        <span class="text-sm lg:text-base mt-4">
-          {{ $t(`sql-review.template.${template.id.split(".").join("-")}`) }}
-        </span>
+        <div class="flex justify-center items-center space-x-1">
+          <img class="w-24" :src="getTemplateImage(template.id)" alt="" />
+          <div class="text-left">
+            <span class="text-base mt-4 font-medium">
+              {{
+                $t(`sql-review.template.${template.id.split(".").join("-")}`)
+              }}
+            </span>
+            <p class="text-sm mt-2">
+              {{
+                $t(
+                  `sql-review.template.${template.id.split(".").join("-")}-desc`
+                )
+              }}
+            </p>
+          </div>
+        </div>
         <heroicons-solid:check-circle
           v-if="index == selectedTemplateIndex"
           class="w-7 h-7 text-gray-500 absolute top-3 left-3"
