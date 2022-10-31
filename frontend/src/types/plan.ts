@@ -92,7 +92,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Database management
   ["bb.feature.pitr", [false, true, true]],
   ["bb.feature.read-replica-connection", [false, false, true]],
-  ["bb.feature.sync-schema", [false, false, true]],
+  ["bb.feature.sync-schema", [true, true, true]],
   // Policy Control
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],
