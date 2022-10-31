@@ -580,8 +580,7 @@ const createMigration = async (
           baseDirectoryWebUrl(repository, {
             DB_NAME: database.value.name,
             ENV_NAME: database.value.instance.environment.name,
-            TYPE:
-              type === "bb.issue.database.schema.update" ? "migrate" : "data",
+            TYPE: type === "bb.issue.database.schema.update" ? "ddl" : "dml",
           }),
           "_blank"
         );
