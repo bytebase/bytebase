@@ -36,12 +36,12 @@
     },
     "team": {
       "title": "Team Plan",
-      "label": "Beta",
+      "label": "",
       "desc": "Medium size team, has dedicated DBA or TL for engineering velocity"
     },
     "enterprise": {
       "title": "Enterprise Plan",
-      "label": "Early access",
+      "label": "",
       "desc": "Large organization, has dedicated DBA group to manage database fleet"
     }
   },
