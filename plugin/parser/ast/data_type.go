@@ -35,3 +35,16 @@ type numericType struct {
 }
 
 func (*numericType) numericTypeInterface() {}
+
+// CharacterType is the interface for character type.
+type CharacterType interface {
+	DataType
+
+	characterTypeInterface()
+}
+
+type characterType struct {
+	dataType
+}
+
+func (*characterType) characterTypeInterface() {}

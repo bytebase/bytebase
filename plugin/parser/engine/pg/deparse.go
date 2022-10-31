@@ -45,19 +45,28 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 	}
 
 	if len(in.ColumnList) != 0 {
-		if _, err := buf.WriteString("("); err != nil {
+		if _, err := buf.WriteString(" ("); err != nil {
 			return err
 		}
 	}
+	columnContext := parser.DeparseContext{
+		IndentLevel: context.IndentLevel + 1,
+	}
 	for i, column := range in.ColumnList {
 		if i != 0 {
-			if _, err := buf.WriteString(", "); err != nil {
+			if _, err := buf.WriteString(","); err != nil {
 				return err
 			}
 		}
-		if err := deparseColumnDef(context, column, buf); err != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
 			return err
 		}
+		if err := deparseColumnDef(columnContext, column, buf); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n"); err != nil {
+		return err
 	}
 	if len(in.ColumnList) != 0 {
 		if _, err := buf.WriteString(")"); err != nil {
@@ -69,6 +78,11 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 }
 
 func deparseColumnDef(context parser.DeparseContext, in *ast.ColumnDef, buf *strings.Builder) error {
+	for i := 0; i < context.IndentLevel; i++ {
+		if _, err := buf.WriteString(parser.DeparseIndentString); err != nil {
+			return err
+		}
+	}
 	if err := writeSurrounding(buf, in.ColumnName, "\""); err != nil {
 		return err
 	}
@@ -135,14 +149,24 @@ func deparseTableDef(_ parser.DeparseContext, in *ast.TableDef, buf *strings.Bui
 func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Builder) error {
 	switch node := in.(type) {
 	case *ast.Integer:
-		if _, err := buf.WriteString("INT"); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
-			return err
+		switch node.Size {
+		case 8:
+			if _, err := buf.WriteString("bigint"); err != nil {
+				return err
+			}
+		case 4:
+			if _, err := buf.WriteString("integer"); err != nil {
+				return err
+			}
+		case 2:
+			if _, err := buf.WriteString("smallint"); err != nil {
+				return err
+			}
+		default:
+			return errors.Errorf("failed to deparse integer with %d size", node.Size)
 		}
 	case *ast.Decimal:
-		if _, err := buf.WriteString("DECIMAL"); err != nil {
+		if _, err := buf.WriteString("numeric"); err != nil {
 			return err
 		}
 		if node.Precision != 0 {
@@ -167,17 +191,57 @@ func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Buil
 			}
 		}
 	case *ast.Float:
-		if _, err := buf.WriteString("FLOAT"); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
-			return err
+		switch node.Size {
+		case 8:
+			if _, err := buf.WriteString("double precision"); err != nil {
+				return err
+			}
+		case 4:
+			if _, err := buf.WriteString("real"); err != nil {
+				return err
+			}
+		default:
+			return errors.Errorf("failed to deparse float with %d size", node.Size)
 		}
 	case *ast.Serial:
-		if _, err := buf.WriteString("SERIAL"); err != nil {
+		switch node.Size {
+		case 8:
+			if _, err := buf.WriteString("bigserial"); err != nil {
+				return err
+			}
+		case 4:
+			if _, err := buf.WriteString("serial"); err != nil {
+				return err
+			}
+		case 2:
+			if _, err := buf.WriteString("smallserial"); err != nil {
+				return err
+			}
+		default:
+			return errors.Errorf("failed to deparse serial with %d size", node.Size)
+		}
+	case *ast.Character:
+		if _, err := buf.WriteString("character("); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+	case *ast.CharacterVarying:
+		if _, err := buf.WriteString("character varying("); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(strconv.Itoa(node.Size)); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+	case *ast.Text:
+		if _, err := buf.WriteString("text"); err != nil {
 			return err
 		}
 	case *ast.UnconvertedDataType:

@@ -90,6 +90,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		// Only Owner and DBA can fetch all projects from all users.
+		// Developer can only fetch all projects from herself.
 		if projectFind.PrincipalID == nil {
 			role := c.Get(getRoleContextKey()).(api.Role)
 			if role != api.Owner && role != api.DBA {

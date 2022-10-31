@@ -920,6 +920,12 @@ func convertDataType(tp *pgquery.TypeName) ast.DataType {
 			return &ast.Serial{Size: size}
 		case s == "numeric":
 			return convertToDecimal(tp.Typmods)
+		case s == "bpchar":
+			return convertToCharacter(tp.Typmods)
+		case s == "varchar":
+			return convertToVarchar(tp.Typmods)
+		case s == "text":
+			return &ast.Text{}
 		}
 	}
 	return convertToUnconvertedDataType(tp)
@@ -959,6 +965,28 @@ func convertToDecimal(typmods []*pgquery.Node) ast.DataType {
 	default:
 		return &ast.UnconvertedDataType{}
 	}
+}
+
+func convertToVarchar(typmods []*pgquery.Node) ast.DataType {
+	if len(typmods) != 1 {
+		return &ast.UnconvertedDataType{}
+	}
+	size, ok := convertToInteger(typmods[0])
+	if !ok {
+		return &ast.UnconvertedDataType{}
+	}
+	return &ast.CharacterVarying{Size: size}
+}
+
+func convertToCharacter(typmods []*pgquery.Node) ast.DataType {
+	if len(typmods) != 1 {
+		return &ast.UnconvertedDataType{}
+	}
+	size, ok := convertToInteger(typmods[0])
+	if !ok {
+		return &ast.UnconvertedDataType{}
+	}
+	return &ast.Character{Size: size}
 }
 
 func convertToInteger(in *pgquery.Node) (int, bool) {
