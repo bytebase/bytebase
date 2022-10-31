@@ -8,7 +8,11 @@
 
     <template v-if="!tabStore.isDisconnected">
       <div ref="queryListContainerRef" class="w-full flex-1 overflow-y-auto">
-        <div class="w-full flex flex-col">
+        <div
+          ref="queryListRef"
+          class="w-full flex flex-col"
+          :data-height="queryListSize.height"
+        >
           <div v-for="(query, i) in state.queryList" :key="i" class="relative">
             <CompactSQLEditor
               v-model:sql="query.sql"
@@ -40,7 +44,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 
 import { ExecuteConfig, ExecuteOption, SQLResultSet } from "@/types";
 import { useSQLEditorStore, useTabStore } from "@/store";
@@ -49,6 +53,7 @@ import EditorAction from "../EditorPanel/EditorAction.vue";
 import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
 import ConnectionHolder from "../EditorPanel/ConnectionHolder.vue";
 import TableView from "./TableView.vue";
+import { useElementSize } from "@vueuse/core";
 
 type QueryItem = {
   sql: string;
@@ -77,6 +82,7 @@ const state = reactive<LocalState>({
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();
+const queryListRef = ref<HTMLDivElement>();
 
 const currentQuery = computed(
   () => state.queryList[state.queryList.length - 1]
@@ -100,15 +106,20 @@ const handleExecute = async (
     });
     queryItem.queryResult = result;
     state.queryList.push(createEmptyQueryItem());
-
-    setTimeout(() => {
-      const container = queryListContainerRef.value;
-      if (container) {
-        container.scrollTo(0, container.scrollHeight);
-      }
-    }, 100);
   } finally {
     queryItem.isExecutingSQL = false;
   }
 };
+
+const queryListSize = useElementSize(queryListRef);
+
+watch(queryListSize.height, () => {
+  // Always scroll to the bottom as if we are in a real terminal.
+  requestAnimationFrame(() => {
+    const container = queryListContainerRef.value;
+    if (container) {
+      container.scrollTo(0, container.scrollHeight);
+    }
+  });
+});
 </script>

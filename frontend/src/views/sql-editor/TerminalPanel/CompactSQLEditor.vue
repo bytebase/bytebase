@@ -13,6 +13,7 @@
         scrollbar: {
           vertical: 'hidden',
           horizontal: 'hidden',
+          alwaysConsumeMouseWheel: false,
         },
         overviewRulerLanes: 0,
         lineNumbers: getLineNumber,
@@ -133,7 +134,8 @@ const handleChangeSelection = (value: string) => {
 
 const handleEditorReady = async () => {
   const monaco = await import("monaco-editor");
-  editorRef.value?.editorInstance?.addAction({
+  const editor = editorRef.value?.editorInstance;
+  editor?.addAction({
     id: "RunQuery",
     label: "Run Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
@@ -146,7 +148,7 @@ const handleEditorReady = async () => {
     },
   });
 
-  editorRef.value?.editorInstance?.addAction({
+  editor?.addAction({
     id: "ExplainQuery",
     label: "Explain Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
@@ -161,6 +163,16 @@ const handleEditorReady = async () => {
       );
     },
   });
+
+  if (editor) {
+    const messageContribution = editor.getContribution(
+      "editor.contrib.messageController"
+    );
+    editor.onDidAttemptReadOnlyEdit(() => {
+      console.log("should dispose ");
+      messageContribution?.dispose();
+    });
+  }
 
   watchEffect(() => {
     if (selectedInstance.value) {
