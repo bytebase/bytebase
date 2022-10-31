@@ -328,7 +328,6 @@ export default defineComponent({
 
     const allowUpdate = computed(() => {
       return (
-        !isEmpty(state.repositoryConfig.branchFilter) &&
         !isEmpty(state.repositoryConfig.filePathTemplate) &&
         (props.repository.branchFilter !==
           state.repositoryConfig.branchFilter ||

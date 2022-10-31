@@ -915,6 +915,7 @@
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
+    "branch-specify-tip": "诀窍: 可以使用空字符串跟踪所有分支的变更.",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",
