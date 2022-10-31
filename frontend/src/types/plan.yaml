@@ -3,6 +3,7 @@ categoryList:
     featureList:
       - instance-count
       - schema-change
+      - sync-schema
       - migration-history
       - sql-editor
       - disaster-recovery
@@ -45,6 +46,7 @@ planList:
       - type: schema-change
         content: schema-change-basic
         tooltip: schema-change-basic-tooltip
+      - type: sync-schema
       - type: migration-history
       - type: sql-editor
       - type: disaster-recovery
@@ -83,6 +85,7 @@ planList:
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
+      - type: sync-schema
       - type: migration-history
       - type: sql-editor
       - type: disaster-recovery
@@ -127,6 +130,7 @@ planList:
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
+      - type: sync-schema
       - type: migration-history
       - type: sql-editor
       - type: disaster-recovery
