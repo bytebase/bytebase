@@ -244,7 +244,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		}
 
 		// TODO(d): we need to figure out the baseline write-back for users using wildcard branch filter.
-		branch := repo.BaseDirectory
+		branch := repo.BranchFilter
 		if vcsPushEvent != nil {
 			b, err := parseBranchNameFromRefs(vcsPushEvent.Ref)
 			if err != nil {
