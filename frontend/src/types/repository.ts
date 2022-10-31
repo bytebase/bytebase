@@ -90,7 +90,7 @@ export type ExternalRepositoryInfo = {
 type WebUrlReplaceParams = {
   DB_NAME?: string;
   VERSION?: string;
-  TYPE?: "migrate" | "data";
+  TYPE?: "ddl" | "dml";
   ENV_NAME?: string;
 };
 
