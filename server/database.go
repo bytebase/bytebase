@@ -780,7 +780,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if err := s.store.DeleteDataSource(ctx, &api.DataSourceDelete{
-			ID: dataSource.ID,
+			ID:         dataSource.ID,
+			InstanceID: database.InstanceID,
 		}); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete data source").SetInternal(err)
 		}

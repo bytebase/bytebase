@@ -103,6 +103,7 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
 	}
+
 	var dataSourceList []*api.DataSource
 	for _, raw := range dataSourceRawList {
 		dataSource, err := s.composeDataSource(ctx, raw)
@@ -128,14 +129,14 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 }
 
 // DeleteDataSource deletes an existing dataSource by ID.
-func (s *Store) DeleteDataSource(ctx context.Context, delete *api.DataSourceDelete) error {
+func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.DataSourceDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.Rollback()
 
-	if err := s.deleteDataSourceImpl(ctx, tx, delete); err != nil {
+	if err := s.deleteDataSourceImpl(ctx, tx, deleteDataSource); err != nil {
 		return FormatError(err)
 	}
 
@@ -143,6 +144,8 @@ func (s *Store) DeleteDataSource(ctx context.Context, delete *api.DataSourceDele
 		return FormatError(err)
 	}
 
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, deleteDataSource.InstanceID)
 	return nil
 }
 
@@ -153,10 +156,11 @@ func (s *Store) DeleteDataSource(ctx context.Context, delete *api.DataSourceDele
 // createDataSourceRawTx creates an instance of DataSource.
 // This uses an existing transaction object.
 func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) error {
-	_, err := s.createDataSourceImpl(ctx, tx, create)
-	if err != nil {
+	if _, err := s.createDataSourceImpl(ctx, tx, create); err != nil {
 		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, create.InstanceID)
 	return nil
 }
 
@@ -194,12 +198,26 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, dataSource.InstanceID)
 
 	return dataSource, nil
 }
 
 // findDataSourceRaw retrieves a list of data sources based on find.
 func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
+	findCopy := *find
+	findCopy.InstanceID = nil
+	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
+	var cacheList []*dataSourceRaw
+	has, err := s.cache.FindCache(api.DataSourceCache, *find.InstanceID, &cacheList)
+	if err != nil {
+		return nil, err
+	}
+	if has && isListDataSource {
+		return cacheList, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -210,7 +228,11 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 	if err != nil {
 		return nil, err
 	}
-
+	if isListDataSource {
+		if err := s.cache.UpsertCache(api.DataSourceCache, *find.InstanceID, list); err != nil {
+			return nil, err
+		}
+	}
 	return list, nil
 }
 
@@ -253,6 +275,8 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, dataSource.InstanceID)
 
 	return dataSource, nil
 }
