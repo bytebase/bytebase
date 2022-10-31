@@ -80,3 +80,30 @@ func TestCreateTable(t *testing.T) {
 
 	runDeparseTest(t, tests)
 }
+
+func TestDeparseCreateSchema(t *testing.T) {
+	tests := []testDeparseData{
+		{
+			stmt: `create schema myschema authorization bytebase create table tbl(id INT);`,
+			want: `CREATE SCHEMA "myschema" AUTHORIZATION "bytebase" CREATE TABLE "tbl"("id" INT4)`,
+		},
+		{
+			stmt: `create schema if not exists myschema authorization bytebase;`,
+			want: `CREATE SCHEMA IF NOT EXISTS "myschema" AUTHORIZATION "bytebase"`,
+		},
+		{
+			stmt: `create schema if not exists myschema`,
+			want: `CREATE SCHEMA IF NOT EXISTS "myschema"`,
+		},
+		{
+			stmt: `create schema if not exists "myschema" authorization bytebase`,
+			want: `CREATE SCHEMA IF NOT EXISTS "myschema" AUTHORIZATION "bytebase"`,
+		},
+		{
+			stmt: `create schema if not exists authorization bytebase`,
+			want: `CREATE SCHEMA IF NOT EXISTS AUTHORIZATION "bytebase"`,
+		},
+	}
+
+	runDeparseTest(t, tests)
+}
