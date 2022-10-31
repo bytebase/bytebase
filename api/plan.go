@@ -209,7 +209,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Database management
 	FeaturePITR:                  {false, true, true},
 	FeatureReadReplicaConnection: {false, false, true},
-	FeatureSyncSchema:            {false, false, true},
+	FeatureSyncSchema:            {true, true, true},
 	// Policy Control
 	FeatureApprovalPolicy:        {false, true, true},
 	FeatureBackupPolicy:          {false, true, true},

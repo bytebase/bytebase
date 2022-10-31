@@ -78,7 +78,8 @@
         "schedule-change": "设定任务执行时间",
         "review-and-backup-policy": "审核和备份策略",
         "tenancy": "多地域/多租户部署",
-        "read-replica": "为只读操作提供单独连接"
+        "read-replica": "为只读操作提供单独连接",
+        "sync-schema": "库表同步"
       }
     },
     "collaboration": {
