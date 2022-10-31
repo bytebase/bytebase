@@ -229,7 +229,9 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 		return nil, err
 	}
 	if isListDataSource {
-		s.cache.UpsertCache(api.DataSourceCache, *find.InstanceID, list)
+		if err := s.cache.UpsertCache(api.DataSourceCache, *find.InstanceID, list); err != nil {
+			return nil, err
+		}
 	}
 	return list, nil
 }
