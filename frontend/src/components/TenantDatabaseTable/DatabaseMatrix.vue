@@ -154,13 +154,15 @@ export default defineComponent({
         return [];
       }
       const dict = groupBy(props.databaseList, (db) => getLabelValue(db, key));
-      return yAxisValueList.value.map((labelValue) => {
-        const databaseList = dict[labelValue] || [];
-        return {
-          labelValue,
-          databaseList,
-        };
-      });
+      return yAxisValueList.value
+        .map((labelValue) => {
+          const databaseList = dict[labelValue] || [];
+          return {
+            labelValue,
+            databaseList,
+          };
+        })
+        .filter((group) => group.databaseList.length > 0);
     });
 
     // then, group each row by `xAxisLabel` into some columns
