@@ -4,17 +4,12 @@
   >
     <EditorAction />
 
-    <div
-      v-if="isProtectedEnvironment"
-      class="w-full py-1 px-4 bg-warning text-white"
-    >
-      {{ $t("sql-editor.sql-execute-in-protected-environment") }}
-    </div>
+    <ConnectionPathBar />
 
     <template v-if="!tabStore.isDisconnected">
       <div ref="queryListContainerRef" class="w-full flex-1 overflow-y-auto">
         <div class="w-full flex flex-col">
-          <template v-for="(query, i) in state.queryList" :key="i">
+          <div v-for="(query, i) in state.queryList" :key="i" class="relative">
             <CompactSQLEditor
               v-model:sql="query.sql"
               class="border-b"
@@ -25,11 +20,16 @@
               v-if="query.queryResult"
               class="max-h-[20rem] overflow-y-auto border-b"
             >
-              <TableView
-                :query-result="query.queryResult.data as [string[], string[], any[][]]"
-              />
+              <TableView :query-result="query.queryResult.data" />
             </div>
-          </template>
+
+            <div
+              v-if="query.isExecutingSQL"
+              class="absolute inset-0 bg-white/50 flex justify-center items-center"
+            >
+              <BBSpin />
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -43,9 +43,10 @@
 import { computed, reactive, ref } from "vue";
 
 import { ExecuteConfig, ExecuteOption, SQLResultSet } from "@/types";
-import { useSQLEditorStore, useTabStore, useInstanceStore } from "@/store";
+import { useSQLEditorStore, useTabStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import EditorAction from "../EditorPanel/EditorAction.vue";
+import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
 import ConnectionHolder from "../EditorPanel/ConnectionHolder.vue";
 import TableView from "./TableView.vue";
 
@@ -70,19 +71,12 @@ const createEmptyQueryItem = (): QueryItem => ({
 });
 
 const tabStore = useTabStore();
-const instanceStore = useInstanceStore();
 
 const state = reactive<LocalState>({
   queryList: [createEmptyQueryItem()],
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();
-
-const isProtectedEnvironment = computed(() => {
-  const { instanceId } = tabStore.currentTab.connection;
-  const instance = instanceStore.getInstanceById(instanceId);
-  return instance.environment.tier === "PROTECTED";
-});
 
 const currentQuery = computed(
   () => state.queryList[state.queryList.length - 1]
@@ -94,6 +88,10 @@ const handleExecute = async (
   option?: ExecuteOption
 ) => {
   const queryItem = currentQuery.value;
+  if (queryItem.isExecutingSQL) {
+    return;
+  }
+
   queryItem.executeParams = { query, config, option };
   queryItem.isExecutingSQL = true;
   try {
