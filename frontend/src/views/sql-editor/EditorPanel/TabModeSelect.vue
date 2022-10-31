@@ -49,7 +49,7 @@ const renderLabel = (option: SelectOption) => {
     {
       class: ["flex items-center gap-x-1", color],
     },
-    [h(icon, { class: "h-4 w-4 " }), h("span", {}, String(option.label))]
+    [h(icon, { class: "h-4 w-4" }), h("span", {}, String(option.label))]
   );
 };
 
