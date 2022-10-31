@@ -78,11 +78,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "c",
-							Type:       &ast.Varchar{Size: 330},
+							Type:       &ast.CharacterVarying{Size: 330},
 						},
 						{
 							ColumnName: "d",
-							Type:       &ast.Varchar{Size: 400},
+							Type:       &ast.CharacterVarying{Size: 400},
 						},
 						{
 							ColumnName: "e",

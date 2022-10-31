@@ -916,7 +916,7 @@ func convertToVarchar(typmods []*pgquery.Node) ast.DataType {
 	if !ok {
 		return &ast.UnconvertedDataType{}
 	}
-	return &ast.Varchar{Size: size}
+	return &ast.CharacterVarying{Size: size}
 }
 
 func convertToCharacter(typmods []*pgquery.Node) ast.DataType {
