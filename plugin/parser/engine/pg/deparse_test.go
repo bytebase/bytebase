@@ -79,6 +79,24 @@ func TestCreateTable(t *testing.T) {
     "a" "user defined data type"
 )`,
 		},
+		{
+			stmt: `
+				CREATE TABLE tech_book(
+					a char(20),
+					b character(30),
+					c varchar(330),
+					d character varying(400),
+					e text
+				)
+			`,
+			want: `CREATE TABLE "tech_book" (
+    "a" character(20),
+    "b" character(30),
+    "c" character varying(330),
+    "d" character varying(400),
+    "e" text
+)`,
+		},
 	}
 
 	runDeparseTest(t, tests)
