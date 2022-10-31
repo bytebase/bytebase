@@ -431,9 +431,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repoPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch linked repository request").SetInternal(err)
 		}
-		if repoPatch.BranchFilter != nil && *repoPatch.BranchFilter == "" && repoPatch.SchemaPathTemplate != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch is specified")
-		}
 
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
@@ -478,6 +475,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repo := repoList[0]
 		repoPatch.ID = &repo.ID
+		newSchemaPathTemplate, newBranchFilter := repo.SchemaPathTemplate, repo.BranchFilter
+		if repoPatch.SchemaPathTemplate != nil {
+			newSchemaPathTemplate = *repoPatch.SchemaPathTemplate
+		}
+		if repoPatch.BranchFilter != nil {
+			newBranchFilter = *repoPatch.BranchFilter
+		}
+		if newBranchFilter == "" && newSchemaPathTemplate != "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch is specified")
+		}
 
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
