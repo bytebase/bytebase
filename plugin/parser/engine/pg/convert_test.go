@@ -51,6 +51,63 @@ func runTests(t *testing.T, tests []testData) {
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: `
+				CREATE TABLE tech_book(
+					a char(20),
+					b character(30),
+					c varchar(330),
+					d character varying(400),
+					e text
+				)
+			`,
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					IfNotExists: false,
+					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							Type:       &ast.Character{Size: 20},
+						},
+						{
+							ColumnName: "b",
+							Type:       &ast.Character{Size: 30},
+						},
+						{
+							ColumnName: "c",
+							Type:       &ast.Varchar{Size: 330},
+						},
+						{
+							ColumnName: "d",
+							Type:       &ast.Varchar{Size: 400},
+						},
+						{
+							ColumnName: "e",
+							Type:       &ast.Text{},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE TABLE tech_book(
+					a char(20),
+					b character(30),
+					c varchar(330),
+					d character varying(400),
+					e text
+				)`,
+					LastLine: 8,
+				},
+			},
+			columnLine: [][]int{
+				{3, 4, 5, 6, 7},
+			},
+		},
+		{
 			stmt: `CREATE TABLE tech_book(
 				a smallint,
 				b integer,
