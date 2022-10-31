@@ -175,11 +175,11 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		return true, nil, errors.Errorf("failed to find linked repository for database %q", task.Database.Name)
 	}
 
-	// We write back the latest schema after migration for VCS-based projects when schema path template is specified and
+	// We write back the latest schema after migration for VCS-based projects when schema path template and branch filter is specified and
 	// 1) baseline migration for SDL,
 	// 2) all DDL/Ghost migrations.
 	writeBack := false
-	if repo != nil && repo.SchemaPathTemplate != "" {
+	if repo != nil && repo.SchemaPathTemplate != "" && repo.BranchFilter != "" {
 		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 			if task.Type == api.TaskDatabaseSchemaBaseline {
 				writeBack = true
@@ -243,17 +243,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", server.profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
-		// TODO(d): we need to figure out the baseline write-back for users using wildcard branch filter.
-		branch := repo.BranchFilter
-		if vcsPushEvent != nil {
-			b, err := parseBranchNameFromRefs(vcsPushEvent.Ref)
-			if err != nil {
-				return true, nil, errors.Errorf("failed to parse branch name: %s", vcsPushEvent.Ref)
-			}
-			branch = b
-		}
-		// Use the branch name from the commit as we will write back to the same branch.
-		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}

@@ -98,6 +98,10 @@ export function baseDirectoryWebUrl(
   repository: Repository,
   params: WebUrlReplaceParams = {}
 ): string {
+  // If branchFilter is empty, we can't locate to the exact branch name, thus we will just return the repository web url
+  if (isEmpty(repository.branchFilter)) {
+    return repository.webUrl;
+  }
   let url = "";
   if (repository.vcs.type == "GITLAB_SELF_HOST") {
     url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;
