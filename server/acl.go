@@ -60,16 +60,6 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 		}
 
-		// If the request is trying to GET/PATCH/DELETE itself, we will change the method signature to
-		// XXX_SELF so that the policy can differentiate between XXX and XXX_SELF
-		if method == "GET" || method == "PATCH" || method == "DELETE" {
-			if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method); err != nil {
-				return err
-			} else if isSelf {
-				method += "_SELF"
-			}
-		}
-
 		path := strings.TrimPrefix(c.Request().URL.Path, "/api")
 
 		role := member.Role
@@ -82,6 +72,26 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+
+		if !pass {
+			// If the request is trying to GET/PATCH/DELETE itself, we will change the method signature to
+			// XXX_SELF and try again. Because XXX is a superset of XXX_SELF, thus we only try XXX_SELF after
+			// XXX fails.
+			if method == "GET" || method == "PATCH" || method == "DELETE" {
+				if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method); err != nil {
+					return err
+				} else if isSelf {
+					method += "_SELF"
+				}
+
+				// Performs the ACL check with _SELF.
+				pass, err = ce.Enforce(string(role), path, method)
+
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+				}
+			}
 		}
 
 		if !pass {
