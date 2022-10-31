@@ -54,7 +54,7 @@
                   :instance="database.instance"
                 />
                 <span class="mx-2">{{ database.name }}</span>
-                <span class="text-gray-400">{{ database.instance.name }}</span>
+                <span>({{ database.instance.name }})</span>
               </div>
             </template>
           </DatabaseSelect>
@@ -121,7 +121,7 @@
               <div class="flex items-center">
                 <InstanceEngineIcon :instance="database.instance" />
                 <span class="mx-2">{{ database.name }}</span>
-                <span class="text-gray-400">{{ database.instance.name }}</span>
+                <span>({{ database.instance.name }})</span>
               </div>
             </template>
           </DatabaseSelect>
@@ -170,6 +170,12 @@
           >
             <heroicons-outline:clipboard class="h-5 w-5" />
           </button>
+          <span
+            v-if="shouldShowDiff && hasDiffBetweenCharactorSets"
+            class="text-red-600 ml-3"
+          >
+            {{ $t("database.sync-schema.character-sets-diff-found") }}
+          </span>
         </div>
         <div v-if="shouldShowDiff" class="textinfolabel">
           {{ $t("database.sync-schema.synchronize-statements-description") }}
@@ -335,6 +341,24 @@ const shouldShowDiff = computed(() => {
 
 const allowCreate = computed(() => {
   return shouldShowDiff.value && state.editStatement !== "";
+});
+
+const hasDiffBetweenCharactorSets = computed(() => {
+  if (
+    !isValidId(state.baseSchemaInfo.databaseId) ||
+    !isValidId(state.targetDatabaseInfo.databaseId)
+  ) {
+    return false;
+  }
+
+  const baseDatabase = databaseStore.getDatabaseById(
+    state.baseSchemaInfo.databaseId as number
+  );
+  const targetDatabase = databaseStore.getDatabaseById(
+    state.targetDatabaseInfo.databaseId as number
+  );
+
+  return baseDatabase?.characterSet !== targetDatabase?.characterSet;
 });
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {

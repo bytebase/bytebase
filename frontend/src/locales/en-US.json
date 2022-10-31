@@ -907,8 +907,9 @@
       "synchronize-statements": "The DDL statements",
       "synchronize-statements-description": "You can further edit the generated DDL statements.",
       "select-schema-and-target-database-tip": "Please select the schema and database first.",
-      "no-difference-tip": "No diff found between source database schema and target database schema.",
+      "no-difference-tip": "No diff found.",
       "more-version": "more...",
+      "character-sets-diff-found": "There are differences between character sets.",
       "preview-issue": "Preview issue"
     }
   },

@@ -902,13 +902,14 @@
       "title": "库表同步",
       "select-project": "步骤 1. 选择项目",
       "select-schema": "步骤 2. 选择 Schema",
-      "select-database": "步骤 3. 应用到数据库",
+      "select-database": "步骤 3. 选择待同步的数据库",
       "schema-diff": "Schema 对比结果",
       "synchronize-statements": "DDL 语句",
       "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句。",
-      "select-schema-and-target-database-tip": "请先选择 Schema 和目标数据库",
-      "no-difference-tip": "源数据库 Schema 与目标数据库 Schema 之间没有差异。",
+      "select-schema-and-target-database-tip": "请先选择 Schema 和数据库。",
+      "no-difference-tip": "没有发现差异。",
       "more-version": "更多...",
+      "character-sets-diff-found": "Schema 之间的字符集不同",
       "preview-issue": "预览工单"
     }
   },
