@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 
@@ -68,10 +67,6 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 		PortOverride: raw.PortOverride,
 	}
 }
-
-// Data sources are used widely. We need to cache them to optimize query latency.
-// The value has type []*dataSourceRaw.
-var dataSourceCache = sync.Map{}
 
 // CreateDataSource creates an instance of DataSource.
 func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSource, error) {
@@ -150,7 +145,7 @@ func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.Data
 	}
 
 	// Invalidate the cache.
-	dataSourceCache.Delete(deleteDataSource.InstanceID)
+	s.cache.DeleteCache(api.DataSourceCache, deleteDataSource.InstanceID)
 	return nil
 }
 
@@ -164,6 +159,8 @@ func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.D
 	if _, err := s.createDataSourceImpl(ctx, tx, create); err != nil {
 		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, create.InstanceID)
 	return nil
 }
 
@@ -202,7 +199,7 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 		return nil, FormatError(err)
 	}
 	// Invalidate the cache.
-	dataSourceCache.Delete(dataSource.InstanceID)
+	s.cache.DeleteCache(api.DataSourceCache, dataSource.InstanceID)
 
 	return dataSource, nil
 }
@@ -212,9 +209,13 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 	findCopy := *find
 	findCopy.InstanceID = nil
 	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
-	cacheList, ok := dataSourceCache.Load(*find.InstanceID)
-	if ok && isListDataSource {
-		return cacheList.([]*dataSourceRaw), nil
+	var cacheList []*dataSourceRaw
+	has, err := s.cache.FindCache(api.DataSourceCache, *find.InstanceID, &cacheList)
+	if err != nil {
+		return nil, err
+	}
+	if has && isListDataSource {
+		return cacheList, nil
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -228,7 +229,7 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 		return nil, err
 	}
 	if isListDataSource {
-		dataSourceCache.Store(*find.InstanceID, list)
+		s.cache.UpsertCache(api.DataSourceCache, *find.InstanceID, list)
 	}
 	return list, nil
 }
@@ -273,7 +274,7 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 		return nil, FormatError(err)
 	}
 	// Invalidate the cache.
-	dataSourceCache.Delete(dataSource.InstanceID)
+	s.cache.DeleteCache(api.DataSourceCache, dataSource.InstanceID)
 
 	return dataSource, nil
 }

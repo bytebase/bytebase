@@ -2,20 +2,26 @@
 package store
 
 import (
+	"sync"
+
 	"github.com/bytebase/bytebase/api"
 )
 
 // Store provides database access to all raw objects.
 type Store struct {
-	db    *DB
-	cache api.CacheService
+	db *DB
+	// Cache for
+	cache           api.CacheService
+	dataSourceCache sync.Map
 }
 
 // New creates a new instance of Store.
 func New(db *DB, cache api.CacheService) *Store {
 	return &Store{
-		db:    db,
-		cache: cache,
+		db: db,
+		// data cache.
+		cache:           cache,
+		dataSourceCache: sync.Map{},
 	}
 }
 

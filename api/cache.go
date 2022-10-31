@@ -22,10 +22,13 @@ const (
 	IssueCache CacheNamespace = "is"
 	// DatabaseLabelCache is the cache type of database labels.
 	DatabaseLabelCache CacheNamespace = "dl"
+	// DataSourceCache is the cache type of data sources.
+	DataSourceCache CacheNamespace = "ds"
 )
 
 // CacheService is the service for caches.
 type CacheService interface {
 	FindCache(namespace CacheNamespace, id int, entry interface{}) (bool, error)
 	UpsertCache(namespace CacheNamespace, id int, entry interface{}) error
+	DeleteCache(namespace CacheNamespace, id int)
 }
