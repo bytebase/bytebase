@@ -79,7 +79,8 @@
         "schedule-change": "Scheduled change at specific time",
         "review-and-backup-policy": "Review and backup policy",
         "tenancy": "Multi-Region / Multi-Tenancy deployment",
-        "read-replica": "Separate connection for read-only operations"
+        "read-replica": "Separate connection for read-only operations",
+        "sync-schema": "Synchronize schema between databases"
       }
     },
     "collaboration": {
