@@ -915,6 +915,7 @@
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
+    "branch-specify-tip": "Tips: You can use empty branch to receive changes from all branches.",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",
