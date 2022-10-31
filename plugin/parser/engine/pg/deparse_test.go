@@ -106,7 +106,9 @@ func TestDeparseCreateSchema(t *testing.T) {
 	tests := []testDeparseData{
 		{
 			stmt: `create schema myschema authorization bytebase create table tbl(id INT);`,
-			want: `CREATE SCHEMA "myschema" AUTHORIZATION "bytebase" CREATE TABLE "tbl"("id" INT4)`,
+			want: `CREATE SCHEMA "myschema" AUTHORIZATION "bytebase" CREATE TABLE "tbl" (
+    "id" integer
+)`,
 		},
 		{
 			stmt: `create schema if not exists myschema authorization bytebase;`,
