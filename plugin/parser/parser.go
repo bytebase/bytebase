@@ -27,6 +27,8 @@ type ParseContext struct {
 
 // DeparseContext is the contxt for restoring.
 type DeparseContext struct {
+	// Indent is indent at the beginning of the line.
+	// The parser deparses statements with the indent for pretty format.
 	Indent string
 }
 
