@@ -27,6 +27,7 @@ type ParseContext struct {
 
 // DeparseContext is the contxt for restoring.
 type DeparseContext struct {
+	Indent string
 }
 
 // Parser is the interface for parser.
