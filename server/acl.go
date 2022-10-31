@@ -83,13 +83,12 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 					return err
 				} else if isSelf {
 					method += "_SELF"
-				}
 
-				// Performs the ACL check with _SELF.
-				pass, err = ce.Enforce(string(role), path, method)
-
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+					// Performs the ACL check with _SELF.
+					pass, err = ce.Enforce(string(role), path, method)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+					}
 				}
 			}
 		}
