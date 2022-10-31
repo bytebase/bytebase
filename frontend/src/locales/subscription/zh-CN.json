@@ -35,12 +35,12 @@
     },
     "team": {
       "title": "团队版",
-      "label": "Beta",
+      "label": "",
       "desc": "中型团队，有专职 DBA 或 TL 以提高工程速度"
     },
     "enterprise": {
       "title": "企业版",
-      "label": "预览版",
+      "label": "",
       "desc": "大型组织，有专属 DBA 团队来管理数据库"
     }
   },
