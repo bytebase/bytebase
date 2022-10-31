@@ -16,6 +16,8 @@ const (
 	SettingWorkspaceID SettingName = "bb.workspace.id"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
+	// SettingEnterpriseTrial is the setting name for free trial.
+	SettingEnterpriseTrial SettingName = "bb.enterprise.trial"
 )
 
 // Setting is the API message for a setting.

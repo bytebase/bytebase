@@ -97,6 +97,7 @@ p, DBA, /label, GET
 p, DBA, /label/{id}, PATCH
 p, DBA, /subscription, GET
 p, DBA, /subscription, PATCH
+p, DBA, /subscription/trial, POST
 p, DBA, /sheet, POST
 p, DBA, /sheet/my, GET
 p, DBA, /sheet/shared, GET
