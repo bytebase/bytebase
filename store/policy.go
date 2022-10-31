@@ -61,6 +61,12 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to upsert policy with PolicyUpsert[%+v]", upsert)
 	}
+	// Cache environment tier policy as it is used widely.
+	if upsert.Type == api.PolicyTypeEnvironmentTier {
+		if err := s.cache.UpsertCache(api.ProjectMemberCache, upsert.EnvironmentID, policyRaw); err != nil {
+			return nil, err
+		}
+	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", policyRaw)
@@ -82,10 +88,10 @@ func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Polic
 }
 
 // DeletePolicy deletes an existing ARCHIVED policy by PolicyDelete.
-func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) error {
+func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete) error {
 	// Validate policy.
 	// Currently we only support PolicyTypeSQLReview type policy to delete by id
-	if delete.Type != api.PolicyTypeSQLReview {
+	if policyDelete.Type != api.PolicyTypeSQLReview {
 		return &common.Error{Code: common.Invalid, Err: errors.Errorf("invalid policy type")}
 	}
 
@@ -96,8 +102,8 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	defer tx.Rollback()
 
 	find := &api.PolicyFind{
-		EnvironmentID: &delete.EnvironmentID,
-		Type:          &delete.Type,
+		EnvironmentID: &policyDelete.EnvironmentID,
+		Type:          &policyDelete.Type,
 	}
 	policyRawList, err := findPolicyImpl(ctx, tx, find)
 	if err != nil {
@@ -108,10 +114,10 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	}
 	policyRaw := policyRawList[0]
 	if policyRaw.RowStatus != api.Archived {
-		return &common.Error{Code: common.Invalid, Err: errors.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
+		return &common.Error{Code: common.Invalid, Err: errors.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", policyDelete)}
 	}
 
-	if err := s.deletePolicyImpl(ctx, tx, delete); err != nil {
+	if err := s.deletePolicyImpl(ctx, tx, policyDelete); err != nil {
 		return FormatError(err)
 	}
 
@@ -119,6 +125,9 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 		return FormatError(err)
 	}
 
+	if policyDelete.Type == api.PolicyTypeEnvironmentTier {
+		s.cache.DeleteCache(api.TierPolicyCache, policyDelete.EnvironmentID)
+	}
 	return nil
 }
 
@@ -215,13 +224,25 @@ func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID i
 
 // GetEnvironmentTierPolicyByEnvID will get the environment tier policy for an environment.
 func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environmentID int) (*api.EnvironmentTierPolicy, error) {
-	pType := api.PolicyTypeEnvironmentTier
-	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		EnvironmentID: &environmentID,
-		Type:          &pType,
-	})
+	var policy *policyRaw
+	ok, err := s.cache.FindCache(api.TierPolicyCache, environmentID, &policy)
 	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		pType := api.PolicyTypeEnvironmentTier
+		p, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+			EnvironmentID: &environmentID,
+			Type:          &pType,
+		})
+		if err != nil {
+			return nil, err
+		}
+		policy = p
+		// Cache the tier policy.
+		if err := s.cache.UpsertCache(api.ProjectMemberCache, environmentID, policy); err != nil {
+			return nil, err
+		}
 	}
 	return api.UnmarshalEnvironmentTierPolicy(policy.Payload)
 }

@@ -20,7 +20,7 @@
     </template>
   </div>
   <div class="mt-2 textinfolabel">
-    <template v-if="isCurrentUserOwner">
+    <template v-if="canManageVCSProvider">
       <i18n-t keypath="repository.choose-git-provider-visit-workspace">
         <template #workspace>
           <router-link class="normal-link" to="/setting/version-control"
@@ -44,7 +44,7 @@ export default { name: "RepositoryVCSProviderPanel" };
 import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { OAuthWindowEventPayload, openWindowForOAuth, VCS } from "../types";
-import { isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { pushNotification, useCurrentUser, useVCSStore } from "@/store";
 
 interface LocalState {
@@ -93,8 +93,11 @@ const eventListener = (event: Event) => {
   }
 };
 
-const isCurrentUserOwner = computed(() => {
-  return isOwner(currentUser.value.role);
+const canManageVCSProvider = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-vcs-provider",
+    currentUser.value.role
+  );
 });
 
 const selectVCS = (vcs: VCS) => {

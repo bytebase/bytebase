@@ -13,7 +13,7 @@
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1 whitespace-nowrap">
           <router-link
-            v-if="showDBAItem"
+            v-if="shouldShowIssueEntry"
             to="/issue"
             class="bar-link px-2 py-2 rounded-md"
             :class="getRouteLinkClass('/issue')"
@@ -150,7 +150,7 @@
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
     <router-link
-      v-if="showDBAItem"
+      v-if="shouldShowIssueEntry"
       to="/issue"
       class="bar-link rounded-md block px-3 py-2"
     >
@@ -192,7 +192,7 @@ import { useI18n } from "vue-i18n";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "../types";
 import { brandingLogoSettingName } from "../types/setting";
-import { isDBAOrOwner, isDev } from "../utils";
+import { hasWorkspacePermission, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
   useCurrentUser,
@@ -200,7 +200,6 @@ import {
   useSettingStore,
   useSubscriptionStore,
   useInboxStore,
-  hasFeature,
 } from "@/store";
 import { storeToRefs } from "pinia";
 
@@ -239,15 +238,17 @@ export default defineComponent({
       return classes;
     };
 
-    const showDBAItem = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
+    const shouldShowIssueEntry = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-issue",
+        currentUser.value.role
+      );
     });
 
     const shouldShowInstanceEntry = computed(() => {
-      // In enterprise version, we don't allow developers to view instance.
-      return (
-        !hasFeature("bb.feature.dba-workflow") ||
-        isDBAOrOwner(currentUser.value.role)
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
       );
     });
 
@@ -386,10 +387,10 @@ export default defineComponent({
       state,
       getRouteLinkClass,
       shouldShowInstanceEntry,
+      shouldShowIssueEntry,
       logoUrl,
       currentUser,
       currentPlan,
-      showDBAItem,
       isDevFeatures,
       inboxSummary,
       switchToFree,

@@ -30,8 +30,8 @@ import {
   ProjectRoleType,
   unknown,
 } from "../types";
-import { isDBAOrOwner } from "../utils";
-import { featureToRef, useCurrentUser, useProjectStore } from "@/store";
+import { hasWorkspacePermission } from "../utils";
+import { useCurrentUser, useProjectStore } from "@/store";
 
 interface LocalState {
   selectedProject?: Project;
@@ -88,8 +88,6 @@ export default defineComponent({
 
     watchEffect(prepareProjectList);
 
-    const hasRBACFeature = featureToRef("bb.feature.rbac");
-
     const rawProjectList = computed((): Project[] => {
       let list = projectStore.getProjectListByUser(currentUser.value.id, [
         "NORMAL",
@@ -106,7 +104,12 @@ export default defineComponent({
         return false;
       });
 
-      if (!hasRBACFeature.value || isDBAOrOwner(currentUser.value.role)) {
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
         return list;
       }
 

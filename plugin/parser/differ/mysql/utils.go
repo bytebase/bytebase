@@ -59,7 +59,7 @@ func extractUnsupportObjNameAndType(stmt string) (string, objectType, error) {
 
 func toString(node ast.Node) (string, error) {
 	var buf bytes.Buffer
-	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset
+	restoreFlag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
 	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {
 		return "", errors.Wrapf(err, "cannot restore node %v", node)
 	}

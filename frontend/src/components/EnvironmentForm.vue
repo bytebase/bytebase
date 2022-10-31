@@ -303,7 +303,7 @@ import type {
   Policy,
   SQLReviewPolicy,
 } from "../types";
-import { isDBAOrOwner, sqlReviewPolicySlug } from "../utils";
+import { hasWorkspacePermission, sqlReviewPolicySlug } from "../utils";
 import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 
@@ -430,7 +430,10 @@ const currentUser = useCurrentUser();
 const environmentList = useEnvironmentList();
 
 const hasPermission = computed(() => {
-  return isDBAOrOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-environment",
+    currentUser.value.role
+  );
 });
 
 const allowArchive = computed(() => {

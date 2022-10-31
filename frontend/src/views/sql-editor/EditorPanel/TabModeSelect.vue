@@ -17,13 +17,18 @@ import LockIcon from "~icons/heroicons-outline/lock-closed";
 
 import { TabMode } from "@/types";
 import { useCurrentUser, useTabStore } from "@/store";
-import { isDBAOrOwner } from "@/utils";
+import { hasWorkspacePermission } from "@/utils";
 
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
 
-const allowAdmin = computed(() => isDBAOrOwner(currentUser.value.role));
+const allowAdmin = computed(() =>
+  hasWorkspacePermission(
+    "bb.permission.workspace.admin-sql-editor",
+    currentUser.value.role
+  )
+);
 
 const tabStore = useTabStore();
 
@@ -49,7 +54,7 @@ const renderLabel = (option: SelectOption) => {
     {
       class: ["flex items-center gap-x-1", color],
     },
-    [h(icon, { class: "h-4 w-4 " }), h("span", {}, String(option.label))]
+    [h(icon, { class: "h-4 w-4" }), h("span", {}, String(option.label))]
   );
 };
 

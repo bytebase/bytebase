@@ -283,7 +283,7 @@ import {
 } from "../types";
 import {
   buildDatabaseNameByTemplateAndLabelList,
-  isDBAOrOwner,
+  hasWorkspacePermission,
   issueSlug,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
@@ -363,7 +363,12 @@ export default defineComponent({
     watchEffect(prepareInstanceList);
 
     const showAssigneeSelect = computed(() => {
-      return !isDBAOrOwner(currentUser.value.role);
+      // If the role can't change assignee after creating the issue, then we will show the
+      // assignee select in the prep stage here to request a particular assignee.
+      return !hasWorkspacePermission(
+        "bb.permission.workspace.manage-issue",
+        currentUser.value.role
+      );
     });
 
     const state = reactive<LocalState>({

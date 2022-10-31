@@ -1,7 +1,7 @@
 import { groupBy } from "lodash-es";
 import semverCompare from "semver/functions/compare";
 import { Database, DataSourceType, Environment, Principal } from "../types";
-import { isDBAOrOwner } from "./role";
+import { hasWorkspacePermission } from "./role";
 import { isDev } from "./util";
 
 export function allowDatabaseAccess(
@@ -23,7 +23,12 @@ export function allowDatabaseAccess(
     return false;
   }
 
-  if (isDBAOrOwner(principal.role)) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      principal.role
+    )
+  ) {
     return true;
   }
 

@@ -97,7 +97,7 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 func deparse(newNodeList []ast.Node) (string, error) {
 	var buf bytes.Buffer
 	for _, node := range newNodeList {
-		if err := node.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags|format.RestoreStringWithoutCharset, &buf)); err != nil {
+		if err := node.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags|format.RestoreStringWithoutCharset|format.RestorePrettyFormat, &buf)); err != nil {
 			return "", err
 		}
 		if _, err := buf.Write([]byte(";\n")); err != nil {

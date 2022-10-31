@@ -134,5 +134,6 @@ type DataSourcePatch struct {
 
 // DataSourceDelete is the API message for deleting data sources.
 type DataSourceDelete struct {
-	ID int
+	ID         int
+	InstanceID int
 }

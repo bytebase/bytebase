@@ -60,3 +60,10 @@ func (s *CacheService) UpsertCache(namespace api.CacheNamespace, id int, entry i
 
 	return nil
 }
+
+// DeleteCache deletes the key from cache.
+func (s *CacheService) DeleteCache(namespace api.CacheNamespace, id int) {
+	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	binary.LittleEndian.PutUint64(buf1, uint64(id))
+	s.cache.Del(append([]byte(namespace), buf1...))
+}

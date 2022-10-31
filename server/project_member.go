@@ -372,6 +372,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMemberDelete := &api.ProjectMemberDelete{
 			ID:        id,
+			ProjectID: projectID,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := s.store.DeleteProjectMember(ctx, projectMemberDelete); err != nil {

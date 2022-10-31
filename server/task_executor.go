@@ -243,7 +243,17 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", server.profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
+		// TODO(d): we need to figure out the baseline write-back for users using wildcard branch filter.
+		branch := repo.BranchFilter
+		if vcsPushEvent != nil {
+			b, err := parseBranchNameFromRefs(vcsPushEvent.Ref)
+			if err != nil {
+				return true, nil, errors.Errorf("failed to parse branch name: %s", vcsPushEvent.Ref)
+			}
+			branch = b
+		}
+		// Use the branch name from the commit as we will write back to the same branch.
+		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}

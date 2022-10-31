@@ -134,7 +134,7 @@ import { Anomaly, EnvironmentId, UNKNOWN_ID } from "../types";
 import {
   databaseSlug,
   instanceSlug,
-  isDBAOrOwner,
+  hasWorkspacePermission,
   sortDatabaseList,
   sortInstanceList,
 } from "../utils";
@@ -174,7 +174,10 @@ export default defineComponent({
     const currentUser = useCurrentUser();
 
     const state = reactive<LocalState>({
-      selectedIndex: isDBAOrOwner(currentUser.value.role)
+      selectedIndex: hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      )
         ? INSTANCE_TAB
         : DATABASE_TAB,
       searchText: "",

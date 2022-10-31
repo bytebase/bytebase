@@ -429,6 +429,11 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 }
 
 func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+	// TODO(d): we will accept all pushes from wildcard branch filter for now.
+	// We should implement our own branch filter later.
+	if strings.HasSuffix(branchFilter, "*") {
+		return true, nil
+	}
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)

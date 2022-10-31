@@ -84,7 +84,7 @@ import {
 } from "../types";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { instanceSlug, isDBAOrOwner } from "../utils";
+import { hasWorkspacePermission, instanceSlug } from "../utils";
 import { useCurrentUser, useInstanceStore } from "@/store";
 
 interface LocalState {
@@ -147,12 +147,11 @@ export default defineComponent({
 
     onBeforeMount(prepareMigrationHistoryList);
 
-    const isCurrentUserDBAOrOwner = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
-    });
-
     const allowConfigInstance = computed(() => {
-      return isCurrentUserDBAOrOwner.value;
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      );
     });
 
     const isTenantProject = computed(() => {
@@ -175,7 +174,7 @@ export default defineComponent({
           t("migration-history.instance-missing-migration-schema", {
             name: props.database.instance.name,
           }) +
-          (isDBAOrOwner(currentUser.value.role)
+          (allowConfigInstance.value
             ? ""
             : " " + t("migration-history.contact-dba"))
         );
@@ -184,7 +183,7 @@ export default defineComponent({
           t("migration-history.instance-bad-connection", {
             name: props.database.instance.name,
           }) +
-          (isDBAOrOwner(currentUser.value.role)
+          (allowConfigInstance.value
             ? ""
             : " " + t("migration-history.contact-dba"))
         );

@@ -136,7 +136,7 @@ import {
   SYSTEM_BOT_ID,
 } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
 
 const columnList = computed(() => [
@@ -221,7 +221,10 @@ export default defineComponent({
     );
 
     const allowEdit = computed(() => {
-      return isOwner(currentUser.value.role);
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-member",
+        currentUser.value.role
+      );
     });
 
     const allowChangeRole = (member: Member) => {

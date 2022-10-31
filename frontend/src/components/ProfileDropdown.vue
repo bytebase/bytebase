@@ -113,7 +113,7 @@ import { computed, defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { ServerInfo } from "@/types";
-import { isDBAOrOwner } from "@/utils";
+import { hasWorkspacePermission } from "@/utils";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
@@ -141,7 +141,10 @@ export default defineComponent({
     // For now, debug mode is a global setting and will affect all users.
     // So we only allow DBA and Owner to toggle it.
     const allowToggleDebug = computed(() => {
-      return isDBAOrOwner(currentUser.value.role);
+      return hasWorkspacePermission(
+        "bb.permission.workspace.debug",
+        currentUser.value.role
+      );
     });
 
     const showQuickstart = computed(() => !actuatorStore.isDemo);

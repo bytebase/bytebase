@@ -114,7 +114,7 @@ import {
   RoleType,
   UNKNOWN_ID,
 } from "../types";
-import { isOwner, isValidEmail } from "../utils";
+import { isValidEmail, hasWorkspacePermission } from "../utils";
 import {
   useUIStateStore,
   featureToRef,
@@ -142,7 +142,10 @@ export default defineComponent({
     const currentUser = useCurrentUser();
 
     const isAdd = computed(() => {
-      return isOwner(currentUser.value.role);
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-member",
+        currentUser.value.role
+      );
     });
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");

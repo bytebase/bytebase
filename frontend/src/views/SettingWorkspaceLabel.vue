@@ -68,7 +68,7 @@
 import { computed, defineComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
-import { isDBAOrOwner, hidePrefix } from "@/utils";
+import { hasWorkspacePermission, hidePrefix } from "@/utils";
 import type { Label, LabelPatch } from "@/types";
 import type { BBTableColumn } from "@/bbkit/types";
 import { BBTable, BBTableCell } from "@/bbkit";
@@ -90,7 +90,10 @@ export default defineComponent({
     const { labelList } = storeToRefs(labelStore);
 
     const allowEdit = computed(() => {
-      return isDBAOrOwner(currentUser.value.role);
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-label",
+        currentUser.value.role
+      );
     });
 
     const allowRemove = computed(() => {

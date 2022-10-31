@@ -36,12 +36,12 @@
     },
     "team": {
       "title": "Team Plan",
-      "label": "Beta",
+      "label": "",
       "desc": "Medium size team, has dedicated DBA or TL for engineering velocity"
     },
     "enterprise": {
       "title": "Enterprise Plan",
-      "label": "Early access",
+      "label": "",
       "desc": "Large organization, has dedicated DBA group to manage database fleet"
     }
   },
@@ -78,7 +78,9 @@
         "anomaly-detection-advanced-tooltip": "Basic + Drift detection",
         "schedule-change": "Scheduled change at specific time",
         "review-and-backup-policy": "Review and backup policy",
-        "tenancy": "Multi-Region / Multi-Tenancy deployment"
+        "tenancy": "Multi-Region / Multi-Tenancy deployment",
+        "read-replica": "Separate connection for read-only operations",
+        "sync-schema": "Synchronize schema between databases"
       }
     },
     "collaboration": {
@@ -100,7 +102,10 @@
         "activity-log": "Activity log",
         "rbac": "RBAC (Owner, DBA, Developer role)",
         "3rd-party-auth": "Login with GitLab account",
-        "sync-members-from-vcs": "Sync project membership from the linked GitLab project"
+        "sync-members-from-vcs": "Sync project membership from the linked GitLab project",
+        "dba-workflow": "DBA workflow",
+        "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
+        "environment-tier": "Environment tier"
       }
     },
     "branding": {

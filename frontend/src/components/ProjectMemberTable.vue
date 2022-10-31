@@ -131,7 +131,7 @@ import {
   ProjectRoleProvider,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
-import { isOwner, isProjectOwner } from "../utils";
+import { hasWorkspacePermission, hasProjectPermission } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -257,8 +257,7 @@ export default defineComponent({
 
     // To prevent user accidentally removing roles and lock the project permanently, we take following measures:
     // 1. Disallow removing the last OWNER.
-    // 2. Allow workspace OWNER to change roles. This helps when the project OWNER is no longer available and
-    //    other project members can ask the workspace OWNER to assign new project OWNER.
+    // 2. Allow workspace roles who can manage project. This helps when the project OWNER is no longer available.
     const allowChangeRole = (role: ProjectRoleType) => {
       if (props.project.rowStatus == "ARCHIVED") {
         return false;
@@ -271,13 +270,23 @@ export default defineComponent({
         return false;
       }
 
-      if (isOwner(currentUser.value.role)) {
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
         return true;
       }
 
       for (const member of props.project.memberList) {
         if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
+          if (
+            hasProjectPermission(
+              "bb.permission.project.manage-member",
+              member.role
+            )
+          ) {
             return true;
           }
         }

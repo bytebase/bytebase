@@ -48,7 +48,7 @@ import {
   featureToRef,
 } from "@/store";
 import { SQLReviewPolicy } from "@/types/sqlReview";
-import { sqlReviewPolicySlug, isDBAOrOwner } from "@/utils";
+import { hasWorkspacePermission, sqlReviewPolicySlug } from "@/utils";
 
 const router = useRouter();
 const store = useSQLReviewStore();
@@ -61,7 +61,10 @@ watchEffect(() => {
 });
 
 const hasPermission = computed(() => {
-  return isDBAOrOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-sql-review-policy",
+    currentUser.value.role
+  );
 });
 
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");

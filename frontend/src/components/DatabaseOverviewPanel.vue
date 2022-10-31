@@ -147,7 +147,7 @@
                 </div>
               </div>
               <div
-                v-if="allowChangeDataSource"
+                v-if="allowConfigInstance"
                 class="flex justify-end space-x-3"
               >
                 <template v-if="isEditingDataSource(ds)">
@@ -213,7 +213,7 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
-import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
+import { hasWorkspacePermission, timezoneString, instanceSlug } from "../utils";
 import {
   Anomaly,
   Database,
@@ -315,16 +315,15 @@ export default defineComponent({
       return dbExtensionStore.getDBExtensionListByDatabaseId(props.database.id);
     });
 
-    const isCurrentUserDBAOrOwner = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
-    });
-
     const allowConfigInstance = computed(() => {
-      return isCurrentUserDBAOrOwner.value;
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      );
     });
 
     const allowViewDataSource = computed(() => {
-      if (isCurrentUserDBAOrOwner.value) {
+      if (allowConfigInstance.value) {
         return true;
       }
 
@@ -335,10 +334,6 @@ export default defineComponent({
       }
 
       return false;
-    });
-
-    const allowChangeDataSource = computed(() => {
-      return isCurrentUserDBAOrOwner.value;
     });
 
     const dataSourceList = computed(() => {
@@ -410,7 +405,6 @@ export default defineComponent({
       hasDataSourceFeature,
       allowConfigInstance,
       allowViewDataSource,
-      allowChangeDataSource,
       readWriteDataSourceList,
       readonlyDataSourceList,
       isEditingDataSource,

@@ -195,7 +195,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName, isDBAOrOwner } from "@/utils";
+import { idFromSlug, environmentName, hasWorkspacePermission } from "@/utils";
 import {
   unknown,
   LEVEL_LIST,
@@ -254,7 +254,10 @@ const state = reactive<LocalState>({
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const hasPermission = computed(() => {
-  return isDBAOrOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-sql-review-policy",
+    currentUser.value.role
+  );
 });
 
 const reviewPolicy = computed((): SQLReviewPolicy => {

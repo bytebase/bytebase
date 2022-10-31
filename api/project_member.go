@@ -100,7 +100,8 @@ type ProjectMemberPatch struct {
 
 // ProjectMemberDelete is the API message for deleting a project member.
 type ProjectMemberDelete struct {
-	ID int
+	ID        int
+	ProjectID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

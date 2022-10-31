@@ -540,6 +540,12 @@ func TestVCS(t *testing.T) {
 			// Get migration history.
 			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
 			a.NoError(err)
+
+			var historiesDeref []api.MigrationHistory
+			for _, history := range histories {
+				historiesDeref = append(historiesDeref, *history)
+			}
+
 			wantHistories := []api.MigrationHistory{
 				{
 					Database:   databaseName,
@@ -593,11 +599,13 @@ func TestVCS(t *testing.T) {
 					Schema:     history.Schema,
 					SchemaPrev: history.SchemaPrev,
 				}
-				a.Equal(wantHistories[i], got)
+				a.Equalf(wantHistories[i], got, "got histories %+v", historiesDeref)
 				a.NotEmpty(history.Version)
 			}
 			a.Equal("ver4", histories[0].Version)
 			a.Equal("ver3", histories[1].Version)
+			a.Equal("ver2", histories[2].Version)
+			a.Equal("ver1", histories[3].Version)
 		})
 	}
 }
@@ -693,7 +701,7 @@ func TestVCS_SDL(t *testing.T) {
 			_, stopInstance := postgres.SetupTestInstance(t, port)
 			defer stopInstance()
 
-			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=127.0.0.1 port=%d user=root database=postgres", port))
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", port))
 			a.NoError(err)
 			defer func() {
 				_ = pgDB.Close()
@@ -769,7 +777,7 @@ func TestVCS_SDL(t *testing.T) {
 					EnvironmentID: prodEnvironment.ID,
 					Name:          "pgInstance",
 					Engine:        db.Postgres,
-					Host:          "127.0.0.1",
+					Host:          "/tmp",
 					Port:          strconv.Itoa(port),
 					Username:      "bytebase",
 					Password:      "bytebase",
@@ -1448,7 +1456,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			_, stopInstance := postgres.SetupTestInstance(t, port)
 			defer stopInstance()
 
-			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=127.0.0.1 port=%d user=root database=postgres", port))
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", port))
 			a.NoError(err)
 			defer func() {
 				_ = pgDB.Close()
@@ -1497,7 +1505,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 				EnvironmentID: prodEnvironment.ID,
 				Name:          "pgInstance",
 				Engine:        db.Postgres,
-				Host:          "127.0.0.1",
+				Host:          "/tmp",
 				Port:          strconv.Itoa(port),
 				Username:      "bytebase",
 				Password:      "bytebase",

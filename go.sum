@@ -145,10 +145,10 @@ github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dR
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651 h1:NpoTuRY6Ckj37zTlEax/UTfvHCOdanI5/5dVCarOD18=
 github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651/go.mod h1:/HsnX0+34LXVz3MxtZoW15GiwEOXz/PrEhutjb3icfE=
-github.com/bytebase/tidb v0.0.0-20221026055853-b84d87cb3775 h1:pcgMqsX9R6tDMOvSVEkKXypkEKO8fxRHURc2pNB6VAA=
-github.com/bytebase/tidb v0.0.0-20221026055853-b84d87cb3775/go.mod h1:xrVXE+0V54QRGgrD9o+tuZmBDDx8vJpQgrPtRQvodWo=
-github.com/bytebase/tidb/parser v0.0.0-20221026055853-b84d87cb3775 h1:hobw6n/MFkNCdyIXVmX84ORZxLWGXYE/rvCQff3TTzM=
-github.com/bytebase/tidb/parser v0.0.0-20221026055853-b84d87cb3775/go.mod h1:wjvp+T3/T9XYt0nKqGX3Kc1AKuyUcfno6LTc6b2A6ew=
+github.com/bytebase/tidb v0.0.0-20221028035959-5d3b71eadf24 h1:XR25hLtR8TtpW/4mgP7EcOlzi8ewNY5EVan97WzDQxc=
+github.com/bytebase/tidb v0.0.0-20221028035959-5d3b71eadf24/go.mod h1:xrVXE+0V54QRGgrD9o+tuZmBDDx8vJpQgrPtRQvodWo=
+github.com/bytebase/tidb/parser v0.0.0-20221028035959-5d3b71eadf24 h1:DZPxIt2aZJ6L/gh8tH9jspTTIufBt7Wvgae1T7TmXAg=
+github.com/bytebase/tidb/parser v0.0.0-20221028035959-5d3b71eadf24/go.mod h1:wjvp+T3/T9XYt0nKqGX3Kc1AKuyUcfno6LTc6b2A6ew=
 github.com/casbin/casbin/v2 v2.1.0/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/casbin/casbin/v2 v2.55.1 h1:vaTAHSLkQfielg9UiHdIdvIVK/NAmMjBkDkrOM9iDqI=
 github.com/casbin/casbin/v2 v2.55.1/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=

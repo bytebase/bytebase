@@ -375,7 +375,7 @@ import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { SslCertificateForm } from "./InstanceForm";
-import { isDBAOrOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import {
   InstancePatch,
   DataSourceType,
@@ -448,7 +448,11 @@ const state = reactive<State>({
 
 const allowEdit = computed(() => {
   return (
-    state.instance.rowStatus == "NORMAL" && isDBAOrOwner(currentUser.value.role)
+    state.instance.rowStatus == "NORMAL" &&
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
   );
 });
 

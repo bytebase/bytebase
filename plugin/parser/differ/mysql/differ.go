@@ -446,7 +446,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	if err := deparse(&buf, newNodeList, newNodeStmt, inplaceUpdate,
 		inplaceAddNodeList, inplaceAddStmt, inplaceDropNodeList,
 		inplaceDropStmt, dropNodeList, dropStmt, viewStmts,
-		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset); err != nil {
+		format.DefaultRestoreFlags|format.RestoreStringWithoutCharset|format.RestorePrettyFormat); err != nil {
 		return "", errors.Wrapf(err, "deparse failed")
 	}
 	if buf.Len() > 0 {

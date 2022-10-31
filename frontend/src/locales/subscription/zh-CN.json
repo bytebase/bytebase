@@ -35,12 +35,12 @@
     },
     "team": {
       "title": "团队版",
-      "label": "Beta",
+      "label": "",
       "desc": "中型团队，有专职 DBA 或 TL 以提高工程速度"
     },
     "enterprise": {
       "title": "企业版",
-      "label": "预览版",
+      "label": "",
       "desc": "大型组织，有专属 DBA 团队来管理数据库"
     }
   },
@@ -77,7 +77,9 @@
         "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
         "schedule-change": "设定任务执行时间",
         "review-and-backup-policy": "审核和备份策略",
-        "tenancy": "多地域/多租户部署"
+        "tenancy": "多地域/多租户部署",
+        "read-replica": "为只读操作提供单独连接",
+        "sync-schema": "库表同步"
       }
     },
     "collaboration": {
@@ -99,7 +101,10 @@
         "activity-log": "活动日志",
         "rbac": "RBAC 权限管理",
         "3rd-party-auth": "通过 GitLab 登录",
-        "sync-members-from-vcs": "从 GitLab 同步成员信息"
+        "sync-members-from-vcs": "从 GitLab 同步成员信息",
+        "dba-workflow": "DBA 工作流",
+        "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
+        "environment-tier": "环境分级"
       }
     },
     "branding": {

@@ -66,11 +66,26 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.ProjectMemberCache, create.ProjectID)
+
 	return projectMember, nil
 }
 
 // FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
+	findCopy := *find
+	findCopy.ProjectID = nil
+	isListProjectMember := find.ProjectID != nil && findCopy == api.ProjectMemberFind{}
+	var cacheList []*api.ProjectMember
+	has, err := s.cache.FindCache(api.ProjectMemberCache, *find.ProjectID, &cacheList)
+	if err != nil {
+		return nil, err
+	}
+	if has && isListProjectMember {
+		return cacheList, nil
+	}
+
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find ProjectMember list with ProjectMemberFind[%+v]", find)
@@ -82,6 +97,11 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 			return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", raw)
 		}
 		projectMemberList = append(projectMemberList, projectMember)
+	}
+	if isListProjectMember {
+		if err := s.cache.UpsertCache(api.ProjectMemberCache, *find.ProjectID, projectMemberList); err != nil {
+			return nil, err
+		}
 	}
 	return projectMemberList, nil
 }
@@ -122,6 +142,8 @@ func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMember
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.ProjectMemberCache, projectMemberRaw.ProjectID)
 	return projectMember, nil
 }
 
@@ -140,6 +162,8 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.ProjectMemberCache, delete.ProjectID)
 
 	return nil
 }

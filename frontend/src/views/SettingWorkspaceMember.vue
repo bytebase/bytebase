@@ -34,7 +34,7 @@
 import { computed, defineComponent } from "vue";
 import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
-import { isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { Member, SYSTEM_BOT_ID, unknown } from "../types";
 import {
   featureToRef,
@@ -76,14 +76,22 @@ export default defineComponent({
 
     const allowAddOrInvite = computed(() => {
       // TODO(tianzhou): Implement invite mode for DBA and developer
-      // If current user is owner, MemberAddOrInvite is in Add mode.
-      // If current user is DBA or developer, MemberAddOrInvite is in Invite mode.
-      // For now, we only enable Add mode for owner
-      return isOwner(currentUser.value.role);
+      // If current user has manage user permission, MemberAddOrInvite is in Add mode.
+      // Otherwise, MemberAddOrInvite is in Invite mode.
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-member",
+        currentUser.value.role
+      );
     });
 
     const showUpgradeInfo = computed(() => {
-      return !hasRBACFeature.value && isOwner(currentUser.value.role);
+      return (
+        !hasRBACFeature.value &&
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-general",
+          currentUser.value.role
+        )
+      );
     });
 
     return {

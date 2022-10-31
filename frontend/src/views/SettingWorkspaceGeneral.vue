@@ -94,7 +94,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
 import {
@@ -145,7 +145,10 @@ settingStore.fetchSetting().then(() => {
 const currentUser = useCurrentUser();
 
 const allowEdit = computed((): boolean => {
-  return isOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-general",
+    currentUser.value.role
+  );
 });
 
 const valid = computed((): boolean => {
