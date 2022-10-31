@@ -29,7 +29,8 @@ export type QueryInfo = {
 export type Advice = TaskCheckResult;
 
 export type SQLResultSet = {
-  data: any[];
+  // [columnNames: string[], types: string[], data: any[][]]
+  data: [string[], string[], any[][]];
   error: string;
   adviceList: Advice[];
 };
