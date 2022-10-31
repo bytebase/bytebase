@@ -17,8 +17,7 @@ func (txn BinlogTransaction) GetRollbackSQL(columnNames []string) (string, error
 	if len(txn) == 0 {
 		return "", nil
 	}
-	var sb strings.Builder
-	_, _ = sb.WriteString("BEGIN;\n")
+	var sqlList []string
 	// Generate rollback SQL for each statement of the transaction in reversed order.
 	// Each statement may have multiple affected rows in a single binlog event. The order between them is irrelevant.
 	for i := len(txn) - 1; i >= 0; i-- {
@@ -30,11 +29,9 @@ func (txn BinlogTransaction) GetRollbackSQL(columnNames []string) (string, error
 		if err != nil {
 			return "", err
 		}
-		_, _ = sb.WriteString(sql)
-		_, _ = sb.WriteString("\n")
+		sqlList = append(sqlList, sql)
 	}
-	_, _ = sb.WriteString("COMMIT;")
-	return sb.String(), nil
+	return strings.Join(sqlList, "\n"), nil
 }
 
 func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
