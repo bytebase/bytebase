@@ -10,6 +10,8 @@ const (
 	EnvironmentCache CacheNamespace = "e"
 	// ProjectCache is the cache type of projects.
 	ProjectCache CacheNamespace = "r"
+	// ProjectMemberCache is the cache type of project members.
+	ProjectMemberCache CacheNamespace = "pm"
 	// InstanceCache is the cache type of instances.
 	InstanceCache CacheNamespace = "i"
 	// DatabaseCache is the cache type of databases.
@@ -24,6 +26,8 @@ const (
 	DatabaseLabelCache CacheNamespace = "dl"
 	// DataSourceCache is the cache type of data sources.
 	DataSourceCache CacheNamespace = "ds"
+	// TierPolicyCache is the cache type of tier policy.
+	TierPolicyCache CacheNamespace = "pot"
 )
 
 // CacheService is the service for caches.
