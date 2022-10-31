@@ -13,6 +13,7 @@ import { computed, h } from "vue";
 import { SelectOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import WrenchIcon from "~icons/heroicons-outline/wrench";
+import LockIcon from "~icons/heroicons-outline/lock-closed";
 
 import { TabMode } from "@/types";
 import { useCurrentUser, useTabStore } from "@/store";
@@ -46,19 +47,15 @@ const tabModeOptions = computed((): SelectOption[] => {
 });
 
 const renderLabel = (option: SelectOption) => {
-  if (option.value === TabMode.Admin) {
-    return h(
-      "span",
-      {
-        class: "flex items-center gap-x-1 text-error",
-      },
-      [
-        h(WrenchIcon, { class: "h-4 w-4 " }),
-        h("span", {}, String(option.label)),
-      ]
-    );
-  }
-  return option.label;
+  const icon = option.value === TabMode.Admin ? WrenchIcon : LockIcon;
+  const color = option.value === TabMode.Admin ? "text-error" : "text-main";
+  return h(
+    "span",
+    {
+      class: ["flex items-center gap-x-1", color],
+    },
+    [h(icon, { class: "h-4 w-4" }), h("span", {}, String(option.label))]
+  );
 };
 
 const onUpdate = () => {
