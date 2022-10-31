@@ -1790,3 +1790,78 @@ func TestCreateDatabase(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCreateSchema(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "CREATE SCHEMA myschema",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA myschema AUTHORIZATION joe;",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+				RoleSpec:    &ast.RoleSpec{Tp: ast.RoleSpecTypeUser, Value: "joe"},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema AUTHORIZATION joe;",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA IF NOT EXISTS myschema AUTHORIZATION joe;",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: true,
+				RoleSpec:    &ast.RoleSpec{Tp: ast.RoleSpecTypeUser, Value: "joe"},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA IF NOT EXISTS myschema AUTHORIZATION joe;",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA myschema CREATE TABLE tbl (id INT)",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+				SchemaElements: []ast.Node{
+					&ast.CreateTableStmt{
+						IfNotExists: false,
+						Name: &ast.TableDef{
+							Type: ast.TableTypeBaseTable,
+							Name: "tbl",
+						},
+						ColumnList: []*ast.ColumnDef{
+							{
+								ColumnName: "id",
+								Type:       &ast.Integer{Size: 4},
+							},
+						},
+					},
+				},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema CREATE TABLE tbl (id INT)",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}

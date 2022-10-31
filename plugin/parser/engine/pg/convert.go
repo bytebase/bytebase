@@ -116,28 +116,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 		return alterTable, nil
 	case *pgquery.Node_CreateStmt:
-		table := &ast.CreateTableStmt{
-			IfNotExists: in.CreateStmt.IfNotExists,
-			Name:        convertRangeVarToTableName(in.CreateStmt.Relation, ast.TableTypeBaseTable),
-		}
-
-		for _, elt := range in.CreateStmt.TableElts {
-			switch item := elt.Node.(type) {
-			case *pgquery.Node_ColumnDef:
-				column, err := convertColumnDef(item)
-				if err != nil {
-					return nil, err
-				}
-				table.ColumnList = append(table.ColumnList, column)
-			case *pgquery.Node_Constraint:
-				cons, err := convertConstraint(item)
-				if err != nil {
-					return nil, err
-				}
-				table.ConstraintList = append(table.ConstraintList, cons)
-			}
-		}
-		return table, nil
+		return convertCreateStmt(in.CreateStmt)
 	case *pgquery.Node_RenameStmt:
 		switch in.RenameStmt.RenameType {
 		case pgquery.ObjectType_OBJECT_COLUMN:
@@ -411,11 +390,65 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &createDatabaseStmt, nil
+	case *pgquery.Node_CreateSchemaStmt:
+		createSchemaStmt := ast.CreateSchemaStmt{
+			Name:        in.CreateSchemaStmt.Schemaname,
+			IfNotExists: in.CreateSchemaStmt.IfNotExists,
+		}
+		roleSpec, err := convertRoleSpec(in.CreateSchemaStmt.Authrole)
+		if err != nil {
+			return nil, err
+		}
+		createSchemaStmt.RoleSpec = roleSpec
+		for _, elt := range in.CreateSchemaStmt.SchemaElts {
+			switch stmt := elt.Node.(type) {
+			// Currently, only CREATE TABLE, CREATE VIEW, CREATE INDEX, CREATE SEQUENCE,
+			// CREATE TRIGGER and GRANT are accepted as clauses within CREATE SCHEMA.
+			// TODO(zp): support other statement list above.
+			case *pgquery.Node_CreateStmt:
+				createStmt, err := convertCreateStmt(stmt.CreateStmt)
+				if err != nil {
+					return nil, err
+				}
+				createSchemaStmt.SchemaElements = append(createSchemaStmt.SchemaElements, createStmt)
+			default:
+			}
+		}
+		return &createSchemaStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
 
 	return nil, nil
+}
+
+func convertRoleSpec(in *pgquery.RoleSpec) (*ast.RoleSpec, error) {
+	if in == nil {
+		return nil, nil
+	}
+	switch in.Roletype {
+	case pgquery.RoleSpecType_ROLE_SPEC_TYPE_UNDEFINED:
+		return &ast.RoleSpec{
+			Tp:    ast.RoleSpecTypeNone,
+			Value: "",
+		}, nil
+	case pgquery.RoleSpecType_ROLESPEC_CSTRING:
+		return &ast.RoleSpec{
+			Tp:    ast.RoleSpecTypeUser,
+			Value: in.Rolename,
+		}, nil
+	case pgquery.RoleSpecType_ROLESPEC_CURRENT_USER:
+		return &ast.RoleSpec{
+			Tp:    ast.RoleSpecTypeCurrentUser,
+			Value: "",
+		}, nil
+	case pgquery.RoleSpecType_ROLESPEC_SESSION_USER:
+		return &ast.RoleSpec{
+			Tp:    ast.RoleSpecTypeSessionUser,
+			Value: "",
+		}, nil
+	}
+	return nil, parser.NewConvertErrorf("unexpected role spec type: %q", in.Roletype.String())
 }
 
 func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.PatternLikeDef, []*ast.SubqueryDef, error) {
@@ -553,6 +586,32 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 		}
 	}
 	return &ast.UnconvertedExpressionDef{}, nil, nil, nil
+}
+
+// convertCreateStmt convert pgquery create stmt to Bytebase create table stmt node.
+func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
+	table := &ast.CreateTableStmt{
+		IfNotExists: in.IfNotExists,
+		Name:        convertRangeVarToTableName(in.Relation, ast.TableTypeBaseTable),
+	}
+
+	for _, elt := range in.TableElts {
+		switch item := elt.Node.(type) {
+		case *pgquery.Node_ColumnDef:
+			column, err := convertColumnDef(item)
+			if err != nil {
+				return nil, err
+			}
+			table.ColumnList = append(table.ColumnList, column)
+		case *pgquery.Node_Constraint:
+			cons, err := convertConstraint(item)
+			if err != nil {
+				return nil, err
+			}
+			table.ConstraintList = append(table.ConstraintList, cons)
+		}
+	}
+	return table, nil
 }
 
 func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
