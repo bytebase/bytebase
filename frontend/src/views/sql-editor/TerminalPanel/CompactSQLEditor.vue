@@ -15,6 +15,7 @@
           horizontal: 'hidden',
         },
         overviewRulerLanes: 0,
+        lineNumbers: getLineNumber,
       }"
       @change="handleChange"
       @change-selection="handleChangeSelection"
@@ -58,7 +59,7 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const MIN_EDITOR_HEIGHT = 20; // ~= 1 line
+const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
 
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
@@ -101,6 +102,11 @@ watch(
   }
 );
 
+const getLineNumber = (lineNumber: number) => {
+  if (lineNumber === 1) return "SQL>";
+  return "->";
+};
+
 const handleChange = (value: string) => {
   // When we are switching between tabs, the MonacoEditor emits a 'change'
   // event, but we shouldn't update the current tab;
@@ -112,8 +118,8 @@ const handleChange = (value: string) => {
     isSaved: false,
   });
 
-  updateEditorHeight();
   emit("update:sql", value);
+  updateEditorHeight();
 };
 
 const handleChangeSelection = (value: string) => {
