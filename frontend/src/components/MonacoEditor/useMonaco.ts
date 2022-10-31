@@ -9,7 +9,7 @@ export const useMonaco = async () => {
     import("monaco-editor/esm/vs/editor/editor.worker?worker"),
   ]);
 
-  monaco.editor.defineTheme("bb-sql-editor-theme", {
+  monaco.editor.defineTheme("bb", {
     base: "vs",
     inherit: true,
     rules: [],
@@ -19,7 +19,13 @@ export const useMonaco = async () => {
       "editorLineNumber.activeForeground": "#111111",
     },
   });
-  monaco.editor.setTheme("bb-sql-editor-theme");
+  monaco.editor.defineTheme("bb-dark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+  monaco.editor.setTheme("bb");
 
   self.MonacoEnvironment = {
     getWorker: (workerId, label) => {

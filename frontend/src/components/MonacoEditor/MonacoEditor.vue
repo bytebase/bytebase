@@ -192,6 +192,16 @@ onMounted(async () => {
       // Delay the flush timing to ensure it performs after the language client started.
       flush: "post",
     });
+
+    watch(
+      () => props.options,
+      (opts) => {
+        if (opts) {
+          editorInstance.updateOptions(opts);
+        }
+      },
+      { deep: true }
+    );
   });
 });
 

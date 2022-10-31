@@ -16,6 +16,9 @@
         },
         overviewRulerLanes: 0,
         lineNumbers: getLineNumber,
+        lineNumbersMinChars: 5,
+        glyphMargin: false,
+        theme: 'bb-dark',
       }"
       @change="handleChange"
       @change-selection="handleChangeSelection"
