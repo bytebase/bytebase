@@ -426,7 +426,7 @@ const handleConfirmButtonClick = async () => {
   } @ ${dayjs().format("MM-DD HH:mm")}`;
 
   const query: Record<string, any> = {
-    template: "bb.issue.database.data.update",
+    template: "bb.issue.database.schema.update",
     name: issueName,
     project: state.projectId,
     databaseList: targetDatabase.id,
