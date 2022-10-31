@@ -50,31 +50,34 @@ func TestCreateTable(t *testing.T) {
 				r serial2,
 				s serial4,
 				t decimal)`,
-			want: `CREATE TABLE "tech_book"(` +
-				`"a" INT2, ` +
-				`"b" INT4, ` +
-				`"c" INT8, ` +
-				`"d" DECIMAL(10, 2), ` +
-				`"e" DECIMAL(4), ` +
-				`"f" FLOAT4, ` +
-				`"g" FLOAT8, ` +
-				`"h" SERIAL2, ` +
-				`"i" SERIAL4, ` +
-				`"j" SERIAL8, ` +
-				`"k" INT8, ` +
-				`"l" SERIAL8, ` +
-				`"m" FLOAT8, ` +
-				`"n" INT4, ` +
-				`"o" INT4, ` +
-				`"p" FLOAT4, ` +
-				`"q" INT2, ` +
-				`"r" SERIAL2, ` +
-				`"s" SERIAL4, ` +
-				`"t" DECIMAL)`,
+			want: `CREATE TABLE "tech_book" (
+    "a" smallint,
+    "b" integer,
+    "c" bigint,
+    "d" numeric(10, 2),
+    "e" numeric(4),
+    "f" real,
+    "g" double precision,
+    "h" smallserial,
+    "i" serial,
+    "j" bigserial,
+    "k" bigint,
+    "l" bigserial,
+    "m" double precision,
+    "n" integer,
+    "o" integer,
+    "p" real,
+    "q" smallint,
+    "r" smallserial,
+    "s" serial,
+    "t" numeric
+)`,
 		},
 		{
 			stmt: `create table "TechBook"(a "user defined data type")`,
-			want: `CREATE TABLE "TechBook"("a" "user defined data type")`,
+			want: `CREATE TABLE "TechBook" (
+    "a" "user defined data type"
+)`,
 		},
 	}
 
