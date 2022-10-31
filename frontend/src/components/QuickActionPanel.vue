@@ -96,7 +96,7 @@
           @click.prevent="syncDatabaseSchema"
         >
           <heroicons-outline:refresh class="w-6 h-6" />
-          <BBBetaBadge :corner="true" class="top-full -mt-1" />
+          <BBBetaBadge :corner="true" class="top-1" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
           {{ $t("quick-action.sync-schema") }}
