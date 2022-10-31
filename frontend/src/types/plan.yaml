@@ -11,6 +11,7 @@ categoryList:
       - anomaly-detection
       - schedule-change
       - review-and-backup-policy
+      - read-replica
       - tenancy
   - type: collaboration
     featureList:
@@ -25,6 +26,8 @@ categoryList:
       - rbac
       - 3rd-party-auth
       - sync-members-from-vcs
+      - dba-workflow
+      - environment-tier
   - type: branding
     featureList:
       - branding-logo
@@ -138,6 +141,7 @@ planList:
         tooltip: anomaly-detection-advanced-tooltip
       - type: schedule-change
       - type: review-and-backup-policy
+      - type: read-replica
       - type: tenancy
       - type: ui-based-sql-review
       - type: vsc-workflow
@@ -150,6 +154,9 @@ planList:
       - type: rbac
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
+      - type: dba-workflow
+        tooltip: dba-workflow-tooltip
+      - type: environment-tier
       - type: branding-logo
     mainFeatureList:
       - sla
