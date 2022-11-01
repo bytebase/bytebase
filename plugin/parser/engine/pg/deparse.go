@@ -21,10 +21,12 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 		if err := deparseCreateTable(context, node, buf); err != nil {
 			return err
 		}
+		return buf.WriteByte(';')
 	case *ast.AlterTableStmt:
 		if err := deparseAlterTable(context, node, buf); err != nil {
 			return err
 		}
+		return buf.WriteByte(';')
 	case *ast.TableDef:
 		if err := deparseTableDef(context, node, buf); err != nil {
 			return err
@@ -37,12 +39,14 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 		if err := deparseCreateSchema(context, node, buf); err != nil {
 			return err
 		}
+		return buf.WriteByte(';')
 	case *ast.DropSchemaStmt:
 		if err := deparseDropSchema(context, node, buf); err != nil {
 			return err
 		}
+		return buf.WriteByte(';')
 	}
-	return buf.WriteByte(';')
+	return errors.Errorf("failed to deparse %T", in)
 }
 
 func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, buf *strings.Builder) error {
