@@ -18,7 +18,7 @@ const (
 
 // RoleSpec is the struct for role specification.
 type RoleSpec struct {
-	Tp RoleSpecType
+	Type RoleSpecType
 	// Value only used when Tp is RoleSpecTypeUser.
 	Value string
 }

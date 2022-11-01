@@ -273,7 +273,7 @@ func deparseCreateSchema(ctx parser.DeparseContext, in *ast.CreateSchemaStmt, bu
 			return err
 		}
 	}
-	if in.RoleSpec != nil && in.RoleSpec.Tp != ast.RoleSpecTypeNone {
+	if in.RoleSpec != nil && in.RoleSpec.Type != ast.RoleSpecTypeNone {
 		if in.Name != "" {
 			if _, err := buf.WriteString(" "); err != nil {
 				return err
@@ -283,7 +283,7 @@ func deparseCreateSchema(ctx parser.DeparseContext, in *ast.CreateSchemaStmt, bu
 			return err
 		}
 	}
-	for _, ele := range in.SchemaElements {
+	for _, ele := range in.SchemaElementList {
 		if _, err := buf.WriteString(" "); err != nil {
 			return err
 		}
@@ -297,11 +297,11 @@ func deparseCreateSchema(ctx parser.DeparseContext, in *ast.CreateSchemaStmt, bu
 }
 
 func deparseRoleSpec(_ parser.DeparseContext, in *ast.RoleSpec, buf *strings.Builder) error {
-	if in != nil && in.Tp != ast.RoleSpecTypeNone {
+	if in != nil && in.Type != ast.RoleSpecTypeNone {
 		if _, err := buf.WriteString("AUTHORIZATION "); err != nil {
 			return err
 		}
-		switch in.Tp {
+		switch in.Type {
 		case ast.RoleSpecTypeUser:
 			if err := writeSurrounding(buf, in.Value, `"`); err != nil {
 				return err

@@ -4,8 +4,8 @@ package ast
 type CreateSchemaStmt struct {
 	ddl
 
-	Name           string
-	IfNotExists    bool
-	RoleSpec       *RoleSpec
-	SchemaElements []Node
+	Name              string
+	IfNotExists       bool
+	RoleSpec          *RoleSpec
+	SchemaElementList []Node
 }

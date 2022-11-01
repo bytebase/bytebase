@@ -410,7 +410,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				if err != nil {
 					return nil, err
 				}
-				createSchemaStmt.SchemaElements = append(createSchemaStmt.SchemaElements, createStmt)
+				createSchemaStmt.SchemaElementList = append(createSchemaStmt.SchemaElementList, createStmt)
 			default:
 			}
 		}
@@ -429,22 +429,22 @@ func convertRoleSpec(in *pgquery.RoleSpec) (*ast.RoleSpec, error) {
 	switch in.Roletype {
 	case pgquery.RoleSpecType_ROLE_SPEC_TYPE_UNDEFINED:
 		return &ast.RoleSpec{
-			Tp:    ast.RoleSpecTypeNone,
+			Type:  ast.RoleSpecTypeNone,
 			Value: "",
 		}, nil
 	case pgquery.RoleSpecType_ROLESPEC_CSTRING:
 		return &ast.RoleSpec{
-			Tp:    ast.RoleSpecTypeUser,
+			Type:  ast.RoleSpecTypeUser,
 			Value: in.Rolename,
 		}, nil
 	case pgquery.RoleSpecType_ROLESPEC_CURRENT_USER:
 		return &ast.RoleSpec{
-			Tp:    ast.RoleSpecTypeCurrentUser,
+			Type:  ast.RoleSpecTypeCurrentUser,
 			Value: "",
 		}, nil
 	case pgquery.RoleSpecType_ROLESPEC_SESSION_USER:
 		return &ast.RoleSpec{
-			Tp:    ast.RoleSpecTypeSessionUser,
+			Type:  ast.RoleSpecTypeSessionUser,
 			Value: "",
 		}, nil
 	}

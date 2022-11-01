@@ -1868,7 +1868,7 @@ func TestCreateSchema(t *testing.T) {
 			want: []ast.Node{&ast.CreateSchemaStmt{
 				Name:        "myschema",
 				IfNotExists: false,
-				RoleSpec:    &ast.RoleSpec{Tp: ast.RoleSpecTypeUser, Value: "joe"},
+				RoleSpec:    &ast.RoleSpec{Type: ast.RoleSpecTypeUser, Value: "joe"},
 			}},
 			statementList: []parser.SingleSQL{
 				{
@@ -1882,7 +1882,7 @@ func TestCreateSchema(t *testing.T) {
 			want: []ast.Node{&ast.CreateSchemaStmt{
 				Name:        "myschema",
 				IfNotExists: true,
-				RoleSpec:    &ast.RoleSpec{Tp: ast.RoleSpecTypeUser, Value: "joe"},
+				RoleSpec:    &ast.RoleSpec{Type: ast.RoleSpecTypeUser, Value: "joe"},
 			}},
 			statementList: []parser.SingleSQL{
 				{
@@ -1896,7 +1896,7 @@ func TestCreateSchema(t *testing.T) {
 			want: []ast.Node{&ast.CreateSchemaStmt{
 				Name:        "myschema",
 				IfNotExists: false,
-				SchemaElements: []ast.Node{
+				SchemaElementList: []ast.Node{
 					&ast.CreateTableStmt{
 						IfNotExists: false,
 						Name: &ast.TableDef{
