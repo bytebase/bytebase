@@ -36,3 +36,9 @@
         ALTER COLUMN "b" SET DATA TYPE serial,
         ALTER COLUMN "c" SET DATA TYPE bigint,
         ADD COLUMN "d" character(30);
+- oldSchema: create table t1(a int, b int NOT NULL)
+  newSchema: create table t1(a int NOT NULL, b int)
+  diff: |
+    ALTER TABLE "t1"
+        ALTER COLUMN "a" SET NOT NULL,
+        ALTER COLUMN "b" DROP NOT NULL;
