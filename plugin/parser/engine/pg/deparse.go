@@ -11,7 +11,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
-func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) error {
+func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) (err error) {
+	defer func() {
+		if err == nil {
+			err = buf.WriteByte(';')
+		}
+	}()
 	switch node := in.(type) {
 	case ast.DataType:
 		return deparseDataType(context, node, buf)
@@ -61,9 +66,6 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 				return err
 			}
 		}
-	}
-	if _, err := buf.WriteString(";\n"); err != nil {
-		return err
 	}
 	return nil
 }
