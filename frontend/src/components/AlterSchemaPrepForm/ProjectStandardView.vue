@@ -117,7 +117,7 @@ import {
   Project,
 } from "../../types";
 
-export type AlterType = "SINGLE_DB" | "MULTI_DB";
+export type AlterType = "SINGLE_DB" | "MULTI_DB" | "DB_GROUP";
 
 export type State = {
   alterType: AlterType;
