@@ -371,11 +371,8 @@ const getSheetDropDownOptions = (sheet: Sheet) => {
       label: t("common.delete"),
     });
   } else if (currentSubPath.value === "shared") {
-    const canManageProject = useProjectStore().canManageProject(
-      sheet.project,
-      currentUser.value
-    );
-    if (canManageProject) {
+    const canManageSheet = sheetStore.canManageSheet(sheet, currentUser.value);
+    if (canManageSheet) {
       options.push({
         key: "delete",
         label: t("common.delete"),

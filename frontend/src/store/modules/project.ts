@@ -4,7 +4,6 @@ import {
   empty,
   EMPTY_ID,
   MemberId,
-  Principal,
   PrincipalId,
   Project,
   ProjectCreate,
@@ -20,7 +19,6 @@ import {
   unknown,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { hasProjectPermission, hasWorkspacePermission } from "@/utils";
 
 function convert(
   project: ResourceObject,
@@ -338,29 +336,6 @@ export const useProjectStore = defineStore("project", {
       for (const project of projectList) {
         this.projectById.set(project.id, project);
       }
-    },
-
-    canManageProject(project: Project, user: Principal) {
-      if (
-        hasWorkspacePermission(
-          "bb.permission.workspace.manage-project",
-          user.role
-        )
-      ) {
-        return true;
-      }
-
-      const projectMemberList = project.memberList || [];
-      const memberInProject = projectMemberList.find((member) => {
-        return member.principal.id === user.id;
-      });
-      return (
-        memberInProject &&
-        hasProjectPermission(
-          "bb.permission.project.manage-sheet",
-          memberInProject.role
-        )
-      );
     },
   },
 });
