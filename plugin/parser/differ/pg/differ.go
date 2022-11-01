@@ -48,17 +48,19 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 	diff := &diffNode{}
 	for _, node := range newNodes {
-		if newTable, ok := node.(*ast.CreateTableStmt); ok {
-			oldTable, hasTable := oldTables[newTable.Name.Name]
+		switch stmt := node.(type) {
+		case *ast.CreateTableStmt:
+			oldTable, hasTable := oldTables[stmt.Name.Name]
 			// Add the new table.
 			if !hasTable {
-				diff.newTableList = append(diff.newTableList, newTable)
+				diff.newTableList = append(diff.newTableList, stmt)
 				continue
 			}
 			// Modify the table.
-			if err := diff.modifyTable(oldTable, newTable); err != nil {
+			if err := diff.modifyTable(oldTable, stmt); err != nil {
 				return "", err
 			}
+		default:
 		}
 	}
 
