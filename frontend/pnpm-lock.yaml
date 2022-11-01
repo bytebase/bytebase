@@ -71,7 +71,7 @@ specifiers:
   sql-formatter: 11.0.0
   tailwindcss: 3.1.8
   typescript: 4.8.4
-  unplugin-icons: 0.14.11
+  unplugin-icons: 0.14.12
   unplugin-vue-components: 0.22.7
   uuid: 9.0.0
   v-code-diff: 0.3.12
@@ -174,7 +174,7 @@ devDependencies:
   prettier: 2.7.1
   tailwindcss: 3.1.8_postcss@8.4.18
   typescript: 4.8.4
-  unplugin-icons: 0.14.11_@vue+compiler-sfc@3.2.40
+  unplugin-icons: 0.14.12_@vue+compiler-sfc@3.2.40
   unplugin-vue-components: 0.22.7_vue@3.2.40
   vite: 3.1.0
   vitest: 0.23.1
@@ -378,8 +378,8 @@ packages:
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
     dev: true
 
-  /@iconify/utils/2.0.0:
-    resolution: {integrity: sha512-thvwZ6m3frWJiOYwRdHPSPGC25rmyvDl0vXdQ8ocRJZx31m8Pn4y7V1mTc5UReR6MiAj+hrV2UPZQjx7zI960g==}
+  /@iconify/utils/2.0.1:
+    resolution: {integrity: sha512-t8IyICk25wgZL4YKn/2kYfjG5MGA6EWZlaUJZ1OEIku4V+kX9V900T5E4HIqS3hLyD6/RJET0zY4vxO9pHLHHw==}
     dependencies:
       '@antfu/install-pkg': 0.1.1
       '@antfu/utils': 0.5.2
@@ -3615,8 +3615,8 @@ packages:
     engines: {node: '>=4.2.0'}
     hasBin: true
 
-  /unplugin-icons/0.14.11_@vue+compiler-sfc@3.2.40:
-    resolution: {integrity: sha512-szr6QA1ILT4RrJCmtvW41m2KPwUCCIx8QNgwEmTehvzEkSLDrdEaBhKGMWb/qTe5/zwnfwrDGcFT/6pGOSHJcA==}
+  /unplugin-icons/0.14.12_@vue+compiler-sfc@3.2.40:
+    resolution: {integrity: sha512-FdkjDnUnc8/75OT8Ywwm8iDyG6kO8w1uHfFbnO2Jh7JhpE0odKhCqaAOmEE/UlvYDYSm5D4X1DKdWMwpAxj07Q==}
     peerDependencies:
       '@svgr/core': '>=5.5.0'
       '@vue/compiler-sfc': ^3.0.2
@@ -3634,7 +3634,7 @@ packages:
     dependencies:
       '@antfu/install-pkg': 0.1.1
       '@antfu/utils': 0.5.2
-      '@iconify/utils': 2.0.0
+      '@iconify/utils': 2.0.1
       '@vue/compiler-sfc': 3.2.40
       debug: 4.3.4
       kolorist: 1.6.0
