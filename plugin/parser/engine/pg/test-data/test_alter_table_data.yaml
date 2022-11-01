@@ -22,3 +22,11 @@
     ALTER TABLE "t"
         DROP COLUMN "a",
         DROP COLUMN "b";
+- stmt: |-
+    alter table t
+        alter column c1 set not null,
+        alter column c2 drop not null
+  want: |-
+    ALTER TABLE "t"
+        ALTER COLUMN "c1" SET NOT NULL,
+        ALTER COLUMN "c2" DROP NOT NULL;

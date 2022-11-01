@@ -147,8 +147,33 @@ func (*diffNode) modifyColumn(alterTableStmt *ast.AlterTableStmt, oldColumn *ast
 			Type:       newColumn.Type,
 		})
 	}
+	// compare the NOT NULL
+	oldNotNull := hasNotNull(oldColumn)
+	newNotNull := hasNotNull(newColumn)
+	needSetNotNull := !oldNotNull && newNotNull
+	needDropNotNull := oldNotNull && !newNotNull
+	if needSetNotNull {
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetNotNullStmt{
+			Table:      alterTableStmt.Table,
+			ColumnName: columnName,
+		})
+	} else if needDropNotNull {
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropNotNullStmt{
+			Table:      alterTableStmt.Table,
+			ColumnName: columnName,
+		})
+	}
 	// TODO(rebelice): compare other column properties
 	return nil
+}
+
+func hasNotNull(column *ast.ColumnDef) bool {
+	for _, constraint := range column.ConstraintList {
+		if constraint.Type == ast.ConstraintTypeNotNull {
+			return true
+		}
+	}
+	return false
 }
 
 func equivalentType(typeA ast.DataType, typeB ast.DataType) (bool, error) {
