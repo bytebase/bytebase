@@ -60,9 +60,21 @@ BEGIN
 				},
 			},
 			columnNames: []string{"id", "name", "balance"},
-			rollbackSQL: `DELETE FROM ` + "`binlog_test`.`user`" + ` WHERE id=1 AND name='alice' AND balance=100;
-DELETE FROM ` + "`binlog_test`.`user`" + ` WHERE id=2 AND name='bob' AND balance=100;
-DELETE FROM ` + "`binlog_test`.`user`" + ` WHERE id=3 AND name='cindy' AND balance=100;`,
+			rollbackSQL: `DELETE FROM ` + "`binlog_test`.`user`" + `
+WHERE
+  ` + "`id`" + `=1 AND
+  ` + "`name`" + `='alice' AND
+  ` + "`balance`" + `=100;
+DELETE FROM ` + "`binlog_test`.`user`" + `
+WHERE
+  ` + "`id`" + `=2 AND
+  ` + "`name`" + `='bob' AND
+  ` + "`balance`" + `=100;
+DELETE FROM ` + "`binlog_test`.`user`" + `
+WHERE
+  ` + "`id`" + `=3 AND
+  ` + "`name`" + `='cindy' AND
+  ` + "`balance`" + `=100;`,
 			err: false,
 		},
 		{
@@ -112,8 +124,24 @@ BEGIN
 				},
 			},
 			columnNames: []string{"id", "name", "balance"},
-			rollbackSQL: `UPDATE ` + "`binlog_test`.`user`" + ` SET id=2, name='bob', balance=100 WHERE id=2 AND name='bob' AND balance=110;
-UPDATE ` + "`binlog_test`.`user`" + ` SET id=1, name='alice', balance=100 WHERE id=1 AND name='alice' AND balance=90;`,
+			rollbackSQL: `UPDATE ` + "`binlog_test`.`user`" + `
+SET
+  ` + "`id`" + `=2,
+  ` + "`name`" + `='bob',
+  ` + "`balance`" + `=100
+WHERE
+  ` + "`id`" + `=2 AND
+  ` + "`name`" + `='bob' AND
+  ` + "`balance`" + `=110;
+UPDATE ` + "`binlog_test`.`user`" + `
+SET
+  ` + "`id`" + `=1,
+  ` + "`name`" + `='alice',
+  ` + "`balance`" + `=100
+WHERE
+  ` + "`id`" + `=1 AND
+  ` + "`name`" + `='alice' AND
+  ` + "`balance`" + `=90;`,
 			err: false,
 		},
 		{
@@ -154,8 +182,16 @@ DELIMITER ;
 				},
 			},
 			columnNames: []string{"id", "name", "balance"},
-			rollbackSQL: `INSERT INTO ` + "`binlog_test`.`user`" + ` (id, name, balance) VALUES (1, 'alice', 0);
-INSERT INTO ` + "`binlog_test`.`user`" + ` (id, name, balance) VALUES (2, 'bob', 0);`,
+			rollbackSQL: `INSERT INTO ` + "`binlog_test`.`user`" + `
+SET
+  ` + "`id`" + `=1,
+  ` + "`name`" + `='alice',
+  ` + "`balance`" + `=0;
+INSERT INTO ` + "`binlog_test`.`user`" + `
+SET
+  ` + "`id`" + `=2,
+  ` + "`name`" + `='bob',
+  ` + "`balance`" + `=0;`,
 			err: false,
 		},
 		{
