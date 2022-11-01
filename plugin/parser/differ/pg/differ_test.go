@@ -56,6 +56,8 @@ func runDifferTest(t *testing.T, file string, record bool) {
 func TestComputeDiff(t *testing.T) {
 	testFileList := []string{
 		"test_differ_data.yaml",
+		// Schema
+		"test_differ_schema.yaml",
 	}
 	for _, test := range testFileList {
 		runDifferTest(t, test, false /* record */)
