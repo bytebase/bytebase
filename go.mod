@@ -30,7 +30,7 @@ require (
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/snowflakedb/gosnowflake v1.6.13
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	github.com/swaggo/echo-swagger v1.3.4
 	github.com/swaggo/swag v1.8.6
