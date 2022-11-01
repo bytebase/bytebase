@@ -16,19 +16,30 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 	case ast.DataType:
 		return deparseDataType(context, node, buf)
 	case *ast.CreateTableStmt:
-		return deparseCreateTable(context, node, buf)
+		if err := deparseCreateTable(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	case *ast.AlterTableStmt:
-		return deparseAlterTable(context, node, buf)
+		if err := deparseAlterTable(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	case *ast.TableDef:
 		return deparseTableDef(context, node, buf)
 	case *ast.ColumnDef:
 		return deparseColumnDef(context, node, buf)
 	case *ast.CreateSchemaStmt:
-		return deparseCreateSchema(context, node, buf)
+		if err := deparseCreateSchema(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	case *ast.DropSchemaStmt:
-		return deparseDropSchema(context, node, buf)
+		if err := deparseDropSchema(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
-
 	return errors.Errorf("failed to deparse %T", in)
 }
 
@@ -65,9 +76,6 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 				return err
 			}
 		}
-	}
-	if _, err := buf.WriteString(";\n"); err != nil {
-		return err
 	}
 	return nil
 }
