@@ -23,6 +23,11 @@ func init() {
 type SchemaDiffer struct {
 }
 
+type diffNode struct {
+	newTableList    []*ast.CreateTableStmt
+	modifyTableList []ast.Node
+}
+
 // SchemaDiff computes the schema differences between old and new schema.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldNodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, oldStmt)
@@ -41,29 +46,120 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		}
 	}
 
-	var diffs []ast.Node
+	diff := &diffNode{}
 	for _, node := range newNodes {
 		if newTable, ok := node.(*ast.CreateTableStmt); ok {
-			_, hasTable := oldTables[newTable.Name.Name]
+			oldTable, hasTable := oldTables[newTable.Name.Name]
+			// Add the new table.
 			if !hasTable {
-				diffs = append(diffs, node)
+				diff.newTableList = append(diff.newTableList, newTable)
 				continue
 			}
-		}
-	}
-
-	// NOTE: Due to limitation of current deparse implementation, we directly
-	// generate the final DDLs here instead of returning []ast.Node to the caller.
-	deparse := func(nodes []ast.Node) string {
-		var buf bytes.Buffer
-		for _, node := range nodes {
-			if n, ok := node.(*ast.CreateTableStmt); ok {
-				_, _ = buf.WriteString(n.Text())
-				_, _ = buf.WriteString("\n")
+			// Modify the table.
+			if err := diff.modifyTable(oldTable, newTable); err != nil {
+				return "", err
 			}
 		}
-		return buf.String()
 	}
 
-	return deparse(diffs), nil
+	return diff.deparse()
+}
+
+func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
+	tableName := oldTable.Name
+
+	// Modify table for columns.
+	oldColumnMap := make(map[string]*ast.ColumnDef)
+	for _, column := range oldTable.ColumnList {
+		oldColumnMap[column.ColumnName] = column
+	}
+
+	alterTableStmt := &ast.AlterTableStmt{
+		Table: tableName,
+	}
+	for _, newColumn := range newTable.ColumnList {
+		oldColumn, exists := oldColumnMap[newColumn.ColumnName]
+		// Add the new column.
+		if !exists {
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddColumnListStmt{
+				Table:      tableName,
+				ColumnList: []*ast.ColumnDef{newColumn},
+			})
+			continue
+		}
+		// Modify the column.
+		if err := diff.modifyColumn(alterTableStmt, oldColumn, newColumn); err != nil {
+			return err
+		}
+		delete(oldColumnMap, oldColumn.ColumnName)
+	}
+
+	for _, oldColumn := range oldColumnMap {
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropColumnStmt{
+			Table:      alterTableStmt.Table,
+			ColumnName: oldColumn.ColumnName,
+		})
+	}
+
+	if len(alterTableStmt.AlterItemList) > 0 {
+		diff.modifyTableList = append(diff.modifyTableList, alterTableStmt)
+	}
+
+	return nil
+}
+
+func (*diffNode) modifyColumn(alterTableStmt *ast.AlterTableStmt, oldColumn *ast.ColumnDef, newColumn *ast.ColumnDef) error {
+	columnName := oldColumn.ColumnName
+	// compare the data type
+	equivalent, err := equivalentType(oldColumn.Type, newColumn.Type)
+	if err != nil {
+		return err
+	}
+	if !equivalent {
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AlterColumnTypeStmt{
+			Table:      alterTableStmt.Table,
+			ColumnName: columnName,
+			Type:       newColumn.Type,
+		})
+	}
+	// TODO(rebelice): compare other column properties
+	return nil
+}
+
+func equivalentType(typeA ast.DataType, typeB ast.DataType) (bool, error) {
+	typeStringA, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, typeA)
+	if err != nil {
+		return false, err
+	}
+	typeStringB, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, typeB)
+	if err != nil {
+		return false, err
+	}
+	return typeStringA == typeStringB, nil
+}
+
+func (diff *diffNode) deparse() (string, error) {
+	var buf bytes.Buffer
+	for _, newTable := range diff.newTableList {
+		if _, err := buf.WriteString(newTable.Text()); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+
+	for _, modifyTable := range diff.modifyTableList {
+		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, modifyTable)
+		if err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(sql); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
 }
