@@ -61,6 +61,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		default:
+			return "", errors.Errorf("unsupported statement %+v", stmt)
 		}
 	}
 
