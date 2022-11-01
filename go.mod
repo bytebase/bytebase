@@ -31,7 +31,7 @@ require (
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/snowflakedb/gosnowflake v1.6.13
 	github.com/spf13/cobra v1.6.1
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/echo-swagger v1.3.4
 	github.com/swaggo/swag v1.8.6
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
