@@ -8,7 +8,6 @@
   "plan-compare": "Compare features between different plans",
   "disabled-feature": "This is a premium feature in subscription plan",
   "trial": "You can start a free trial - no credit card required",
-  "trial-with-plan": "You can start a free trial({plan}) - no credit card required",
   "upgrade": "Upgrade subscription",
   "per-month": "/ month",
   "price-unit-for-enterprise": "/ month",
@@ -28,7 +27,7 @@
   "trialing": "trialing",
   "plan": {
     "title": "Plan",
-    "try": "Try Team",
+    "try": "Start free trial",
     "free": {
       "title": "Free Plan",
       "label": "",

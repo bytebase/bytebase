@@ -13,6 +13,8 @@ import {
 export const useSubscriptionStore = defineStore("subscription", {
   state: (): SubscriptionState => ({
     subscription: undefined,
+    trialingDays: 7,
+    trialingPlan: PlanType.ENTERPRISE,
   }),
   getters: {
     currentPlan(state): PlanType {
@@ -54,6 +56,9 @@ export const useSubscriptionStore = defineStore("subscription", {
         "day"
       );
       return daysBeforeExpire / total < 0.5;
+    },
+    canTrial(state): boolean {
+      return !state.subscription || state.subscription.plan === PlanType.FREE;
     },
   },
   actions: {
@@ -97,6 +102,12 @@ export const useSubscriptionStore = defineStore("subscription", {
           },
         })
       ).data.data;
+      const subscription = data.attributes as Subscription;
+      this.setSubscription(subscription);
+      return subscription;
+    },
+    async trialSubscription() {
+      const data = (await axios.post(`/api/subscription/trial`)).data.data;
       const subscription = data.attributes as Subscription;
       this.setSubscription(subscription);
       return subscription;

@@ -36,14 +36,21 @@
             class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
           >
             <router-link
+              v-if="!isFreePlan"
               to="/setting/subscription"
               exact-active-class
               class="text-sm flex"
-              :class="isFreePlan ? 'text-accent' : ''"
             >
-              <heroicons-solid:sparkles v-if="isFreePlan" class="w-5 h-5" />
               {{ $t(currentPlan) }}
             </router-link>
+            <div
+              v-else
+              class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
+              v-on:click="state.showTrialModal = true"
+            >
+              <heroicons-solid:sparkles class="w-5 h-5" />
+              {{ $t(currentPlan) }}
+            </div>
             <div class="text-sm ml-auto text-control-light tooltip-wrapper">
               {{ version }}
               <span v-if="gitCommit" class="tooltip"
@@ -83,14 +90,21 @@
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
           <router-link
+            v-if="!isFreePlan"
             to="/setting/subscription"
             exact-active-class
             class="text-sm flex whitespace-nowrap mr-1"
-            :class="isFreePlan ? 'text-accent' : ''"
           >
-            <heroicons-outline:sparkles v-if="isFreePlan" class="w-4 h-auto" />
             {{ $t(currentPlan) }}
           </router-link>
+          <div
+            v-else
+            class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
+            v-on:click="state.showTrialModal = true"
+          >
+            <heroicons-solid:sparkles class="w-5 h-5" />
+            {{ $t(currentPlan) }}
+          </div>
           <div
             class="text-sm ml-auto text-control-light tooltip-wrapper whitespace-nowrap truncate"
           >
@@ -148,6 +162,10 @@
       </div>
     </div>
   </div>
+  <TrialModal
+    v-if="state.showTrialModal"
+    @cancel="state.showTrialModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -168,6 +186,7 @@ import {
 
 interface LocalState {
   showMobileOverlay: boolean;
+  showTrialModal: boolean;
 }
 
 export default defineComponent({
@@ -185,6 +204,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showMobileOverlay: false,
+      showTrialModal: false,
     });
 
     const currentUser = useCurrentUser();
