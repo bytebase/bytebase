@@ -58,6 +58,6 @@ func TestComputeDiff(t *testing.T) {
 		"test_differ_data.yaml",
 	}
 	for _, test := range testFileList {
-		runDifferTest(t, test, true /* record */)
+		runDifferTest(t, test, false /* record */)
 	}
 }

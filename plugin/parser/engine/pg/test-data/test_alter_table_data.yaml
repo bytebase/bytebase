@@ -5,7 +5,7 @@
 - stmt: alter table t alter column a type varchar(20)
   want: |
     ALTER TABLE "t"
-        ALTER COLUMN "t" SET DATA TYPE character varying(20);
+        ALTER COLUMN "a" SET DATA TYPE character varying(20);
 - stmt: |-
     alter table t
         add column a integer,
@@ -20,5 +20,5 @@
         drop column b
   want: |
     ALTER TABLE "t"
-        DROP COLUMN a,
-        DROP COLUMN b;
+        DROP COLUMN "a",
+        DROP COLUMN "b";
