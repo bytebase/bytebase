@@ -20,6 +20,7 @@ import {
   unknown,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
+import { hasProjectPermission, hasWorkspacePermission } from "@/utils";
 
 function convert(
   project: ResourceObject,
@@ -340,7 +341,12 @@ export const useProjectStore = defineStore("project", {
     },
 
     isProjectOwner(project: Project, user: Principal) {
-      if (user.role === "DBA" || user.role === "OWNER") {
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          user.role
+        )
+      ) {
         return true;
       }
 
@@ -348,7 +354,13 @@ export const useProjectStore = defineStore("project", {
       const memberInProject = projectMemberList.find((member) => {
         return member.principal.id === user.id;
       });
-      return memberInProject && memberInProject.role === "OWNER";
+      return (
+        memberInProject &&
+        hasProjectPermission(
+          "bb.permission.project.manage-sheet",
+          memberInProject.role
+        )
+      );
     },
   },
 });
