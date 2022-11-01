@@ -1,5 +1,5 @@
--- approval_instance stores approval instances of third party applications.
-CREATE TABLE approval_instance ( 
+-- external_approval_instance stores approval instances of third party applications.
+CREATE TABLE external_approval_instance ( 
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
@@ -11,12 +11,12 @@ CREATE TABLE approval_instance (
     payload JSONB NOT NULL
 );
 
-CREATE INDEX idx_approval_instance_issue_id ON approval_instance(issue_id); 
+CREATE INDEX idx_external_approval_instance_issue_id ON external_approval_instance(issue_id); 
 
-ALTER SEQUENCE approval_instance_id_seq RESTART WITH 101;
+ALTER SEQUENCE external_approval_instance_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_approval_instance_updated_ts
+CREATE TRIGGER update_external_approval_instance_updated_ts
 BEFORE
 UPDATE
-    ON approval_instance FOR EACH ROW
+    ON external_approval_instance FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
