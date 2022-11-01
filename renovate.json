@@ -4,6 +4,9 @@
     "config:base"
   ],
   "schedule": ["every month"],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "ignoreDeps": [
     "github.com/pingcap/tidb/parser"
   ]
