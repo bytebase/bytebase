@@ -175,11 +175,11 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		return true, nil, errors.Errorf("failed to find linked repository for database %q", task.Database.Name)
 	}
 
-	// We write back the latest schema after migration for VCS-based projects when schema path template and branch filter is specified and
+	// On the presence of schema path template and non-wildcard branch filter, We write back the latest schema after migration for VCS-based projects for
 	// 1) baseline migration for SDL,
 	// 2) all DDL/Ghost migrations.
 	writeBack := false
-	if repo != nil && repo.SchemaPathTemplate != "" && repo.BranchFilter != "" {
+	if repo != nil && repo.SchemaPathTemplate != "" && !strings.Contains(repo.BranchFilter, "*") {
 		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 			if task.Type == api.TaskDatabaseSchemaBaseline {
 				writeBack = true

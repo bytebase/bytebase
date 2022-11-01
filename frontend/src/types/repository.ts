@@ -98,8 +98,8 @@ export function baseDirectoryWebUrl(
   repository: Repository,
   params: WebUrlReplaceParams = {}
 ): string {
-  // If branchFilter is empty, we can't locate to the exact branch name, thus we will just return the repository web url
-  if (isEmpty(repository.branchFilter)) {
+  // If branchFilter has wildcard, we can't locate to the exact branch name, thus we will just return the repository web url
+  if (repository.branchFilter.includes("*")) {
     return repository.webUrl;
   }
   let url = "";
