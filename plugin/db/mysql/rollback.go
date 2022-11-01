@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -30,15 +29,10 @@ func (txn BinlogTransaction) GetRollbackSQL(columnNames []string) (string, error
 	return strings.Join(sqlList, "\n"), nil
 }
 
-var (
-	reDMLBlockPrefix = regexp.MustCompile("(?m)^### ")
-	reInsertInto     = regexp.MustCompile("(?m)^INSERT INTO")
-	reDeleteFrom     = regexp.MustCompile("(?m)^DELETE FROM")
-)
-
 func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 	// 1. Remove the "### " prefix of each line.
-	body := reDMLBlockPrefix.ReplaceAllLiteralString(e.Body, "")
+	// Prefix a "\n" to make the replacement easier.
+	body := strings.ReplaceAll("\n"+e.Body, "\n### ", "\n")
 
 	// 2. Switch "DELETE FROM" and "INSERT INTO".
 	// 3. Replace "WHERE" and "SET" with each other.
@@ -47,7 +41,9 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 	var err error
 	switch e.Type {
 	case WriteRowsEventType:
-		body = reInsertInto.ReplaceAllLiteralString(body, "DELETE FROM")
+		body = strings.ReplaceAll(body, "\nINSERT INTO", "\nDELETE FROM")
+		// Trim the "\n" prefix we added at the first step.
+		body = strings.TrimPrefix(body, "\n")
 		body = strings.ReplaceAll(body, "\nSET", "\nWHERE")
 		body, err = replaceColumns(columnNames, body, "\nWHERE", " AND")
 		if err != nil {
@@ -55,7 +51,9 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 		}
 		return addSemicolon(body, "\nDELETE FROM"), nil
 	case DeleteRowsEventType:
-		body = reDeleteFrom.ReplaceAllLiteralString(body, "INSERT INTO")
+		body = strings.ReplaceAll(body, "\nDELETE FROM", "\nINSERT INTO")
+		// Trim the "\n" prefix we added at the first step.
+		body = strings.TrimPrefix(body, "\n")
 		body = strings.ReplaceAll(body, "\nWHERE", "\nSET")
 		body, err = replaceColumns(columnNames, body, "\nSET", ",")
 		if err != nil {
@@ -63,6 +61,8 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 		}
 		return addSemicolon(body, "\nINSERT INTO"), nil
 	case UpdateRowsEventType:
+		// Trim the "\n" prefix we added at the first step.
+		body = strings.TrimPrefix(body, "\n")
 		body = strings.ReplaceAll(body, "\nWHERE", "\nOLDWHERE")
 		body = strings.ReplaceAll(body, "\nSET", "\nWHERE")
 		body = strings.ReplaceAll(body, "\nOLDWHERE", "\nSET")
@@ -76,7 +76,6 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 		}
 		return addSemicolon(body, "\nUPDATE"), nil
 	}
-
 	return "", errors.Errorf("invalid binlog event type %s", e.Type.String())
 }
 
