@@ -1,15 +1,15 @@
 package ast
 
-// DropSchemaType is the type for drop schema statement.
-type DropSchemaType int
+// DropSchemaBehavior is the type for drop schema statement.
+type DropSchemaBehavior int
 
 const (
-	// DropSchemaTypeNone is the default type for drop schema statement.
-	DropSchemaTypeNone DropSchemaType = iota
-	// DropSchemaTypeCascade is the type for drop schema statement with cascade.
-	DropSchemaTypeCascade
-	// DropSchemaTypeRestrict is the type for drop schema statement with restrict.
-	DropSchemaTypeRestrict
+	// DropSchemaBehaviorNone is the default type for drop schema statement.
+	DropSchemaBehaviorNone DropSchemaBehavior = iota
+	// DropSchemaBehaviorCascade is the type for drop schema statement with cascade.
+	DropSchemaBehaviorCascade
+	// DropSchemaBehaviorRestrict is the type for drop schema statement with restrict.
+	DropSchemaBehaviorRestrict
 )
 
 // DropSchemaStmt is the struct for drop schema statement.
@@ -18,5 +18,5 @@ type DropSchemaStmt struct {
 
 	IfExists   bool
 	SchemaList []string
-	Type       DropSchemaType
+	Behavior   DropSchemaBehavior
 }

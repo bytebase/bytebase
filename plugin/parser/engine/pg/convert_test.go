@@ -1931,7 +1931,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   false,
 					SchemaList: []string{"s1"},
-					Type:       ast.DropSchemaTypeRestrict,
+					Behavior:   ast.DropSchemaBehaviorRestrict,
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -1947,7 +1947,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   false,
 					SchemaList: []string{"s1", "s2"},
-					Type:       ast.DropSchemaTypeCascade,
+					Behavior:   ast.DropSchemaBehaviorCascade,
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -1963,7 +1963,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   true,
 					SchemaList: []string{"s1", "s2"},
-					Type:       ast.DropSchemaTypeRestrict,
+					Behavior:   ast.DropSchemaBehaviorRestrict,
 				},
 			},
 			statementList: []parser.SingleSQL{

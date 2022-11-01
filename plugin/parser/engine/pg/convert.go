@@ -254,11 +254,11 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 			switch in.DropStmt.Behavior {
 			case pg_query.DropBehavior_DROP_CASCADE:
-				dropSchema.Type = ast.DropSchemaTypeCascade
+				dropSchema.Behavior = ast.DropSchemaBehaviorCascade
 			case pg_query.DropBehavior_DROP_RESTRICT:
-				dropSchema.Type = ast.DropSchemaTypeRestrict
+				dropSchema.Behavior = ast.DropSchemaBehaviorRestrict
 			default:
-				dropSchema.Type = ast.DropSchemaTypeNone
+				dropSchema.Behavior = ast.DropSchemaBehaviorNone
 			}
 			for _, object := range in.DropStmt.Objects {
 				strNode, ok := object.Node.(*pgquery.Node_String_)
