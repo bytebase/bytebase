@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -429,20 +430,18 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 }
 
 func (*Server) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
-	// TODO(d): we will accept all pushes from wildcard branch filter for now.
-	// We should implement our own branch filter later.
-	if strings.HasSuffix(branchFilter, "*") {
-		return true, nil
-	}
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, "Invalid ref: %s", pushEventRef).SetInternal(err)
 	}
-	if branch != branchFilter {
+	ok, err := filepath.Match(branchFilter, branch)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to match branch filter")
+	}
+	if !ok {
 		log.Debug("Skipping repo due to branch filter mismatch", zap.String("branch", branch), zap.String("filter", branchFilter))
 		return false, nil
 	}
-
 	return true, nil
 }
 

@@ -378,6 +378,11 @@ export const useDatabaseStore = defineStore("database", {
       }
       return this.fetchDatabaseById(databaseId);
     },
+    async fetchDatabaseSchemaById(databaseId: DatabaseId): Promise<string> {
+      const url = `/api/database/${databaseId}/schema`;
+      const schema = (await axios.get(url)).data as string;
+      return schema;
+    },
     async transferProject({
       databaseId,
       projectId,

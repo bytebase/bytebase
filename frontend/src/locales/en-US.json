@@ -900,19 +900,22 @@
     "selected-n-databases": "{n} database selected | {n} databases selected",
     "sync-schema": {
       "title": "Synchronize Schema",
-      "description": "Synchronize the selected source database schema version to target database.",
-      "select-schema-version": "Select schema version from source database",
-      "target-database": "Select target database",
-      "schema-diff": "Schema diff",
-      "synchronize-statements": "The generated DDL statements based on diff",
+      "select-project": "Step 1. Select project",
+      "select-schema": "Step 2. Select schema",
+      "select-database": "Step 3. Apply to database",
+      "schema-diff": "The diff",
+      "synchronize-statements": "The DDL statements",
       "synchronize-statements-description": "You can further edit the generated DDL statements.",
       "select-schema-and-target-database-tip": "Please select the schema and database first.",
-      "no-difference-tip": "No diff found between source database schema and target database schema.",
-      "more-version": "more..."
+      "no-difference-tip": "No diff found.",
+      "more-version": "more...",
+      "character-sets-diff-found": "There are differences between character sets.",
+      "preview-issue": "Preview issue"
     }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
+    "branch-specify-tip": "Tips: You can use empty branch to receive changes from all branches.",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",

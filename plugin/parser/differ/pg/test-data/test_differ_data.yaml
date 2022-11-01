@@ -1,0 +1,41 @@
+- oldSchema: CREATE TABLE projects ();
+  newSchema: |
+    CREATE TABLE users (
+        id serial PRIMARY KEY,
+        username TEXT NOT NULL
+    );
+    CREATE TABLE projects ();
+    CREATE TABLE repositories (
+        id serial PRIMARY KEY
+    );
+  diff: |
+    CREATE TABLE users (
+        id serial PRIMARY KEY,
+        username TEXT NOT NULL
+    );
+    CREATE TABLE repositories (
+        id serial PRIMARY KEY
+    );
+- oldSchema: CREATE TABLE t1(a int, b char(20), c int);
+  newSchema: CREATE TABLE t1(a int);
+  diff: |+
+    ALTER TABLE "t1"
+        DROP COLUMN "b",
+        DROP COLUMN "c";
+
+- oldSchema: CREATE TABLE t1(a int);
+  newSchema: CREATE TABLE t1(a int, b char(20), c int)
+  diff: |+
+    ALTER TABLE "t1"
+        ADD COLUMN "b" character(20),
+        ADD COLUMN "c" integer;
+
+- oldSchema: create table t1(a int, b bigint, c serial);
+  newSchema: create table t1(a varchar(20), b serial, c bigint, d char(30))
+  diff: |+
+    ALTER TABLE "t1"
+        ALTER COLUMN "a" SET DATA TYPE character varying(20),
+        ALTER COLUMN "b" SET DATA TYPE serial,
+        ALTER COLUMN "c" SET DATA TYPE bigint,
+        ADD COLUMN "d" character(30);
+

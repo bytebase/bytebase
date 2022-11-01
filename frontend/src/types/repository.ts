@@ -90,7 +90,7 @@ export type ExternalRepositoryInfo = {
 type WebUrlReplaceParams = {
   DB_NAME?: string;
   VERSION?: string;
-  TYPE?: "migrate" | "data";
+  TYPE?: "ddl" | "dml";
   ENV_NAME?: string;
 };
 
@@ -98,6 +98,10 @@ export function baseDirectoryWebUrl(
   repository: Repository,
   params: WebUrlReplaceParams = {}
 ): string {
+  // If branchFilter has wildcard, we can't locate to the exact branch name, thus we will just return the repository web url
+  if (repository.branchFilter.includes("*")) {
+    return repository.webUrl;
+  }
   let url = "";
   if (repository.vcs.type == "GITLAB_SELF_HOST") {
     url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;

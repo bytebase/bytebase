@@ -2,7 +2,6 @@ p, OWNER, /principal, POST
 p, OWNER, /principal, GET
 p, OWNER, /principal/{id}, GET
 p, OWNER, /principal/{id}, PATCH
-p, OWNER, /principal/{id}, PATCH_SELF
 p, OWNER, /member, POST
 p, OWNER, /member, GET
 p, OWNER, /member/{id}, PATCH
@@ -110,7 +109,6 @@ p, OWNER, /sheet/shared, GET
 p, OWNER, /sheet/starred, GET
 p, OWNER, /sheet/{id}, GET
 p, OWNER, /sheet/{id}, PATCH
-p, OWNER, /sheet/{id}, PATCH_SELF
 p, OWNER, /sheet/{id}, DELETE_SELF
 p, OWNER, /sheet/{id}/organizer, PATCH
 p, OWNER, /sheet/project/{projectID}/sync, POST

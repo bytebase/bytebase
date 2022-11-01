@@ -51,6 +51,63 @@ func runTests(t *testing.T, tests []testData) {
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
+			stmt: `
+				CREATE TABLE tech_book(
+					a char(20),
+					b character(30),
+					c varchar(330),
+					d character varying(400),
+					e text
+				)
+			`,
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					IfNotExists: false,
+					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							Type:       &ast.Character{Size: 20},
+						},
+						{
+							ColumnName: "b",
+							Type:       &ast.Character{Size: 30},
+						},
+						{
+							ColumnName: "c",
+							Type:       &ast.CharacterVarying{Size: 330},
+						},
+						{
+							ColumnName: "d",
+							Type:       &ast.CharacterVarying{Size: 400},
+						},
+						{
+							ColumnName: "e",
+							Type:       &ast.Text{},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE TABLE tech_book(
+					a char(20),
+					b character(30),
+					c varchar(330),
+					d character varying(400),
+					e text
+				)`,
+					LastLine: 8,
+				},
+			},
+			columnLine: [][]int{
+				{3, 4, 5, 6, 7},
+			},
+		},
+		{
 			stmt: `CREATE TABLE tech_book(
 				a smallint,
 				b integer,
@@ -1788,5 +1845,134 @@ func TestCreateDatabase(t *testing.T) {
 		},
 	}
 
+	runTests(t, tests)
+}
+
+func TestCreateSchema(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "CREATE SCHEMA myschema",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA myschema AUTHORIZATION joe;",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+				RoleSpec:    &ast.RoleSpec{Type: ast.RoleSpecTypeUser, Value: "joe"},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema AUTHORIZATION joe;",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA IF NOT EXISTS myschema AUTHORIZATION joe;",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: true,
+				RoleSpec:    &ast.RoleSpec{Type: ast.RoleSpecTypeUser, Value: "joe"},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA IF NOT EXISTS myschema AUTHORIZATION joe;",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA myschema CREATE TABLE tbl (id INT)",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+				SchemaElementList: []ast.Node{
+					&ast.CreateTableStmt{
+						IfNotExists: false,
+						Name: &ast.TableDef{
+							Type: ast.TableTypeBaseTable,
+							Name: "tbl",
+						},
+						ColumnList: []*ast.ColumnDef{
+							{
+								ColumnName: "id",
+								Type:       &ast.Integer{Size: 4},
+							},
+						},
+					},
+				},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema CREATE TABLE tbl (id INT)",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestDropSchema(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP SCHEMA s1",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   false,
+					SchemaList: []string{"s1"},
+					Behavior:   ast.DropSchemaBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA s1",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP SCHEMA s1, s2 CASCADE",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   false,
+					SchemaList: []string{"s1", "s2"},
+					Behavior:   ast.DropSchemaBehaviorCascade,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA s1, s2 CASCADE",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP SCHEMA IF EXISTS s1, s2 RESTRICT",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   true,
+					SchemaList: []string{"s1", "s2"},
+					Behavior:   ast.DropSchemaBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA IF EXISTS s1, s2 RESTRICT",
+					LastLine: 1,
+				},
+			},
+		},
+	}
 	runTests(t, tests)
 }

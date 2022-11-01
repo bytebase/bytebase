@@ -405,8 +405,8 @@ export default defineComponent({
                 DB_NAME: state.selectedDatabaseName!,
                 TYPE:
                   props.type === "bb.issue.database.schema.update"
-                    ? "migrate"
-                    : "data",
+                    ? "ddl"
+                    : "dml",
               }),
               "_blank"
             );
@@ -448,8 +448,8 @@ export default defineComponent({
                 ENV_NAME: database.instance.environment.name,
                 TYPE:
                   props.type === "bb.issue.database.schema.update"
-                    ? "migrate"
-                    : "data",
+                    ? "ddl"
+                    : "dml",
               }),
               "_blank"
             );
