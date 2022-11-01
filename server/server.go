@@ -381,15 +381,15 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}
 
-	s.initSubscription()
+	s.initSubscription(ctx)
 
 	serverStarted = true
 	return s, nil
 }
 
 // initSubscription will initial the subscription cache in memory.
-func (s *Server) initSubscription() {
-	s.subscription = s.loadSubscription()
+func (s *Server) initSubscription(ctx context.Context) {
+	s.subscription = s.loadSubscription(ctx)
 }
 
 // initMetricReporter will initial the metric scheduler.
