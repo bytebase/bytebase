@@ -686,7 +686,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 
 				if !sameEnvStageFound {
 					create.StageList = append(create.StageList, api.StageCreate{
-						Name:          fmt.Sprintf("%s State", database.Instance.Environment.Name),
+						Name:          fmt.Sprintf("%s Stage", database.Instance.Environment.Name),
 						EnvironmentID: database.Instance.Environment.ID,
 						TaskList:      []api.TaskCreate{*taskCreate},
 					})
