@@ -101,7 +101,49 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropColumn(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.SetNotNullStmt:
+			if err := deparseSetNotNull(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.DropNotNullStmt:
+			if err := deparseDropNotNull(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
+	}
+	return nil
+}
+
+func deparseDropNotNull(context parser.DeparseContext, in *ast.DropNotNullStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" DROP NOT NULL"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deparseSetNotNull(context parser.DeparseContext, in *ast.SetNotNullStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" SET NOT NULL"); err != nil {
+		return err
 	}
 	return nil
 }
