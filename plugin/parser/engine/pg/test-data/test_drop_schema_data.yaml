@@ -1,4 +1,4 @@
 - stmt: drop schema myschema
-  want: DROP SCHEMA "myschema" RESTRICT
+  want: DROP SCHEMA "myschema" RESTRICT;
 - stmt: drop schema if exists s1, s2 cascade
-  want: DROP SCHEMA IF EXISTS "s1", "s2" CASCADE
+  want: DROP SCHEMA IF EXISTS "s1", "s2" CASCADE;
