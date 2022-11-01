@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	pg_query "github.com/pganalyze/pg_query_go/v2"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 	"github.com/pkg/errors"
 
@@ -248,14 +247,14 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				dropView.TableList = append(dropView.TableList, viewDef)
 			}
 			return dropView, nil
-		case pg_query.ObjectType_OBJECT_SCHEMA:
+		case pgquery.ObjectType_OBJECT_SCHEMA:
 			dropSchema := &ast.DropSchemaStmt{
 				IfExists: in.DropStmt.MissingOk,
 			}
 			switch in.DropStmt.Behavior {
-			case pg_query.DropBehavior_DROP_CASCADE:
+			case pgquery.DropBehavior_DROP_CASCADE:
 				dropSchema.Behavior = ast.DropSchemaBehaviorCascade
-			case pg_query.DropBehavior_DROP_RESTRICT:
+			case pgquery.DropBehavior_DROP_RESTRICT:
 				dropSchema.Behavior = ast.DropSchemaBehaviorRestrict
 			default:
 				dropSchema.Behavior = ast.DropSchemaBehaviorNone
