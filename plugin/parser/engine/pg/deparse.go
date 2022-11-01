@@ -17,6 +17,8 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 		return deparseDataType(context, node, buf)
 	case *ast.CreateTableStmt:
 		return deparseCreateTable(context, node, buf)
+	case *ast.AlterTableStmt:
+		return deparseAlterTable(context, node, buf)
 	case *ast.TableDef:
 		return deparseTableDef(context, node, buf)
 	case *ast.ColumnDef:
@@ -24,6 +26,79 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 	}
 
 	return errors.Errorf("failed to deparse %T", in)
+}
+
+func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("ALTER TABLE "); err != nil {
+		return err
+	}
+	if err := deparseTableDef(context, in.Table, buf); err != nil {
+		return err
+	}
+	itemContext := parser.DeparseContext{
+		IndentLevel: context.IndentLevel + 1,
+	}
+	for i, item := range in.AlterItemList {
+		if i != 0 {
+			if _, err := buf.WriteString(","); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		switch action := item.(type) {
+		case *ast.AddColumnListStmt:
+			if err := deparseAddColumnList(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.AlterColumnTypeStmt:
+			if err := deparseAlterColumnType(itemContext, action, buf); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err := buf.WriteString(";\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deparseAlterColumnType(context parser.DeparseContext, in *ast.AlterColumnTypeStmt, buf *strings.Builder) error {
+	for i := 0; i < context.IndentLevel; i++ {
+		if _, err := buf.WriteString(parser.DeparseIndentString); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := deparseTableDef(context, in.Table, buf); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" SET DATA TYPE "); err != nil {
+		return err
+	}
+	return deparseDataType(context, in.Type, buf)
+}
+
+func deparseAddColumnList(context parser.DeparseContext, in *ast.AddColumnListStmt, buf *strings.Builder) error {
+	for i := 0; i < context.IndentLevel; i++ {
+		if _, err := buf.WriteString(parser.DeparseIndentString); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString("ADD COLUMN "); err != nil {
+		return err
+	}
+
+	if len(in.ColumnList) != 1 {
+		return errors.Errorf("PostgreSQL doesn't support zero or multi-columns for ALTER TABLE ADD COLUMN statements")
+	}
+
+	return deparseColumnDef(parser.DeparseContext{IndentLevel: 0}, in.ColumnList[0], buf)
 }
 
 func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, buf *strings.Builder) error {
