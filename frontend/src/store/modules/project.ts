@@ -340,7 +340,7 @@ export const useProjectStore = defineStore("project", {
       }
     },
 
-    isProjectOwner(project: Project, user: Principal) {
+    canManageProject(project: Project, user: Principal) {
       if (
         hasWorkspacePermission(
           "bb.permission.workspace.manage-project",
