@@ -42,11 +42,11 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/label/:id", func(c echo.Context) error {
+	g.PATCH("/label/:labelID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("labelID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("id is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("id is not a number: %s", c.Param("labelID"))).SetInternal(err)
 		}
 
 		patch := &api.LabelKeyPatch{
