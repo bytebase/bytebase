@@ -4,6 +4,7 @@ import {
   empty,
   EMPTY_ID,
   MemberId,
+  Principal,
   PrincipalId,
   Project,
   ProjectCreate,
@@ -321,6 +322,7 @@ export const useProjectStore = defineStore("project", {
 
       return updatedProject;
     },
+
     setProjectById({
       projectId,
       project,
@@ -330,10 +332,23 @@ export const useProjectStore = defineStore("project", {
     }) {
       this.projectById.set(projectId, project);
     },
+
     upsertProjectList(projectList: Project[]) {
       for (const project of projectList) {
         this.projectById.set(project.id, project);
       }
+    },
+
+    isProjectOwner(project: Project, user: Principal) {
+      if (user.role === "DBA" || user.role === "OWNER") {
+        return true;
+      }
+
+      const projectMemberList = project.memberList || [];
+      const memberInProject = projectMemberList.find((member) => {
+        return member.principal.id === user.id;
+      });
+      return memberInProject && memberInProject.role === "OWNER";
     },
   },
 });

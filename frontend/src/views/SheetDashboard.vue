@@ -371,6 +371,17 @@ const getSheetDropDownOptions = (sheet: Sheet) => {
       label: t("common.delete"),
     });
   } else if (currentSubPath.value === "shared") {
+    const isProjectOwner = useProjectStore().isProjectOwner(
+      sheet.project,
+      currentUser.value
+    );
+    if (isProjectOwner) {
+      options.push({
+        key: "delete",
+        label: t("common.delete"),
+      });
+    }
+
     options.push({
       key: "duplicate",
       label: t("common.duplicate"),
