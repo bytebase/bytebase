@@ -1922,3 +1922,57 @@ func TestCreateSchema(t *testing.T) {
 	}
 	runTests(t, tests)
 }
+
+func TestDropSchema(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP SCHEMA s1",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   false,
+					SchemaList: []string{"s1"},
+					Behavior:   ast.DropSchemaBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA s1",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP SCHEMA s1, s2 CASCADE",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   false,
+					SchemaList: []string{"s1", "s2"},
+					Behavior:   ast.DropSchemaBehaviorCascade,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA s1, s2 CASCADE",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP SCHEMA IF EXISTS s1, s2 RESTRICT",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   true,
+					SchemaList: []string{"s1", "s2"},
+					Behavior:   ast.DropSchemaBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA IF EXISTS s1, s2 RESTRICT",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
