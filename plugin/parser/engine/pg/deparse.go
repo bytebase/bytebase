@@ -80,10 +80,7 @@ func deparseDropColumn(context parser.DeparseContext, in *ast.DropColumnStmt, bu
 	if _, err := buf.WriteString("DROP COLUMN "); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(in.ColumnName); err != nil {
-		return err
-	}
-	return nil
+	return writeSurrounding(buf, in.ColumnName, `"`)
 }
 
 func deparseAlterColumnType(context parser.DeparseContext, in *ast.AlterColumnTypeStmt, buf *strings.Builder) error {
@@ -94,7 +91,7 @@ func deparseAlterColumnType(context parser.DeparseContext, in *ast.AlterColumnTy
 	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
 		return err
 	}
-	if err := deparseTableDef(context, in.Table, buf); err != nil {
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(" SET DATA TYPE "); err != nil {
