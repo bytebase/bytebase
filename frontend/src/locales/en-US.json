@@ -523,8 +523,9 @@
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
     "vcs-info": "VCS enabled. Selecting this will navigate you to the corresponding Git repository to initiate the change process.",
     "alter-single-db": "Alter single database",
-    "alter-multiple-db": "Alter multiple databases",
-    "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments."
+    "alter-multiple-db": "Manual Selection",
+    "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments.",
+    "alter-db-group": "By Deployment Config"
   },
   "quick-action": {
     "create-db": "Create database",

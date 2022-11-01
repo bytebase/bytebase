@@ -1,0 +1,4 @@
+- stmt: drop table t
+  want: DROP TABLE "t";
+- stmt: drop table public.t, t1
+  want: DROP TABLE "public"."t", "t1";

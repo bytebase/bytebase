@@ -16,20 +16,57 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 	case ast.DataType:
 		return deparseDataType(context, node, buf)
 	case *ast.CreateTableStmt:
-		return deparseCreateTable(context, node, buf)
+		if err := deparseCreateTable(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
+	case *ast.DropTableStmt:
+		if err := deparseDropTable(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	case *ast.AlterTableStmt:
-		return deparseAlterTable(context, node, buf)
+		if err := deparseAlterTable(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	case *ast.TableDef:
 		return deparseTableDef(context, node, buf)
 	case *ast.ColumnDef:
 		return deparseColumnDef(context, node, buf)
 	case *ast.CreateSchemaStmt:
-		return deparseCreateSchema(context, node, buf)
+		if err := deparseCreateSchema(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	case *ast.DropSchemaStmt:
-		return deparseDropSchema(context, node, buf)
+		if err := deparseDropSchema(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
+	}
+	return errors.Errorf("failed to deparse %T", in)
+}
+
+func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
 	}
 
-	return errors.Errorf("failed to deparse %T", in)
+	if _, err := buf.WriteString("DROP TABLE "); err != nil {
+		return err
+	}
+	for i, table := range in.TableList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if err := deparseTableDef(parser.DeparseContext{IndentLevel: 0}, table, buf); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, buf *strings.Builder) error {
@@ -64,9 +101,48 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropColumn(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.SetNotNullStmt:
+			if err := deparseSetNotNull(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.DropNotNullStmt:
+			if err := deparseDropNotNull(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
 	}
-	if _, err := buf.WriteString(";\n"); err != nil {
+	return nil
+}
+
+func deparseDropNotNull(context parser.DeparseContext, in *ast.DropNotNullStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" DROP NOT NULL"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deparseSetNotNull(context parser.DeparseContext, in *ast.SetNotNullStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" SET NOT NULL"); err != nil {
 		return err
 	}
 	return nil

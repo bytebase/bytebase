@@ -18,24 +18,27 @@
     );
 - oldSchema: CREATE TABLE t1(a int, b char(20), c int);
   newSchema: CREATE TABLE t1(a int);
-  diff: |+
+  diff: |
     ALTER TABLE "t1"
         DROP COLUMN "b",
         DROP COLUMN "c";
-
 - oldSchema: CREATE TABLE t1(a int);
   newSchema: CREATE TABLE t1(a int, b char(20), c int)
-  diff: |+
+  diff: |
     ALTER TABLE "t1"
         ADD COLUMN "b" character(20),
         ADD COLUMN "c" integer;
-
 - oldSchema: create table t1(a int, b bigint, c serial);
   newSchema: create table t1(a varchar(20), b serial, c bigint, d char(30))
-  diff: |+
+  diff: |
     ALTER TABLE "t1"
         ALTER COLUMN "a" SET DATA TYPE character varying(20),
         ALTER COLUMN "b" SET DATA TYPE serial,
         ALTER COLUMN "c" SET DATA TYPE bigint,
         ADD COLUMN "d" character(30);
-
+- oldSchema: create table t1(a int, b int NOT NULL)
+  newSchema: create table t1(a int NOT NULL, b int)
+  diff: |
+    ALTER TABLE "t1"
+        ALTER COLUMN "a" SET NOT NULL,
+        ALTER COLUMN "b" DROP NOT NULL;

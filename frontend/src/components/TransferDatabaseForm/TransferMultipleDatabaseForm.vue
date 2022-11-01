@@ -9,7 +9,7 @@
       :database-list="databaseList"
       :show-selection-column="true"
       @select-database="
-        (db) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
+        (db: Database) => toggleDatabaseSelection(db, !isDatabaseSelected(db))
       "
     >
       <template #selection-all="{ databaseList: renderedDatabaseList }">
@@ -26,7 +26,6 @@
           "
         />
       </template>
-
       <template #selection="{ database }">
         <input
           type="checkbox"
