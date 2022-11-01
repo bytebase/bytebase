@@ -16,3 +16,6 @@
     CREATE TABLE repositories (
         id serial PRIMARY KEY
     );
+- oldSchema: CREATE TABLE t1(a int, b char, c int);
+  newSchema: CREATE TABLE t1(a int);
+  diff: ""
