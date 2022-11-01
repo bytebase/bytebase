@@ -82,8 +82,6 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 
 func addSemicolon(sql, delimiter string) string {
 	rows := strings.Split(sql, delimiter)
-	// rows = rows[1:]
-	// rows[0] = delimiter + rows[0]
 	for i := range rows {
 		rows[i] = strings.TrimSuffix(rows[i], "\n")
 	}
