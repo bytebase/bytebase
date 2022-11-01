@@ -43,7 +43,7 @@
     </div>
     <div>
       <div class="textlabel">
-        {{ $t("common.branch") }}
+        {{ $t("common.branch") }} <span class="text-red-600">*</span>
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.branch-observe-file-change") }}
