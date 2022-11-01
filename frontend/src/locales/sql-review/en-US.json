@@ -16,8 +16,10 @@
     "system": "System"
   },
   "template": {
-    "bb-sql-review-prod": "Template for Prod Environment",
-    "bb-sql-review-dev": "Template for Dev Environment"
+    "bb-sql-review-prod": "Advanced Template",
+    "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
+    "bb-sql-review-dev": "Basic Template",
+    "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage."
   },
   "rule": {
     "engine-mysql-use-innodb": {
