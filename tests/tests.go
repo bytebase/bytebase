@@ -184,6 +184,7 @@ func getTestPort(testName string) int {
 		"TestPITRInvalidTimePoint",
 		"TestPITRTwice",
 		"TestPITRToNewDatabaseInAnotherInstance",
+		"TestRollback",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
