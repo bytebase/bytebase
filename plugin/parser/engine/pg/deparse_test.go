@@ -58,6 +58,7 @@ func runDeparseTest(t *testing.T, file string, record bool) {
 func TestDeparse(t *testing.T) {
 	testFileList := []string{
 		"test_create_table_data.yaml",
+		"test_alter_table_data.yaml",
 		// Schema
 		"test_create_schema_data.yaml",
 		"test_drop_schema_data.yaml",
