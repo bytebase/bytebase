@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
-func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) (err error) {
+func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) error {
 	switch node := in.(type) {
 	case ast.DataType:
 		if err := deparseDataType(context, node, buf); err != nil {
