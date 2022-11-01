@@ -628,12 +628,15 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
 
-	schemaVersion := common.DefaultMigrationVersion()
 	// Tenant mode project pipeline has its own generation.
 	if project.TenantMode == api.TenantModeTenant {
 		if !s.feature(api.FeatureMultiTenancy) {
 			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
+		if len(c.DetailList) == 0 {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have at least one update schema detail")
+		}
+		databaseNameCount, databaseIDCount := 0, 0
 		for _, detail := range c.DetailList {
 			if detail.MigrationType != db.Migrate && detail.MigrationType != db.Data {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
@@ -641,18 +644,22 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if detail.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
+			if detail.DatabaseID > 0 {
+				databaseIDCount++
+			}
+			if detail.DatabaseName != "" {
+				databaseNameCount++
+			}
 		}
-		if len(c.DetailList) < 1 {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have at least one update schema detail")
+		if databaseNameCount > 0 && databaseIDCount > 0 {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Migration detail should set either database name or database ID.")
+		}
+		if databaseNameCount > 1 {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with database name.")
 		}
 
-		headDetail := c.DetailList[0]
-		// VCS push event contains schema version in the file name, which is parsed against the file template.
-		if headDetail.SchemaVersion != "" {
-			schemaVersion = headDetail.SchemaVersion
-		}
-
-		if len(c.DetailList) > 1 || (headDetail.DatabaseName == "" && headDetail.DatabaseID > 0) {
+		if databaseIDCount > 0 {
+			// Use database IDs in the issue.
 			for _, detail := range c.DetailList {
 				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &detail.DatabaseID})
 				if err != nil {
@@ -662,7 +669,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", detail.DatabaseID))
 				}
 
-				taskCreate, err := getUpdateTask(database, c.VCSPushEvent, detail, schemaVersion)
+				taskCreate, err := getUpdateTask(database, c.VCSPushEvent, detail, getOrDefaultSchemaVersion(detail))
 				if err != nil {
 					return nil, err
 				}
@@ -693,7 +700,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
 
-			baseDBName := headDetail.DatabaseName
+			migrationDetail := c.DetailList[0]
+			baseDBName := migrationDetail.DatabaseName
 			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
 			if err != nil {
 				return nil, err
@@ -707,8 +715,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				for _, database := range databaseList {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
-
-					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, headDetail, schemaVersion)
+					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
 					if err != nil {
 						return nil, err
 					}
@@ -754,11 +761,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			// VCS push event contains schema version in the file name, which is parsed against the file template.
-			if d.SchemaVersion != "" {
-				schemaVersion = d.SchemaVersion
-			}
-			taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, schemaVersion)
+			taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, getOrDefaultSchemaVersion(d))
 			if err != nil {
 				return nil, err
 			}
@@ -838,6 +841,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 		})
 	}
 	return create, nil
+}
+
+func getOrDefaultSchemaVersion(detail *api.MigrationDetail) string {
+	if detail.SchemaVersion != "" {
+		return detail.SchemaVersion
+	}
+	return common.DefaultMigrationVersion()
 }
 
 func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (*api.TaskCreate, error) {
