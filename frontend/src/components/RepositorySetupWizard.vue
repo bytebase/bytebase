@@ -254,10 +254,7 @@ export default defineComponent({
 
     const allowNext = computed((): boolean => {
       if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
-        return (
-          !isEmpty(state.config.repositoryConfig.branchFilter.trim()) &&
-          !isEmpty(state.config.repositoryConfig.filePathTemplate.trim())
-        );
+        return !isEmpty(state.config.repositoryConfig.filePathTemplate.trim());
       }
       return true;
     });

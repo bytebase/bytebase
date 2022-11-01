@@ -1,105 +1,67 @@
 package pg
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/plugin/parser"
 )
 
-type testDeparseData struct {
-	stmt string
-	want string
+// TestDeparseData is the test data struct.
+type TestDeparseData struct {
+	Stmt string `yaml:"stmt"`
+	Want string `yaml:"want"`
 }
 
-func runDeparseTest(t *testing.T, tests []testDeparseData) {
+func runDeparseTest(t *testing.T, file string, record bool) {
 	p := &PostgreSQLParser{}
 
-	for _, test := range tests {
-		nodeList, err := p.Parse(parser.ParseContext{}, test.stmt)
+	var tests []TestDeparseData
+	filepath := filepath.Join("test-data", file)
+	yamlFile, err := os.Open(filepath)
+	require.NoError(t, err)
+	defer yamlFile.Close()
+
+	byteValue, err := io.ReadAll(yamlFile)
+	require.NoError(t, err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	require.NoError(t, err)
+
+	for i, test := range tests {
+		nodeList, err := p.Parse(parser.ParseContext{}, test.Stmt)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
 		res, err := p.Deparse(parser.DeparseContext{}, nodeList[0])
 		require.NoError(t, err)
-		require.Equal(t, test.want, res, test.stmt)
+		if record {
+			tests[i].Want = res
+		} else {
+			require.Equal(t, test.Want, res, test.Stmt)
+		}
+	}
+
+	if record {
+		err := yamlFile.Close()
+		require.NoError(t, err)
+		byteValue, err = yaml.Marshal(tests)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		require.NoError(t, err)
 	}
 }
 
-func TestCreateTable(t *testing.T) {
-	tests := []testDeparseData{
-		{
-			stmt: `CREATE TABLE tech_book(
-				a smallint,
-				b integer,
-				c bigint,
-				d decimal(10, 2),
-				e numeric(4),
-				f real,
-				g double precision,
-				h smallserial,
-				i serial,
-				j bigserial,
-				k int8,
-				l serial8,
-				m float8,
-				n int,
-				o int4,
-				p float4,
-				q int2,
-				r serial2,
-				s serial4,
-				t decimal)`,
-			want: `CREATE TABLE "tech_book" (
-    "a" smallint,
-    "b" integer,
-    "c" bigint,
-    "d" numeric(10, 2),
-    "e" numeric(4),
-    "f" real,
-    "g" double precision,
-    "h" smallserial,
-    "i" serial,
-    "j" bigserial,
-    "k" bigint,
-    "l" bigserial,
-    "m" double precision,
-    "n" integer,
-    "o" integer,
-    "p" real,
-    "q" smallint,
-    "r" smallserial,
-    "s" serial,
-    "t" numeric
-)`,
-		},
-		{
-			stmt: `create table "TechBook"(a "user defined data type")`,
-			want: `CREATE TABLE "TechBook" (
-    "a" "user defined data type"
-)`,
-		},
-		{
-			stmt: `
-				CREATE TABLE tech_book(
-					a char(20),
-					b character(30),
-					c varchar(330),
-					d character varying(400),
-					e text
-				)
-			`,
-			want: `CREATE TABLE "tech_book" (
-    "a" character(20),
-    "b" character(30),
-    "c" character varying(330),
-    "d" character varying(400),
-    "e" text
-)`,
-		},
+func TestDeparse(t *testing.T) {
+	testFileList := []string{
+		"test_create_table_data.yaml",
 	}
-
-	runDeparseTest(t, tests)
+	for _, test := range testFileList {
+		runDeparseTest(t, test, false /* record */)
+	}
 }
 
 func TestDeparseCreateSchema(t *testing.T) {
