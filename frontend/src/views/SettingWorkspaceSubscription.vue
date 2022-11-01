@@ -7,8 +7,17 @@
         href="https://bytebase.com/pricing?source=console.subscription"
         target="__blank"
       >
-        {{ $t("subscription.description-highlight") }}
+        {{ $t("subscription.pruchase-license") }}
       </a>
+      <span v-if="canTrial" class="ml-1">
+        {{ $t("common.or") }}
+        <span
+          class="text-accent cursor-pointer"
+          v-on:click="state.showTrialModal = true"
+        >
+          {{ $t("subscription.plan.try") }}
+        </span>
+      </span>
     </div>
     <dl class="text-left grid grid-cols-2 gap-x-6 my-5 sm:grid-cols-4">
       <div class="my-3">
@@ -67,6 +76,10 @@
       </div>
       <PricingTable />
     </div>
+    <TrialModal
+      v-if="state.showTrialModal"
+      @cancel="state.showTrialModal = false"
+    />
   </div>
 </template>
 
@@ -81,6 +94,7 @@ import { storeToRefs } from "pinia";
 interface LocalState {
   loading: boolean;
   license: string;
+  showTrialModal: boolean;
 }
 
 export default defineComponent({
@@ -95,6 +109,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       loading: false,
       license: "",
+      showTrialModal: false,
     });
 
     const disabled = computed((): boolean => {
@@ -145,9 +160,14 @@ export default defineComponent({
       }
     });
 
+    const canTrial = computed((): boolean => {
+      return subscriptionStore.canTrial;
+    });
+
     return {
       state,
       disabled,
+      canTrial,
       expireAt,
       isTrialing,
       currentPlan,

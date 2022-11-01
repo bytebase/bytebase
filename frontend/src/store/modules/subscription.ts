@@ -63,7 +63,7 @@ export const useSubscriptionStore = defineStore("subscription", {
   },
   actions: {
     hasFeature(type: FeatureType) {
-      return FEATURE_MATRIX.get(type)![this.currentPlan];
+      return !this.isExpired && FEATURE_MATRIX.get(type)![this.currentPlan];
     },
     getMinimumRequiredPlan(type: FeatureType): PlanType {
       const matrix = FEATURE_MATRIX.get(type);

@@ -34,7 +34,7 @@
             {{
               $t(
                 isTrialing
-                  ? "subscription.description-highlight"
+                  ? "subscription.pruchase-license"
                   : "banner.update-license"
               )
             }}
