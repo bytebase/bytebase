@@ -45,7 +45,7 @@
     "semver": "7.3.7",
     "slug": "8.0.0",
     "splitpanes": "3.1.1",
-    "sql-formatter": "11.0.0",
+    "sql-formatter": "11.0.2",
     "uuid": "9.0.0",
     "v-code-diff": "0.3.12",
     "vscode-languageserver": "8.0.2",
