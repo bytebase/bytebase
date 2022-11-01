@@ -14,3 +14,11 @@
     ALTER TABLE "t"
         ADD COLUMN "a" integer,
         ADD COLUMN "b" character(20);
+- stmt: |-
+    alter table t
+        drop column a,
+        drop column b
+  want: |-
+    ALTER TABLE "t"
+        DROP COLUMN a,
+        DROP COLUMN b;
