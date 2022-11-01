@@ -88,7 +88,7 @@
       </div>
 
       <div
-        v-if="isDev && quickAction === 'quickaction.bb.database.schema.sync'"
+        v-if="quickAction === 'quickaction.bb.database.schema.sync'"
         class="flex flex-col items-center w-28 py-1"
       >
         <button
@@ -243,10 +243,10 @@
   />
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { kebabCase } from "lodash-es";
-import { defineComponent, reactive, PropType, computed, watch } from "vue";
+import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { ProjectId, QuickActionType } from "../types";
@@ -274,202 +274,174 @@ interface LocalState {
   quickActionType: QuickActionType;
 }
 
-export default defineComponent({
-  name: "QuickActionPanel",
-  components: {
-    ProjectCreate,
-    CreateInstanceForm,
-    AlterSchemaPrepForm,
-    CreateDatabasePrepForm,
-    RequestDatabasePrepForm,
-    TransferDatabaseForm,
-    SyncDatabaseSchemaPrepForm,
-    BBBetaBadge,
-  },
-  props: {
-    quickActionList: {
-      required: true,
-      type: Object as PropType<QuickActionType[]>,
-    },
-  },
-  setup(props) {
-    const { t } = useI18n();
-    const router = useRouter();
-    const route = useRoute();
-    const commandStore = useCommandStore();
-    const subscriptionStore = useSubscriptionStore();
-
-    const state = reactive<LocalState>({
-      showModal: false,
-      featureName: "",
-      showFeatureModal: false,
-      modalTitle: "",
-      modalSubtitle: "",
-      quickActionType: "quickaction.bb.instance.create",
-    });
-
-    const projectId = computed((): ProjectId | undefined => {
-      if (router.currentRoute.value.name == "workspace.project.detail") {
-        const parts = router.currentRoute.value.path.split("/");
-        return idFromSlug(parts[parts.length - 1]);
-      }
-      return undefined;
-    });
-
-    watch(route, () => {
-      state.showModal = false;
-    });
-
-    const createProject = () => {
-      state.modalTitle = t("quick-action.create-project");
-      state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bb.project.create";
-      state.showModal = true;
-    };
-
-    const transferDatabase = () => {
-      state.modalTitle = t("quick-action.transfer-in-db-title");
-      state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bb.project.database.transfer";
-      state.showModal = true;
-    };
-
-    const createInstance = () => {
-      const { subscription } = subscriptionStore;
-      const instanceList = useInstanceStore().getInstanceList();
-      if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
-        state.featureName = "bb.feature.instance-count";
-        state.showFeatureModal = true;
-        return;
-      }
-      state.modalTitle = t("quick-action.create-instance");
-      state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bb.instance.create";
-      state.showModal = true;
-    };
-
-    const alterSchema = () => {
-      state.modalTitle = t("database.alter-schema");
-      state.modalSubtitle = t("quick-action.choose-db");
-      state.quickActionType = "quickaction.bb.database.schema.update";
-      state.showModal = true;
-    };
-
-    const syncDatabaseSchema = () => {
-      state.modalTitle = t("database.sync-schema.title");
-      state.quickActionType = "quickaction.bb.database.schema.sync";
-      state.showModal = true;
-    };
-
-    const changeData = () => {
-      state.modalTitle = t("database.change-data");
-      state.modalSubtitle = t("quick-action.choose-db");
-      state.quickActionType = "quickaction.bb.database.data.update";
-      state.showModal = true;
-    };
-
-    const createDatabase = () => {
-      state.modalTitle = t("quick-action.create-db");
-      state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bb.database.create";
-      state.showModal = true;
-    };
-
-    const requestDatabase = () => {
-      state.modalTitle = "Request database";
-      state.modalSubtitle = "";
-      state.quickActionType = "quickaction.bb.database.request";
-      state.showModal = true;
-    };
-
-    const createEnvironment = () => {
-      commandStore.dispatchCommand("bb.environment.create");
-    };
-
-    const reorderEnvironment = () => {
-      commandStore.dispatchCommand("bb.environment.reorder");
-    };
-
-    const QuickActionMap: Record<string, Partial<Action>> = {
-      "quickaction.bb.instance.create": {
-        name: t("quick-action.add-instance"),
-        perform: () => createInstance(),
-      },
-      "quickaction.bb.user.manage": {
-        name: t("quick-action.manage-user"),
-        perform: () => router.push({ name: "setting.workspace.member" }),
-      },
-      "quickaction.bb.database.create": {
-        name: t("quick-action.new-db"),
-        perform: () => createDatabase(),
-      },
-      "quickaction.bb.database.request": {
-        name: t("quick-action.request-db"),
-        perform: () => requestDatabase(),
-      },
-      "quickaction.bb.database.schema.update": {
-        name: t("database.alter-schema"),
-        perform: () => alterSchema(),
-      },
-      "quickaction.bb.database.troubleshoot": {
-        name: t("quick-action.troubleshoot"),
-        perform: () => router.push({ path: "/issue/new" }),
-      },
-      "quickaction.bb.database.schema.sync": {
-        name: t("quick-action.sync-schema"),
-        perform: () => syncDatabaseSchema(),
-      },
-      "quickaction.bb.environment.create": {
-        name: t("quick-action.add-environment"),
-        perform: () => createEnvironment(),
-      },
-      "quickaction.bb.environment.reorder": {
-        name: t("common.reorder"),
-        perform: () => reorderEnvironment(),
-      },
-      "quickaction.bb.project.create": {
-        name: t("quick-action.new-project"),
-        perform: () => createProject(),
-      },
-      "quickaction.bb.project.database.transfer": {
-        name: t("quick-action.transfer-in-db"),
-        perform: () => transferDatabase(),
-      },
-    };
-    const kbarActions = computed(() => {
-      return props.quickActionList
-        .filter((qa) => qa in QuickActionMap)
-        .map((qa) => {
-          // a QuickActionType starts with "quickaction.bb."
-          // it's already namespaced so we don't need prefix here
-          // just re-order the identifier to match other kbar action ids' format
-          // here `id` looks like "bb.quickaction.instance.create"
-          const id = qa.replace(/^quickaction\.bb\.(.+)$/, "bb.quickaction.$1");
-          return defineAction({
-            id,
-            section: t("common.quick-action"),
-            keywords: "quick action",
-            ...QuickActionMap[qa],
-          });
-        });
-    });
-    useRegisterActions(kbarActions, true);
-
-    return {
-      state,
-      projectId,
-      createProject,
-      transferDatabase,
-      createInstance,
-      alterSchema,
-      changeData,
-      syncDatabaseSchema,
-      createDatabase,
-      requestDatabase,
-      createEnvironment,
-      reorderEnvironment,
-      kebabCase,
-    };
+const props = defineProps({
+  quickActionList: {
+    required: true,
+    type: Object as PropType<QuickActionType[]>,
   },
 });
+
+const { t } = useI18n();
+const router = useRouter();
+const route = useRoute();
+const commandStore = useCommandStore();
+const subscriptionStore = useSubscriptionStore();
+
+const state = reactive<LocalState>({
+  showModal: false,
+  featureName: "",
+  showFeatureModal: false,
+  modalTitle: "",
+  modalSubtitle: "",
+  quickActionType: "quickaction.bb.instance.create",
+});
+
+const projectId = computed((): ProjectId | undefined => {
+  if (router.currentRoute.value.name == "workspace.project.detail") {
+    const parts = router.currentRoute.value.path.split("/");
+    return idFromSlug(parts[parts.length - 1]);
+  }
+  return undefined;
+});
+
+watch(route, () => {
+  state.showModal = false;
+});
+
+const createProject = () => {
+  state.modalTitle = t("quick-action.create-project");
+  state.modalSubtitle = "";
+  state.quickActionType = "quickaction.bb.project.create";
+  state.showModal = true;
+};
+
+const transferDatabase = () => {
+  state.modalTitle = t("quick-action.transfer-in-db-title");
+  state.modalSubtitle = "";
+  state.quickActionType = "quickaction.bb.project.database.transfer";
+  state.showModal = true;
+};
+
+const createInstance = () => {
+  const { subscription } = subscriptionStore;
+  const instanceList = useInstanceStore().getInstanceList();
+  if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
+    state.featureName = "bb.feature.instance-count";
+    state.showFeatureModal = true;
+    return;
+  }
+  state.modalTitle = t("quick-action.create-instance");
+  state.modalSubtitle = "";
+  state.quickActionType = "quickaction.bb.instance.create";
+  state.showModal = true;
+};
+
+const alterSchema = () => {
+  state.modalTitle = t("database.alter-schema");
+  state.modalSubtitle = t("quick-action.choose-db");
+  state.quickActionType = "quickaction.bb.database.schema.update";
+  state.showModal = true;
+};
+
+const syncDatabaseSchema = () => {
+  state.modalTitle = t("database.sync-schema.title");
+  state.quickActionType = "quickaction.bb.database.schema.sync";
+  state.showModal = true;
+};
+
+const changeData = () => {
+  state.modalTitle = t("database.change-data");
+  state.modalSubtitle = t("quick-action.choose-db");
+  state.quickActionType = "quickaction.bb.database.data.update";
+  state.showModal = true;
+};
+
+const createDatabase = () => {
+  state.modalTitle = t("quick-action.create-db");
+  state.modalSubtitle = "";
+  state.quickActionType = "quickaction.bb.database.create";
+  state.showModal = true;
+};
+
+const requestDatabase = () => {
+  state.modalTitle = "Request database";
+  state.modalSubtitle = "";
+  state.quickActionType = "quickaction.bb.database.request";
+  state.showModal = true;
+};
+
+const createEnvironment = () => {
+  commandStore.dispatchCommand("bb.environment.create");
+};
+
+const reorderEnvironment = () => {
+  commandStore.dispatchCommand("bb.environment.reorder");
+};
+
+const QuickActionMap: Record<string, Partial<Action>> = {
+  "quickaction.bb.instance.create": {
+    name: t("quick-action.add-instance"),
+    perform: () => createInstance(),
+  },
+  "quickaction.bb.user.manage": {
+    name: t("quick-action.manage-user"),
+    perform: () => router.push({ name: "setting.workspace.member" }),
+  },
+  "quickaction.bb.database.create": {
+    name: t("quick-action.new-db"),
+    perform: () => createDatabase(),
+  },
+  "quickaction.bb.database.request": {
+    name: t("quick-action.request-db"),
+    perform: () => requestDatabase(),
+  },
+  "quickaction.bb.database.schema.update": {
+    name: t("database.alter-schema"),
+    perform: () => alterSchema(),
+  },
+  "quickaction.bb.database.troubleshoot": {
+    name: t("quick-action.troubleshoot"),
+    perform: () => router.push({ path: "/issue/new" }),
+  },
+  "quickaction.bb.database.schema.sync": {
+    name: t("quick-action.sync-schema"),
+    perform: () => syncDatabaseSchema(),
+  },
+  "quickaction.bb.environment.create": {
+    name: t("quick-action.add-environment"),
+    perform: () => createEnvironment(),
+  },
+  "quickaction.bb.environment.reorder": {
+    name: t("common.reorder"),
+    perform: () => reorderEnvironment(),
+  },
+  "quickaction.bb.project.create": {
+    name: t("quick-action.new-project"),
+    perform: () => createProject(),
+  },
+  "quickaction.bb.project.database.transfer": {
+    name: t("quick-action.transfer-in-db"),
+    perform: () => transferDatabase(),
+  },
+};
+
+const kbarActions = computed(() => {
+  return props.quickActionList
+    .filter((qa) => qa in QuickActionMap)
+    .map((qa) => {
+      // a QuickActionType starts with "quickaction.bb."
+      // it's already namespaced so we don't need prefix here
+      // just re-order the identifier to match other kbar action ids' format
+      // here `id` looks like "bb.quickaction.instance.create"
+      const id = qa.replace(/^quickaction\.bb\.(.+)$/, "bb.quickaction.$1");
+      return defineAction({
+        id,
+        section: t("common.quick-action"),
+        keywords: "quick action",
+        ...QuickActionMap[qa],
+      });
+    });
+});
+
+useRegisterActions(kbarActions, true);
 </script>
