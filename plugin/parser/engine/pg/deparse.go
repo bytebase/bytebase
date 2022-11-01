@@ -21,6 +21,8 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 		return deparseTableDef(context, node, buf)
 	case *ast.ColumnDef:
 		return deparseColumnDef(context, node, buf)
+	case *ast.CreateSchemaStmt:
+		return deparseCreateSchema(context, node, buf)
 	}
 
 	return errors.Errorf("failed to deparse %T", in)
@@ -252,6 +254,71 @@ func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Buil
 		}
 	default:
 		return errors.Errorf("failed to deparse data type %T", in)
+	}
+	return nil
+}
+
+func deparseCreateSchema(ctx parser.DeparseContext, in *ast.CreateSchemaStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("CREATE SCHEMA "); err != nil {
+		return err
+	}
+
+	if in.IfNotExists {
+		if _, err := buf.WriteString("IF NOT EXISTS "); err != nil {
+			return err
+		}
+	}
+	if in.Name != "" {
+		if err := writeSurrounding(buf, in.Name, `"`); err != nil {
+			return err
+		}
+	}
+	if in.RoleSpec != nil && in.RoleSpec.Type != ast.RoleSpecTypeNone {
+		if in.Name != "" {
+			if _, err := buf.WriteString(" "); err != nil {
+				return err
+			}
+		}
+		if err := deparseRoleSpec(ctx, in.RoleSpec, buf); err != nil {
+			return err
+		}
+	}
+	for _, ele := range in.SchemaElementList {
+		if _, err := buf.WriteString(" "); err != nil {
+			return err
+		}
+		if createTableStmt, ok := ele.(*ast.CreateTableStmt); ok {
+			if err := deparseCreateTable(ctx, createTableStmt, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func deparseRoleSpec(_ parser.DeparseContext, in *ast.RoleSpec, buf *strings.Builder) error {
+	if in != nil && in.Type != ast.RoleSpecTypeNone {
+		if _, err := buf.WriteString("AUTHORIZATION "); err != nil {
+			return err
+		}
+		switch in.Type {
+		case ast.RoleSpecTypeUser:
+			if err := writeSurrounding(buf, in.Value, `"`); err != nil {
+				return err
+			}
+		case ast.RoleSpecTypeCurrentRole:
+			if _, err := buf.WriteString("CURRENT_ROLE"); err != nil {
+				return err
+			}
+		case ast.RoleSpecTypeCurrentUser:
+			if _, err := buf.WriteString("CURRENT_USER"); err != nil {
+				return err
+			}
+		case ast.RoleSpecTypeSessionUser:
+			if _, err := buf.WriteString("SESSION_USER"); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
