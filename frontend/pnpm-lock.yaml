@@ -68,7 +68,7 @@ specifiers:
   semver: 7.3.7
   slug: 8.0.0
   splitpanes: 3.1.1
-  sql-formatter: 11.0.0
+  sql-formatter: 11.0.2
   tailwindcss: 3.1.8
   typescript: 4.8.4
   unplugin-icons: 0.14.12
@@ -123,7 +123,7 @@ dependencies:
   semver: 7.3.7
   slug: 8.0.0
   splitpanes: 3.1.1
-  sql-formatter: 11.0.0
+  sql-formatter: 11.0.2
   uuid: 9.0.0
   v-code-diff: 0.3.12_vue@3.2.40
   vscode-languageserver: 8.0.2
@@ -3452,8 +3452,8 @@ packages:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
     dev: true
 
-  /sql-formatter/11.0.0:
-    resolution: {integrity: sha512-1mzwR84U2Gb9dl+MOata2Zf11OMthUKDAJbixDUF3gmazXMoezUk6qWPzMAdbiIRePF+seCVZkzOkfdwLIQ1iw==}
+  /sql-formatter/11.0.2:
+    resolution: {integrity: sha512-6QumAdGHEnI5dXEq1d0aBRP876AyA9Wp/UE7wopKNA2Mp9sKGRKVqGgoWHk4dr0J0nceesC85Y0p36qmGoNqhw==}
     hasBin: true
     dependencies:
       argparse: 2.0.1
