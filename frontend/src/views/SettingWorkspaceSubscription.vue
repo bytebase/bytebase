@@ -13,7 +13,7 @@
         {{ $t("common.or") }}
         <span
           class="text-accent cursor-pointer"
-          v-on:click="state.showTrialModal = true"
+          @click="state.showTrialModal = true"
         >
           {{ $t("subscription.plan.try") }}
         </span>

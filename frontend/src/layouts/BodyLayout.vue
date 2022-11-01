@@ -46,7 +46,7 @@
             <div
               v-else
               class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
-              v-on:click="state.showTrialModal = true"
+              @click="state.showTrialModal = true"
             >
               <heroicons-solid:sparkles class="w-5 h-5" />
               {{ $t(currentPlan) }}
@@ -100,7 +100,7 @@
           <div
             v-else
             class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
-            v-on:click="state.showTrialModal = true"
+            @click="state.showTrialModal = true"
           >
             <heroicons-solid:sparkles class="w-5 h-5" />
             {{ $t(currentPlan) }}
