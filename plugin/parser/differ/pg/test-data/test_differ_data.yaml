@@ -1,0 +1,18 @@
+- oldSchema: CREATE TABLE projects ();
+  newSchema: |
+    CREATE TABLE users (
+        id serial PRIMARY KEY,
+        username TEXT NOT NULL
+    );
+    CREATE TABLE projects ();
+    CREATE TABLE repositories (
+        id serial PRIMARY KEY
+    );
+  diff: |
+    CREATE TABLE users (
+        id serial PRIMARY KEY,
+        username TEXT NOT NULL
+    );
+    CREATE TABLE repositories (
+        id serial PRIMARY KEY
+    );

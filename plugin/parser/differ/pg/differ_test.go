@@ -1,53 +1,63 @@
 package pg
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	// Register PostgreSQL parser engine.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
-func TestComputeDiff(t *testing.T) {
-	tests := []struct {
-		name      string
-		oldSchema string
-		newSchema string
-		want      string
-		errPart   string
-	}{
-		{
-			name:      "diffCreateTableInPostgres",
-			oldSchema: `CREATE TABLE projects ();`,
-			newSchema: `CREATE TABLE users (
-	id serial PRIMARY KEY,
-	username TEXT NOT NULL
-);
-CREATE TABLE projects ();
-CREATE TABLE repositories (
-	id serial PRIMARY KEY
-);`,
-			want: `CREATE TABLE users (
-	id serial PRIMARY KEY,
-	username TEXT NOT NULL
-);
-CREATE TABLE repositories (
-	id serial PRIMARY KEY
-);
-`,
-			errPart: "",
-		},
+type DifferTestData struct {
+	OldSchema string `yaml:"oldSchema"`
+	NewSchema string `yaml:"newSchema"`
+	Diff      string `yaml:"diff"`
+}
+
+func runDifferTest(t *testing.T, file string, record bool) {
+	pgDiffer := &SchemaDiffer{}
+
+	var tests []DifferTestData
+	filepath := filepath.Join("test-data", file)
+	yamlFile, err := os.Open(filepath)
+	require.NoError(t, err)
+	defer yamlFile.Close()
+
+	byteValue, err := io.ReadAll(yamlFile)
+	require.NoError(t, err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	require.NoError(t, err)
+
+	for i, test := range tests {
+		diff, err := pgDiffer.SchemaDiff(test.OldSchema, test.NewSchema)
+		require.NoError(t, err)
+		if record {
+			tests[i].Diff = diff
+		} else {
+			require.Equal(t, test.Diff, diff, test.OldSchema)
+		}
 	}
 
-	pgDiffer := &SchemaDiffer{}
-	for _, test := range tests {
-		diff, err := pgDiffer.SchemaDiff(test.oldSchema, test.newSchema)
-		if test.errPart == "" {
-			require.NoError(t, err)
-		} else {
-			require.Contains(t, err.Error(), test.errPart, test.name)
-		}
-		require.Equal(t, test.want, diff)
+	if record {
+		err := yamlFile.Close()
+		require.NoError(t, err)
+		byteValue, err = yaml.Marshal(tests)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		require.NoError(t, err)
+	}
+}
+
+func TestComputeDiff(t *testing.T) {
+	testFileList := []string{
+		"test_differ_data.yaml",
+	}
+	for _, test := range testFileList {
+		runDifferTest(t, test, false /* record */)
 	}
 }
