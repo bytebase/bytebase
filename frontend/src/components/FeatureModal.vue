@@ -12,17 +12,30 @@
           id="modal-headline"
           class="flex self-center text-lg leading-6 font-medium text-gray-900"
         >
-          {{ featureTitle }}
+          {{ $t(`subscription.features.${featureKey}.title`) }}
         </h3>
       </div>
       <div class="mt-5">
         <p class="whitespace-pre-wrap">
-          {{ featureDesc }}
+          {{ $t(`subscription.features.${featureKey}.desc`) }}
         </p>
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          {{ $t("subscription.trial-with-plan", { plan: requiredPlan }) }}*
+          {{
+            $t("subscription.required-plan-with-trial", {
+              requiredPlan: $t(
+                `subscription.plan.${planTypeToString(requiredPlan)}.title`
+              ),
+              startTrial: $t("subscription.trial-for-plan", {
+                plan: $t(
+                  `subscription.plan.${planTypeToString(
+                    subscriptionStore.trialingPlan
+                  )}.title`
+                ),
+              }).toLowerCase(),
+            })
+          }}*
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
@@ -33,7 +46,20 @@
         >
           {{ $t("common.dismiss") }}
         </button>
-        <button type="button" class="btn-primary" @click.prevent="ok">
+
+        <button
+          v-if="subscriptionStore.canTrial"
+          type="button"
+          class="btn-primary"
+          @click.prevent="trialSubscription"
+        >
+          {{
+            $t("subscription.start-n-days-trial", {
+              days: subscriptionStore.trialingDays,
+            })
+          }}
+        </button>
+        <button v-else type="button" class="btn-primary" @click.prevent="ok">
           {{ $t("common.learn-more") }}
         </button>
       </div>
@@ -41,45 +67,47 @@
   </BBModal>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from "vue";
-import { useI18n } from "vue-i18n";
+<script lang="ts" setup>
+import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import { useSubscriptionStore } from "@/store";
+import { useI18n } from "vue-i18n";
+import { useSubscriptionStore, pushNotification } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 
-export default defineComponent({
-  props: {
-    feature: {
-      required: true,
-      type: String as PropType<FeatureType>,
-    },
-  },
-  emits: ["cancel"],
-  setup(props) {
-    const { t } = useI18n();
-    const router = useRouter();
-
-    const ok = () => {
-      router.push({ name: "setting.workspace.subscription" });
-    };
-
-    const requiredPlan = useSubscriptionStore().getMinimumRequiredPlan(
-      props.feature
-    );
-
-    const featureKey = props.feature.split(".").join("-");
-
-    return {
-      ok,
-      requiredPlan: t(
-        `subscription.plan.${planTypeToString(requiredPlan)}.title`
-      ),
-      featureDesc: t(`subscription.features.${featureKey}.desc`),
-      featureTitle: t(`subscription.features.${featureKey}.title`),
-    };
+const props = defineProps({
+  feature: {
+    required: true,
+    type: String as PropType<FeatureType>,
   },
 });
+
+const emit = defineEmits(["cancel"]);
+const { t } = useI18n();
+const router = useRouter();
+
+const ok = () => {
+  router.push({ name: "setting.workspace.subscription" });
+};
+
+const subscriptionStore = useSubscriptionStore();
+
+const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
+
+const featureKey = props.feature.split(".").join("-");
+
+const trialSubscription = () => {
+  subscriptionStore.trialSubscription().then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.success"),
+      description: t("subscription.successfully-start-trial", {
+        days: subscriptionStore.trialingDays,
+      }),
+    });
+    emit("cancel");
+  });
+};
 </script>
 
 <style scoped>
