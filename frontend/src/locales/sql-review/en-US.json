@@ -17,9 +17,9 @@
   },
   "template": {
     "bb-sql-review-prod": "Advanced Template",
-    "bb-sql-review-prod-desc": "Recommended for the production environment",
+    "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-dev": "Basic Template",
-    "bb-sql-review-dev-desc": "Recommended for the development environment"
+    "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage."
   },
   "rule": {
     "engine-mysql-use-innodb": {

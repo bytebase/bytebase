@@ -18,9 +18,9 @@
   },
   "template": {
     "bb-sql-review-prod": "进阶模板",
-    "bb-sql-review-prod-desc": "建议用于生产环境",
+    "bb-sql-review-prod-desc": "为您的数据库提供全面保护和最佳实践。",
     "bb-sql-review-dev": "基础模板",
-    "bb-sql-review-dev-desc": "建议用于开发环境"
+    "bb-sql-review-dev-desc": "保证变更可正确地应用到数据库。"
   },
   "rule": {
     "engine-mysql-use-innodb": {
