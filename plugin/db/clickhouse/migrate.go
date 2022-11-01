@@ -264,7 +264,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	var query = baseQuery +
 		db.FormatParamNameInNumberedPosition(paramNames) +
-		`ORDER BY created_ts DESC`
+		`ORDER BY id DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
