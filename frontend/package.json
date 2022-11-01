@@ -21,7 +21,7 @@
     "@tanstack/table-core": "8.5.15",
     "@tanstack/vue-table": "8.5.13",
     "@vueuse/core": "9.2.0",
-    "axios": "1.1.2",
+    "axios": "1.1.3",
     "bootstrap": "5.2.1",
     "canvas-confetti": "1.5.1",
     "dayjs": "1.11.5",
