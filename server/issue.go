@@ -638,38 +638,53 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if detail.MigrationType != db.Migrate && detail.MigrationType != db.Data {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
 			}
+			if detail.Statement == "" {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+			}
 		}
-		if len(c.DetailList) != 1 {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have exactly one update schema detail")
+		if len(c.DetailList) < 1 {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have at least one update schema detail")
 		}
-		d := c.DetailList[0]
-		if d.Statement == "" {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
-		}
+
+		headDetail := c.DetailList[0]
 		// VCS push event contains schema version in the file name, which is parsed against the file template.
-		if d.SchemaVersion != "" {
-			schemaVersion = d.SchemaVersion
+		if headDetail.SchemaVersion != "" {
+			schemaVersion = headDetail.SchemaVersion
 		}
 
-		if d.DatabaseName == "" && d.DatabaseID > 0 {
-			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
-			}
-			if database == nil {
-				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
-			}
+		if len(c.DetailList) > 1 || (headDetail.DatabaseName == "" && headDetail.DatabaseID > 0) {
+			for _, detail := range c.DetailList {
+				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &detail.DatabaseID})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", detail.DatabaseID)).SetInternal(err)
+				}
+				if database == nil {
+					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", detail.DatabaseID))
+				}
 
-			taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, schemaVersion)
-			if err != nil {
-				return nil, err
-			}
+				taskCreate, err := getUpdateTask(database, c.VCSPushEvent, detail, schemaVersion)
+				if err != nil {
+					return nil, err
+				}
 
-			create.StageList = append(create.StageList, api.StageCreate{
-				Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
-				EnvironmentID: database.Instance.Environment.ID,
-				TaskList:      []api.TaskCreate{*taskCreate},
-			})
+				sameEnvStageFound := false
+				for index, stage := range create.StageList {
+					if stage.EnvironmentID == database.Instance.Environment.ID {
+						stage.TaskList = append(stage.TaskList, *taskCreate)
+						create.StageList[index] = stage
+						sameEnvStageFound = true
+						break
+					}
+				}
+
+				if !sameEnvStageFound {
+					create.StageList = append(create.StageList, api.StageCreate{
+						Name:          fmt.Sprintf("%s State", database.Instance.Environment.Name),
+						EnvironmentID: database.Instance.Environment.ID,
+						TaskList:      []api.TaskCreate{*taskCreate},
+					})
+				}
+			}
 		} else {
 			dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
 				ProjectID: &issueCreate.ProjectID,
@@ -678,7 +693,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 			}
 
-			baseDBName := d.DatabaseName
+			baseDBName := headDetail.DatabaseName
 			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
 			if err != nil {
 				return nil, err
@@ -693,7 +708,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
 
-					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, schemaVersion)
+					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, headDetail, schemaVersion)
 					if err != nil {
 						return nil, err
 					}
