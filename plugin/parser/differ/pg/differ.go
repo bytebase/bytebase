@@ -3,6 +3,7 @@ package pg
 
 import (
 	"bytes"
+	"io"
 
 	"github.com/pkg/errors"
 
@@ -24,8 +25,10 @@ type SchemaDiffer struct {
 }
 
 type diffNode struct {
+	newSchemaList   []*ast.CreateSchemaStmt
 	newTableList    []*ast.CreateTableStmt
 	modifyTableList []ast.Node
+	dropNodeList    []ast.Node
 }
 
 // SchemaDiff computes the schema differences between old and new schema.
@@ -39,10 +42,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
-	oldTables := make(map[string]*ast.CreateTableStmt)
+	oldTableMap := make(map[string]*ast.CreateTableStmt)
+	oldSchemaMap := make(map[string]*ast.CreateSchemaStmt)
+	var oldSchemaList []*ast.CreateSchemaStmt
 	for _, node := range oldNodes {
-		if n, ok := node.(*ast.CreateTableStmt); ok {
-			oldTables[n.Name.Name] = n
+		switch stmt := node.(type) {
+		case *ast.CreateSchemaStmt:
+			oldSchemaMap[stmt.Name] = stmt
+			oldSchemaList = append(oldSchemaList, stmt)
+		case *ast.CreateTableStmt:
+			oldTableMap[stmt.Name.Name] = stmt
 		}
 	}
 
@@ -50,7 +59,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	for _, node := range newNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
-			oldTable, hasTable := oldTables[stmt.Name.Name]
+			oldTable, hasTable := oldTableMap[stmt.Name.Name]
 			// Add the new table.
 			if !hasTable {
 				diff.newTableList = append(diff.newTableList, stmt)
@@ -60,9 +69,20 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := diff.modifyTable(oldTable, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateSchemaStmt:
+			if _, hasSchema := oldSchemaMap[stmt.Name]; !hasSchema {
+				diff.newSchemaList = append(diff.newSchemaList, stmt)
+				continue
+			}
+			delete(oldSchemaMap, stmt.Name)
 		default:
 			return "", errors.Errorf("unsupported statement %+v", stmt)
 		}
+	}
+
+	// Drop the remaining old schemata.
+	if dropSchemaStmt := dropSchemata(oldSchemaMap, oldSchemaList); dropSchemaStmt != nil {
+		diff.dropNodeList = append(diff.dropNodeList, dropSchemaStmt)
 	}
 
 	return diff.deparse()
@@ -144,10 +164,7 @@ func equivalentType(typeA ast.DataType, typeB ast.DataType) (bool, error) {
 func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
 	for _, newTable := range diff.newTableList {
-		if _, err := buf.WriteString(newTable.Text()); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("\n"); err != nil {
+		if err := writeStringWithNewLine(&buf, newTable.Text()); err != nil {
 			return "", err
 		}
 	}
@@ -157,12 +174,46 @@ func (diff *diffNode) deparse() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if _, err := buf.WriteString(sql); err != nil {
+		if err := writeStringWithNewLine(&buf, sql); err != nil {
 			return "", err
 		}
-		if _, err := buf.WriteString("\n"); err != nil {
+	}
+
+	// Deparse the drop node in reverse order.
+	for i := len(diff.dropNodeList) - 1; i >= 0; i-- {
+		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, diff.dropNodeList[i])
+		if err != nil {
+			return "", err
+		}
+		if err := writeStringWithNewLine(&buf, sql); err != nil {
 			return "", err
 		}
 	}
 	return buf.String(), nil
+}
+
+func dropSchemata(m map[string]*ast.CreateSchemaStmt, l []*ast.CreateSchemaStmt) *ast.DropSchemaStmt {
+	var schemaNames []string
+	for _, stmt := range l {
+		if _, ok := m[stmt.Name]; !ok {
+			schemaNames = append(schemaNames, stmt.Name)
+		}
+	}
+	if len(schemaNames) == 0 {
+		return nil
+	}
+	return &ast.DropSchemaStmt{
+		IfExists:   true,
+		SchemaList: schemaNames,
+	}
+}
+
+func writeStringWithNewLine(out io.Writer, str string) error {
+	if _, err := out.Write([]byte(str)); err != nil {
+		return err
+	}
+	if _, err := out.Write([]byte("\n")); err != nil {
+		return err
+	}
+	return nil
 }
