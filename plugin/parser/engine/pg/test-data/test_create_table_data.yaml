@@ -2,7 +2,7 @@
   want: |-
     CREATE TABLE "TechBook" (
         "a" "user defined data type"
-    )
+    );
 - stmt: |-
     CREATE TABLE tech_book(
       a char(20),
@@ -10,7 +10,7 @@
       c varchar(330),
       d character varying(400),
       e text
-    )
+    );
   want: |-
     CREATE TABLE "tech_book" (
         "a" character(20),
@@ -18,7 +18,7 @@
         "c" character varying(330),
         "d" character varying(400),
         "e" text
-    )
+    );
 - stmt: |-
     CREATE TABLE tech_book(
       a smallint,
@@ -63,4 +63,4 @@
         "r" smallserial,
         "s" serial,
         "t" numeric
-    )
+    );

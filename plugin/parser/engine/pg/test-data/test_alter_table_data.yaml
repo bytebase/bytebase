@@ -1,16 +1,16 @@
 - stmt: alter table t add column a int
-  want: |
+  want: |-
     ALTER TABLE "t"
         ADD COLUMN "a" integer;
 - stmt: alter table t alter column a type varchar(20)
-  want: |
+  want: |-
     ALTER TABLE "t"
         ALTER COLUMN "a" SET DATA TYPE character varying(20);
 - stmt: |-
     alter table t
         add column a integer,
         add column b char(20)
-  want: |
+  want: |-
     ALTER TABLE "t"
         ADD COLUMN "a" integer,
         ADD COLUMN "b" character(20);
@@ -18,7 +18,7 @@
     alter table t
         drop column a,
         drop column b
-  want: |
+  want: |-
     ALTER TABLE "t"
         DROP COLUMN "a",
         DROP COLUMN "b";
