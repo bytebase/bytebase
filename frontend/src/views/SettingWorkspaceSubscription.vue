@@ -7,7 +7,7 @@
         href="https://bytebase.com/pricing?source=console.subscription"
         target="__blank"
       >
-        {{ $t("subscription.pruchase-license") }}
+        {{ $t("subscription.purchase-license") }}
       </a>
       <span v-if="canTrial" class="ml-1">
         {{ $t("common.or") }}
