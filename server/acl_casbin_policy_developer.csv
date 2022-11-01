@@ -88,7 +88,7 @@ p, DEVELOPER, /sheet/shared, GET
 p, DEVELOPER, /sheet/starred, GET
 p, DEVELOPER, /sheet/{sheetID}, GET
 p, DEVELOPER, /sheet/{sheetID}, PATCH
-p, DEVELOPER, /sheet/{sheetID}, DELETE_SELF
+p, DEVELOPER, /sheet/{sheetID}, DELETE
 p, DEVELOPER, /sheet/{sheetID}/organizer, PATCH
 p, DEVELOPER, /sheet/project/{projectID}/sync, POST
 p, DEVELOPER, /debug, GET

@@ -104,7 +104,7 @@ p, DBA, /sheet/shared, GET
 p, DBA, /sheet/starred, GET
 p, DBA, /sheet/{sheetID}, GET
 p, DBA, /sheet/{sheetID}, PATCH
-p, DBA, /sheet/{sheetID}, DELETE_SELF
+p, DBA, /sheet/{sheetID}, DELETE
 p, DBA, /sheet/{sheetID}/organizer, PATCH
 p, DBA, /sheet/project/{projectID}/sync, POST
 p, DBA, /debug, GET

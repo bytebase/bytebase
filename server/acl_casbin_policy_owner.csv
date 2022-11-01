@@ -109,7 +109,7 @@ p, OWNER, /sheet/shared, GET
 p, OWNER, /sheet/starred, GET
 p, OWNER, /sheet/{sheetID}, GET
 p, OWNER, /sheet/{sheetID}, PATCH
-p, OWNER, /sheet/{sheetID}, DELETE_SELF
+p, OWNER, /sheet/{sheetID}, DELETE
 p, OWNER, /sheet/{sheetID}/organizer, PATCH
 p, OWNER, /sheet/project/{projectID}/sync, POST
 p, OWNER, /debug, GET
