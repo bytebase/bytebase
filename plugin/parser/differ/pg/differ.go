@@ -117,11 +117,13 @@ func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.C
 		delete(oldColumnMap, oldColumn.ColumnName)
 	}
 
-	for _, oldColumn := range oldColumnMap {
-		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropColumnStmt{
-			Table:      alterTableStmt.Table,
-			ColumnName: oldColumn.ColumnName,
-		})
+	for _, oldColumn := range oldTable.ColumnList {
+		if _, exists := oldColumnMap[oldColumn.ColumnName]; exists {
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropColumnStmt{
+				Table:      alterTableStmt.Table,
+				ColumnName: oldColumn.ColumnName,
+			})
+		}
 	}
 
 	if len(alterTableStmt.AlterItemList) > 0 {
