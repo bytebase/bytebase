@@ -33,7 +33,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	github.com/swaggo/echo-swagger v1.3.4
-	github.com/swaggo/swag v1.8.6
+	github.com/swaggo/swag v1.8.7
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.12.4
 	go.uber.org/zap v1.23.0
