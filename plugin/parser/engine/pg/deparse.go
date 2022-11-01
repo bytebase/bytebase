@@ -14,9 +14,7 @@ import (
 func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) error {
 	switch node := in.(type) {
 	case ast.DataType:
-		if err := deparseDataType(context, node, buf); err != nil {
-			return err
-		}
+		return deparseDataType(context, node, buf)
 	case *ast.CreateTableStmt:
 		if err := deparseCreateTable(context, node, buf); err != nil {
 			return err
@@ -28,13 +26,9 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 		}
 		return buf.WriteByte(';')
 	case *ast.TableDef:
-		if err := deparseTableDef(context, node, buf); err != nil {
-			return err
-		}
+		return deparseTableDef(context, node, buf)
 	case *ast.ColumnDef:
-		if err := deparseColumnDef(context, node, buf); err != nil {
-			return err
-		}
+		return deparseColumnDef(context, node, buf)
 	case *ast.CreateSchemaStmt:
 		if err := deparseCreateSchema(context, node, buf); err != nil {
 			return err
