@@ -247,6 +247,26 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				dropView.TableList = append(dropView.TableList, viewDef)
 			}
 			return dropView, nil
+		case pgquery.ObjectType_OBJECT_SCHEMA:
+			dropSchema := &ast.DropSchemaStmt{
+				IfExists: in.DropStmt.MissingOk,
+			}
+			switch in.DropStmt.Behavior {
+			case pgquery.DropBehavior_DROP_CASCADE:
+				dropSchema.Behavior = ast.DropSchemaBehaviorCascade
+			case pgquery.DropBehavior_DROP_RESTRICT:
+				dropSchema.Behavior = ast.DropSchemaBehaviorRestrict
+			default:
+				dropSchema.Behavior = ast.DropSchemaBehaviorNone
+			}
+			for _, object := range in.DropStmt.Objects {
+				strNode, ok := object.Node.(*pgquery.Node_String_)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected String but found %t", object.Node)
+				}
+				dropSchema.SchemaList = append(dropSchema.SchemaList, strNode.String_.Str)
+			}
+			return dropSchema, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{

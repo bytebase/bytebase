@@ -23,6 +23,8 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 		return deparseColumnDef(context, node, buf)
 	case *ast.CreateSchemaStmt:
 		return deparseCreateSchema(context, node, buf)
+	case *ast.DropSchemaStmt:
+		return deparseDropSchema(context, node, buf)
 	}
 
 	return errors.Errorf("failed to deparse %T", in)
@@ -318,6 +320,44 @@ func deparseRoleSpec(_ parser.DeparseContext, in *ast.RoleSpec, buf *strings.Bui
 			if _, err := buf.WriteString("SESSION_USER"); err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func deparseDropSchema(_ parser.DeparseContext, in *ast.DropSchemaStmt, buf *strings.Builder) error {
+	if in == nil {
+		return nil
+	}
+	if _, err := buf.WriteString("DROP SCHEMA"); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString(" IF EXISTS"); err != nil {
+			return err
+		}
+	}
+	for idx, schema := range in.SchemaList {
+		if idx >= 1 {
+			if _, err := buf.WriteString(","); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(" "); err != nil {
+			return err
+		}
+		if err := writeSurrounding(buf, schema, `"`); err != nil {
+			return err
+		}
+	}
+	switch in.Behavior {
+	case ast.DropSchemaBehaviorCascade:
+		if _, err := buf.WriteString(" CASCADE"); err != nil {
+			return err
+		}
+	case ast.DropSchemaBehaviorRestrict:
+		if _, err := buf.WriteString(" RESTRICT"); err != nil {
+			return err
 		}
 	}
 	return nil
