@@ -126,7 +126,12 @@ import { t } from "@/plugins/i18n";
 import dayjs from "@/plugins/dayjs";
 import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
 import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
-import { isDev, sheetSlug } from "@/utils";
+import {
+  getDefaultSheetPayload,
+  isDev,
+  isSheetWritable,
+  sheetSlug,
+} from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
@@ -333,6 +338,7 @@ const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
           name: sheet.name,
           statement: sheet.statement,
           visibility: "PRIVATE",
+          payload: getDefaultSheetPayload(),
         };
         if (sheet.databaseId) {
           sheetCreate.databaseId = sheet.databaseId;
@@ -371,8 +377,8 @@ const getSheetDropDownOptions = (sheet: Sheet) => {
       label: t("common.delete"),
     });
   } else if (currentSubPath.value === "shared") {
-    const canManageSheet = sheetStore.canManageSheet(sheet, currentUser.value);
-    if (canManageSheet) {
+    const canDeleteSheet = isSheetWritable(sheet, currentUser.value);
+    if (canDeleteSheet) {
       options.push({
         key: "delete",
         label: t("common.delete"),

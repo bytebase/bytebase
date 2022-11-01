@@ -24,12 +24,7 @@ import { useAuthStore } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import {
-  getDefaultSheetPayload,
-  hasProjectPermission,
-  hasWorkspacePermission,
-  isSheetWritable,
-} from "@/utils";
+import { getDefaultSheetPayload, isSheetWritable } from "@/utils";
 
 function convertSheetPayload(
   resourceObj: ResourceObject,
@@ -338,28 +333,6 @@ export const useSheetStore = defineStore("sheet", {
     },
     async syncSheetFromVCS(projectId: ProjectId) {
       await axios.post(`/api/sheet/project/${projectId}/sync`);
-    },
-    canManageSheet(sheet: Sheet, user: Principal) {
-      if (
-        hasWorkspacePermission(
-          "bb.permission.workspace.manage-project",
-          user.role
-        )
-      ) {
-        return true;
-      }
-
-      const projectMemberList = sheet.project.memberList || [];
-      const memberInProject = projectMemberList.find((member) => {
-        return member.principal.id === user.id;
-      });
-      return (
-        memberInProject &&
-        hasProjectPermission(
-          "bb.permission.project.manage-sheet",
-          memberInProject.role
-        )
-      );
     },
   },
 });
