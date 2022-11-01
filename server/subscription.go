@@ -80,22 +80,13 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		ctx := c.Request().Context()
-		setting, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		if _, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 			CreatorID:   api.SystemBotID,
 			Name:        api.SettingEnterpriseTrial,
 			Value:       string(value),
 			Description: "The trialing license.",
-		})
-		if err != nil {
+		}); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
-		}
-
-		var data enterpriseAPI.License
-		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal license").SetInternal(err)
-		}
-		if data.IssuedTs != license.IssuedTs {
-			return echo.NewHTTPError(http.StatusBadRequest, "Free trial license already exists").SetInternal(err)
 		}
 
 		s.subscription = s.loadSubscription(ctx)
