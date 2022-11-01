@@ -60,6 +60,10 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseAlterColumnType(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.DropColumnStmt:
+			if err := deparseDropColumn(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
 	}
 	if _, err := buf.WriteString(";\n"); err != nil {
@@ -68,11 +72,23 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 	return nil
 }
 
+func deparseDropColumn(context parser.DeparseContext, in *ast.DropColumnStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("DROP COLUMN "); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(in.ColumnName); err != nil {
+		return err
+	}
+	return nil
+}
+
 func deparseAlterColumnType(context parser.DeparseContext, in *ast.AlterColumnTypeStmt, buf *strings.Builder) error {
-	for i := 0; i < context.IndentLevel; i++ {
-		if _, err := buf.WriteString(parser.DeparseIndentString); err != nil {
-			return err
-		}
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
 	}
 
 	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
@@ -88,10 +104,8 @@ func deparseAlterColumnType(context parser.DeparseContext, in *ast.AlterColumnTy
 }
 
 func deparseAddColumnList(context parser.DeparseContext, in *ast.AddColumnListStmt, buf *strings.Builder) error {
-	for i := 0; i < context.IndentLevel; i++ {
-		if _, err := buf.WriteString(parser.DeparseIndentString); err != nil {
-			return err
-		}
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
 	}
 
 	if _, err := buf.WriteString("ADD COLUMN "); err != nil {
@@ -155,11 +169,10 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 }
 
 func deparseColumnDef(context parser.DeparseContext, in *ast.ColumnDef, buf *strings.Builder) error {
-	for i := 0; i < context.IndentLevel; i++ {
-		if _, err := buf.WriteString(parser.DeparseIndentString); err != nil {
-			return err
-		}
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
 	}
+
 	if err := writeSurrounding(buf, in.ColumnName, "\""); err != nil {
 		return err
 	}
