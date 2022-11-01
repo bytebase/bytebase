@@ -125,7 +125,7 @@ const onRuleActivate = (type: RuleType) => {
 
 const onPayloadChange = (
   rule: RuleTemplate,
-  data: (string | number | string[])[]
+  data: (string | number | boolean | string[])[]
 ) => {
   if (!rule.componentList) {
     return;
@@ -150,6 +150,15 @@ const onPayloadChange = (
             payload: {
               ...component.payload,
               value: data[index] as number,
+            },
+          });
+          break;
+        case "BOOLEAN":
+          list.push({
+            ...component,
+            payload: {
+              ...component.payload,
+              value: data[index] as boolean,
             },
           });
           break;

@@ -1410,7 +1410,7 @@
       },
       "bb-feature-sql-review": {
         "title": "SQL review policy",
-        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan. @:{'subscription.trial'}."
+        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan. @:{'subscription.free-trial'}."
       },
       "bb-feature-vcs-sql-review": {
         "title": "SQL Review in GitOps workflow",
@@ -1418,7 +1418,7 @@
       },
       "bb-feature-rbac": {
         "title": "Role management",
-        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.trial'}."
+        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.free-trial'}."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
@@ -1426,7 +1426,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.trial'}.",
+        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.free-trial'}.",
         "login": "@:{'subscription.upgrade'} to unlock this feature"
       },
       "bb-feature-branding": {
