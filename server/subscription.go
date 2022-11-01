@@ -80,13 +80,22 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		ctx := c.Request().Context()
-		if _, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		setting, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 			CreatorID:   api.SystemBotID,
 			Name:        api.SettingEnterpriseTrial,
 			Value:       string(value),
 			Description: "The trialing license.",
-		}); err != nil {
+		})
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
+		}
+
+		var data enterpriseAPI.License
+		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal license").SetInternal(err)
+		}
+		if data.IssuedTs != license.IssuedTs {
+			return echo.NewHTTPError(http.StatusBadRequest, "Free trial license already exists").SetInternal(err)
 		}
 
 		s.subscription = s.loadSubscription(ctx)
@@ -128,42 +137,42 @@ func (s *Server) loadSubscription(ctx context.Context) enterpriseAPI.Subscriptio
 // loadLicense will get and parse valid license from file.
 func (s *Server) loadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	license, err := s.LicenseService.LoadLicense()
-	if err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			log.Debug("Failed to find license", zap.String("error", err.Error()))
-		} else {
-			log.Warn("Failed to load valid license", zap.String("error", err.Error()))
-		}
+	if license != nil {
+		log.Info(
+			"Load valid license",
+			zap.String("plan", license.Plan.String()),
+			zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+			zap.Int("instanceCount", license.InstanceCount),
+		)
 
-		// find free trial license in console
-		settingName := api.SettingEnterpriseTrial
-		settings, err := s.store.FindSetting(ctx, &api.SettingFind{
-			Name: &settingName,
-		})
-		if err != nil {
-			log.Warn("Failed to load trial license from settings", zap.String("error", err.Error()))
-			return nil, err
-		}
-		if len(settings) == 0 {
-			return nil, common.Wrapf(err, common.NotFound, "cannot find license")
-		}
-
-		var data enterpriseAPI.License
-		if err := json.Unmarshal([]byte(settings[0].Value), &data); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal value %q", settings[0].Value)
-		}
-
-		return &data, nil
+		return license, nil
 	}
 
-	log.Info(
-		"Load valid license",
-		zap.String("plan", license.Plan.String()),
-		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
-		zap.Int("instanceCount", license.InstanceCount),
-	)
+	if common.ErrorCode(err) == common.NotFound {
+		log.Debug("Failed to find license", zap.String("error", err.Error()))
+	} else {
+		log.Warn("Failed to load valid license", zap.String("error", err.Error()))
+	}
 
-	return license, nil
+	// find free trial license in console
+	settingName := api.SettingEnterpriseTrial
+	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
+		Name: &settingName,
+	})
+	if err != nil {
+		log.Warn("Failed to load trial license from settings", zap.String("error", err.Error()))
+		return nil, err
+	}
+	if len(settings) == 0 {
+		return nil, common.Wrapf(err, common.NotFound, "cannot find license")
+	}
+
+	var data enterpriseAPI.License
+	if err := json.Unmarshal([]byte(settings[0].Value), &data); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal value %q", settings[0].Value)
+	}
+
+	return &data, nil
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
