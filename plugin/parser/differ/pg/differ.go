@@ -165,6 +165,17 @@ func equivalentType(typeA ast.DataType, typeB ast.DataType) (bool, error) {
 
 func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
+	for _, newSchema := range diff.newSchemaList {
+		newSchema.IfNotExists = true
+		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, newSchema)
+		if err != nil {
+			return "", err
+		}
+		if err := writeStringWithNewLine(&buf, sql); err != nil {
+			return "", err
+		}
+	}
+
 	for _, newTable := range diff.newTableList {
 		if err := writeStringWithNewLine(&buf, newTable.Text()); err != nil {
 			return "", err
@@ -197,7 +208,7 @@ func (diff *diffNode) deparse() (string, error) {
 func dropSchemata(m map[string]*ast.CreateSchemaStmt, l []*ast.CreateSchemaStmt) *ast.DropSchemaStmt {
 	var schemaNames []string
 	for _, stmt := range l {
-		if _, ok := m[stmt.Name]; !ok {
+		if _, ok := m[stmt.Name]; ok {
 			schemaNames = append(schemaNames, stmt.Name)
 		}
 	}
