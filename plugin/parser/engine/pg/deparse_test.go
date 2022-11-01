@@ -58,37 +58,9 @@ func runDeparseTest(t *testing.T, file string, record bool) {
 func TestDeparse(t *testing.T) {
 	testFileList := []string{
 		"test_create_table_data.yaml",
+		"test_create_schema_data.yaml",
 	}
 	for _, test := range testFileList {
 		runDeparseTest(t, test, false /* record */)
 	}
-}
-
-func TestDeparseCreateSchema(t *testing.T) {
-	tests := []testDeparseData{
-		{
-			stmt: `create schema myschema authorization bytebase create table tbl(id INT);`,
-			want: `CREATE SCHEMA "myschema" AUTHORIZATION "bytebase" CREATE TABLE "tbl" (
-    "id" integer
-)`,
-		},
-		{
-			stmt: `create schema if not exists myschema authorization bytebase;`,
-			want: `CREATE SCHEMA IF NOT EXISTS "myschema" AUTHORIZATION "bytebase"`,
-		},
-		{
-			stmt: `create schema if not exists myschema`,
-			want: `CREATE SCHEMA IF NOT EXISTS "myschema"`,
-		},
-		{
-			stmt: `create schema if not exists "myschema" authorization bytebase`,
-			want: `CREATE SCHEMA IF NOT EXISTS "myschema" AUTHORIZATION "bytebase"`,
-		},
-		{
-			stmt: `create schema if not exists authorization bytebase`,
-			want: `CREATE SCHEMA IF NOT EXISTS AUTHORIZATION "bytebase"`,
-		},
-	}
-
-	runDeparseTest(t, tests)
 }
