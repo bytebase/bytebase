@@ -3,7 +3,7 @@
   "instance-count": "实例数",
   "expires-at": "过期时间",
   "free-trial": "无需信用卡即可免费试用",
-  "description-highlight": "购买证书",
+  "purchase-license": "购买证书",
   "sensitive-placeholder": "粘贴您的证书 - 仅写入",
   "plan-compare": "比较不同版本的功能，寻找适合您的方案",
   "disabled-feature": "这是一个订阅版高级功能",
@@ -27,7 +27,7 @@
   "trialing": "试用期",
   "plan": {
     "title": "版本",
-    "try": "试用团队版",
+    "try": "免费试用",
     "free": {
       "title": "免费版",
       "label": "",
