@@ -24,6 +24,7 @@ specifiers:
   '@types/papaparse': 5.3.5
   '@types/prettier': 2.7.1
   '@types/qs': 6.9.7
+  '@types/scrollparent': ^2.0.1
   '@types/semver': 7.3.13
   '@types/slug': 5.0.3
   '@types/splitpanes': 2.2.1
@@ -65,6 +66,7 @@ specifiers:
   qs: 6.11.0
   rollup: 3.2.5
   scroll-into-view-if-needed: ^2.2.29
+  scrollparent: ^2.0.1
   semver: 7.3.8
   slug: 8.2.2
   splitpanes: 3.1.5
@@ -120,6 +122,7 @@ dependencies:
   qs: 6.11.0
   rollup: 3.2.5
   scroll-into-view-if-needed: 2.2.29
+  scrollparent: 2.0.1
   semver: 7.3.8
   slug: 8.2.2
   splitpanes: 3.1.5
@@ -153,6 +156,7 @@ devDependencies:
   '@types/papaparse': 5.3.5
   '@types/prettier': 2.7.1
   '@types/qs': 6.9.7
+  '@types/scrollparent': 2.0.1
   '@types/semver': 7.3.13
   '@types/slug': 5.0.3
   '@types/splitpanes': 2.2.1
@@ -894,6 +898,10 @@ packages:
 
   /@types/qs/6.9.7:
     resolution: {integrity: sha512-FGa1F62FT09qcrueBA6qYTrJPVDzah9a+493+o2PCXsesWHIn27G98TsSMs3WPNbZIEj4+VJf6saSFpvD+3Zsw==}
+    dev: true
+
+  /@types/scrollparent/2.0.1:
+    resolution: {integrity: sha512-LcvYdxOG83yL0IoJOmdeoCVlJUgf5WA+cxrBPh2mfYy3bsMoY72fOe87vneW4W/NWuqsdGjoK7fVldUkD1xVSw==}
     dev: true
 
   /@types/semver/7.3.13:
@@ -3391,6 +3399,10 @@ packages:
     resolution: {integrity: sha512-hxpAR6AN+Gh53AdAimHM6C8oTN1ppwVZITihix+WqalywBeFcQ6LdQP5ABNl26nX8GTEL7VT+b8lKpdqq65wXg==}
     dependencies:
       compute-scroll-into-view: 1.0.17
+    dev: false
+
+  /scrollparent/2.0.1:
+    resolution: {integrity: sha512-HSdN78VMvFCSGCkh0oYX/tY4R3P1DW61f8+TeZZ4j2VLgfwvw0bpRSOv4PCVKisktIwbzHCfZsx+rLbbDBqIBA==}
     dev: false
 
   /seemly/0.3.6:
