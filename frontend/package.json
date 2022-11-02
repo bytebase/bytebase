@@ -19,7 +19,7 @@
     "@markdoc/markdoc": "0.1.7",
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/table-core": "8.5.22",
-    "@tanstack/vue-table": "8.5.13",
+    "@tanstack/vue-table": "8.5.22",
     "@vueuse/core": "9.4.0",
     "axios": "1.1.3",
     "bootstrap": "5.2.2",

@@ -14,7 +14,7 @@ specifiers:
   '@tailwindcss/line-clamp': 0.4.2
   '@tailwindcss/typography': 0.5.7
   '@tanstack/table-core': 8.5.22
-  '@tanstack/vue-table': 8.5.13
+  '@tanstack/vue-table': 8.5.22
   '@types/canvas-confetti': 1.4.3
   '@types/dompurify': 2.3.4
   '@types/downloadjs': 1.4.3
@@ -97,7 +97,7 @@ dependencies:
   '@markdoc/markdoc': 0.1.7
   '@soerenmartius/vue3-clipboard': 0.1.2
   '@tanstack/table-core': 8.5.22
-  '@tanstack/vue-table': 8.5.13_vue@3.2.41
+  '@tanstack/vue-table': 8.5.22_vue@3.2.41
   '@vueuse/core': 9.4.0_vue@3.2.41
   axios: 1.1.3
   bootstrap: 5.2.2_@popperjs+core@2.11.6
@@ -608,23 +608,18 @@ packages:
       tailwindcss: 3.2.1_postcss@8.4.18
     dev: true
 
-  /@tanstack/table-core/8.5.13:
-    resolution: {integrity: sha512-kvDRjC7LrLNNNgUMfsBz3nHOwbBLFdosWQ16dfbD9D/OJrvFHRXoUIPzF0MNqqSPghaj7/18fnwXHGypvzoh9Q==}
-    engines: {node: '>=12'}
-    dev: false
-
   /@tanstack/table-core/8.5.22:
     resolution: {integrity: sha512-D3wDbVXl3Bi5PdGfle6DijhLzZxrvMyZsE1dSHH0xBsqEbu7Pkxn5EEd6CA9tGsCgXIEP1s4Yfy1cZ9xnMz1sQ==}
     engines: {node: '>=12'}
     dev: false
 
-  /@tanstack/vue-table/8.5.13_vue@3.2.41:
-    resolution: {integrity: sha512-x8I0De8RFW1/JTd7tnTYEhux4UJ0BCYCDrMK1PtIXlZnATamVV4b93OID7HFmajDk2LIIHdl170ei3eV5ivFQQ==}
+  /@tanstack/vue-table/8.5.22_vue@3.2.41:
+    resolution: {integrity: sha512-0s/Bb4WUJ1SrKuKRHImGI0TY1xB2b58u69Trz3W/3fHRwSFTROYarvRLEK9z/27TKFSaMJdlwbDM8UD9IYenvQ==}
     engines: {node: '>=12'}
     peerDependencies:
       vue: ^3.2.33
     dependencies:
-      '@tanstack/table-core': 8.5.13
+      '@tanstack/table-core': 8.5.22
       vue: 3.2.41
     dev: false
 
