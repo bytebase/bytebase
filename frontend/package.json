@@ -18,7 +18,7 @@
     "@joe-re/sql-parser": "^1.2.1",
     "@markdoc/markdoc": "0.1.7",
     "@soerenmartius/vue3-clipboard": "0.1.2",
-    "@tanstack/table-core": "8.5.15",
+    "@tanstack/table-core": "8.5.22",
     "@tanstack/vue-table": "8.5.13",
     "@vueuse/core": "9.4.0",
     "axios": "1.1.3",
