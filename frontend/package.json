@@ -23,7 +23,7 @@
     "@vueuse/core": "9.4.0",
     "axios": "1.1.3",
     "bootstrap": "5.2.2",
-    "canvas-confetti": "1.5.1",
+    "canvas-confetti": "1.6.0",
     "dayjs": "1.11.6",
     "dompurify": "2.4.0",
     "downloadjs": "1.4.7",

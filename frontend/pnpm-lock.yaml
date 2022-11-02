@@ -38,7 +38,7 @@ specifiers:
   autoprefixer: 10.4.13
   axios: 1.1.3
   bootstrap: 5.2.2
-  canvas-confetti: 1.5.1
+  canvas-confetti: 1.6.0
   dayjs: 1.11.6
   dompurify: 2.4.0
   downloadjs: 1.4.7
@@ -101,7 +101,7 @@ dependencies:
   '@vueuse/core': 9.4.0_vue@3.2.41
   axios: 1.1.3
   bootstrap: 5.2.2_@popperjs+core@2.11.6
-  canvas-confetti: 1.5.1
+  canvas-confetti: 1.6.0
   dayjs: 1.11.6
   dompurify: 2.4.0
   downloadjs: 1.4.7
@@ -1482,8 +1482,8 @@ packages:
     resolution: {integrity: sha512-511ThLu1hF+5RRRt0zYCf2U2yRr9GPF6m5y90SBCWsvSoYoW7yAGlv/elyPaNfvGCkp6kj/KFZWU0BMA69Prsg==}
     dev: true
 
-  /canvas-confetti/1.5.1:
-    resolution: {integrity: sha512-Ncz+oZJP6OvY7ti4E1slxVlyAV/3g7H7oQtcCDXgwGgARxPnwYY9PW5Oe+I8uvspYNtuHviAdgA0LfcKFWJfpg==}
+  /canvas-confetti/1.6.0:
+    resolution: {integrity: sha512-ej+w/m8Jzpv9Z7W7uJZer14Ke8P2ogsjg4ZMGIuq4iqUOqY2Jq8BNW42iGmNfRwREaaEfFIczLuZZiEVSYNHAA==}
     dev: false
 
   /chai/4.3.6:
