@@ -59,4 +59,7 @@ type ConstraintDef struct {
 	SkipValidation bool
 	// CheckExpression is the expression for the check constraint.
 	CheckExpression ExpressionNode
+	// https://www.postgresql.org/docs/14/sql-altertable.html
+	Deferrable   bool
+	Initdeferred bool
 }
