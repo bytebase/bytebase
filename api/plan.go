@@ -230,6 +230,12 @@ type PlanPatch struct {
 	Type PlanType `jsonapi:"attr,type"`
 }
 
+type TrialPlanCreate struct {
+	Type          PlanType `jsonapi:"attr,type"`
+	Days          int      `jsonapi:"attr,days"`
+	InstanceCount int      `jsonapi:"attr,instanceCount"`
+}
+
 // PlanLimit is the type for plan limits.
 type PlanLimit int
 

@@ -18,15 +18,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 )
 
-const (
-	// freeTrialPlan is the subscription plan for free trial.
-	freeTrialPlan = api.ENTERPRISE
-	// freeTrialInstanceCount is the instance count for free trial.
-	freeTrialInstanceCount = 999
-	// freeTrialDays is the trialing days for free trial.
-	freeTrialDays = 7
-)
-
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -61,12 +52,16 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	})
 
 	g.POST("/subscription/trial", func(c echo.Context) error {
+		create := &api.TrialPlanCreate{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, create); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create trial request").SetInternal(err)
+		}
+
 		license := &enterpriseAPI.License{
-			InstanceCount: freeTrialInstanceCount,
-			// trial 7 days
-			ExpiresTs: time.Now().Unix() + freeTrialDays*24*60*60,
-			IssuedTs:  time.Now().Unix(),
-			Plan:      freeTrialPlan,
+			InstanceCount: create.InstanceCount,
+			ExpiresTs:     time.Now().AddDate(0, 0, create.Days).Unix(),
+			IssuedTs:      time.Now().Unix(),
+			Plan:          create.Type,
 			// the subject format for license should be {org id in hub}.{subscription id in hub}
 			// as we just need to simply generate the trialing license in console, we can use the workspace id instead.
 			Subject:  fmt.Sprintf("%s.%s", s.workspaceID, ""),
@@ -81,7 +76,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 		ctx := c.Request().Context()
 		if _, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-			CreatorID:   api.SystemBotID,
+			CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 			Name:        api.SettingEnterpriseTrial,
 			Value:       string(value),
 			Description: "The trialing license.",
