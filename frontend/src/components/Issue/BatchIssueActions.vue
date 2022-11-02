@@ -3,7 +3,7 @@
     type="primary"
     :disabled="!isTransitionApplicableForAllIssues('RESOLVE')"
     tooltip-mode="DISABLED-ONLY"
-    @click="doBatchIssueTransition('DONE')"
+    @click="startBatchIssueTransition('RESOLVE')"
   >
     {{ $t("issue.batch-transition.resolve") }}
     <template #tooltip>
@@ -21,7 +21,7 @@
     type="normal"
     :disabled="!isTransitionApplicableForAllIssues('CANCEL')"
     tooltip-mode="DISABLED-ONLY"
-    @click="doBatchIssueTransition('CANCELED')"
+    @click="startBatchIssueTransition('CANCEL')"
   >
     {{ $t("issue.batch-transition.cancel") }}
     <template #tooltip>
@@ -39,7 +39,7 @@
     type="normal"
     :disabled="!isTransitionApplicableForAllIssues('REOPEN')"
     tooltip-mode="DISABLED-ONLY"
-    @click="doBatchIssueTransition('OPEN')"
+    @click="startBatchIssueTransition('REOPEN')"
   >
     {{ $t("issue.batch-transition.reopen") }}
     <template #tooltip>
@@ -53,18 +53,71 @@
     </template>
   </BBTooltipButton>
 
-  <div
-    v-if="state.isRequesting"
-    class="fixed inset-0 bg-white/70 flex flex-col items-center justify-center gap-y-2"
+  <BBModal
+    v-if="state.modal.show"
+    :title="state.modal.title"
+    class="relative overflow-hidden"
+    @close="state.modal.show = false"
   >
-    <BBSpin />
-    <div class="flex items-center textlabel">
-      <span>{{ $t("common.updating") }}</span>
-      <span v-if="state.stats"
-        >({{ state.stats.success }} / {{ state.stats.total }})</span
-      >
+    <div
+      v-if="state.isRequesting"
+      class="absolute inset-0 flex flex-col items-center justify-center bg-white/70"
+    >
+      <BBSpin />
+      <div class="flex items-center textlabel">
+        <span>{{ $t("common.updating") }}</span>
+        <span v-if="state.stats"
+          >({{ state.stats.success }} / {{ state.stats.total }})</span
+        >
+      </div>
     </div>
-  </div>
+
+    <div>
+      <div class="sm:col-span-4 w-112 min-w-full">
+        <label for="about" class="textlabel">
+          {{ $t("issue.status-transition.form.note") }}
+        </label>
+        <div class="mt-1">
+          <textarea
+            ref="commentTextArea"
+            v-model="state.modal.comment"
+            rows="3"
+            class="textarea block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
+            :placeholder="$t('issue.status-transition.form.placeholder')"
+            @input="
+              (e) => {
+                sizeToFit(e.target as HTMLTextAreaElement);
+              }
+            "
+            @focus="
+              (e) => {
+                sizeToFit(e.target as HTMLTextAreaElement);
+              }
+            "
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update button group -->
+    <div class="flex justify-end items-center pt-5">
+      <button
+        type="button"
+        class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:w-auto"
+        @click.prevent="state.modal.show = false"
+      >
+        {{ $t("common.cancel") }}
+      </button>
+      <button
+        type="button"
+        class="ml-3 px-4 py-2"
+        :class="state.modal.okButtonClass"
+        @click="doBatchIssueTransition(state.modal.to!)"
+      >
+        {{ state.modal.okButtonText }}
+      </button>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -85,6 +138,7 @@ import {
 } from "@/types";
 import { allTaskList, hasWorkspacePermission } from "@/utils";
 import { refreshIssueList, useCurrentUser, useIssueStore } from "@/store";
+import { useI18n } from "vue-i18n";
 
 type RequestStats = {
   total: number;
@@ -92,8 +146,18 @@ type RequestStats = {
   failed: number;
 };
 
+type ModalProps = {
+  show: boolean;
+  title: string;
+  comment: string;
+  to?: IssueStatus;
+  okButtonText: string;
+  okButtonClass?: string;
+};
+
 type LocalState = {
   isRequesting: boolean;
+  modal: ModalProps;
   stats?: RequestStats;
 };
 
@@ -106,10 +170,17 @@ const props = defineProps({
 
 const state = reactive<LocalState>({
   isRequesting: false,
+  modal: {
+    show: false,
+    title: "",
+    comment: "",
+    okButtonText: "",
+  },
 });
 
 const currentUser = useCurrentUser();
 const issueStore = useIssueStore();
+const { t } = useI18n();
 
 const getApplicableIssueStatusTransitionList = (
   issue: Issue
@@ -175,10 +246,24 @@ const isTransitionApplicableForAllIssues = (
   });
 };
 
+const startBatchIssueTransition = (type: IssueStatusTransitionType) => {
+  const { modal } = state;
+  modal.show = true;
+  const transition = ISSUE_STATUS_TRANSITION_LIST.get(type)!;
+  modal.to = transition.to;
+  modal.comment = "";
+  modal.okButtonClass = transition.buttonClass;
+  modal.okButtonText = t(transition.buttonName);
+  modal.title = t("issue.batch-transition.action-n-issues", {
+    action: t(`issue.batch-transition.${type.toLowerCase()}`),
+    n: props.issueList.length,
+  });
+};
+
 const doBatchIssueTransition = async (to: IssueStatus) => {
   const issueStatusPatch: IssueStatusPatch = {
     status: to,
-    comment: "", // TODO: provide a dialog to input the comments
+    comment: state.modal.comment,
   };
 
   const stats = {
