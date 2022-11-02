@@ -53,7 +53,7 @@ specifiers:
   js-yaml: 4.1.0
   lodash-es: 4.17.21
   monaco-editor: 0.34.0
-  monaco-languageclient: 4.0.0
+  monaco-languageclient: 4.0.1
   naive-ui: 2.33.5
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
@@ -111,7 +111,7 @@ dependencies:
   js-yaml: 4.1.0
   lodash-es: 4.17.21
   monaco-editor: 0.34.0
-  monaco-languageclient: 4.0.0_g4fp2q2jxj3u35wmxezeq2vo6y
+  monaco-languageclient: 4.0.1_g4fp2q2jxj3u35wmxezeq2vo6y
   naive-ui: 2.33.5_vue@3.2.41
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
@@ -2872,8 +2872,8 @@ packages:
     resolution: {integrity: sha512-VF+S5zG8wxfinLKLrWcl4WUizMx+LeJrG4PM/M78OhcwocpV0jiyhX/pG6Q9jIOhrb/ckYi6nHnaR5OojlOZCQ==}
     dev: false
 
-  /monaco-languageclient/4.0.0_g4fp2q2jxj3u35wmxezeq2vo6y:
-    resolution: {integrity: sha512-IRQag1btvne1Hwb97l5B+aitf6zCp7Pp1aj5JYYW2zSWz5Q5rS73l+0RuY5UknwVNX/6YkpGO6KZygAahzAs8A==}
+  /monaco-languageclient/4.0.1_g4fp2q2jxj3u35wmxezeq2vo6y:
+    resolution: {integrity: sha512-mUIq/7gQM/8CyOBVGv0thLRAR80vk49Ur0ROJveoh6R0/uwaUoyri+5OBslxsa5BICftLTsC8/Y+at6/iW50Ww==}
     engines: {node: '>=16.11.0', npm: '>=8.0.0'}
     dependencies:
       vscode: /@codingame/monaco-vscode-api/1.69.12_g4fp2q2jxj3u35wmxezeq2vo6y
