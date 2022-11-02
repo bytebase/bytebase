@@ -49,3 +49,10 @@
   want: |-
     ALTER TABLE "t"
         ADD UNIQUE USING INDEX "email_idx" INITIALLY DEFERRED;
+# DROP CONSTRAINT
+- stmt: |-
+    alter table t
+        drop constraint unique_tbl_email_key;
+  want: |-
+    ALTER TABLE "t"
+        DROP CONSTRAINT "unique_tbl_email_key";

@@ -113,6 +113,10 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseAddConstraint(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.DropConstraintStmt:
+			if err := deparseDropConstraint(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -157,6 +161,17 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 	default:
 	}
 	return nil
+}
+
+func deparseDropConstraint(context parser.DeparseContext, in *ast.DropConstraintStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("DROP CONSTRAINT "); err != nil {
+		return err
+	}
+
+	return writeSurrounding(buf, in.ConstraintName, `"`)
 }
 
 func deparseDropNotNull(context parser.DeparseContext, in *ast.DropNotNullStmt, buf *strings.Builder) error {
