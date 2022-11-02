@@ -521,11 +521,11 @@
     "batch-transition": {
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
       "resolve": "Resolve",
-      "resolved": "Resolved",
+      "resolved": "resolved",
       "cancel": "Cancel",
-      "cancelled": "Cancelled",
+      "cancelled": "cancelled",
       "reopen": "Reopen",
-      "reopened": "Reopened",
+      "reopened": "reopened",
       "action-n-issues": "{action} {n} issue | {action} {n} issues"
     }
   },
