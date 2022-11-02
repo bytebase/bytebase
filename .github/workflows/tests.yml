@@ -41,6 +41,15 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code
+      - name: Cache MySQL
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./resources/mysql/*.tar.gz
+            ./resources/mysql/*.tar.xz
+          key: ${{ runner.OS }}-build-mysql-cache
+      - name: Install dependencies
+        run: go generate -tags ${{ matrix.release-tags }} ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
