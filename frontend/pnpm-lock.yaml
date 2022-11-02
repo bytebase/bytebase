@@ -69,7 +69,7 @@ specifiers:
   slug: 8.0.0
   splitpanes: 3.1.1
   sql-formatter: 11.0.2
-  tailwindcss: 3.1.8
+  tailwindcss: 3.2.1
   typescript: 4.8.4
   unplugin-icons: 0.14.13
   unplugin-vue-components: 0.22.7
@@ -141,9 +141,9 @@ devDependencies:
   '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.1.0+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 4.0.1_rollup@2.79.0
-  '@tailwindcss/forms': 0.5.3_tailwindcss@3.1.8
-  '@tailwindcss/line-clamp': 0.4.2_tailwindcss@3.1.8
-  '@tailwindcss/typography': 0.5.7_tailwindcss@3.1.8
+  '@tailwindcss/forms': 0.5.3_tailwindcss@3.2.1
+  '@tailwindcss/line-clamp': 0.4.2_tailwindcss@3.2.1
+  '@tailwindcss/typography': 0.5.7_tailwindcss@3.2.1
   '@types/canvas-confetti': 1.4.3
   '@types/dompurify': 2.3.4
   '@types/downloadjs': 1.4.3
@@ -172,7 +172,7 @@ devDependencies:
   popper.js: 1.16.1
   postcss: 8.4.18
   prettier: 2.7.1
-  tailwindcss: 3.1.8_postcss@8.4.18
+  tailwindcss: 3.2.1_postcss@8.4.18
   typescript: 4.8.4
   unplugin-icons: 0.14.13_@vue+compiler-sfc@3.2.40
   unplugin-vue-components: 0.22.7_vue@3.2.40
@@ -579,24 +579,24 @@ packages:
       clipboard: 2.0.11
     dev: false
 
-  /@tailwindcss/forms/0.5.3_tailwindcss@3.1.8:
+  /@tailwindcss/forms/0.5.3_tailwindcss@3.2.1:
     resolution: {integrity: sha512-y5mb86JUoiUgBjY/o6FJSFZSEttfb3Q5gllE4xoKjAAD+vBrnIhE4dViwUuow3va8mpH4s9jyUbUbrRGoRdc2Q==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.1.8_postcss@8.4.18
+      tailwindcss: 3.2.1_postcss@8.4.18
     dev: true
 
-  /@tailwindcss/line-clamp/0.4.2_tailwindcss@3.1.8:
+  /@tailwindcss/line-clamp/0.4.2_tailwindcss@3.2.1:
     resolution: {integrity: sha512-HFzAQuqYCjyy/SX9sLGB1lroPzmcnWv1FHkIpmypte10hptf4oPUfucryMKovZh2u0uiS9U5Ty3GghWfEJGwVw==}
     peerDependencies:
       tailwindcss: '>=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1'
     dependencies:
-      tailwindcss: 3.1.8_postcss@8.4.18
+      tailwindcss: 3.2.1_postcss@8.4.18
     dev: true
 
-  /@tailwindcss/typography/0.5.7_tailwindcss@3.1.8:
+  /@tailwindcss/typography/0.5.7_tailwindcss@3.2.1:
     resolution: {integrity: sha512-JTTSTrgZfp6Ki4svhPA4mkd9nmQ/j9EfE7SbHJ1cLtthKkpW2OxsFXzSmxbhYbEkfNIyAyhle5p4SYyKRbz/jg==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
@@ -605,7 +605,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.1.8_postcss@8.4.18
+      tailwindcss: 3.2.1_postcss@8.4.18
     dev: true
 
   /@tanstack/table-core/8.5.13:
@@ -3193,8 +3193,8 @@ packages:
       yaml: 1.10.2
     dev: true
 
-  /postcss-nested/5.0.6_postcss@8.4.18:
-    resolution: {integrity: sha512-rKqm2Fk0KbA8Vt3AdGN0FB9OBOMDVajMG6ZCf/GoHgdxUJ4sBFp0A/uMIRm+MJUdo33YXEtjqIz8u7DAp8B7DA==}
+  /postcss-nested/6.0.0_postcss@8.4.18:
+    resolution: {integrity: sha512-0DkamqrPcmkBDsLn+vQDIrtkSbNkv5AD/M322ySo9kqFkCIYklym2xEmWkwo+Y3/qZo34tzEPNUw4y7yMCdv5w==}
     engines: {node: '>=12.0'}
     peerDependencies:
       postcss: ^8.2.14
@@ -3498,8 +3498,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /tailwindcss/3.1.8_postcss@8.4.18:
-    resolution: {integrity: sha512-YSneUCZSFDYMwk+TGq8qYFdCA3yfBRdBlS7txSq0LUmzyeqRe3a8fBQzbz9M3WS/iFT4BNf/nmw9mEzrnSaC0g==}
+  /tailwindcss/3.2.1_postcss@8.4.18:
+    resolution: {integrity: sha512-Uw+GVSxp5CM48krnjHObqoOwlCt5Qo6nw1jlCRwfGy68dSYb/LwS9ZFidYGRiM+w6rMawkZiu1mEMAsHYAfoLg==}
     engines: {node: '>=12.13.0'}
     hasBin: true
     peerDependencies:
@@ -3515,6 +3515,7 @@ packages:
       glob-parent: 6.0.2
       is-glob: 4.0.3
       lilconfig: 2.0.6
+      micromatch: 4.0.5
       normalize-path: 3.0.0
       object-hash: 3.0.0
       picocolors: 1.0.0
@@ -3522,7 +3523,7 @@ packages:
       postcss-import: 14.1.0_postcss@8.4.18
       postcss-js: 4.0.0_postcss@8.4.18
       postcss-load-config: 3.1.4_postcss@8.4.18
-      postcss-nested: 5.0.6_postcss@8.4.18
+      postcss-nested: 6.0.0_postcss@8.4.18
       postcss-selector-parser: 6.0.10
       postcss-value-parser: 4.2.0
       quick-lru: 5.1.1
