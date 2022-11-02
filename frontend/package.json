@@ -54,7 +54,7 @@
     "vscode-languageserver-types": "3.17.2",
     "vue": "3.2.41",
     "vue-i18n": "9.2.2",
-    "vue-router": "4.1.5",
+    "vue-router": "4.1.6",
     "vuedraggable": "^4.1.0",
     "vueuc": "0.4.48"
   },
