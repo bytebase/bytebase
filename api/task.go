@@ -137,6 +137,10 @@ type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+
+	// ThreadID is the ID of the connection executing the migration.
+	// MySQL rollback SQL related.
+	ThreadID string `json:"threadID,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
