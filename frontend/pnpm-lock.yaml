@@ -88,7 +88,7 @@ specifiers:
   vue-router: 4.1.5
   vue-tsc: 0.40.13
   vuedraggable: ^4.1.0
-  vueuc: 0.4.48
+  vueuc: 0.4.49
 
 dependencies:
   '@bytebase/vue-kbar': 0.1.8_vue@3.2.41
@@ -134,7 +134,7 @@ dependencies:
   vue-i18n: 9.2.2_vue@3.2.41
   vue-router: 4.1.5_vue@3.2.41
   vuedraggable: 4.1.0_vue@3.2.41
-  vueuc: 0.4.48_vue@3.2.41
+  vueuc: 0.4.49_vue@3.2.41
 
 devDependencies:
   '@iconify/json': 2.1.131
@@ -2909,7 +2909,7 @@ packages:
       vdirs: 0.1.8_vue@3.2.41
       vooks: 0.2.12_vue@3.2.41
       vue: 3.2.41
-      vueuc: 0.4.48_vue@3.2.41
+      vueuc: 0.4.49_vue@3.2.41
     dev: false
 
   /nanoid/3.3.4:
@@ -3932,8 +3932,8 @@ packages:
       vue: 3.2.41
     dev: false
 
-  /vueuc/0.4.48_vue@3.2.41:
-    resolution: {integrity: sha512-dQTBLxCzfaPuzD3c4/dIxAULtnyY+xwdotCRFUDgf0DJiwuR3tI+txJ9K8uJKmaHwc1JDUVqhRAj9Jd/pvInWg==}
+  /vueuc/0.4.49_vue@3.2.41:
+    resolution: {integrity: sha512-WarAC44a/Yx78CxkAgROYLq+LkAeCGA/6wHidVoFmHLbzyF3SiP2nzRNGD/8zJeJInXv18EnWK6A//eGgMMq8w==}
     peerDependencies:
       vue: ^3.0.11
     dependencies:
