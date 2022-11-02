@@ -230,6 +230,7 @@ type PlanPatch struct {
 	Type PlanType `jsonapi:"attr,type"`
 }
 
+// TrialPlanCreate is the API message for creating a trial plan.
 type TrialPlanCreate struct {
 	Type          PlanType `jsonapi:"attr,type"`
 	Days          int      `jsonapi:"attr,days"`
