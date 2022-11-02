@@ -45,18 +45,10 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 		body = replaceAllPrefix(body, "INSERT INTO", "DELETE FROM")
 		body = replaceAllPrefix(body, "SET", "WHERE")
 		body, err = replaceColumns(columnNames, body, "WHERE", " AND", ";")
-		if err != nil {
-			return "", err
-		}
-		return strings.Join(body, "\n"), nil
 	case DeleteRowsEventType:
 		body = replaceAllPrefix(body, "DELETE FROM", "INSERT INTO")
 		body = replaceAllPrefix(body, "WHERE", "SET")
 		body, err = replaceColumns(columnNames, body, "SET", ",", ";")
-		if err != nil {
-			return "", err
-		}
-		return strings.Join(body, "\n"), nil
 	case UpdateRowsEventType:
 		body = replaceAllPrefix(body, "WHERE", "OLDWHERE")
 		body = replaceAllPrefix(body, "SET", "WHERE")
@@ -66,12 +58,11 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 			return "", err
 		}
 		body, err = replaceColumns(columnNames, body, "WHERE", " AND", ";")
-		if err != nil {
-			return "", err
-		}
-		return strings.Join(body, "\n"), nil
+	default:
+		return "", errors.Errorf("invalid binlog event type %s", e.Type.String())
 	}
-	return "", errors.Errorf("invalid binlog event type %s", e.Type.String())
+
+	return strings.Join(body, "\n"), err
 }
 
 func replaceAllPrefix(body []string, old, new string) []string {
