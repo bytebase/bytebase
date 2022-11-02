@@ -46,7 +46,7 @@ func (raw *externalApprovalRaw) toExternalApproval() *api.ExternalApproval {
 	}
 }
 
-// CreateExternalApproval creates an ExternalAPproval.
+// CreateExternalApproval creates an ExternalApproval.
 func (s *Store) CreateExternalApproval(ctx context.Context, create *api.ExternalApprovalCreate) (*api.ExternalApproval, error) {
 	externalApprovalRaw, err := s.createExternalApprovalRaw(ctx, create)
 	if err != nil {
