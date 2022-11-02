@@ -6,7 +6,7 @@ specifiers:
   '@iconify/json': 2.1.131
   '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@joe-re/sql-parser': ^1.2.1
-  '@markdoc/markdoc': 0.1.7
+  '@markdoc/markdoc': 0.2.0
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 4.0.1
   '@soerenmartius/vue3-clipboard': 0.1.2
@@ -94,7 +94,7 @@ dependencies:
   '@bytebase/vue-kbar': 0.1.8_vue@3.2.41
   '@codingame/monaco-vscode-api': 1.69.12_g4fp2q2jxj3u35wmxezeq2vo6y
   '@joe-re/sql-parser': 1.2.1
-  '@markdoc/markdoc': 0.1.7
+  '@markdoc/markdoc': 0.2.0
   '@soerenmartius/vue3-clipboard': 0.1.2
   '@tanstack/table-core': 8.5.22
   '@tanstack/vue-table': 8.5.22_vue@3.2.41
@@ -502,9 +502,19 @@ packages:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
     dev: false
 
-  /@markdoc/markdoc/0.1.7:
-    resolution: {integrity: sha512-Dz7+VP5I3m/DFpLnzjwvXv64XmneYNzy4adm5uJSkcAJxFlJujIn+hCmMh11k70w+y5Qu18sjngetpuP+3570g==}
+  /@markdoc/markdoc/0.2.0:
+    resolution: {integrity: sha512-g5aqMY7uf3pmP50Ol7SyxT3iGD5cUwLEqMzCu5RTrOpllsrmamk1XAbsXY5rcPFPuc9m25peFOKEHfksrnPrXg==}
     engines: {node: '>=14.7.0'}
+    peerDependencies:
+      '@types/react': '*'
+      react: '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      react:
+        optional: true
+    optionalDependencies:
+      '@types/markdown-it': 12.2.3
     dev: false
 
   /@nodelib/fs.scandir/2.1.5:
@@ -838,6 +848,11 @@ packages:
     resolution: {integrity: sha512-wOuvG1SN4Us4rez+tylwwwCV1psiNVOkJeM3AUWUNWg/jDQY2+HE/444y5gc+jBmRqASOm2Oeh5c1axHobwRKQ==}
     dev: true
 
+  /@types/linkify-it/3.0.2:
+    resolution: {integrity: sha512-HZQYqbiFVWufzCwexrvh694SOim8z2d+xJl5UNamcvQFejLY/2YUtzXHYi3cHdI7PMlS8ejH2slRAOJQ32aNbA==}
+    dev: false
+    optional: true
+
   /@types/lodash-es/4.17.6:
     resolution: {integrity: sha512-R+zTeVUKDdfoRxpAryaQNRKk3105Rrgx2CFRClIgRGaqDTdjsm8h6IYA8ir584W3ePzkZfst5xIgDwYrlh9HLg==}
     dependencies:
@@ -845,6 +860,20 @@ packages:
 
   /@types/lodash/4.14.187:
     resolution: {integrity: sha512-MrO/xLXCaUgZy3y96C/iOsaIqZSeupyTImKClHunL5GrmaiII2VwvWmLBu2hwa0Kp0sV19CsyjtrTc/Fx8rg/A==}
+
+  /@types/markdown-it/12.2.3:
+    resolution: {integrity: sha512-GKMHFfv3458yYy+v/N8gjufHO6MSZKCOXpZc5GXIWWy8uldwfmPn98vp81gZ5f9SVw8YYBctgfJ22a2d7AOMeQ==}
+    requiresBuild: true
+    dependencies:
+      '@types/linkify-it': 3.0.2
+      '@types/mdurl': 1.0.2
+    dev: false
+    optional: true
+
+  /@types/mdurl/1.0.2:
+    resolution: {integrity: sha512-eC4U9MlIcu2q0KQmXszyn5Akca/0jrQmwDRgpAMJai7qBWq4amIQhZyNau4VYGtCeALvW1/NtjzJJ567aZxfKA==}
+    dev: false
+    optional: true
 
   /@types/node/16.18.3:
     resolution: {integrity: sha512-jh6m0QUhIRcZpNv7Z/rpN+ZWXOicUUQbSoWks7Htkbb9IjFQj4kzcX/xFCkjstCj5flMsN8FiSvt+q+Tcs4Llg==}
