@@ -58,7 +58,7 @@ specifiers:
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
   pev2: 1.5.0
-  pinia: 2.0.22
+  pinia: 2.0.23
   popper.js: 1.16.1
   postcss: 8.4.18
   prettier: 2.7.1
@@ -116,7 +116,7 @@ dependencies:
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
   pev2: 1.5.0_47tpum6wtjtozdoo6t4hr5iro4
-  pinia: 2.0.22_l7r24p6nevbtlimqmqcwa3ouhu
+  pinia: 2.0.23_l7r24p6nevbtlimqmqcwa3ouhu
   qs: 6.11.0
   rollup: 3.2.5
   scroll-into-view-if-needed: 2.2.29
@@ -3101,8 +3101,8 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /pinia/2.0.22_l7r24p6nevbtlimqmqcwa3ouhu:
-    resolution: {integrity: sha512-u+b8/BC+tmvo3ACbYO2w5NfxHWFOjvvw9DQnyT0dW8aUMCPRQT5QnfZ5R5W2MzZBMTeZRMQI7V/QFbafmM9QHw==}
+  /pinia/2.0.23_l7r24p6nevbtlimqmqcwa3ouhu:
+    resolution: {integrity: sha512-N15hFf4o5STrxpNrib1IEb1GOArvPYf1zPvQVRGOO1G1d74Ak0J0lVyalX/SmrzdT4Q0nlEFjbURsmBmIGUR5Q==}
     peerDependencies:
       '@vue/composition-api': ^1.4.0
       typescript: '>=4.4.4'
