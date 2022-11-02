@@ -75,7 +75,7 @@ specifiers:
   unplugin-vue-components: 0.22.9
   uuid: 9.0.0
   v-code-diff: 0.3.12
-  vite: 3.1.0
+  vite: 3.2.2
   vitest: 0.23.1
   vscode-languageserver: 8.0.2
   vscode-languageserver-protocol: 3.17.2
@@ -138,7 +138,7 @@ dependencies:
 
 devDependencies:
   '@iconify/json': 2.1.131
-  '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.1.0+vue-i18n@9.2.2
+  '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.2.2+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 4.0.1_rollup@3.2.5
   '@tailwindcss/forms': 0.5.3_tailwindcss@3.2.1
@@ -160,7 +160,7 @@ devDependencies:
   '@typescript-eslint/eslint-plugin': 5.39.0_xyciw6oqjoiiono4dhv3uhn5my
   '@typescript-eslint/parser': 5.39.0_ypn2ylkkyfa5i233caldtndbqa
   '@vicons/ionicons5': 0.12.0
-  '@vitejs/plugin-vue': 3.1.0_vite@3.1.0+vue@3.2.41
+  '@vitejs/plugin-vue': 3.1.0_vite@3.2.2+vue@3.2.41
   '@vue/compiler-sfc': 3.2.41
   '@vue/eslint-config-typescript': 11.0.2_bqr75canz4ugtqiwzy2fi6tndu
   autoprefixer: 10.4.13_postcss@8.4.18
@@ -176,7 +176,7 @@ devDependencies:
   typescript: 4.8.4
   unplugin-icons: 0.14.13_@vue+compiler-sfc@3.2.41
   unplugin-vue-components: 0.22.9_rollup@3.2.5+vue@3.2.41
-  vite: 3.1.0
+  vite: 3.2.2
   vitest: 0.23.1
   vscode-oniguruma: 1.6.2
   vscode-textmate: 7.0.3
@@ -463,7 +463,7 @@ packages:
     engines: {node: '>= 14'}
     dev: true
 
-  /@intlify/vite-plugin-vue-i18n/6.0.3_vite@3.1.0+vue-i18n@9.2.2:
+  /@intlify/vite-plugin-vue-i18n/6.0.3_vite@3.2.2+vue-i18n@9.2.2:
     resolution: {integrity: sha512-6SgNzPAOCR90wvt368lKzi7f/5ZEWJn22UCGvhFsP3XvKqlF3cVzojahgQ6o+LTdCkExeM6wPgd+haFf28E9VQ==}
     engines: {node: '>= 14.6'}
     peerDependencies:
@@ -484,7 +484,7 @@ packages:
       debug: 4.3.4
       fast-glob: 3.2.12
       source-map: 0.6.1
-      vite: 3.1.0
+      vite: 3.2.2
       vue-i18n: 9.2.2_vue@3.2.41
     transitivePeerDependencies:
       - supports-color
@@ -1028,14 +1028,14 @@ packages:
     resolution: {integrity: sha512-Iy1EUVRpX0WWxeu1VIReR1zsZLMc4fqpt223czR+Rpnrwu7pt46nbnC2ycO7ItI/uqDLJxnbcMC7FujKs9IfFA==}
     dev: true
 
-  /@vitejs/plugin-vue/3.1.0_vite@3.1.0+vue@3.2.41:
+  /@vitejs/plugin-vue/3.1.0_vite@3.2.2+vue@3.2.41:
     resolution: {integrity: sha512-fmxtHPjSOEIRg6vHYDaem+97iwCUg/uSIaTzp98lhELt2ISOQuDo2hbkBdXod0g15IhfPMQmAxh4heUks2zvDA==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
       vite: ^3.0.0
       vue: ^3.2.25
     dependencies:
-      vite: 3.1.0
+      vite: 3.2.2
       vue: 3.2.41
     dev: true
 
@@ -3307,8 +3307,8 @@ packages:
     resolution: {integrity: sha512-ndEIpszUHiG4HtDsQLeIuMvRsDnn8c8rYStabochtUeCvfuvNptb5TUbVD68LRAILPX7p9nqQGh4xJgn3EHS/g==}
     dev: false
 
-  /rollup/2.78.1:
-    resolution: {integrity: sha512-VeeCgtGi4P+o9hIg+xz4qQpRl6R401LWEXBmxYKOV4zlF82lyhgh2hTZnheFUbANE8l2A41F458iwj2vEYaXJg==}
+  /rollup/2.79.1:
+    resolution: {integrity: sha512-uKxbd0IhMZOhjAiD5oAFp7BqvkA4Dv47qpOCtaNvng4HBwdbWtdOh8f5nZNuk2rp51PMGk3bzfWu5oayNEuYnw==}
     engines: {node: '>=10.0.0'}
     hasBin: true
     optionalDependencies:
@@ -3704,14 +3704,15 @@ packages:
       vue: 3.2.41
     dev: false
 
-  /vite/3.1.0:
-    resolution: {integrity: sha512-YBg3dUicDpDWFCGttmvMbVyS9ydjntwEjwXRj2KBFwSB8SxmGcudo1yb8FW5+M/G86aS8x828ujnzUVdsLjs9g==}
+  /vite/3.2.2:
+    resolution: {integrity: sha512-pLrhatFFOWO9kS19bQ658CnRYzv0WLbsPih6R+iFeEEhDOuYgYCX2rztUViMz/uy/V8cLCJvLFeiOK7RJEzHcw==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
     peerDependencies:
       less: '*'
       sass: '*'
       stylus: '*'
+      sugarss: '*'
       terser: ^5.4.0
     peerDependenciesMeta:
       less:
@@ -3720,13 +3721,15 @@ packages:
         optional: true
       stylus:
         optional: true
+      sugarss:
+        optional: true
       terser:
         optional: true
     dependencies:
       esbuild: 0.15.12
       postcss: 8.4.18
       resolve: 1.22.1
-      rollup: 2.78.1
+      rollup: 2.79.1
     optionalDependencies:
       fsevents: 2.3.2
     dev: true
@@ -3763,11 +3766,12 @@ packages:
       tinybench: 2.3.1
       tinypool: 0.2.4
       tinyspy: 1.0.2
-      vite: 3.1.0
+      vite: 3.2.2
     transitivePeerDependencies:
       - less
       - sass
       - stylus
+      - sugarss
       - supports-color
       - terser
     dev: true
