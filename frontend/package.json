@@ -101,7 +101,7 @@
     "vite": "3.1.0",
     "vitest": "0.23.1",
     "vscode-oniguruma": "1.6.2",
-    "vscode-textmate": "7.0.1",
+    "vscode-textmate": "7.0.3",
     "vue-tsc": "0.40.13"
   },
   "peerDependencies": {
