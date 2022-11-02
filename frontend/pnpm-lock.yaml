@@ -54,7 +54,7 @@ specifiers:
   lodash-es: 4.17.21
   monaco-editor: 0.34.0
   monaco-languageclient: 4.0.0
-  naive-ui: 2.33.2
+  naive-ui: 2.33.5
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
   pev2: 1.5.0
@@ -112,7 +112,7 @@ dependencies:
   lodash-es: 4.17.21
   monaco-editor: 0.34.0
   monaco-languageclient: 4.0.0_g4fp2q2jxj3u35wmxezeq2vo6y
-  naive-ui: 2.33.2_vue@3.2.41
+  naive-ui: 2.33.5_vue@3.2.41
   node-sql-parser: 4.5.0
   papaparse: 5.3.2
   pev2: 1.5.0_47tpum6wtjtozdoo6t4hr5iro4
@@ -2892,8 +2892,8 @@ packages:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
     dev: true
 
-  /naive-ui/2.33.2_vue@3.2.41:
-    resolution: {integrity: sha512-XT18dOE7dK15xedO9MlrPsD3AXBKncr0lqlsxakHl/DckqOaAbdA7yxDl/qtVTBC+1Rlf29cFP/th7P7DSy5zg==}
+  /naive-ui/2.33.5_vue@3.2.41:
+    resolution: {integrity: sha512-O87zwOduut3Xk9NzGIX+LZYr6sW/Y0oGuNJ6T2dka+14CtHD9iidi8gdxg6obhMpzdwa3SnlxO7nzDLqmXVUwA==}
     peerDependencies:
       vue: ^3.0.0
     dependencies:
