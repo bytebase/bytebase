@@ -517,7 +517,16 @@
     "upload-sql": "上传 SQL",
     "override-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
-    "waiting-earliest-allowed-time": "将于 {time} 之后执行"
+    "waiting-earliest-allowed-time": "将于 {time} 之后执行",
+    "batch-transition": {
+      "not-allowed-tips": "部分选中的工单无法被{operation}",
+      "resolve": "解决",
+      "resolved": "解决",
+      "cancel": "取消",
+      "cancelled": "取消",
+      "reopen": "重开",
+      "reopened": "重开"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",

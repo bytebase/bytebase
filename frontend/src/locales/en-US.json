@@ -517,7 +517,16 @@
     "upload-sql": "Upload SQL",
     "override-current-statement": "Override current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
-    "waiting-earliest-allowed-time": "Will run after {time}"
+    "waiting-earliest-allowed-time": "Will run after {time}",
+    "batch-transition": {
+      "not-allowed-tips": "Some of selected issues cannot be {operation}",
+      "resolve": "Resolve",
+      "resolved": "Resolved",
+      "cancel": "Cancel",
+      "cancelled": "Cancelled",
+      "reopen": "Reopen",
+      "reopened": "Reopened"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
