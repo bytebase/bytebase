@@ -72,7 +72,7 @@ specifiers:
   tailwindcss: 3.2.1
   typescript: 4.8.4
   unplugin-icons: 0.14.13
-  unplugin-vue-components: 0.22.7
+  unplugin-vue-components: 0.22.9
   uuid: 9.0.0
   v-code-diff: 0.3.12
   vite: 3.1.0
@@ -175,7 +175,7 @@ devDependencies:
   tailwindcss: 3.2.1_postcss@8.4.18
   typescript: 4.8.4
   unplugin-icons: 0.14.13_@vue+compiler-sfc@3.2.41
-  unplugin-vue-components: 0.22.7_vue@3.2.41
+  unplugin-vue-components: 0.22.9_rollup@3.2.5+vue@3.2.41
   vite: 3.1.0
   vitest: 0.23.1
   vscode-oniguruma: 1.6.2
@@ -3623,8 +3623,8 @@ packages:
       - supports-color
     dev: true
 
-  /unplugin-vue-components/0.22.7_vue@3.2.41:
-    resolution: {integrity: sha512-MJEAKJF9bRykTRvJ4WXF0FNMAyt1PX3iwpu2NN+li35sAKjQv6sC1col5aZDLiwDZDo2AGwxNkzLJFKaun9qHw==}
+  /unplugin-vue-components/0.22.9_rollup@3.2.5+vue@3.2.41:
+    resolution: {integrity: sha512-qBvooq3EgpjtYicxeccRUGUBBQCCw9rJ0kHPZPOSJd8TBZViSv86vuKLTRDHPyjWtclwOIkVStZJfPdJFhYUMw==}
     engines: {node: '>=14'}
     peerDependencies:
       '@babel/parser': ^7.15.8
@@ -3633,8 +3633,8 @@ packages:
       '@babel/parser':
         optional: true
     dependencies:
-      '@antfu/utils': 0.5.2
-      '@rollup/pluginutils': 4.2.1
+      '@antfu/utils': 0.6.2
+      '@rollup/pluginutils': 5.0.2_rollup@3.2.5
       chokidar: 3.5.3
       debug: 4.3.4
       fast-glob: 3.2.12
@@ -3642,23 +3642,15 @@ packages:
       magic-string: 0.26.7
       minimatch: 5.1.0
       resolve: 1.22.1
-      unplugin: 0.9.6
+      unplugin: 0.10.2
       vue: 3.2.41
     transitivePeerDependencies:
+      - rollup
       - supports-color
     dev: true
 
   /unplugin/0.10.2:
     resolution: {integrity: sha512-6rk7GUa4ICYjae5PrAllvcDeuT8pA9+j5J5EkxbMFaV+SalHhxZ7X2dohMzu6C3XzsMT+6jwR/+pwPNR3uK9MA==}
-    dependencies:
-      acorn: 8.8.1
-      chokidar: 3.5.3
-      webpack-sources: 3.2.3
-      webpack-virtual-modules: 0.4.6
-    dev: true
-
-  /unplugin/0.9.6:
-    resolution: {integrity: sha512-YYLtfoNiie/lxswy1GOsKXgnLJTE27la/PeCGznSItk+8METYZErO+zzV9KQ/hXhPwzIJsfJ4s0m1Rl7ZCWZ4Q==}
     dependencies:
       acorn: 8.8.1
       chokidar: 3.5.3
