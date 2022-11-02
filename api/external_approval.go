@@ -41,11 +41,14 @@ type ExternalApprovalPayloadFeishu struct {
 
 // ExternalApprovalCreate is the API message for creating an ExternalApproval.
 type ExternalApprovalCreate struct {
+	// Related fields
 	IssueID     int
 	RequesterID int
 	ApproverID  int
-	Type        ExternalApprovalType
-	Payload     string
+
+	// Domain specific fields
+	Type    ExternalApprovalType
+	Payload string
 }
 
 // ExternalApprovalFind is the API message for finding ExternalApprovals.
