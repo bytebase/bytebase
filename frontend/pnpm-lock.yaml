@@ -52,7 +52,7 @@ specifiers:
   jquery: 3.6.1
   js-yaml: 4.1.0
   lodash-es: 4.17.21
-  monaco-editor: 0.34.0
+  monaco-editor: 0.34.1
   monaco-languageclient: 4.0.1
   naive-ui: 2.33.5
   node-sql-parser: 4.5.0
@@ -110,7 +110,7 @@ dependencies:
   inter-ui: 3.19.3
   js-yaml: 4.1.0
   lodash-es: 4.17.21
-  monaco-editor: 0.34.0
+  monaco-editor: 0.34.1
   monaco-languageclient: 4.0.1_g4fp2q2jxj3u35wmxezeq2vo6y
   naive-ui: 2.33.5_vue@3.2.41
   node-sql-parser: 4.5.0
@@ -248,7 +248,7 @@ packages:
       vscode-oniguruma: ^1.6.2
       vscode-textmate: ^7.0.1
     dependencies:
-      monaco-editor: 0.34.0
+      monaco-editor: 0.34.1
       vscode-oniguruma: 1.6.2
       vscode-textmate: 7.0.3
     dev: false
@@ -2868,8 +2868,8 @@ packages:
     deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
     dev: false
 
-  /monaco-editor/0.34.0:
-    resolution: {integrity: sha512-VF+S5zG8wxfinLKLrWcl4WUizMx+LeJrG4PM/M78OhcwocpV0jiyhX/pG6Q9jIOhrb/ckYi6nHnaR5OojlOZCQ==}
+  /monaco-editor/0.34.1:
+    resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
     dev: false
 
   /monaco-languageclient/4.0.1_g4fp2q2jxj3u35wmxezeq2vo6y:
