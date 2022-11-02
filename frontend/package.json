@@ -89,7 +89,7 @@
     "eslint": "8.24.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-prettier": "4.2.1",
-    "eslint-plugin-vue": "9.4.0",
+    "eslint-plugin-vue": "9.7.0",
     "jquery": "3.6.1",
     "popper.js": "1.16.1",
     "postcss": "8.4.18",
