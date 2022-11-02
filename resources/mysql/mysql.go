@@ -36,6 +36,11 @@ type Instance struct {
 	proc *os.Process
 }
 
+// DataDir returns the data dir.
+func (i Instance) DataDir() string {
+	return i.datadir
+}
+
 // Port returns the port of the mysql instance.
 func (i Instance) Port() int {
 	return i.port
