@@ -13,8 +13,9 @@ import {
 export const useSubscriptionStore = defineStore("subscription", {
   state: (): SubscriptionState => ({
     subscription: undefined,
-    trialingDays: 7,
+    trialingDays: 14,
     trialingPlan: PlanType.ENTERPRISE,
+    trialingInstanceCount: 999,
   }),
   getters: {
     currentPlan(state): PlanType {
@@ -107,7 +108,18 @@ export const useSubscriptionStore = defineStore("subscription", {
       return subscription;
     },
     async trialSubscription() {
-      const data = (await axios.post(`/api/subscription/trial`)).data.data;
+      const data = (
+        await axios.post(`/api/subscription/trial`, {
+          data: {
+            type: "TrialPlanCreate",
+            attributes: {
+              type: this.trialingPlan,
+              days: this.trialingDays,
+              instanceCount: this.trialingInstanceCount,
+            },
+          },
+        })
+      ).data.data;
       const subscription = data.attributes as Subscription;
       this.setSubscription(subscription);
       return subscription;
