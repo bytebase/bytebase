@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -22,6 +23,26 @@ const (
 
 func getRoleContextKey() string {
 	return roleContextKey
+}
+
+func enforceWorkspaceDeveloperProjectACL(path string, method string, quaryParams url.Values, principalID int) *echo.HTTPError {
+	if strings.HasPrefix(path, "/project") {
+		if path == "/project" {
+			// Developer can only fetch projects from herself.
+			if method == "GET" {
+				userIDStr := quaryParams.Get("user")
+				if userIDStr == "" {
+					return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+						errors.Errorf("Not allowed to fetch all project list"))
+				}
+				if strconv.Itoa(principalID) != userIDStr {
+					return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+						errors.Errorf("Not allowed to fetch projects from other user"))
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
@@ -67,9 +88,9 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 		if !s.feature(api.FeatureRBAC) {
 			role = api.Owner
 		}
+
 		// Performs the ACL check.
 		pass, err := ce.Enforce(string(role), path, method)
-
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
@@ -96,6 +117,15 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 		if !pass {
 			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
 				errors.Errorf("rejected by the ACL policy; %s %s u%d/%s", method, path, principalID, role))
+		}
+
+		// Workspace Owner or DBA assumes project Owner role for all projects, so will
+		// pass any project ACL.
+		if role != api.Owner && role != api.DBA {
+			projectACLErr := enforceWorkspaceDeveloperProjectACL(path, method, c.QueryParams(), principalID)
+			if projectACLErr != nil {
+				return projectACLErr
+			}
 		}
 
 		// Stores role into context.
