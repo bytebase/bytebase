@@ -35,7 +35,7 @@
     "monaco-editor": "0.34.1",
     "monaco-languageclient": "4.0.1",
     "naive-ui": "2.33.5",
-    "node-sql-parser": "4.5.0",
+    "node-sql-parser": "4.5.1",
     "papaparse": "5.3.2",
     "pev2": "1.5.0",
     "pinia": "2.0.22",
