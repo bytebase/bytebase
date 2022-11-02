@@ -112,7 +112,7 @@
         type="button"
         class="ml-3 px-4 py-2"
         :class="state.modal.okButtonClass"
-        @click="doBatchIssueTransition(state.modal.to!)"
+        @click="doBatchIssueTransition(state.modal.transition!)"
       >
         {{ state.modal.okButtonText }}
       </button>
@@ -125,7 +125,6 @@ import { computed, PropType, reactive } from "vue";
 
 import type {
   Issue,
-  IssueStatus,
   IssueStatusPatch,
   IssueStatusTransition,
   IssueStatusTransitionType,
@@ -137,7 +136,12 @@ import {
   SYSTEM_BOT_ID,
 } from "@/types";
 import { allTaskList, hasWorkspacePermission } from "@/utils";
-import { refreshIssueList, useCurrentUser, useIssueStore } from "@/store";
+import {
+  pushNotification,
+  refreshIssueList,
+  useCurrentUser,
+  useIssueStore,
+} from "@/store";
 import { useI18n } from "vue-i18n";
 
 type RequestStats = {
@@ -150,7 +154,7 @@ type ModalProps = {
   show: boolean;
   title: string;
   comment: string;
-  to?: IssueStatus;
+  transition?: IssueStatusTransition;
   okButtonText: string;
   okButtonClass?: string;
 };
@@ -250,7 +254,7 @@ const startBatchIssueTransition = (type: IssueStatusTransitionType) => {
   const { modal } = state;
   modal.show = true;
   const transition = ISSUE_STATUS_TRANSITION_LIST.get(type)!;
-  modal.to = transition.to;
+  modal.transition = transition;
   modal.comment = "";
   modal.okButtonClass = transition.buttonClass;
   modal.okButtonText = t(transition.buttonName);
@@ -260,19 +264,19 @@ const startBatchIssueTransition = (type: IssueStatusTransitionType) => {
   });
 };
 
-const doBatchIssueTransition = async (to: IssueStatus) => {
+const doBatchIssueTransition = async (transition: IssueStatusTransition) => {
   const issueStatusPatch: IssueStatusPatch = {
-    status: to,
+    status: transition.to,
     comment: state.modal.comment,
   };
 
-  const stats = {
+  const stats = reactive<RequestStats>({
     total: props.issueList.length,
     success: 0,
     failed: 0,
-  };
+  });
 
-  const doSingleIssueTransition = (issue: Issue) => {
+  const doSingleIssueTransition = async (issue: Issue, index: number) => {
     const request = issueStore.updateIssueStatus({
       issueId: issue.id,
       issueStatusPatch,
@@ -290,6 +294,13 @@ const doBatchIssueTransition = async (to: IssueStatus) => {
   try {
     const requestList = props.issueList.map(doSingleIssueTransition);
     await Promise.allSettled(requestList);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("issue.batch-transition.successfully-updated-n-issues", {
+        n: stats.success,
+      }),
+    });
   } finally {
     state.isRequesting = false;
     refreshIssueList();

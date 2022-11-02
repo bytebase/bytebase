@@ -526,7 +526,8 @@
       "cancelled": "取消",
       "reopen": "重开",
       "reopened": "重开",
-      "action-n-issues": "{action} {n} 个工单"
+      "action-n-issues": "{action} {n} 个工单",
+      "successfully-action-n-issues": "成功更新 {n} 个工单"
     }
   },
   "alter-schema": {

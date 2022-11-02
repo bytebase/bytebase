@@ -526,7 +526,8 @@
       "cancelled": "cancelled",
       "reopen": "Reopen",
       "reopened": "reopened",
-      "action-n-issues": "{action} {n} issue | {action} {n} issues"
+      "action-n-issues": "{action} {n} issue | {action} {n} issues",
+      "successfully-updated-n-issues": "Successfully updated {n} issue | Successfully updated {n} issues"
     }
   },
   "alter-schema": {
