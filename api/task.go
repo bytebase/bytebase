@@ -137,6 +137,9 @@ type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+
+	// MySQL rollback SQL related
+	ThreadID string `json:"threadID,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
