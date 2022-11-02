@@ -22,6 +22,8 @@ const (
 	ConstraintTypeNotNull
 	// ConstraintTypeCheck is the check constraint.
 	ConstraintTypeCheck
+	// ConstraintTypeDefault is the default constraint.
+	ConstraintTypeDefault
 )
 
 // ConstraintDef is struct for constraint definition.
@@ -57,6 +59,8 @@ type ConstraintDef struct {
 	// For PG, the option SkipValidation is currently only allowed for foreign key and CHECK constraints.
 	// If SkipValidation is true, the constraint will only be enforced against subsequent inserts or updates.
 	SkipValidation bool
-	// CheckExpression is the expression for the check constraint.
-	CheckExpression ExpressionNode
+	// Expression is the expression for
+	//   1. CHECK constraint
+	//   2. DEFAULT constraint
+	Expression ExpressionNode
 }

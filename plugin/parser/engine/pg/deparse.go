@@ -291,6 +291,13 @@ func deparseColumnConstraint(_ parser.DeparseContext, in *ast.ConstraintDef, buf
 		if _, err := buf.WriteString("PRIMARY KEY"); err != nil {
 			return err
 		}
+	case ast.ConstraintTypeDefault:
+		if _, err := buf.WriteString("DEFAULT "); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.Expression.Text()); err != nil {
+			return err
+		}
 	default:
 		return errors.Errorf("failed to deparse column constraint: not support %d", in.Type)
 	}

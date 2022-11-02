@@ -825,12 +825,17 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 	case ast.ConstraintTypePrimaryUsingIndex, ast.ConstraintTypeUniqueUsingIndex:
 		cons.IndexName = in.Constraint.Indexname
-	case ast.ConstraintTypeCheck:
+	case ast.ConstraintTypeCheck, ast.ConstraintTypeDefault:
 		expression, _, _, err := convertExpressionNode(in.Constraint.RawExpr)
 		if err != nil {
 			return nil, err
 		}
-		cons.CheckExpression = expression
+		text, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, in.Constraint.RawExpr)
+		if err != nil {
+			return nil, err
+		}
+		expression.SetText(text)
+		cons.Expression = expression
 	}
 
 	return cons, nil
@@ -857,6 +862,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeNotNull
 	case pgquery.ConstrType_CONSTR_CHECK:
 		return ast.ConstraintTypeCheck
+	case pgquery.ConstrType_CONSTR_DEFAULT:
+		return ast.ConstraintTypeDefault
 	}
 	return ast.ConstraintTypeUndefined
 }
