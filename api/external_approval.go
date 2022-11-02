@@ -30,13 +30,12 @@ type ExternalApproval struct {
 
 // ExternalApprovalPayloadFeishu is the payload for feishu type ExternalApproval.
 type ExternalApprovalPayloadFeishu struct {
+	StageID    int
+	AssigneeID int
+
 	// feishu
 	InstanceCode string
 	RequesterID  string
-
-	// bytebase
-	StageID    int
-	AssigneeID int
 }
 
 // ExternalApprovalCreate is the API message for creating an ExternalApproval.
