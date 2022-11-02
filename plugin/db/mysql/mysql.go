@@ -38,6 +38,10 @@ type Driver struct {
 	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
+	// conn is used to execute migrations.
+	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
+	// So that it's easy to get the thread ID for rollback SQL.
+	conn *sql.Conn
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -90,11 +94,13 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	if err != nil {
 		return nil, err
 	}
-	// Use a single connection in the lifetime of the driver.
-	// This makes things easier, such as the thread ID will not change.
-	db.SetMaxOpenConns(1)
+	conn, err := db.Conn(context.Background())
+	if err != nil {
+		return nil, err
+	}
 	driver.dbType = dbType
 	driver.db = db
+	driver.conn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
 
@@ -159,7 +165,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 	transformedStatement := buf.String()
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := driver.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
