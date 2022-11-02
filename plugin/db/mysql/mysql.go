@@ -38,10 +38,10 @@ type Driver struct {
 	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
-	// conn is used to execute migrations.
+	// migrationConn is used to execute migrations.
 	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
 	// So that it's easy to get the thread ID for rollback SQL.
-	conn *sql.Conn
+	migrationConn *sql.Conn
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -100,7 +100,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	}
 	driver.dbType = dbType
 	driver.db = db
-	driver.conn = conn
+	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
 
@@ -165,7 +165,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 	transformedStatement := buf.String()
-	tx, err := driver.conn.BeginTx(ctx, nil)
+	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 // GetMigrationConnID gets the ID of the connection executing migrations.
 func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 	var id string
-	if err := driver.conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&id); err != nil {
+	if err := driver.migrationConn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&id); err != nil {
 		return "", errors.Wrap(err, "failed to get the connection ID")
 	}
 	return id, nil
