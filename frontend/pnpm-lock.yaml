@@ -31,7 +31,7 @@ specifiers:
   '@typescript-eslint/eslint-plugin': 5.42.0
   '@typescript-eslint/parser': 5.42.0
   '@vicons/ionicons5': 0.12.0
-  '@vitejs/plugin-vue': 3.1.0
+  '@vitejs/plugin-vue': 3.2.0
   '@vue/compiler-sfc': 3.2.41
   '@vue/eslint-config-typescript': 11.0.2
   '@vueuse/core': 9.4.0
@@ -160,7 +160,7 @@ devDependencies:
   '@typescript-eslint/eslint-plugin': 5.42.0_hrwhwzj4tm3phhafqq6w6i2wnu
   '@typescript-eslint/parser': 5.42.0_ypn2ylkkyfa5i233caldtndbqa
   '@vicons/ionicons5': 0.12.0
-  '@vitejs/plugin-vue': 3.1.0_vite@3.2.2+vue@3.2.41
+  '@vitejs/plugin-vue': 3.2.0_vite@3.2.2+vue@3.2.41
   '@vue/compiler-sfc': 3.2.41
   '@vue/eslint-config-typescript': 11.0.2_bqr75canz4ugtqiwzy2fi6tndu
   autoprefixer: 10.4.13_postcss@8.4.18
@@ -1030,8 +1030,8 @@ packages:
     resolution: {integrity: sha512-Iy1EUVRpX0WWxeu1VIReR1zsZLMc4fqpt223czR+Rpnrwu7pt46nbnC2ycO7ItI/uqDLJxnbcMC7FujKs9IfFA==}
     dev: true
 
-  /@vitejs/plugin-vue/3.1.0_vite@3.2.2+vue@3.2.41:
-    resolution: {integrity: sha512-fmxtHPjSOEIRg6vHYDaem+97iwCUg/uSIaTzp98lhELt2ISOQuDo2hbkBdXod0g15IhfPMQmAxh4heUks2zvDA==}
+  /@vitejs/plugin-vue/3.2.0_vite@3.2.2+vue@3.2.41:
+    resolution: {integrity: sha512-E0tnaL4fr+qkdCNxJ+Xd0yM31UwMkQje76fsDVBBUCoGOUPexu2VDUYHL8P4CwV+zMvWw6nlRw19OnRKmYAJpw==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
       vite: ^3.0.0
