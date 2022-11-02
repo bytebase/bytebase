@@ -40,7 +40,7 @@
     "pev2": "1.5.0",
     "pinia": "2.0.22",
     "qs": "6.11.0",
-    "rollup": "2.79.0",
+    "rollup": "3.2.5",
     "scroll-into-view-if-needed": "^2.2.29",
     "semver": "7.3.8",
     "slug": "8.2.2",

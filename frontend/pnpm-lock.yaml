@@ -63,7 +63,7 @@ specifiers:
   postcss: 8.4.18
   prettier: 2.7.1
   qs: 6.11.0
-  rollup: 2.79.0
+  rollup: 3.2.5
   scroll-into-view-if-needed: ^2.2.29
   semver: 7.3.8
   slug: 8.2.2
@@ -118,7 +118,7 @@ dependencies:
   pev2: 1.5.0_47tpum6wtjtozdoo6t4hr5iro4
   pinia: 2.0.22_l7r24p6nevbtlimqmqcwa3ouhu
   qs: 6.11.0
-  rollup: 2.79.0
+  rollup: 3.2.5
   scroll-into-view-if-needed: 2.2.29
   semver: 7.3.8
   slug: 8.2.2
@@ -140,7 +140,7 @@ devDependencies:
   '@iconify/json': 2.1.131
   '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.1.0+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
-  '@rollup/plugin-yaml': 4.0.1_rollup@2.79.0
+  '@rollup/plugin-yaml': 4.0.1_rollup@3.2.5
   '@tailwindcss/forms': 0.5.3_tailwindcss@3.2.1
   '@tailwindcss/line-clamp': 0.4.2_tailwindcss@3.2.1
   '@tailwindcss/typography': 0.5.7_tailwindcss@3.2.1
@@ -535,7 +535,7 @@ packages:
   /@popperjs/core/2.11.6:
     resolution: {integrity: sha512-50/17A98tWUfQ176raKiOGXuYpLyyVMkxxG6oylzL3BPOlA6ADGdK7EYunSa4I064xerltq9TGXs8HmOk5E+vw==}
 
-  /@rollup/plugin-yaml/4.0.1_rollup@2.79.0:
+  /@rollup/plugin-yaml/4.0.1_rollup@3.2.5:
     resolution: {integrity: sha512-eyftkLWrwaGhgad+gXmisPYXeW3hP1s+lz63mgbur+F/8aKZhPG1Bf8RFNnz0Vhnf3uBimFebZBDwwz6X4KqUQ==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -544,9 +544,9 @@ packages:
       rollup:
         optional: true
     dependencies:
-      '@rollup/pluginutils': 5.0.2_rollup@2.79.0
+      '@rollup/pluginutils': 5.0.2_rollup@3.2.5
       js-yaml: 4.1.0
-      rollup: 2.79.0
+      rollup: 3.2.5
       tosource: 2.0.0-alpha.3
     dev: true
 
@@ -558,7 +558,7 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /@rollup/pluginutils/5.0.2_rollup@2.79.0:
+  /@rollup/pluginutils/5.0.2_rollup@3.2.5:
     resolution: {integrity: sha512-pTd9rIsP92h+B6wWwFbW8RkZv4hiR/xKsqre4SIuAOaOEQRxi0lqLke9k2/7WegC85GgUs9pjmOjCUi3In4vwA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -570,7 +570,7 @@ packages:
       '@types/estree': 1.0.0
       estree-walker: 2.0.2
       picomatch: 2.3.1
-      rollup: 2.79.0
+      rollup: 3.2.5
     dev: true
 
   /@soerenmartius/vue3-clipboard/0.1.2:
@@ -3320,9 +3320,9 @@ packages:
       fsevents: 2.3.2
     dev: true
 
-  /rollup/2.79.0:
-    resolution: {integrity: sha512-x4KsrCgwQ7ZJPcFA/SUu6QVcYlO7uRLfLAy0DSA4NS2eG8japdbpM50ToH7z4iObodRYOJ0soneF0iaQRJ6zhA==}
-    engines: {node: '>=10.0.0'}
+  /rollup/3.2.5:
+    resolution: {integrity: sha512-/Ha7HhVVofduy+RKWOQJrxe4Qb3xyZo+chcpYiD8SoQa4AG7llhupUtyfKSSrdBM2mWJjhM8wZwmbY23NmlIYw==}
+    engines: {node: '>=14.18.0', npm: '>=8.0.0'}
     hasBin: true
     optionalDependencies:
       fsevents: 2.3.2
