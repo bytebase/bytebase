@@ -31,8 +31,9 @@ func (txn BinlogTransaction) GetRollbackSQL(columnNames []string) (string, error
 
 func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 	// 1. Remove the "### " prefix of each line.
-	// Prefix a "\n" to make the replacement easier.
-	body := strings.ReplaceAll("\n"+e.Body, "\n### ", "\n")
+	// mysqlbinlog output is separated by "\n", ref https://sourcegraph.com/github.com/mysql/mysql-server@a246bad76b9271cb4333634e954040a970222e0a/-/blob/sql/log_event.cc?L2398
+	body := strings.Split(e.Body, "\n")
+	body = replaceAllPrefix(body, "### ", "")
 
 	// 2. Switch "DELETE FROM" and "INSERT INTO".
 	// 3. Replace "WHERE" and "SET" with each other.
@@ -41,84 +42,83 @@ func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
 	var err error
 	switch e.Type {
 	case WriteRowsEventType:
-		body = strings.ReplaceAll(body, "\nINSERT INTO", "\nDELETE FROM")
-		// Trim the "\n" prefix we added at the first step.
-		body = strings.TrimPrefix(body, "\n")
-		body = strings.ReplaceAll(body, "\nSET", "\nWHERE")
-		body, err = replaceColumns(columnNames, body, "\nWHERE", " AND")
+		body = replaceAllPrefix(body, "INSERT INTO", "DELETE FROM")
+		body = replaceAllPrefix(body, "SET", "WHERE")
+		body, err = replaceColumns(columnNames, body, "WHERE", " AND", ";")
 		if err != nil {
 			return "", err
 		}
-		return addSemicolon(body, "\nDELETE FROM"), nil
+		return strings.Join(body, "\n"), nil
 	case DeleteRowsEventType:
-		body = strings.ReplaceAll(body, "\nDELETE FROM", "\nINSERT INTO")
-		// Trim the "\n" prefix we added at the first step.
-		body = strings.TrimPrefix(body, "\n")
-		body = strings.ReplaceAll(body, "\nWHERE", "\nSET")
-		body, err = replaceColumns(columnNames, body, "\nSET", ",")
+		body = replaceAllPrefix(body, "DELETE FROM", "INSERT INTO")
+		body = replaceAllPrefix(body, "WHERE", "SET")
+		body, err = replaceColumns(columnNames, body, "SET", ",", ";")
 		if err != nil {
 			return "", err
 		}
-		return addSemicolon(body, "\nINSERT INTO"), nil
+		return strings.Join(body, "\n"), nil
 	case UpdateRowsEventType:
-		// Trim the "\n" prefix we added at the first step.
-		body = strings.TrimPrefix(body, "\n")
-		body = strings.ReplaceAll(body, "\nWHERE", "\nOLDWHERE")
-		body = strings.ReplaceAll(body, "\nSET", "\nWHERE")
-		body = strings.ReplaceAll(body, "\nOLDWHERE", "\nSET")
-		body, err = replaceColumns(columnNames, body, "\nWHERE", " AND")
+		body = replaceAllPrefix(body, "WHERE", "OLDWHERE")
+		body = replaceAllPrefix(body, "SET", "WHERE")
+		body = replaceAllPrefix(body, "OLDWHERE", "SET")
+		body, err = replaceColumns(columnNames, body, "SET", ",", "")
 		if err != nil {
 			return "", err
 		}
-		body, err = replaceColumns(columnNames, body, "\nSET", ",")
+		body, err = replaceColumns(columnNames, body, "WHERE", " AND", ";")
 		if err != nil {
 			return "", err
 		}
-		return addSemicolon(body, "\nUPDATE"), nil
+		return strings.Join(body, "\n"), nil
 	}
 	return "", errors.Errorf("invalid binlog event type %s", e.Type.String())
 }
 
-func addSemicolon(sql, delimiter string) string {
-	rows := strings.Split(sql, delimiter)
-	for i := range rows {
-		rows[i] = strings.TrimSuffix(rows[i], "\n")
+func replaceAllPrefix(body []string, old, new string) []string {
+	var ret []string
+	for _, line := range body {
+		ret = append(ret, replacePrefix(line, old, new))
 	}
-	return strings.Join(rows, ";"+delimiter) + ";"
+	return ret
 }
 
-func replaceColumns(columnNames []string, body, delimBlock, delimCol string) (string, error) {
-	var rows []string
-	// Split the block with "\nWHERE" or "\nSET".
-	blocks := strings.Split(body, delimBlock)
-	rows = append(rows, blocks[0])
-	for _, block := range blocks[1:] {
-		// prefixLocs is the index of all column placeholders "@i", which uses the same format as strings.FindAllStringIndex.
-		var prefixLocs [][]int
-		for i := range columnNames {
-			prefix := fmt.Sprintf("\n  @%d=", i+1)
-			colIndex := strings.Index(block, prefix)
-			if colIndex == -1 {
-				return "", errors.Errorf("the block has fewer values than columns, which means the schema has changed after executing the original task")
-			}
-			prefixLocs = append(prefixLocs, []int{colIndex, colIndex + len(prefix)})
-		}
-		var row []string
-		for i, name := range columnNames {
-			left := prefixLocs[i][1]
-			var right int
-			if i < len(columnNames)-1 {
-				// For columns except the last one.
-				right = prefixLocs[i+1][0]
-			} else {
-				// Write to the end of the block.
-				right = len(block)
-			}
-			row = append(row, fmt.Sprintf("\n  `%s`=%s", name, block[left:right]))
-		}
-		rows = append(rows, strings.Join(row, delimCol))
+func replacePrefix(line, old, new string) string {
+	if strings.HasPrefix(line, old) {
+		return new + strings.TrimPrefix(line, old)
 	}
-	return strings.Join(rows, delimBlock), nil
+	return line
+}
+
+func replaceColumns(columnNames []string, body []string, sepLine, lineSuffix, sectionSuffix string) ([]string, error) {
+	var ret []string
+	for i := 0; i < len(body); {
+		line := body[i]
+		if line != sepLine {
+			ret = append(ret, line)
+			i++
+			continue
+		}
+		// Found the "WHERE" or "SET" line
+		ret = append(ret, line)
+		i++
+		if i+len(columnNames) > len(body) {
+			return nil, errors.Errorf("binlog event body has a section with less columns than %d: %q", len(columnNames), strings.Join(body, "\n"))
+		}
+		for j := range columnNames {
+			prefix := fmt.Sprintf("  @%d=", j+1)
+			line := body[i+j]
+			if !strings.HasPrefix(line, prefix) {
+				return nil, errors.Errorf("invalid value line %q, must starts with %q", line, prefix)
+			}
+			if j == len(columnNames)-1 {
+				ret = append(ret, fmt.Sprintf("  `%s`=%s%s", columnNames[j], strings.TrimPrefix(line, prefix), sectionSuffix))
+			} else {
+				ret = append(ret, fmt.Sprintf("  `%s`=%s%s", columnNames[j], strings.TrimPrefix(line, prefix), lineSuffix))
+			}
+		}
+		i += len(columnNames)
+	}
+	return ret, nil
 }
 
 func (t BinlogEventType) String() string {

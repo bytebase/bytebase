@@ -49,8 +49,7 @@ BEGIN
 ### SET
 ###   @1=3
 ###   @2='cindy'
-###   @3=100
-`,
+###   @3=100`,
 				},
 				{
 					Type:   XidEventType,
@@ -99,8 +98,7 @@ BEGIN
 ### SET
 ###   @1=1
 ###   @2='alice'
-###   @3=90
-`,
+###   @3=90`,
 				},
 				{
 					Type:   UpdateRowsEventType,
@@ -113,8 +111,7 @@ BEGIN
 ### SET
 ###   @1=2
 ###   @2='bob'
-###   @3=110
-`,
+###   @3=110`,
 				},
 				{
 					Type:   XidEventType,
@@ -167,8 +164,7 @@ BEGIN
 ### WHERE
 ###   @1=2
 ###   @2='bob'
-###   @3=0
-`,
+###   @3=0`,
 				},
 				{
 					Type:   XidEventType,
@@ -204,8 +200,7 @@ SET
 ### WHERE
 ###   @1=1
 ###   @2='alice'
-###   @3=0
-`,
+###   @3=0`,
 				},
 			},
 			columnNames: []string{"id", "name", "balance", "new_field"},
