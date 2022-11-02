@@ -122,7 +122,7 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-
+import { useI18n } from "vue-i18n";
 import type {
   Issue,
   IssueStatusPatch,
@@ -142,7 +142,6 @@ import {
   useCurrentUser,
   useIssueStore,
 } from "@/store";
-import { useI18n } from "vue-i18n";
 
 type RequestStats = {
   total: number;
