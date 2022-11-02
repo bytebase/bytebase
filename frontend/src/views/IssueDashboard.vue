@@ -48,10 +48,9 @@
           :right-bordered="false"
           :top-bordered="true"
           :bottom-bordered="true"
-          :issue-section-list="[
-            { title: $t('issue.table.open'), list: issueList.filter(filter) },
-          ]"
           :show-placeholder="!loading"
+          :title="$t('issue.table.open')"
+          :issue-list="issueList.filter(filter)"
         />
       </template>
     </PagedIssueTable>
@@ -74,10 +73,9 @@
           :right-bordered="false"
           :top-bordered="true"
           :bottom-bordered="true"
-          :issue-section-list="[
-            { title: $t('issue.table.closed'), list: issueList.filter(filter) },
-          ]"
           :show-placeholder="!loading"
+          :title="$t('issue.table.closed')"
+          :issue-list="issueList.filter(filter)"
         />
       </template>
     </PagedIssueTable>
