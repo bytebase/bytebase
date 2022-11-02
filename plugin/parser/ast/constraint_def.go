@@ -63,4 +63,7 @@ type ConstraintDef struct {
 	//   1. CHECK constraint
 	//   2. DEFAULT constraint
 	Expression ExpressionNode
+	// https://www.postgresql.org/docs/14/sql-altertable.html
+	Deferrable   bool
+	Initdeferred bool
 }

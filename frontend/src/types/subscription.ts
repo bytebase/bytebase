@@ -10,4 +10,7 @@ export interface Subscription {
 
 export interface SubscriptionState {
   subscription: Subscription | undefined;
+  trialingDays: number;
+  trialingPlan: PlanType;
+  trialingInstanceCount: number;
 }

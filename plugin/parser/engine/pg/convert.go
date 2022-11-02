@@ -792,6 +792,8 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		Name:           in.Constraint.Conname,
 		Type:           convertConstraintType(in.Constraint.Contype, in.Constraint.Indexname != ""),
 		SkipValidation: in.Constraint.SkipValidation,
+		Deferrable:     in.Constraint.Deferrable,
+		Initdeferred:   in.Constraint.Initdeferred,
 	}
 
 	switch cons.Type {

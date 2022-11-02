@@ -109,9 +109,69 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropNotNull(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.AddConstraintStmt:
+			if err := deparseAddConstraint(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.DropConstraintStmt:
+			if err := deparseDropConstraint(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("ADD "); err != nil {
+		return err
+	}
+	if in.Constraint.Name != "" {
+		if _, err := buf.WriteString("CONSRAINT "); err != nil {
+			return err
+		}
+		if err := writeSurrounding(buf, in.Constraint.Name, `"`); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(" "); err != nil {
+			return err
+		}
+	}
+	switch in.Constraint.Type {
+	case ast.ConstraintTypeUniqueUsingIndex:
+		if _, err := buf.WriteString("UNIQUE USING INDEX "); err != nil {
+			return err
+		}
+		if err := writeSurrounding(buf, in.Constraint.IndexName, `"`); err != nil {
+			return err
+		}
+
+		if in.Constraint.Initdeferred {
+			if _, err := buf.WriteString(" INITIALLY DEFERRED"); err != nil {
+				return err
+			}
+		} else if in.Constraint.Deferrable {
+			if _, err := buf.WriteString(" DEFERRABLE"); err != nil {
+				return err
+			}
+		}
+	default:
+	}
+	return nil
+}
+
+func deparseDropConstraint(context parser.DeparseContext, in *ast.DropConstraintStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("DROP CONSTRAINT "); err != nil {
+		return err
+	}
+
+	return writeSurrounding(buf, in.ConstraintName, `"`)
 }
 
 func deparseDropNotNull(context parser.DeparseContext, in *ast.DropNotNullStmt, buf *strings.Builder) error {
