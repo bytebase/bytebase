@@ -67,7 +67,7 @@ specifiers:
   scroll-into-view-if-needed: ^2.2.29
   semver: 7.3.8
   slug: 8.2.2
-  splitpanes: 3.1.1
+  splitpanes: 3.1.5
   sql-formatter: 11.0.2
   tailwindcss: 3.2.1
   typescript: 4.8.4
@@ -122,7 +122,7 @@ dependencies:
   scroll-into-view-if-needed: 2.2.29
   semver: 7.3.8
   slug: 8.2.2
-  splitpanes: 3.1.1
+  splitpanes: 3.1.5
   sql-formatter: 11.0.2
   uuid: 9.0.0
   v-code-diff: 0.3.12_vue@3.2.41
@@ -3080,7 +3080,7 @@ packages:
       humanize-duration: 3.27.3
       lodash: 4.17.21
       sass: 1.55.0
-      splitpanes: 3.1.1
+      splitpanes: 3.1.5
       vue: 3.2.41
       vue-clipboard3: 2.0.0
       vue-tippy: 6.0.0-alpha.65_vue@3.2.41
@@ -3421,8 +3421,8 @@ packages:
   /sourcemap-codec/1.4.8:
     resolution: {integrity: sha512-9NykojV5Uih4lgo5So5dtw+f0JgJX30KCNI8gwhz2J9A15wD0Ml6tjHKwf6fTSa6fAdVBdZeNOs9eJ71qCk8vA==}
 
-  /splitpanes/3.1.1:
-    resolution: {integrity: sha512-VUkxDJfIGSvTM/fm/+OSrx8ha9URwE/9B8FPvfzoBuAxVELIHBWpsfnJXIXv77zVwuex//QQL4kTU9SDBPeHjA==}
+  /splitpanes/3.1.5:
+    resolution: {integrity: sha512-r3Mq2ITFQ5a2VXLOy4/Sb2Ptp7OfEO8YIbhVJqJXoFc9hc5nTXXkCvtVDjIGbvC0vdE7tse+xTM9BMjsszP6bw==}
     dev: false
 
   /sql-formatter/11.0.2:
