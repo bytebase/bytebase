@@ -175,7 +175,7 @@ func updateTaskPayloadForMySQLRollbackSQL(ctx context.Context, driver db.Driver,
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return errors.Wrap(err, "invalid database data update payload")
 	}
-	payload.ThreadID = mysqlDriver.GetLastMigrationConnID()
+	payload.ThreadID = mysqlDriver.GetLastTxnConnID()
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal task payload")

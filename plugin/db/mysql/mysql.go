@@ -38,7 +38,7 @@ type Driver struct {
 	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
-	lastConnID    string
+	lastTxnConnID string
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -169,7 +169,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	// Save the thread ID of the latest executed transaction.
 	// It is used to filter the binlog events of the current transaction in the rollback SQL generation.
-	driver.lastConnID = connID
+	driver.lastTxnConnID = connID
 
 	_, err = tx.ExecContext(ctx, transformedStatement)
 
@@ -182,9 +182,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return err
 }
 
-// GetLastMigrationConnID returns the thread ID when executing the last migration.
-func (driver *Driver) GetLastMigrationConnID() string {
-	return driver.lastConnID
+// GetLastTxnConnID returns the thread ID when executing the last transaction.
+func (driver *Driver) GetLastTxnConnID() string {
+	return driver.lastTxnConnID
 }
 
 // getConnID gets the connection ID.
