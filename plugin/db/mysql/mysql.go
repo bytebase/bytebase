@@ -38,7 +38,10 @@ type Driver struct {
 	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
-	lastTxnConnID string
+	// conn is used to execute migrations.
+	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
+	// So that it's easy to get the thread ID for rollback SQL.
+	conn *sql.Conn
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -52,7 +55,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -91,8 +94,13 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	if err != nil {
 		return nil, err
 	}
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
 	driver.dbType = dbType
 	driver.db = db
+	driver.conn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
 
@@ -157,19 +165,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 	transformedStatement := buf.String()
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := driver.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-
-	connID, err := driver.getConnID(ctx, tx)
-	if err != nil {
-		return err
-	}
-	// Save the thread ID of the latest executed transaction.
-	// It is used to filter the binlog events of the current transaction in the rollback SQL generation.
-	driver.lastTxnConnID = connID
 
 	_, err = tx.ExecContext(ctx, transformedStatement)
 
@@ -182,15 +182,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return err
 }
 
-// GetLastTxnConnID returns the thread ID when executing the last transaction.
-func (driver *Driver) GetLastTxnConnID() string {
-	return driver.lastTxnConnID
-}
-
-// getConnID gets the connection ID.
-func (*Driver) getConnID(ctx context.Context, tx *sql.Tx) (string, error) {
+// GetMigrationConnID gets the ID of the connection executing migrations.
+func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 	var id string
-	if err := tx.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&id); err != nil {
+	if err := driver.conn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&id); err != nil {
 		return "", errors.Wrap(err, "failed to get the connection ID")
 	}
 	return id, nil

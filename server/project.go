@@ -89,15 +89,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			projectFind.PrincipalID = &userID
 		}
 
-		// Only Owner and DBA can fetch all projects from all users.
-		// Developer can only fetch all projects from herself.
-		if projectFind.PrincipalID == nil {
-			role := c.Get(getRoleContextKey()).(api.Role)
-			if role != api.Owner && role != api.DBA {
-				return echo.NewHTTPError(http.StatusForbidden, "Not allowed to fetch all project list")
-			}
-		}
-
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			projectFind.RowStatus = &rowStatus
@@ -108,11 +99,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		var activeProjectList []*api.Project
-		// if principalID is passed, we will enable the filter logic
+		// If principalID is passed, We will filter those projects with the current principal having the role provider
+		// different from the project's current role provider.
 		if projectFind.PrincipalID != nil {
 			principalID := *projectFind.PrincipalID
 			for _, project := range projectList {
-				// We will filter those project with the current principal as an inactive member (the role provider differs from that of the project)
 				roleProvider := project.RoleProvider
 				for _, projectMember := range project.ProjectMemberList {
 					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
