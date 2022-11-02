@@ -15,9 +15,11 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/transform"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/store"
 )
 
 // TaskExecutor is the task executor.
@@ -114,7 +116,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	if mi.Type != db.Baseline && statement == "" {
 		return nil, errors.Errorf("empty statement")
 	}
-	// We will force migration for baseline and migrate type of migrations.
+	// We will force migration for baseline, migrate and data type of migrations.
 	// This usually happens when the previous attempt fails and the client retries the migration.
 	// We also force migration for VCS migrations, which is usually a modified file to correct a former wrong migration commit.
 	if mi.Type == db.Baseline || mi.Type == db.Migrate || mi.Type == db.Data {
@@ -150,11 +152,48 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 	}
 
+	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
+		if err := updateTaskPayloadForMySQLThreadID(ctx, driver, task, server.store); err != nil {
+			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+		}
+	}
+
 	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
 		return 0, "", err
 	}
+
 	return migrationID, schema, nil
+}
+
+func updateTaskPayloadForMySQLThreadID(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
+	mysqlDriver, ok := driver.(*mysql.Driver)
+	if !ok {
+		return errors.Errorf("failed to cast driver to mysql.Driver")
+	}
+	payload := &api.TaskDatabaseDataUpdatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return errors.Wrap(err, "invalid database data update payload")
+	}
+	connID, err := mysqlDriver.GetMigrationConnID(ctx)
+	if err != nil {
+		return err
+	}
+	payload.ThreadID = connID
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal task payload")
+	}
+	payloadString := string(payloadBytes)
+	patch := &api.TaskPatch{
+		ID:        task.ID,
+		UpdaterID: api.SystemBotID,
+		Payload:   &payloadString,
+	}
+	if _, err := store.PatchTask(ctx, patch); err != nil {
+		return errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
+	}
+	return nil
 }
 
 func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
