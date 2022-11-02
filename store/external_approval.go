@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 type externalApprovalRaw struct {
@@ -45,6 +46,7 @@ func (raw *externalApprovalRaw) toExternalApproval() *api.ExternalApproval {
 	}
 }
 
+// CreateExternalApproval creates an ExternalAPproval.
 func (s *Store) CreateExternalApproval(ctx context.Context, create *api.ExternalApprovalCreate) (*api.ExternalApproval, error) {
 	externalApprovalRaw, err := s.createExternalApprovalRaw(ctx, create)
 	if err != nil {
@@ -57,6 +59,7 @@ func (s *Store) CreateExternalApproval(ctx context.Context, create *api.External
 	return externalApproval, nil
 }
 
+// FindExternalApproval finds a list of ExternalApproval by find and whose RowStatus == NORMAL.
 func (s *Store) FindExternalApproval(ctx context.Context, find *api.ExternalApprovalFind) ([]*api.ExternalApproval, error) {
 	rawList, err := s.findExternalApprovalRaw(ctx, find)
 	if err != nil {
@@ -73,6 +76,7 @@ func (s *Store) FindExternalApproval(ctx context.Context, find *api.ExternalAppr
 	return externalApprovalList, nil
 }
 
+// PatchExternalApproval patches an ExternalApproval.
 func (s *Store) PatchExternalApproval(ctx context.Context, patch *api.ExternalApprovalPatch) (*api.ExternalApproval, error) {
 	externalApprovalRaw, err := s.patchExternalApprovalRaw(ctx, patch)
 	if err != nil {
@@ -159,7 +163,7 @@ func (s *Store) patchExternalApprovalRaw(ctx context.Context, patch *api.Externa
 	return raw, nil
 }
 
-func (s *Store) createExternalApprovalImpl(ctx context.Context, tx *Tx, create *api.ExternalApprovalCreate) (*externalApprovalRaw, error) {
+func (*Store) createExternalApprovalImpl(ctx context.Context, tx *Tx, create *api.ExternalApprovalCreate) (*externalApprovalRaw, error) {
 	query := `
     INSERT INTO external_approval (
       issue_id,
@@ -194,7 +198,7 @@ func (s *Store) createExternalApprovalImpl(ctx context.Context, tx *Tx, create *
 	return &externalApprovalRaw, nil
 }
 
-func (s *Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, find *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
+func (*Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, _ *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
 	rows, err := tx.QueryContext(ctx, `
@@ -241,7 +245,7 @@ func (s *Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, find *api.
 	return rawList, nil
 }
 
-func (s *Store) patchExternalApprovalImpl(ctx context.Context, tx *Tx, patch *api.ExternalApprovalPatch) (*externalApprovalRaw, error) {
+func (*Store) patchExternalApprovalImpl(ctx context.Context, tx *Tx, patch *api.ExternalApprovalPatch) (*externalApprovalRaw, error) {
 	var raw externalApprovalRaw
 	query := `
     UPDATE external_approval

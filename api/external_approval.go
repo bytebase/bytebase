@@ -1,9 +1,13 @@
 package api
 
+// ExternalApprovalType is the type of the ExternalApproval.
 type ExternalApprovalType string
 
+// ExternalApprovalTypeFeishu is the ExternalApproval from feishu.
 const ExternalApprovalTypeFeishu = "bb.plugin.app.feishu"
 
+// ExternalApproval is the API message of ExternalApproval.
+// It only lives in the backend.
 type ExternalApproval struct {
 	ID int
 
@@ -24,6 +28,7 @@ type ExternalApproval struct {
 	Payload string
 }
 
+// ExternalApprovalPayloadFeishu is the payload for feishu type ExternalApproval.
 type ExternalApprovalPayloadFeishu struct {
 	// feishu
 	InstanceCode string
@@ -34,6 +39,7 @@ type ExternalApprovalPayloadFeishu struct {
 	AssigneeID int
 }
 
+// ExternalApprovalCreate is the API message for creating an ExternalApproval.
 type ExternalApprovalCreate struct {
 	IssueID     int
 	RequesterID int
@@ -42,8 +48,10 @@ type ExternalApprovalCreate struct {
 	Payload     string
 }
 
+// ExternalApprovalFind is the API message for finding ExternalApprovals.
 type ExternalApprovalFind struct{}
 
+// ExternalApprovalPatch is the API message for patching an ExternalApproval.
 type ExternalApprovalPatch struct {
 	ID        int
 	RowStatus RowStatus
