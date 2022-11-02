@@ -30,3 +30,10 @@
     ALTER TABLE "t"
         ALTER COLUMN "c1" SET NOT NULL,
         ALTER COLUMN "c2" DROP NOT NULL;
+# DROP CONSTRAINT
+- stmt: |-
+    alter table t
+        drop constraint unique_tbl_email_key;
+  want: |-
+    ALTER TABLE "t"
+        DROP CONSTRAINT "unique_tbl_email_key";
