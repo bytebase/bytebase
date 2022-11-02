@@ -153,7 +153,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		if err := updateTaskPayloadForMySQLRollbackSQL(ctx, driver, task, server.store); err != nil {
+		if err := updateTaskPayloadForMySQLThreadID(ctx, driver, task, server.store); err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 	}
