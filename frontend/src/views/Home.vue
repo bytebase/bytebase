@@ -27,12 +27,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.assigned'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.assigned')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
@@ -52,12 +48,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.created'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.created')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
@@ -77,12 +69,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.subscribed'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.subscribed')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
@@ -104,12 +92,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('project.overview.recently-closed'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('project.overview.recently-closed')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>

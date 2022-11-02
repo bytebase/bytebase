@@ -105,9 +105,8 @@
           <template #table="{ issueList, loading }">
             <IssueTable
               :mode="'PROJECT'"
-              :issue-section-list="[
-                { title: $t('project.overview.in-progress'), list: issueList },
-              ]"
+              :title="$t('project.overview.in-progress')"
+              :issue-list="issueList"
               :show-placeholder="!loading"
             />
           </template>
@@ -128,12 +127,8 @@
             <IssueTable
               class="-mt-px"
               :mode="'PROJECT'"
-              :issue-section-list="[
-                {
-                  title: $t('project.overview.recently-closed'),
-                  list: issueList,
-                },
-              ]"
+              :title="$t('project.overview.recently-closed')"
+              :issue-list="issueList"
               :show-placeholder="!loading"
             />
           </template>
