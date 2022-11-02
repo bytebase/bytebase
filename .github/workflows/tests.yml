@@ -8,6 +8,7 @@ on:
 
 jobs:
   eslint-checks:
+    name: "Check Frontend Code"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -25,7 +26,8 @@ jobs:
         run: pnpm lint
         working-directory: frontend
 
-  golangci-lint:
+  lint-golang:
+    name: "Check Golang Code"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -58,6 +60,7 @@ jobs:
           skip-cache: true
 
   go-tests:
+    name: "Backend Unit/Integration Test"
     strategy:
       matrix:
         release-tags:
@@ -75,11 +78,6 @@ jobs:
           go-version: 1.19
           check-latest: true
           cache: true
-      - name: Verify go.mod is tidy
-        if: ${{ matrix.release-tags == 'mysql' }}
-        run: |
-          go mod tidy
-          git diff --exit-code
       - name: Cache MySQL
         uses: actions/cache@v3
         with:
