@@ -90,6 +90,9 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	if err != nil {
 		return nil, err
 	}
+	// Use a single connection in the lifetime of the driver.
+	// This makes things easier, such as the thread ID will not change.
+	db.SetMaxOpenConns(1)
 	driver.dbType = dbType
 	driver.db = db
 	driver.connectionCtx = connCtx
