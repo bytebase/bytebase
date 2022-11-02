@@ -71,7 +71,7 @@ specifiers:
   sql-formatter: 11.0.2
   tailwindcss: 3.1.8
   typescript: 4.8.4
-  unplugin-icons: 0.14.12
+  unplugin-icons: 0.14.13
   unplugin-vue-components: 0.22.7
   uuid: 9.0.0
   v-code-diff: 0.3.12
@@ -174,7 +174,7 @@ devDependencies:
   prettier: 2.7.1
   tailwindcss: 3.1.8_postcss@8.4.18
   typescript: 4.8.4
-  unplugin-icons: 0.14.12_@vue+compiler-sfc@3.2.40
+  unplugin-icons: 0.14.13_@vue+compiler-sfc@3.2.40
   unplugin-vue-components: 0.22.7_vue@3.2.40
   vite: 3.1.0
   vitest: 0.23.1
@@ -193,6 +193,10 @@ packages:
 
   /@antfu/utils/0.5.2:
     resolution: {integrity: sha512-CQkeV+oJxUazwjlHD0/3ZD08QWKuGQkhnrKo3e6ly5pd48VUpXbb77q0xMU4+vc2CkJnDS02Eq/M9ugyX20XZA==}
+    dev: true
+
+  /@antfu/utils/0.6.2:
+    resolution: {integrity: sha512-Qdwda+qE1KOKXuM8Gnn09zIJSA293J5putdHBx4J9sdbHzqp5QY4OmH77KgwJoi0PuY+kbddkVVdkSoZ9ruiug==}
     dev: true
 
   /@babel/helper-string-parser/7.19.4:
@@ -3614,8 +3618,8 @@ packages:
     engines: {node: '>=4.2.0'}
     hasBin: true
 
-  /unplugin-icons/0.14.12_@vue+compiler-sfc@3.2.40:
-    resolution: {integrity: sha512-FdkjDnUnc8/75OT8Ywwm8iDyG6kO8w1uHfFbnO2Jh7JhpE0odKhCqaAOmEE/UlvYDYSm5D4X1DKdWMwpAxj07Q==}
+  /unplugin-icons/0.14.13_@vue+compiler-sfc@3.2.40:
+    resolution: {integrity: sha512-ZZCw9qZg/zNJeHWicaFYMfsfzMAXOHHnZt5tRxslhPE++/THvg5xGu5AsIRmMCtyNBCpC1Ly1MTb8CZmlqaQTA==}
     peerDependencies:
       '@svgr/core': '>=5.5.0'
       '@vue/compiler-sfc': ^3.0.2
@@ -3632,13 +3636,13 @@ packages:
         optional: true
     dependencies:
       '@antfu/install-pkg': 0.1.1
-      '@antfu/utils': 0.5.2
+      '@antfu/utils': 0.6.2
       '@iconify/utils': 2.0.1
       '@vue/compiler-sfc': 3.2.40
       debug: 4.3.4
       kolorist: 1.6.0
       local-pkg: 0.4.2
-      unplugin: 0.9.6
+      unplugin: 0.10.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -3666,6 +3670,15 @@ packages:
       vue: 3.2.40
     transitivePeerDependencies:
       - supports-color
+    dev: true
+
+  /unplugin/0.10.2:
+    resolution: {integrity: sha512-6rk7GUa4ICYjae5PrAllvcDeuT8pA9+j5J5EkxbMFaV+SalHhxZ7X2dohMzu6C3XzsMT+6jwR/+pwPNR3uK9MA==}
+    dependencies:
+      acorn: 8.8.1
+      chokidar: 3.5.3
+      webpack-sources: 3.2.3
+      webpack-virtual-modules: 0.4.6
     dev: true
 
   /unplugin/0.9.6:
