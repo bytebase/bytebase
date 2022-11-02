@@ -166,7 +166,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	return migrationID, schema, nil
 }
 
-func updateTaskPayloadForMySQLRollbackSQL(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
+func updateTaskPayloadForMySQLThreadID(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		return errors.Errorf("failed to cast driver to mysql.Driver")
