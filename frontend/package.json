@@ -102,7 +102,7 @@
     "vitest": "0.24.5",
     "vscode-oniguruma": "1.6.2",
     "vscode-textmate": "7.0.3",
-    "vue-tsc": "0.40.13"
+    "vue-tsc": "1.0.9"
   },
   "peerDependencies": {
     "@popperjs/core": "^2.11.6",
