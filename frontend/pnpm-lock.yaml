@@ -2,7 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@bytebase/vue-kbar': 0.1.8
-  '@codingame/monaco-vscode-api': 1.69.11
+  '@codingame/monaco-vscode-api': 1.69.12
   '@iconify/json': 2.1.131
   '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@joe-re/sql-parser': ^1.2.1
@@ -92,7 +92,7 @@ specifiers:
 
 dependencies:
   '@bytebase/vue-kbar': 0.1.8_vue@3.2.40
-  '@codingame/monaco-vscode-api': 1.69.11_2dqbcwnoiqa4sunjfnse34uode
+  '@codingame/monaco-vscode-api': 1.69.12_2dqbcwnoiqa4sunjfnse34uode
   '@joe-re/sql-parser': 1.2.1
   '@markdoc/markdoc': 0.1.7
   '@soerenmartius/vue3-clipboard': 0.1.2
@@ -238,8 +238,8 @@ packages:
       - '@vue/composition-api'
     dev: false
 
-  /@codingame/monaco-vscode-api/1.69.11_2dqbcwnoiqa4sunjfnse34uode:
-    resolution: {integrity: sha512-+WE/vYHZcrNos/ZADTt0bKfDI07hixfsu3Y0eCF2kxwWWNYbKWIbBWupOmFCy7oU8AggYWO/dFWlAYsGDwqKLQ==}
+  /@codingame/monaco-vscode-api/1.69.12_2dqbcwnoiqa4sunjfnse34uode:
+    resolution: {integrity: sha512-ES1xRnU232t82tcdM2ImikkjGfAMgJtrF0XkLa4poEnvcUH0SFqUhYvcqk5CFggQWh16jqxifVvozcu0/mbH7A==}
     peerDependencies:
       vscode-oniguruma: ^1.6.2
       vscode-textmate: ^7.0.1
@@ -2898,7 +2898,7 @@ packages:
     resolution: {integrity: sha512-IRQag1btvne1Hwb97l5B+aitf6zCp7Pp1aj5JYYW2zSWz5Q5rS73l+0RuY5UknwVNX/6YkpGO6KZygAahzAs8A==}
     engines: {node: '>=16.11.0', npm: '>=8.0.0'}
     dependencies:
-      vscode: /@codingame/monaco-vscode-api/1.69.11_2dqbcwnoiqa4sunjfnse34uode
+      vscode: /@codingame/monaco-vscode-api/1.69.12_2dqbcwnoiqa4sunjfnse34uode
       vscode-jsonrpc: 8.0.2
       vscode-languageclient: 8.0.2
     transitivePeerDependencies:
