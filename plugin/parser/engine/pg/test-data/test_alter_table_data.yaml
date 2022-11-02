@@ -30,3 +30,22 @@
     ALTER TABLE "t"
         ALTER COLUMN "c1" SET NOT NULL,
         ALTER COLUMN "c2" DROP NOT NULL;
+# ADD UNIQUE USING INDEX
+- stmt: |-
+    alter table t
+        add unique using index email_idx;
+  want: |-
+    ALTER TABLE "t"
+        ADD UNIQUE USING INDEX "email_idx";
+- stmt: |-
+    alter table t
+        add unique using index email_idx deferrable;
+  want: |-
+    ALTER TABLE "t"
+        ADD UNIQUE USING INDEX "email_idx" DEFERRABLE;
+- stmt: |-
+    alter table t
+        add unique using index email_idx INITIALLY DEFERRED;
+  want: |-
+    ALTER TABLE "t"
+        ADD UNIQUE USING INDEX "email_idx" INITIALLY DEFERRED;
