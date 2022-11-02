@@ -28,7 +28,7 @@ func getRoleContextKey() string {
 func enforceWorkspaceDeveloperProjectACL(path string, method string, quaryParams url.Values, principalID int) *echo.HTTPError {
 	if strings.HasPrefix(path, "/project") {
 		if path == "/project" {
-			// Developer can only fetch projects from herself.
+			// Developer can only fetch projects from themseleves.
 			if method == "GET" {
 				userIDStr := quaryParams.Get("user")
 				if userIDStr == "" {

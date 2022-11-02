@@ -33,7 +33,7 @@ func TestEnforceWorkspaceDeveloperProjectACL(t *testing.T) {
 			errMsg:      "Not allowed to fetch projects from other user",
 		},
 		{
-			desc:        "Fetch projects from herself",
+			desc:        "Fetch projects from themselves",
 			path:        "/project",
 			method:      "GET",
 			queryParams: url.Values{"user": []string{"123"}},
