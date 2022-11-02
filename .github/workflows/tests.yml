@@ -8,7 +8,6 @@ on:
 
 jobs:
   eslint-checks:
-    name: "Check Frontend Code"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -26,8 +25,7 @@ jobs:
         run: pnpm lint
         working-directory: frontend
 
-  lint-golang:
-    name: "Check Golang Code"
+  golangci-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -60,7 +58,6 @@ jobs:
           skip-cache: true
 
   go-tests:
-    name: "Backend Unit/Integration Test"
     strategy:
       matrix:
         release-tags:
