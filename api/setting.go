@@ -22,8 +22,10 @@ const (
 	SettingAppIM SettingName = "bb.app.im"
 )
 
+// IMType is the type of IM.
 type IMType string
 
+// IMTypeFeishu is IM feishu.
 const IMTypeFeishu IMType = "im.feishu"
 
 // Setting is the API message for a setting.
