@@ -50,11 +50,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { pushNotification, useTabStore, useDatabaseStore } from "@/store";
-import {
-  parseSQL,
-  transformSQL,
-  isDDLStatement,
-} from "@/components/MonacoEditor/sqlParser";
+import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import { UNKNOWN_ID } from "@/types";
 
 const emit = defineEmits<{
@@ -72,15 +68,8 @@ const sqlStatement = computed(
   () => tabStore.currentTab.selectedStatement || tabStore.currentTab.statement
 );
 
-const getParsedStatement = () => {
-  const statement = sqlStatement.value;
-  const { data } = parseSQL(statement);
-  return data !== null ? transformSQL(data) : statement;
-};
-
 const isDDLSQLStatement = computed(() => {
-  const statement = getParsedStatement();
-  const { data } = parseSQL(statement);
+  const { data } = parseSQL(sqlStatement.value);
   return data !== null ? isDDLStatement(data) : false;
 });
 
@@ -115,7 +104,7 @@ const gotoAlterSchema = () => {
       }`,
       project: database.project.id,
       databaseList: databaseId,
-      sql: getParsedStatement(),
+      sql: sqlStatement.value,
     },
   });
 };
