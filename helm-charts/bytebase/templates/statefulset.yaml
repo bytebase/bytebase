@@ -1,4 +1,4 @@
-{{- $external_url := .Values.bytebase.option.external_url -}}
+{{- $external_url := index .Values.bytebase.option "external-url" -}}
 {{- $port := .Values.bytebase.option.port -}}
 {{- $pg := .Values.bytebase.option.pg -}}
 {{- $data := .Values.bytebase.option.data -}}
@@ -33,7 +33,8 @@ spec:
               "--port",
               {{ $port | quote }},
               "--external-url",
-              {{ $external-url | quote }},
+              # helm parser cannot handle the dash in the value, so we need to quote it, so we use $external_url instead of $external-url.
+              {{ $external_url | quote }},
               "--pg",
               {{ $pg | quote}},
             ]
