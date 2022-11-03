@@ -208,7 +208,8 @@
     "no": "否",
     "yes": "是",
     "advanced": "高级",
-    "restart": "重启"
+    "restart": "重启",
+    "want-help": "加入用户群"
   },
   "error-page": {
     "go-back-home": "回到主页"
