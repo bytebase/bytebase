@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -58,38 +57,6 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update setting request").SetInternal(err)
-		}
-
-		if settingPatch.Name == api.SettingAppFeishu {
-			var value api.SettingAppFeishuValue
-			if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
-				return err
-			}
-			// check if we have one already.
-			name := api.SettingAppFeishu
-			setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &name})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get setting").SetInternal(err)
-			}
-			if setting != nil {
-				var oldValue api.SettingAppFeishuValue
-				if err := json.Unmarshal([]byte(setting.Value), &oldValue); err != nil {
-					return err
-				}
-				if oldValue.AppID == value.AppID && oldValue.AppSecret == value.AppSecret {
-					return echo.NewHTTPError(http.StatusBadRequest, "Setting value has not changed")
-				}
-			} else {
-				if _, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
-					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-					Name:        api.SettingAppFeishu,
-					Value:       "",
-					Description: "",
-				}); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create setting").SetInternal(err)
-				}
-			}
-			// TODO(p0ny): create approval definition
 		}
 
 		setting, err := s.store.PatchSetting(ctx, settingPatch)
