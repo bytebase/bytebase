@@ -529,6 +529,11 @@
       "reopened": "reopened",
       "action-n-issues": "{action} {n} issue | {action} {n} issues",
       "successfully-updated-n-issues": "Successfully updated {n} issue | Successfully updated {n} issues"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
+      "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
+      "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     }
   },
   "alter-schema": {
