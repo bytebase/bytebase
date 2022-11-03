@@ -102,6 +102,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, PropType, ref, watch, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import {
   pipelineType,
@@ -163,6 +164,8 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: "status-changed", eager: boolean): void;
 }>();
+
+const { t } = useI18n();
 
 const route = useRoute();
 
@@ -274,11 +277,14 @@ const instance = computed((): Instance => {
 });
 
 const sqlHint = (): string | undefined => {
+  if (isTenantMode.value) {
+    return t("issue.sql-hint.change-will-apply-to-all-tasks-in-tenant-mode");
+  }
   if (selectedMigrateType.value == "BASELINE") {
-    return `This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history`;
+    return t("issue.sql-hint.dont-apply-to-database-in-baseline-migration");
   }
   if (instance.value.engine === "SNOWFLAKE") {
-    return `Use <<schema>>.<<table>> to specify a Snowflake table`;
+    return t("issue.sql-hint.snowflake");
   }
   return undefined;
 };
