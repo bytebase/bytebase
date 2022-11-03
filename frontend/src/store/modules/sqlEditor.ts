@@ -17,6 +17,7 @@ import { useInstanceStore } from "./instance";
 import { useTableStore } from "./table";
 import { useSQLStore } from "./sql";
 import { useTabStore } from "./tab";
+import { emptyConnection } from "@/utils";
 
 // set the limit to 10000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 10000;
@@ -141,3 +142,42 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     },
   },
 });
+
+export const searchConnectionByName = (
+  instanceName: string,
+  databaseName: string
+): Connection => {
+  const connection = emptyConnection();
+  const store = useSQLEditorStore();
+
+  const rootNodes = store.connectionTree.data;
+  for (let i = 0; i < rootNodes.length; i++) {
+    const maybeInstanceNode = rootNodes[i];
+    if (maybeInstanceNode.type !== "instance") {
+      // Skip if we met dirty data.
+      continue;
+    }
+    if (maybeInstanceNode.label === instanceName) {
+      connection.instanceId = maybeInstanceNode.id;
+      if (databaseName) {
+        const { children = [] } = maybeInstanceNode;
+        for (let j = 0; j < children.length; j++) {
+          const maybeDatabaseNode = children[j];
+          if (maybeDatabaseNode.type !== "database") {
+            // Skip if we met dirty data.
+            continue;
+          }
+          if (maybeDatabaseNode.label === databaseName) {
+            connection.databaseId = maybeDatabaseNode.id;
+            // Don't go further since we've found the databaseId
+            break;
+          }
+        }
+      }
+      // Don't go further since we've found the instanceId
+      break;
+    }
+  }
+
+  return connection;
+};
