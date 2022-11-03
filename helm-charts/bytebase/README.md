@@ -4,7 +4,7 @@ Install the web-based schema change and version control tool [Bytebase](https://
 
 ## Installing
 
-`helm -n <YOUR_NAMESPACE> --set bytebase.option.port={PORT} --set bytebase.option.external_url={EXTERNAL_URL} --set bytebase.option.pg={PGDSN} --set bytebase.version={VERSION} install <RELEASE_NAME> helm-charts/bytebase`
+`helm -n <YOUR_NAMESPACE> --set "bytebase.option.port"={PORT} --set "bytebase.option.external-url"={EXTERNAL_URL} --set "bytebase.option.pg"={PGDSN} --set "bytebase.version"={VERSION} install <RELEASE_NAME> helm-charts/bytebase`
 
 ## Uninstalling
 
