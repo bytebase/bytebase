@@ -1988,3 +1988,62 @@ func TestDropSchema(t *testing.T) {
 	}
 	runTests(t, tests)
 }
+
+func TestAlterColumnDefault(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a DROP DEFAULT",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.DropDefaultStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a DROP DEFAULT",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a SET DEFAULT 1+2+3",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.SetDefaultStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+							Expression: expressionWithText(&ast.UnconvertedExpressionDef{}, "(1 + 2) + 3"),
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a SET DEFAULT 1+2+3",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
