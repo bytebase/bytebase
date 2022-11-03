@@ -461,6 +461,16 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 		return nil, err
 	}
 
+	// initial feishu app
+	if _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingAppIM,
+		Value:       "",
+		Description: "",
+	}); err != nil {
+		return nil, err
+	}
+
 	return conf, nil
 }
 
