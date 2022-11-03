@@ -71,6 +71,7 @@ func (find *SettingFind) String() string {
 	return string(str)
 }
 
+// SettingAppFeishuValue is the setting value of SettingAppFeishu type setting.
 type SettingAppFeishuValue struct {
 	AppID        string `json:"appId"`
 	AppSecret    string `json:"appSecret"`
