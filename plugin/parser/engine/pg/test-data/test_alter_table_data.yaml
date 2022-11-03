@@ -30,7 +30,6 @@
     ALTER TABLE "t"
         ALTER COLUMN "c1" SET NOT NULL,
         ALTER COLUMN "c2" DROP NOT NULL;
-# ADD UNIQUE USING INDEX
 - stmt: |-
     alter table t
         add unique using index email_idx;
@@ -49,10 +48,17 @@
   want: |-
     ALTER TABLE "t"
         ADD UNIQUE USING INDEX "email_idx" INITIALLY DEFERRED;
-# DROP CONSTRAINT
 - stmt: |-
     alter table t
         drop constraint unique_tbl_email_key;
   want: |-
     ALTER TABLE "t"
         DROP CONSTRAINT "unique_tbl_email_key";
+- stmt: alter table t alter column a set default 1+2+3+4
+  want: |-
+    ALTER TABLE "t"
+        ALTER COLUMN "a" SET DEFAULT ((1 + 2) + 3) + 4;
+- stmt: alter table t alter column a drop default
+  want: |-
+    ALTER TABLE "t"
+        ALTER COLUMN "a" DROP DEFAULT;
