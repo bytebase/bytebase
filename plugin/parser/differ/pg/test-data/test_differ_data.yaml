@@ -42,3 +42,10 @@
     ALTER TABLE "t1"
         ALTER COLUMN "a" SET NOT NULL,
         ALTER COLUMN "b" DROP NOT NULL;
+- oldSchema: create table t1(a int, b int DEFAULT 1+2, c int DEFAULT 1)
+  newSchema: create table t1(a int DEFAULT 1, b int, c int DEFAULT 1+2+3+4)
+  diff: |
+    ALTER TABLE "t1"
+        ALTER COLUMN "a" SET DEFAULT 1,
+        ALTER COLUMN "b" DROP DEFAULT,
+        ALTER COLUMN "c" SET DEFAULT ((1 + 2) + 3) + 4;
