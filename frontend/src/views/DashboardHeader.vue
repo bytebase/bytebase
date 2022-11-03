@@ -116,6 +116,14 @@
             </svg>
           </div>
         </div>
+        <div
+          v-if="currentPlan === PlanType.FREE"
+          class="flex justify-between items-center min-w-fit px-4 py-2 bg-indigo-600 text-sm font-medium text-white rounded-md cursor-pointer"
+          @click="handleWantHelp"
+        >
+          <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
+          <heroicons-outline:chat-bubble-left-right class="w-5 h-5" />
+        </div>
         <router-link to="/inbox" exact-active-class>
           <span
             v-if="inboxSummary.hasUnread"
@@ -193,6 +201,17 @@
       >{{ $t("common.settings") }}</router-link
     >
   </div>
+  <BBModal
+    v-if="state.showQRCodeModal"
+    :title="$t('common.want-help')"
+    @close="state.showQRCodeModal = false"
+  >
+    <img
+      class="w-48 h-48"
+      src="@/assets/bb-helper-wechat-qrcode.webp"
+      alt="bb_helper"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
@@ -218,6 +237,7 @@ import { PlanType } from "@/types";
 
 interface LocalState {
   showMobileMenu: boolean;
+  showQRCodeModal: boolean;
 }
 
 export default defineComponent({
@@ -231,10 +251,11 @@ export default defineComponent({
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const route = useRoute();
-    const { setLocale, toggleLocales } = useLanguage();
+    const { setLocale, toggleLocales, locale } = useLanguage();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
+      showQRCodeModal: false,
     });
 
     const currentUser = useCurrentUser();
@@ -396,6 +417,17 @@ export default defineComponent({
     ]);
     useRegisterActions(i18nActions);
 
+    const handleWantHelp = () => {
+      if (locale.value === "zh-CN") {
+        state.showQRCodeModal = true;
+      } else {
+        window.open(
+          "https://www.bytebase.com/docs/faq#how-to-reach-us",
+          "_blank"
+        );
+      }
+    };
+
     return {
       state,
       getRouteLinkClass,
@@ -413,6 +445,7 @@ export default defineComponent({
       isDebug,
       toggleDebug,
       toggleLocales,
+      handleWantHelp,
     };
   },
 });
