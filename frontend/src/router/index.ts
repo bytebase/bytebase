@@ -541,7 +541,8 @@ const routes: Array<RouteRecordRaw> = [
 
                   const currentUser = useAuthStore().currentUser;
                   let allowAlterSchemaOrChangeData = false;
-                  let allowCreateOrTransferDB = false;
+                  let allowCreateDB = false;
+                  let allowTransferDB = false;
                   if (
                     hasWorkspacePermission(
                       "bb.permission.workspace.manage-instance",
@@ -549,7 +550,8 @@ const routes: Array<RouteRecordRaw> = [
                     )
                   ) {
                     allowAlterSchemaOrChangeData = true;
-                    allowCreateOrTransferDB = true;
+                    allowCreateDB = true;
+                    allowTransferDB = true;
                   } else {
                     const memberOfProject = project.memberList.find(
                       (m) => m.principal.id === currentUser.id
@@ -559,8 +561,12 @@ const routes: Array<RouteRecordRaw> = [
                         "bb.permission.project.change-database",
                         memberOfProject.role
                       );
-                      allowCreateOrTransferDB = hasProjectPermission(
-                        "bb.permission.project.create-or-transfer-database",
+                      allowCreateDB = hasProjectPermission(
+                        "bb.permission.project.create-database",
+                        memberOfProject.role
+                      );
+                      allowTransferDB = hasProjectPermission(
+                        "bb.permission.project.transfer-database",
                         memberOfProject.role
                       );
                     }
@@ -576,11 +582,11 @@ const routes: Array<RouteRecordRaw> = [
                     );
                   }
 
-                  if (allowCreateOrTransferDB) {
-                    actionList.push(
-                      "quickaction.bb.database.create",
-                      "quickaction.bb.project.database.transfer"
-                    );
+                  if (allowCreateDB) {
+                    actionList.push("quickaction.bb.database.create");
+                  }
+                  if (allowTransferDB) {
+                    actionList.push("quickaction.bb.project.database.transfer");
                   }
 
                   return new Map([
