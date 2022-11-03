@@ -3,8 +3,11 @@
 
   <template v-if="state.alterType === 'MULTI_DB'">
     <!-- multiple stage view -->
-    <div class="textinfolabel">
+    <div v-if="databaseList.length > 0" class="textinfolabel">
       {{ $t("alter-schema.alter-multiple-db-info") }}
+    </div>
+    <div v-if="databaseList.length === 0" class="textinfolabel">
+      {{ $t("alter-schema.no-databases-in-project") }}
     </div>
     <slot name="header"></slot>
     <div class="space-y-4">
