@@ -111,6 +111,31 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
+				case pgquery.AlterTableType_AT_ColumnDefault:
+					if alterCmd.Def == nil {
+						dropDefault := &ast.DropDefaultStmt{
+							Table:      alterTable.Table,
+							ColumnName: alterCmd.Name,
+						}
+
+						alterTable.AlterItemList = append(alterTable.AlterItemList, dropDefault)
+					} else {
+						var err error
+						setDefault := &ast.SetDefaultStmt{
+							Table:      alterTable.Table,
+							ColumnName: alterCmd.Name,
+						}
+						if setDefault.Expression, _, _, err = convertExpressionNode(alterCmd.Def); err != nil {
+							return nil, err
+						}
+						text, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, alterCmd.Def)
+						if err != nil {
+							return nil, err
+						}
+						setDefault.Expression.SetText(text)
+
+						alterTable.AlterItemList = append(alterTable.AlterItemList, setDefault)
+					}
 				}
 			}
 		}
