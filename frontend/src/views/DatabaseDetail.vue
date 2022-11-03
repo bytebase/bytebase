@@ -405,7 +405,7 @@ const allowTransferProject = computed(() => {
     if (
       member.principal.id == currentUser.value.id &&
       hasProjectPermission(
-        "bb.permission.project.create-or-transfer-database",
+        "bb.permission.project.transfer-database",
         member.role
       )
     ) {
