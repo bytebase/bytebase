@@ -133,13 +133,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		targetProject := database.Project
 		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != database.ProjectID {
-			// Before updating the database projectID, we first need to check if there are still bound sheets.
+			// Before updating database's projectID, we need to check if there are still bound sheets.
 			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, currentPrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
 			}
 			if len(sheetList) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, unbind them first", len(sheetList)))
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, please go to SQL editor to unbind them first", len(sheetList)))
 			}
 
 			toProject, err := s.store.GetProjectByID(ctx, *dbPatch.ProjectID)
