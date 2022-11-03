@@ -208,7 +208,8 @@
     "no": "No",
     "yes": "Yes",
     "advanced": "Advanced",
-    "restart": "Restart"
+    "restart": "Restart",
+    "want-help": "Want help"
   },
   "error-page": {
     "go-back-home": "Go back home"
