@@ -69,6 +69,7 @@ planList:
     mainFeatureList:
       - community-support
       - review-workflow
+      - gitops
       - sql-editor
       - database-backup-restore
       - im-integration
@@ -117,6 +118,8 @@ planList:
       - gitlab-login
       - sql-check-anomaly-detection
       - review-and-backup-policy
+      - online-schema-migration
+      - pitr
   - type: 2
     title: enterprise
     trialDays: 0
@@ -166,4 +169,6 @@ planList:
       - sla
       - everything-in-team-plan
       - multi-tenancy
+      - dba-workflow
+      - environment-tier
       - more-to-come

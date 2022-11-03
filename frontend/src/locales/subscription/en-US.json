@@ -116,6 +116,8 @@
   "main-features": {
     "community-support": "Community support",
     "review-workflow": "Schema and data change review workflow",
+    "gitops": "VCS integration #GitOps",
+    "pitr": "Point-in-Time-Recovery",
     "sql-editor": "SQL Editor",
     "database-backup-restore": "Database backup / restore",
     "im-integration": "IM integration (e.g. Slack, Discord and etc)",
@@ -123,11 +125,14 @@
     "everything-in-free-plan": "Everything in free plan",
     "rbac": "Owner, DBA and Developer roles",
     "gitlab-login": "GitLab login",
+    "online-schema-migration": "Large table online schema migration",
     "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",
     "review-and-backup-policy": "Review and backup policy",
     "sla": "SLA support",
     "everything-in-team-plan": "Everything in team plan",
     "multi-tenancy": "Multi-Region / Multi-Tenancy deployment",
+    "dba-workflow": "DBA workflow",
+    "environment-tier": "Environment tier",
     "more-to-come": "More to come..."
   }
 }
