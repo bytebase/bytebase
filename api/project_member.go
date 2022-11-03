@@ -134,8 +134,8 @@ const (
 	// ProjectPermissionChangeDatabase allows user to make DML/DDL database change in the project.
 	ProjectPermissionChangeDatabase ProjectPermissionType = "bb.permission.project.change-database"
 	// ProjectPermissionAdminDatabase allows user to manage database settings in the project.
-	// - Edit database label
-	// - Backup settings
+	// - Edit database label.
+	// - Backup settings.
 	ProjectPermissionAdminDatabase ProjectPermissionType = "bb.permission.project.admin-database"
 	// ProjectPermissionCreateDatabase allows user to create database in the project.
 	ProjectPermissionCreateDatabase ProjectPermissionType = "bb.permission.project.create-database"
