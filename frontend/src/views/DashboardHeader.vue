@@ -68,21 +68,33 @@
         >
           <div
             class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="currentPlan == 0 ? 'underline text-accent' : 'text-main'"
+            :class="
+              currentPlan == PlanType.FREE
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToFree"
           >
             {{ $t("subscription.plan.free.title") }}
           </div>
           <div
             class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="currentPlan == 1 ? 'underline text-accent' : 'text-main'"
+            :class="
+              currentPlan == PlanType.TEAM
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToTeam"
           >
             {{ $t("subscription.plan.team.title") }}
           </div>
           <div
             class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="currentPlan == 2 ? 'underline text-accent' : 'text-main'"
+            :class="
+              currentPlan == PlanType.ENTERPRISE
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToEnterprise"
           >
             {{ $t("subscription.plan.enterprise.title") }}
@@ -202,6 +214,7 @@ import {
   useInboxStore,
 } from "@/store";
 import { storeToRefs } from "pinia";
+import { PlanType } from "@/types";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -391,6 +404,7 @@ export default defineComponent({
       logoUrl,
       currentUser,
       currentPlan,
+      PlanType,
       isDevFeatures,
       inboxSummary,
       switchToFree,
