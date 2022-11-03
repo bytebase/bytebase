@@ -277,14 +277,14 @@ const instance = computed((): Instance => {
 });
 
 const sqlHint = (): string | undefined => {
-  if (isTenantMode.value) {
-    return t("issue.sql-hint.change-will-apply-to-all-tasks-in-tenant-mode");
-  }
   if (selectedMigrateType.value == "BASELINE") {
     return t("issue.sql-hint.dont-apply-to-database-in-baseline-migration");
   }
   if (instance.value.engine === "SNOWFLAKE") {
     return t("issue.sql-hint.snowflake");
+  }
+  if (isTenantMode.value) {
+    return t("issue.sql-hint.change-will-apply-to-all-tasks-in-tenant-mode");
   }
   return undefined;
 };
