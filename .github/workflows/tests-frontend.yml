@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/*.*.*"
+    paths:
+      - "**.js"
+      - "frontend/**"
+      - ".github/**"
+
+jobs:
+  eslint-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 6.10.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm lint
+        run: pnpm lint
+        working-directory: frontend
