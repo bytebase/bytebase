@@ -18,6 +18,8 @@ const (
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.
 	SettingEnterpriseTrial SettingName = "bb.enterprise.trial"
+	// SettingAppFeishu is the setting name for feishu application.
+	SettingAppFeishu SettingName = "bb.app.feishu"
 )
 
 // Setting is the API message for a setting.
@@ -67,4 +69,10 @@ func (find *SettingFind) String() string {
 		return err.Error()
 	}
 	return string(str)
+}
+
+type SettingAppFeishuValue struct {
+	AppID        string `json:"appId"`
+	AppSecret    string `json:"appSecret"`
+	ApprovalCode string `json:"approvalCode,omitempty"`
 }
