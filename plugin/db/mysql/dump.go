@@ -106,7 +106,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			return "", err
 		}
 
-		binlog, err := GetBinlogInfo(ctx, conn)
+		binlog, err := GetBinlogInfo(ctx, driver.db)
 		if err != nil {
 			return "", err
 		}
@@ -357,11 +357,11 @@ func excludeSchemaAutoIncrementValue(s string) string {
 }
 
 // GetBinlogInfo queries current binlog info from MySQL server.
-func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
+func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 	query := "SHOW MASTER STATUS"
 	binlogInfo := api.BinlogInfo{}
 	var unused interface{}
-	if err := conn.QueryRowContext(ctx, query).Scan(
+	if err := db.QueryRowContext(ctx, query).Scan(
 		&binlogInfo.FileName,
 		&binlogInfo.Position,
 		&unused,
