@@ -153,7 +153,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		if err := saveThreadIDAndStartBinlogCoordinate(ctx, driver, task, server.store); err != nil {
+		if err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, server.store); err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 	}
@@ -164,7 +164,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		if err := saveEndBinlogCoordinate(ctx, driver, task, server.store); err != nil {
+		if err := setEndBinlogCoordinate(ctx, driver, task, server.store); err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 	}
@@ -172,7 +172,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	return migrationID, schema, nil
 }
 
-func saveThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
+func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		return errors.Errorf("failed to cast driver to mysql.Driver")
@@ -214,7 +214,7 @@ func saveThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return nil
 }
 
-func saveEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
+func setEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return errors.Wrap(err, "invalid database data update payload")
