@@ -77,21 +77,6 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 	return settingList, nil
 }
 
-func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Setting, error) {
-	settingRaw, err := s.getSettingRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Setting with SettingFind[%+v]", find)
-	}
-	if settingRaw == nil {
-		return nil, nil
-	}
-	setting, err := s.composeSetting(ctx, settingRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Setting with settingRaw[%+v]", settingRaw)
-	}
-	return setting, nil
-}
-
 // PatchSetting patches an instance of Setting.
 func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api.Setting, error) {
 	settingRaw, err := s.patchSettingRaw(ctx, patch)
