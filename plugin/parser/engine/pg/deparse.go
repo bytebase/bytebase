@@ -117,7 +117,50 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropConstraint(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.SetDefaultStmt:
+			if err := deparseSetDefault(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.DropDefaultStmt:
+			if err := deparseDropDefault(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
+	}
+	return nil
+}
+
+func deparseSetDefault(context parser.DeparseContext, in *ast.SetDefaultStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" SET DEFAULT "); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(in.Expression.Text()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deparseDropDefault(context parser.DeparseContext, in *ast.DropDefaultStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" DROP DEFAULT"); err != nil {
+		return err
 	}
 	return nil
 }

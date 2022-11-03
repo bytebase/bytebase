@@ -163,8 +163,37 @@ func (*diffNode) modifyColumn(alterTableStmt *ast.AlterTableStmt, oldColumn *ast
 			ColumnName: columnName,
 		})
 	}
+	// compare the DEFAULT
+	oldDefault, oldHasDefault := getDefault(oldColumn)
+	newDefault, newHasDefault := getDefault(newColumn)
+	needSetDefault := (!oldHasDefault && newHasDefault) || (oldHasDefault && newHasDefault && oldDefault != newDefault)
+	needDropDefault := oldHasDefault && !newHasDefault
+	if needSetDefault {
+		expression := &ast.UnconvertedExpressionDef{}
+		expression.SetText(newDefault)
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetDefaultStmt{
+			Table:      alterTableStmt.Table,
+			ColumnName: columnName,
+			Expression: expression,
+		})
+	} else if needDropDefault {
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropDefaultStmt{
+			Table:      alterTableStmt.Table,
+			ColumnName: columnName,
+		})
+	}
+
 	// TODO(rebelice): compare other column properties
 	return nil
+}
+
+func getDefault(column *ast.ColumnDef) (string, bool) {
+	for _, constraint := range column.ConstraintList {
+		if constraint.Type == ast.ConstraintTypeDefault {
+			return constraint.Expression.Text(), true
+		}
+	}
+	return "", false
 }
 
 func hasNotNull(column *ast.ColumnDef) bool {
