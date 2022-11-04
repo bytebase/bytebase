@@ -23,7 +23,7 @@ var (
 		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval},
 		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskRunning, api.TaskPendingApproval},
+		api.TaskFailed:          {api.TaskPendingApproval},
 		api.TaskCanceled:        {api.TaskPendingApproval},
 	}
 	taskCancellationImplemented = map[api.TaskType]bool{
@@ -398,8 +398,8 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 			}
 
-			// updated statement, dismiss stale approvals and transfer the status to PendingApproval.
-			if taskPatched.Status != api.TaskPendingApproval {
+			// updated statement, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
+			if taskPatched.Status == api.TaskPending {
 				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 					IDList:    []int{taskPatch.ID},
 					UpdaterID: taskPatch.UpdaterID,
@@ -488,7 +488,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 	// earliest allowed time update.
 	// - create an activity.
-	// - dismiss stale approval.
+	// - dismiss stale approval for Pending tasks.
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
 		if issue == nil {
@@ -520,8 +520,8 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
 		}
 
-		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval.
-		if taskPatched.Status != api.TaskPendingApproval {
+		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
+		if taskPatched.Status == api.TaskPending {
 			t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 				IDList:    []int{taskPatch.ID},
 				UpdaterID: taskPatch.UpdaterID,
