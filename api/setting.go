@@ -18,7 +18,15 @@ const (
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 	// SettingEnterpriseTrial is the setting name for free trial.
 	SettingEnterpriseTrial SettingName = "bb.enterprise.trial"
+	// SettingAppIM is the setting name for IM applications.
+	SettingAppIM SettingName = "bb.app.im"
 )
+
+// IMType is the type of IM.
+type IMType string
+
+// IMTypeFeishu is IM feishu.
+const IMTypeFeishu IMType = "im.feishu"
 
 // Setting is the API message for a setting.
 type Setting struct {
@@ -67,4 +75,15 @@ func (find *SettingFind) String() string {
 		return err.Error()
 	}
 	return string(str)
+}
+
+// SettingAppIMValue is the setting value of SettingAppIM type setting.
+type SettingAppIMValue struct {
+	IMType           string `json:"imType"`
+	AppID            string `json:"appId"`
+	AppSecret        string `json:"appSecret"`
+	ExternalApproval struct {
+		Enabled      bool   `json:"enabled"`
+		ApprovalCode string `json:"approvalCode"`
+	} `json:"externalApproval"`
 }

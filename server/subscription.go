@@ -162,7 +162,7 @@ func (s *Server) loadLicense(ctx context.Context) (*enterpriseAPI.License, error
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
-	return api.FeatureMatrix[feature][s.getEffectivePlan()]
+	return api.Feature(feature, s.getEffectivePlan())
 }
 
 func (s *Server) getPlanLimitValue(name api.PlanLimit) int64 {

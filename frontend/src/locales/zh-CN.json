@@ -529,6 +529,11 @@
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",
       "successfully-action-n-issues": "成功更新 {n} 个工单"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
+      "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
+      "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     }
   },
   "alter-schema": {
@@ -626,7 +631,7 @@
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn": "该实例没有配置只读用户，请考虑配置。",
+    "no-read-only-data-source-warn": "该实例没有配置只读连接，请考虑配置。",
     "sentence": {
       "host": {
         "snowflake": "例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
