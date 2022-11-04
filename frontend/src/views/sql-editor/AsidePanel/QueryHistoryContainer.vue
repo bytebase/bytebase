@@ -60,7 +60,12 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useClipboard } from "@vueuse/core";
 
-import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import {
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  searchConnectionByName,
+} from "@/store";
 import { QueryHistory } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 
@@ -134,10 +139,18 @@ const handleCopy = (history: QueryHistory) => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  // Changing SQL statement is quite harmless, so we just update the current tab.
+  // It's awkward that we stored instanceName and databaseName rather than IDs
+  // in the history activity entity.
+  // We may try our best to find the correct database and instance by searching
+  // their names.
+  const { instanceName, databaseName, statement } = queryHistory;
+  const connection = searchConnectionByName(instanceName, databaseName);
+
+  // Open a new tab with the connection and statement.
+  tabStore.selectOrAddTempTab();
   tabStore.updateCurrentTab({
-    statement: queryHistory.statement,
-    selectedStatement: "",
+    connection,
+    statement,
   });
 };
 </script>
