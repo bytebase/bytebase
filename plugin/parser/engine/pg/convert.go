@@ -830,6 +830,14 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			}
 			cons.KeyList = append(cons.KeyList, name.String_.Str)
 		}
+		for _, col := range in.Constraint.Including {
+			name, ok := col.Node.(*pgquery.Node_String_)
+			if !ok {
+				return nil, parser.NewConvertErrorf("expected String but found %t", col.Node)
+			}
+			cons.Including = append(cons.Including, name.String_.Str)
+		}
+		cons.IndexTableSpace = in.Constraint.Indexspace
 	case ast.ConstraintTypeForeign:
 		cons.Foreign = &ast.ForeignDef{
 			Table: convertRangeVarToTableName(in.Constraint.Pktable, ast.TableTypeBaseTable),

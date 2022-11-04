@@ -64,6 +64,8 @@ type ConstraintDef struct {
 	//   2. DEFAULT constraint
 	Expression ExpressionNode
 	// https://www.postgresql.org/docs/14/sql-altertable.html
-	Deferrable   bool
-	Initdeferred bool
+	Deferrable      bool
+	Initdeferred    bool
+	Including       []string
+	IndexTableSpace string
 }

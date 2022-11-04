@@ -173,7 +173,7 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 		return err
 	}
 	if in.Constraint.Name != "" {
-		if _, err := buf.WriteString("CONSRAINT "); err != nil {
+		if _, err := buf.WriteString("CONSTRAINT "); err != nil {
 			return err
 		}
 		if err := writeSurrounding(buf, in.Constraint.Name, `"`); err != nil {
@@ -201,7 +201,46 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 				return err
 			}
 		}
-	default:
+	case ast.ConstraintTypeUnique:
+		if _, err := buf.WriteString("UNIQUE ("); err != nil {
+			return err
+		}
+		for idx, col := range in.Constraint.KeyList {
+			if idx >= 1 {
+				if _, err := buf.WriteString(", "); err != nil {
+					return err
+				}
+			}
+			if err := writeSurrounding(buf, col, `"`); err != nil {
+				return err
+			}
+		}
+		if len(in.Constraint.Including) > 0 {
+			if _, err := buf.WriteString(") INCLUDE ("); err != nil {
+				return err
+			}
+			for idx, col := range in.Constraint.Including {
+				if idx >= 1 {
+					if _, err := buf.WriteString(", "); err != nil {
+						return err
+					}
+				}
+				if err := writeSurrounding(buf, col, `"`); err != nil {
+					return err
+				}
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+		if in.Constraint.IndexTableSpace != "" {
+			if _, err := buf.WriteString(" USING INDEX TABLESPACE "); err != nil {
+				return err
+			}
+			if err := writeSurrounding(buf, in.Constraint.IndexTableSpace, `"`); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
