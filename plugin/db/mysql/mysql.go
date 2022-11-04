@@ -109,6 +109,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
+	_ = driver.migrationConn.Close()
 	return driver.db.Close()
 }
 
