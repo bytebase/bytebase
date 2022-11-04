@@ -20,10 +20,10 @@ import (
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
 		api.TaskPendingApproval: {api.TaskPending},
-		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval},
+		api.TaskPending:         {api.TaskCanceled, api.TaskRunning},
 		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskRunning, api.TaskPendingApproval},
+		api.TaskFailed:          {api.TaskRunning},
 		api.TaskCanceled:        {api.TaskPendingApproval},
 	}
 	taskCancellationImplemented = map[api.TaskType]bool{
@@ -398,19 +398,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 			}
 
-			// updated statement, dismiss stale approvals and transfer the status to PendingApproval.
-			if taskPatched.Status != api.TaskPendingApproval {
-				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-					IDList:    []int{taskPatch.ID},
-					UpdaterID: taskPatch.UpdaterID,
-					Status:    api.TaskPendingApproval,
-				})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
-				}
-				taskPatched = t
-			}
-
 			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID: taskPatched.CreatorID,
@@ -488,7 +475,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 	// earliest allowed time update.
 	// - create an activity.
-	// - dismiss stale approval.
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
 		if issue == nil {
@@ -518,19 +504,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		})
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
-		}
-
-		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval.
-		if taskPatched.Status != api.TaskPendingApproval {
-			t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-				IDList:    []int{taskPatch.ID},
-				UpdaterID: taskPatch.UpdaterID,
-				Status:    api.TaskPendingApproval,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
-			}
-			taskPatched = t
 		}
 	}
 	return taskPatched, nil
