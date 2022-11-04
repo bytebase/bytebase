@@ -2,7 +2,6 @@ package feishu
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -207,7 +206,7 @@ const (
 )
 
 // GetTenantAccessToken gets tenant access token.
-func (p *FeishuProvider) GetTenantAccessToken(ctx context.Context, appID string, appSecret string) (*TenantAccessTokenResponse, error) {
+func (p *FeishuProvider) GetTenantAccessToken(appID string, appSecret string) (*TenantAccessTokenResponse, error) {
 	body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal", body)
 	if err != nil {
@@ -237,7 +236,7 @@ func (p *FeishuProvider) GetTenantAccessToken(ctx context.Context, appID string,
 }
 
 // CreateApprovalDefinition creates an approval definition.
-func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, approvalCode string) (*ApprovalDefinitionResponse, error) {
+func (p *FeishuProvider) CreateApprovalDefinition(approvalCode string) (*ApprovalDefinitionResponse, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/approvals", body)
 	if err != nil {
@@ -269,7 +268,7 @@ func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, approvalC
 }
 
 // CreateExternalApproval creates an approval instance.
-func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, content Content, approvalCode string, creatorID string, approverID string) (*ExternalApprovalResponse, error) {
+func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode string, creatorID string, approverID string) (*ExternalApprovalResponse, error) {
 	formValue, err := formatForm(content)
 	if err != nil {
 		return nil, err
@@ -322,7 +321,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, content Con
 }
 
 // GetExternalApproval gets the status of an approval instance.
-func (p *FeishuProvider) GetExternalApproval(ctx context.Context, instanceCode string) (*getExternalApprovalResponse, error) {
+func (p *FeishuProvider) GetExternalApproval(instanceCode string) (*getExternalApprovalResponse, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -350,7 +349,7 @@ func (p *FeishuProvider) GetExternalApproval(ctx context.Context, instanceCode s
 }
 
 // CancelExternalApproval cancels an approval instance.
-func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, approvalCode, instanceCode, userID string) (*cancelExternalApprovalResponse, error) {
+func (p *FeishuProvider) CancelExternalApproval(approvalCode, instanceCode, userID string) (*cancelExternalApprovalResponse, error) {
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances/cancel", body)
 	if err != nil {
@@ -382,7 +381,7 @@ func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, approvalCod
 }
 
 // GetIDByEmail gets user ids by emails.
-func (p *FeishuProvider) GetIDByEmail(ctx context.Context, emails *EmailsFind) (*emailsFindResponse, error) {
+func (p *FeishuProvider) GetIDByEmail(emails *EmailsFind) (*emailsFindResponse, error) {
 	body, err := json.Marshal(emails)
 	if err != nil {
 		return nil, err
