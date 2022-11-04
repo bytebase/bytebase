@@ -56,7 +56,7 @@
     "vue": "3.2.41",
     "vue-i18n": "9.2.2",
     "vue-router": "4.1.6",
-    "vuedraggable": "^2.24.3",
+    "vuedraggable": "^4.1.0",
     "vueuc": "0.4.49"
   },
   "devDependencies": {
