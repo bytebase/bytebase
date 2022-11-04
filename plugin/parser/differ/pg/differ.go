@@ -4,6 +4,7 @@ package pg
 import (
 	"bytes"
 	"io"
+	"sort"
 
 	"github.com/pkg/errors"
 
@@ -31,6 +32,56 @@ type diffNode struct {
 	dropNodeList    []ast.Node
 }
 
+type tableMap map[string]*tableInfo
+type schemaMap map[string]*schemaInfo
+
+type schemaInfo struct {
+	id           int
+	existsInNew  bool
+	createSchema *ast.CreateSchemaStmt
+	tableMap     tableMap
+}
+
+func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
+	return &schemaInfo{
+		id:           id,
+		existsInNew:  false,
+		createSchema: createSchema,
+		tableMap:     make(tableMap),
+	}
+}
+
+type tableInfo struct {
+	id          int
+	existsInNew bool
+	createTable *ast.CreateTableStmt
+}
+
+func newTableInfo(id int, createTable *ast.CreateTableStmt) *tableInfo {
+	return &tableInfo{
+		id:          id,
+		existsInNew: false,
+		createTable: createTable,
+	}
+}
+
+func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
+	schema, exists := m[table.Name.Schema]
+	if !exists {
+		return errors.Errorf("failed to add table: schema %s not found", table.Name.Schema)
+	}
+	schema.tableMap[table.Name.Name] = newTableInfo(id, table)
+	return nil
+}
+
+func (m schemaMap) getTable(schemaName string, tableName string) *tableInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.tableMap[tableName]
+}
+
 // SchemaDiff computes the schema differences between old and new schema.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldNodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, oldStmt)
@@ -42,16 +93,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
 	}
 
-	oldTableMap := make(map[string]*ast.CreateTableStmt)
-	oldSchemaMap := make(map[string]*ast.CreateSchemaStmt)
-	var oldSchemaList []*ast.CreateSchemaStmt
-	for _, node := range oldNodes {
+	oldSchemaMap := make(schemaMap)
+	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
+	for i, node := range oldNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateSchemaStmt:
-			oldSchemaMap[stmt.Name] = stmt
-			oldSchemaList = append(oldSchemaList, stmt)
+			oldSchemaMap[stmt.Name] = newSchemaInfo(i, stmt)
 		case *ast.CreateTableStmt:
-			oldTableMap[stmt.Name.Name] = stmt
+			if err := oldSchemaMap.addTable(i, stmt); err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -59,33 +110,48 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	for _, node := range newNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
-			oldTable, hasTable := oldTableMap[stmt.Name.Name]
+			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new table.
-			if !hasTable {
+			if oldTable == nil {
 				diff.newTableList = append(diff.newTableList, stmt)
 				continue
 			}
+			oldTable.existsInNew = true
 			// Modify the table.
-			if err := diff.modifyTable(oldTable, stmt); err != nil {
+			if err := diff.modifyTable(oldTable.createTable, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateSchemaStmt:
-			if _, hasSchema := oldSchemaMap[stmt.Name]; !hasSchema {
+			schema, hasSchema := oldSchemaMap[stmt.Name]
+			if !hasSchema {
 				diff.newSchemaList = append(diff.newSchemaList, stmt)
 				continue
 			}
-			delete(oldSchemaMap, stmt.Name)
+			schema.existsInNew = true
 		default:
 			return "", errors.Errorf("unsupported statement %+v", stmt)
 		}
 	}
 
-	// Drop the remaining old schemata.
-	if dropSchemaStmt := dropSchemata(oldSchemaMap, oldSchemaList); dropSchemaStmt != nil {
-		diff.dropNodeList = append(diff.dropNodeList, dropSchemaStmt)
+	// Drop remaining old objects.
+	if err := diff.dropObject(oldSchemaMap); err != nil {
+		return "", err
 	}
 
 	return diff.deparse()
+}
+
+func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
+	// Drop the renaming old schema.
+	if dropSchemaStmt := dropSchema(oldSchemaMap); dropSchemaStmt != nil {
+		diff.dropNodeList = append(diff.dropNodeList, dropSchemaStmt)
+	}
+
+	// Drop the renaming old table.
+	if dropTableStmt := dropTable(oldSchemaMap); dropTableStmt != nil {
+		diff.dropNodeList = append(diff.dropNodeList, dropTableStmt)
+	}
+	return nil
 }
 
 func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
@@ -259,19 +325,61 @@ func (diff *diffNode) deparse() (string, error) {
 	return buf.String(), nil
 }
 
-func dropSchemata(m map[string]*ast.CreateSchemaStmt, l []*ast.CreateSchemaStmt) *ast.DropSchemaStmt {
-	var schemaNames []string
-	for _, stmt := range l {
-		if _, ok := m[stmt.Name]; ok {
-			schemaNames = append(schemaNames, stmt.Name)
+func dropTable(m schemaMap) *ast.DropTableStmt {
+	var tableList []*tableInfo
+	for _, schema := range m {
+		if !schema.existsInNew {
+			// dropped by DROP SCHEMA ... CASCADE statements
+			continue
+		}
+		for _, table := range schema.tableMap {
+			if table.existsInNew {
+				// no need to drop
+				continue
+			}
+			tableList = append(tableList, table)
 		}
 	}
-	if len(schemaNames) == 0 {
+	if len(tableList) == 0 {
 		return nil
+	}
+	sort.Slice(tableList, func(i, j int) bool {
+		return tableList[i].id < tableList[j].id
+	})
+
+	var tableDefList []*ast.TableDef
+	for _, table := range tableList {
+		tableDefList = append(tableDefList, table.createTable.Name)
+	}
+	return &ast.DropTableStmt{
+		TableList: tableDefList,
+		// TODO(rebelice): add CASCADE here.
+	}
+}
+
+func dropSchema(m schemaMap) *ast.DropSchemaStmt {
+	var schemaList []*schemaInfo
+	for _, schema := range m {
+		if schema.createSchema.Name == "public" || schema.existsInNew {
+			continue
+		}
+		schemaList = append(schemaList, schema)
+	}
+	if len(schemaList) == 0 {
+		return nil
+	}
+	sort.Slice(schemaList, func(i, j int) bool {
+		return schemaList[i].id < schemaList[j].id
+	})
+
+	var schemaNameList []string
+	for _, schema := range schemaList {
+		schemaNameList = append(schemaNameList, schema.createSchema.Name)
 	}
 	return &ast.DropSchemaStmt{
 		IfExists:   true,
-		SchemaList: schemaNames,
+		SchemaList: schemaNameList,
+		Behavior:   ast.DropSchemaBehaviorCascade,
 	}
 }
 
