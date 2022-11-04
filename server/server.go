@@ -50,6 +50,7 @@ type Server struct {
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
+	RollbackRunner     *RollbackRunner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
@@ -287,6 +288,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
 
+		// Rollback SQL generator
+		s.RollbackRunner = NewRollbackRunner(s)
+
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
 	}
@@ -492,6 +496,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
