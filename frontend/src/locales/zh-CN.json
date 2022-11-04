@@ -322,6 +322,7 @@
       "workspace": "工作空间",
       "general": "通用",
       "members": "成员",
+      "im-integration": "IM 集成管理",
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",
@@ -379,6 +380,9 @@
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
       "system-bot": "机器人助手"
+    },
+    "im-integration": {
+      "feishu-updated-tip": "飞书配置更新成功"
     },
     "general": {
       "workspace": {

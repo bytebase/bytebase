@@ -345,6 +345,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "im-integration",
+                name: "setting.workspace.im-integration",
+                meta: { title: () => t("settings.sidebar.im-integration") },
+                component: () =>
+                  import("../views/SettingWorkspaceIMIntegration.vue"),
+                props: true,
+              },
+              {
                 path: "version-control",
                 name: "setting.workspace.version-control",
                 meta: { title: () => t("settings.sidebar.version-control") },

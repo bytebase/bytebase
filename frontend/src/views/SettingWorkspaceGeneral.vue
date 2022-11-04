@@ -95,7 +95,6 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { hasWorkspacePermission } from "../utils";
-import { brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -136,9 +135,8 @@ const state = reactive<LocalState>({
 });
 
 settingStore.fetchSetting().then(() => {
-  const brandingLogoSetting = settingStore.getSettingByName(
-    brandingLogoSettingName
-  )!;
+  const brandingLogoSetting =
+    settingStore.getSettingByName("bb.branding.logo")!;
   state.logoUrl = brandingLogoSetting.value;
 });
 
@@ -180,7 +178,7 @@ const uploadLogo = async () => {
   try {
     const fileInBase64 = await convertFileToBase64(state.logoFile);
     const setting = await useSettingStore().updateSettingByName({
-      name: brandingLogoSettingName,
+      name: "bb.branding.logo",
       value: fileInBase64,
     });
 

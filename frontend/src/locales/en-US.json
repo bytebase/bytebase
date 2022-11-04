@@ -322,6 +322,7 @@
       "workspace": "Workspace",
       "general": "General",
       "members": "Members",
+      "im-integration": "IM Integration",
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",
@@ -379,6 +380,9 @@
         "content": "You are about to restore the following members. All existing members synced from VCS will be removed."
       },
       "system-bot": "System Bot"
+    },
+    "im-integration": {
+      "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "general": {
       "workspace": {
