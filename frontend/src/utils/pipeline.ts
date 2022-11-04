@@ -198,7 +198,7 @@ export const TASK_STATUS_TRANSITION_LIST: Map<
     "RETRY",
     {
       type: "RETRY",
-      to: "RUNNING",
+      to: "PENDING_APPROVAL",
       buttonName: "common.retry",
       buttonType: "PRIMARY",
     },
