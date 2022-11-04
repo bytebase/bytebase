@@ -10,14 +10,14 @@ func TestGetRollbackSQL(t *testing.T) {
 	tests := []struct {
 		name        string
 		txn         BinlogTransaction
-		columnNames []string
+		tableMap    map[string][]string
 		rollbackSQL string
 		err         bool
 	}{
 		{
 			name:        "empty",
 			txn:         BinlogTransaction{},
-			columnNames: []string{"what", "ever"},
+			tableMap:    map[string][]string{},
 			rollbackSQL: "",
 			err:         false,
 		},
@@ -58,7 +58,9 @@ BEGIN
 `,
 				},
 			},
-			columnNames: []string{"id", "name", "balance"},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance"},
+			},
 			rollbackSQL: `DELETE FROM ` + "`binlog_test`.`user`" + `
 WHERE
   ` + "`id`" + `=1 AND
@@ -120,7 +122,9 @@ BEGIN
 `,
 				},
 			},
-			columnNames: []string{"id", "name", "balance"},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance"},
+			},
 			rollbackSQL: `UPDATE ` + "`binlog_test`.`user`" + `
 SET
   ` + "`id`" + `=2,
@@ -177,7 +181,9 @@ DELIMITER ;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
 				},
 			},
-			columnNames: []string{"id", "name", "balance"},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance"},
+			},
 			rollbackSQL: `INSERT INTO ` + "`binlog_test`.`user`" + `
 SET
   ` + "`id`" + `=1,
@@ -203,7 +209,9 @@ SET
 ###   @3=0`,
 				},
 			},
-			columnNames: []string{"id", "name", "balance", "new_field"},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance", "new_column"},
+			},
 			rollbackSQL: "",
 			err:         true,
 		},
@@ -212,7 +220,7 @@ SET
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
-			sql, err := test.txn.GetRollbackSQL(test.columnNames)
+			sql, err := test.txn.GetRollbackSQL(test.tableMap)
 			if test.err {
 				a.Error(err)
 			} else {
