@@ -131,14 +131,14 @@ func formatForm(content Content) (string, error) {
 
 const (
 	getTenantAccessTokenReq = `{
-    "app_id": "%s",
-    "app_secret": "%s"
+		"app_id": "%s",
+		"app_secret": "%s"
 }`
 	createApprovalDefinitionReq = `{
   "approval_code": "%s",
 	"approval_name": "@i18n@approval_name",
 	"form": {
-    "form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"textarea\", \"name\":\"@i18n@widget3\"}]"
+		"form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"textarea\", \"name\":\"@i18n@widget3\"}]"
 	},
 	"i18n_resources": [
 		{
@@ -147,7 +147,7 @@ const (
 			"texts": [
 				{
 					"key": "@i18n@approval_name",
-          "value": "Bytebase 工单"
+					"value": "Bytebase 工单"
 				},
 				{
 					"key": "@i18n@node_name",
@@ -258,10 +258,11 @@ func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, approvalC
 	return &response, nil
 }
 
+// msg is the message sent to the user.
 func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, content Content, approvalCode string, creatorID string, approverID string) (*ExternalApprovalResponse, error) {
 	formValue, err := formatForm(content)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to format form value")
+		return nil, err
 	}
 	payload := createApprovalInstanceReq{
 		ApprovalCode: approvalCode,
@@ -304,7 +305,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, content Con
 	}
 
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to create approval instance: %s", response.Msg)
+		return nil, errors.Errorf("failed to create approval instance, %s", response.Msg)
 	}
 
 	return &response, nil
@@ -331,7 +332,7 @@ func (p *FeishuProvider) GetExternalApproval(ctx context.Context, instanceCode s
 		return nil, err
 	}
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to get approval instance: %s", response.Msg)
+		return nil, errors.Errorf("failed to get approval instance, %s", response.Msg)
 	}
 
 	return &response, nil
@@ -362,7 +363,7 @@ func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, approvalCod
 	}
 
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to cancel approval instance: %s", response.Msg)
+		return nil, errors.Errorf("failed to create approval instance, %s", response.Msg)
 	}
 
 	return &response, nil
