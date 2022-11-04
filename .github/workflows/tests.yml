@@ -29,7 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: files
-        uses: jitterbit/get-changed-files@v1
+        uses: Ana06/get-changed-files@v2.1.0
+        with:
+          filter: |
+            frontend/**
+            *.js
+            *.json
       - run: |
           for changed_file in ${{ steps.files.outputs.all }}; do
             echo ${changed_file}
