@@ -9,5 +9,5 @@ bytebase:
     external-url: https://www.bytebase.com/docs/get-started/install/external-url
     pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
-  version: 1.3.2
+  version: 1.7.0
   storage: 2Gi
