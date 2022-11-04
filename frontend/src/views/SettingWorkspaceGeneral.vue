@@ -178,7 +178,7 @@ const uploadLogo = async () => {
   try {
     const fileInBase64 = await convertFileToBase64(state.logoFile);
     const setting = await useSettingStore().updateSettingByName({
-      name: brandingLogoSettingName,
+      name: "bb.branding.logo",
       value: fileInBase64,
     });
 
