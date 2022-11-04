@@ -110,14 +110,10 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	var errs []error
-	if err := driver.db.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := driver.migrationConn.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	return multierr.Combine(errs...)
+	var err error
+	err = multierr.Append(err, driver.db.Close())
+	err = multierr.Append(err, driver.migrationConn.Close())
+	return err
 }
 
 // Ping pings the database.
