@@ -3,6 +3,7 @@ package mysql
 import (
 	"bufio"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -106,6 +107,37 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	}
 
 	return txns, nil
+}
+
+// FilterBinlogTransactionsByThreadID filters the binlog transaction by thread ID.
+func FilterBinlogTransactionsByThreadID(txnList []BinlogTransaction, threadID string) ([]BinlogTransaction, error) {
+	var ret []BinlogTransaction
+	for _, txn := range txnList {
+		event := txn[0]
+		if event.Type != QueryEventType {
+			return nil, errors.Errorf("invalid binlog transaction, the first event must be an query event, but got %s", event.Type.String())
+		}
+		parsed, err := parseQueryEventThreadID(event.Header)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to parse thread ID from query event")
+		}
+		if parsed == threadID {
+			ret = append(ret, txn)
+		}
+	}
+	return ret, nil
+}
+
+var (
+	reThreadID = regexp.MustCompile(`thread_id=(\d+)`)
+)
+
+func parseQueryEventThreadID(header string) (string, error) {
+	matches := reThreadID.FindStringSubmatch(header)
+	if len(matches) != 2 {
+		return "", errors.Errorf("invalid query header %q", header)
+	}
+	return matches[1], nil
 }
 
 func getEventType(header string) BinlogEventType {
