@@ -527,11 +527,12 @@ func TestVCS(t *testing.T) {
 			a.Len(stage.TaskList, 1)
 			task := stage.TaskList[0]
 			// simulate retrying the failed task.
-			ctl.patchTaskStatus(api.TaskStatusPatch{
+			_, err = ctl.patchTaskStatus(api.TaskStatusPatch{
 				IDList:    []int{task.ID},
 				UpdaterID: api.SystemBotID,
 				Status:    api.TaskPendingApproval,
 			}, issue.PipelineID, task.ID)
+			a.NoError(err)
 
 			status, err = ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
