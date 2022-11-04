@@ -19,6 +19,10 @@ var roleFinder = func(projectID int, principalID int) (common.ProjectRole, error
 		}
 	case 101:
 		switch principalID {
+		case 200:
+			return "", nil
+		case 201:
+			return "", nil
 		case 202:
 			return common.ProjectOwner, nil
 		}
