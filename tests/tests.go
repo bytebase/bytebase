@@ -165,6 +165,8 @@ func getTestPort(testName string) int {
 		"TestTenant",
 		"TestTenantVCS/GitLab",
 		"TestTenantVCS/GitHub",
+		"TestTenantVCS_YAML/GitLab",
+		"TestTenantVCS_YAML/GitHub",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestTenantVCSDatabaseNameTemplate/GitLab",

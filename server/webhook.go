@@ -19,6 +19,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -586,6 +587,10 @@ const (
 	schemaFileType
 )
 
+// getFileInfo processes the file item against the candidate list of
+// repositories and returns the parsed migration information, file change type
+// and a single matched repository. It returns an error when none or multiple
+// repositories are matched.
 func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository) (*db.MigrationInfo, fileType, *api.Repository, error) {
 	var migrationInfo *db.MigrationInfo
 	var fType fileType
@@ -599,9 +604,26 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 			continue
 		}
 
-		allowOmitDatabaseName := repository.Project.TenantMode == api.TenantModeTenant && repository.Project.DBNameTemplate == ""
 		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		mi, err := db.ParseMigrationInfo(fileItem.FileName, path.Join(repository.BaseDirectory, repository.FilePathTemplate), allowOmitDatabaseName)
+		filePathTemplate := path.Join(repository.BaseDirectory, repository.FilePathTemplate)
+		allowOmitDatabaseName := false
+		if repository.Project.TenantMode == api.TenantModeTenant {
+			// If the committed file is a YAML file, then the user may have opted-in
+			// advanced mode, we need to alter the FilePathTemplate to match ".yml" instead
+			// of ".sql".
+			if fileItem.IsYAML {
+				filePathTemplate = strings.Replace(filePathTemplate, ".sql", ".yml", 1)
+
+				// We do not care database name in the file path with a YAML file.
+				allowOmitDatabaseName = true
+			} else if repository.Project.DBNameTemplate == "" {
+				// Empty DBNameTemplate represents wildcard matching of all databases, thus the
+				// database name can be omitted.
+				allowOmitDatabaseName = true
+			}
+		}
+
+		mi, err := db.ParseMigrationInfo(fileItem.FileName, filePathTemplate, allowOmitDatabaseName)
 		if err != nil {
 			log.Error("Failed to parse migration file info",
 				zap.Int("project", repository.ProjectID),
@@ -611,6 +633,10 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 			continue
 		}
 		if mi != nil {
+			if fileItem.IsYAML && mi.Type != db.Data {
+				return nil, unknownFileType, nil, errors.New("only DML is allowed for YAML files in a tenant project")
+			}
+
 			migrationInfo = mi
 			fType = migrationFileType
 			fileRepositoryList = append(fileRepositoryList, repository)
@@ -643,7 +669,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		for _, repository := range fileRepositoryList {
 			projectList = append(projectList, repository.Project.Name)
 		}
-		return nil, unknownFileType, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ","))
+		return nil, unknownFileType, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
 	}
 }
 
@@ -689,7 +715,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 			// 1) DML is always migration-based.
 			// 2) We may have a limitation in SDL implementation.
 			// 3) User just wants to break the glass.
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo.item.FileName, fileInfo.item.ItemType, fileInfo.migrationInfo)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repo, pushEvent, fileInfo)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			if len(migrationDetailListForFile) != 0 {
@@ -970,59 +996,118 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 	return migrationDetailList, nil
 }
 
+type migrationFileYAMLDatabase struct {
+	Name string `yaml:"name"` // The name of the database
+}
+
+// migrationFileYAML represents the information contained in a YAML format
+// migration file.
+type migrationFileYAML struct {
+	Databases []migrationFileYAMLDatabase `yaml:"databases"` // The list of databases and how to identify them
+	Statement string                      `yaml:"statement"` // The SQL statement to be executed to specified list of databases
+}
+
 // prepareIssueFromFile returns a list of update schema details derived
 // from the given push event for DDL.
-func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileName string, fileType vcs.FileItemType, migrationInfo *db.MigrationInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
-	statement, err := s.readFileContent(ctx, pushEvent, repo, fileName)
+func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileInfo fileInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
+	content, err := s.readFileContent(ctx, pushEvent, repo, fileInfo.item.FileName)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to read file content"))
-		return nil, []*api.ActivityCreate{activityCreate}
+		return nil, []*api.ActivityCreate{
+			getIgnoredFileActivityCreate(
+				repo.ProjectID,
+				pushEvent,
+				fileInfo.item.FileName,
+				errors.Wrap(err, "Failed to read file content"),
+			),
+		}
 	}
 
-	var migrationDetailList []*api.MigrationDetail
-
-	// TODO(dragonly): handle modified file for tenant mode.
-	migrationType := db.Migrate
-	if migrationInfo.Type == db.Data {
-		migrationType = db.Data
-	}
 	if repo.Project.TenantMode == api.TenantModeTenant {
-		migrationDetailList = append(migrationDetailList,
-			&api.MigrationDetail{
-				MigrationType: migrationType,
-				DatabaseName:  migrationInfo.Database,
-				Statement:     statement,
-				SchemaVersion: migrationInfo.Version,
-			},
-		)
+		// A non-YAML file means the whole file content is the SQL statement
+		if !fileInfo.item.IsYAML {
+			return []*api.MigrationDetail{
+				{
+					MigrationType: fileInfo.migrationInfo.Type,
+					DatabaseName:  fileInfo.migrationInfo.Database,
+					Statement:     content,
+					SchemaVersion: fileInfo.migrationInfo.Version,
+				},
+			}, nil
+		}
+
+		var migrationFile migrationFileYAML
+		err = yaml.Unmarshal([]byte(content), &migrationFile)
+		if err != nil {
+			return nil, []*api.ActivityCreate{
+				getIgnoredFileActivityCreate(
+					repo.ProjectID,
+					pushEvent,
+					fileInfo.item.FileName,
+					errors.Wrap(err, "Failed to parse file content as YAML"),
+				),
+			}
+		}
+
+		var migrationDetailList []*api.MigrationDetail
+		for _, database := range migrationFile.Databases {
+			dbList, err := s.findProjectDatabases(ctx, repo.ProjectID, database.Name, "")
+			if err != nil {
+				return nil, []*api.ActivityCreate{
+					getIgnoredFileActivityCreate(
+						repo.ProjectID,
+						pushEvent,
+						fileInfo.item.FileName,
+						errors.Wrapf(err, "Failed to find project database %q", database.Name),
+					),
+				}
+			}
+
+			for _, db := range dbList {
+				migrationDetailList = append(migrationDetailList,
+					&api.MigrationDetail{
+						MigrationType: fileInfo.migrationInfo.Type,
+						DatabaseID:    db.ID,
+						Statement:     migrationFile.Statement,
+						SchemaVersion: fileInfo.migrationInfo.Version,
+					},
+				)
+			}
+		}
 		return migrationDetailList, nil
 	}
 
-	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, migrationInfo.Database, migrationInfo.Environment)
+	// TODO(dragonly): handle modified file for tenant mode.
+	databases, err := s.findProjectDatabases(ctx, repo.ProjectID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*api.ActivityCreate{activityCreate}
 	}
 
-	if fileType == vcs.FileItemTypeAdded {
+	if fileInfo.item.ItemType == vcs.FileItemTypeAdded {
+		var migrationDetailList []*api.MigrationDetail
 		for _, database := range databases {
 			migrationDetailList = append(migrationDetailList,
 				&api.MigrationDetail{
-					MigrationType: migrationType,
+					MigrationType: fileInfo.migrationInfo.Type,
 					DatabaseID:    database.ID,
-					Statement:     statement,
-					SchemaVersion: migrationInfo.Version,
+					Statement:     content,
+					SchemaVersion: fileInfo.migrationInfo.Version,
 				},
 			)
 		}
 		return migrationDetailList, nil
 	}
 
-	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileName, migrationInfo.Version, statement); err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repo.ProjectID, pushEvent, fileName, errors.Wrap(err, "Failed to find project task"))
-		return nil, []*api.ActivityCreate{activityCreate}
+	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, fileInfo.migrationInfo.Version, content); err != nil {
+		return nil, []*api.ActivityCreate{
+			getIgnoredFileActivityCreate(
+				repo.ProjectID,
+				pushEvent,
+				fileInfo.item.FileName,
+				errors.Wrap(err, "Failed to find project task"),
+			),
+		}
 	}
-
 	return nil, nil
 }
 
