@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -109,7 +110,10 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	return driver.db.Close()
+	var err error
+	err = multierr.Append(err, driver.db.Close())
+	err = multierr.Append(err, driver.migrationConn.Close())
+	return err
 }
 
 // Ping pings the database.
