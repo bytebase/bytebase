@@ -58,7 +58,9 @@ BEGIN
 `,
 				},
 			},
-			tableMap: map[string][]string{"user": {"id", "name", "balance"}},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance"},
+			},
 			rollbackSQL: `DELETE FROM ` + "`binlog_test`.`user`" + `
 WHERE
   ` + "`id`" + `=1 AND
@@ -120,7 +122,9 @@ BEGIN
 `,
 				},
 			},
-			tableMap: map[string][]string{"user": {"id", "name", "balance"}},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance"},
+			},
 			rollbackSQL: `UPDATE ` + "`binlog_test`.`user`" + `
 SET
   ` + "`id`" + `=2,
@@ -177,7 +181,9 @@ DELIMITER ;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
 				},
 			},
-			tableMap: map[string][]string{"user": {"id", "name", "balance"}},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance"},
+			},
 			rollbackSQL: `INSERT INTO ` + "`binlog_test`.`user`" + `
 SET
   ` + "`id`" + `=1,
@@ -203,7 +209,9 @@ SET
 ###   @3=0`,
 				},
 			},
-			tableMap:    map[string][]string{"user": {"id", "name", "balance", "new_column"}},
+			tableMap: map[string][]string{
+				"user": {"id", "name", "balance", "new_column"},
+			},
 			rollbackSQL: "",
 			err:         true,
 		},
