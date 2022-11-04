@@ -382,7 +382,7 @@
       "system-bot": "System Bot"
     },
     "im-integration": {
-      "updated-tip": "Successfully updated the Feishu integration"
+      "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "general": {
       "workspace": {

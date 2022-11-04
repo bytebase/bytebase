@@ -94,7 +94,7 @@ const updateFeishuIntegration = async () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("settings.im-integration.updated-tip"),
+    title: t("settings.im-integration.feishu-updated-tip"),
   });
 };
 </script>
