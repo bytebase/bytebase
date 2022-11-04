@@ -157,7 +157,7 @@ const (
 					"key": "@i18n@widget1",
 					"value": "Issue"
 				},
-        {
+				{
 					"key": "@i18n@widget2",
 					"value": "Stage"
 				},
