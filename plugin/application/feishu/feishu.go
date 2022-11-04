@@ -1,4 +1,4 @@
-// package feishu implements feishu open api callers.
+// Package feishu implements feishu open api callers.
 package feishu
 
 import (
