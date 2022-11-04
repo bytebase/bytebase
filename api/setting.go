@@ -79,11 +79,11 @@ func (find *SettingFind) String() string {
 
 // SettingAppIMValue is the setting value of SettingAppIM type setting.
 type SettingAppIMValue struct {
-	IMType           string `json:"imType"`
+	IMType           IMType `json:"imType"`
 	AppID            string `json:"appId"`
 	AppSecret        string `json:"appSecret"`
 	ExternalApproval struct {
-		Enabled      bool   `json:"enabled"`
-		ApprovalCode string `json:"approvalCode"`
+		Enabled      bool `json:"enabled"`
+		ApprovalCode string
 	} `json:"externalApproval"`
 }
