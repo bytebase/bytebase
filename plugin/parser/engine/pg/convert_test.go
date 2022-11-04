@@ -933,6 +933,40 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			},
 		},
 		{
+			stmt: "ALTER TABLE ONLY s.person ADD CONSTRAINT person_email_email1_key UNIQUE (email) INCLUDE (email) USING INDEX TABLESPACE demo_table_space;",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type:   ast.TableTypeBaseTable,
+						Schema: "s",
+						Name:   "person",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type:   ast.TableTypeBaseTable,
+								Schema: "s",
+								Name:   "person",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:            ast.ConstraintTypeUnique,
+								Name:            "person_email_email1_key",
+								KeyList:         []string{"email"},
+								Including:       []string{"email"},
+								IndexTableSpace: "demo_table_space",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE ONLY s.person ADD CONSTRAINT person_email_email1_key UNIQUE (email) INCLUDE (email) USING INDEX TABLESPACE demo_table_space;",
+					LastLine: 1,
+				},
+			},
+		},
+		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
