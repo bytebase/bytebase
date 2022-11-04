@@ -322,6 +322,7 @@
       "workspace": "工作空间",
       "general": "通用",
       "members": "成员",
+      "im-integration": "IM 集成管理",
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",

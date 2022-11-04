@@ -322,6 +322,7 @@
       "workspace": "Workspace",
       "general": "General",
       "members": "Members",
+      "im-integration": "IM Integration",
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",

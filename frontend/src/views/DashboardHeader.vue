@@ -222,7 +222,6 @@ import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "../types";
-import { brandingLogoSettingName } from "../types/setting";
 import { hasWorkspacePermission, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
@@ -295,9 +294,8 @@ export default defineComponent({
     };
 
     const logoUrl = computed((): string | undefined => {
-      const brandingLogoSetting = settingStore.getSettingByName(
-        brandingLogoSettingName
-      );
+      const brandingLogoSetting =
+        settingStore.getSettingByName("bb.branding.logo");
       return brandingLogoSetting?.value;
     });
 
