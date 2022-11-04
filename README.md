@@ -10,6 +10,9 @@
   <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
     <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
   </a>
+  <a href="https://artifacthub.io/packages/search?repo=bytebase">
+    <img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/bytebase" />
+  </a>
 </p>
 
 <p align="center">
