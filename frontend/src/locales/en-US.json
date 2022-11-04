@@ -631,7 +631,7 @@
     "show-how-to-create": "Show how to create",
     "below-is-an-example-to-create-user-bytebase-with-password": "Below is an example to create user 'bytebase{'@'}%' with password",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn": "The instance has not configured read-only user, please consider adding one.",
+    "no-read-only-data-source-warn": "The instance has not configured read-only connection, please consider adding one.",
     "sentence": {
       "host": {
         "snowflake": "e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
@@ -643,7 +643,7 @@
         "snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)"
       },
       "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
-      "create-readonly-user": "This is the connection user used by Bytebase to perform read-only operations such as SELECT query.",
+      "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
       "create-user-example": {
         "snowflake": {
           "user": "bytebase{'@'}%",

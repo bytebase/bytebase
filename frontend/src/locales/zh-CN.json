@@ -631,7 +631,7 @@
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn": "该实例没有配置只读用户，请考虑配置。",
+    "no-read-only-data-source-warn": "该实例没有配置只读连接，请考虑配置。",
     "sentence": {
       "host": {
         "snowflake": "例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
