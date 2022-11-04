@@ -381,6 +381,9 @@
       },
       "system-bot": "机器人助手"
     },
+    "im-integration": {
+      "updated-tip": "飞书配置更新成功"
+    },
     "general": {
       "workspace": {
         "branding": "品牌",

@@ -49,13 +49,15 @@
 
 <script lang="ts" setup>
 import { onMounted, reactive } from "vue";
-import { useSettingStore } from "@/store";
+import { pushNotification, useSettingStore } from "@/store";
 import { SettingAppIMValue } from "@/types/setting";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   feishuSetting?: SettingAppIMValue;
 }
 
+const { t } = useI18n();
 const state = reactive<LocalState>({});
 const settingStore = useSettingStore();
 
@@ -78,13 +80,21 @@ const createFeishuIntegration = async () => {
       enabled: true,
     },
   };
-  await updateFeishuIntegration();
+  await settingStore.updateSettingByName({
+    name: "bb.app.im",
+    value: JSON.stringify(state.feishuSetting),
+  });
 };
 
 const updateFeishuIntegration = async () => {
   await settingStore.updateSettingByName({
     name: "bb.app.im",
     value: JSON.stringify(state.feishuSetting),
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("settings.im-integration.updated-tip"),
   });
 };
 </script>
