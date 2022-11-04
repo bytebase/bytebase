@@ -83,8 +83,10 @@ func TestRollback(t *testing.T) {
 	a.NoError(err)
 	a.Equal(2, len(txList))
 	var rollbackSQLList []string
+	tableMap := make(map[string][]string)
+	tableMap["user"] = []string{"id", "name", "balance"}
 	for _, tx := range txList {
-		sql, err := tx.GetRollbackSQL([]string{"id", "name", "balance"})
+		sql, err := tx.GetRollbackSQL(tableMap)
 		a.NoError(err)
 		rollbackSQLList = append(rollbackSQLList, sql)
 	}

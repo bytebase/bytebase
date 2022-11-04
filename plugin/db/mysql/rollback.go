@@ -2,13 +2,19 @@ package mysql
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 )
 
+var (
+	// The (?s) is a modifier that makes "." to match the new line character, which is a valid character in the MySQL database and name.
+	reDatabaseTable = regexp.MustCompile("(?s)`(.+)`\\.`(.+)`")
+)
+
 // GetRollbackSQL generates the rollback SQL for the list of binlog events in the reversed order.
-func (txn BinlogTransaction) GetRollbackSQL(columnNames []string) (string, error) {
+func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string, error) {
 	if len(txn) == 0 {
 		return "", nil
 	}
@@ -20,7 +26,7 @@ func (txn BinlogTransaction) GetRollbackSQL(columnNames []string) (string, error
 		if e.Type != WriteRowsEventType && e.Type != DeleteRowsEventType && e.Type != UpdateRowsEventType {
 			continue
 		}
-		sql, err := e.getRollbackSQL(columnNames)
+		sql, err := e.getRollbackSQL(tables)
 		if err != nil {
 			return "", err
 		}
@@ -29,11 +35,21 @@ func (txn BinlogTransaction) GetRollbackSQL(columnNames []string) (string, error
 	return strings.Join(sqlList, "\n"), nil
 }
 
-func (e *BinlogEvent) getRollbackSQL(columnNames []string) (string, error) {
+func (e *BinlogEvent) getRollbackSQL(tables map[string][]string) (string, error) {
 	// 1. Remove the "### " prefix of each line.
 	// mysqlbinlog output is separated by "\n", ref https://sourcegraph.com/github.com/mysql/mysql-server@a246bad76b9271cb4333634e954040a970222e0a/-/blob/sql/log_event.cc?L2398
 	body := strings.Split(e.Body, "\n")
 	body = replaceAllPrefix(body, "### ", "")
+
+	matches := reDatabaseTable.FindStringSubmatch(e.Body)
+	if len(matches) != 3 {
+		return "", errors.Errorf("failed to match database and table names in binlog event %q", e.Body)
+	}
+	tableName := matches[2]
+	columnNames, ok := tables[tableName]
+	if !ok {
+		return "", errors.Errorf("table %s does not exist in the provided table map", tableName)
+	}
 
 	// 2. Switch "DELETE FROM" and "INSERT INTO".
 	// 3. Replace "WHERE" and "SET" with each other.
