@@ -11,6 +11,7 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.manage-project"
   | "bb.permission.workspace.manage-sql-review-policy"
   | "bb.permission.workspace.manage-member"
+  | "bb.permission.workspace.manage-im-integration"
   | "bb.permission.workspace.manage-vcs-provider"
   | "bb.permission.workspace.manage-general"
   // Can execute admininstrive queries such as "SHOW PROCESSLIST"
@@ -32,6 +33,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-member", [false, false, true]],
   ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
   ["bb.permission.workspace.manage-general", [false, false, true]],
+  ["bb.permission.workspace.manage-im-integration", [false, true, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
 ]);
 

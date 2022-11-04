@@ -1,7 +1,7 @@
 import { SettingId } from "./id";
 import { Principal } from "./principal";
 
-export type SettingName = string;
+export type SettingName = "bb.branding.logo" | "bb.app.im";
 
 export type Setting = {
   id: SettingId;
@@ -18,4 +18,13 @@ export type Setting = {
   description: string;
 };
 
-export const brandingLogoSettingName: SettingName = "bb.branding.logo";
+type IMType = "im.feishu";
+
+export interface SettingAppIMValue {
+  imType: IMType;
+  appId: string;
+  appSecret: string;
+  externalApproval: {
+    enabled: boolean;
+  };
+}
