@@ -1,6 +1,7 @@
 import { computed, ref, Ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { IssueCreate, IssueType } from "@/types";
+import type { IssueCreate, IssueType } from "@/types";
+import { SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
 import { pushNotification, useIssueStore } from "@/store";
 import { idFromSlug } from "@/utils";
 import { defaultTemplate, templateForType } from "@/plugins";
@@ -8,6 +9,7 @@ import { BuildNewIssueContext } from "../common";
 import { maybeBuildTenantDeployIssue } from "./tenant";
 import { maybeBuildGhostIssue } from "./ghost";
 import { buildNewStandardIssue } from "./standard";
+import { tryGetDefaultAssignee } from "./assignee";
 
 export function useInitializeIssue(issueSlug: Ref<string>) {
   const issueStore = useIssueStore();
@@ -48,6 +50,13 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
       issueCreate.value = undefined;
       if (create.value) {
         issueCreate.value = await buildNewIssue({ template, route });
+        if (
+          issueCreate.value.assigneeId === UNKNOWN_ID ||
+          issueCreate.value.assigneeId === SYSTEM_BOT_ID
+        ) {
+          // Try to find a default assignee of the first task automatically.
+          await tryGetDefaultAssignee(issueCreate.value);
+        }
       }
     },
     { immediate: true }
