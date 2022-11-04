@@ -12,13 +12,15 @@
         >
           <BBSpin />
         </div>
-        <router-link
-          :to="`#activity`"
-          class="mt-2 flex justify-end normal-link"
-          exact-active-class=""
-        >
-          {{ $t("project.overview.view-all") }}
-        </router-link>
+        <div class="w-full flex justify-end mt-2 px-4">
+          <router-link
+            :to="`#activity`"
+            class="normal-link"
+            exact-active-class=""
+          >
+            {{ $t("project.overview.view-all") }}
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -134,12 +136,14 @@
           </template>
         </PagedIssueTable>
 
-        <router-link
-          :to="`/issue?status=closed&project=${project.id}`"
-          class="mt-2 flex justify-end normal-link"
-        >
-          {{ $t("project.overview.view-all-closed") }}
-        </router-link>
+        <div class="w-full flex justify-end mt-2 px-4">
+          <router-link
+            :to="`/issue?status=closed&project=${project.id}`"
+            class="normal-link"
+          >
+            {{ $t("project.overview.view-all-closed") }}
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
