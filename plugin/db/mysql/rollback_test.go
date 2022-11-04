@@ -7,10 +7,6 @@ import (
 )
 
 func TestGetRollbackSQL(t *testing.T) {
-	tableMap := make(map[string][]string)
-	tableMap["user"] = []string{"id", "name", "balance"}
-	tableMapNew := make(map[string][]string)
-	tableMapNew["user"] = []string{"id", "name", "balance", "new_column"}
 	tests := []struct {
 		name        string
 		txn         BinlogTransaction
@@ -21,7 +17,7 @@ func TestGetRollbackSQL(t *testing.T) {
 		{
 			name:        "empty",
 			txn:         BinlogTransaction{},
-			tableMap:    make(map[string][]string),
+			tableMap:    map[string][]string{},
 			rollbackSQL: "",
 			err:         false,
 		},
@@ -62,7 +58,7 @@ BEGIN
 `,
 				},
 			},
-			tableMap: tableMap,
+			tableMap: map[string][]string{"user": {"id", "name", "balance"}},
 			rollbackSQL: `DELETE FROM ` + "`binlog_test`.`user`" + `
 WHERE
   ` + "`id`" + `=1 AND
@@ -124,7 +120,7 @@ BEGIN
 `,
 				},
 			},
-			tableMap: tableMap,
+			tableMap: map[string][]string{"user": {"id", "name", "balance"}},
 			rollbackSQL: `UPDATE ` + "`binlog_test`.`user`" + `
 SET
   ` + "`id`" + `=2,
@@ -181,7 +177,7 @@ DELIMITER ;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
 				},
 			},
-			tableMap: tableMap,
+			tableMap: map[string][]string{"user": {"id", "name", "balance"}},
 			rollbackSQL: `INSERT INTO ` + "`binlog_test`.`user`" + `
 SET
   ` + "`id`" + `=1,
@@ -207,7 +203,7 @@ SET
 ###   @3=0`,
 				},
 			},
-			tableMap:    tableMapNew,
+			tableMap:    map[string][]string{"user": {"id", "name", "balance", "new_column"}},
 			rollbackSQL: "",
 			err:         true,
 		},
