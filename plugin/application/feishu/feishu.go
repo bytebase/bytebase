@@ -1,0 +1,408 @@
+package feishu
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
+	"github.com/pkg/errors"
+)
+
+var Provider *FeishuProvider
+
+func init() {
+	Provider = NewFeishuProvider()
+}
+
+type FeishuProvider struct {
+	Token  string
+	client *http.Client
+}
+
+func NewFeishuProvider() *FeishuProvider {
+	return &FeishuProvider{
+		client: &http.Client{},
+	}
+}
+
+type TenantAccessTokenResponse struct {
+	Code   int    `json:"code"`
+	Msg    string `json:"msg"`
+	Token  string `json:"tenant_access_token"`
+	Expire int    `json:"expire"`
+}
+
+type ApprovalDefinitionResponse struct {
+	Code int `json:"code"`
+	Data struct {
+		ApprovalCode string `json:"approval_code"`
+		ApprovalID   string `json:"approval_id"`
+	} `json:"data"`
+	Msg string `json:"msg"`
+}
+
+type ExternalApprovalResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		InstanceCode string `json:"instance_code"`
+	} `json:"data"`
+}
+
+type EmailsFind struct {
+	Emails []string `json:"emails"`
+}
+
+type emailsFindResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		UserList []user `json:"user_list"`
+	} `json:"data"`
+}
+
+type user struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+}
+type getExternalApprovalResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		Status string `json:"status"`
+	} `json:"data"`
+}
+
+type cancelExternalApprovalResponse struct {
+	Code int      `json:"code"`
+	Msg  string   `json:"msg"`
+	Data struct{} `json:"data"`
+}
+
+type createApprovalInstanceReq struct {
+	ApprovalCode           string `json:"approval_code"`
+	Form                   string `json:"form"`
+	NodeApproverOpenIDList []struct {
+		Key   string   `json:"key"`
+		Value []string `json:"value"`
+	} `json:"node_approver_open_id_list"`
+	OpenID string `json:"open_id"`
+}
+
+type Content struct {
+	Issue       string
+	Stage       string
+	Description string
+}
+
+func formatForm(content Content) (string, error) {
+	type form []struct {
+		ID    string `json:"id"`
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	}
+	forms := form{
+		{
+			ID:    "1",
+			Type:  "input",
+			Value: content.Issue,
+		},
+		{
+			ID:    "2",
+			Type:  "input",
+			Value: content.Stage,
+		},
+		{
+			ID:    "3",
+			Type:  "textarea",
+			Value: content.Description,
+		},
+	}
+	b, err := json.Marshal(forms)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+const (
+	getTenantAccessTokenReq = `{
+    "app_id": "%s",
+    "app_secret": "%s"
+}`
+	createApprovalDefinitionReq = `{
+  "approval_code": "%s",
+	"approval_name": "@i18n@approval_name",
+	"form": {
+    "form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"textarea\", \"name\":\"@i18n@widget3\"}]"
+	},
+	"i18n_resources": [
+		{
+			"is_default": "true",
+			"locale": "zh-CN",
+			"texts": [
+				{
+					"key": "@i18n@approval_name",
+          "value": "Bytebase 工单"
+				},
+				{
+					"key": "@i18n@node_name",
+					"value": "审批"
+				},
+				{
+					"key": "@i18n@widget1",
+					"value": "Issue"
+				},
+        {
+          "key": "@i18n@widget2",
+          "value": "Stage"
+        },
+        {
+          "key": "@i18n@widget3",
+          "value": "Description"
+        }
+			]
+		}
+	],
+	"node_list": [
+		{
+			"id": "START"
+		},
+		{
+			"id": "approve-here",
+			"name": "@i18n@node_name",
+			"approver": [
+				{
+					"type": "Free"
+				}
+			]
+		},
+		{
+			"id": "END"
+		}
+	],
+	"viewers": [
+		{
+			"viewer_type": "NONE"
+		}
+	]
+}`
+	cancelExternalApprovalReq = `{
+  "approval_code": "%s",
+  "instance_code": "%s",
+  "user_id": "%s"
+}`
+)
+
+func (p *FeishuProvider) GetTenantAccessToken(ctx context.Context, appID string, appSecret string) (*TenantAccessTokenResponse, error) {
+	body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
+	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal", body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response TenantAccessTokenResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+	if response.Code != 0 {
+		return nil, errors.Errorf("failed to get tenant access token: %s", response.Msg)
+	}
+
+	return &response, nil
+}
+
+func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, approvalCode string) (*ApprovalDefinitionResponse, error) {
+	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
+	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/approvals", body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.Token)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response ApprovalDefinitionResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+
+	if response.Code != 0 {
+		return nil, errors.Errorf("failed to create approval definition: %s", response.Msg)
+	}
+
+	return &response, nil
+}
+
+func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, content Content, approvalCode string, creatorID string, approverID string) (*ExternalApprovalResponse, error) {
+	formValue, err := formatForm(content)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to format form value")
+	}
+	payload := createApprovalInstanceReq{
+		ApprovalCode: approvalCode,
+		Form:         formValue,
+		NodeApproverOpenIDList: []struct {
+			Key   string   `json:"key"`
+			Value []string `json:"value"`
+		}{
+			{
+				Key:   "approve-here",
+				Value: []string{approverID},
+			},
+		},
+		OpenID: creatorID,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.Token)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response ExternalApprovalResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+
+	if response.Code != 0 {
+		return nil, errors.Errorf("failed to create approval instance: %s", response.Msg)
+	}
+
+	return &response, nil
+}
+
+func (p *FeishuProvider) GetExternalApproval(ctx context.Context, instanceCode string) (*getExternalApprovalResponse, error) {
+	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+p.Token)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var response getExternalApprovalResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+	if response.Code != 0 {
+		return nil, errors.Errorf("failed to get approval instance: %s", response.Msg)
+	}
+
+	return &response, nil
+}
+
+func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, approvalCode, instanceCode, userID string) (*cancelExternalApprovalResponse, error) {
+	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
+	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances/cancel", body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.Token)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response cancelExternalApprovalResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+
+	if response.Code != 0 {
+		return nil, errors.Errorf("failed to cancel approval instance: %s", response.Msg)
+	}
+
+	return &response, nil
+}
+
+func (p *FeishuProvider) GetIDByEmail(ctx context.Context, emails *EmailsFind) (*emailsFindResponse, error) {
+	body, err := json.Marshal(emails)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.Token)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response emailsFindResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+
+	if response.Code != 0 {
+		return nil, errors.Errorf("failed to get id by email: %s", response.Msg)
+	}
+	for _, user := range response.Data.UserList {
+		if user.UserID == "" {
+			return nil, errors.Errorf("failed to get id by email for %s", user.Email)
+		}
+	}
+
+	return &response, nil
+}
