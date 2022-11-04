@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -25,23 +26,52 @@ func getRoleContextKey() string {
 	return roleContextKey
 }
 
-func enforceWorkspaceDeveloperProjectACL(path string, method string, quaryParams url.Values, principalID int) *echo.HTTPError {
-	if strings.HasPrefix(path, "/project") {
+var projectGeneralRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)`)
+var projectMemberRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/member`)
+
+func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, quaryParams url.Values, principalID int, roleFinder func(projectID int, principalID int) (common.ProjectRole, error)) *echo.HTTPError {
+	var projectID int
+	var permission api.ProjectPermissionType
+	if method == "GET" {
 		if path == "/project" {
-			// Developer can only fetch projects from themseleves.
-			if method == "GET" {
-				userIDStr := quaryParams.Get("user")
-				if userIDStr == "" {
-					return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-						errors.Errorf("Not allowed to fetch all project list"))
-				}
-				if strconv.Itoa(principalID) != userIDStr {
-					return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-						errors.Errorf("Not allowed to fetch projects from other user"))
-				}
+			userIDStr := quaryParams.Get("user")
+			if userIDStr == "" {
+				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+					errors.Errorf("not allowed to fetch all project list"))
+			}
+			if strconv.Itoa(principalID) != userIDStr {
+				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+					errors.Errorf("not allowed to fetch projects from other user"))
 			}
 		}
+		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
+	} else {
+		if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionManageMember
+		} else if matches := projectGeneralRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionManageGeneral
+		}
 	}
+
+	if projectID > 0 {
+		role, err := roleFinder(projectID, principalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
+		}
+
+		if role == "" {
+			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+				errors.Errorf("rejected by the project ACL policy; %s %s u%d/non-member", method, path, principalID))
+		}
+
+		if !api.ProjectPermission(permission, plan, role) {
+			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
+				errors.Errorf("rejected by the project ACL policy; %s %s u%d/%s", method, path, principalID, role))
+		}
+	}
+
 	return nil
 }
 
@@ -122,9 +152,24 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 		// Workspace Owner or DBA assumes project Owner role for all projects, so will
 		// pass any project ACL.
 		if role != api.Owner && role != api.DBA {
-			projectACLErr := enforceWorkspaceDeveloperProjectACL(path, method, c.QueryParams(), principalID)
-			if projectACLErr != nil {
-				return projectACLErr
+			var aclErr *echo.HTTPError
+
+			roleFinder := func(projectID int, principalID int) (common.ProjectRole, error) {
+				memberList, err := s.store.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &projectID, PrincipalID: &principalID})
+				if err != nil {
+					return "", err
+				}
+				if len(memberList) > 0 {
+					return common.ProjectRole(memberList[0].Role), nil
+				}
+				return "", nil
+			}
+
+			if strings.HasPrefix(path, "/project") {
+				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.getEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
+			}
+			if aclErr != nil {
+				return aclErr
 			}
 		}
 
