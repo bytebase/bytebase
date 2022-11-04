@@ -54,6 +54,18 @@
   want: |-
     ALTER TABLE "t"
         DROP CONSTRAINT "unique_tbl_email_key";
+- stmt: |-
+    alter table t
+        add constraint email_unique_key unique(email);
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "email_unique_key" UNIQUE ("email");
+- stmt: |-
+    alter table t
+        add constraint email_unique_key unique(email) include (email) using index tablespace demo_tablespace;
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "email_unique_key" UNIQUE ("email") INCLUDE ("email") USING INDEX TABLESPACE "demo_tablespace";
 - stmt: alter table t alter column a set default 1+2+3+4
   want: |-
     ALTER TABLE "t"
