@@ -158,13 +158,13 @@ const (
 					"value": "Issue"
 				},
         {
-          "key": "@i18n@widget2",
-          "value": "Stage"
-        },
-        {
-          "key": "@i18n@widget3",
-          "value": "Description"
-        }
+					"key": "@i18n@widget2",
+					"value": "Stage"
+				},
+				{
+					"key": "@i18n@widget3",
+					"value": "Description"
+				}
 			]
 		}
 	],
