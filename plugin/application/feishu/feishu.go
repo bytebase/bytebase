@@ -31,7 +31,7 @@ func NewFeishuProvider() *FeishuProvider {
 	}
 }
 
-// TenantAccessTokenResponse is the response of get tenant access token.
+// TenantAccessTokenResponse is the response of GetTenantAccessToken.
 type TenantAccessTokenResponse struct {
 	Code   int    `json:"code"`
 	Msg    string `json:"msg"`
@@ -39,7 +39,7 @@ type TenantAccessTokenResponse struct {
 	Expire int    `json:"expire"`
 }
 
-// ApprovalDefinitionResponse is the response of create approval definition.
+// ApprovalDefinitionResponse is the response of CreateApprovalDefinition.
 type ApprovalDefinitionResponse struct {
 	Code int `json:"code"`
 	Data struct {
@@ -49,7 +49,7 @@ type ApprovalDefinitionResponse struct {
 	Msg string `json:"msg"`
 }
 
-// ExternalApprovalResponse is the response of create approval instance.
+// ExternalApprovalResponse is the response of CreateExternalApproval.
 type ExternalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
@@ -63,7 +63,8 @@ type EmailsFind struct {
 	Emails []string `json:"emails"`
 }
 
-type emailsFindResponse struct {
+// EmailsFindResponse is the response of GetIDByEmail.
+type EmailsFindResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -75,7 +76,9 @@ type user struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
 }
-type getExternalApprovalResponse struct {
+
+// GetExternalApprovalResponse is the response of GetExternalApproval.
+type GetExternalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -83,7 +86,8 @@ type getExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
-type cancelExternalApprovalResponse struct {
+// CancelExternalApprovalResponse is the response of CancelExternalApproval.
+type CancelExternalApprovalResponse struct {
 	Code int      `json:"code"`
 	Msg  string   `json:"msg"`
 	Data struct{} `json:"data"`
@@ -321,7 +325,7 @@ func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode st
 }
 
 // GetExternalApproval gets the status of an approval instance.
-func (p *FeishuProvider) GetExternalApproval(instanceCode string) (*getExternalApprovalResponse, error) {
+func (p *FeishuProvider) GetExternalApproval(instanceCode string) (*GetExternalApprovalResponse, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -337,7 +341,7 @@ func (p *FeishuProvider) GetExternalApproval(instanceCode string) (*getExternalA
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var response getExternalApprovalResponse
+	var response GetExternalApprovalResponse
 	if err := json.Unmarshal(b, &response); err != nil {
 		return nil, err
 	}
@@ -349,7 +353,7 @@ func (p *FeishuProvider) GetExternalApproval(instanceCode string) (*getExternalA
 }
 
 // CancelExternalApproval cancels an approval instance.
-func (p *FeishuProvider) CancelExternalApproval(approvalCode, instanceCode, userID string) (*cancelExternalApprovalResponse, error) {
+func (p *FeishuProvider) CancelExternalApproval(approvalCode, instanceCode, userID string) (*CancelExternalApprovalResponse, error) {
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances/cancel", body)
 	if err != nil {
@@ -368,7 +372,7 @@ func (p *FeishuProvider) CancelExternalApproval(approvalCode, instanceCode, user
 	}
 	defer resp.Body.Close()
 
-	var response cancelExternalApprovalResponse
+	var response CancelExternalApprovalResponse
 	if err := json.Unmarshal(b, &response); err != nil {
 		return nil, err
 	}
@@ -381,7 +385,7 @@ func (p *FeishuProvider) CancelExternalApproval(approvalCode, instanceCode, user
 }
 
 // GetIDByEmail gets user ids by emails.
-func (p *FeishuProvider) GetIDByEmail(emails *EmailsFind) (*emailsFindResponse, error) {
+func (p *FeishuProvider) GetIDByEmail(emails *EmailsFind) (*EmailsFindResponse, error) {
 	body, err := json.Marshal(emails)
 	if err != nil {
 		return nil, err
@@ -403,7 +407,7 @@ func (p *FeishuProvider) GetIDByEmail(emails *EmailsFind) (*emailsFindResponse, 
 	}
 	defer resp.Body.Close()
 
-	var response emailsFindResponse
+	var response EmailsFindResponse
 	if err := json.Unmarshal(b, &response); err != nil {
 		return nil, err
 	}
