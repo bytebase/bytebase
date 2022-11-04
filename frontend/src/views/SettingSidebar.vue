@@ -68,6 +68,12 @@
             >{{ $t("settings.sidebar.labels") }}</router-link
           >
           <router-link
+            v-if="showIMIntegrationItem"
+            to="/setting/im-integration"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.im-integration") }}</router-link
+          >
+          <router-link
             v-if="showVCSItem"
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
@@ -104,84 +110,46 @@
   </nav>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, reactive } from "vue";
+<script lang="ts" setup>
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { hasWorkspacePermission, isDev } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { useCurrentUser, useRouterStore } from "@/store";
 
-interface LocalState {
-  collapseState: boolean;
-}
+const routerStore = useRouterStore();
+const router = useRouter();
 
-export default defineComponent({
-  name: "SettingSidebar",
-  props: {
-    vcsSlug: {
-      default: "",
-      type: String,
-    },
-    sqlReviewPolicySlug: {
-      default: "",
-      type: String,
-    },
-  },
-  setup() {
-    const routerStore = useRouterStore();
-    const router = useRouter();
+const currentUser = useCurrentUser();
 
-    const state = reactive<LocalState>({
-      collapseState: true,
-    });
-
-    const currentUser = useCurrentUser();
-
-    const showDebugItem = computed((): boolean => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.debug",
-        currentUser.value.role
-      );
-    });
-
-    const showProjectItem = computed((): boolean => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-project",
-        currentUser.value.role
-      );
-    });
-
-    const showVCSItem = computed((): boolean => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-vcs-provider",
-        currentUser.value.role
-      );
-    });
-
-    const goBack = () => {
-      router.push(routerStore.backPath());
-    };
-
-    const toggleCollapse = () => {
-      state.collapseState = !state.collapseState;
-    };
-
-    const integrationList = [
-      {
-        name: "Slack",
-        link: "/setting/integration/slack",
-      },
-    ];
-
-    return {
-      state,
-      isDev,
-      integrationList,
-      showDebugItem,
-      showProjectItem,
-      showVCSItem,
-      goBack,
-      toggleCollapse,
-    };
-  },
+const showDebugItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.debug",
+    currentUser.value.role
+  );
 });
+
+const showProjectItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-project",
+    currentUser.value.role
+  );
+});
+
+const showIMIntegrationItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-im-integration",
+    currentUser.value.role
+  );
+});
+
+const showVCSItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-vcs-provider",
+    currentUser.value.role
+  );
+});
+
+const goBack = () => {
+  router.push(routerStore.backPath());
+};
 </script>

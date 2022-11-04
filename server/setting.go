@@ -15,6 +15,7 @@ var (
 	// Some settings contain secret info so we only return settings that are needed by the client.
 	whitelistSettings = []api.SettingName{
 		api.SettingBrandingLogo,
+		api.SettingAppIM,
 	}
 )
 
