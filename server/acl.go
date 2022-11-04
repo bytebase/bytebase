@@ -153,7 +153,6 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 		// pass any project ACL.
 		if role != api.Owner && role != api.DBA {
 			var aclErr *echo.HTTPError
-
 			roleFinder := func(projectID int, principalID int) (common.ProjectRole, error) {
 				memberList, err := s.store.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &projectID, PrincipalID: &principalID})
 				if err != nil {
@@ -168,6 +167,7 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 			if strings.HasPrefix(path, "/project") {
 				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.getEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
 			}
+
 			if aclErr != nil {
 				return aclErr
 			}
