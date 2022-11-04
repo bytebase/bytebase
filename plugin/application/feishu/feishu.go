@@ -12,23 +12,27 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Provider is the global provider for feishu.
 var Provider *FeishuProvider
 
 func init() {
 	Provider = NewFeishuProvider()
 }
 
+// FeishuProvider is the type of feishu.
 type FeishuProvider struct {
 	Token  string
 	client *http.Client
 }
 
+// NewFeishuProvider returns a FeishuProvider.
 func NewFeishuProvider() *FeishuProvider {
 	return &FeishuProvider{
 		client: &http.Client{},
 	}
 }
 
+// TenantAccessTokenResponse is the response of get tenant access token.
 type TenantAccessTokenResponse struct {
 	Code   int    `json:"code"`
 	Msg    string `json:"msg"`
@@ -36,6 +40,7 @@ type TenantAccessTokenResponse struct {
 	Expire int    `json:"expire"`
 }
 
+// ApprovalDefinitionResponse is the response of create approval definition.
 type ApprovalDefinitionResponse struct {
 	Code int `json:"code"`
 	Data struct {
@@ -45,6 +50,7 @@ type ApprovalDefinitionResponse struct {
 	Msg string `json:"msg"`
 }
 
+// ExternalApprovalResponse is the response of create approval instance.
 type ExternalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
@@ -53,6 +59,7 @@ type ExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
+// EmailsFind is the request of finding user ids by emails.
 type EmailsFind struct {
 	Emails []string `json:"emails"`
 }
@@ -93,6 +100,7 @@ type createApprovalInstanceReq struct {
 	OpenID string `json:"open_id"`
 }
 
+// Content is the content of the approval.
 type Content struct {
 	Issue       string
 	Stage       string
@@ -198,6 +206,7 @@ const (
 }`
 )
 
+// GetTenantAccessToken gets tenant access token.
 func (p *FeishuProvider) GetTenantAccessToken(ctx context.Context, appID string, appSecret string) (*TenantAccessTokenResponse, error) {
 	body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal", body)
@@ -227,6 +236,7 @@ func (p *FeishuProvider) GetTenantAccessToken(ctx context.Context, appID string,
 	return &response, nil
 }
 
+// CreateApprovalDefinition creates an approval definition.
 func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, approvalCode string) (*ApprovalDefinitionResponse, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/approvals", body)
@@ -258,7 +268,7 @@ func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, approvalC
 	return &response, nil
 }
 
-// msg is the message sent to the user.
+// CreateExternalApproval creates an approval instance.
 func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, content Content, approvalCode string, creatorID string, approverID string) (*ExternalApprovalResponse, error) {
 	formValue, err := formatForm(content)
 	if err != nil {
@@ -311,6 +321,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, content Con
 	return &response, nil
 }
 
+// GetExternalApproval gets the status of an approval instance.
 func (p *FeishuProvider) GetExternalApproval(ctx context.Context, instanceCode string) (*getExternalApprovalResponse, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
 	req, err := http.NewRequest("GET", url, nil)
@@ -338,6 +349,7 @@ func (p *FeishuProvider) GetExternalApproval(ctx context.Context, instanceCode s
 	return &response, nil
 }
 
+// CancelExternalApproval cancels an approval instance.
 func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, approvalCode, instanceCode, userID string) (*cancelExternalApprovalResponse, error) {
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances/cancel", body)
@@ -369,6 +381,7 @@ func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, approvalCod
 	return &response, nil
 }
 
+// GetIDByEmail gets user ids by emails.
 func (p *FeishuProvider) GetIDByEmail(ctx context.Context, emails *EmailsFind) (*emailsFindResponse, error) {
 	body, err := json.Marshal(emails)
 	if err != nil {
