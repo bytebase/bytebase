@@ -63,6 +63,6 @@ upgrade bytebase-release bytebase-repo/bytebase
 
 ## Need Help?
 
-- [Bytebase Support](mailto:support@bytebase.com)
+- Contact support@bytebase.com
 - [Bytebase Docs](https://bytebase.com/docs)
 - [Bytebase GitHub Issue Page](https://github.com/bytebase/bytebase/issues/new/choose)
