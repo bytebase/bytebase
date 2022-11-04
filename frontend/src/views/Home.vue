@@ -98,12 +98,11 @@
       </template>
     </PagedIssueTable>
   </div>
-  <router-link
-    to="/issue?status=closed"
-    class="mt-2 px-4 flex justify-end normal-link"
-  >
-    {{ $t("project.overview.view-all-closed") }}
-  </router-link>
+  <div class="w-full flex justify-end mt-2 px-4">
+    <router-link to="/issue?status=closed" class="normal-link">
+      {{ $t("project.overview.view-all-closed") }}
+    </router-link>
+  </div>
 </template>
 
 <script lang="ts" setup>
