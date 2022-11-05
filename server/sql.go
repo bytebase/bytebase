@@ -319,7 +319,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			errMessage = queryErr.Error()
 		}
 		var databaseID int
-		if exec.DatabaseName != "" {
+		if database != nil {
 			databaseID = database.ID
 		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
@@ -431,7 +431,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			errMessage = queryErr.Error()
 		}
 		var databaseID int
-		if exec.DatabaseName != "" {
+		if database != nil {
 			databaseID = database.ID
 		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
