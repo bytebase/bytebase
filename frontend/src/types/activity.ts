@@ -1,5 +1,12 @@
 import { FieldId } from "../plugins";
-import { ActivityId, ContainerId, PrincipalId, TaskId } from "./id";
+import {
+  ActivityId,
+  ContainerId,
+  DatabaseId,
+  InstanceId,
+  PrincipalId,
+  TaskId,
+} from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
@@ -178,7 +185,9 @@ export type ActivityProjectDatabaseTransferPayload = {
 export type ActivitySQLEditorQueryPayload = {
   statement: string;
   durationNs: number;
+  instanceId: InstanceId;
   instanceName: string;
+  databaseId: DatabaseId;
   databaseName: string;
   error: string;
   adviceList: Advice[];
