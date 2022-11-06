@@ -15,6 +15,9 @@ import (
 // Provider is the global provider for feishu.
 var Provider *feishuProvider
 
+// https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN
+const invalidTokenRespCode = 99991663
+
 func init() {
 	Provider = newFeishuProvider()
 }
@@ -211,33 +214,33 @@ const (
 )
 
 // GetTenantAccessToken gets tenant access token.
-func (p *feishuProvider) GetTenantAccessToken(appID string, appSecret string) (*TenantAccessTokenResponse, error) {
+func (p *feishuProvider) GetTenantAccessToken(appID string, appSecret string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal", body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	var response TenantAccessTokenResponse
 	if err := json.Unmarshal(b, &response); err != nil {
-		return nil, err
+		return "", err
 	}
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to get tenant access token: %s", response.Msg)
+		return "", errors.Errorf("failed to get tenant access token: %s", response.Msg)
 	}
 
-	return &response, nil
+	return response.Token, nil
 }
 
 // CreateApprovalDefinition creates an approval definition.
