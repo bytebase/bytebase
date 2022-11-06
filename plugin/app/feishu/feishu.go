@@ -247,40 +247,40 @@ func (p *feishuProvider) GetTenantAccessToken(appID string, appSecret string) (s
 	return response.Token, nil
 }
 
-// CreateApprovalDefinition creates an approval definition.
-func (p *feishuProvider) CreateApprovalDefinition(approvalCode string) (*ApprovalDefinitionResponse, error) {
+// CreateApprovalDefinition creates an approval definition and returns approval code.
+func (p *feishuProvider) CreateApprovalDefinition(approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/approvals", body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+p.Token)
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+		return "", errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
 	}
 
 	var response ApprovalDefinitionResponse
 	if err := json.Unmarshal(b, &response); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to create approval definition: %s", response.Msg)
+		return "", errors.Errorf("failed to create approval definition: %s", response.Msg)
 	}
 
-	return &response, nil
+	return response.Data.ApprovalCode, nil
 }
 
 // CreateExternalApproval creates an approval instance.
