@@ -340,8 +340,9 @@ func (p *feishuProvider) CreateExternalApproval(content Content, approvalCode st
 	return response.Data.InstanceCode, nil
 }
 
-// GetExternalApproval gets and returns the status of an approval instance.
-func (p *feishuProvider) GetExternalApproval(instanceCode string) (string, error) {
+// GetExternalApprovalStatus gets and returns the status of an approval instance.
+// https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
+func (p *feishuProvider) GetExternalApprovalStatus(instanceCode string) (string, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
