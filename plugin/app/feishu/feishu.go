@@ -283,11 +283,11 @@ func (p *feishuProvider) CreateApprovalDefinition(approvalCode string) (string, 
 	return response.Data.ApprovalCode, nil
 }
 
-// CreateExternalApproval creates an approval instance.
-func (p *feishuProvider) CreateExternalApproval(content Content, approvalCode string, creatorID string, approverID string) (*ExternalApprovalResponse, error) {
+// CreateExternalApproval creates an approval instance and returns instance code.
+func (p *feishuProvider) CreateExternalApproval(content Content, approvalCode string, creatorID string, approverID string) (string, error) {
 	formValue, err := formatForm(content)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	payload := createApprovalInstanceReq{
 		ApprovalCode: approvalCode,
@@ -305,39 +305,39 @@ func (p *feishuProvider) CreateExternalApproval(content Content, approvalCode st
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances", bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+p.Token)
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+		return "", errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
 	}
 
 	var response ExternalApprovalResponse
 	if err := json.Unmarshal(b, &response); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to create approval instance, %s", response.Msg)
+		return "", errors.Errorf("failed to create approval instance, %s", response.Msg)
 	}
 
-	return &response, nil
+	return response.Data.InstanceCode, nil
 }
 
 // GetExternalApproval gets the status of an approval instance.
