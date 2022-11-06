@@ -232,6 +232,10 @@ func (p *feishuProvider) GetTenantAccessToken(appID string, appSecret string) (s
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	}
+
 	var response TenantAccessTokenResponse
 	if err := json.Unmarshal(b, &response); err != nil {
 		return "", err
@@ -262,6 +266,10 @@ func (p *feishuProvider) CreateApprovalDefinition(approvalCode string) (*Approva
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	}
 
 	var response ApprovalDefinitionResponse
 	if err := json.Unmarshal(b, &response); err != nil {
@@ -316,6 +324,10 @@ func (p *feishuProvider) CreateExternalApproval(content Content, approvalCode st
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	}
+
 	var response ExternalApprovalResponse
 	if err := json.Unmarshal(b, &response); err != nil {
 		return nil, err
@@ -345,6 +357,11 @@ func (p *feishuProvider) GetExternalApproval(instanceCode string) (*GetExternalA
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	}
+
 	var response GetExternalApprovalResponse
 	if err := json.Unmarshal(b, &response); err != nil {
 		return nil, err
@@ -375,6 +392,10 @@ func (p *feishuProvider) CancelExternalApproval(approvalCode, instanceCode, user
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	}
 
 	var response CancelExternalApprovalResponse
 	if err := json.Unmarshal(b, &response); err != nil {
@@ -410,6 +431,10 @@ func (p *feishuProvider) GetIDByEmail(emails *EmailsFind) (*EmailsFindResponse, 
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	}
 
 	var response EmailsFindResponse
 	if err := json.Unmarshal(b, &response); err != nil {
