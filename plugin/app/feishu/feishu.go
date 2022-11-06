@@ -374,39 +374,39 @@ func (p *feishuProvider) GetExternalApproval(instanceCode string) (*GetExternalA
 }
 
 // CancelExternalApproval cancels an approval instance.
-func (p *feishuProvider) CancelExternalApproval(approvalCode, instanceCode, userID string) (*CancelExternalApprovalResponse, error) {
+func (p *feishuProvider) CancelExternalApproval(approvalCode, instanceCode, userID string) error {
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
 	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances/cancel", body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+p.Token)
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+		return errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
 	}
 
 	var response CancelExternalApprovalResponse
 	if err := json.Unmarshal(b, &response); err != nil {
-		return nil, err
+		return err
 	}
 
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to create approval instance, %s", response.Msg)
+		return errors.Errorf("failed to create approval instance, %s", response.Msg)
 	}
 
-	return &response, nil
+	return nil
 }
 
 // GetIDByEmail gets user ids by emails.
