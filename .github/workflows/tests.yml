@@ -32,9 +32,7 @@ jobs:
         uses: Ana06/get-changed-files@v2.1.0
         with:
           filter: |
-            frontend/**
-            *.js
-            *.json
+            !frontend/**
       - run: |
           for changed_file in ${{ steps.files.outputs.all }}; do
             echo ${changed_file}
