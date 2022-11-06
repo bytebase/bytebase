@@ -62,8 +62,8 @@ type ExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
-// EmailsFind is the request of finding user ids by emails.
-type EmailsFind struct {
+// GetIDByEmailReq is the request of finding user ids by emails.
+type GetIDByEmailReq struct {
 	Emails []string `json:"emails"`
 }
 
@@ -411,8 +411,8 @@ func (p *feishuProvider) CancelExternalApproval(approvalCode, instanceCode, user
 }
 
 // GetIDByEmail gets user ids by emails.
-func (p *feishuProvider) GetIDByEmail(emails *EmailsFind) (*EmailsFindResponse, error) {
-	body, err := json.Marshal(emails)
+func (p *feishuProvider) GetIDByEmail(emails []string) (*EmailsFindResponse, error) {
+	body, err := json.Marshal(&GetIDByEmailReq{Emails: emails})
 	if err != nil {
 		return nil, err
 	}
