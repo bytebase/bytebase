@@ -111,6 +111,31 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
+				case pgquery.AlterTableType_AT_ColumnDefault:
+					if alterCmd.Def == nil {
+						dropDefault := &ast.DropDefaultStmt{
+							Table:      alterTable.Table,
+							ColumnName: alterCmd.Name,
+						}
+
+						alterTable.AlterItemList = append(alterTable.AlterItemList, dropDefault)
+					} else {
+						var err error
+						setDefault := &ast.SetDefaultStmt{
+							Table:      alterTable.Table,
+							ColumnName: alterCmd.Name,
+						}
+						if setDefault.Expression, _, _, err = convertExpressionNode(alterCmd.Def); err != nil {
+							return nil, err
+						}
+						text, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, alterCmd.Def)
+						if err != nil {
+							return nil, err
+						}
+						setDefault.Expression.SetText(text)
+
+						alterTable.AlterItemList = append(alterTable.AlterItemList, setDefault)
+					}
 				}
 			}
 		}
@@ -792,6 +817,8 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		Name:           in.Constraint.Conname,
 		Type:           convertConstraintType(in.Constraint.Contype, in.Constraint.Indexname != ""),
 		SkipValidation: in.Constraint.SkipValidation,
+		Deferrable:     in.Constraint.Deferrable,
+		Initdeferred:   in.Constraint.Initdeferred,
 	}
 
 	switch cons.Type {
@@ -803,6 +830,14 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			}
 			cons.KeyList = append(cons.KeyList, name.String_.Str)
 		}
+		for _, col := range in.Constraint.Including {
+			name, ok := col.Node.(*pgquery.Node_String_)
+			if !ok {
+				return nil, parser.NewConvertErrorf("expected String but found %t", col.Node)
+			}
+			cons.Including = append(cons.Including, name.String_.Str)
+		}
+		cons.IndexTableSpace = in.Constraint.Indexspace
 	case ast.ConstraintTypeForeign:
 		cons.Foreign = &ast.ForeignDef{
 			Table: convertRangeVarToTableName(in.Constraint.Pktable, ast.TableTypeBaseTable),
@@ -825,12 +860,17 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 	case ast.ConstraintTypePrimaryUsingIndex, ast.ConstraintTypeUniqueUsingIndex:
 		cons.IndexName = in.Constraint.Indexname
-	case ast.ConstraintTypeCheck:
+	case ast.ConstraintTypeCheck, ast.ConstraintTypeDefault:
 		expression, _, _, err := convertExpressionNode(in.Constraint.RawExpr)
 		if err != nil {
 			return nil, err
 		}
-		cons.CheckExpression = expression
+		text, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, in.Constraint.RawExpr)
+		if err != nil {
+			return nil, err
+		}
+		expression.SetText(text)
+		cons.Expression = expression
 	}
 
 	return cons, nil
@@ -857,6 +897,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeNotNull
 	case pgquery.ConstrType_CONSTR_CHECK:
 		return ast.ConstraintTypeCheck
+	case pgquery.ConstrType_CONSTR_DEFAULT:
+		return ast.ConstraintTypeDefault
 	}
 	return ast.ConstraintTypeUndefined
 }

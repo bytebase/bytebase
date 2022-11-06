@@ -30,3 +30,47 @@
     ALTER TABLE "t"
         ALTER COLUMN "c1" SET NOT NULL,
         ALTER COLUMN "c2" DROP NOT NULL;
+- stmt: |-
+    alter table t
+        add unique using index email_idx;
+  want: |-
+    ALTER TABLE "t"
+        ADD UNIQUE USING INDEX "email_idx";
+- stmt: |-
+    alter table t
+        add unique using index email_idx deferrable;
+  want: |-
+    ALTER TABLE "t"
+        ADD UNIQUE USING INDEX "email_idx" DEFERRABLE;
+- stmt: |-
+    alter table t
+        add unique using index email_idx INITIALLY DEFERRED;
+  want: |-
+    ALTER TABLE "t"
+        ADD UNIQUE USING INDEX "email_idx" INITIALLY DEFERRED;
+- stmt: |-
+    alter table t
+        drop constraint unique_tbl_email_key;
+  want: |-
+    ALTER TABLE "t"
+        DROP CONSTRAINT "unique_tbl_email_key";
+- stmt: |-
+    alter table t
+        add constraint email_unique_key unique(email);
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "email_unique_key" UNIQUE ("email");
+- stmt: |-
+    alter table t
+        add constraint email_unique_key unique(email) include (email) using index tablespace demo_tablespace;
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "email_unique_key" UNIQUE ("email") INCLUDE ("email") USING INDEX TABLESPACE "demo_tablespace";
+- stmt: alter table t alter column a set default 1+2+3+4
+  want: |-
+    ALTER TABLE "t"
+        ALTER COLUMN "a" SET DEFAULT ((1 + 2) + 3) + 4;
+- stmt: alter table t alter column a drop default
+  want: |-
+    ALTER TABLE "t"
+        ALTER COLUMN "a" DROP DEFAULT;

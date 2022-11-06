@@ -11,6 +11,7 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.manage-project"
   | "bb.permission.workspace.manage-sql-review-policy"
   | "bb.permission.workspace.manage-member"
+  | "bb.permission.workspace.manage-im-integration"
   | "bb.permission.workspace.manage-vcs-provider"
   | "bb.permission.workspace.manage-general"
   // Can execute admininstrive queries such as "SHOW PROCESSLIST"
@@ -32,6 +33,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-member", [false, false, true]],
   ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
   ["bb.permission.workspace.manage-general", [false, false, true]],
+  ["bb.permission.workspace.manage-im-integration", [false, true, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
 ]);
 
@@ -57,10 +59,10 @@ export type ProjectPermissionType =
   | "bb.permission.project.manage-general"
   | "bb.permission.project.manage-member"
   | "bb.permission.project.manage-sheet"
-  | "bb.permission.project.archive-restore"
   | "bb.permission.project.change-database"
   | "bb.permission.project.admin-database"
-  | "bb.permission.project.create-or-transfer-database";
+  | "bb.permission.project.create-database"
+  | "bb.permission.project.transfer-database";
 
 // Returns true if RBAC is not enabled or the particular project role has the particular project permission.
 export function hasProjectPermission(
@@ -78,12 +80,16 @@ export function hasProjectPermission(
       ["bb.permission.project.manage-general", [false, true]],
       ["bb.permission.project.manage-member", [false, true]],
       ["bb.permission.project.manage-sheet", [false, true]],
-      ["bb.permission.project.archive-restore", [false, true]],
       ["bb.permission.project.change-database", [true, true]],
       ["bb.permission.project.admin-database", [false, true]],
-      // If dba-workflow is disabled, then project developer can also create or transfer database.
+      // If dba-workflow is disabled, then project developer can also create database.
       [
-        "bb.permission.project.create-or-transfer-database",
+        "bb.permission.project.create-database",
+        [!hasFeature("bb.feature.dba-workflow"), true],
+      ],
+      // If dba-workflow is disabled, then project developer can also transfer database.
+      [
+        "bb.permission.project.transfer-database",
         [!hasFeature("bb.feature.dba-workflow"), true],
       ],
     ]);

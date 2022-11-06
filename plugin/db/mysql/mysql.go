@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -38,6 +39,10 @@ type Driver struct {
 	resourceDir   string
 	binlogDir     string
 	db            *sql.DB
+	// migrationConn is used to execute migrations.
+	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
+	// So that it's easy to get the thread ID for rollback SQL.
+	migrationConn *sql.Conn
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -51,7 +56,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -90,8 +95,13 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 	if err != nil {
 		return nil, err
 	}
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
 	driver.dbType = dbType
 	driver.db = db
+	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
 
@@ -100,7 +110,10 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	return driver.db.Close()
+	var err error
+	err = multierr.Append(err, driver.db.Close())
+	err = multierr.Append(err, driver.migrationConn.Close())
+	return err
 }
 
 // Ping pings the database.
@@ -156,7 +169,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 	transformedStatement := buf.String()
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -171,6 +184,15 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 
 	return err
+}
+
+// GetMigrationConnID gets the ID of the connection executing migrations.
+func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
+	var id string
+	if err := driver.migrationConn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&id); err != nil {
+		return "", errors.Wrap(err, "failed to get the connection ID")
+	}
+	return id, nil
 }
 
 // Query queries a SQL statement.

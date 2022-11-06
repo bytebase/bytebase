@@ -97,7 +97,7 @@ const { t } = useI18n();
 const showProgress = computed((): boolean => {
   const { status } = props.task;
 
-  return status === "PENDING" || status === "RUNNING" || status === "DONE";
+  return status === "PENDING" || status === "RUNNING";
 });
 
 const progress = computed((): ProgressSummary => {

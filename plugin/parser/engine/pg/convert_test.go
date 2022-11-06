@@ -301,7 +301,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			},
 		},
 		{
-			stmt: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
+			stmt: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int DEFAULT 1+2+3-4+5)",
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					IfNotExists: true,
@@ -317,13 +317,20 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						{
 							ColumnName: "b",
 							Type:       &ast.Integer{Size: 4},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type:       ast.ConstraintTypeDefault,
+									KeyList:    []string{"b"},
+									Expression: expressionWithText(&ast.UnconvertedExpressionDef{}, "(((1 + 2) + 3) - 4) + 5"),
+								},
+							},
 						},
 					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
+					Text:     "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int DEFAULT 1+2+3-4+5)",
 					LastLine: 1,
 				},
 			},
@@ -857,6 +864,11 @@ func TestPGDropConstraintStmt(t *testing.T) {
 	runTests(t, tests)
 }
 
+func expressionWithText(expression ast.ExpressionNode, text string) ast.ExpressionNode {
+	expression.SetText(text)
+	return expression
+}
+
 func TestPGAddConstraintStmt(t *testing.T) {
 	tests := []testData{
 		{
@@ -874,10 +886,10 @@ func TestPGAddConstraintStmt(t *testing.T) {
 								Name: "tech_book",
 							},
 							Constraint: &ast.ConstraintDef{
-								Type:            ast.ConstraintTypeCheck,
-								Name:            "check_a_bigger_than_b",
-								SkipValidation:  true,
-								CheckExpression: &ast.UnconvertedExpressionDef{},
+								Type:           ast.ConstraintTypeCheck,
+								Name:           "check_a_bigger_than_b",
+								SkipValidation: true,
+								Expression:     expressionWithText(&ast.UnconvertedExpressionDef{}, "a > b"),
 							},
 						},
 					},
@@ -916,6 +928,40 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text:     "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE ONLY s.person ADD CONSTRAINT person_email_email1_key UNIQUE (email) INCLUDE (email) USING INDEX TABLESPACE demo_table_space;",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type:   ast.TableTypeBaseTable,
+						Schema: "s",
+						Name:   "person",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type:   ast.TableTypeBaseTable,
+								Schema: "s",
+								Name:   "person",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:            ast.ConstraintTypeUnique,
+								Name:            "person_email_email1_key",
+								KeyList:         []string{"email"},
+								Including:       []string{"email"},
+								IndexTableSpace: "demo_table_space",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE ONLY s.person ADD CONSTRAINT person_email_email1_key UNIQUE (email) INCLUDE (email) USING INDEX TABLESPACE demo_table_space;",
 					LastLine: 1,
 				},
 			},
@@ -1969,6 +2015,65 @@ func TestDropSchema(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text:     "DROP SCHEMA IF EXISTS s1, s2 RESTRICT",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestAlterColumnDefault(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a DROP DEFAULT",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.DropDefaultStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a DROP DEFAULT",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a SET DEFAULT 1+2+3",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.SetDefaultStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+							Expression: expressionWithText(&ast.UnconvertedExpressionDef{}, "(1 + 2) + 3"),
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a SET DEFAULT 1+2+3",
 					LastLine: 1,
 				},
 			},

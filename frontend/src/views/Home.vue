@@ -27,12 +27,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.assigned'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.assigned')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
@@ -52,12 +48,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.created'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.created')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
@@ -77,12 +69,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.subscribed'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.subscribed')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
@@ -104,22 +92,17 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('project.overview.recently-closed'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('project.overview.recently-closed')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
   </div>
-  <router-link
-    to="/issue?status=closed"
-    class="mt-2 px-4 flex justify-end normal-link"
-  >
-    {{ $t("project.overview.view-all-closed") }}
-  </router-link>
+  <div class="w-full flex justify-end mt-2 px-4">
+    <router-link to="/issue?status=closed" class="normal-link">
+      {{ $t("project.overview.view-all-closed") }}
+    </router-link>
+  </div>
 </template>
 
 <script lang="ts" setup>

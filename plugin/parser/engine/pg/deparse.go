@@ -109,9 +109,151 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropNotNull(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.AddConstraintStmt:
+			if err := deparseAddConstraint(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.DropConstraintStmt:
+			if err := deparseDropConstraint(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.SetDefaultStmt:
+			if err := deparseSetDefault(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.DropDefaultStmt:
+			if err := deparseDropDefault(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func deparseSetDefault(context parser.DeparseContext, in *ast.SetDefaultStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" SET DEFAULT "); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(in.Expression.Text()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deparseDropDefault(context parser.DeparseContext, in *ast.DropDefaultStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("ALTER COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" DROP DEFAULT"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("ADD "); err != nil {
+		return err
+	}
+	if in.Constraint.Name != "" {
+		if _, err := buf.WriteString("CONSTRAINT "); err != nil {
+			return err
+		}
+		if err := writeSurrounding(buf, in.Constraint.Name, `"`); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(" "); err != nil {
+			return err
+		}
+	}
+	switch in.Constraint.Type {
+	case ast.ConstraintTypeUniqueUsingIndex:
+		if _, err := buf.WriteString("UNIQUE USING INDEX "); err != nil {
+			return err
+		}
+		if err := writeSurrounding(buf, in.Constraint.IndexName, `"`); err != nil {
+			return err
+		}
+
+		if in.Constraint.Initdeferred {
+			if _, err := buf.WriteString(" INITIALLY DEFERRED"); err != nil {
+				return err
+			}
+		} else if in.Constraint.Deferrable {
+			if _, err := buf.WriteString(" DEFERRABLE"); err != nil {
+				return err
+			}
+		}
+	case ast.ConstraintTypeUnique:
+		if _, err := buf.WriteString("UNIQUE ("); err != nil {
+			return err
+		}
+		for idx, col := range in.Constraint.KeyList {
+			if idx >= 1 {
+				if _, err := buf.WriteString(", "); err != nil {
+					return err
+				}
+			}
+			if err := writeSurrounding(buf, col, `"`); err != nil {
+				return err
+			}
+		}
+		if len(in.Constraint.Including) > 0 {
+			if _, err := buf.WriteString(") INCLUDE ("); err != nil {
+				return err
+			}
+			for idx, col := range in.Constraint.Including {
+				if idx >= 1 {
+					if _, err := buf.WriteString(", "); err != nil {
+						return err
+					}
+				}
+				if err := writeSurrounding(buf, col, `"`); err != nil {
+					return err
+				}
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+		if in.Constraint.IndexTableSpace != "" {
+			if _, err := buf.WriteString(" USING INDEX TABLESPACE "); err != nil {
+				return err
+			}
+			if err := writeSurrounding(buf, in.Constraint.IndexTableSpace, `"`); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func deparseDropConstraint(context parser.DeparseContext, in *ast.DropConstraintStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("DROP CONSTRAINT "); err != nil {
+		return err
+	}
+
+	return writeSurrounding(buf, in.ConstraintName, `"`)
 }
 
 func deparseDropNotNull(context parser.DeparseContext, in *ast.DropNotNullStmt, buf *strings.Builder) error {
@@ -289,6 +431,13 @@ func deparseColumnConstraint(_ parser.DeparseContext, in *ast.ConstraintDef, buf
 		}
 	case ast.ConstraintTypePrimary:
 		if _, err := buf.WriteString("PRIMARY KEY"); err != nil {
+			return err
+		}
+	case ast.ConstraintTypeDefault:
+		if _, err := buf.WriteString("DEFAULT "); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.Expression.Text()); err != nil {
 			return err
 		}
 	default:

@@ -208,7 +208,8 @@
     "no": "否",
     "yes": "是",
     "advanced": "高级",
-    "restart": "重启"
+    "restart": "重启",
+    "want-help": "加入用户群"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -321,6 +322,7 @@
       "workspace": "工作空间",
       "general": "通用",
       "members": "成员",
+      "im-integration": "IM 集成管理",
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",
@@ -378,6 +380,9 @@
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
       "system-bot": "机器人助手"
+    },
+    "im-integration": {
+      "feishu-updated-tip": "飞书配置更新成功"
     },
     "general": {
       "workspace": {
@@ -517,7 +522,23 @@
     "upload-sql": "上传 SQL",
     "override-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
-    "waiting-earliest-allowed-time": "将于 {time} 之后执行"
+    "waiting-earliest-allowed-time": "将于 {time} 之后执行",
+    "batch-transition": {
+      "not-allowed-tips": "部分选中的工单无法被{operation}",
+      "resolve": "解决",
+      "resolved": "解决",
+      "cancel": "取消",
+      "cancelled": "取消",
+      "reopen": "重开",
+      "reopened": "重开",
+      "action-n-issues": "{action} {n} 个工单",
+      "successfully-action-n-issues": "成功更新 {n} 个工单"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
+      "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
+      "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -525,7 +546,8 @@
     "alter-single-db": "变更单个数据库",
     "alter-multiple-db": "手动选择数据库",
     "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。",
-    "alter-db-group": "按部署的配置"
+    "alter-db-group": "按部署的配置",
+    "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
   },
   "quick-action": {
     "create-db": "创建数据库",
@@ -613,7 +635,7 @@
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn": "该实例没有配置只读用户，请考虑配置。",
+    "no-read-only-data-source-warn": "该实例没有配置只读连接，请考虑配置。",
     "sentence": {
       "host": {
         "snowflake": "例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"

@@ -36,6 +36,7 @@ require (
 	github.com/swaggo/swag v1.8.7
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.12.4
+	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.1.0
 	golang.org/x/sys v0.1.0
@@ -147,7 +148,6 @@ require (
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
@@ -169,3 +169,5 @@ replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20220728
 replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20221028035959-5d3b71eadf24
 
 replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20221028035959-5d3b71eadf24
+
+replace github.com/pganalyze/pg_query_go/v2 => github.com/bytebase/pg_query_go/v2 v2.0.0-20221102094723-0d12de86f87c

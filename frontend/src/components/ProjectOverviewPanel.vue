@@ -12,13 +12,15 @@
         >
           <BBSpin />
         </div>
-        <router-link
-          :to="`#activity`"
-          class="mt-2 flex justify-end normal-link"
-          exact-active-class=""
-        >
-          {{ $t("project.overview.view-all") }}
-        </router-link>
+        <div class="w-full flex justify-end mt-2 px-4">
+          <router-link
+            :to="`#activity`"
+            class="normal-link"
+            exact-active-class=""
+          >
+            {{ $t("project.overview.view-all") }}
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -105,9 +107,8 @@
           <template #table="{ issueList, loading }">
             <IssueTable
               :mode="'PROJECT'"
-              :issue-section-list="[
-                { title: $t('project.overview.in-progress'), list: issueList },
-              ]"
+              :title="$t('project.overview.in-progress')"
+              :issue-list="issueList"
               :show-placeholder="!loading"
             />
           </template>
@@ -128,23 +129,21 @@
             <IssueTable
               class="-mt-px"
               :mode="'PROJECT'"
-              :issue-section-list="[
-                {
-                  title: $t('project.overview.recently-closed'),
-                  list: issueList,
-                },
-              ]"
+              :title="$t('project.overview.recently-closed')"
+              :issue-list="issueList"
               :show-placeholder="!loading"
             />
           </template>
         </PagedIssueTable>
 
-        <router-link
-          :to="`/issue?status=closed&project=${project.id}`"
-          class="mt-2 flex justify-end normal-link"
-        >
-          {{ $t("project.overview.view-all-closed") }}
-        </router-link>
+        <div class="w-full flex justify-end mt-2 px-4">
+          <router-link
+            :to="`/issue?status=closed&project=${project.id}`"
+            class="normal-link"
+          >
+            {{ $t("project.overview.view-all-closed") }}
+          </router-link>
+        </div>
       </div>
     </div>
   </div>

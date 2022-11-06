@@ -68,21 +68,33 @@
         >
           <div
             class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="currentPlan == 0 ? 'underline text-accent' : 'text-main'"
+            :class="
+              currentPlan == PlanType.FREE
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToFree"
           >
             {{ $t("subscription.plan.free.title") }}
           </div>
           <div
             class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="currentPlan == 1 ? 'underline text-accent' : 'text-main'"
+            :class="
+              currentPlan == PlanType.TEAM
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToTeam"
           >
             {{ $t("subscription.plan.team.title") }}
           </div>
           <div
             class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="currentPlan == 2 ? 'underline text-accent' : 'text-main'"
+            :class="
+              currentPlan == PlanType.ENTERPRISE
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToEnterprise"
           >
             {{ $t("subscription.plan.enterprise.title") }}
@@ -103,6 +115,14 @@
               />
             </svg>
           </div>
+        </div>
+        <div
+          v-if="currentPlan === PlanType.FREE"
+          class="flex justify-between items-center min-w-fit px-4 py-2 bg-indigo-600 text-sm font-medium text-white rounded-md cursor-pointer"
+          @click="handleWantHelp"
+        >
+          <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
+          <heroicons-outline:chat-bubble-left-right class="w-5 h-5" />
         </div>
         <router-link to="/inbox" exact-active-class>
           <span
@@ -181,6 +201,17 @@
       >{{ $t("common.settings") }}</router-link
     >
   </div>
+  <BBModal
+    v-if="state.showQRCodeModal"
+    :title="$t('common.want-help')"
+    @close="state.showQRCodeModal = false"
+  >
+    <img
+      class="w-48 h-48"
+      src="@/assets/bb-helper-wechat-qrcode.webp"
+      alt="bb_helper"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
@@ -191,7 +222,6 @@ import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "../types";
-import { brandingLogoSettingName } from "../types/setting";
 import { hasWorkspacePermission, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
@@ -202,9 +232,11 @@ import {
   useInboxStore,
 } from "@/store";
 import { storeToRefs } from "pinia";
+import { PlanType } from "@/types";
 
 interface LocalState {
   showMobileMenu: boolean;
+  showQRCodeModal: boolean;
 }
 
 export default defineComponent({
@@ -218,10 +250,11 @@ export default defineComponent({
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const route = useRoute();
-    const { setLocale, toggleLocales } = useLanguage();
+    const { setLocale, toggleLocales, locale } = useLanguage();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
+      showQRCodeModal: false,
     });
 
     const currentUser = useCurrentUser();
@@ -261,9 +294,8 @@ export default defineComponent({
     };
 
     const logoUrl = computed((): string | undefined => {
-      const brandingLogoSetting = settingStore.getSettingByName(
-        brandingLogoSettingName
-      );
+      const brandingLogoSetting =
+        settingStore.getSettingByName("bb.branding.logo");
       return brandingLogoSetting?.value;
     });
 
@@ -383,6 +415,17 @@ export default defineComponent({
     ]);
     useRegisterActions(i18nActions);
 
+    const handleWantHelp = () => {
+      if (locale.value === "zh-CN") {
+        state.showQRCodeModal = true;
+      } else {
+        window.open(
+          "https://www.bytebase.com/docs/faq#how-to-reach-us",
+          "_blank"
+        );
+      }
+    };
+
     return {
       state,
       getRouteLinkClass,
@@ -391,6 +434,7 @@ export default defineComponent({
       logoUrl,
       currentUser,
       currentPlan,
+      PlanType,
       isDevFeatures,
       inboxSummary,
       switchToFree,
@@ -399,6 +443,7 @@ export default defineComponent({
       isDebug,
       toggleDebug,
       toggleLocales,
+      handleWantHelp,
     };
   },
 });
