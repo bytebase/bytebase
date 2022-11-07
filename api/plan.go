@@ -30,6 +30,20 @@ func (p PlanType) String() string {
 	return ""
 }
 
+// Priority returns the priority of plan type.
+// Higher priority means the plan supports more feature.
+func (p PlanType) Priority() int {
+	switch p {
+	case FREE:
+		return 1
+	case TEAM:
+		return 2
+	case ENTERPRISE:
+		return 3
+	}
+	return 0
+}
+
 // FeatureType is the type of a feature.
 type FeatureType string
 

@@ -59,7 +59,16 @@ export const useSubscriptionStore = defineStore("subscription", {
       return daysBeforeExpire / total < 0.5;
     },
     canTrial(state): boolean {
-      return !state.subscription || state.subscription.plan === PlanType.FREE;
+      if (!state.subscription) {
+        return true;
+      }
+      if (state.subscription.plan === PlanType.FREE) {
+        return true;
+      }
+      return (
+        state.subscription.trialing &&
+        state.subscription.plan < state.trialingPlan
+      );
     },
   },
   actions: {

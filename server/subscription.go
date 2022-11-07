@@ -69,6 +69,13 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			OrgName:  s.workspaceID,
 		}
 
+		upgradeTrial := s.subscription.Trialing && license.Plan.Priority() > s.subscription.Plan.Priority()
+
+		if upgradeTrial {
+			license.ExpiresTs = s.subscription.ExpiresTs
+			license.IssuedTs = s.subscription.StartedTs
+		}
+
 		value, err := json.Marshal(license)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal license").SetInternal(err)
@@ -82,6 +89,16 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			Description: "The trialing license.",
 		}); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
+		}
+
+		if upgradeTrial {
+			if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+				UpdaterID: api.SystemBotID,
+				Name:      api.SettingEnterpriseLicense,
+				Value:     "",
+			}); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove license").SetInternal(err)
+			}
 		}
 
 		s.subscription = s.loadSubscription(ctx)
