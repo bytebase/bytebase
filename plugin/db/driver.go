@@ -457,7 +457,7 @@ type Driver interface {
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-	Execute(ctx context.Context, statement string) error
+	Execute(ctx context.Context, statement string, createDatabase bool) error
 	// Used for execute readonly SELECT statement
 	// limit is the maximum row count returned. No limit enforced if limit <= 0
 	Query(ctx context.Context, statement string, limit int, readOnly bool) ([]interface{}, error)

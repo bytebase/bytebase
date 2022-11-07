@@ -55,7 +55,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
 		// Should use role SYSADMIN.
-		if err := driver.Execute(ctx, migrationSchema); err != nil {
+		if err := driver.Execute(ctx, migrationSchema, true /* createDatabase */); err != nil {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),

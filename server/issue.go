@@ -1194,6 +1194,7 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 		// ERROR:  must be member of role "hello"
 		//
 		// For tenant project, the schema for the newly created database will belong to the same owner.
+		// TODO(d): alter schema "public" owner to the database owner.
 		stmt = fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;\n", stmt, databaseName, createDatabaseContext.Owner)
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\n\\connect \"%s\";\n%s", stmt, databaseName, schema)

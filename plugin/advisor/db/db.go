@@ -8,7 +8,7 @@ import (
 )
 
 // Type is the type of a database.
-//nolint
+// nolint
 type Type string
 
 const (
