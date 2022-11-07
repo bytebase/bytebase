@@ -163,7 +163,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) error {
 	var buf bytes.Buffer
 	if err := transformDelimiter(&buf, statement); err != nil {
 		return err

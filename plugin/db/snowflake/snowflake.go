@@ -217,7 +217,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) error {
 	count := 0
 	f := func(stmt string) error {
 		count++
