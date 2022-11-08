@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -48,6 +49,7 @@ type Driver struct {
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
 
+	mu        sync.Mutex
 	collector prometheus.Collector
 }
 
@@ -59,15 +61,15 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
-	if strings.HasPrefix(connCfg.Host, "/") {
+	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
 	}
 
 	params := []string{"multiStatements=true"}
 
-	port := connCfg.Port
+	port := config.Port
 	if port == "" {
 		port = "3306"
 		if dbType == db.TiDB {
@@ -75,15 +77,15 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		}
 	}
 
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	tlsConfig, err := config.TLSConfig.GetSslConfig()
 
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 
-	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	if connCfg.Password != "" {
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
+	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", config.Username, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
+	if config.Password != "" {
+		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", config.Username, config.Password, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
 	}
 	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
@@ -98,12 +100,14 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	if err != nil {
 		return nil, err
 	}
+	driver.mu.Lock()
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = util.NewStatsCollector(string(dbType), connCfg.Database, db)
+		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}
+	driver.mu.Unlock()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return nil, err
@@ -112,7 +116,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	driver.db = db
 	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
-	driver.connCfg = connCfg
+	driver.connCfg = config
 
 	return driver, nil
 }

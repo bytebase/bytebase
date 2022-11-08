@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
@@ -60,6 +61,7 @@ type Driver struct {
 	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
 	strictDatabase string
 
+	mu        sync.Mutex
 	collector prometheus.Collector
 }
 
@@ -104,12 +106,14 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	if err != nil {
 		return nil, err
 	}
+	driver.mu.Lock()
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
 		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}
+	driver.mu.Unlock()
 
 	driver.db = db
 	return driver, nil

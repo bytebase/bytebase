@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
@@ -40,6 +41,7 @@ type Driver struct {
 
 	db *sql.DB
 
+	mu        sync.Mutex
 	collector prometheus.Collector
 }
 
@@ -81,12 +83,14 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
 	)
+	driver.mu.Lock()
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
 		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}
+	driver.mu.Unlock()
 
 	driver.dbType = dbType
 	driver.db = db

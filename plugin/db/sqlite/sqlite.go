@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
@@ -34,6 +35,7 @@ type Driver struct {
 	db            *sql.DB
 	connectionCtx db.ConnectionContext
 
+	mu        sync.Mutex
 	collector prometheus.Collector
 }
 
@@ -51,12 +53,14 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	if err != nil {
 		return nil, err
 	}
+	driver.mu.Lock()
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
 		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}
+	driver.mu.Unlock()
 	driver.connectionCtx = connCtx
 	return driver, nil
 }
