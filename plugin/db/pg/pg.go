@@ -105,10 +105,12 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	if err != nil {
 		return nil, err
 	}
-	// Create a new collector, the name will be used as a label on the metrics
-	collector := sqlstats.NewStatsCollector("pg_"+config.Database, db)
-	// Register it with Prometheus
-	prometheus.MustRegister(collector)
+	if driver.collector == nil {
+		// Create a new collector, the name will be used as a label on the metrics
+		driver.collector = sqlstats.NewStatsCollector("pg_"+config.Database, db)
+		// Register it with Prometheus
+		prometheus.MustRegister(driver.collector)
+	}
 
 	driver.db = db
 	return driver, nil
@@ -176,7 +178,9 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	prometheus.Unregister(driver.collector)
+	if driver.collector != nil {
+		prometheus.Unregister(driver.collector)
+	}
 	return driver.db.Close()
 }
 

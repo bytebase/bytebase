@@ -99,10 +99,12 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	if err != nil {
 		return nil, err
 	}
-	// Create a new collector, the name will be used as a label on the metrics
-	collector := sqlstats.NewStatsCollector("mysql_"+connCfg.Database, db)
-	// Register it with Prometheus
-	prometheus.MustRegister(collector)
+	if driver.collector == nil {
+		// Create a new collector, the name will be used as a label on the metrics
+		driver.collector = sqlstats.NewStatsCollector("mysql_"+connCfg.Database, db)
+		// Register it with Prometheus
+		prometheus.MustRegister(driver.collector)
+	}
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return nil, err
@@ -112,7 +114,6 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
-	driver.collector = collector
 
 	return driver, nil
 }
@@ -122,7 +123,9 @@ func (driver *Driver) Close(context.Context) error {
 	var err error
 	err = multierr.Append(err, driver.db.Close())
 	err = multierr.Append(err, driver.migrationConn.Close())
-	prometheus.Unregister(driver.collector)
+	if driver.collector != nil {
+		prometheus.Unregister(driver.collector)
+	}
 	return err
 }
 

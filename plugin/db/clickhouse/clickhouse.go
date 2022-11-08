@@ -82,10 +82,12 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
 	)
-	// Create a new collector, the name will be used as a label on the metrics
-	collector := sqlstats.NewStatsCollector("clickhouse_"+config.Database, db)
-	// Register it with Prometheus
-	prometheus.MustRegister(collector)
+	if driver.collector == nil {
+		// Create a new collector, the name will be used as a label on the metrics
+		driver.collector = sqlstats.NewStatsCollector("clickhouse_"+config.Database, db)
+		// Register it with Prometheus
+		prometheus.MustRegister(driver.collector)
+	}
 
 	driver.dbType = dbType
 	driver.db = db
@@ -96,7 +98,9 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	prometheus.Unregister(driver.collector)
+	if driver.collector != nil {
+		prometheus.Unregister(driver.collector)
+	}
 	return driver.db.Close()
 }
 
