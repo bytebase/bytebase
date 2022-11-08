@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dlmiddlecote/sqlstats"
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -71,7 +70,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
 		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
@@ -107,7 +106,7 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	}
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = sqlstats.NewStatsCollector("pg_"+config.Database, db)
+		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}

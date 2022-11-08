@@ -9,7 +9,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/dlmiddlecote/sqlstats"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -101,7 +100,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	}
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = sqlstats.NewStatsCollector("mysql_"+connCfg.Database, db)
+		driver.collector = util.NewStatsCollector(string(dbType), connCfg.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}

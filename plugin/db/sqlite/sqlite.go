@@ -9,7 +9,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/dlmiddlecote/sqlstats"
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -43,7 +42,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a SQLite driver.
-func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	// Host is the directory (instance) containing all SQLite databases.
 	driver.dir = config.Host
 
@@ -54,7 +53,7 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 	}
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = sqlstats.NewStatsCollector("sqlite_"+config.Database, db)
+		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}

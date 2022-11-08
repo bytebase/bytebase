@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dlmiddlecote/sqlstats"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -93,7 +92,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 	if driver.collector == nil {
 		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = sqlstats.NewStatsCollector("snowflake_"+config.Database, db)
+		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
 		// Register it with Prometheus
 		prometheus.MustRegister(driver.collector)
 	}
