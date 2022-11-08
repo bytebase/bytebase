@@ -6,10 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
@@ -38,9 +36,6 @@ type Driver struct {
 	dbType        db.Type
 
 	db *sql.DB
-
-	mu        sync.Mutex
-	collector prometheus.Collector
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -92,14 +87,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		panic(err)
 	}
 
-	driver.mu.Lock()
-	if driver.collector == nil {
-		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
-		// Register it with Prometheus
-		prometheus.MustRegister(driver.collector)
-	}
-	driver.mu.Unlock()
+	util.RegisterStats(string(dbType), config.Database, db)
 
 	driver.dbType = dbType
 	driver.db = db
@@ -110,8 +98,8 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	if driver.collector != nil {
-		prometheus.Unregister(driver.collector)
+	if driver.db != nil {
+		util.UnregisterStats(driver.db)
 	}
 	return driver.db.Close()
 }

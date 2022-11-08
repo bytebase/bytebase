@@ -8,12 +8,10 @@ import (
 	"os"
 	"path"
 	"strings"
-	"sync"
 
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -34,9 +32,6 @@ type Driver struct {
 	dir           string
 	db            *sql.DB
 	connectionCtx db.ConnectionContext
-
-	mu        sync.Mutex
-	collector prometheus.Collector
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -53,14 +48,9 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	if err != nil {
 		return nil, err
 	}
-	driver.mu.Lock()
-	if driver.collector == nil {
-		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
-		// Register it with Prometheus
-		prometheus.MustRegister(driver.collector)
-	}
-	driver.mu.Unlock()
+
+	util.RegisterStats(string(dbType), config.Database, db)
+
 	driver.connectionCtx = connCtx
 	return driver, nil
 }
@@ -70,8 +60,8 @@ func (driver *Driver) Close(context.Context) error {
 	if driver.db != nil {
 		return driver.db.Close()
 	}
-	if driver.collector != nil {
-		prometheus.Unregister(driver.collector)
+	if driver.db != nil {
+		util.UnregisterStats(driver.db)
 	}
 	return nil
 }

@@ -8,11 +8,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/common"
@@ -48,9 +46,6 @@ type Driver struct {
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
-
-	mu        sync.Mutex
-	collector prometheus.Collector
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -100,14 +95,9 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	if err != nil {
 		return nil, err
 	}
-	driver.mu.Lock()
-	if driver.collector == nil {
-		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
-		// Register it with Prometheus
-		prometheus.MustRegister(driver.collector)
-	}
-	driver.mu.Unlock()
+
+	util.RegisterStats(string(dbType), config.Database, db)
+
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return nil, err
@@ -126,8 +116,8 @@ func (driver *Driver) Close(context.Context) error {
 	var err error
 	err = multierr.Append(err, driver.db.Close())
 	err = multierr.Append(err, driver.migrationConn.Close())
-	if driver.collector != nil {
-		prometheus.Unregister(driver.collector)
+	if driver.db != nil {
+		util.UnregisterStats(driver.db)
 	}
 	return err
 }

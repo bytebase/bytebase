@@ -6,13 +6,11 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"sync"
 
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -60,9 +58,6 @@ type Driver struct {
 
 	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
 	strictDatabase string
-
-	mu        sync.Mutex
-	collector prometheus.Collector
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -106,14 +101,8 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	if err != nil {
 		return nil, err
 	}
-	driver.mu.Lock()
-	if driver.collector == nil {
-		// Create a new collector, the name will be used as a label on the metrics
-		driver.collector = util.NewStatsCollector(string(dbType), config.Database, db)
-		// Register it with Prometheus
-		prometheus.MustRegister(driver.collector)
-	}
-	driver.mu.Unlock()
+
+	util.RegisterStats(string(dbType), config.Database, db)
 
 	driver.db = db
 	return driver, nil
@@ -181,8 +170,8 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	if driver.collector != nil {
-		prometheus.Unregister(driver.collector)
+	if driver.db != nil {
+		util.UnregisterStats(driver.db)
 	}
 	return driver.db.Close()
 }
