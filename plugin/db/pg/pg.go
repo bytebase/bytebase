@@ -102,7 +102,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		return nil, err
 	}
 
-	util.RegisterStats(string(dbType), config.Database, db)
+	util.RegisterStats(string(dbType), databaseName, db)
 
 	driver.db = db
 	return driver, nil
