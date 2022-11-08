@@ -9,8 +9,10 @@ import (
 
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
+	"github.com/dlmiddlecote/sqlstats"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -101,6 +103,11 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	if err != nil {
 		return nil, err
 	}
+	// Create a new collector, the name will be used as a label on the metrics
+	collector := sqlstats.NewStatsCollector("pg_"+config.Database, db)
+	// Register it with Prometheus
+	prometheus.MustRegister(collector)
+
 	driver.db = db
 	return driver, nil
 }

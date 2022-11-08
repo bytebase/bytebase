@@ -9,7 +9,9 @@ import (
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/dlmiddlecote/sqlstats"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
@@ -57,7 +59,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 	// Default user name is "default".
-	conn := clickhouse.OpenDB(&clickhouse.Options{
+	db := clickhouse.OpenDB(&clickhouse.Options{
 		Addr: []string{addr},
 		Auth: clickhouse.Auth{
 			Database: config.Database,
@@ -78,9 +80,13 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
 	)
+	// Create a new collector, the name will be used as a label on the metrics
+	collector := sqlstats.NewStatsCollector("clickhouse_"+config.Database, db)
+	// Register it with Prometheus
+	prometheus.MustRegister(collector)
 
 	driver.dbType = dbType
-	driver.db = conn
+	driver.db = db
 	driver.connectionCtx = connCtx
 
 	return driver, nil

@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/casbin/casbin/v2 v2.56.0
+	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/github/gh-ost v1.1.5
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.4.2
@@ -27,6 +28,7 @@ require (
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
 	github.com/pingcap/tidb/parser v0.0.0-20221101143359-5b0be9af540e
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.13.0
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/snowflakedb/gosnowflake v1.6.14
@@ -122,7 +124,6 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
-	github.com/prometheus/client_golang v1.13.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect

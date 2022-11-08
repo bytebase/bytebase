@@ -9,8 +9,10 @@ import (
 	"io"
 	"strings"
 
+	"github.com/dlmiddlecote/sqlstats"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/common"
@@ -95,6 +97,10 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	if err != nil {
 		return nil, err
 	}
+	// Create a new collector, the name will be used as a label on the metrics
+	collector := sqlstats.NewStatsCollector("mysql_"+connCfg.Database, db)
+	// Register it with Prometheus
+	prometheus.MustRegister(collector)
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return nil, err

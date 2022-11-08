@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dlmiddlecote/sqlstats"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
@@ -86,6 +88,12 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	if err != nil {
 		panic(err)
 	}
+
+	// Create a new collector, the name will be used as a label on the metrics
+	collector := sqlstats.NewStatsCollector("snowflake_"+config.Database, db)
+	// Register it with Prometheus
+	prometheus.MustRegister(collector)
+
 	driver.dbType = dbType
 	driver.db = db
 	driver.connectionCtx = connCtx

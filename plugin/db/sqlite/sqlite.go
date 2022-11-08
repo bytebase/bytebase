@@ -9,9 +9,11 @@ import (
 	"path"
 	"strings"
 
+	"github.com/dlmiddlecote/sqlstats"
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -44,9 +46,14 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 	driver.dir = config.Host
 
 	// If config.Database is empty, we will get a connection to in-memory database.
-	if _, err := driver.GetDBConnection(ctx, config.Database); err != nil {
+	db, err := driver.GetDBConnection(ctx, config.Database)
+	if err != nil {
 		return nil, err
 	}
+	// Create a new collector, the name will be used as a label on the metrics
+	collector := sqlstats.NewStatsCollector("sqlite_"+config.Database, db)
+	// Register it with Prometheus
+	prometheus.MustRegister(collector)
 	driver.connectionCtx = connCtx
 	return driver, nil
 }
