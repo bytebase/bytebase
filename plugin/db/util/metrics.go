@@ -35,7 +35,7 @@ type Collector struct {
 
 var (
 	dbStatsMu sync.RWMutex
-	dbStats   map[*sql.DB]stats
+	dbStats   = make(map[*sql.DB]stats)
 )
 
 // RegisterStats register dbStats metrics.
