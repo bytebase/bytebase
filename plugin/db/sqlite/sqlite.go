@@ -49,7 +49,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		return nil, err
 	}
 
-	util.RegisterStats(string(dbType), config.Database, db)
+	util.RegisterStats(connCtx.EnvironmentName, connCtx.InstanceName, string(dbType), db)
 
 	driver.connectionCtx = connCtx
 	return driver, nil

@@ -87,7 +87,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		panic(err)
 	}
 
-	util.RegisterStats(string(dbType), config.Database, db)
+	util.RegisterStats(connCtx.EnvironmentName, connCtx.InstanceName, string(dbType), db)
 
 	driver.dbType = dbType
 	driver.db = db

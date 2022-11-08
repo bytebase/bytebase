@@ -79,7 +79,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 		zap.String("database", connCtx.InstanceName),
 	)
 
-	util.RegisterStats(string(dbType), config.Database, db)
+	util.RegisterStats(connCtx.EnvironmentName, connCtx.InstanceName, string(dbType), db)
 
 	driver.dbType = dbType
 	driver.db = db
