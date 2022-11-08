@@ -38,6 +38,8 @@ type Driver struct {
 	dbType        db.Type
 
 	db *sql.DB
+
+	collector prometheus.Collector
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -103,6 +105,7 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
+	prometheus.Unregister(driver.collector)
 	return driver.db.Close()
 }
 

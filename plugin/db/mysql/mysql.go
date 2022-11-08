@@ -48,6 +48,8 @@ type Driver struct {
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
+
+	collector prometheus.Collector
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -110,6 +112,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
+	driver.collector = collector
 
 	return driver, nil
 }
@@ -119,6 +122,7 @@ func (driver *Driver) Close(context.Context) error {
 	var err error
 	err = multierr.Append(err, driver.db.Close())
 	err = multierr.Append(err, driver.migrationConn.Close())
+	prometheus.Unregister(driver.collector)
 	return err
 }
 

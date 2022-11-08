@@ -60,6 +60,8 @@ type Driver struct {
 
 	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
 	strictDatabase string
+
+	collector prometheus.Collector
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -174,6 +176,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
+	prometheus.Unregister(driver.collector)
 	return driver.db.Close()
 }
 

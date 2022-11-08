@@ -34,6 +34,8 @@ type Driver struct {
 	dir           string
 	db            *sql.DB
 	connectionCtx db.ConnectionContext
+
+	collector prometheus.Collector
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -63,6 +65,7 @@ func (driver *Driver) Close(context.Context) error {
 	if driver.db != nil {
 		return driver.db.Close()
 	}
+	prometheus.Unregister(driver.collector)
 	return nil
 }
 
