@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dlmiddlecote/sqlstats"
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
-	"github.com/dlmiddlecote/sqlstats"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
