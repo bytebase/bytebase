@@ -165,8 +165,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	// 1. When the rollback generation starts, we set it to "RUNNING".
 	// 2. When the rollback generation succeeds, we set it to "SUCCESS".
 	// 4. When the rollback generation fails, we set it to "FAIL", and set the err to RollbackError.
-	RollbackTaskState string `json:"rollbackTaskState,omitempty"`
-	RollbackError     string `json:"rollbackError,omitempty"`
+	RollbackTaskState RollbackTaskState `json:"rollbackTaskState,omitempty"`
+	RollbackError     string            `json:"rollbackError,omitempty"`
 	// RollbackStatement is the generated rollback SQL statement for the DML task.
 	RollbackStatement string `json:"rollbackStatement,omitempty"`
 }
