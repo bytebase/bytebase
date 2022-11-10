@@ -221,6 +221,13 @@ const renderPrefix = ({ option }: { option: ConnectionAtom }) => {
         environment: instance.environment,
         class: "w-4 h-4",
       }),
+      h(
+        "span",
+        {
+          class: "text-gray-500 text-sm",
+        },
+        `(${instance.environment.name})`
+      ),
     ];
 
     return h("span", { class: "flex items-center gap-x-1" }, children);
@@ -396,7 +403,7 @@ watch(
 
 <style>
 .databases-tree .n-tree-node-content__prefix {
-  @apply shrink-0;
+  @apply shrink-0 !mr-1;
 }
 .databases-tree .n-tree-node-content__text {
   @apply truncate mr-1;
