@@ -390,30 +390,19 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx to
 
 // GetExternalApprovalStatus gets and returns the status of an approval instance.
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
-func (p *FeishuProvider) GetExternalApprovalStatus(instanceCode string) (string, error) {
+func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx tokenCtx, instanceCode string) (string, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
-	req, err := http.NewRequest("GET", url, nil)
+	code, _, b, err := do(ctx, p.client, http.MethodGet, url, &tokenCtx.token, nil, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "GET %s", url)
 	}
-	req.Header.Set("Authorization", "Bearer "+p.Token)
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 GET status code %d with body %q", code, b)
 	}
 
 	var response GetExternalApprovalResponse
-	if err := json.Unmarshal(b, &response); err != nil {
-		return "", err
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal response to GetExternalApprovalResponse")
 	}
 	if response.Code != 0 {
 		return "", errors.Errorf("failed to get approval instance, %s", response.Msg)
