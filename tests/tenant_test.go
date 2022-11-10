@@ -1249,3 +1249,299 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		})
 	}
 }
+
+// TestTenantVCS_YAML tests the behavior when use a YAML file to do DML in a
+// tenant project.
+func TestTenantVCS_YAML(t *testing.T) {
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             vcs.Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(gitFile string) interface{}
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			externalID:         "121",
+			repositoryFullPath: "test/dataUpdate",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp: "2021-01-13T13:14:00Z",
+							AddedList: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(gitFile string) interface{} {
+				return github.WebhookPushEvent{
+					Ref: "refs/heads/feature/foo",
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Added: []string{gitFile},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), fake.NewGitHub, getTestPort(t.Name()))
+			require.NoError(t, err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			require.NoError(t, err)
+			err = ctl.setLicense()
+			require.NoError(t, err)
+
+			// Create a VCS.
+			vcs, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			require.NoError(t, err)
+
+			// Create a tenant project with empty database name template.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name:       "Test VCS Project",
+					Key:        "TestTenantVCS_YAML",
+					TenantMode: api.TenantModeTenant,
+				},
+			)
+			require.NoError(t, err)
+
+			// Create a repository.
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              vcs.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: ".{{DB_NAME}}##LATEST.sql",
+					ExternalID:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+			require.NoError(t, err)
+
+			// Provision instances.
+			instanceRootDir := t.TempDir()
+
+			const stagingTenantNumber = 2 // We need more than one tenant to test database selection
+			var stagingInstanceDirs []string
+			for i := 0; i < stagingTenantNumber; i++ {
+				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+				require.NoError(t, err)
+				stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
+			}
+			environments, err := ctl.getEnvironments()
+			require.NoError(t, err)
+			stagingEnvironment, err := findEnvironment(environments, "Staging")
+			require.NoError(t, err)
+
+			// Add the provisioned instances.
+			var stagingInstances []*api.Instance
+			for i, stagingInstanceDir := range stagingInstanceDirs {
+				instance, err := ctl.addInstance(
+					api.InstanceCreate{
+						EnvironmentID: stagingEnvironment.ID,
+						Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+						Engine:        db.SQLite,
+						Host:          stagingInstanceDir,
+					},
+				)
+				require.NoError(t, err)
+				stagingInstances = append(stagingInstances, instance)
+			}
+
+			// Create deployment configuration.
+			_, err = ctl.upsertDeploymentConfig(
+				api.DeploymentConfigUpsert{
+					ProjectID: project.ID,
+				},
+				api.DeploymentSchedule{
+					Deployments: []*api.Deployment{
+						{
+							Name: "Staging stage",
+							Spec: &api.DeploymentSpec{
+								Selector: &api.LabelSelector{
+									MatchExpressions: []*api.LabelSelectorRequirement{
+										{
+											Key:      api.EnvironmentKeyName,
+											Operator: api.InOperatorType,
+											Values:   []string{"Staging"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			)
+			require.NoError(t, err)
+
+			// Create issues that create databases.
+			const baseDatabaseName = "TestTenantVCS_YAML"
+			for i, stagingInstance := range stagingInstances {
+				tenant := fmt.Sprintf("tenant%d", i)
+				databaseName := baseDatabaseName + "_" + tenant
+				err := ctl.createDatabase(project, stagingInstance, databaseName, "", nil /* labelMap */)
+				require.NoError(t, err)
+			}
+
+			// Getting databases for each environment.
+			databases, err := ctl.getDatabases(
+				api.DatabaseFind{
+					ProjectID: &project.ID,
+				},
+			)
+			require.NoError(t, err)
+
+			var stagingDatabases []*api.Database
+			for _, stagingInstance := range stagingInstances {
+				for _, database := range databases {
+					if database.Instance.ID == stagingInstance.ID {
+						stagingDatabases = append(stagingDatabases, database)
+						break
+					}
+				}
+			}
+			require.Equal(t, stagingTenantNumber, len(stagingDatabases))
+
+			// Simulate Git commits for schema update.
+			gitFile := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
+			require.NoError(t, err)
+
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			require.NoError(t, err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			require.NoError(t, err)
+
+			// Get schema update issues.
+			openStatus := []api.IssueStatus{api.IssueOpen}
+			issues, err := ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: openStatus,
+				},
+			)
+			require.NoError(t, err)
+			require.Len(t, issues, 1)
+			status, err := ctl.waitIssuePipeline(issues[0].ID)
+			require.NoError(t, err)
+			require.Equal(t, api.TaskDone, status)
+
+			// Simulate Git commits for data update.
+			gitFile = baseDirectory + "/ver2##data##insert_a_new_row.yml"
+			err = ctl.vcsProvider.AddFiles(
+				test.externalID,
+				map[string]string{
+					gitFile: fmt.Sprintf(`
+databases:
+  - name: %s
+statement: |
+  INSERT INTO book (name) VALUES ('Star Wars')
+`,
+						databases[0].Name,
+					),
+				},
+			)
+			require.NoError(t, err)
+
+			payload, err = json.Marshal(test.newWebhookPushEvent(gitFile))
+			require.NoError(t, err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			require.NoError(t, err)
+
+			// Get data update issues.
+			openStatus = []api.IssueStatus{api.IssueOpen}
+			issues, err = ctl.getIssues(
+				api.IssueFind{
+					ProjectID:  &project.ID,
+					StatusList: openStatus,
+				},
+			)
+			require.NoError(t, err)
+			require.Len(t, issues, 2)
+			status, err = ctl.waitIssuePipeline(issues[0].ID)
+			require.NoError(t, err)
+			require.Equal(t, api.TaskDone, status)
+
+			// Query migration history, only the database of the first tenant should be touched
+			histories, err := ctl.getInstanceMigrationHistory(
+				db.MigrationHistoryFind{
+					ID:       &stagingInstances[0].ID,
+					Database: &databases[0].Name,
+				},
+			)
+			require.NoError(t, err)
+			require.Len(t, histories, 3)
+			require.Equal(t, histories[0].Version, "ver2")
+
+			histories, err = ctl.getInstanceMigrationHistory(
+				db.MigrationHistoryFind{
+					ID:       &stagingInstances[1].ID,
+					Database: &databases[1].Name,
+				},
+			)
+			require.NoError(t, err)
+			require.Len(t, histories, 2)
+			require.Equal(t, histories[0].Version, "ver1")
+		})
+	}
+}
