@@ -42,7 +42,7 @@ func NewProvider() *Provider {
 	return &p
 }
 
-type tokenCtx struct {
+type TokenCtx struct {
 	appID     string
 	appSecret string
 	token     string
@@ -353,7 +353,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 // CreateApprovalDefinition creates an approval definition and returns approval code.
 // example approvalCode: 813718CE-F38D-45CA-A5C1-ACF4F564B526
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/approval/create
-func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenCtx, approvalCode string) (string, error) {
+func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx TokenCtx, approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
 	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
@@ -382,7 +382,7 @@ func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenC
 // example approvalCode: 813718CE-F38D-45CA-A5C1-ACF4F564B526
 // example requesterID & approverID: ou_3cda9c969f737aaa05e6915dce306cb9
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/create
-func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx tokenCtx, content Content, approvalCode string, requesterID string, approverID string) (string, error) {
+func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx, content Content, approvalCode string, requesterID string, approverID string) (string, error) {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances"
 	formValue, err := formatForm(content)
 	if err != nil {
@@ -429,7 +429,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx tokenCtx
 // GetExternalApprovalStatus gets and returns the status of an approval instance.
 // example instanceCode: 81D31358-93AF-92D6-7425-01A5D67C4E71
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
-func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx tokenCtx, instanceCode string) (string, error) {
+func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx TokenCtx, instanceCode string) (string, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
 	code, _, b, err := do(ctx, p.client, http.MethodGet, url, &tokenCtx.token, nil, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
@@ -452,7 +452,7 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx token
 
 // CancelExternalApproval cancels an approval instance.
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/cancel
-func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx tokenCtx, approvalCode, instanceCode, userID string) error {
+func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx, approvalCode, instanceCode, userID string) error {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
 	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
@@ -478,7 +478,7 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx tokenCtx
 // GetIDByEmail gets user ids by emails, returns email to userID mapping.
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/batch_get_id
 // TODO(p0ny): cache email-id mapping.
-func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx tokenCtx, emails []string) (map[string]string, error) {
+func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails []string) (map[string]string, error) {
 	const url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
 	body, err := json.Marshal(&getIDByEmailReq{Emails: emails})
 	if err != nil {
