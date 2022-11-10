@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// code definition in feishu response payload body.
 // https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN
 const (
 	emptyTokenRespCode   = 99991661
@@ -352,6 +353,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 }
 
 // CreateApprovalDefinition creates an approval definition and returns approval code.
+// example approvalCode: 813718CE-F38D-45CA-A5C1-ACF4F564B526
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/approval/create
 func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenCtx, approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
@@ -379,7 +381,8 @@ func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx 
 
 // CreateExternalApproval creates an approval instance and returns instance code.
 // The requester requests the approval of the approver.
-// sample value of the requesterID & approverID: ou_3cda9c969f737aaa05e6915dce306cb9
+// example approvalCode: 813718CE-F38D-45CA-A5C1-ACF4F564B526
+// example requesterID & approverID: ou_3cda9c969f737aaa05e6915dce306cb9
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/create
 func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx tokenCtx, content Content, approvalCode string, requesterID string, approverID string) (string, error) {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances"
@@ -426,6 +429,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx to
 }
 
 // GetExternalApprovalStatus gets and returns the status of an approval instance.
+// example instanceCode: 81D31358-93AF-92D6-7425-01A5D67C4E71
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
 func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx tokenCtx, instanceCode string) (string, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
