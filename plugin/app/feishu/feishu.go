@@ -43,9 +43,9 @@ func NewProvider() *Provider {
 }
 
 type TokenCtx struct {
-	appID     string
-	appSecret string
-	token     string
+	AppID     string
+	AppSecret string
+	Token     string
 }
 
 // tenantAccessTokenResponse is the response of GetTenantAccessToken.
@@ -356,7 +356,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx TokenCtx, approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, body, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -406,7 +406,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to marshal payload %+v", payload)
 	}
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, bytes.NewBuffer(body), p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -431,7 +431,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
 func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx TokenCtx, instanceCode string) (string, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
-	code, _, b, err := do(ctx, p.client, http.MethodGet, url, &tokenCtx.token, nil, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodGet, url, &tokenCtx.Token, nil, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -455,7 +455,7 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx Token
 func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx, approvalCode, instanceCode, userID string) error {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, body, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", url)
 	}
@@ -485,7 +485,7 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 		return nil, err
 	}
 
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, bytes.NewBuffer(body), p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
 	if err != nil {
 		return nil, err
 	}
