@@ -277,7 +277,7 @@ func (p *FeishuProvider) CreateApprovalDefinition(approvalCode string) (string, 
 }
 
 // CreateExternalApproval creates an approval instance and returns instance code.
-func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode string, creatorID string, approverID string) (string, error) {
+func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode string, requesterID string, approverID string) (string, error) {
 	formValue, err := formatForm(content)
 	if err != nil {
 		return "", err
@@ -294,7 +294,7 @@ func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode st
 				Value: []string{approverID},
 			},
 		},
-		OpenID: creatorID,
+		OpenID: requesterID,
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
