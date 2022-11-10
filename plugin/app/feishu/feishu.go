@@ -17,15 +17,17 @@ import (
 // https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN
 const invalidTokenRespCode = 99991663
 
-// FeishuProvider is the type of feishu.
+// FeishuProvider is the provider for IM Feishu.
 type FeishuProvider struct {
+	// cache token in memory.
+	// use atomic.Value since it can be accessed concurrently.
 	token  atomic.Value
 	client *http.Client
 }
 
 type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
-// NewFeishuProvider returns a feishuProvider.
+// NewFeishuProvider returns a FeishuProvider.
 func NewFeishuProvider() *FeishuProvider {
 	return &FeishuProvider{
 		client: &http.Client{},
