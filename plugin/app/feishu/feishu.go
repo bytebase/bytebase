@@ -30,7 +30,7 @@ type FeishuProvider struct {
 	client *http.Client
 }
 
-type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
+type tokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
 // NewFeishuProvider returns a FeishuProvider.
 func NewFeishuProvider() *FeishuProvider {
@@ -255,7 +255,7 @@ const (
 }`
 )
 
-func (p *FeishuProvider) tokenRefresher(appID, appSecret string) TokenRefresher {
+func (p *FeishuProvider) tokenRefresher(appID, appSecret string) tokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
 		const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
 		body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
@@ -311,13 +311,13 @@ func requester(ctx context.Context, client *http.Client, method, url string, tok
 	}
 }
 
-func do(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+func do(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader, tokenRefresher tokenRefresher) (code int, header http.Header, respBody string, err error) {
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, method, url, token, body))
 }
 
 const maxRetries = 3
 
-func retry(ctx context.Context, client *http.Client, token *string, tokenRefresher TokenRefresher, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
+func retry(ctx context.Context, client *http.Client, token *string, tokenRefresher tokenRefresher, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
 	var resp *http.Response
 	var body []byte
 	for retries := 0; retries < maxRetries; retries++ {
