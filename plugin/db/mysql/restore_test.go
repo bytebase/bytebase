@@ -183,6 +183,50 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 	}
 }
 
+func TestGenBinlogFileNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		base     string
+		seqStart int64
+		seqEnd   int64
+		want     []string
+	}{
+		{
+			name:     "empty",
+			seqStart: 2,
+			seqEnd:   1,
+			want:     nil,
+		},
+		{
+			name:     "single",
+			base:     "binlog",
+			seqStart: 1,
+			seqEnd:   1,
+			want:     []string{"binlog.000001"},
+		},
+		{
+			name:     "less than 6 digits",
+			base:     "binlog",
+			seqStart: 1,
+			seqEnd:   4,
+			want:     []string{"binlog.000001", "binlog.000002", "binlog.000003", "binlog.000004"},
+		},
+		{
+			name:     "more than 6 digits",
+			base:     "binlog",
+			seqStart: 1000001,
+			seqEnd:   1000004,
+			want:     []string{"binlog.1000001", "binlog.1000002", "binlog.1000003", "binlog.1000004"},
+		},
+	}
+
+	for _, test := range tests {
+		a := require.New(t)
+		result := GenBinlogFileNames(test.base, test.seqStart, test.seqEnd)
+		a.Equal(test.want, result)
+	}
+}
+
 func TestGetReplayBinlogPathList(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
