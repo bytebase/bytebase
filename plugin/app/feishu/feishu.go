@@ -276,7 +276,7 @@ func tokenRefresher(appID, appSecret string) TokenRefresher {
 			return errors.Wrapf(err, "unmarshal body from POST %s", url)
 		}
 		if response.Code != 0 {
-			return errors.Errorf("non-0 code of POST %s, msg %s", response.Code, response.Msg)
+			return errors.Errorf("failed to get tenant access token, code %d, msg %s", response.Code, response.Msg)
 		}
 		*oldToken = response.Token
 		return nil
@@ -338,7 +338,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 		}
 		return resp.StatusCode, resp.Header, string(body), nil
 	}
-	return 0, nil, "", errors.Errorf("retries exceeded for OAuth refresher with status code %d and body %q", resp.StatusCode, string(body))
+	return 0, nil, "", errors.Errorf("retries exceeded for token refresher with status code %d and body %q", resp.StatusCode, string(body))
 }
 
 // CreateApprovalDefinition creates an approval definition and returns approval code.
@@ -361,7 +361,7 @@ func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx 
 	}
 
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to create approval definition: %s", response.Msg)
+		return "", errors.Errorf("failed to create approval definition, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return response.Data.ApprovalCode, nil
@@ -409,7 +409,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx to
 	}
 
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to create approval instance: %s", response.Msg)
+		return "", errors.Errorf("failed to create approval instance, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return response.Data.InstanceCode, nil
@@ -432,7 +432,7 @@ func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx
 		return "", errors.Wrap(err, "failed to unmarshal response to GetExternalApprovalResponse")
 	}
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to get approval instance, %s", response.Msg)
+		return "", errors.Errorf("failed to get approval instance, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return response.Data.Status, nil
@@ -457,7 +457,7 @@ func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, tokenCtx to
 	}
 
 	if response.Code != 0 {
-		return errors.Errorf("failed to create approval instance, %s", response.Msg)
+		return errors.Errorf("failed to create approval instance, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return nil
@@ -488,13 +488,13 @@ func (p *FeishuProvider) GetIDByEmail(ctx context.Context, tokenCtx tokenCtx, em
 	}
 
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to get id by email, %s", response.Msg)
+		return nil, errors.Errorf("failed to get id by email, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	userID := make(map[string]string)
 	for _, user := range response.Data.UserList {
 		if user.UserID == "" {
-			return nil, errors.Errorf("failed to get id by email for %s", user.Email)
+			return nil, errors.Errorf("id not found for email %s", user.Email)
 		}
 		userID[user.Email] = user.UserID
 	}
