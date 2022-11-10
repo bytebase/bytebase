@@ -95,7 +95,6 @@ func init() {
 type FeishuReceiver struct{}
 
 func (*FeishuReceiver) post(context Context) error {
-	// TODO(p0ny): handle context.Task
 	var markdownBuf strings.Builder
 
 	if context.Description != "" {

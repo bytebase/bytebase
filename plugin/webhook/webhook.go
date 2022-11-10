@@ -46,10 +46,10 @@ type Issue struct {
 
 // Task object of task.
 type Task struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Status      string `json:"status"`
-	Description string `json:"description"`
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Status       string `json:"status"`
+	ResultDetail string `json:"resultDetail"`
 }
 
 // Project object of project.
@@ -109,6 +109,28 @@ func (c *Context) getMetaList() []meta {
 			Name:  "Issue Description",
 			Value: string(descriptionRune),
 		})
+	}
+
+	if c.Task != nil {
+		m = append(m, meta{
+			Name:  "Task",
+			Value: c.Task.Name,
+		})
+		m = append(m, meta{
+			Name:  "Status",
+			Value: c.Task.Status,
+		})
+		if c.Task.ResultDetail != "" {
+			resultDetailRune := []rune(c.Task.ResultDetail)
+			if len(resultDetailRune) > 200 {
+				resultDetailRune = resultDetailRune[:200]
+				resultDetailRune = append(resultDetailRune, []rune("... (view details in Bytebase)")...)
+			}
+			m = append(m, meta{
+				Name:  "Result Detail",
+				Value: string(resultDetailRune),
+			})
+		}
 	}
 
 	return m

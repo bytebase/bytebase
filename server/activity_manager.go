@@ -352,7 +352,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					zap.Error(err))
 				return webhookCtx, err
 			}
-			webhookTask.Description = result.Detail
+			webhookTask.ResultDetail = result.Detail
 		}
 	}
 
