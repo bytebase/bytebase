@@ -3,7 +3,7 @@
     <div class="w-full flex flex-col justify-start items-start space-y-2">
       <div class="w-full flex flex-row justify-start items-center">
         <div class="flex flex-row justify-start items-center">
-          <img class="w-10 h-auto" src="../assets/feishu-logo.png" alt="" />
+          <img class="w-10 h-auto" src="../assets/feishu-logo.webp" alt="" />
           <span class="ml-2 text-lg font-medium">{{
             $t("common.feishu")
           }}</span>
