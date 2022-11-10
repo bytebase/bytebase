@@ -12,9 +12,7 @@
         {{
           $t("subscription.trial-for-plan", {
             plan: $t(
-              `subscription.plan.${planTypeToString(
-                subscriptionStore.trialingPlan
-              )}.title`
+              `subscription.plan.${planTypeToString(PlanType.TEAM)}.title`
             ),
           })
         }}*
@@ -57,7 +55,7 @@
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
-import { planTypeToString } from "@/types";
+import { PlanType, planTypeToString } from "@/types";
 
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
@@ -69,7 +67,7 @@ const learnMore = () => {
 };
 
 const trialSubscription = () => {
-  subscriptionStore.trialSubscription().then(() => {
+  subscriptionStore.trialSubscription(PlanType.TEAM).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

@@ -1383,11 +1383,13 @@
   "subscription": {
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
-    "free-trial": "Free trial",
+    "free-trial-button": "Free trial",
+    "upgrade-trial-button": "Upgrade trial",
     "start-n-days-trial": "Start {days} days trial",
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "required-plan-with-trial": "This feature requires {requiredPlan}, but {startTrial}.",
     "trial-for-plan": "You can start a free trial for {plan} - no credit card required",
+    "upgrade-trial": "You can upgrade your free trial to this plan",
     "update": {
       "success": {
         "title": "Successfully updated license",

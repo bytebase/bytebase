@@ -1383,11 +1383,13 @@
   "subscription": {
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
-    "free-trial": "免费试用",
+    "free-trial-button": "免费试用",
+    "upgrade-trial-button": "升级试用",
     "start-n-days-trial": "开启 {days} 天试用",
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
     "trial-for-plan": "您可以开启{plan}的免费试用 - 无需任何信用卡或预付费",
+    "upgrade-trial": "您可以直接升级现有的试用",
     "update": {
       "success": {
         "title": "证书更新成功",

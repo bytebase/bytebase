@@ -36,9 +36,7 @@
               {{
                 $t("subscription.trial-for-plan", {
                   plan: $t(
-                    `subscription.plan.${planTypeToString(
-                      subscriptionStore.trialingPlan
-                    )}.title`
+                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
                   ),
                 }).toLowerCase()
               }}
@@ -104,7 +102,7 @@ const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 const featureKey = props.feature.split(".").join("-");
 
 const trialSubscription = () => {
-  subscriptionStore.trialSubscription().then(() => {
+  subscriptionStore.trialSubscription(requiredPlan).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

@@ -42,10 +42,11 @@ const props = defineProps({
 const router = useRouter();
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionStore();
+const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
 const onClick = () => {
   if (subscriptionStore.canTrial) {
-    subscriptionStore.trialSubscription().then(() => {
+    subscriptionStore.trialSubscription(requiredPlan).then(() => {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
