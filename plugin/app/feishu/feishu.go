@@ -411,7 +411,7 @@ func (p *feishuProvider) CancelExternalApproval(approvalCode, instanceCode, user
 }
 
 // GetIDByEmail gets user ids by emails.
-func (p *feishuProvider) GetIDByEmail(emails []string) (*EmailsFindResponse, error) {
+func (p *feishuProvider) GetIDByEmail(emails []string) (map[string]string, error) {
 	body, err := json.Marshal(&GetIDByEmailReq{Emails: emails})
 	if err != nil {
 		return nil, err
@@ -445,11 +445,14 @@ func (p *feishuProvider) GetIDByEmail(emails []string) (*EmailsFindResponse, err
 	if response.Code != 0 {
 		return nil, errors.Errorf("failed to get id by email: %s", response.Msg)
 	}
+
+	userID := make(map[string]string)
 	for _, user := range response.Data.UserList {
 		if user.UserID == "" {
 			return nil, errors.Errorf("failed to get id by email for %s", user.Email)
 		}
+		userID[user.Email] = user.UserID
 	}
 
-	return &response, nil
+	return userID, nil
 }
