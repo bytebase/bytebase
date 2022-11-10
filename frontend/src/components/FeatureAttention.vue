@@ -3,19 +3,7 @@
     :class="customClass"
     :style="`WARN`"
     :title="$t(`subscription.features.${featureKey}.title`)"
-    :description="`${description}\n${$t(
-      'subscription.required-plan-with-trial',
-      {
-        requiredPlan: $t(
-          `subscription.plan.${planTypeToString(requiredPlan)}.title`
-        ),
-        startTrial: subscriptionStore.canUpgradeTrial
-          ? $t('subscription.upgrade-trial').toLowerCase()
-          : $t('subscription.trial-for-days', {
-              days: subscriptionStore.trialingDays,
-            }).toLowerCase(),
-      }
-    )}`"
+    :description="descriptionText"
     :action-text="actionText"
     @click-action="onClick"
   />
@@ -60,6 +48,21 @@ const actionText = computed(() => {
   return t("subscription.start-n-days-trial", {
     days: subscriptionStore.trialingDays,
   });
+});
+
+const descriptionText = computed(() => {
+  const trialText = t("subscription.required-plan-with-trial", {
+    requiredPlan: t(
+      `subscription.plan.${planTypeToString(requiredPlan)}.title`
+    ),
+    startTrial: subscriptionStore.canUpgradeTrial
+      ? t("subscription.upgrade-trial").toLowerCase()
+      : t("subscription.trial-for-days", {
+          days: subscriptionStore.trialingDays,
+        }).toLowerCase(),
+  });
+
+  return `${props.description}\n${trialText}`;
 });
 
 const onClick = () => {
