@@ -64,7 +64,7 @@ type BinlogFile struct {
 }
 
 func newBinlogFile(name string, size int64) (BinlogFile, error) {
-	seq, err := GetBinlogNameSeq(name)
+	_, seq, err := ParseBinlogName(name)
 	if err != nil {
 		return BinlogFile{}, err
 	}
@@ -78,7 +78,7 @@ type binlogCoordinate struct {
 }
 
 func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
-	seq, err := GetBinlogNameSeq(binlogFileName)
+	_, seq, err := ParseBinlogName(binlogFileName)
 	if err != nil {
 		return binlogCoordinate{}, err
 	}
@@ -105,7 +105,7 @@ func readBinlogMetaFile(binlogDir, fileName string) (binlogFileMeta, error) {
 	}
 	binlogFileName := strings.TrimSuffix(fileName, binlogMetaSuffix)
 	meta.binlogName = binlogFileName
-	seq, err := GetBinlogNameSeq(binlogFileName)
+	_, seq, err := ParseBinlogName(binlogFileName)
 	if err != nil {
 		return binlogFileMeta{}, errors.Wrapf(err, "failed to get seq from binlog metadata file name %q", fileName)
 	}
@@ -266,11 +266,11 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
 func GetBinlogReplayList(startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
-	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
+	_, startBinlogSeq, err := ParseBinlogName(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse the start binlog file name %q", startBinlogInfo.FileName)
 	}
-	targetBinlogSeq, err := GetBinlogNameSeq(targetBinlogInfo.FileName)
+	_, targetBinlogSeq, err := ParseBinlogName(targetBinlogInfo.FileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse the target binlog file name %q", targetBinlogInfo.FileName)
 	}
@@ -1034,14 +1034,30 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 	return pos, nil
 }
 
-// GetBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
-// For example: ("binlog.000001") => 1, ("binlog000001") => err.
-func GetBinlogNameSeq(name string) (int64, error) {
+// ParseBinlogName parses the numeric extension and the binary log base name by using split the dot.
+// Examples:
+//   - ("binlog.000001") => ("binlog", 1)
+//   - ("binlog000001") => ("", err)
+func ParseBinlogName(name string) (string, int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
+		return "", 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
 	}
-	return strconv.ParseInt(s[1], 10, 0)
+	seq, err := strconv.ParseInt(s[1], 10, 0)
+	if err != nil {
+		return "", 0, errors.Wrapf(err, "failed to parse the sequence number %s", s[1])
+	}
+	return s[0], seq, nil
+}
+
+// GenBinlogFileNames generates the binlog file names between the start end end sequence numbers.
+// The generation algorithm refers to the implementation of mysql-server: https://sourcegraph.com/github.com/mysql/mysql-server@a246bad76b9271cb4333634e954040a970222e0a/-/blob/sql/binlog.cc?L3693.
+func GenBinlogFileNames(base string, seqStart, seqEnd int64) []string {
+	var ret []string
+	for i := seqStart; i <= seqEnd; i++ {
+		ret = append(ret, fmt.Sprintf("%s.%06d", base, i))
+	}
+	return ret
 }
 
 // checks the MySQL version is >=8.0.

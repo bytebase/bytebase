@@ -136,38 +136,45 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 	tests := []struct {
 		name   string
 		prefix string
-		expect int64
+		base   string
+		seq    int64
 		err    bool
 	}{
 		{
-			name:   "binlog.096865",
-			expect: 96865,
-			err:    false,
+			name: "binlog.096865",
+			base: "binlog",
+			seq:  96865,
+			err:  false,
 		},
 		{
-			name:   "binlog.999999",
-			expect: 999999,
-			err:    false,
+			name: "binlog.999999",
+			base: "binlog",
+			seq:  999999,
+			err:  false,
 		},
 		{
-			name:   "binlog.1000000",
-			expect: 1000000,
-			err:    false,
+			name: "binlog.1000000",
+			base: "binlog",
+			seq:  1000000,
+			err:  false,
 		},
 		{
-			name:   "binlog.000001",
-			expect: 1,
-			err:    false,
+			name: "binlog.000001",
+			base: "binlog",
+			seq:  1,
+			err:  false,
 		},
 		{
-			name:   "binlog.x8dft",
-			expect: 0,
-			err:    true,
+			name: "binlog.x8dft",
+			base: "",
+			seq:  0,
+			err:  true,
 		},
 	}
 	for _, test := range tests {
-		ext, err := GetBinlogNameSeq(test.name)
-		a.EqualValues(test.expect, ext)
+		base, ext, err := ParseBinlogName(test.name)
+		a.EqualValues(test.seq, ext)
+		a.Equal(test.base, base)
 		if test.err {
 			a.Error(err)
 		} else {
