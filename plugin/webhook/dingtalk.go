@@ -34,10 +34,10 @@ func init() {
 }
 
 // DingTalkReceiver is the receiver for DingTalk.
-type DingTalkReceiver struct {
-}
+type DingTalkReceiver struct{}
 
 func (*DingTalkReceiver) post(context Context) error {
+	// TODO(p0ny): handle context.Task
 	metaStrList := []string{}
 	for _, meta := range context.getMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))

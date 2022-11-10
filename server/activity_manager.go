@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -148,7 +149,6 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, errors.Errorf("updater principal not found for ID %v", create.CreatorID)
 	}
 
-	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
 	webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
 	if err != nil {
 		log.Warn("Failed to get webhook context",
@@ -156,6 +156,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			zap.Error(err))
 		return activity, nil
 	}
+	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
 	go postWebhookList(webhookCtx, webhookList, meta.issue)
 
 	return activity, nil
@@ -176,8 +177,10 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 		}
 	}
 }
+
 func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.Context, error) {
 	var webhookCtx webhook.Context
+	var webhookTask *webhook.Task
 	level := webhook.WebhookInfo
 	title := ""
 	link := fmt.Sprintf("%s/issue/%s", m.s.profile.ExternalURL, api.IssueSlug(meta.issue))
@@ -304,6 +307,12 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 
+		webhookTask = &webhook.Task{
+			ID:     task.ID,
+			Name:   task.Name,
+			Status: string(task.Status),
+		}
+
 		title = "Task changed - " + task.Name
 		switch update.NewStatus {
 		case api.TaskPending:
@@ -321,6 +330,29 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		case api.TaskFailed:
 			level = webhook.WebhookError
 			title = "Task failed - " + task.Name
+
+			if len(task.TaskRunList) == 0 {
+				err := errors.Errorf("expect at least 1 TaskRun, get 0")
+				log.Warn(err.Error(),
+					zap.Any("task", task),
+					zap.Error(err))
+				return webhookCtx, err
+			}
+
+			// sort TaskRunList to get the most recent task run result.
+			sort.Slice(task.TaskRunList, func(i int, j int) bool {
+				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs
+			})
+
+			var result api.TaskRunResultPayload
+			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
+				err := errors.Wrapf(err, "failed to unmarshal TaskRun Result")
+				log.Warn(err.Error(),
+					zap.Any("TaskRun", task.TaskRunList[0]),
+					zap.Error(err))
+				return webhookCtx, err
+			}
+			webhookTask.Description = result.Detail
 		}
 	}
 
@@ -339,6 +371,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			ID:   meta.issue.ProjectID,
 			Name: meta.issue.Project.Name,
 		},
+		Task:         webhookTask,
 		Description:  activity.Comment,
 		Link:         link,
 		CreatorID:    updater.ID,

@@ -44,6 +44,14 @@ type Issue struct {
 	Description string `json:"description"`
 }
 
+// Task object of task.
+type Task struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Status      string `json:"status"`
+	Description string `json:"description"`
+}
+
 // Project object of project.
 type Project struct {
 	ID   int    `json:"id"`
@@ -64,6 +72,7 @@ type Context struct {
 	CreatedTs    int64
 	Issue        *Issue
 	Project      *Project
+	Task         *Task
 }
 
 // Receiver is the webhook receiver.

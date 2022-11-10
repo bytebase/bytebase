@@ -47,10 +47,10 @@ func init() {
 }
 
 // SlackReceiver is the receiver for Slack.
-type SlackReceiver struct {
-}
+type SlackReceiver struct{}
 
 func (*SlackReceiver) post(context Context) error {
+	// TODO(p0ny): handle context.Task
 	blockList := []SlackWebhookBlock{}
 
 	status := ""

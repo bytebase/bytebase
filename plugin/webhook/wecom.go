@@ -33,10 +33,10 @@ func init() {
 }
 
 // WeComReceiver is the receiver for WeCom.
-type WeComReceiver struct {
-}
+type WeComReceiver struct{}
 
 func (*WeComReceiver) post(context Context) error {
+	// TODO(p0ny): handle context.Task
 	metaStrList := []string{}
 	for _, meta := range context.getMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
