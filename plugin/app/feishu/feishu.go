@@ -42,6 +42,7 @@ func NewProvider() *Provider {
 	return &p
 }
 
+// TokenCtx is the token context to access feishu APIs.
 type TokenCtx struct {
 	AppID     string
 	AppSecret string
