@@ -277,6 +277,9 @@ func (p *FeishuProvider) CreateApprovalDefinition(approvalCode string) (string, 
 }
 
 // CreateExternalApproval creates an approval instance and returns instance code.
+// The requester requests the approval of the approver.
+// sample value of the requesterID & approverID: ou_3cda9c969f737aaa05e6915dce306cb9
+// https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/create
 func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode string, requesterID string, approverID string) (string, error) {
 	formValue, err := formatForm(content)
 	if err != nil {
