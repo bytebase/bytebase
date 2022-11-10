@@ -411,7 +411,7 @@ func (s *Server) initMetricReporter(workspaceID string) {
 
 func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial branding
-	_, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	_, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
@@ -428,7 +428,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate random JWT secret")
 	}
-	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	authSetting, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingAuthSecret,
 		Value:       value,
@@ -440,7 +440,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	conf.secret = authSetting.Value
 
 	// initial workspace
-	workspaceSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	workspaceSetting, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
@@ -452,7 +452,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	conf.workspaceID = workspaceSetting.Value
 
 	// initial license
-	if _, err = store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	if _, _, err = store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingEnterpriseLicense,
 		Value:       "",
@@ -462,7 +462,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	}
 
 	// initial feishu app
-	if _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingAppIM,
 		Value:       "",
