@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 	"github.com/pkg/errors"
 )
 
@@ -23,11 +22,18 @@ type FeishuProvider struct {
 	client *http.Client
 }
 
+type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
+
 // NewFeishuProvider returns a feishuProvider.
 func NewFeishuProvider() *FeishuProvider {
 	return &FeishuProvider{
 		client: &http.Client{},
 	}
+}
+
+type minResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
 }
 
 // TenantAccessTokenResponse is the response of GetTenantAccessToken.
@@ -208,7 +214,7 @@ const (
 }`
 )
 
-func tokenRefresher(appID, appSecret string) oauth.TokenRefresher {
+func tokenRefresher(appID, appSecret string) TokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
 		const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
 		body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
@@ -242,6 +248,43 @@ func tokenRefresher(appID, appSecret string) oauth.TokenRefresher {
 		*oldToken = response.Token
 		return nil
 	}
+}
+
+const maxRetries = 3
+
+func retry(ctx context.Context, client *http.Client, token *string, tokenRefresher TokenRefresher, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
+	var resp *http.Response
+	var body []byte
+	for retries := 0; retries < maxRetries; retries++ {
+		select {
+		case <-ctx.Done():
+			return 0, nil, "", ctx.Err()
+		default:
+		}
+
+		resp, err = f()
+		if err != nil {
+			return 0, nil, "", err
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+		}
+
+		var response minResponse
+		if err := json.Unmarshal(body, &response); err != nil {
+			return 0, nil, "", errors.New("failed to unmarshal response")
+		}
+		if response.Code == invalidTokenRespCode {
+			if err := tokenRefresher(ctx, client, token); err != nil {
+				return 0, nil, "", err
+			}
+			continue
+		}
+		return resp.StatusCode, resp.Header, string(body), nil
+	}
+	return 0, nil, "", errors.Errorf("retries exceeded for OAuth refresher with status code %d and body %q", resp.StatusCode, string(body))
 }
 
 // CreateApprovalDefinition creates an approval definition and returns approval code.
