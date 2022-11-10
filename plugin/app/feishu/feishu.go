@@ -316,6 +316,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 }
 
 // CreateApprovalDefinition creates an approval definition and returns approval code.
+// https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/approval/create
 func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenCtx, approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
@@ -412,6 +413,7 @@ func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx
 }
 
 // CancelExternalApproval cancels an approval instance.
+// https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/cancel
 func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, tokenCtx tokenCtx, approvalCode, instanceCode, userID string) error {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
@@ -435,7 +437,8 @@ func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, tokenCtx to
 	return nil
 }
 
-// GetIDByEmail gets user ids by emails.
+// GetIDByEmail gets user ids by emails, returns email to userID mapping.
+// https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/batch_get_id
 // TODO(p0ny): cache email-id mapping.
 func (p *FeishuProvider) GetIDByEmail(ctx context.Context, tokenCtx tokenCtx, emails []string) (map[string]string, error) {
 	const url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
