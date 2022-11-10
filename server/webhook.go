@@ -996,17 +996,6 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 	return migrationDetailList, nil
 }
 
-type migrationFileYAMLDatabase struct {
-	Name string `yaml:"name"` // The name of the database
-}
-
-// migrationFileYAML represents the information contained in a YAML format
-// migration file.
-type migrationFileYAML struct {
-	Databases []migrationFileYAMLDatabase `yaml:"databases"` // The list of databases and how to identify them
-	Statement string                      `yaml:"statement"` // The SQL statement to be executed to specified list of databases
-}
-
 // prepareIssueFromFile returns a list of update schema details derived
 // from the given push event for DDL.
 func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, fileInfo fileInfo) ([]*api.MigrationDetail, []*api.ActivityCreate) {
@@ -1035,7 +1024,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 			}, nil
 		}
 
-		var migrationFile migrationFileYAML
+		var migrationFile api.MigrationFileYAML
 		err = yaml.Unmarshal([]byte(content), &migrationFile)
 		if err != nil {
 			return nil, []*api.ActivityCreate{
