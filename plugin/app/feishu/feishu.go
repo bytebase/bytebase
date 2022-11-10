@@ -15,12 +15,16 @@ import (
 )
 
 // https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN
-const invalidTokenRespCode = 99991663
+const (
+	emptyTokenRespCode   = 99991661
+	invalidTokenRespCode = 99991663
+)
 
 // FeishuProvider is the provider for IM Feishu.
 type FeishuProvider struct {
 	// cache token in memory.
 	// use atomic.Value since it can be accessed concurrently.
+	// we have initialized token so it is either an empty string or a valid but maybe expired token.
 	token  atomic.Value
 	client *http.Client
 }
@@ -29,9 +33,12 @@ type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *str
 
 // NewFeishuProvider returns a FeishuProvider.
 func NewFeishuProvider() *FeishuProvider {
-	return &FeishuProvider{
+	p := FeishuProvider{
 		client: &http.Client{},
 	}
+	// initialize token
+	p.token.Store("")
+	return &p
 }
 
 type tokenCtx struct {
@@ -247,7 +254,7 @@ const (
 }`
 )
 
-func tokenRefresher(appID, appSecret string) TokenRefresher {
+func (p *FeishuProvider) tokenRefresher(appID, appSecret string) TokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
 		const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
 		body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
@@ -279,6 +286,9 @@ func tokenRefresher(appID, appSecret string) TokenRefresher {
 			return errors.Errorf("failed to get tenant access token, code %d, msg %s", response.Code, response.Msg)
 		}
 		*oldToken = response.Token
+
+		// cache token
+		p.token.Store(response.Token)
 		return nil
 	}
 }
@@ -330,7 +340,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 		if err := json.Unmarshal(body, &response); err != nil {
 			return 0, nil, "", errors.New("failed to unmarshal response")
 		}
-		if response.Code == invalidTokenRespCode {
+		if response.Code == emptyTokenRespCode || response.Code == invalidTokenRespCode {
 			if err := tokenRefresher(ctx, client, token); err != nil {
 				return 0, nil, "", err
 			}
@@ -346,7 +356,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenCtx, approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -395,7 +405,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx to
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to marshal payload %+v", payload)
 	}
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -419,7 +429,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx to
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
 func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx tokenCtx, instanceCode string) (string, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
-	code, _, b, err := do(ctx, p.client, http.MethodGet, url, &tokenCtx.token, nil, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodGet, url, &tokenCtx.token, nil, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -443,7 +453,7 @@ func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx
 func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, tokenCtx tokenCtx, approvalCode, instanceCode, userID string) error {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", url)
 	}
@@ -473,7 +483,7 @@ func (p *FeishuProvider) GetIDByEmail(ctx context.Context, tokenCtx tokenCtx, em
 		return nil, err
 	}
 
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), p.tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return nil, err
 	}
