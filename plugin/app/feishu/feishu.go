@@ -178,6 +178,32 @@ const (
 				},
 				{
 					"key": "@i18n@widget1",
+					"value": "工单"
+				},
+				{
+					"key": "@i18n@widget2",
+					"value": "阶段"
+				},
+				{
+					"key": "@i18n@widget3",
+					"value": "描述"
+				}
+			]
+		},
+    {
+			"is_default": "false",
+			"locale": "en-US",
+			"texts": [
+				{
+					"key": "@i18n@approval_name",
+					"value": "Bytebase Issue"
+				},
+				{
+					"key": "@i18n@node_name",
+					"value": "Approval"
+				},
+				{
+					"key": "@i18n@widget1",
 					"value": "Issue"
 				},
 				{
@@ -189,7 +215,7 @@ const (
 					"value": "Description"
 				}
 			]
-		}
+    }
 	],
 	"node_list": [
 		{
