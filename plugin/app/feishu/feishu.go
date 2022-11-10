@@ -48,11 +48,6 @@ type tokenCtx struct {
 	token     string
 }
 
-type minResponse struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-}
-
 // tenantAccessTokenResponse is the response of GetTenantAccessToken.
 type tenantAccessTokenResponse struct {
 	Code   int    `json:"code"`
@@ -337,7 +332,10 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
 		}
 
-		var response minResponse
+		var response struct {
+			Code int    `json:"code"`
+			Msg  string `json:"msg"`
+		}
 		if err := json.Unmarshal(body, &response); err != nil {
 			return 0, nil, "", errors.New("failed to unmarshal response")
 		}
