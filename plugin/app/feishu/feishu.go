@@ -344,7 +344,8 @@ func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx 
 // The requester requests the approval of the approver.
 // sample value of the requesterID & approverID: ou_3cda9c969f737aaa05e6915dce306cb9
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/create
-func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode string, requesterID string, approverID string) (string, error) {
+func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx tokenCtx, content Content, approvalCode string, requesterID string, approverID string) (string, error) {
+	const url = "https://open.feishu.cn/open-apis/approval/v4/instances"
 	formValue, err := formatForm(content)
 	if err != nil {
 		return "", err
@@ -365,36 +366,23 @@ func (p *FeishuProvider) CreateExternalApproval(content Content, approvalCode st
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to marshal payload %+v", payload)
 	}
-	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances", bytes.NewBuffer(body))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "POST %s", url)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.Token)
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
 	var response ExternalApprovalResponse
-	if err := json.Unmarshal(b, &response); err != nil {
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", err
 	}
 
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to create approval instance, %s", response.Msg)
+		return "", errors.Errorf("failed to create approval instance: %s", response.Msg)
 	}
 
 	return response.Data.InstanceCode, nil
