@@ -843,13 +843,22 @@ const doUpdate = () => {
 const testConnection = () => {
   const instance = state.instance;
   const dataSource = currentDataSource.value;
+  let connectionHost = instance.host;
+  let connectionPort = instance.port;
+  if (dataSource.type === "RO") {
+    if (dataSource.hostOverride && dataSource.portOverride) {
+      connectionHost = dataSource.hostOverride;
+      connectionPort = dataSource.portOverride;
+    }
+  }
+
   const connectionInfo: ConnectionInfo = {
     engine: instance.engine,
     username: dataSource.username,
     password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
     useEmptyPassword: dataSource.useEmptyPassword,
-    host: instance.host,
-    port: instance.port,
+    host: connectionHost,
+    port: connectionPort,
     instanceId: instance.id,
   };
 
