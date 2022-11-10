@@ -241,6 +241,16 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 				return err
 			}
 		}
+	case ast.ConstraintTypeCheck:
+		if _, err := buf.WriteString("CHECK ("); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.Constraint.Expression.Text()); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
