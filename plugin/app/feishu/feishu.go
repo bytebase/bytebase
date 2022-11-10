@@ -53,16 +53,16 @@ type minResponse struct {
 	Msg  string `json:"msg"`
 }
 
-// TenantAccessTokenResponse is the response of GetTenantAccessToken.
-type TenantAccessTokenResponse struct {
+// tenantAccessTokenResponse is the response of GetTenantAccessToken.
+type tenantAccessTokenResponse struct {
 	Code   int    `json:"code"`
 	Msg    string `json:"msg"`
 	Token  string `json:"tenant_access_token"`
 	Expire int    `json:"expire"`
 }
 
-// ApprovalDefinitionResponse is the response of CreateApprovalDefinition.
-type ApprovalDefinitionResponse struct {
+// approvalDefinitionResponse is the response of CreateApprovalDefinition.
+type approvalDefinitionResponse struct {
 	Code int `json:"code"`
 	Data struct {
 		ApprovalCode string `json:"approval_code"`
@@ -71,8 +71,8 @@ type ApprovalDefinitionResponse struct {
 	Msg string `json:"msg"`
 }
 
-// ExternalApprovalResponse is the response of CreateExternalApproval.
-type ExternalApprovalResponse struct {
+// externalApprovalResponse is the response of CreateExternalApproval.
+type externalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -80,13 +80,13 @@ type ExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
-// GetIDByEmailReq is the request of finding user ids by emails.
-type GetIDByEmailReq struct {
+// getIDByEmailReq is the request of finding user ids by emails.
+type getIDByEmailReq struct {
 	Emails []string `json:"emails"`
 }
 
-// EmailsFindResponse is the response of GetIDByEmail.
-type EmailsFindResponse struct {
+// emailsFindResponse is the response of GetIDByEmail.
+type emailsFindResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -97,8 +97,8 @@ type EmailsFindResponse struct {
 	} `json:"data"`
 }
 
-// GetExternalApprovalResponse is the response of GetExternalApproval.
-type GetExternalApprovalResponse struct {
+// getExternalApprovalResponse is the response of GetExternalApproval.
+type getExternalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -106,8 +106,8 @@ type GetExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
-// CancelExternalApprovalResponse is the response of CancelExternalApproval.
-type CancelExternalApprovalResponse struct {
+// cancelExternalApprovalResponse is the response of CancelExternalApproval.
+type cancelExternalApprovalResponse struct {
 	Code int      `json:"code"`
 	Msg  string   `json:"msg"`
 	Data struct{} `json:"data"`
@@ -279,7 +279,7 @@ func (p *Provider) tokenRefresher(appID, appSecret string) tokenRefresher {
 			return errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
 		}
 
-		var response TenantAccessTokenResponse
+		var response tenantAccessTokenResponse
 		if err := json.Unmarshal(b, &response); err != nil {
 			return errors.Wrapf(err, "unmarshal body from POST %s", url)
 		}
@@ -367,7 +367,7 @@ func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenC
 		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response ApprovalDefinitionResponse
+	var response approvalDefinitionResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", err
 	}
@@ -416,7 +416,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx tokenCtx
 		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response ExternalApprovalResponse
+	var response externalApprovalResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", err
 	}
@@ -441,7 +441,7 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx token
 		return "", errors.Errorf("non-200 GET status code %d with body %q", code, b)
 	}
 
-	var response GetExternalApprovalResponse
+	var response getExternalApprovalResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal response to GetExternalApprovalResponse")
 	}
@@ -465,7 +465,7 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx tokenCtx
 		return errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response CancelExternalApprovalResponse
+	var response cancelExternalApprovalResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return errors.Wrap(err, "failed to unmarshal response to CancelExternalApprovalResponse")
 	}
@@ -482,7 +482,7 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx tokenCtx
 // TODO(p0ny): cache email-id mapping.
 func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx tokenCtx, emails []string) (map[string]string, error) {
 	const url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
-	body, err := json.Marshal(&GetIDByEmailReq{Emails: emails})
+	body, err := json.Marshal(&getIDByEmailReq{Emails: emails})
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +496,7 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx tokenCtx, emails [
 		return nil, errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response EmailsFindResponse
+	var response emailsFindResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return nil, err
 	}
