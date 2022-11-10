@@ -3,12 +3,14 @@ package feishu
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
+	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 	"github.com/pkg/errors"
 )
 
@@ -206,38 +208,40 @@ const (
 }`
 )
 
-// GetTenantAccessToken gets tenant access token.
-func (p *FeishuProvider) GetTenantAccessToken(appID string, appSecret string) (string, error) {
-	body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
-	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal", body)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return "", err
-	}
+func tokenRefresher(appID, appSecret string) oauth.TokenRefresher {
+	return func(ctx context.Context, client *http.Client, oldToken *string) error {
+		const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+		body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+		if err != nil {
+			return errors.Wrapf(err, "construct POST %s", url)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			return errors.Wrapf(err, "POST %s", url)
+		}
 
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return errors.Wrapf(err, "read body of POST %s", url)
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
-	}
+		if resp.StatusCode != http.StatusOK {
+			return errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+		}
 
-	var response TenantAccessTokenResponse
-	if err := json.Unmarshal(b, &response); err != nil {
-		return "", err
+		var response TenantAccessTokenResponse
+		if err := json.Unmarshal(b, &response); err != nil {
+			return errors.Wrapf(err, "unmarshal body from POST %s", url)
+		}
+		if response.Code != 0 {
+			return errors.Errorf("non-0 code of POST %s, msg %s", response.Code, response.Msg)
+		}
+		*oldToken = response.Token
+		return nil
 	}
-	if response.Code != 0 {
-		return "", errors.Errorf("failed to get tenant access token: %s", response.Msg)
-	}
-
-	return response.Token, nil
 }
 
 // CreateApprovalDefinition creates an approval definition and returns approval code.
