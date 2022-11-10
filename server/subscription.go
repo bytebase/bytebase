@@ -69,19 +69,37 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			OrgName:  s.workspaceID,
 		}
 
+		upgradeTrial := s.subscription.Trialing && license.Plan.Priority() > s.subscription.Plan.Priority()
+		if upgradeTrial {
+			license.ExpiresTs = s.subscription.ExpiresTs
+			license.IssuedTs = s.subscription.StartedTs
+		}
+
 		value, err := json.Marshal(license)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal license").SetInternal(err)
 		}
 
 		ctx := c.Request().Context()
-		if _, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		_, created, err := s.store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 			CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 			Name:        api.SettingEnterpriseTrial,
 			Value:       string(value),
 			Description: "The trialing license.",
-		}); err != nil {
+		})
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
+		}
+
+		if created && upgradeTrial {
+			// We need to override SettingEnterpriseLicense with empty value so that we can get the valid free trial.
+			if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+				UpdaterID: api.SystemBotID,
+				Name:      api.SettingEnterpriseLicense,
+				Value:     "",
+			}); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove license").SetInternal(err)
+			}
 		}
 
 		s.subscription = s.loadSubscription(ctx)

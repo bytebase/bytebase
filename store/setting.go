@@ -48,16 +48,16 @@ func (raw *settingRaw) toSetting() *api.Setting {
 }
 
 // CreateSettingIfNotExist creates an instance of Setting.
-func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, error) {
-	settingRaw, err := s.createSettingRawIfNotExist(ctx, create)
+func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, bool, error) {
+	settingRaw, created, err := s.createSettingRawIfNotExist(ctx, create)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Setting with SettingCreate[%+v]", create)
+		return nil, false, errors.Wrapf(err, "failed to create Setting with SettingCreate[%+v]", create)
 	}
 	setting, err := s.composeSetting(ctx, settingRaw)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Setting with settingRaw[%+v]", settingRaw)
+		return nil, false, errors.Wrapf(err, "failed to compose Setting with settingRaw[%+v]", settingRaw)
 	}
-	return setting, nil
+	return setting, created, nil
 }
 
 // FindSetting finds a list of Setting instances.
@@ -113,7 +113,8 @@ func (s *Store) composeSetting(ctx context.Context, raw *settingRaw) (*api.Setti
 }
 
 // createSettingRawIfNotExist creates a new setting only if the named setting does not exist.
-func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.SettingCreate) (*settingRaw, error) {
+// The returned bool means the resource is created successfully.
+func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.SettingCreate) (*settingRaw, bool, error) {
 	// We do a find followed by a create if NOT found. Though SQLite supports UPSERT ON CONFLICT DO NOTHING syntax, it doesn't
 	// support RETURNING in such case. So we have to use separate SELECT and INSERT anyway.
 	find := &api.SettingFind{
@@ -121,28 +122,28 @@ func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.Sett
 	}
 	setting, err := s.getSettingRaw(ctx, find)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if setting == nil {
 		tx, err := s.db.BeginTx(ctx, nil)
 		if err != nil {
-			return nil, FormatError(err)
+			return nil, false, FormatError(err)
 		}
 		defer tx.Rollback()
 
 		setting, err := createSettingImpl(ctx, tx, create)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		if err := tx.Commit(); err != nil {
-			return nil, FormatError(err)
+			return nil, false, FormatError(err)
 		}
 
-		return setting, nil
+		return setting, true, nil
 	}
 
-	return setting, nil
+	return setting, false, nil
 }
 
 // findSettingRaw retrieves a list of settings based on find.
