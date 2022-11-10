@@ -26,7 +26,7 @@ type Provider struct {
 	// cache token in memory.
 	// use atomic.Value since it can be accessed concurrently.
 	// we have initialized token so it is either an empty string or a valid but maybe expired token.
-	token  atomic.Value
+	Token  atomic.Value
 	client *http.Client
 }
 
@@ -38,7 +38,7 @@ func NewProvider() *Provider {
 		client: &http.Client{},
 	}
 	// initialize token
-	p.token.Store("")
+	p.Token.Store("")
 	return &p
 }
 
@@ -284,7 +284,7 @@ func (p *Provider) tokenRefresher(appID, appSecret string) tokenRefresher {
 		*oldToken = response.Token
 
 		// cache token
-		p.token.Store(response.Token)
+		p.Token.Store(response.Token)
 		return nil
 	}
 }
