@@ -375,7 +375,7 @@ func (p *FeishuProvider) CreateExternalApproval(ctx context.Context, tokenCtx to
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances"
 	formValue, err := formatForm(content)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to compose formValue")
 	}
 	payload := createApprovalInstanceReq{
 		ApprovalCode: approvalCode,
