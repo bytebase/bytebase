@@ -74,7 +74,7 @@
       <div class="textinfolabel">
         {{ $t("subscription.plan-compare") }}
       </div>
-      <PricingTable />
+      <PricingTable @on-trial="state.showTrialModal = true" />
     </div>
     <TrialModal
       v-if="state.showTrialModal"
