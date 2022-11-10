@@ -417,7 +417,7 @@ func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, tokenCtx to
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
 	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "POST %s", url)
 	}
 	if code != http.StatusOK {
 		return errors.Errorf("non-200 POST status code %d with body %q", code, b)
@@ -437,39 +437,29 @@ func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, tokenCtx to
 
 // GetIDByEmail gets user ids by emails.
 // TODO(p0ny): cache email-id mapping.
-func (p *FeishuProvider) GetIDByEmail(emails []string) (map[string]string, error) {
+func (p *FeishuProvider) GetIDByEmail(ctx context.Context, tokenCtx tokenCtx, emails []string) (map[string]string, error) {
+	const url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
 	body, err := json.Marshal(&GetIDByEmailReq{Emails: emails})
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id", bytes.NewBuffer(body))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, bytes.NewBuffer(body), tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.Token)
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	if code != http.StatusOK {
+		return nil, errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
 	var response EmailsFindResponse
-	if err := json.Unmarshal(b, &response); err != nil {
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return nil, err
 	}
 
 	if response.Code != 0 {
-		return nil, errors.Errorf("failed to get id by email: %s", response.Msg)
+		return nil, errors.Errorf("failed to get id by email, %s", response.Msg)
 	}
 
 	userID := make(map[string]string)
