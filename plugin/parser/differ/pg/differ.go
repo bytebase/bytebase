@@ -156,6 +156,9 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 
 func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
 	tableName := oldTable.Name
+	alterTableStmt := &ast.AlterTableStmt{
+		Table: tableName,
+	}
 
 	// Modify table for columns.
 	oldColumnMap := make(map[string]*ast.ColumnDef)
@@ -163,9 +166,6 @@ func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.C
 		oldColumnMap[column.ColumnName] = column
 	}
 
-	alterTableStmt := &ast.AlterTableStmt{
-		Table: tableName,
-	}
 	for _, newColumn := range newTable.ColumnList {
 		oldColumn, exists := oldColumnMap[newColumn.ColumnName]
 		// Add the new column.
@@ -192,10 +192,74 @@ func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.C
 		}
 	}
 
+	// Modify table for constraints.
+	oldConstraintMap := make(map[string]*ast.ConstraintDef)
+	for _, constraint := range oldTable.ConstraintList {
+		oldConstraintMap[constraint.Name] = constraint
+	}
+	for _, newConstraint := range newTable.ConstraintList {
+		oldConstraint, exists := oldConstraintMap[newConstraint.Name]
+		// Add the new constraint.
+		if !exists {
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
+				Table:      tableName,
+				Constraint: newConstraint,
+			})
+			continue
+		}
+		if err := diff.modifyConstraint(alterTableStmt, oldConstraint, newConstraint); err != nil {
+			return err
+		}
+		delete(oldConstraintMap, oldConstraint.Name)
+	}
+
+	for _, oldConstraint := range oldTable.ConstraintList {
+		if _, exists := oldConstraintMap[oldConstraint.Name]; exists {
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
+				Table:          alterTableStmt.Table,
+				ConstraintName: oldConstraint.Name,
+			})
+		}
+	}
+
 	if len(alterTableStmt.AlterItemList) > 0 {
 		diff.modifyTableList = append(diff.modifyTableList, alterTableStmt)
 	}
 
+	return nil
+}
+
+func (*diffNode) modifyConstraint(alterTableStmt *ast.AlterTableStmt, oldConstraint *ast.ConstraintDef, newConstraint *ast.ConstraintDef) error {
+	constraintName := oldConstraint.Name
+
+	if oldConstraint.Type != newConstraint.Type {
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
+			Table:          alterTableStmt.Table,
+			ConstraintName: constraintName,
+		})
+		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
+			Table:      alterTableStmt.Table,
+			Constraint: newConstraint,
+		})
+		return nil
+	}
+
+	switch newConstraint.Type {
+	case ast.ConstraintTypeCheck:
+		if newConstraint.Expression.Text() != oldConstraint.Expression.Text() {
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
+				Table:          alterTableStmt.Table,
+				ConstraintName: constraintName,
+			})
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
+				Table:      alterTableStmt.Table,
+				Constraint: newConstraint,
+			})
+			return nil
+		}
+	default:
+		return errors.Errorf("Unsupported table constraint type: %d for modifyConstraint", newConstraint.Type)
+	}
 	return nil
 }
 
