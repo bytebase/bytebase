@@ -82,13 +82,11 @@ type EmailsFindResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
-		UserList []user `json:"user_list"`
+		UserList []struct {
+			UserID string `json:"user_id"`
+			Email  string `json:"email"`
+		} `json:"user_list"`
 	} `json:"data"`
-}
-
-type user struct {
-	UserID string `json:"user_id"`
-	Email  string `json:"email"`
 }
 
 // GetExternalApprovalResponse is the response of GetExternalApproval.
