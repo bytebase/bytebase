@@ -90,3 +90,18 @@
         ADD CONSTRAINT "check_b" CHECK (b > a),
         ADD CONSTRAINT "check_c" CHECK (a > 1),
         DROP CONSTRAINT "check_a";
+- oldSchema: |
+    create table public.t1(
+      a int,
+      b int,
+      constraint check_a check(a > 1),
+      constraint check_b check(b > 1)
+    );
+  newSchema: |
+    create table public.t1(
+      a int,
+      b int,
+      constraint check_b check(b > 1),
+      constraint check_a check(a > 1)
+    )
+  diff: ""
