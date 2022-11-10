@@ -411,6 +411,7 @@ func (p *feishuProvider) CancelExternalApproval(approvalCode, instanceCode, user
 }
 
 // GetIDByEmail gets user ids by emails.
+// TODO(p0ny): cache email-id mapping.
 func (p *feishuProvider) GetIDByEmail(emails []string) (map[string]string, error) {
 	body, err := json.Marshal(&GetIDByEmailReq{Emails: emails})
 	if err != nil {
