@@ -4,8 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 // TODO(d): fix the double underscore "__".
@@ -167,7 +171,7 @@ You can check the docs at https://www.bytebase.com/docs/reference/error-code/adv
 	assert.Equal(t, expect, res.Content[0])
 }
 
-func TestVCSSQLReview_ConvertSQLAdiceToGitHubActionResult(t *testing.T) {
+func TestVCSSQLReview_ConvertSQLAdviceToGitHubActionResult(t *testing.T) {
 	expect := []string{
 		"::warning file=file1.sql,line=1,col=1,endColumn=2,title=column.no-null (402)::Column \"id\" in \"public\".\"book\" cannot have NULL value%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#402",
 		"::error file=file1.sql,line=2,col=1,endColumn=2,title=naming.index.idx (303)::Index in table \"tech_book\" mismatches the naming convention, expect \"^$|^idx_tech_book_id_name$\" but found \"tech_book_id_name\"%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#303",
@@ -178,4 +182,159 @@ func TestVCSSQLReview_ConvertSQLAdiceToGitHubActionResult(t *testing.T) {
 	assert.Equal(t, advisor.Error, res.Status)
 	assert.Equal(t, 4, len(res.Content))
 	assert.Equal(t, expect, res.Content)
+}
+
+func TestGetFileInfo(t *testing.T) {
+	t.Run("a SQL format DDL", func(t *testing.T) {
+		mi, fileType, repo, err := getFileInfo(
+			vcs.DistinctFileItem{
+				FileName: "db##0001##migrate.sql",
+				ItemType: vcs.FileItemTypeAdded,
+			},
+			[]*api.Repository{
+				{
+					ID:               1,
+					Project:          &api.Project{},
+					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+				},
+			},
+		)
+		require.NoError(t, err)
+		assert.Equal(t, 1, repo.ID)
+		assert.Equal(t, migrationFileType, fileType)
+
+		want := &db.MigrationInfo{
+			Version:     "0001",
+			Namespace:   "db",
+			Database:    "db",
+			Source:      db.VCS,
+			Type:        db.Migrate,
+			Description: "Create db schema migration",
+		}
+		assert.Equal(t, want, mi)
+	})
+
+	t.Run("a SQL format DML", func(t *testing.T) {
+		mi, fileType, repo, err := getFileInfo(
+			vcs.DistinctFileItem{
+				FileName: "db##0001##data.sql",
+				ItemType: vcs.FileItemTypeAdded,
+			},
+			[]*api.Repository{
+				{
+					ID:               1,
+					Project:          &api.Project{},
+					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+				},
+			},
+		)
+		require.NoError(t, err)
+		assert.Equal(t, 1, repo.ID)
+		assert.Equal(t, migrationFileType, fileType)
+
+		want := &db.MigrationInfo{
+			Version:     "0001",
+			Namespace:   "db",
+			Database:    "db",
+			Source:      db.VCS,
+			Type:        db.Data,
+			Description: "Create db data change",
+		}
+		assert.Equal(t, want, mi)
+	})
+
+	t.Run("a YAML format DML in a tenant project", func(t *testing.T) {
+		mi, fileType, repo, err := getFileInfo(
+			vcs.DistinctFileItem{
+				FileName: "db##0001##data.yml",
+				ItemType: vcs.FileItemTypeAdded,
+				IsYAML:   true,
+			},
+			[]*api.Repository{
+				{
+					ID: 1,
+					Project: &api.Project{
+						TenantMode: api.TenantModeTenant,
+					},
+					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+				},
+			},
+		)
+		require.NoError(t, err)
+		assert.Equal(t, 1, repo.ID)
+		assert.Equal(t, migrationFileType, fileType)
+
+		want := &db.MigrationInfo{
+			Version:     "0001",
+			Namespace:   "db",
+			Database:    "db",
+			Source:      db.VCS,
+			Type:        db.Data,
+			Description: "Create db data change",
+		}
+		assert.Equal(t, want, mi)
+	})
+
+	t.Run("a YAML format DDL is not allowed in a tenant project", func(t *testing.T) {
+		_, _, _, err := getFileInfo(
+			vcs.DistinctFileItem{
+				FileName: "db##0001##migrate.yml",
+				ItemType: vcs.FileItemTypeAdded,
+				IsYAML:   true,
+			},
+			[]*api.Repository{
+				{
+					ID: 1,
+					Project: &api.Project{
+						TenantMode: api.TenantModeTenant,
+					},
+					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+				},
+			},
+		)
+		require.EqualError(t, err, "only DML is allowed for YAML files in a tenant project")
+	})
+
+	t.Run("no matching repository", func(t *testing.T) {
+		_, _, _, err := getFileInfo(
+			vcs.DistinctFileItem{
+				FileName: "db##0001##migrate.sql",
+				ItemType: vcs.FileItemTypeAdded,
+			},
+			[]*api.Repository{
+				{
+					ID:               1,
+					Project:          &api.Project{},
+					BaseDirectory:    "bytebase",
+					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+				},
+			},
+		)
+		require.EqualError(t, err, "file change is not associated with any project")
+	})
+
+	t.Run("matching multiple repositories", func(t *testing.T) {
+		_, _, _, err := getFileInfo(
+			vcs.DistinctFileItem{
+				FileName: "db##0001##migrate.sql",
+				ItemType: vcs.FileItemTypeAdded,
+			},
+			[]*api.Repository{
+				{
+					ID: 1,
+					Project: &api.Project{
+						Name: "project-1",
+					},
+					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+				}, {
+					ID: 2,
+					Project: &api.Project{
+						Name: "project-2",
+					},
+					FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
+				},
+			},
+		)
+		require.EqualError(t, err, "file change should be associated with exactly one project but found project-1, project-2")
+	})
 }

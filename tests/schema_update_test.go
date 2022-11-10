@@ -1618,7 +1618,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 	}
 }
 
-// postVCSSQLReview will creates the VCS SQL review and get the response.
+// postVCSSQLReview will create the VCS SQL review and get the response.
 func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
 	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, repo.WebhookEndpointID)
 

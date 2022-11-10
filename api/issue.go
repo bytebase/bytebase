@@ -172,6 +172,18 @@ type MigrationContext struct {
 	VCSPushEvent *vcs.PushEvent `json:"vcsPushEvent"`
 }
 
+// MigrationFileYAMLDatabase contains the information of a database in a YAML
+// format migration file.
+type MigrationFileYAMLDatabase struct {
+	Name string `yaml:"name"` // The name of the database
+}
+
+// MigrationFileYAML contains the information in a YAML format migration file.
+type MigrationFileYAML struct {
+	Databases []MigrationFileYAMLDatabase `yaml:"databases"` // The list of databases and how to identify them
+	Statement string                      `yaml:"statement"` // The SQL statement to be executed to specified list of databases
+}
+
 // UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.
 type UpdateSchemaGhostDetail struct {
 	// DatabaseID is the ID of a database.
