@@ -31,6 +31,12 @@ func NewFeishuProvider() *FeishuProvider {
 	}
 }
 
+type tokenCtx struct {
+	appID     string
+	appSecret string
+	token     string
+}
+
 type minResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
@@ -250,6 +256,27 @@ func tokenRefresher(appID, appSecret string) TokenRefresher {
 	}
 }
 
+func requester(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader) func() (*http.Response, error) {
+	return func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, method, url, body)
+		if err != nil {
+			return nil, errors.Wrapf(err, "construct %s %s", method, url)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s %s", method, url)
+		}
+		return resp, nil
+	}
+}
+
+func do(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, method, url, token, body))
+}
+
 const maxRetries = 3
 
 func retry(ctx context.Context, client *http.Client, token *string, tokenRefresher TokenRefresher, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
@@ -288,31 +315,21 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 }
 
 // CreateApprovalDefinition creates an approval definition and returns approval code.
-func (p *FeishuProvider) CreateApprovalDefinition(approvalCode string) (string, error) {
+func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenCtx, approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
-	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/approvals", body)
+	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
+	token := p.Token
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &token, body, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.Token)
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "POST %s", url)
 	}
 
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
 	var response ApprovalDefinitionResponse
-	if err := json.Unmarshal(b, &response); err != nil {
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", err
 	}
 
