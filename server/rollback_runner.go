@@ -104,10 +104,10 @@ func (r *RollbackRunner) getRollbackSQL(ctx context.Context, task *api.Task) {
 	rollbackSQL, err := r.getRollbackSQLImpl(ctx, task, payload)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
-		payload.RollbackTaskState = string(api.RollbackTaskFail)
+		payload.RollbackTaskState = api.RollbackTaskFail
 		payload.RollbackError = err.Error()
 	}
-	payload.RollbackTaskState = string(api.RollbackTaskSuccess)
+	payload.RollbackTaskState = api.RollbackTaskSuccess
 	payload.RollbackStatement = rollbackSQL
 
 	payloadBytes, err := json.Marshal(payload)
