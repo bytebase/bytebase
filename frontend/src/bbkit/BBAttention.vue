@@ -31,9 +31,7 @@
           class="mt-2 text-sm"
           :class="`text-${color}-700`"
         >
-          <p>
-            {{ $t(description) }}
-          </p>
+          <pre>{{ $t(description) }}</pre>
         </div>
       </div>
     </div>

@@ -1383,12 +1383,14 @@
   "subscription": {
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
-    "free-trial-button": "Free trial",
     "upgrade-trial-button": "Upgrade trial",
     "start-n-days-trial": "Start {days} days trial",
     "successfully-start-trial": "Successfully start free trial for {days} days",
+    "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
+    "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
     "required-plan-with-trial": "This feature requires {requiredPlan}, but {startTrial}.",
-    "trial-for-plan": "You can start a free trial for {plan} - no credit card required",
+    "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required",
+    "trial-for-days": "You can start a free trial for {days} days - no credit card required",
     "upgrade-trial": "You can upgrade your free trial to this plan",
     "update": {
       "success": {
@@ -1434,7 +1436,7 @@
       },
       "bb-feature-sql-review": {
         "title": "SQL review policy",
-        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan. @:{'subscription.free-trial'}."
+        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan."
       },
       "bb-feature-vcs-sql-review": {
         "title": "SQL Review in GitOps workflow",
@@ -1442,7 +1444,7 @@
       },
       "bb-feature-rbac": {
         "title": "Role management",
-        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.free-trial'}."
+        "desc": "Role management can assign a particular role (e.g. DBA) to a member."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
@@ -1450,7 +1452,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.free-trial'}.",
+        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.",
         "login": "@:{'subscription.upgrade'} to unlock this feature"
       },
       "bb-feature-branding": {

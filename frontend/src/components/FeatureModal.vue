@@ -22,7 +22,10 @@
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          <i18n-t keypath="subscription.required-plan-with-trial">
+          <i18n-t
+            v-if="subscriptionStore.canTrial"
+            keypath="subscription.required-plan-with-trial"
+          >
             <template #requiredPlan>
               <span class="font-bold text-accent">
                 {{
@@ -32,14 +35,26 @@
                 }}
               </span>
             </template>
-            <template #startTrial>
+            <template #startTrial v-if="subscriptionStore.canUpgradeTrial">
+              {{ $t("subscription.upgrade-trial").toLowerCase() }}
+            </template>
+            <template #startTrial v-else>
               {{
-                $t("subscription.trial-for-plan", {
-                  plan: $t(
-                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
-                  ),
+                $t("subscription.trial-for-days", {
+                  days: subscriptionStore.trialingDays,
                 }).toLowerCase()
               }}
+            </template>
+          </i18n-t>
+          <i18n-t v-else keypath="subscription.require-subscription">
+            <template #requiredPlan>
+              <span class="font-bold text-accent">
+                {{
+                  $t(
+                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
+                  )
+                }}
+              </span>
             </template>
           </i18n-t>
         </p>
@@ -53,18 +68,28 @@
           {{ $t("common.dismiss") }}
         </button>
 
-        <button
-          v-if="subscriptionStore.canTrial"
-          type="button"
-          class="btn-primary"
-          @click.prevent="trialSubscription"
-        >
-          {{
-            $t("subscription.start-n-days-trial", {
-              days: subscriptionStore.trialingDays,
-            })
-          }}
-        </button>
+        <template v-if="subscriptionStore.canTrial">
+          <button
+            v-if="subscriptionStore.canUpgradeTrial"
+            type="button"
+            class="btn-primary"
+            @click.prevent="trialSubscription"
+          >
+            {{ $t("subscription.upgrade-trial-button") }}
+          </button>
+          <button
+            v-else
+            type="button"
+            class="btn-primary"
+            @click.prevent="trialSubscription"
+          >
+            {{
+              $t("subscription.start-n-days-trial", {
+                days: subscriptionStore.trialingDays,
+              })
+            }}
+          </button>
+        </template>
         <button v-else type="button" class="btn-primary" @click.prevent="ok">
           {{ $t("common.learn-more") }}
         </button>
@@ -102,14 +127,21 @@ const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 const featureKey = props.feature.split(".").join("-");
 
 const trialSubscription = () => {
+  const isUpgrade = subscriptionStore.canUpgradeTrial;
   subscriptionStore.trialSubscription(requiredPlan).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.success"),
-      description: t("subscription.successfully-start-trial", {
-        days: subscriptionStore.trialingDays,
-      }),
+      description: isUpgrade
+        ? t("subscription.successfully-upgrade-trial", {
+            plan: t(
+              `subscription.plan.${planTypeToString(requiredPlan)}.title`
+            ),
+          })
+        : t("subscription.successfully-start-trial", {
+            days: subscriptionStore.trialingDays,
+          }),
     });
     emit("cancel");
   });

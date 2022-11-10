@@ -3,21 +3,27 @@
     :class="customClass"
     :style="`WARN`"
     :title="$t(`subscription.features.${featureKey}.title`)"
-    :description="description"
-    :action-text="
-      subscriptionStore.canTrial
-        ? $t('subscription.start-n-days-trial', {
-            days: subscriptionStore.trialingDays,
-          })
-        : $t('subscription.upgrade')
-    "
+    :description="`${description}\n${$t(
+      'subscription.required-plan-with-trial',
+      {
+        requiredPlan: $t(
+          `subscription.plan.${planTypeToString(requiredPlan)}.title`
+        ),
+        startTrial: subscriptionStore.canUpgradeTrial
+          ? $t('subscription.upgrade-trial').toLowerCase()
+          : $t('subscription.trial-for-days', {
+              days: subscriptionStore.trialingDays,
+            }).toLowerCase(),
+      }
+    )}`"
+    :action-text="actionText"
     @click-action="onClick"
   />
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
-import { FeatureType } from "../types";
+import { PropType, computed } from "vue";
+import { FeatureType, planTypeToString } from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
@@ -44,16 +50,35 @@ const { t } = useI18n();
 const subscriptionStore = useSubscriptionStore();
 const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
+const actionText = computed(() => {
+  if (!subscriptionStore.canTrial) {
+    return t("subscription.upgrade");
+  }
+  if (subscriptionStore.canUpgradeTrial) {
+    return t("subscription.upgrade-trial-button");
+  }
+  return t("subscription.start-n-days-trial", {
+    days: subscriptionStore.trialingDays,
+  });
+});
+
 const onClick = () => {
   if (subscriptionStore.canTrial) {
+    const isUpgrade = subscriptionStore.canUpgradeTrial;
     subscriptionStore.trialSubscription(requiredPlan).then(() => {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.success"),
-        description: t("subscription.successfully-start-trial", {
-          days: subscriptionStore.trialingDays,
-        }),
+        description: isUpgrade
+          ? t("subscription.successfully-upgrade-trial", {
+              plan: t(
+                `subscription.plan.${planTypeToString(requiredPlan)}.title`
+              ),
+            })
+          : t("subscription.successfully-start-trial", {
+              days: subscriptionStore.trialingDays,
+            }),
       });
     });
   } else {

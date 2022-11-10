@@ -9,13 +9,18 @@
   >
     <div class="min-w-0 md:min-w-400">
       <p class="whitespace-pre-wrap">
-        {{
-          $t("subscription.trial-for-plan", {
-            plan: $t(
-              `subscription.plan.${planTypeToString(PlanType.TEAM)}.title`
-            ),
-          })
-        }}*
+        <i18n-t keypath="subscription.trial-for-plan">
+          <template #days>
+            {{ subscriptionStore.trialingDays }}
+          </template>
+          <template #plan>
+            <span class="font-bold text-accent">
+              {{
+                $t(`subscription.plan.${planTypeToString(PlanType.TEAM)}.title`)
+              }}
+            </span>
+          </template>
+        </i18n-t>
       </p>
       <div class="mt-7 flex justify-end space-x-2">
         <button

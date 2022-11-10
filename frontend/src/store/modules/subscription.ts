@@ -64,6 +64,12 @@ export const useSubscriptionStore = defineStore("subscription", {
       if (state.subscription.plan === PlanType.FREE) {
         return true;
       }
+      return this.canUpgradeTrial;
+    },
+    canUpgradeTrial(state): boolean {
+      if (!state.subscription) {
+        return false;
+      }
       return (
         state.subscription.trialing &&
         state.subscription.plan < PlanType.ENTERPRISE

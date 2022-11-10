@@ -67,7 +67,7 @@
                 v-if="canTrial && plan.trialDays"
                 class="font-bold text-sm my-2 text-center"
               >
-                {{ $t("subscription.free-trial-button") }}
+                {{ $t("subscription.free-trial") }}
               </div>
             </div>
           </td>
@@ -189,7 +189,7 @@
           v-if="canTrial && plan.trialDays"
           class="font-bold text-sm my-2 text-center"
         >
-          {{ $t("subscription.free-trial-button") }}
+          {{ $t("subscription.free-trial") }}
         </div>
 
         <div v-if="plan.isAvailable" class="px-4 py-8 text-right text-gray-500">
