@@ -196,6 +196,9 @@ func normalizeExternalURL(url string) (string, error) {
 }
 
 func checkDataDir() error {
+	// Clean data directory path.
+	flags.dataDir = filepath.Clean(flags.dataDir)
+
 	// Convert to absolute path if relative path is supplied.
 	if !filepath.IsAbs(flags.dataDir) {
 		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + flags.dataDir)
@@ -203,11 +206,6 @@ func checkDataDir() error {
 			return err
 		}
 		flags.dataDir = absDir
-	}
-
-	// Trim trailing / in case user supplies
-	if len(flags.dataDir) > 1 {
-		flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 	}
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
