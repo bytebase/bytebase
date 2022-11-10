@@ -402,7 +402,7 @@ func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx
 
 	var response GetExternalApprovalResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
-		return "", errors.Wrapf(err, "failed to unmarshal response to GetExternalApprovalResponse")
+		return "", errors.Wrap(err, "failed to unmarshal response to GetExternalApprovalResponse")
 	}
 	if response.Code != 0 {
 		return "", errors.Errorf("failed to get approval instance, %s", response.Msg)
@@ -412,32 +412,20 @@ func (p *FeishuProvider) GetExternalApprovalStatus(ctx context.Context, tokenCtx
 }
 
 // CancelExternalApproval cancels an approval instance.
-func (p *FeishuProvider) CancelExternalApproval(approvalCode, instanceCode, userID string) error {
+func (p *FeishuProvider) CancelExternalApproval(ctx context.Context, tokenCtx tokenCtx, approvalCode, instanceCode, userID string) error {
+	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
 	body := strings.NewReader(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
-	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/approval/v4/instances/cancel", body)
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.Token)
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+	if code != http.StatusOK {
+		return errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
 	var response CancelExternalApprovalResponse
-	if err := json.Unmarshal(b, &response); err != nil {
-		return err
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
+		return errors.Wrap(err, "failed to unmarshal response to CancelExternalApprovalResponse")
 	}
 
 	if response.Code != 0 {
