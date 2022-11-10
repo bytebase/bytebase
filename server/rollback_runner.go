@@ -42,6 +42,7 @@ type RollbackRunner struct {
 // Run is the runner for backup runner.
 func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
+	r.retryGetRollbackSQL(ctx)
 	for {
 		select {
 		case task := <-generateRollbackSQLChan:
@@ -51,6 +52,27 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
+	}
+}
+
+// retryGetRollbackSQL retries generating rollback SQL for tasks.
+// It is currently called when Bytebase server starts and only rerun unfinished generation.
+func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context) {
+	find := &api.TaskFind{
+		StatusList: &[]api.TaskStatus{api.TaskRunning},
+		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
+		Payload:    fmt.Sprintf("payload->>'rollbackTaskState' = '%s'", api.RollbackTaskRunning),
+	}
+	taskList, err := r.server.store.FindTask(ctx, find, true)
+	if err != nil {
+		log.Error("Failed to get running DML tasks", zap.Error(err))
+		return
+	}
+	for _, task := range taskList {
+		if task.Instance.Engine != db.MySQL {
+			continue
+		}
+		r.getRollbackSQL(ctx, task)
 	}
 }
 
