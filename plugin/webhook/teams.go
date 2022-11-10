@@ -55,10 +55,10 @@ func init() {
 }
 
 // TeamsReceiver is the receiver for Teams.
-type TeamsReceiver struct{}
+type TeamsReceiver struct {
+}
 
 func (*TeamsReceiver) post(context Context) error {
-	// TODO(p0ny): handle context.Task
 	factList := []TeamsWebhookSectionFact{}
 	for _, meta := range context.getMetaList() {
 		factList = append(factList, TeamsWebhookSectionFact(meta))

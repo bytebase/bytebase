@@ -48,10 +48,10 @@ func init() {
 }
 
 // DiscordReceiver is the receiver for Discord.
-type DiscordReceiver struct{}
+type DiscordReceiver struct {
+}
 
 func (*DiscordReceiver) post(context Context) error {
-	// TODO(p0ny): handle context.Task
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}

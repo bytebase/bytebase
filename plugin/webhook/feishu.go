@@ -92,7 +92,8 @@ func init() {
 }
 
 // FeishuReceiver is the receiver for Feishu.
-type FeishuReceiver struct{}
+type FeishuReceiver struct {
+}
 
 func (*FeishuReceiver) post(context Context) error {
 	var markdownBuf strings.Builder
