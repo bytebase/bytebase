@@ -219,68 +219,78 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) error {
 	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
 		return err
 	}
 
+	connected := false
 	var remainingStmts []string
 	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
+		// We will execute the statement directly before "\\connect" statement.
 		// https://github.com/bytebase/bytebase/issues/202
-		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-			databases, err := driver.getDatabases(ctx)
-			if err != nil {
-				return err
-			}
-			databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
-			if err != nil {
-				return err
-			}
-			exist := false
-			for _, database := range databases {
-				if database.name == databaseName {
-					exist = true
-					break
+		if createDatabase && !connected {
+			if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+				databases, err := driver.getDatabases(ctx)
+				if err != nil {
+					return err
 				}
-			}
-
-			if !exist {
+				databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
+				if err != nil {
+					return err
+				}
+				exist := false
+				for _, database := range databases {
+					if database.name == databaseName {
+						exist = true
+						break
+					}
+				}
+				if !exist {
+					if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+						return err
+					}
+				}
+			} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
+				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+					return err
+				}
+			} else if strings.HasPrefix(stmt, "\\connect ") {
+				// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
+				parts := strings.Split(stmt, `"`)
+				if len(parts) != 3 {
+					return errors.Errorf("invalid statement %q", stmt)
+				}
+				if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
+					return err
+				}
+				// Update current owner
+				if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
+					return err
+				}
+				connected = true
+			} else {
 				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 					return err
 				}
 			}
-		} else if strings.HasPrefix(stmt, "GRANT") || strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
-			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-				return err
-			}
-		} else if strings.HasPrefix(stmt, "\\connect ") {
-			// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
-			parts := strings.Split(stmt, `"`)
-			if len(parts) != 3 {
-				return errors.Errorf("invalid statement %q", stmt)
-			}
-			if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
-				return err
-			}
-			// Update current owner
-			if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
-				return err
-			}
-		} else if isSuperuserStatement(stmt) {
-			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-			if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
-				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-			}
-			// Use superuser privilege to run privileged statements.
-			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
-			remainingStmts = append(remainingStmts, stmt)
 		} else {
-			remainingStmts = append(remainingStmts, stmt)
+			if isSuperuserStatement(stmt) {
+				// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
+				// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
+				// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
+				// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
+				if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
+					stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
+				}
+				// Use superuser privilege to run privileged statements.
+				stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
+				remainingStmts = append(remainingStmts, stmt)
+			} else {
+				remainingStmts = append(remainingStmts, stmt)
+			}
 		}
 		return nil
 	}
@@ -313,7 +323,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 func isSuperuserStatement(stmt string) bool {
 	upperCaseStmt := strings.ToUpper(stmt)
-	if strings.Contains(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.Contains(upperCaseStmt, "CREATE EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
+	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
 		return true
 	}
 	return false
