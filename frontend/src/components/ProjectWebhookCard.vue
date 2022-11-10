@@ -23,7 +23,7 @@
           <img class="h-5 w-5" src="../assets/dingtalk-logo.png" />
         </template>
         <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.feishu'">
-          <img class="h-5 w-5" src="../assets/feishu-logo.png" />
+          <img class="h-5 w-5" src="../assets/feishu-logo.webp" />
         </template>
         <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.wecom'">
           <img class="h-5 w-5" src="../assets/wecom-logo.png" />
