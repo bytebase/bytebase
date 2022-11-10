@@ -22,7 +22,7 @@ fi
 NODE_VERSION=`node -v | { read v; echo ${v#v}; }`
 if [ "$(version ${NODE_VERSION})" -lt "$(version 18.11)" ];
 then
-   echo "${RED}Precheck failed.${NC} Require go version >= 18.11. Current version ${NODE_VERSION}."; exit 1;
+   echo "${RED}Precheck failed.${NC} Require node.js version >= 18.11. Current version ${NODE_VERSION}."; exit 1;
 fi
 
 if ! command -v npm > /dev/null
