@@ -22,20 +22,28 @@
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          {{
-            $t("subscription.required-plan-with-trial", {
-              requiredPlan: $t(
-                `subscription.plan.${planTypeToString(requiredPlan)}.title`
-              ),
-              startTrial: $t("subscription.trial-for-plan", {
-                plan: $t(
-                  `subscription.plan.${planTypeToString(
-                    subscriptionStore.trialingPlan
-                  )}.title`
-                ),
-              }).toLowerCase(),
-            })
-          }}*
+          <i18n-t keypath="subscription.required-plan-with-trial">
+            <template #requiredPlan>
+              <span class="font-bold text-accent">
+                {{
+                  $t(
+                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
+                  )
+                }}
+              </span>
+            </template>
+            <template #startTrial>
+              {{
+                $t("subscription.trial-for-plan", {
+                  plan: $t(
+                    `subscription.plan.${planTypeToString(
+                      subscriptionStore.trialingPlan
+                    )}.title`
+                  ),
+                }).toLowerCase()
+              }}
+            </template>
+          </i18n-t>
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
