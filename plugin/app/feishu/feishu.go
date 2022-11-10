@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 )
@@ -18,7 +19,7 @@ const invalidTokenRespCode = 99991663
 
 // FeishuProvider is the type of feishu.
 type FeishuProvider struct {
-	Token  string
+	token  atomic.Value
 	client *http.Client
 }
 
@@ -318,8 +319,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 func (p *FeishuProvider) CreateApprovalDefinition(ctx context.Context, tokenCtx tokenCtx, approvalCode string) (string, error) {
 	body := strings.NewReader(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
-	token := p.Token
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &token, body, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
+	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.token, body, tokenRefresher(tokenCtx.appID, tokenCtx.appSecret))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
