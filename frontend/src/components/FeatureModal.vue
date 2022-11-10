@@ -35,10 +35,10 @@
                 }}
               </span>
             </template>
-            <template #startTrial v-if="subscriptionStore.canUpgradeTrial">
+            <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
               {{ $t("subscription.upgrade-trial").toLowerCase() }}
             </template>
-            <template #startTrial v-else>
+            <template v-else #startTrial>
               {{
                 $t("subscription.trial-for-days", {
                   days: subscriptionStore.trialingDays,
