@@ -30,8 +30,8 @@ func (p PlanType) String() string {
 	return ""
 }
 
-// Priority returns the priority of plan type.
-// Higher priority means the plan supports more feature.
+// Priority returns the priority of the plan type.
+// Higher priority means the plan supports more features.
 func (p PlanType) Priority() int {
 	switch p {
 	case FREE:

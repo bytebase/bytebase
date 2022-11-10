@@ -113,6 +113,7 @@ func (s *Store) composeSetting(ctx context.Context, raw *settingRaw) (*api.Setti
 }
 
 // createSettingRawIfNotExist creates a new setting only if the named setting does not exist.
+// The returned bool means the resource is created successfully.
 func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.SettingCreate) (*settingRaw, bool, error) {
 	// We do a find followed by a create if NOT found. Though SQLite supports UPSERT ON CONFLICT DO NOTHING syntax, it doesn't
 	// support RETURNING in such case. So we have to use separate SELECT and INSERT anyway.

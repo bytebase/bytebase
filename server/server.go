@@ -411,13 +411,12 @@ func (s *Server) initMetricReporter(workspaceID string) {
 
 func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial branding
-	_, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
