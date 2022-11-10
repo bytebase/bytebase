@@ -11,7 +11,7 @@
       <BBTableCell :left-padding="4" class="w-4">
         {{ instanceUser.name }}
       </BBTableCell>
-      <BBTableCell class="whitespace-pre-wrap">
+      <BBTableCell class="whitespace-pre-wrap break-all">
         {{ instanceUser.grant.replaceAll("\n", "\n\n") }}
       </BBTableCell>
     </template>
