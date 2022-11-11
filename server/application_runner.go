@@ -76,7 +76,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 
 						issue, err := r.server.store.GetIssueByID(ctx, externalApproval.IssueID)
-						stage := GetActiveStage(issue.Pipeline.StageList)
+						stage := getActiveStage(issue.Pipeline.StageList)
 						if stage == nil {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
@@ -335,7 +335,7 @@ func scheduleApproval(s *Server, pipeline *api.Pipeline) {
 		return
 	}
 	issue := issues[0]
-	stage := GetActiveStage(pipeline.StageList)
+	stage := getActiveStage(pipeline.StageList)
 	if stage == nil {
 		stage = pipeline.StageList[len(pipeline.StageList)-1]
 	}

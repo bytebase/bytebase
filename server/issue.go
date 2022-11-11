@@ -186,7 +186,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
-			stage := GetActiveStage(issue.Pipeline.StageList)
+			stage := getActiveStage(issue.Pipeline.StageList)
 			if stage == nil {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]

@@ -269,7 +269,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
-								if stage := GetActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
+								if stage := getActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
 									environmentID := stage.EnvironmentID
 									ok, err := s.server.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 									if err != nil {
@@ -494,7 +494,7 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 	return false, nil
 }
 
-func GetActiveStage(stageList []*api.Stage) *api.Stage {
+func getActiveStage(stageList []*api.Stage) *api.Stage {
 	for _, stage := range stageList {
 		for _, task := range stage.TaskList {
 			if task.Status != api.TaskDone {
