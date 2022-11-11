@@ -121,36 +121,6 @@ type Content struct {
 	Description string
 }
 
-func formatForm(content Content) (string, error) {
-	type form []struct {
-		ID    string `json:"id"`
-		Type  string `json:"type"`
-		Value string `json:"value"`
-	}
-	forms := form{
-		{
-			ID:    "1",
-			Type:  "input",
-			Value: content.Issue,
-		},
-		{
-			ID:    "2",
-			Type:  "input",
-			Value: content.Stage,
-		},
-		{
-			ID:    "3",
-			Type:  "textarea",
-			Value: content.Description,
-		},
-	}
-	b, err := json.Marshal(forms)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
 const (
 	getTenantAccessTokenReq = `{
 		"app_id": "%s",
@@ -285,6 +255,10 @@ func (p *Provider) tokenRefresher(appID, appSecret string) tokenRefresher {
 	}
 }
 
+func do(ctx context.Context, client *http.Client, method, url string, token *string, body []byte, tokenRefresher tokenRefresher) (code int, header http.Header, respBody string, err error) {
+	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, method, url, token, body))
+}
+
 // The type of body is []byte because it could be read multiple times but io.Reader can only be read once.
 func requester(ctx context.Context, client *http.Client, method, url string, token *string, body []byte) func() (*http.Response, error) {
 	return func() (*http.Response, error) {
@@ -302,10 +276,6 @@ func requester(ctx context.Context, client *http.Client, method, url string, tok
 		}
 		return resp, nil
 	}
-}
-
-func do(ctx context.Context, client *http.Client, method, url string, token *string, body []byte, tokenRefresher tokenRefresher) (code int, header http.Header, respBody string, err error) {
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, method, url, token, body))
 }
 
 const maxRetries = 3
@@ -513,4 +483,34 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 	}
 
 	return userID, nil
+}
+
+func formatForm(content Content) (string, error) {
+	type form []struct {
+		ID    string `json:"id"`
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	}
+	forms := form{
+		{
+			ID:    "1",
+			Type:  "input",
+			Value: content.Issue,
+		},
+		{
+			ID:    "2",
+			Type:  "input",
+			Value: content.Stage,
+		},
+		{
+			ID:    "3",
+			Type:  "textarea",
+			Value: content.Description,
+		},
+	}
+	b, err := json.Marshal(forms)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
