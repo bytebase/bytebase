@@ -18,8 +18,8 @@ import (
 type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
 func requester(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader) func() (*http.Response, error) {
-	// body may be read multiple times but io.Reader is meant to be read once.
-	// so we read body first and build the reader every time.
+	// The body may be read multiple times but io.Reader is meant to be read once,
+	// so we read the body first and build the reader every time.
 	var bodyBytes []byte
 	if body != nil {
 		b, err := io.ReadAll(body)
