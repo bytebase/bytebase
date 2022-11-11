@@ -180,7 +180,7 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 
 func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.Context, error) {
 	var webhookCtx webhook.Context
-	var webhookTask *webhook.Task
+	var webhookTaskResult *webhook.TaskResult
 	level := webhook.WebhookInfo
 	title := ""
 	link := fmt.Sprintf("%s/issue/%s", m.s.profile.ExternalURL, api.IssueSlug(meta.issue))
@@ -307,8 +307,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 
-		webhookTask = &webhook.Task{
-			ID:     task.ID,
+		webhookTaskResult = &webhook.TaskResult{
 			Name:   task.Name,
 			Status: string(task.Status),
 		}
@@ -352,7 +351,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					zap.Error(err))
 				return webhookCtx, err
 			}
-			webhookTask.ResultDetail = result.Detail
+			webhookTaskResult.Detail = result.Detail
 		}
 	}
 
@@ -371,7 +370,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			ID:   meta.issue.ProjectID,
 			Name: meta.issue.Project.Name,
 		},
-		Task:         webhookTask,
+		TaskResult:   webhookTaskResult,
 		Description:  activity.Comment,
 		Link:         link,
 		CreatorID:    updater.ID,

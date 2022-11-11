@@ -44,12 +44,12 @@ type Issue struct {
 	Description string `json:"description"`
 }
 
-// Task object of task.
-type Task struct {
-	ID           int    `json:"id"`
-	Name         string `json:"name"`
-	Status       string `json:"status"`
-	ResultDetail string `json:"resultDetail"`
+// TaskResult is the latest result of a task.
+// The `detail` field is only present if the status is TaskFailed.
+type TaskResult struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Detail string `json:"detail"`
 }
 
 // Project object of project.
@@ -72,7 +72,7 @@ type Context struct {
 	CreatedTs    int64
 	Issue        *Issue
 	Project      *Project
-	Task         *Task
+	TaskResult   *TaskResult
 }
 
 // Receiver is the webhook receiver.
@@ -111,17 +111,17 @@ func (c *Context) getMetaList() []meta {
 		})
 	}
 
-	if c.Task != nil {
+	if c.TaskResult != nil {
 		m = append(m, meta{
 			Name:  "Task",
-			Value: c.Task.Name,
+			Value: c.TaskResult.Name,
 		})
 		m = append(m, meta{
 			Name:  "Status",
-			Value: c.Task.Status,
+			Value: c.TaskResult.Status,
 		})
-		if c.Task.ResultDetail != "" {
-			resultDetailRune := []rune(c.Task.ResultDetail)
+		if c.TaskResult.Detail != "" {
+			resultDetailRune := []rune(c.TaskResult.Detail)
 			if len(resultDetailRune) > 200 {
 				resultDetailRune = resultDetailRune[:200]
 				resultDetailRune = append(resultDetailRune, []rune("... (view details in Bytebase)")...)
