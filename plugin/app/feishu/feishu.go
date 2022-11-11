@@ -76,11 +76,6 @@ type externalApprovalResponse struct {
 	} `json:"data"`
 }
 
-// getIDByEmailReq is the request of finding user ids by emails.
-type getIDByEmailReq struct {
-	Emails []string `json:"emails"`
-}
-
 // emailsFindResponse is the response of GetIDByEmail.
 type emailsFindResponse struct {
 	Code int    `json:"code"`
@@ -483,7 +478,10 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx
 // TODO(p0ny): cache email-id mapping.
 func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails []string) (map[string]string, error) {
 	const url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
-	body, err := json.Marshal(&getIDByEmailReq{Emails: emails})
+	body, err := json.Marshal(
+		struct {
+			Emails []string `json:"emails"`
+		}{Emails: emails})
 	if err != nil {
 		return nil, err
 	}
