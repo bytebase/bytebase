@@ -77,6 +77,7 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 	return settingList, nil
 }
 
+// GetSetting gets an instance of Setting.
 func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Setting, error) {
 	settingRaw, err := s.getSettingRaw(ctx, find)
 	if err != nil {
