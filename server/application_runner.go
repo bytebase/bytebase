@@ -87,7 +87,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 						if issue.Status != api.IssueOpen {
-							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value, r.p); err != nil {
+							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 								continue
 							}
@@ -152,7 +152,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue, p *feishu.Provider) (*api.ExternalApproval, error) {
+func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
 	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 		if err != nil {
 			return nil, err
 		}
-		if err := p.CancelExternalApproval(ctx,
+		if err := r.p.CancelExternalApproval(ctx,
 			feishu.TokenCtx{
 				AppID:     settingValue.AppID,
 				AppSecret: settingValue.AppSecret,
@@ -238,8 +238,8 @@ func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *
 	return true, nil
 }
 
-func (*ApplicationRunner) createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue, p *feishu.Provider) error {
-	users, err := p.GetIDByEmail(ctx,
+func (r *ApplicationRunner) createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
+	users, err := r.p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
 			AppSecret: settingValue.AppSecret,
@@ -250,7 +250,7 @@ func (*ApplicationRunner) createExternalApproval(ctx context.Context, s *Server,
 		log.Error("failed to get id by email", zap.Any("resp", users))
 		return err
 	}
-	instanceCode, err := p.CreateExternalApproval(ctx,
+	instanceCode, err := r.p.CreateExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
 			AppSecret: settingValue.AppSecret,
@@ -336,8 +336,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 		stage = pipeline.StageList[len(pipeline.StageList)-1]
 	}
 
-	p := feishu.NewProvider()
-	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue, p)
+	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue)
 	if err != nil {
 		log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
 	}
@@ -355,7 +354,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 		return
 	}
 
-	if err := r.createExternalApproval(ctx, s, issue, stage, &settingValue, p); err != nil {
+	if err := r.createExternalApproval(ctx, s, issue, stage, &settingValue); err != nil {
 		log.Error("failed to create external approval", zap.Error(err))
 		return
 	}
