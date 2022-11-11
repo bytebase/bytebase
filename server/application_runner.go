@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-const applicationRunnerInterval = time.Duration(1) * time.Second
+const applicationRunnerInterval = time.Duration(60) * time.Second
 
 // NewApplicationRunner returns a ApplicationRunner.
 func NewApplicationRunner(store *store.Store, activityManager *ActivityManager) *ApplicationRunner {
