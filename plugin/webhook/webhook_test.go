@@ -58,7 +58,8 @@ func TestContext_getMetaList(t *testing.T) {
 
 		// generate random string
 		b := make([]byte, 300)
-		rand.Read(b)
+		_, err := rand.Read(b)
+		a.NoError(err)
 		detail := string(b)
 		a.Equal(300, len(detail))
 
