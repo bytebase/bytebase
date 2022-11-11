@@ -782,7 +782,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		Type:        api.ActivitySQLEditorQuery,
 		ContainerID: containerID,
 		Level:       level,
-		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
+		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
 	}
