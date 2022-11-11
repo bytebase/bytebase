@@ -102,7 +102,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
-						if status == string(feishu.ApprovalStatusApproved) {
+						if status == feishu.ApprovalStatusApproved {
 							// double check
 							if stage.ID == payload.StageID && payload.AssigneeID == issue.AssigneeID {
 								// approve stage
@@ -140,7 +140,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									log.Error("failed to archive external apporval", zap.Error(err))
 								}
 							}
-						} else if status != string(feishu.ApprovalStatusPending) {
+						} else if status != feishu.ApprovalStatusPending {
 							if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
 								// Archive external approval if it's not pending.
 								ID:        externalApproval.ID,

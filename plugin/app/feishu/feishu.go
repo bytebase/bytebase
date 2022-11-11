@@ -108,7 +108,7 @@ type getExternalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
-		Status string `json:"status"`
+		Status ApprovalStatus `json:"status"`
 	} `json:"data"`
 }
 
@@ -413,7 +413,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 // GetExternalApprovalStatus gets and returns the status of an external approval.
 // example instanceCode: 81D31358-93AF-92D6-7425-01A5D67C4E71
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
-func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx TokenCtx, instanceCode string) (string, error) {
+func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx TokenCtx, instanceCode string) (ApprovalStatus, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
 	code, _, b, err := p.do(ctx, p.client, http.MethodGet, url, nil, p.tokenRefresher(tokenCtx))
 	if err != nil {
