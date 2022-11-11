@@ -102,7 +102,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
-						if status == "APPROVED" {
+						if status == string(feishu.ApprovalStatusApproved) {
 							// double check
 							if stage.ID == payload.StageID && payload.AssigneeID == issue.AssigneeID {
 								// approve stage
@@ -122,7 +122,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									}
 									_, err := r.store.PatchTaskStatus(ctx, taskStatusPatch)
 									if err != nil {
-										return errors.Wrapf(err, "Failed to update task %q status", taskIDList)
+										return errors.Wrapf(err, "failed to update task status, task id list: %+v", taskIDList)
 									}
 									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
 										return errors.Wrapf(err, "failed to create task status update activity")

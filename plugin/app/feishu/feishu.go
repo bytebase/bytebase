@@ -48,6 +48,22 @@ type TokenCtx struct {
 	AppSecret string
 }
 
+// ApprovalStatus is the status of an external approval.
+type ApprovalStatus string
+
+const (
+	// ApprovalStatusPending is the approval status for pending approvals.
+	ApprovalStatusPending = "PENDING"
+	// ApprovalStatusApproved is the approval status for approved approvals.
+	ApprovalStatusApproved = "APPROVED"
+	// ApprovalStatusRejected is the approval status for rejected approvals.
+	ApprovalStatusRejected = "REJECTED"
+	// ApprovalStatusCanceled is the approval status for canceled approvals.
+	ApprovalStatusCanceled = "CANCELED"
+	// ApprovalStatusDeleted is the approval status for deleted approvals.
+	ApprovalStatusDeleted = "DELETED"
+)
+
 // tenantAccessTokenResponse is the response of GetTenantAccessToken.
 type tenantAccessTokenResponse struct {
 	Code   int    `json:"code"`
