@@ -53,15 +53,15 @@ type ApprovalStatus string
 
 const (
 	// ApprovalStatusPending is the approval status for pending approvals.
-	ApprovalStatusPending = "PENDING"
+	ApprovalStatusPending = ApprovalStatus("PENDING")
 	// ApprovalStatusApproved is the approval status for approved approvals.
-	ApprovalStatusApproved = "APPROVED"
+	ApprovalStatusApproved = ApprovalStatus("APPROVED")
 	// ApprovalStatusRejected is the approval status for rejected approvals.
-	ApprovalStatusRejected = "REJECTED"
+	ApprovalStatusRejected = ApprovalStatus("REJECTED")
 	// ApprovalStatusCanceled is the approval status for canceled approvals.
-	ApprovalStatusCanceled = "CANCELED"
+	ApprovalStatusCanceled = ApprovalStatus("CANCELED")
 	// ApprovalStatusDeleted is the approval status for deleted approvals.
-	ApprovalStatusDeleted = "DELETED"
+	ApprovalStatusDeleted = ApprovalStatus("DELETED")
 )
 
 // tenantAccessTokenResponse is the response of GetTenantAccessToken.

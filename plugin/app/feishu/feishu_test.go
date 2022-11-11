@@ -128,7 +128,7 @@ func TestProvider_GetExternalApprovalStatus(t *testing.T) {
 	ctx := context.Background()
 	status, err := p.GetExternalApprovalStatus(ctx, TokenCtx{}, "")
 	a.NoError(err)
-	want := "PENDING"
+	want := ApprovalStatusPending
 	a.Equal(want, status)
 }
 
