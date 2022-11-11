@@ -133,14 +133,23 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 								}
 
 								if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
-									// archive external approval
+									// Archive external approval.
 									ID:        externalApproval.ID,
 									RowStatus: api.Archived,
 								}); err != nil {
 									log.Error("failed to archive external apporval", zap.Error(err))
 								}
 							}
+						} else if status != string(feishu.ApprovalStatusPending) {
+							if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
+								// Archive external approval if it's not pending.
+								ID:        externalApproval.ID,
+								RowStatus: api.Archived,
+							}); err != nil {
+								log.Error("failed to archive external apporval", zap.Error(err))
+							}
 						}
+
 					default:
 						log.Error("Unknown ExternalApproval.Type", zap.Any("ExternalApproval", externalApproval))
 					}
