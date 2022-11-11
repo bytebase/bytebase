@@ -79,13 +79,16 @@ func (s *Store) FindExternalApproval(ctx context.Context, find *api.ExternalAppr
 
 // GetExternalApprovalByIssueID gets an ExternalApproval by IssueID.
 func (s *Store) GetExternalApprovalByIssueID(ctx context.Context, issueID int) (*api.ExternalApproval, error) {
-	externalApprovalRaw, err := s.getExternalApprovalRawByIssueID(ctx, issueID)
+	rawList, err := s.findExternalApprovalRaw(ctx, &api.ExternalApprovalFind{IssueID: &issueID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ApprovalInstance by issueID %v", issueID)
 	}
-	if externalApprovalRaw == nil {
+	if len(rawList) == 0 {
 		return nil, nil
+	} else if len(rawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d externalApprovals with issueID %d, expect 1", len(rawList), issueID)}
 	}
+	externalApprovalRaw := rawList[0]
 	externalApproval, err := s.composeExternalApproval(ctx, externalApprovalRaw)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose ExternalApproval with externalApprovalRaw[%+v]", externalApprovalRaw)
@@ -162,25 +165,6 @@ func (s *Store) findExternalApprovalRaw(ctx context.Context, find *api.ExternalA
 	}
 
 	return rawList, nil
-}
-
-func (s *Store) getExternalApprovalRawByIssueID(ctx context.Context, issueID int) (*externalApprovalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-	rawList, err := s.findExternalApprovalImpl(ctx, tx, &api.ExternalApprovalFind{IssueID: &issueID})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rawList) == 0 {
-		return nil, nil
-	} else if len(rawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d externalApprovals with issueID %d, expect 1", len(rawList), issueID)}
-	}
-	return rawList[0], nil
 }
 
 func (s *Store) patchExternalApprovalRaw(ctx context.Context, patch *api.ExternalApprovalPatch) (*externalApprovalRaw, error) {
