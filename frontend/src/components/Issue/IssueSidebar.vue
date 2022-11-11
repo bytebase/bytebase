@@ -318,6 +318,7 @@ import {
   useEnvironmentStore,
   useLabelList,
   useProjectStore,
+  useMemberStore,
 } from "@/store";
 import {
   useExtraIssueLogic,
@@ -577,6 +578,12 @@ const selectTaskId = (taskId: TaskId) => {
 
 const allowProjectOwnerToApprove = useAllowProjectOwnerToApprove();
 const filterPrincipal = (principal: Principal): boolean => {
+  // Always hide inactive principals.
+  if (
+    useMemberStore().memberByPrincipalId(principal.id).rowStatus === "ARCHIVED"
+  ) {
+    return false;
+  }
   if (allowProjectOwnerToApprove.value) {
     return isOwnerOfProject(principal, project.value);
   }

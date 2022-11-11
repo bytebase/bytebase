@@ -90,6 +90,7 @@
                 :required="false"
                 :placeholder="$t('project.settings.member-placeholder')"
                 :selected-id="state.principalId"
+                :custom-filter="filterPrincipal"
                 @select-principal-id="
                   (principalId) => {
                     state.principalId = principalId;
@@ -161,6 +162,7 @@ import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import {
   DEFAULT_PROJECT_ID,
+  Principal,
   PrincipalId,
   Project,
   ProjectMember,
@@ -407,6 +409,10 @@ export default defineComponent({
       }
     };
 
+    const filterPrincipal = (principal: Principal): boolean =>
+      useMemberStore().memberByPrincipalId(principal.id).rowStatus !==
+      "ARCHIVED";
+
     return {
       state,
       hasRBACFeature,
@@ -423,6 +429,7 @@ export default defineComponent({
       onRefreshSync,
       onToggleRoleProvider,
       onConfirmToggleRoleProvider,
+      filterPrincipal,
     };
   },
 });

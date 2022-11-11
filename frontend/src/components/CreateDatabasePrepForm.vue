@@ -208,6 +208,7 @@
           :allowed-role-list="['OWNER', 'DBA']"
           :selectedId="state.assigneeId"
           :placeholder="'Select assignee'"
+          :custom-filter="filterPrincipal"
           @select-principal-id="selectAssignee"
         />
       </div>
@@ -280,11 +281,14 @@ import {
   Instance,
   InstanceUserId,
   PITRContext,
+  Principal,
 } from "../types";
 import {
   buildDatabaseNameByTemplateAndLabelList,
   hasWorkspacePermission,
   issueSlug,
+  isDBA,
+  isOwner,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
 import {
@@ -294,6 +298,7 @@ import {
   useInstanceStore,
   useIssueStore,
   useProjectStore,
+  useMemberStore,
 } from "@/store";
 
 interface LocalState {
@@ -597,6 +602,17 @@ export default defineComponent({
         );
     };
 
+    const filterPrincipal = (principal: Principal): boolean => {
+      if (
+        useMemberStore().memberByPrincipalId(principal.id).rowStatus ===
+        "ARCHIVED"
+      ) {
+        return false;
+      }
+
+      return isOwner(principal.role) || isDBA(principal.role);
+    };
+
     // update `state.labelList` when selected Environment changed
     watchEffect(() => {
       const envId = state.environmentId;
@@ -636,6 +652,7 @@ export default defineComponent({
       selectAssignee,
       cancel,
       create,
+      filterPrincipal,
     };
   },
 });
