@@ -44,8 +44,138 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.CreateIndexStmt:
+		if err := deparseCreateIndex(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
+}
+
+func deparseCreateIndex(context parser.DeparseContext, in *ast.CreateIndexStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("CREATE "); err != nil {
+		return err
+	}
+
+	if in.Index.Unique {
+		if _, err := buf.WriteString("UNIQUE "); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString("INDEX "); err != nil {
+		return err
+	}
+
+	if in.IfNotExists {
+		if _, err := buf.WriteString("IF NOT EXISTS "); err != nil {
+			return err
+		}
+	}
+
+	if err := writeSurrounding(buf, in.Index.Name, `"`); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(" ON "); err != nil {
+		return err
+	}
+
+	if err := deparseTableDef(context, in.Index.Table, buf); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(" USING "); err != nil {
+		return err
+	}
+
+	method := ""
+	switch in.Index.Method {
+	case ast.IndexMethodTypeBTree:
+		method = "btree"
+	case ast.IndexMethodTypeHash:
+		method = "hash"
+	case ast.IndexMethodTypeGiST:
+		method = "gist"
+	case ast.IndexMethodTypeSpGiST:
+		method = "spgist"
+	case ast.IndexMethodTypeGin:
+		method = "gin"
+	case ast.IndexMethodTypeBrin:
+		method = "brin"
+	}
+
+	if _, err := buf.WriteString(method); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(" ("); err != nil {
+		return err
+	}
+
+	for i, key := range in.Index.KeyList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if err := deparseIndexKey(parser.DeparseContext{IndentLevel: 0}, key, buf); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(")"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deparseIndexKey(context parser.DeparseContext, in *ast.IndexKeyDef, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	switch in.Type {
+	case ast.IndexKeyTypeColumn:
+		if _, err := buf.WriteString(in.Key); err != nil {
+			return err
+		}
+	case ast.IndexKeyTypeExpression:
+		if err := buf.WriteByte('('); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.Key); err != nil {
+			return err
+		}
+		if err := buf.WriteByte(')'); err != nil {
+			return err
+		}
+	}
+
+	if in.SortOrder == ast.SortOrderTypeDescending {
+		if _, err := buf.WriteString(" DESC"); err != nil {
+			return err
+		}
+	}
+
+	switch in.NullOrder {
+	case ast.NullOrderTypeFirst:
+		if _, err := buf.WriteString(" NULLS FIRST"); err != nil {
+			return err
+		}
+	case ast.NullOrderTypeLast:
+		if _, err := buf.WriteString(" NULLS LAST"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf *strings.Builder) error {

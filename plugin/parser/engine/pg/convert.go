@@ -208,26 +208,46 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			Unique: in.IndexStmt.Unique,
 		}
 
+		method, err := convertMethodType(in.IndexStmt.AccessMethod)
+		if err != nil {
+			return nil, err
+		}
+		indexDef.Method = method
+
 		for _, key := range in.IndexStmt.IndexParams {
 			index, ok := key.Node.(*pgquery.Node_IndexElem)
 			if !ok {
 				return nil, parser.NewConvertErrorf("expected IndexElem but found %t", key.Node)
 			}
-			// We only support index on columns now.
-			// TODO(rebelice): support index on expressions.
+			indexKey := &ast.IndexKeyDef{}
 			if index.IndexElem.Name != "" {
-				indexDef.KeyList = append(indexDef.KeyList, &ast.IndexKeyDef{
-					Type: ast.IndexKeyTypeColumn,
-					Key:  index.IndexElem.Name,
-				})
+				indexKey.Type = ast.IndexKeyTypeColumn
+				indexKey.Key = index.IndexElem.Name
 			} else {
-				indexDef.KeyList = append(indexDef.KeyList, &ast.IndexKeyDef{
-					Type: ast.IndexKeyTypeExpression,
-				})
+				expression, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, index.IndexElem.Expr)
+				if err != nil {
+					return nil, err
+				}
+				indexKey.Type = ast.IndexKeyTypeExpression
+				indexKey.Key = expression
 			}
+
+			order, err := convertSortOrder(index.IndexElem.Ordering)
+			if err != nil {
+				return nil, err
+			}
+			indexKey.SortOrder = order
+
+			nullOrder, err := convertNullOrder(index.IndexElem.NullsOrdering)
+			if err != nil {
+				return nil, err
+			}
+			indexKey.NullOrder = nullOrder
+
+			indexDef.KeyList = append(indexDef.KeyList, indexKey)
 		}
 
-		return &ast.CreateIndexStmt{Index: indexDef}, nil
+		return &ast.CreateIndexStmt{Index: indexDef, IfNotExists: in.IndexStmt.IfNotExists}, nil
 	case *pgquery.Node_DropStmt:
 		switch in.DropStmt.RemoveType {
 		case pgquery.ObjectType_OBJECT_INDEX:
@@ -494,6 +514,51 @@ func convertRoleSpec(in *pgquery.RoleSpec) (*ast.RoleSpec, error) {
 		}, nil
 	}
 	return nil, parser.NewConvertErrorf("unexpected role spec type: %q", in.Roletype.String())
+}
+
+func convertNullOrder(order pgquery.SortByNulls) (ast.NullOrderType, error) {
+	switch order {
+	case pgquery.SortByNulls_SORTBY_NULLS_DEFAULT:
+		return ast.NullOrderTypeDefault, nil
+	case pgquery.SortByNulls_SORTBY_NULLS_FIRST:
+		return ast.NullOrderTypeFirst, nil
+	case pgquery.SortByNulls_SORTBY_NULLS_LAST:
+		return ast.NullOrderTypeLast, nil
+	default:
+		return ast.NullOrderTypeDefault, parser.NewConvertErrorf("unsupported null sort order: %d", order)
+	}
+}
+
+func convertSortOrder(order pgquery.SortByDir) (ast.SortOrderType, error) {
+	switch order {
+	case pgquery.SortByDir_SORTBY_DEFAULT:
+		return ast.SortOrderTypeDefault, nil
+	case pgquery.SortByDir_SORTBY_ASC:
+		return ast.SortOrderTypeAscending, nil
+	case pgquery.SortByDir_SORTBY_DESC:
+		return ast.SortOrderTypeDescending, nil
+	default:
+		return ast.NullOrderTypeDefault, parser.NewConvertErrorf("unsupported sort order: %d", order)
+	}
+}
+
+func convertMethodType(method string) (ast.IndexMethodType, error) {
+	switch method {
+	case "btree":
+		return ast.IndexMethodTypeBTree, nil
+	case "hash":
+		return ast.IndexMethodTypeHash, nil
+	case "gist":
+		return ast.IndexMethodTypeGiST, nil
+	case "spgist":
+		return ast.IndexMethodTypeSpGiST, nil
+	case "gin":
+		return ast.IndexMethodTypeGin, nil
+	case "brin":
+		return ast.IndexMethodTypeBrin, nil
+	default:
+		return ast.IndexMethodTypeBTree, parser.NewConvertErrorf("unsupported index method type: %s", method)
+	}
 }
 
 func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.PatternLikeDef, []*ast.SubqueryDef, error) {
