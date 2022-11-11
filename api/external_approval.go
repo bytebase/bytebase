@@ -51,7 +51,9 @@ type ExternalApprovalCreate struct {
 }
 
 // ExternalApprovalFind is the API message for finding ExternalApprovals.
-type ExternalApprovalFind struct{}
+type ExternalApprovalFind struct {
+	IssueID *int
+}
 
 // ExternalApprovalPatch is the API message for patching an ExternalApproval.
 type ExternalApprovalPatch struct {
