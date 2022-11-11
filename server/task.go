@@ -559,6 +559,19 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		if principal == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 		}
+
+		member, err := s.store.GetMemberByPrincipalID(ctx, principalID)
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get member by principal ID %d", principalID)
+		}
+		if member == nil {
+			return false, common.Errorf(common.NotFound, "member not found by principal ID %d", principalID)
+		}
+		// check for inactive members
+		if member.RowStatus == api.Archived {
+			return false, common.Errorf(common.Invalid, "deactivated member %s cannot be an assignee", member.Principal.Name)
+		}
+
 		if principal.Role == api.Owner || principal.Role == api.DBA {
 			return true, nil
 		}
