@@ -153,9 +153,11 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		if err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, server.store); err != nil {
+		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, server.store)
+		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
+		task = updatedTask
 	}
 
 	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
@@ -164,7 +166,8 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		if err := setEndBinlogCoordinate(ctx, driver, task, server.store); err != nil {
+		_, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, server.store, migrationID)
+		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 	}
@@ -172,35 +175,35 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	return migrationID, schema, nil
 }
 
-func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
+func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) (*api.Task, error) {
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
-		return errors.Errorf("failed to cast driver to mysql.Driver")
+		return nil, errors.Errorf("failed to cast driver to mysql.Driver")
 	}
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return errors.Wrap(err, "invalid database data update payload")
+		return nil, errors.Wrap(err, "invalid database data update payload")
 	}
 	connID, err := mysqlDriver.GetMigrationConnID(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	payload.ThreadID = connID
 
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
-		return errors.Wrap(err, "failed to get the DB connection")
+		return nil, errors.Wrap(err, "failed to get the DB connection")
 	}
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
 	if err != nil {
-		return errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
+		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
 	payload.BinlogFileStart = binlogInfo.FileName
 	payload.BinlogPosStart = binlogInfo.Position
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal task payload")
+		return nil, errors.Wrap(err, "failed to marshal task payload")
 	}
 	payloadString := string(payloadBytes)
 	patch := &api.TaskPatch{
@@ -208,32 +211,35 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	if _, err := store.PatchTask(ctx, patch); err != nil {
-		return errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
+	updatedTask, err := store.PatchTask(ctx, patch)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
 	}
-	return nil
+	return updatedTask, nil
 }
 
-func setEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) error {
+func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store, migrationID int64) (*api.Task, error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return errors.Wrap(err, "invalid database data update payload")
+		return nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
+	payload.MigrationID = int(migrationID)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
-		return errors.Wrap(err, "failed to get the DB connection")
+		return nil, errors.Wrap(err, "failed to get the DB connection")
 	}
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
 	if err != nil {
-		return errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
+		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
 	payload.BinlogFileEnd = binlogInfo.FileName
 	payload.BinlogPosEnd = binlogInfo.Position
+	payload.RollbackTaskState = api.RollbackTaskRunning
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal task payload")
+		return nil, errors.Wrap(err, "failed to marshal task payload")
 	}
 	payloadString := string(payloadBytes)
 	patch := &api.TaskPatch{
@@ -241,10 +247,11 @@ func setEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Tas
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	if _, err := store.PatchTask(ctx, patch); err != nil {
-		return errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
+	updatedTask, err := store.PatchTask(ctx, patch)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
 	}
-	return nil
+	return updatedTask, nil
 }
 
 func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
