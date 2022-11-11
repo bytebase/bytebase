@@ -64,7 +64,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				externalApprovalList, err := r.store.FindExternalApproval(ctx, &api.ExternalApprovalFind{})
 				if err != nil {
-					log.Error("failed to find approval instance list", zap.Error(err))
+					log.Error("failed to find external approval list", zap.Error(err))
 					return
 				}
 
@@ -98,7 +98,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							AppSecret: value.AppSecret,
 						}, payload.InstanceCode)
 						if err != nil {
-							log.Error("failed to get approval instance", zap.String("instanceCode", payload.InstanceCode), zap.Error(err))
+							log.Error("failed to get external approval", zap.String("instanceCode", payload.InstanceCode), zap.Error(err))
 							continue
 						}
 
@@ -133,7 +133,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 								}
 
 								if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
-									// archive approval instance
+									// archive external approval
 									ID:        externalApproval.ID,
 									RowStatus: api.Archived,
 								}); err != nil {
@@ -343,7 +343,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 	}
 
 	// createExternalApprovalIfNeeded
-	// check if we need to create a new approval instance
+	// check if we need to create a new external approval
 	// 1. has one or more PENDING_APPROVAL tasks.
 	// 2. all task checks are done and the results have no errors.
 	ok, err := r.shouldCreateExternalApproval(issue, stage, oldApproval)
@@ -356,7 +356,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 	}
 
 	if err := r.createExternalApproval(ctx, s, issue, stage, &settingValue, p); err != nil {
-		log.Error("failed to create approval instance", zap.Error(err))
+		log.Error("failed to create external approval", zap.Error(err))
 		return
 	}
 }

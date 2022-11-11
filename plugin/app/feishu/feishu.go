@@ -345,7 +345,7 @@ func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx TokenC
 	return response.Data.ApprovalCode, nil
 }
 
-// CreateExternalApproval creates an approval instance and returns instance code.
+// CreateExternalApproval creates an external approval and returns instance code.
 // The requester requests the approval of the approver.
 // example approvalCode: 813718CE-F38D-45CA-A5C1-ACF4F564B526
 // example requesterID & approverID: ou_3cda9c969f737aaa05e6915dce306cb9
@@ -388,13 +388,13 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 	}
 
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to create approval instance, code %d, msg %s", response.Code, response.Msg)
+		return "", errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return response.Data.InstanceCode, nil
 }
 
-// GetExternalApprovalStatus gets and returns the status of an approval instance.
+// GetExternalApprovalStatus gets and returns the status of an external approval.
 // example instanceCode: 81D31358-93AF-92D6-7425-01A5D67C4E71
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
 func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx TokenCtx, instanceCode string) (string, error) {
@@ -412,13 +412,13 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx Token
 		return "", errors.Wrap(err, "failed to unmarshal response to GetExternalApprovalResponse")
 	}
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to get approval instance, code %d, msg %s", response.Code, response.Msg)
+		return "", errors.Errorf("failed to get external approval, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return response.Data.Status, nil
 }
 
-// CancelExternalApproval cancels an approval instance.
+// CancelExternalApproval cancels an external approval.
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/cancel
 func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx, approvalCode, instanceCode, userID string) error {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
@@ -437,7 +437,7 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx
 	}
 
 	if response.Code != 0 {
-		return errors.Errorf("failed to create approval instance, code %d, msg %s", response.Code, response.Msg)
+		return errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return nil
