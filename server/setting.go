@@ -73,7 +73,6 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
 				AppID:     value.AppID,
 				AppSecret: value.AppSecret,
-				Token:     p.Token.Load().(string),
 			}, "")
 			if err != nil {
 				return err

@@ -46,7 +46,6 @@ func NewProvider() *Provider {
 type TokenCtx struct {
 	AppID     string
 	AppSecret string
-	Token     string
 }
 
 // tenantAccessTokenResponse is the response of GetTenantAccessToken.
@@ -216,10 +215,10 @@ const (
 }`
 )
 
-func (p *Provider) tokenRefresher(appID, appSecret string) tokenRefresher {
+func (p *Provider) tokenRefresher(tokenCtx TokenCtx) tokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
 		const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
-		body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, appID, appSecret))
+		body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, tokenCtx.AppID, tokenCtx.AppSecret))
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 		if err != nil {
 			return errors.Wrapf(err, "construct POST %s", url)
@@ -255,8 +254,9 @@ func (p *Provider) tokenRefresher(appID, appSecret string) tokenRefresher {
 	}
 }
 
-func do(ctx context.Context, client *http.Client, method, url string, token *string, body []byte, tokenRefresher tokenRefresher) (code int, header http.Header, respBody string, err error) {
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, method, url, token, body))
+func (p *Provider) do(ctx context.Context, client *http.Client, method, url string, body []byte, tokenRefresher tokenRefresher) (code int, header http.Header, respBody string, err error) {
+	token := p.Token.Load().(string)
+	return retry(ctx, client, &token, tokenRefresher, requester(ctx, client, method, url, &token, body))
 }
 
 // The type of body is []byte because it could be read multiple times but io.Reader can only be read once.
@@ -324,7 +324,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx TokenCtx, approvalCode string) (string, error) {
 	body := []byte(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
 	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, body, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
+	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -374,7 +374,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to marshal payload %+v", payload)
 	}
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, body, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
+	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -399,7 +399,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
 func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx TokenCtx, instanceCode string) (string, error) {
 	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
-	code, _, b, err := do(ctx, p.client, http.MethodGet, url, &tokenCtx.Token, nil, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
+	code, _, b, err := p.do(ctx, p.client, http.MethodGet, url, nil, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -423,7 +423,7 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx Token
 func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx, approvalCode, instanceCode, userID string) error {
 	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
 	body := []byte(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, body, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
+	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", url)
 	}
@@ -456,7 +456,7 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 		return nil, err
 	}
 
-	code, _, b, err := do(ctx, p.client, http.MethodPost, url, &tokenCtx.Token, body, p.tokenRefresher(tokenCtx.AppID, tokenCtx.AppSecret))
+	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return nil, err
 	}

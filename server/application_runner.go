@@ -94,7 +94,6 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						status, err := r.P.GetExternalApprovalStatus(ctx, feishu.TokenCtx{
 							AppID:     value.AppID,
 							AppSecret: value.AppSecret,
-							Token:     r.P.Token.Load().(string),
 						}, payload.InstanceCode)
 						if err != nil {
 							log.Error("failed to get approval instance", zap.String("instanceCode", payload.InstanceCode), zap.Error(err))
@@ -189,7 +188,6 @@ func (s *Server) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *a
 			feishu.TokenCtx{
 				AppID:     settingValue.AppID,
 				AppSecret: settingValue.AppSecret,
-				Token:     p.Token.Load().(string),
 			},
 			settingValue.ExternalApproval.ApprovalCode,
 			payload.InstanceCode,
@@ -243,7 +241,6 @@ func createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, st
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
 			AppSecret: settingValue.AppSecret,
-			Token:     p.Token.Load().(string),
 		},
 		[]string{issue.Creator.Email, issue.Assignee.Email})
 	log.Info("appp", zap.Any("users", users))
@@ -255,7 +252,6 @@ func createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, st
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
 			AppSecret: settingValue.AppSecret,
-			Token:     p.Token.Load().(string),
 		},
 		feishu.Content{
 			Issue: issue.Name,
