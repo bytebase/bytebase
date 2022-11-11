@@ -82,6 +82,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					dropConstraint := &ast.DropConstraintStmt{
 						Table:          alterTable.Table,
 						ConstraintName: alterCmd.Name,
+						IfExists:       alterCmd.MissingOk,
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropConstraint)
