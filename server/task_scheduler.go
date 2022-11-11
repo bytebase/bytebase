@@ -11,11 +11,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
 )
 
 const (

@@ -7,15 +7,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 const applicationRunnerInterval = time.Duration(1) * time.Second
 
+// NewApplicationRunner returns a ApplicationRunner.
 func NewApplicationRunner(server *Server) *ApplicationRunner {
 	return &ApplicationRunner{
 		server: server,
@@ -23,11 +25,13 @@ func NewApplicationRunner(server *Server) *ApplicationRunner {
 	}
 }
 
+// ApplicationRunner is a runner which periodically checks external approval status and approve the correspoding stages.
 type ApplicationRunner struct {
 	server *Server
 	P      *feishu.Provider
 }
 
+// Run runs the ApplicationRunner.
 func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
