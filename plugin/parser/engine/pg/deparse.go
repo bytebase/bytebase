@@ -262,6 +262,11 @@ func deparseDropConstraint(context parser.DeparseContext, in *ast.DropConstraint
 	if _, err := buf.WriteString("DROP CONSTRAINT "); err != nil {
 		return err
 	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
 
 	return writeSurrounding(buf, in.ConstraintName, `"`)
 }
