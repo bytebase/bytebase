@@ -13,22 +13,25 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
+	"github.com/bytebase/bytebase/store"
 )
 
 const applicationRunnerInterval = time.Duration(1) * time.Second
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(server *Server) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *ActivityManager) *ApplicationRunner {
 	return &ApplicationRunner{
-		server: server,
-		P:      feishu.NewProvider(),
+		store:           store,
+		activityManager: activityManager,
+		P:               feishu.NewProvider(),
 	}
 }
 
 // ApplicationRunner is a runner which periodically checks external approval status and approve the correspoding stages.
 type ApplicationRunner struct {
-	server *Server
-	P      *feishu.Provider
+	store           *store.Store
+	activityManager *ActivityManager
+	P               *feishu.Provider
 }
 
 // Run runs the ApplicationRunner.
@@ -43,7 +46,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			func() {
 				ctx := context.Background()
 				settingName := api.SettingAppIM
-				setting, err := r.server.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+				setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 				if err != nil {
 					log.Error("failed to get setting by settingName", zap.String("settingName", string(settingName)), zap.Error(err))
 					return
@@ -60,7 +63,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 
-				externalApprovalList, err := r.server.store.FindExternalApproval(ctx, &api.ExternalApprovalFind{})
+				externalApprovalList, err := r.store.FindExternalApproval(ctx, &api.ExternalApprovalFind{})
 				if err != nil {
 					log.Error("failed to find approval instance list", zap.Error(err))
 					return
@@ -75,7 +78,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
-						issue, err := r.server.store.GetIssueByID(ctx, externalApproval.IssueID)
+						issue, err := r.store.GetIssueByID(ctx, externalApproval.IssueID)
 						stage := getActiveStage(issue.Pipeline.StageList)
 						if stage == nil {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
@@ -85,7 +88,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 						if issue.Status != api.IssueOpen {
-							if _, err := r.server.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value, r.P); err != nil {
+							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value, r.P); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 								continue
 							}
@@ -118,11 +121,11 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 										UpdaterID: externalApproval.ApproverID,
 										Status:    api.TaskPending,
 									}
-									_, err := r.server.store.PatchTaskStatus(ctx, taskStatusPatch)
+									_, err := r.store.PatchTaskStatus(ctx, taskStatusPatch)
 									if err != nil {
 										return errors.Wrapf(err, "Failed to update task %q status", taskIDList)
 									}
-									if err := r.server.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
+									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
 										return errors.Wrapf(err, "failed to create task status update activity")
 									}
 									return nil
@@ -130,7 +133,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									log.Error("failed to approve stage", zap.Error(err))
 								}
 
-								if _, err := r.server.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
+								if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
 									// archive approval instance
 									ID:        externalApproval.ID,
 									RowStatus: api.Archived,
@@ -150,8 +153,8 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *Server) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue, p *feishu.Provider) (*api.ExternalApproval, error) {
-	approval, err := s.store.GetExternalApprovalByIssueID(ctx, issue.ID)
+func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue, p *feishu.Provider) (*api.ExternalApproval, error) {
+	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +183,7 @@ func (s *Server) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *a
 	}()
 
 	if cancelOld {
-		_, err := s.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived})
+		_, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived})
 		if err != nil {
 			return nil, err
 		}
@@ -199,7 +202,7 @@ func (s *Server) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *a
 	return approval, nil
 }
 
-func shouldCreateExternalApproval(issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
 	if oldApproval != nil {
 		var oldPayload api.ExternalApprovalPayloadFeishu
 		if err := json.Unmarshal([]byte(oldApproval.Payload), &oldPayload); err != nil {
@@ -236,7 +239,7 @@ func shouldCreateExternalApproval(issue *api.Issue, stage *api.Stage, oldApprova
 	return true, nil
 }
 
-func createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue, p *feishu.Provider) error {
+func (*ApplicationRunner) createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue, p *feishu.Provider) error {
 	users, err := p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
@@ -287,7 +290,8 @@ func createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, st
 	return nil
 }
 
-func scheduleApproval(s *Server, pipeline *api.Pipeline) {
+// ScheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
+func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) {
 	ctx := context.Background()
 	settingName := api.SettingAppIM
 	setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
@@ -334,7 +338,7 @@ func scheduleApproval(s *Server, pipeline *api.Pipeline) {
 	}
 
 	p := feishu.NewProvider()
-	oldApproval, err := s.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue, p)
+	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue, p)
 	if err != nil {
 		log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
 	}
@@ -343,7 +347,7 @@ func scheduleApproval(s *Server, pipeline *api.Pipeline) {
 	// check if we need to create a new approval instance
 	// 1. has one or more PENDING_APPROVAL tasks.
 	// 2. all task checks are done and the results have no errors.
-	ok, err := shouldCreateExternalApproval(issue, stage, oldApproval)
+	ok, err := r.shouldCreateExternalApproval(issue, stage, oldApproval)
 	if err != nil {
 		log.Error("failed to check shouldCreateExternalApproval", zap.Error(err))
 		return
@@ -352,7 +356,7 @@ func scheduleApproval(s *Server, pipeline *api.Pipeline) {
 		return
 	}
 
-	if err := createExternalApproval(ctx, s, issue, stage, &settingValue, p); err != nil {
+	if err := r.createExternalApproval(ctx, s, issue, stage, &settingValue, p); err != nil {
 		log.Error("failed to create approval instance", zap.Error(err))
 		return
 	}

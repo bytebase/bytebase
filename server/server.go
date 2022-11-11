@@ -196,6 +196,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
+	s.ActivityManager = NewActivityManager(s, storeInstance)
+
 	e := echo.New()
 	e.Debug = prof.Debug
 	e.HideBanner = true
@@ -285,7 +287,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
-		s.ApplicationRunner = NewApplicationRunner(s)
+		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
@@ -378,7 +380,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
