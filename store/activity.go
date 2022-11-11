@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -412,6 +413,9 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 	if v := patch.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -442,4 +446,49 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 		return nil, FormatError(err)
 	}
 	return &activityRaw, nil
+}
+
+// BackfillSQLEditorActivity backfills SQL editor activities.
+// TODO(d): remove this after the backfill.
+func (s *Store) BackfillSQLEditorActivity(ctx context.Context) error {
+	typePrefix := string(api.ActivitySQLEditorQuery)
+	activityList, err := s.FindActivity(ctx, &api.ActivityFind{TypePrefix: &typePrefix})
+	if err != nil {
+		return err
+	}
+	for _, activity := range activityList {
+		queryPayload := &api.ActivitySQLEditorQueryPayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), queryPayload); err != nil {
+			return err
+		}
+		if queryPayload.InstanceID > 0 {
+			continue
+		}
+		// Backfill instance ID.
+		queryPayload.InstanceID = activity.ContainerID
+		// Backfill database ID.
+		if queryPayload.DatabaseName != "" {
+			database, err := s.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &queryPayload.InstanceID, Name: &queryPayload.DatabaseName})
+			if err != nil {
+				return err
+			}
+			if database != nil {
+				queryPayload.DatabaseID = database.ID
+			}
+		}
+
+		activityPayloadBytes, err := json.Marshal(queryPayload)
+		if err != nil {
+			return err
+		}
+		activityPayload := string(activityPayloadBytes)
+		if _, err := s.patchActivityRaw(ctx, &api.ActivityPatch{
+			ID:        activity.ID,
+			UpdaterID: activity.UpdaterID,
+			Payload:   &activityPayload,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

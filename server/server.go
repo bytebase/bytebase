@@ -188,6 +188,11 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	storeInstance := store.New(storeDB, cacheService)
 	s.store = storeInstance
 
+	// Backfill activity.
+	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
+		return nil, errors.Wrap(err, "cannot backfill SQL editor activities")
+	}
+
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
