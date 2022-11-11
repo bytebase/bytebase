@@ -1171,9 +1171,11 @@ func TestPGDropColumnStmt(t *testing.T) {
 func TestPGDropTableStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "DROP TABLE tech_book, xschema.user",
+			stmt: "DROP TABLE IF EXISTS tech_book, xschema.user CASCADE",
 			want: []ast.Node{
 				&ast.DropTableStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
 					TableList: []*ast.TableDef{
 						{
 							Type: ast.TableTypeBaseTable,
@@ -1189,15 +1191,16 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "DROP TABLE tech_book, xschema.user",
+					Text:     "DROP TABLE IF EXISTS tech_book, xschema.user CASCADE",
 					LastLine: 1,
 				},
 			},
 		},
 		{
-			stmt: "DROP VIEW tech_book, xschema.user",
+			stmt: "DROP VIEW tech_book, xschema.user RESTRICT",
 			want: []ast.Node{
 				&ast.DropTableStmt{
+					Behavior: ast.DropBehaviorRestrict,
 					TableList: []*ast.TableDef{
 						{
 							Type: ast.TableTypeView,
@@ -1213,7 +1216,7 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "DROP VIEW tech_book, xschema.user",
+					Text:     "DROP VIEW tech_book, xschema.user RESTRICT",
 					LastLine: 1,
 				},
 			},
@@ -2014,7 +2017,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   false,
 					SchemaList: []string{"s1"},
-					Behavior:   ast.DropSchemaBehaviorRestrict,
+					Behavior:   ast.DropBehaviorRestrict,
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -2030,7 +2033,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   false,
 					SchemaList: []string{"s1", "s2"},
-					Behavior:   ast.DropSchemaBehaviorCascade,
+					Behavior:   ast.DropBehaviorCascade,
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -2046,7 +2049,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   true,
 					SchemaList: []string{"s1", "s2"},
-					Behavior:   ast.DropSchemaBehaviorRestrict,
+					Behavior:   ast.DropBehaviorRestrict,
 				},
 			},
 			statementList: []parser.SingleSQL{

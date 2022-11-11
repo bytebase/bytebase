@@ -188,6 +188,11 @@ func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf 
 	if _, err := buf.WriteString("DROP TABLE "); err != nil {
 		return err
 	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
 	for i, table := range in.TableList {
 		if i != 0 {
 			if _, err := buf.WriteString(", "); err != nil {
@@ -198,7 +203,7 @@ func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf 
 			return err
 		}
 	}
-	return nil
+	return deparseDropBehavior(context, in.Behavior, buf)
 }
 
 func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, buf *strings.Builder) error {
@@ -802,13 +807,12 @@ func deparseDropSchema(_ parser.DeparseContext, in *ast.DropSchemaStmt, buf *str
 			return err
 		}
 	}
-	switch in.Behavior {
-	case ast.DropSchemaBehaviorCascade:
+	return deparseDropBehavior(parser.DeparseContext{}, in.Behavior, buf)
+}
+
+func deparseDropBehavior(_ parser.DeparseContext, behavior ast.DropBehavior, buf *strings.Builder) error {
+	if behavior == ast.DropBehaviorCascade {
 		if _, err := buf.WriteString(" CASCADE"); err != nil {
-			return err
-		}
-	case ast.DropSchemaBehaviorRestrict:
-		if _, err := buf.WriteString(" RESTRICT"); err != nil {
 			return err
 		}
 	}
