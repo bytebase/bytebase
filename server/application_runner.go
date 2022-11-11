@@ -23,7 +23,7 @@ func NewApplicationRunner(store *store.Store, activityManager *ActivityManager) 
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
-		P:               feishu.NewProvider(),
+		p:               feishu.NewProvider(),
 	}
 }
 
@@ -31,7 +31,7 @@ func NewApplicationRunner(store *store.Store, activityManager *ActivityManager) 
 type ApplicationRunner struct {
 	store           *store.Store
 	activityManager *ActivityManager
-	P               *feishu.Provider
+	p               *feishu.Provider
 }
 
 // Run runs the ApplicationRunner.
@@ -44,7 +44,6 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			func() {
-				ctx := context.Background()
 				settingName := api.SettingAppIM
 				setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 				if err != nil {
@@ -88,13 +87,13 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 						if issue.Status != api.IssueOpen {
-							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value, r.P); err != nil {
+							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value, r.p); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 								continue
 							}
 						}
 
-						status, err := r.P.GetExternalApprovalStatus(ctx, feishu.TokenCtx{
+						status, err := r.p.GetExternalApprovalStatus(ctx, feishu.TokenCtx{
 							AppID:     value.AppID,
 							AppSecret: value.AppSecret,
 						}, payload.InstanceCode)

@@ -69,7 +69,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if value.IMType != (api.IMTypeFeishu) {
 				return errors.New("unknown IM type")
 			}
-			p := s.ApplicationRunner.P
+			p := s.ApplicationRunner.p
 			approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
 				AppID:     value.AppID,
 				AppSecret: value.AppSecret,
