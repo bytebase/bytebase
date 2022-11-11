@@ -190,7 +190,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// Backfill activity.
 	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cannot backfill SQL editor activities")
 	}
 
 	config, err := getInitSetting(ctx, storeInstance)
