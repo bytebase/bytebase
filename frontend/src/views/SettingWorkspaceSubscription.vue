@@ -11,10 +11,7 @@
       </a>
       <span v-if="canTrial" class="ml-1">
         {{ $t("common.or") }}
-        <span
-          class="text-accent cursor-pointer"
-          @click="state.showTrialModal = true"
-        >
+        <span class="text-accent cursor-pointer" @click="openTrialModal">
           {{ $t("subscription.plan.try") }}
         </span>
       </span>
@@ -74,7 +71,7 @@
       <div class="textinfolabel">
         {{ $t("subscription.plan-compare") }}
       </div>
-      <PricingTable @on-trial="state.showTrialModal = true" />
+      <PricingTable @on-trial="openTrialModal" />
     </div>
     <TrialModal
       v-if="state.showTrialModal"
@@ -164,6 +161,10 @@ export default defineComponent({
       return subscriptionStore.canTrial;
     });
 
+    const openTrialModal = () => {
+      state.showTrialModal = true;
+    };
+
     return {
       state,
       disabled,
@@ -173,6 +174,7 @@ export default defineComponent({
       currentPlan,
       instanceCount,
       uploadLicense,
+      openTrialModal,
     };
   },
 });
