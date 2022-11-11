@@ -4,3 +4,5 @@
   want: CREATE UNIQUE INDEX IF NOT EXISTS "idx_1" ON "public"."t" USING btree (a NULLS FIRST, b DESC NULLS LAST, c);
 - stmt: create index if not exists idx_1 on public.t using hash (a, b, c)
   want: CREATE INDEX IF NOT EXISTS "idx_1" ON "public"."t" USING hash (a, b, c);
+- stmt: create index if not exists idx_1 on public.t using btree((a+b) desc, c)
+  want: CREATE INDEX IF NOT EXISTS "idx_1" ON "public"."t" USING btree ((a + b) DESC, c);
