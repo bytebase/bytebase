@@ -42,9 +42,9 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 	return strings.Join(sqlList, "\n"), nil
 }
 
-// ParseTableColumns parses the schema to get the table columns map.
+// GetTableColumns parses the schema to get the table columns map.
 // This is used to generate rollback SQL from the binlog events.
-func ParseTableColumns(schema string) (map[string][]string, error) {
+func GetTableColumns(schema string) (map[string][]string, error) {
 	_, supportStmts, err := bbparser.ExtractTiDBUnsupportStmts(schema)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract TiDB unsupported statements from old statements %q", schema)

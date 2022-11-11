@@ -231,7 +231,7 @@ SET
 	}
 }
 
-func TestParseTableColumns(t *testing.T) {
+func TestGetTableColumns(t *testing.T) {
 	tests := []struct {
 		name     string
 		schema   string
@@ -260,7 +260,7 @@ CREATE TABLE balance (
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
-			tableMap, err := ParseTableColumns(test.schema)
+			tableMap, err := GetTableColumns(test.schema)
 			if test.err {
 				a.Error(err)
 			} else {
