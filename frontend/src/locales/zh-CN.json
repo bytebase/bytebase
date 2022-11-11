@@ -1383,11 +1383,15 @@
   "subscription": {
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
-    "free-trial": "免费试用",
+    "upgrade-trial-button": "升级试用",
     "start-n-days-trial": "开启 {days} 天试用",
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
+    "successfully-upgrade-trial": "成功升级为{plan}试用",
+    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买的 Bytebase 证书来解锁该功能。",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
-    "trial-for-plan": "您可以开启{plan}的免费试用 - 无需任何信用卡或预付费",
+    "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
+    "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
+    "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
     "update": {
       "success": {
         "title": "证书更新成功",
@@ -1432,7 +1436,7 @@
       },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",
-        "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。@:{'subscription.free-trial'}。"
+        "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"
       },
       "bb-feature-vcs-sql-review": {
         "title": "GitOps 工作流中的 SQL 审核",
@@ -1440,7 +1444,7 @@
       },
       "bb-feature-rbac": {
         "title": "角色管理",
-        "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。@:{'subscription.free-trial'}。"
+        "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
       },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
@@ -1448,7 +1452,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "第三方认证 & 授权",
-        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。@:{'subscription.free-trial'}。",
+        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。",
         "login": "请@:{'subscription.upgrade'}来开启该功能"
       },
       "bb-feature-branding": {
