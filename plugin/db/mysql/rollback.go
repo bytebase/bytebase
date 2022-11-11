@@ -1,11 +1,18 @@
 package mysql
 
 import (
+	"bufio"
+	"context"
 	"fmt"
+	"os/exec"
 	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 )
 
 var (
@@ -33,6 +40,96 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 		sqlList = append(sqlList, sql)
 	}
 	return strings.Join(sqlList, "\n"), nil
+}
+
+// GenerateRollbackSQL generates the rollback SQL statements from the binlog.
+func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, tableMap map[string][]string) (string, error) {
+	args := binlogFileNameList
+	args = append(args,
+		"--read-from-remote-server",
+		// Verify checksum binlog events.
+		"--verify-binlog-checksum",
+		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
+		"--base64-output=DECODE-ROWS",
+		// Reconstruct pseudo-SQL statements out of row events. This is where we parse the data changes.
+		"--verbose",
+		"--host", driver.connCfg.Host,
+		"--user", driver.connCfg.Username,
+		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
+		"--start-position", fmt.Sprintf("%d", binlogPosStart),
+		// Stop decoding the binary log at the log position, this option applies to the last log file named on the command line.
+		"--stop-position", fmt.Sprintf("%d", binlogPosEnd),
+	)
+	if driver.connCfg.Port != "" {
+		args = append(args, "--port", driver.connCfg.Port)
+	}
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	log.Debug("mysqlbinlog", zap.String("command", cmd.String()))
+	if driver.connCfg.Password != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))
+	}
+	pr, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create stdout pipe")
+	}
+
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create stderr pipe")
+	}
+	defer errPipe.Close()
+	errScanner := bufio.NewScanner(errPipe)
+
+	if err := cmd.Start(); err != nil {
+		return "", errors.Wrap(err, "failed to run mysqlbinlog")
+	}
+
+	txnList, err := ParseBinlogStream(pr)
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to parse binlog stream")
+	}
+
+	threadID, err := driver.GetMigrationConnID(ctx)
+	if err != nil {
+		return "", err
+	}
+	txnList, err = FilterBinlogTransactionsByThreadID(txnList, threadID)
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to filter binlog transactions by thread ID")
+	}
+
+	var rollbackSQLList []string
+	for i := len(txnList) - 1; i >= 0; i-- {
+		sql, err := txnList[i].GetRollbackSQL(tableMap)
+		if err != nil {
+			return "", errors.WithMessage(err, "failed to generate rollback SQL statement for transaction")
+		}
+		rollbackSQLList = append(rollbackSQLList, sql)
+	}
+
+	var errBuilder strings.Builder
+	for errScanner.Scan() {
+		line := errScanner.Text()
+		// Log the error, but return the first 1024 characters in the error to users.
+		log.Warn(line)
+		if errBuilder.Len() < 1024 {
+			if _, err := errBuilder.WriteString(line); err != nil {
+				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
+			}
+			if _, err := errBuilder.WriteString("\n"); err != nil {
+				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
+			}
+		}
+	}
+	if errScanner.Err() != nil {
+		return "", errors.Wrap(errScanner.Err(), "error scanner failed")
+	}
+
+	if err = cmd.Wait(); err != nil {
+		return "", errors.Wrapf(err, "mysqlbinlog error: %s", errBuilder.String())
+	}
+
+	return strings.Join(rollbackSQLList, "\n\n"), nil
 }
 
 func (e *BinlogEvent) getRollbackSQL(tables map[string][]string) (string, error) {

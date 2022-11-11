@@ -110,6 +110,7 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 }
 
 // FilterBinlogTransactionsByThreadID filters the binlog transaction by thread ID.
+// TODO(dragonly): refactor to streaming process.
 func FilterBinlogTransactionsByThreadID(txnList []BinlogTransaction, threadID string) ([]BinlogTransaction, error) {
 	var ret []BinlogTransaction
 	for _, txn := range txnList {

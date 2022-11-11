@@ -3,9 +3,8 @@ package tests
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"path"
+	"math"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,85 +19,47 @@ func TestRollback(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	port := getTestPort(t.Name())
+	database := "funny\ndatabase"
 
-	instance, stopFn := resourcemysql.SetupTestInstance(t, port)
-	binlogDir := instance.DataDir()
+	_, stopFn := resourcemysql.SetupTestInstance(t, port)
 	defer stopFn()
 
-	resourceDir := t.TempDir()
-	err := mysqlutil.Install(resourceDir)
-	a.NoError(err)
-
-	database := "funny\ndatabase"
 	db, err := connectTestMySQL(port, "")
 	a.NoError(err)
 	defer db.Close()
-	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`;", database, database))
-	a.NoError(err)
-	_, err = db.ExecContext(ctx, "CREATE TABLE user (id INT PRIMARY KEY, name VARCHAR(64), balance INT);")
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`; CREATE TABLE user (id INT PRIMARY KEY, name VARCHAR(64), balance INT);", database, database))
 	a.NoError(err)
 	_, err = db.ExecContext(ctx, "INSERT INTO user VALUES (1, 'alice\nalice', 100), (2, 'bob', 100), (3, 'cindy', 100);")
 	a.NoError(err)
+	_, err = db.ExecContext(ctx, "UPDATE user SET balance=90 WHERE id=1; UPDATE user SET balance=110 WHERE id=2; DELETE FROM user WHERE id=3;")
+	a.NoError(err)
 
-	txn, err := db.BeginTx(ctx, nil)
+	resourceDir := t.TempDir()
+	err = mysqlutil.Install(resourceDir)
 	a.NoError(err)
-	_, err = txn.ExecContext(ctx, "UPDATE user SET balance=90 WHERE id=1;")
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, resourceDir)
 	a.NoError(err)
-	_, err = txn.ExecContext(ctx, "UPDATE user SET balance=110 WHERE id=2;")
-	a.NoError(err)
-	_, err = txn.ExecContext(ctx, "DELETE FROM user WHERE id=3;")
-	a.NoError(err)
-	err = txn.Commit()
-	a.NoError(err)
+	defer driver.Close(ctx)
 
 	// Rotate to binlog.000002 so that it's easy to rollback the following transactions and check that the state is the same as now.
 	_, err = db.ExecContext(ctx, "FLUSH BINARY LOGS;")
 	a.NoError(err)
-	_, err = db.ExecContext(ctx, "UPDATE user SET balance=0;")
+	err = driver.Execute(ctx, "UPDATE user SET balance=0;", false)
 	a.NoError(err)
-	_, err = db.ExecContext(ctx, "DELETE FROM user;")
+	err = driver.Execute(ctx, "DELETE FROM user;", false)
 	a.NoError(err)
 
-	t.Log("Set up mysqlbinlog")
-	args := []string{
-		path.Join(binlogDir, "binlog.000002"),
-		"--verify-binlog-checksum",
-		"-v",
-		"--base64-output=DECODE-ROWS",
-	}
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, resourceDir), args...)
-	cmd.Stderr = os.Stderr
-	pr, err := cmd.StdoutPipe()
-	a.NoError(err)
-	err = cmd.Start()
-	a.NoError(err)
-	defer func() {
-		err = pr.Close()
-		a.NoError(err)
-		err = cmd.Process.Kill()
-		a.NoError(err)
-	}()
-
-	txList, err := mysql.ParseBinlogStream(pr)
-	a.NoError(err)
-	a.Equal(2, len(txList))
-	var rollbackSQLList []string
+	// Restore data using generated rollback SQL.
+	mysqlDriver, ok := driver.(*mysql.Driver)
+	a.Equal(true, ok)
+	binlogFileList := []string{"binlog.000002"}
 	tableMap := map[string][]string{
 		"user": {"id", "name", "balance"},
 	}
-	for _, tx := range txList {
-		sql, err := tx.GetRollbackSQL(tableMap)
-		a.NoError(err)
-		rollbackSQLList = append(rollbackSQLList, sql)
-	}
-
-	// Execute the rollback SQL in reversed order.
-	for i := len(rollbackSQLList) - 1; i >= 0; i-- {
-		sql := rollbackSQLList[i]
-		t.Log(sql)
-		_, err = db.ExecContext(ctx, sql)
-		a.NoError(err)
-	}
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, tableMap)
+	a.NoError(err)
+	_, err = db.ExecContext(ctx, rollbackSQL)
+	a.NoError(err)
 
 	// Check for rollback state.
 	rows, err := db.QueryContext(ctx, "SELECT * FROM user;")
