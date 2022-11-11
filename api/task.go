@@ -143,6 +143,9 @@ type TaskDatabaseDataUpdatePayload struct {
 	// ThreadID is the ID of the connection executing the migration.
 	// We use it to filter the binlog events of the migration transaction.
 	ThreadID string `json:"threadID,omitempty"`
+	// MigrationID is the ID of the migration history record.
+	// We use it to get the schema when the transaction ran.
+	MigrationID int `json:"migrationID,omitempty"`
 	// BinlogXxx are obtained before and after executing the migration.
 	// We use them to locate the range of binlog for the migration transaction.
 	BinlogFileStart string `json:"binlogFileStart,omitempty"`
