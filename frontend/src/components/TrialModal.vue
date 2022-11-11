@@ -9,15 +9,18 @@
   >
     <div class="min-w-0 md:min-w-400">
       <p class="whitespace-pre-wrap">
-        {{
-          $t("subscription.trial-for-plan", {
-            plan: $t(
-              `subscription.plan.${planTypeToString(
-                subscriptionStore.trialingPlan
-              )}.title`
-            ),
-          })
-        }}*
+        <i18n-t keypath="subscription.trial-for-plan">
+          <template #days>
+            {{ subscriptionStore.trialingDays }}
+          </template>
+          <template #plan>
+            <span class="font-bold text-accent">
+              {{
+                $t(`subscription.plan.${planTypeToString(PlanType.TEAM)}.title`)
+              }}
+            </span>
+          </template>
+        </i18n-t>
       </p>
       <div class="mt-7 flex justify-end space-x-2">
         <button
@@ -57,7 +60,7 @@
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
-import { planTypeToString } from "@/types";
+import { PlanType, planTypeToString } from "@/types";
 
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
@@ -69,7 +72,7 @@ const learnMore = () => {
 };
 
 const trialSubscription = () => {
-  subscriptionStore.trialSubscription().then(() => {
+  subscriptionStore.trialSubscription(PlanType.TEAM).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
