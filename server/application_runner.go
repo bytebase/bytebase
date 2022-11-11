@@ -177,10 +177,7 @@ func (s *Server) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *a
 				pendingApprovalCount++
 			}
 		}
-		if pendingApprovalCount == 0 {
-			return true
-		}
-		return false
+		return pendingApprovalCount == 0
 	}()
 
 	if cancelOld {
@@ -342,6 +339,9 @@ func scheduleApproval(s *Server, pipeline *api.Pipeline) {
 
 	p := feishu.NewProvider()
 	oldApproval, err := s.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue, p)
+	if err != nil {
+		log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
+	}
 
 	// createExternalApprovalIfNeeded
 	// check if we need to create a new approval instance
