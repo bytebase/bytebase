@@ -56,7 +56,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					log.Error("failed to unmarshal", zap.Error(err))
 					return
 				}
-				if value.ExternalApproval.Enabled == false {
+				if !value.ExternalApproval.Enabled {
 					return
 				}
 
@@ -308,7 +308,7 @@ func scheduleApproval(s *Server, pipeline *api.Pipeline) {
 		return
 	}
 
-	if settingValue.ExternalApproval.Enabled == false {
+	if !settingValue.ExternalApproval.Enabled {
 		return
 	}
 
