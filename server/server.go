@@ -50,6 +50,7 @@ type Server struct {
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
+	ApplicationRunner  *ApplicationRunner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
@@ -284,6 +285,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
+		s.ApplicationRunner = NewApplicationRunner(s)
+
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
 
@@ -492,6 +495,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)

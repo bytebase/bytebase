@@ -186,7 +186,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
-			stage := getActiveStage(issue.Pipeline.StageList)
+			stage := GetActiveStage(issue.Pipeline.StageList)
 			if stage == nil {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
@@ -1258,6 +1258,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			}
 		}
 		pipelineStatus = api.PipelineCanceled
+
 	}
 
 	pipelinePatch := &api.PipelinePatch{

@@ -10,7 +10,7 @@ import (
 
 // ScheduleActiveStage tries to schedule the tasks in the active stage.
 func (s *Server) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
-	stage := getActiveStage(pipeline.StageList)
+	stage := GetActiveStage(pipeline.StageList)
 	if stage == nil {
 		return nil
 	}
