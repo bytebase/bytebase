@@ -340,7 +340,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 
 			// sort TaskRunList to get the most recent task run result.
 			sort.Slice(task.TaskRunList, func(i int, j int) bool {
-				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs
+				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs || (task.TaskRunList[i].UpdatedTs == task.TaskRunList[j].UpdatedTs && task.TaskRunList[i].ID > task.TaskRunList[j].ID)
 			})
 
 			var result api.TaskRunResultPayload
