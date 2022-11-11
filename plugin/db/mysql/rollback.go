@@ -43,7 +43,12 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 }
 
 // GenerateRollbackSQL generates the rollback SQL statements from the binlog.
-func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, tableMap map[string][]string) (string, error) {
+// binlogFileNameList is a list of binlog file names, such as ["binlog.000001", "binlog.000002"].
+// binlogPosStart is the start position in the first binlog file.
+// binlogPosEnd is the end position in the last binlog file.
+// The binlog file names and positions are used to specify the binlog events range for rollback SQL generation.
+// tableCatalog is a map from table names to column names. It is used to map positional placeholders in the binlog events to the actual columns to generate valid SQL statements.
+func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, tableCatalog map[string][]string) (string, error) {
 	args := binlogFileNameList
 	args = append(args,
 		"--read-from-remote-server",
@@ -100,7 +105,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 
 	var rollbackSQLList []string
 	for i := len(txnList) - 1; i >= 0; i-- {
-		sql, err := txnList[i].GetRollbackSQL(tableMap)
+		sql, err := txnList[i].GetRollbackSQL(tableCatalog)
 		if err != nil {
 			return "", errors.WithMessage(err, "failed to generate rollback SQL statement for transaction")
 		}

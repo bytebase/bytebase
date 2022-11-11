@@ -53,10 +53,10 @@ func TestRollback(t *testing.T) {
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	a.Equal(true, ok)
 	binlogFileList := []string{"binlog.000002"}
-	tableMap := map[string][]string{
+	tableCatalog := map[string][]string{
 		"user": {"id", "name", "balance"},
 	}
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, tableMap)
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, tableCatalog)
 	a.NoError(err)
 	_, err = db.ExecContext(ctx, rollbackSQL)
 	a.NoError(err)
