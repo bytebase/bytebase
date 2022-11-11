@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// code definition in feishu response payload body.
+// Response code definition in feishu response body.
 // https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN
 const (
 	emptyTokenRespCode   = 99991661
