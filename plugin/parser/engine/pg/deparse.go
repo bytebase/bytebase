@@ -94,23 +94,7 @@ func deparseCreateIndex(context parser.DeparseContext, in *ast.CreateIndexStmt, 
 		return err
 	}
 
-	method := ""
-	switch in.Index.Method {
-	case ast.IndexMethodTypeBTree:
-		method = "btree"
-	case ast.IndexMethodTypeHash:
-		method = "hash"
-	case ast.IndexMethodTypeGiST:
-		method = "gist"
-	case ast.IndexMethodTypeSpGiST:
-		method = "spgist"
-	case ast.IndexMethodTypeGin:
-		method = "gin"
-	case ast.IndexMethodTypeBrin:
-		method = "brin"
-	}
-
-	if _, err := buf.WriteString(method); err != nil {
+	if err := deparseIndexMethod(in.Index.Method, buf); err != nil {
 		return err
 	}
 
@@ -134,6 +118,24 @@ func deparseCreateIndex(context parser.DeparseContext, in *ast.CreateIndexStmt, 
 	}
 
 	return nil
+}
+
+func deparseIndexMethod(method ast.IndexMethodType, buf *strings.Builder) (err error) {
+	switch method {
+	case ast.IndexMethodTypeBTree:
+		_, err = buf.WriteString("btree")
+	case ast.IndexMethodTypeHash:
+		_, err = buf.WriteString("hash")
+	case ast.IndexMethodTypeGiST:
+		_, err = buf.WriteString("gist")
+	case ast.IndexMethodTypeSpGiST:
+		_, err = buf.WriteString("spgist")
+	case ast.IndexMethodTypeGin:
+		_, err = buf.WriteString("gin")
+	case ast.IndexMethodTypeBrin:
+		_, err = buf.WriteString("brin")
+	}
+	return err
 }
 
 func deparseIndexKey(context parser.DeparseContext, in *ast.IndexKeyDef, buf *strings.Builder) error {
