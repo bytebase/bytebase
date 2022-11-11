@@ -230,3 +230,43 @@ SET
 		})
 	}
 }
+
+func TestParseTableColumns(t *testing.T) {
+	tests := []struct {
+		name     string
+		schema   string
+		tableMap map[string][]string
+		err      bool
+	}{
+		{
+			name: "multiple tables",
+			schema: `
+CREATE TABLE user (
+	id INT PRIMARY KEY,
+	name VARCHAR(20)
+);
+CREATE TABLE balance (
+	id INT PRIMARY KEY,
+	user_id INT REFERENCES user(id),
+	balance INT
+);`,
+			tableMap: map[string][]string{
+				"user":    {"id", "name"},
+				"balance": {"id", "user_id", "balance"},
+			},
+			err: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			a := require.New(t)
+			tableMap, err := ParseTableColumns(test.schema)
+			if test.err {
+				a.Error(err)
+			} else {
+				a.NoError(err)
+				a.Equal(test.tableMap, tableMap)
+			}
+		})
+	}
+}
