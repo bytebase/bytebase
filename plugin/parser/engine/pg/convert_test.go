@@ -713,7 +713,40 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 func TestPGCreateIndexStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "CREATE INDEX idx_id ON tech_book (id)",
+			stmt: "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+			want: []ast.Node{
+				&ast.CreateIndexStmt{
+					IfNotExists: true,
+					Index: &ast.IndexDef{
+						Name:   "idx_id",
+						Table:  &ast.TableDef{Name: "tech_book"},
+						Unique: false,
+						KeyList: []*ast.IndexKeyDef{
+							{
+								Type:      ast.IndexKeyTypeExpression,
+								Key:       "id + 1",
+								SortOrder: ast.SortOrderTypeDescending,
+								NullOrder: ast.NullOrderTypeDefault,
+							},
+							{
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "name",
+								SortOrder: ast.NullOrderTypeDefault,
+								NullOrder: ast.NullOrderTypeDefault,
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE INDEX idx_id ON tech_book (id ASC NULLS FIRST)",
 			want: []ast.Node{
 				&ast.CreateIndexStmt{
 					Index: &ast.IndexDef{
@@ -722,8 +755,10 @@ func TestPGCreateIndexStmt(t *testing.T) {
 						Unique: false,
 						KeyList: []*ast.IndexKeyDef{
 							{
-								Type: ast.IndexKeyTypeColumn,
-								Key:  "id",
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "id",
+								SortOrder: ast.SortOrderTypeAscending,
+								NullOrder: ast.NullOrderTypeFirst,
 							},
 						},
 					},
@@ -731,13 +766,13 @@ func TestPGCreateIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "CREATE INDEX idx_id ON tech_book (id)",
+					Text:     "CREATE INDEX idx_id ON tech_book (id ASC NULLS FIRST)",
 					LastLine: 1,
 				},
 			},
 		},
 		{
-			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id NULLS LAST)",
 			want: []ast.Node{
 				&ast.CreateIndexStmt{
 					Index: &ast.IndexDef{
@@ -746,8 +781,10 @@ func TestPGCreateIndexStmt(t *testing.T) {
 						Unique: true,
 						KeyList: []*ast.IndexKeyDef{
 							{
-								Type: ast.IndexKeyTypeColumn,
-								Key:  "id",
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "id",
+								SortOrder: ast.NullOrderTypeDefault,
+								NullOrder: ast.NullOrderTypeLast,
 							},
 						},
 					},
@@ -755,7 +792,7 @@ func TestPGCreateIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+					Text:     "CREATE UNIQUE INDEX idx_id ON tech_book (id NULLS LAST)",
 					LastLine: 1,
 				},
 			},

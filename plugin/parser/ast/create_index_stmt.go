@@ -4,5 +4,6 @@ package ast
 type CreateIndexStmt struct {
 	ddl
 
-	Index *IndexDef
+	Index       *IndexDef
+	IfNotExists bool
 }
