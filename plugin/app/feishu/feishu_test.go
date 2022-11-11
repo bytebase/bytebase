@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 func TestProvider_CreateApprovalDefinition(t *testing.T) {
