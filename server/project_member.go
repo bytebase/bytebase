@@ -251,6 +251,18 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project membership request").SetInternal(err)
 		}
 
+		member, err := s.store.GetMemberByPrincipalID(ctx, projectMemberCreate.PrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get member by principal ID %d", projectMemberCreate.PrincipalID)).SetInternal(err)
+		}
+		if member == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Member not found by principal ID %d", projectMemberCreate.PrincipalID))
+		}
+		// check for inactive members
+		if member.RowStatus == api.Archived {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Deactivated member %s cannot be an assignee", member.Principal.Name))
+		}
+
 		projectMember, err := s.store.CreateProjectMember(ctx, projectMemberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
