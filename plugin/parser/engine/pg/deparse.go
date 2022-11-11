@@ -71,9 +71,6 @@ func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf 
 			return err
 		}
 	}
-	if err := buf.WriteByte(' '); err != nil {
-		return err
-	}
 	return deparseDropBehavior(context, in.Behavior, buf)
 }
 
@@ -678,20 +675,12 @@ func deparseDropSchema(_ parser.DeparseContext, in *ast.DropSchemaStmt, buf *str
 			return err
 		}
 	}
-	if err := buf.WriteByte(' '); err != nil {
-		return err
-	}
 	return deparseDropBehavior(parser.DeparseContext{}, in.Behavior, buf)
 }
 
 func deparseDropBehavior(_ parser.DeparseContext, behavior ast.DropBehavior, buf *strings.Builder) error {
-	switch behavior {
-	case ast.DropBehaviorCascade:
-		if _, err := buf.WriteString("CASCADE"); err != nil {
-			return err
-		}
-	case ast.DropBehaviorRestrict:
-		if _, err := buf.WriteString("RESTRICT"); err != nil {
+	if behavior == ast.DropBehaviorCascade {
+		if _, err := buf.WriteString(" CASCADE"); err != nil {
 			return err
 		}
 	}
