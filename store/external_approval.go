@@ -81,7 +81,7 @@ func (s *Store) FindExternalApproval(ctx context.Context, find *api.ExternalAppr
 func (s *Store) GetExternalApprovalByIssueID(ctx context.Context, issueID int) (*api.ExternalApproval, error) {
 	externalApprovalRaw, err := s.getExternalApprovalRawByIssueID(ctx, issueID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get ApprovalInstanec by issueID %v", issueID)
+		return nil, errors.Wrapf(err, "failed to get ApprovalInstance by issueID %v", issueID)
 	}
 	if externalApprovalRaw == nil {
 		return nil, nil
