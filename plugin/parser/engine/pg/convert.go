@@ -245,7 +245,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 			return dropIndex, nil
 		case pgquery.ObjectType_OBJECT_TABLE:
-			dropTable := &ast.DropTableStmt{}
+			dropTable := &ast.DropTableStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
 			for _, object := range in.DropStmt.Objects {
 				list, ok := object.Node.(*pgquery.Node_List)
 				if !ok {
@@ -259,7 +262,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 			return dropTable, nil
 		case pgquery.ObjectType_OBJECT_VIEW:
-			dropView := &ast.DropTableStmt{}
+			dropView := &ast.DropTableStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
 			for _, object := range in.DropStmt.Objects {
 				list, ok := object.Node.(*pgquery.Node_List)
 				if !ok {
@@ -275,14 +281,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		case pgquery.ObjectType_OBJECT_SCHEMA:
 			dropSchema := &ast.DropSchemaStmt{
 				IfExists: in.DropStmt.MissingOk,
-			}
-			switch in.DropStmt.Behavior {
-			case pgquery.DropBehavior_DROP_CASCADE:
-				dropSchema.Behavior = ast.DropSchemaBehaviorCascade
-			case pgquery.DropBehavior_DROP_RESTRICT:
-				dropSchema.Behavior = ast.DropSchemaBehaviorRestrict
-			default:
-				dropSchema.Behavior = ast.DropSchemaBehaviorNone
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
 			}
 			for _, object := range in.DropStmt.Objects {
 				strNode, ok := object.Node.(*pgquery.Node_String_)
@@ -465,6 +464,17 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 	}
 
 	return nil, nil
+}
+
+func convertDropBehavior(behavior pgquery.DropBehavior) ast.DropBehavior {
+	switch behavior {
+	case pgquery.DropBehavior_DROP_CASCADE:
+		return ast.DropBehaviorCascade
+	case pgquery.DropBehavior_DROP_RESTRICT:
+		return ast.DropBehaviorRestrict
+	default:
+		return ast.DropBehaviorNone
+	}
 }
 
 func convertRoleSpec(in *pgquery.RoleSpec) (*ast.RoleSpec, error) {
