@@ -1,11 +1,24 @@
 package mysql
 
 import (
+	"bufio"
+	"context"
 	"fmt"
+	"os/exec"
 	"regexp"
 	"strings"
 
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/pingcap/tidb/parser"
+	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/common/log"
+	bbparser "github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 )
 
 var (
@@ -33,6 +46,125 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 		sqlList = append(sqlList, sql)
 	}
 	return strings.Join(sqlList, "\n"), nil
+}
+
+// GenerateRollbackSQL generates the rollback SQL statements from the binlog.
+// binlogFileNameList is a list of binlog file names, such as ["binlog.000001", "binlog.000002"].
+// binlogPosStart is the start position in the first binlog file.
+// binlogPosEnd is the end position in the last binlog file.
+// The binlog file names and positions are used to specify the binlog events range for rollback SQL generation.
+// tableCatalog is a map from table names to column names. It is used to map positional placeholders in the binlog events to the actual columns to generate valid SQL statements.
+func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, tableCatalog map[string][]string) (string, error) {
+	args := binlogFileNameList
+	args = append(args,
+		"--read-from-remote-server",
+		// Verify checksum binlog events.
+		"--verify-binlog-checksum",
+		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
+		"--base64-output=DECODE-ROWS",
+		// Reconstruct pseudo-SQL statements out of row events. This is where we parse the data changes.
+		"--verbose",
+		"--host", driver.connCfg.Host,
+		"--user", driver.connCfg.Username,
+		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
+		"--start-position", fmt.Sprintf("%d", binlogPosStart),
+		// Stop decoding the binary log at the log position, this option applies to the last log file named on the command line.
+		"--stop-position", fmt.Sprintf("%d", binlogPosEnd),
+	)
+	if driver.connCfg.Port != "" {
+		args = append(args, "--port", driver.connCfg.Port)
+	}
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	log.Debug("mysqlbinlog", zap.String("command", cmd.String()))
+	if driver.connCfg.Password != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))
+	}
+	pr, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create stdout pipe")
+	}
+
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create stderr pipe")
+	}
+	defer errPipe.Close()
+	errScanner := bufio.NewScanner(errPipe)
+
+	if err := cmd.Start(); err != nil {
+		return "", errors.Wrap(err, "failed to run mysqlbinlog")
+	}
+
+	txnList, err := ParseBinlogStream(pr)
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to parse binlog stream")
+	}
+
+	threadID, err := driver.GetMigrationConnID(ctx)
+	if err != nil {
+		return "", err
+	}
+	txnList, err = FilterBinlogTransactionsByThreadID(txnList, threadID)
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to filter binlog transactions by thread ID")
+	}
+
+	var rollbackSQLList []string
+	for i := len(txnList) - 1; i >= 0; i-- {
+		sql, err := txnList[i].GetRollbackSQL(tableCatalog)
+		if err != nil {
+			return "", errors.WithMessage(err, "failed to generate rollback SQL statement for transaction")
+		}
+		rollbackSQLList = append(rollbackSQLList, sql)
+	}
+
+	var errBuilder strings.Builder
+	for errScanner.Scan() {
+		line := errScanner.Text()
+		// Log the error, but return the first 1024 characters in the error to users.
+		log.Warn(line)
+		if errBuilder.Len() < 1024 {
+			if _, err := errBuilder.WriteString(line); err != nil {
+				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
+			}
+			if _, err := errBuilder.WriteString("\n"); err != nil {
+				return "", errors.Wrap(err, "failed to write mysqlbinlog error string")
+			}
+		}
+	}
+	if errScanner.Err() != nil {
+		return "", errors.Wrap(errScanner.Err(), "error scanner failed")
+	}
+
+	if err = cmd.Wait(); err != nil {
+		return "", errors.Wrapf(err, "mysqlbinlog error: %s", errBuilder.String())
+	}
+
+	return strings.Join(rollbackSQLList, "\n\n"), nil
+}
+
+// GetTableColumns parses the schema to get the table columns map.
+// This is used to generate rollback SQL from the binlog events.
+func GetTableColumns(schema string) (map[string][]string, error) {
+	_, supportStmts, err := bbparser.ExtractTiDBUnsupportStmts(schema)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract TiDB unsupported statements from old statements %q", schema)
+	}
+	nodes, _, err := parser.New().Parse(supportStmts, "", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse old statement %q", schema)
+	}
+	tableMap := make(map[string][]string)
+	for _, node := range nodes {
+		if stmt, ok := node.(*ast.CreateTableStmt); ok {
+			var columnNames []string
+			for _, col := range stmt.Cols {
+				columnNames = append(columnNames, col.Name.Name.O)
+			}
+			tableMap[stmt.Table.Name.O] = columnNames
+		}
+	}
+	return tableMap, nil
 }
 
 func (e *BinlogEvent) getRollbackSQL(tables map[string][]string) (string, error) {

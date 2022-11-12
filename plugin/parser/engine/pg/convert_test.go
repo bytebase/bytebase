@@ -713,7 +713,40 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 func TestPGCreateIndexStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "CREATE INDEX idx_id ON tech_book (id)",
+			stmt: "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+			want: []ast.Node{
+				&ast.CreateIndexStmt{
+					IfNotExists: true,
+					Index: &ast.IndexDef{
+						Name:   "idx_id",
+						Table:  &ast.TableDef{Name: "tech_book"},
+						Unique: false,
+						KeyList: []*ast.IndexKeyDef{
+							{
+								Type:      ast.IndexKeyTypeExpression,
+								Key:       "id + 1",
+								SortOrder: ast.SortOrderTypeDescending,
+								NullOrder: ast.NullOrderTypeDefault,
+							},
+							{
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "name",
+								SortOrder: ast.NullOrderTypeDefault,
+								NullOrder: ast.NullOrderTypeDefault,
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE INDEX idx_id ON tech_book (id ASC NULLS FIRST)",
 			want: []ast.Node{
 				&ast.CreateIndexStmt{
 					Index: &ast.IndexDef{
@@ -722,8 +755,10 @@ func TestPGCreateIndexStmt(t *testing.T) {
 						Unique: false,
 						KeyList: []*ast.IndexKeyDef{
 							{
-								Type: ast.IndexKeyTypeColumn,
-								Key:  "id",
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "id",
+								SortOrder: ast.SortOrderTypeAscending,
+								NullOrder: ast.NullOrderTypeFirst,
 							},
 						},
 					},
@@ -731,13 +766,13 @@ func TestPGCreateIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "CREATE INDEX idx_id ON tech_book (id)",
+					Text:     "CREATE INDEX idx_id ON tech_book (id ASC NULLS FIRST)",
 					LastLine: 1,
 				},
 			},
 		},
 		{
-			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id NULLS LAST)",
 			want: []ast.Node{
 				&ast.CreateIndexStmt{
 					Index: &ast.IndexDef{
@@ -746,8 +781,10 @@ func TestPGCreateIndexStmt(t *testing.T) {
 						Unique: true,
 						KeyList: []*ast.IndexKeyDef{
 							{
-								Type: ast.IndexKeyTypeColumn,
-								Key:  "id",
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "id",
+								SortOrder: ast.NullOrderTypeDefault,
+								NullOrder: ast.NullOrderTypeLast,
 							},
 						},
 					},
@@ -755,7 +792,7 @@ func TestPGCreateIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+					Text:     "CREATE UNIQUE INDEX idx_id ON tech_book (id NULLS LAST)",
 					LastLine: 1,
 				},
 			},
@@ -1162,9 +1199,11 @@ func TestPGDropColumnStmt(t *testing.T) {
 func TestPGDropTableStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "DROP TABLE tech_book, xschema.user",
+			stmt: "DROP TABLE IF EXISTS tech_book, xschema.user CASCADE",
 			want: []ast.Node{
 				&ast.DropTableStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
 					TableList: []*ast.TableDef{
 						{
 							Type: ast.TableTypeBaseTable,
@@ -1180,15 +1219,16 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "DROP TABLE tech_book, xschema.user",
+					Text:     "DROP TABLE IF EXISTS tech_book, xschema.user CASCADE",
 					LastLine: 1,
 				},
 			},
 		},
 		{
-			stmt: "DROP VIEW tech_book, xschema.user",
+			stmt: "DROP VIEW tech_book, xschema.user RESTRICT",
 			want: []ast.Node{
 				&ast.DropTableStmt{
+					Behavior: ast.DropBehaviorRestrict,
 					TableList: []*ast.TableDef{
 						{
 							Type: ast.TableTypeView,
@@ -1204,7 +1244,7 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "DROP VIEW tech_book, xschema.user",
+					Text:     "DROP VIEW tech_book, xschema.user RESTRICT",
 					LastLine: 1,
 				},
 			},
@@ -2005,7 +2045,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   false,
 					SchemaList: []string{"s1"},
-					Behavior:   ast.DropSchemaBehaviorRestrict,
+					Behavior:   ast.DropBehaviorRestrict,
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -2021,7 +2061,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   false,
 					SchemaList: []string{"s1", "s2"},
-					Behavior:   ast.DropSchemaBehaviorCascade,
+					Behavior:   ast.DropBehaviorCascade,
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -2037,7 +2077,7 @@ func TestDropSchema(t *testing.T) {
 				&ast.DropSchemaStmt{
 					IfExists:   true,
 					SchemaList: []string{"s1", "s2"},
-					Behavior:   ast.DropSchemaBehaviorRestrict,
+					Behavior:   ast.DropBehaviorRestrict,
 				},
 			},
 			statementList: []parser.SingleSQL{

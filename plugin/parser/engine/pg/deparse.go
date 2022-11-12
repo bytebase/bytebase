@@ -45,12 +45,141 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 		}
 		return buf.WriteByte(';')
 	case *ast.ConstraintDef:
-		if err := deparseConstraintDef(context, node, buf); err != nil {
+		return deparseConstraintDef(context, node, buf)
+	case *ast.CreateIndexStmt:
+		if err := deparseCreateIndex(context, node, buf); err != nil {
 			return err
 		}
 		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
+}
+
+func deparseCreateIndex(context parser.DeparseContext, in *ast.CreateIndexStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("CREATE "); err != nil {
+		return err
+	}
+
+	if in.Index.Unique {
+		if _, err := buf.WriteString("UNIQUE "); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString("INDEX "); err != nil {
+		return err
+	}
+
+	if in.IfNotExists {
+		if _, err := buf.WriteString("IF NOT EXISTS "); err != nil {
+			return err
+		}
+	}
+
+	if err := writeSurrounding(buf, in.Index.Name, `"`); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(" ON "); err != nil {
+		return err
+	}
+
+	if err := deparseTableDef(context, in.Index.Table, buf); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(" USING "); err != nil {
+		return err
+	}
+
+	if err := deparseIndexMethod(in.Index.Method, buf); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(" ("); err != nil {
+		return err
+	}
+
+	for i, key := range in.Index.KeyList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if err := deparseIndexKey(parser.DeparseContext{IndentLevel: 0}, key, buf); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(")"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deparseIndexMethod(method ast.IndexMethodType, buf *strings.Builder) (err error) {
+	switch method {
+	case ast.IndexMethodTypeBTree:
+		_, err = buf.WriteString("btree")
+	case ast.IndexMethodTypeHash:
+		_, err = buf.WriteString("hash")
+	case ast.IndexMethodTypeGiST:
+		_, err = buf.WriteString("gist")
+	case ast.IndexMethodTypeSpGiST:
+		_, err = buf.WriteString("spgist")
+	case ast.IndexMethodTypeGin:
+		_, err = buf.WriteString("gin")
+	case ast.IndexMethodTypeBrin:
+		_, err = buf.WriteString("brin")
+	}
+	return err
+}
+
+func deparseIndexKey(context parser.DeparseContext, in *ast.IndexKeyDef, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	switch in.Type {
+	case ast.IndexKeyTypeColumn:
+		if _, err := buf.WriteString(in.Key); err != nil {
+			return err
+		}
+	case ast.IndexKeyTypeExpression:
+		if err := buf.WriteByte('('); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.Key); err != nil {
+			return err
+		}
+		if err := buf.WriteByte(')'); err != nil {
+			return err
+		}
+	}
+
+	if in.SortOrder == ast.SortOrderTypeDescending {
+		if _, err := buf.WriteString(" DESC"); err != nil {
+			return err
+		}
+	}
+
+	switch in.NullOrder {
+	case ast.NullOrderTypeFirst:
+		if _, err := buf.WriteString(" NULLS FIRST"); err != nil {
+			return err
+		}
+	case ast.NullOrderTypeLast:
+		if _, err := buf.WriteString(" NULLS LAST"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf *strings.Builder) error {
@@ -60,6 +189,11 @@ func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf 
 
 	if _, err := buf.WriteString("DROP TABLE "); err != nil {
 		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
 	}
 	for i, table := range in.TableList {
 		if i != 0 {
@@ -71,7 +205,7 @@ func deparseDropTable(context parser.DeparseContext, in *ast.DropTableStmt, buf 
 			return err
 		}
 	}
-	return nil
+	return deparseDropBehavior(context, in.Behavior, buf)
 }
 
 func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, buf *strings.Builder) error {
@@ -684,13 +818,12 @@ func deparseDropSchema(_ parser.DeparseContext, in *ast.DropSchemaStmt, buf *str
 			return err
 		}
 	}
-	switch in.Behavior {
-	case ast.DropSchemaBehaviorCascade:
+	return deparseDropBehavior(parser.DeparseContext{}, in.Behavior, buf)
+}
+
+func deparseDropBehavior(_ parser.DeparseContext, behavior ast.DropBehavior, buf *strings.Builder) error {
+	if behavior == ast.DropBehaviorCascade {
 		if _, err := buf.WriteString(" CASCADE"); err != nil {
-			return err
-		}
-	case ast.DropSchemaBehaviorRestrict:
-		if _, err := buf.WriteString(" RESTRICT"); err != nil {
 			return err
 		}
 	}

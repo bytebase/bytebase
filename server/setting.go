@@ -1,6 +1,8 @@
 package server
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -9,15 +11,14 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
 )
 
-var (
-	// Some settings contain secret info so we only return settings that are needed by the client.
-	whitelistSettings = []api.SettingName{
-		api.SettingBrandingLogo,
-		api.SettingAppIM,
-	}
-)
+// Some settings contain secret info so we only return settings that are needed by the client.
+var whitelistSettings = []api.SettingName{
+	api.SettingBrandingLogo,
+	api.SettingAppIM,
+}
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
 	g.GET("/setting", func(c echo.Context) error {
@@ -58,6 +59,30 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update setting request").SetInternal(err)
+		}
+
+		if settingPatch.Name == api.SettingAppIM {
+			var value api.SettingAppIMValue
+			if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
+				return err
+			}
+			if value.IMType != (api.IMTypeFeishu) {
+				return errors.New("unknown IM type")
+			}
+			p := s.ApplicationRunner.p
+			approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
+				AppID:     value.AppID,
+				AppSecret: value.AppSecret,
+			}, "")
+			if err != nil {
+				return err
+			}
+			value.ExternalApproval.ApprovalCode = approvalCode
+			b, err := json.Marshal(value)
+			if err != nil {
+				return err
+			}
+			settingPatch.Value = string(b)
 		}
 
 		setting, err := s.store.PatchSetting(ctx, settingPatch)

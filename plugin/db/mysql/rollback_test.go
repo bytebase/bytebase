@@ -8,18 +8,18 @@ import (
 
 func TestGetRollbackSQL(t *testing.T) {
 	tests := []struct {
-		name        string
-		txn         BinlogTransaction
-		tableMap    map[string][]string
-		rollbackSQL string
-		err         bool
+		name         string
+		txn          BinlogTransaction
+		tableCatalog map[string][]string
+		rollbackSQL  string
+		err          bool
 	}{
 		{
-			name:        "empty",
-			txn:         BinlogTransaction{},
-			tableMap:    map[string][]string{},
-			rollbackSQL: "",
-			err:         false,
+			name:         "empty",
+			txn:          BinlogTransaction{},
+			tableCatalog: map[string][]string{},
+			rollbackSQL:  "",
+			err:          false,
 		},
 		{
 			name: "INSERT",
@@ -58,7 +58,7 @@ BEGIN
 `,
 				},
 			},
-			tableMap: map[string][]string{
+			tableCatalog: map[string][]string{
 				"user": {"id", "name", "balance"},
 			},
 			rollbackSQL: `DELETE FROM ` + "`binlog_test`.`user`" + `
@@ -122,7 +122,7 @@ BEGIN
 `,
 				},
 			},
-			tableMap: map[string][]string{
+			tableCatalog: map[string][]string{
 				"user": {"id", "name", "balance"},
 			},
 			rollbackSQL: `UPDATE ` + "`binlog_test`.`user`" + `
@@ -181,7 +181,7 @@ DELIMITER ;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
 				},
 			},
-			tableMap: map[string][]string{
+			tableCatalog: map[string][]string{
 				"user": {"id", "name", "balance"},
 			},
 			rollbackSQL: `INSERT INTO ` + "`binlog_test`.`user`" + `
@@ -209,7 +209,7 @@ SET
 ###   @3=0`,
 				},
 			},
-			tableMap: map[string][]string{
+			tableCatalog: map[string][]string{
 				"user": {"id", "name", "balance", "new_column"},
 			},
 			rollbackSQL: "",
@@ -220,12 +220,52 @@ SET
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
-			sql, err := test.txn.GetRollbackSQL(test.tableMap)
+			sql, err := test.txn.GetRollbackSQL(test.tableCatalog)
 			if test.err {
 				a.Error(err)
 			} else {
 				a.NoError(err)
 				a.Equal(test.rollbackSQL, sql)
+			}
+		})
+	}
+}
+
+func TestGetTableColumns(t *testing.T) {
+	tests := []struct {
+		name     string
+		schema   string
+		tableMap map[string][]string
+		err      bool
+	}{
+		{
+			name: "multiple tables",
+			schema: `
+CREATE TABLE user (
+	id INT PRIMARY KEY,
+	name VARCHAR(20)
+);
+CREATE TABLE balance (
+	id INT PRIMARY KEY,
+	user_id INT REFERENCES user(id),
+	balance INT
+);`,
+			tableMap: map[string][]string{
+				"user":    {"id", "name"},
+				"balance": {"id", "user_id", "balance"},
+			},
+			err: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			a := require.New(t)
+			tableMap, err := GetTableColumns(test.schema)
+			if test.err {
+				a.Error(err)
+			} else {
+				a.NoError(err)
+				a.Equal(test.tableMap, tableMap)
 			}
 		})
 	}

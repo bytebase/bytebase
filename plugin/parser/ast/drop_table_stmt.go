@@ -4,5 +4,7 @@ package ast
 type DropTableStmt struct {
 	ddl
 
+	IfExists  bool
+	Behavior  DropBehavior
 	TableList []*TableDef
 }

@@ -577,8 +577,9 @@ func dropTable(m schemaMap) *ast.DropTableStmt {
 		tableDefList = append(tableDefList, table.createTable.Name)
 	}
 	return &ast.DropTableStmt{
+		IfExists:  true,
 		TableList: tableDefList,
-		// TODO(rebelice): add CASCADE here.
+		Behavior:  ast.DropBehaviorCascade,
 	}
 }
 
@@ -604,7 +605,7 @@ func dropSchema(m schemaMap) *ast.DropSchemaStmt {
 	return &ast.DropSchemaStmt{
 		IfExists:   true,
 		SchemaList: schemaNameList,
-		Behavior:   ast.DropSchemaBehaviorCascade,
+		Behavior:   ast.DropBehaviorCascade,
 	}
 }
 

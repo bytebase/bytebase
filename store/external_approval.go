@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 type externalApprovalRaw struct {
@@ -74,6 +75,25 @@ func (s *Store) FindExternalApproval(ctx context.Context, find *api.ExternalAppr
 		externalApprovalList = append(externalApprovalList, externalApproval)
 	}
 	return externalApprovalList, nil
+}
+
+// GetExternalApprovalByIssueID gets an ExternalApproval by IssueID.
+func (s *Store) GetExternalApprovalByIssueID(ctx context.Context, issueID int) (*api.ExternalApproval, error) {
+	rawList, err := s.findExternalApprovalRaw(ctx, &api.ExternalApprovalFind{IssueID: &issueID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get ApprovalInstance by issueID %v", issueID)
+	}
+	if len(rawList) == 0 {
+		return nil, nil
+	} else if len(rawList) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d externalApprovals with issueID %d, expect 1", len(rawList), issueID)}
+	}
+	externalApprovalRaw := rawList[0]
+	externalApproval, err := s.composeExternalApproval(ctx, externalApprovalRaw)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to compose ExternalApproval with externalApprovalRaw[%+v]", externalApprovalRaw)
+	}
+	return externalApproval, nil
 }
 
 // PatchExternalApproval patches an ExternalApproval.
@@ -198,9 +218,12 @@ func (*Store) createExternalApprovalImpl(ctx context.Context, tx *Tx, create *ap
 	return &externalApprovalRaw, nil
 }
 
-func (*Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, _ *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
+func (*Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, find *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	if v := find.IssueID; v != nil {
+		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)
+	}
 	rows, err := tx.QueryContext(ctx, `
     SELECT
       id,

@@ -64,7 +64,7 @@
                 {{ plan.buttonText }}
               </button>
               <div
-                v-if="canTrial && plan.trialDays"
+                v-if="subscriptionStore.canTrial && plan.trialDays"
                 class="font-bold text-sm my-2 text-center"
               >
                 {{ $t("subscription.free-trial") }}
@@ -91,7 +91,7 @@
         Feature comparison
       </caption>
       <tbody class="border-t border-gray-200 divide-y divide-gray-200">
-        <template v-for="section in sections" :key="section.type">
+        <template v-for="section in FEATURE_SECTIONS" :key="section.type">
           <tr>
             <th
               class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
@@ -186,7 +186,7 @@
           {{ plan.buttonText }}
         </button>
         <div
-          v-if="canTrial && plan.trialDays"
+          v-if="subscriptionStore.canTrial && plan.trialDays"
           class="font-bold text-sm my-2 text-center"
         >
           {{ $t("subscription.free-trial") }}
@@ -210,7 +210,7 @@
           Feature comparison
         </caption>
         <tbody class="border-t border-gray-200 divide-y divide-gray-200">
-          <template v-for="section in sections" :key="section.type">
+          <template v-for="section in FEATURE_SECTIONS" :key="section.type">
             <tr>
               <th
                 class="bg-gray-50 py-3 pl-6 text-sm font-medium text-gray-900 text-left"
@@ -256,8 +256,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive, computed, watch, defineComponent } from "vue";
+<script lang="ts" setup>
+import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Plan, PlanType, PLANS, FEATURE_SECTIONS } from "@/types";
 import { useSubscriptionStore } from "@/store";
@@ -269,87 +269,72 @@ interface LocalState {
   instanceCount: number;
 }
 
+const emit = defineEmits(["on-trial"]);
+
 const minimumInstanceCount = 5;
 
-export default defineComponent({
-  name: "PricingTable",
-  components: { FeatureItem },
-  setup() {
-    const { t } = useI18n();
-    const subscriptionStore = useSubscriptionStore();
-    const state = reactive<LocalState>({
-      isMonthly: false,
-      instanceCount:
-        subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
-    });
-
-    watch(
-      () => subscriptionStore.subscription,
-      (val) =>
-        (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
-    );
-
-    const plans = computed((): LocalPlan[] => {
-      return PLANS.map((plan) => ({
-        ...plan,
-        image: new URL(
-          `../../assets/plan-${plan.title.toLowerCase()}.png`,
-          import.meta.url
-        ).href,
-        buttonText: getButtonText(plan),
-        highlight: plan.type === PlanType.TEAM,
-        isAvailable: plan.type === PlanType.TEAM,
-        isFreePlan: plan.type === PlanType.FREE,
-        label: t(`subscription.plan.${plan.title}.label`),
-        pricePrefix:
-          plan.type === PlanType.ENTERPRISE ? t("subscription.start-from") : "",
-        priceUnit:
-          plan.type === PlanType.ENTERPRISE
-            ? t("subscription.price-unit-for-enterprise")
-            : t("subscription.per-month"),
-      }));
-    });
-
-    const getButtonText = (plan: Plan): string => {
-      if (plan.type === PlanType.FREE) return t("subscription.deploy");
-      if (plan.type === PlanType.ENTERPRISE)
-        return t("subscription.contact-us");
-
-      if (subscriptionStore.isTrialing) return t("subscription.subscribe");
-      if (plan.type === subscriptionStore.subscription?.plan)
-        return t("subscription.upgrade");
-      if (plan.trialDays) return t("subscription.start-trial");
-
-      return t("subscription.subscribe");
-    };
-
-    const onButtonClick = (plan: Plan) => {
-      if (plan.type === PlanType.TEAM) {
-        window.open(
-          "https://bytebase.com/pricing?source=console.subscription",
-          "__blank"
-        );
-      } else if (plan.type === PlanType.ENTERPRISE) {
-        window.open(
-          "mailto:support@bytebase.com?subject=Request for enterprise plan"
-        );
-      } else {
-        window.open("https://bytebase.com/docs?source=console", "_self");
-      }
-    };
-
-    const canTrial = computed((): boolean => {
-      return subscriptionStore.currentPlan === PlanType.FREE;
-    });
-
-    return {
-      state,
-      plans,
-      canTrial,
-      sections: FEATURE_SECTIONS,
-      onButtonClick,
-      minimumInstanceCount,
-    };
-  },
+const { t } = useI18n();
+const subscriptionStore = useSubscriptionStore();
+const state = reactive<LocalState>({
+  isMonthly: false,
+  instanceCount:
+    subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
 });
+
+watch(
+  () => subscriptionStore.subscription,
+  (val) => (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
+);
+
+const plans = computed((): LocalPlan[] => {
+  return PLANS.map((plan) => ({
+    ...plan,
+    image: new URL(
+      `../../assets/plan-${plan.title.toLowerCase()}.png`,
+      import.meta.url
+    ).href,
+    buttonText: getButtonText(plan),
+    highlight: plan.type === PlanType.TEAM,
+    isAvailable: plan.type === PlanType.TEAM,
+    isFreePlan: plan.type === PlanType.FREE,
+    label: t(`subscription.plan.${plan.title}.label`),
+    pricePrefix:
+      plan.type === PlanType.ENTERPRISE ? t("subscription.start-from") : "",
+    priceUnit:
+      plan.type === PlanType.ENTERPRISE
+        ? t("subscription.price-unit-for-enterprise")
+        : t("subscription.per-month"),
+  }));
+});
+
+const getButtonText = (plan: Plan): string => {
+  if (plan.type === PlanType.FREE) return t("subscription.deploy");
+  if (plan.type === PlanType.ENTERPRISE) return t("subscription.contact-us");
+
+  if (subscriptionStore.isTrialing) return t("subscription.subscribe");
+  if (plan.type === subscriptionStore.subscription?.plan)
+    return t("subscription.upgrade");
+  if (plan.trialDays) return t("subscription.start-trial");
+
+  return t("subscription.subscribe");
+};
+
+const onButtonClick = (plan: Plan) => {
+  if (plan.type === PlanType.TEAM) {
+    if (subscriptionStore.canTrial) {
+      emit("on-trial");
+      return;
+    }
+    window.open(
+      "https://bytebase.com/pricing?source=console.subscription",
+      "__blank"
+    );
+  } else if (plan.type === PlanType.ENTERPRISE) {
+    window.open(
+      "mailto:support@bytebase.com?subject=Request for enterprise plan"
+    );
+  } else {
+    window.open("https://bytebase.com/docs?source=console", "_self");
+  }
+};
 </script>
