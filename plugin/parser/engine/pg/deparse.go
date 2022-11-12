@@ -44,6 +44,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.AddConstraintStmt:
+		if err := deparseAddConstraint(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }

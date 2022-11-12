@@ -32,22 +32,25 @@ type diffNode struct {
 	dropNodeList    []ast.Node
 }
 
+type constraintMap map[string]*constraintInfo
 type tableMap map[string]*tableInfo
 type schemaMap map[string]*schemaInfo
 
 type schemaInfo struct {
-	id           int
-	existsInNew  bool
-	createSchema *ast.CreateSchemaStmt
-	tableMap     tableMap
+	id            int
+	existsInNew   bool
+	createSchema  *ast.CreateSchemaStmt
+	tableMap      tableMap
+	constraintMap constraintMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 	return &schemaInfo{
-		id:           id,
-		existsInNew:  false,
-		createSchema: createSchema,
-		tableMap:     make(tableMap),
+		id:            id,
+		existsInNew:   false,
+		createSchema:  createSchema,
+		tableMap:      make(tableMap),
+		constraintMap: make(constraintMap),
 	}
 }
 
@@ -62,6 +65,20 @@ func newTableInfo(id int, createTable *ast.CreateTableStmt) *tableInfo {
 		id:          id,
 		existsInNew: false,
 		createTable: createTable,
+	}
+}
+
+type constraintInfo struct {
+	id            int
+	existsInNew   bool
+	addConstraint *ast.AddConstraintStmt
+}
+
+func newConstraintInfo(id int, addConstraint *ast.AddConstraintStmt) *constraintInfo {
+	return &constraintInfo{
+		id:            id,
+		existsInNew:   false,
+		addConstraint: addConstraint,
 	}
 }
 
@@ -80,6 +97,32 @@ func (m schemaMap) getTable(schemaName string, tableName string) *tableInfo {
 		return nil
 	}
 	return schema.tableMap[tableName]
+}
+
+func (m schemaMap) addConstraint(id int, addConstraint *ast.AddConstraintStmt) error {
+	schema, exists := m[addConstraint.Table.Schema]
+	if !exists {
+		return errors.Errorf("failed to add constraint: schema %s not found", addConstraint.Table.Schema)
+	}
+	if _, exists = schema.tableMap[addConstraint.Table.Name]; !exists {
+		if !exists {
+			return errors.Errorf("failed to add constraint: table %s not found", addConstraint.Table.Name)
+		}
+	}
+	constraintName := addConstraint.Constraint.Name
+	if constraintName == "" {
+		return errors.Errorf("failed to add constraint: constraint name is empty")
+	}
+	schema.constraintMap[constraintName] = newConstraintInfo(id, addConstraint)
+	return nil
+}
+
+func (m schemaMap) getConstraint(schemaName string, constraintName string) *constraintInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.constraintMap[constraintName]
 }
 
 // SchemaDiff computes the schema differences between old and new schema.
@@ -102,6 +145,22 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		case *ast.CreateTableStmt:
 			if err := oldSchemaMap.addTable(i, stmt); err != nil {
 				return "", err
+			}
+		case *ast.AlterTableStmt:
+			for _, alterItem := range stmt.AlterItemList {
+				switch item := alterItem.(type) {
+				case *ast.AddConstraintStmt:
+					switch item.Constraint.Type {
+					case ast.ConstraintTypeUnique:
+						if err := oldSchemaMap.addConstraint(i, item); err != nil {
+							return "", err
+						}
+					default:
+						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
+					}
+				default:
+					return "", errors.Errorf("unsupported alter table item type %T", item)
+				}
 			}
 		}
 	}
@@ -128,6 +187,53 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				continue
 			}
 			schema.existsInNew = true
+		case *ast.AlterTableStmt:
+			alterTableStmt := &ast.AlterTableStmt{
+				Table: stmt.Table,
+			}
+			for _, alterItem := range stmt.AlterItemList {
+				switch item := alterItem.(type) {
+				case *ast.AddConstraintStmt:
+					switch item.Constraint.Type {
+					case ast.ConstraintTypeUnique:
+						oldConstraint := oldSchemaMap.getConstraint(item.Table.Schema, item.Constraint.Name)
+						if oldConstraint == nil {
+							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, item)
+							continue
+						}
+
+						oldConstraint.existsInNew = true
+						// TODO(zp): To make the logic simple now, we just restore the statement, and drop and create the new one if
+						// there is any difference.
+						oldAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, oldConstraint.addConstraint)
+						if err != nil {
+							return "", errors.Wrapf(err, "failed to deparse old alter table add constraint statement")
+						}
+						newAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, item)
+						if err != nil {
+							return "", errors.Wrapf(err, "failed to deparse new alter table add constraint statement")
+						}
+						if oldAlterTableAddConstraint != newAlterTableAddConstraint || oldConstraint.addConstraint.Table.Name != item.Table.Name {
+							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
+								Table:          item.Table,
+								ConstraintName: item.Constraint.Name,
+								IfExists:       true,
+							})
+							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
+								Table:      item.Table,
+								Constraint: item.Constraint,
+							})
+						}
+					default:
+						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
+					}
+				default:
+					return "", errors.Errorf("unsupported alter table item type %T", item)
+				}
+			}
+			if len(alterTableStmt.AlterItemList) > 0 {
+				diff.modifyTableList = append(diff.modifyTableList, alterTableStmt)
+			}
 		default:
 			return "", errors.Errorf("unsupported statement %+v", stmt)
 		}
@@ -142,15 +248,22 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 }
 
 func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
-	// Drop the renaming old schema.
+	// Drop the remaining old schema.
 	if dropSchemaStmt := dropSchema(oldSchemaMap); dropSchemaStmt != nil {
 		diff.dropNodeList = append(diff.dropNodeList, dropSchemaStmt)
 	}
 
-	// Drop the renaming old table.
+	// Drop the remaining old table.
 	if dropTableStmt := dropTable(oldSchemaMap); dropTableStmt != nil {
 		diff.dropNodeList = append(diff.dropNodeList, dropTableStmt)
 	}
+
+	// Drop the remaining old constraints.
+	dropConstraintStms := dropConstraint(oldSchemaMap)
+	for _, dropConstraintStmt := range dropConstraintStms {
+		diff.dropNodeList = append(diff.dropNodeList, dropConstraintStmt)
+	}
+
 	return nil
 }
 
@@ -387,6 +500,39 @@ func (diff *diffNode) deparse() (string, error) {
 		}
 	}
 	return buf.String(), nil
+}
+
+func dropConstraint(m schemaMap) []*ast.AlterTableStmt {
+	var dropConstraintList []*ast.AlterTableStmt
+	for schemaName, schemaInfo := range m {
+		constraintMap := make(map[string][]*constraintInfo)
+		for _, constraintInfo := range schemaInfo.constraintMap {
+			if !constraintInfo.existsInNew {
+				constraintMap[constraintInfo.addConstraint.Table.Name] = append(constraintMap[constraintInfo.addConstraint.Table.Name], constraintInfo)
+			}
+		}
+		for tableName, constraintList := range constraintMap {
+			sort.Slice(constraintList, func(i, j int) bool {
+				return constraintList[i].id < constraintList[j].id
+			})
+			var alterItemList []ast.Node
+			for _, constraintInfo := range constraintList {
+				alterItemList = append(alterItemList, &ast.DropConstraintStmt{
+					Table:          &ast.TableDef{Schema: schemaName, Name: tableName},
+					ConstraintName: constraintInfo.addConstraint.Constraint.Name,
+					IfExists:       true,
+				})
+			}
+			dropConstraintList = append(dropConstraintList, &ast.AlterTableStmt{
+				Table: &ast.TableDef{
+					Schema: schemaName,
+					Name:   tableName,
+				},
+				AlterItemList: alterItemList,
+			})
+		}
+	}
+	return dropConstraintList
 }
 
 func dropTable(m schemaMap) *ast.DropTableStmt {
