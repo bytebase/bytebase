@@ -8,10 +8,16 @@ import (
 	"regexp"
 	"strings"
 
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/pingcap/tidb/parser"
+	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common/log"
+	bbparser "github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 )
 
@@ -135,6 +141,30 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 	}
 
 	return strings.Join(rollbackSQLList, "\n\n"), nil
+}
+
+// GetTableColumns parses the schema to get the table columns map.
+// This is used to generate rollback SQL from the binlog events.
+func GetTableColumns(schema string) (map[string][]string, error) {
+	_, supportStmts, err := bbparser.ExtractTiDBUnsupportStmts(schema)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract TiDB unsupported statements from old statements %q", schema)
+	}
+	nodes, _, err := parser.New().Parse(supportStmts, "", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse old statement %q", schema)
+	}
+	tableMap := make(map[string][]string)
+	for _, node := range nodes {
+		if stmt, ok := node.(*ast.CreateTableStmt); ok {
+			var columnNames []string
+			for _, col := range stmt.Cols {
+				columnNames = append(columnNames, col.Name.Name.O)
+			}
+			tableMap[stmt.Table.Name.O] = columnNames
+		}
+	}
+	return tableMap, nil
 }
 
 func (e *BinlogEvent) getRollbackSQL(tables map[string][]string) (string, error) {

@@ -34,10 +34,10 @@ func init() {
 }
 
 // CustomReceiver is the receiver for custom.
-type CustomReceiver struct {
-}
+type CustomReceiver struct{}
 
 func (*CustomReceiver) post(context Context) error {
+	// TODO(p0ny): handle context.Task
 	payload := CustomWebhookRequest{
 		Level:        context.Level,
 		ActivityType: context.ActivityType,

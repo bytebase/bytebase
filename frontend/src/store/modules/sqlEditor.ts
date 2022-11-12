@@ -126,7 +126,9 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
           updatedTs: history.updatedTs,
           statement: payload.statement,
           durationNs: payload.durationNs,
+          instanceId: payload.instanceId,
           instanceName: payload.instanceName,
+          databaseId: payload.databaseId,
           databaseName: payload.databaseName,
           error: payload.error,
           createdAt: dayjs(history.createdTs * 1000).format(

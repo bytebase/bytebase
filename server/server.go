@@ -50,6 +50,7 @@ type Server struct {
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
+	ApplicationRunner  *ApplicationRunner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
@@ -188,12 +189,19 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	storeInstance := store.New(storeDB, cacheService)
 	s.store = storeInstance
 
+	// Backfill activity.
+	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
+		return nil, errors.Wrap(err, "cannot backfill SQL editor activities")
+	}
+
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
+
+	s.ActivityManager = NewActivityManager(s, storeInstance)
 
 	e := echo.New()
 	e.Debug = prof.Debug
@@ -283,6 +291,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
+
+		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
@@ -375,7 +385,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
@@ -492,6 +501,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)

@@ -57,6 +57,10 @@
                 value="TENANT"
               />
               <label class="label">{{ $t("project.mode.tenant") }}</label>
+              <FeatureBadge
+                feature="bb.feature.multi-tenancy"
+                class="text-accent"
+              />
             </div>
           </div>
         </div>

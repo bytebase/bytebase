@@ -69,7 +69,7 @@
     create table s2.t2(a int);
     ALTER TABLE "s1"."t2"
         DROP COLUMN "b";
-    DROP TABLE "s1"."t1", "s2"."t4";
+    DROP TABLE IF EXISTS "s1"."t1", "s2"."t4" CASCADE;
 - oldSchema: |
     create table public.t1(
       a int,
