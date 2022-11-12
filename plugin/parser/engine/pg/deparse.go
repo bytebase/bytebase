@@ -44,8 +44,8 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
-	case *ast.AddConstraintStmt:
-		if err := deparseAddConstraint(context, node, buf); err != nil {
+	case *ast.ConstraintDef:
+		if err := deparseConstraintDef(context, node, buf); err != nil {
 			return err
 		}
 		return buf.WriteByte(';')
@@ -188,20 +188,24 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 			return err
 		}
 	}
-	switch in.Constraint.Type {
+	return deparseConstraintDef(context, in.Constraint, buf)
+}
+
+func deparseConstraintDef(_ parser.DeparseContext, in *ast.ConstraintDef, buf *strings.Builder) error {
+	switch in.Type {
 	case ast.ConstraintTypeUniqueUsingIndex:
 		if _, err := buf.WriteString("UNIQUE USING INDEX "); err != nil {
 			return err
 		}
-		if err := writeSurrounding(buf, in.Constraint.IndexName, `"`); err != nil {
+		if err := writeSurrounding(buf, in.IndexName, `"`); err != nil {
 			return err
 		}
 
-		if in.Constraint.Initdeferred {
+		if in.Initdeferred {
 			if _, err := buf.WriteString(" INITIALLY DEFERRED"); err != nil {
 				return err
 			}
-		} else if in.Constraint.Deferrable {
+		} else if in.Deferrable {
 			if _, err := buf.WriteString(" DEFERRABLE"); err != nil {
 				return err
 			}
@@ -210,7 +214,7 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 		if _, err := buf.WriteString("UNIQUE ("); err != nil {
 			return err
 		}
-		for idx, col := range in.Constraint.KeyList {
+		for idx, col := range in.KeyList {
 			if idx >= 1 {
 				if _, err := buf.WriteString(", "); err != nil {
 					return err
@@ -220,11 +224,11 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 				return err
 			}
 		}
-		if len(in.Constraint.Including) > 0 {
+		if len(in.Including) > 0 {
 			if _, err := buf.WriteString(") INCLUDE ("); err != nil {
 				return err
 			}
-			for idx, col := range in.Constraint.Including {
+			for idx, col := range in.Including {
 				if idx >= 1 {
 					if _, err := buf.WriteString(", "); err != nil {
 						return err
@@ -238,11 +242,11 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
-		if in.Constraint.IndexTableSpace != "" {
+		if in.IndexTableSpace != "" {
 			if _, err := buf.WriteString(" USING INDEX TABLESPACE "); err != nil {
 				return err
 			}
-			if err := writeSurrounding(buf, in.Constraint.IndexTableSpace, `"`); err != nil {
+			if err := writeSurrounding(buf, in.IndexTableSpace, `"`); err != nil {
 				return err
 			}
 		}
@@ -250,7 +254,7 @@ func deparseAddConstraint(context parser.DeparseContext, in *ast.AddConstraintSt
 		if _, err := buf.WriteString("CHECK ("); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(in.Constraint.Expression.Text()); err != nil {
+		if _, err := buf.WriteString(in.Expression.Text()); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(")"); err != nil {

@@ -203,26 +203,19 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 						}
 
 						oldConstraint.existsInNew = true
-						// TODO(zp): To make the logic simple now, we just restore the statement, and drop and create the new one if
-						// there is any difference.
-						oldAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, oldConstraint.addConstraint)
-						if err != nil {
-							return "", errors.Wrapf(err, "failed to deparse old alter table add constraint statement")
-						}
-						newAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, item)
-						if err != nil {
-							return "", errors.Wrapf(err, "failed to deparse new alter table add constraint statement")
-						}
-						if oldAlterTableAddConstraint != newAlterTableAddConstraint || oldConstraint.addConstraint.Table.Name != item.Table.Name {
+						if oldConstraint.addConstraint.Table.Name != item.Table.Name {
 							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
-								Table:          item.Table,
-								ConstraintName: item.Constraint.Name,
-								IfExists:       true,
+								Table:    alterTableStmt.Table,
+								IfExists: true,
 							})
 							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
-								Table:      item.Table,
+								Table:      alterTableStmt.Table,
 								Constraint: item.Constraint,
 							})
+							continue
+						}
+						if err := diff.modifyConstraint(alterTableStmt, oldConstraint.addConstraint.Constraint, item.Constraint); err != nil {
+							return "", err
 						}
 					default:
 						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
@@ -369,6 +362,28 @@ func (*diffNode) modifyConstraint(alterTableStmt *ast.AlterTableStmt, oldConstra
 				Constraint: newConstraint,
 			})
 			return nil
+		}
+	case ast.ConstraintTypeUnique:
+		// TODO(zp): To make the logic simple now, we just restore the statement, and drop and create the new one if
+		// there is any difference.
+		oldAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, oldConstraint)
+		if err != nil {
+			return errors.Wrapf(err, "failed to deparse old alter table constraintDef: %v", oldConstraint)
+		}
+		newAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, newConstraint)
+		if err != nil {
+			return errors.Wrapf(err, "failed to deparse new alter table constraintDef: %v", newConstraint)
+		}
+		if oldAlterTableAddConstraint != newAlterTableAddConstraint {
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
+				Table:          alterTableStmt.Table,
+				ConstraintName: constraintName,
+				IfExists:       true,
+			})
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
+				Table:      alterTableStmt.Table,
+				Constraint: newConstraint,
+			})
 		}
 	default:
 		return errors.Errorf("Unsupported table constraint type: %d for modifyConstraint", newConstraint.Type)
