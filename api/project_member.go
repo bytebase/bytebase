@@ -129,8 +129,12 @@ const (
 	ProjectPermissionManageGeneral ProjectPermissionType = "bb.permission.project.manage-general"
 	// ProjectPermissionManageMember allows user to manage project memberships.
 	ProjectPermissionManageMember ProjectPermissionType = "bb.permission.project.manage-member"
-	// ProjectPermissionManageSheet allows user to manage sheets in the project.
-	ProjectPermissionManageSheet ProjectPermissionType = "bb.permission.project.manage-sheet"
+	// ProjectPermissionCreateSheet allows user to create sheets in the project.
+	ProjectPermissionCreateSheet ProjectPermissionType = "bb.permission.project.create-sheet"
+	// ProjectPermissionAdminSheet allows user to manage sheet settings in the project.
+	ProjectPermissionAdminSheet ProjectPermissionType = "bb.permission.project.admin-sheet"
+	// ProjectPermissionOrganizeSheet allows user to organize sheet (star, pin) in the project.
+	ProjectPermissionOrganizeSheet ProjectPermissionType = "bb.permission.project.organize-sheet"
 	// ProjectPermissionChangeDatabase allows user to make DML/DDL database change in the project.
 	ProjectPermissionChangeDatabase ProjectPermissionType = "bb.permission.project.change-database"
 	// ProjectPermissionAdminDatabase allows user to manage database settings in the project.
@@ -149,7 +153,9 @@ func ProjectPermission(permission ProjectPermissionType, plan PlanType, role com
 	projectPermissionMatrix := map[ProjectPermissionType][2]bool{
 		ProjectPermissionManageGeneral:  {false, true},
 		ProjectPermissionManageMember:   {false, true},
-		ProjectPermissionManageSheet:    {false, true},
+		ProjectPermissionCreateSheet:    {true, true},
+		ProjectPermissionAdminSheet:     {false, true},
+		ProjectPermissionOrganizeSheet:  {true, true},
 		ProjectPermissionChangeDatabase: {true, true},
 		ProjectPermissionAdminDatabase:  {false, true},
 		// If dba-workflow is disabled, then project developer can also create database.
