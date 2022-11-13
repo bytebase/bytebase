@@ -140,16 +140,8 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									log.Error("failed to archive external apporval", zap.Error(err))
 								}
 							}
-						} else if status != feishu.ApprovalStatusPending {
-							if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
-								// Archive external approval if it's not pending.
-								ID:        externalApproval.ID,
-								RowStatus: api.Archived,
-							}); err != nil {
-								log.Error("failed to archive external apporval", zap.Error(err))
-							}
 						}
-
+						// Do nothing for ApprovalStatusRejected
 					default:
 						log.Error("Unknown ExternalApproval.Type", zap.Any("ExternalApproval", externalApproval))
 					}
@@ -254,9 +246,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, s *Serve
 			AppSecret: settingValue.AppSecret,
 		},
 		[]string{issue.Creator.Email, issue.Assignee.Email})
-	log.Info("appp", zap.Any("users", users))
 	if err != nil {
-		log.Error("failed to get id by email", zap.Any("resp", users))
 		return err
 	}
 	instanceCode, err := r.p.CreateExternalApproval(ctx,
@@ -348,6 +338,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue)
 	if err != nil {
 		log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
+		return
 	}
 
 	// createExternalApprovalIfNeeded
