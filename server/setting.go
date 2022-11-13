@@ -64,10 +64,10 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		if settingPatch.Name == api.SettingAppIM {
 			var value api.SettingAppIMValue
 			if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed setting value for IM App").SetInternal(err)
 			}
 			if value.IMType != api.IMTypeFeishu {
-				return errors.New("unknown IM type")
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unknown IM Type %s", value.IMType))
 			}
 			p := s.ApplicationRunner.p
 			approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
@@ -75,12 +75,12 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				AppSecret: value.AppSecret,
 			}, "")
 			if err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create approval definition").SetInternal(err)
 			}
 			value.ExternalApproval.ApprovalCode = approvalCode
 			b, err := json.Marshal(value)
 			if err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal updated setting value").SetInternal(err)
 			}
 			settingPatch.Value = string(b)
 		}
