@@ -1,7 +1,9 @@
 #####################################################################################
 ##                                                                                 ##
-##  NOTE: The following license applies to all files in the enterprise/ and        ##
-##  frontend/src/enterprise/ directories.                                          ##
+##  NOTE: The following license applies to following code:                         ##
+##  1. enterprise/ and its subdirectories                                          ##
+##  2. frontend/src/enterprise/ and its directories                                ##
+##  3. Any code controlling feature, permission, role and plan enablement          ##
 ##                                                                                 ##
 #####################################################################################
 
