@@ -69,7 +69,164 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/sheet/project/:projectID/sync", func(c echo.Context) error {
+	// Get current user created sheet list.
+	g.GET("/sheet/my", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind := api.SheetFind{
+			CreatorID: &currentPrincipalID,
+		}
+
+		if rowStatusStr := c.QueryParam("rowStatus"); rowStatusStr != "" {
+			rowStatus := api.RowStatus(rowStatusStr)
+			sheetFind.RowStatus = &rowStatus
+		}
+
+		mySheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch sheet list").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, mySheetList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal my sheet list response").SetInternal(err)
+		}
+		return nil
+	})
+
+	// Get sheet list which is shared with current user.
+	// The desired sheets would be PROJECT sheets which current user is one of the active member of its project and all public sheets.
+	g.GET("/sheet/shared", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind := api.SheetFind{
+			PrincipalID: &currentPrincipalID,
+		}
+
+		var sheetList []*api.Sheet
+		projectSheetVisibility := api.ProjectSheet
+		sheetFind.Visibility = &projectSheetVisibility
+		projectSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared project sheet list").SetInternal(err)
+		}
+		sheetList = append(sheetList, projectSheetList...)
+
+		publicSheetVisibility := api.PublicSheet
+		sheetFind.Visibility = &publicSheetVisibility
+		publicSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared public sheet list").SetInternal(err)
+		}
+		sheetList = append(sheetList, publicSheetList...)
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, sheetList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal shared sheet list response").SetInternal(err)
+		}
+		return nil
+	})
+
+	// Get current user starred sheet list.
+	// The desired sheets would be any visibility but have a record of sheet organizer.
+	g.GET("/sheet/starred", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind := api.SheetFind{
+			OrganizerPrincipalID: &currentPrincipalID,
+		}
+
+		starredSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch starred sheet list").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, starredSheetList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal starred sheet list response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/sheet/:sheetID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		id, err := strconv.Atoi(c.Param("sheetID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
+		}
+
+		sheetFind := &api.SheetFind{
+			ID: &id,
+		}
+		sheet, err := s.store.GetSheet(ctx, sheetFind, currentPrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet ID: %v", id)).SetInternal(err)
+		}
+		if sheet == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, sheet); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal sheet response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.PATCH("/sheet/:sheetID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		id, err := strconv.Atoi(c.Param("sheetID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
+		}
+
+		sheetPatch := &api.SheetPatch{
+			ID:        id,
+			UpdaterID: currentPrincipalID,
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch sheet request").SetInternal(err)
+		}
+
+		sheet, err := s.store.PatchSheet(ctx, sheetPatch)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch sheet with ID: %d", id)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, sheet); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal patch sheet response: %d", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.DELETE("/sheet/:sheetID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		id, err := strconv.Atoi(c.Param("sheetID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
+		}
+
+		sheetDelete := &api.SheetDelete{
+			ID:        id,
+			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
+		}
+		err = s.store.DeleteSheet(ctx, sheetDelete)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete sheet ID: %v", id)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
+	g.POST("/project/:projectID/sync-sheet", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		projectID, err := strconv.Atoi(c.Param("projectID"))
@@ -274,163 +431,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		return nil
-	})
-
-	// Get current user created sheet list.
-	g.GET("/sheet/my", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind := api.SheetFind{
-			CreatorID: &currentPrincipalID,
-		}
-
-		if rowStatusStr := c.QueryParam("rowStatus"); rowStatusStr != "" {
-			rowStatus := api.RowStatus(rowStatusStr)
-			sheetFind.RowStatus = &rowStatus
-		}
-
-		mySheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch sheet list").SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, mySheetList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal my sheet list response").SetInternal(err)
-		}
-		return nil
-	})
-
-	// Get sheet list which is shared with current user.
-	// The desired sheets would be PROJECT sheets which current user is one of the active member of its project and all public sheets.
-	g.GET("/sheet/shared", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind := api.SheetFind{
-			PrincipalID: &currentPrincipalID,
-		}
-
-		var sheetList []*api.Sheet
-		projectSheetVisibility := api.ProjectSheet
-		sheetFind.Visibility = &projectSheetVisibility
-		projectSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared project sheet list").SetInternal(err)
-		}
-		sheetList = append(sheetList, projectSheetList...)
-
-		publicSheetVisibility := api.PublicSheet
-		sheetFind.Visibility = &publicSheetVisibility
-		publicSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared public sheet list").SetInternal(err)
-		}
-		sheetList = append(sheetList, publicSheetList...)
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, sheetList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal shared sheet list response").SetInternal(err)
-		}
-		return nil
-	})
-
-	// Get current user starred sheet list.
-	// The desired sheets would be any visibility but have a record of sheet organizer.
-	g.GET("/sheet/starred", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind := api.SheetFind{
-			OrganizerPrincipalID: &currentPrincipalID,
-		}
-
-		starredSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch starred sheet list").SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, starredSheetList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal starred sheet list response").SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/sheet/:sheetID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		id, err := strconv.Atoi(c.Param("sheetID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
-		}
-
-		sheetFind := &api.SheetFind{
-			ID: &id,
-		}
-		sheet, err := s.store.GetSheet(ctx, sheetFind, currentPrincipalID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet ID: %v", id)).SetInternal(err)
-		}
-		if sheet == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, sheet); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal sheet response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.PATCH("/sheet/:sheetID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		id, err := strconv.Atoi(c.Param("sheetID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
-		}
-
-		sheetPatch := &api.SheetPatch{
-			ID:        id,
-			UpdaterID: currentPrincipalID,
-		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch sheet request").SetInternal(err)
-		}
-
-		sheet, err := s.store.PatchSheet(ctx, sheetPatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch sheet with ID: %d", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, sheet); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal patch sheet response: %d", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.DELETE("/sheet/:sheetID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("sheetID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
-		}
-
-		sheetDelete := &api.SheetDelete{
-			ID:        id,
-			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
-		err = s.store.DeleteSheet(ctx, sheetDelete)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete sheet ID: %v", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
 }
