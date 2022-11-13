@@ -5,30 +5,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
-
-var roleFinder = func(projectID int, principalID int) (common.ProjectRole, error) {
-	switch projectID {
-	case 100:
-		switch principalID {
-		case 200:
-			return common.ProjectOwner, nil
-		case 201:
-			return common.ProjectDeveloper, nil
-		}
-	case 101:
-		switch principalID {
-		case 200:
-			return "", nil
-		case 201:
-			return "", nil
-		case 202:
-			return common.ProjectOwner, nil
-		}
-	}
-	return "", nil
-}
 
 func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 	type test struct {
@@ -115,7 +92,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100",
 			method:      "PATCH",
 			principalID: 201,
-			errMsg:      "rejected by the project ACL policy; PATCH /project/100 u201/DEVELOPER",
+			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
 			desc:        "Patch a single project as a non-member",
@@ -123,7 +100,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100",
 			method:      "PATCH",
 			principalID: 202,
-			errMsg:      "rejected by the project ACL policy; PATCH /project/100 u202/non-member",
+			errMsg:      "is not a member of the project",
 		},
 		{
 			desc:        "Fetch subroute from a single project as a project owner",
@@ -163,7 +140,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/repository",
 			method:      "POST",
 			principalID: 201,
-			errMsg:      "rejected by the project ACL policy; POST /project/100/repository u201/DEVELOPER",
+			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
 			desc:        "Create subroute from a single project as a non member",
@@ -171,7 +148,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/repository",
 			method:      "POST",
 			principalID: 202,
-			errMsg:      "rejected by the project ACL policy; POST /project/100/repository u202/non-member",
+			errMsg:      "is not a member of the project",
 		},
 		{
 			desc:        "Patch subroute from a single project as a project owner",
@@ -187,7 +164,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/repository",
 			method:      "PATCH",
 			principalID: 201,
-			errMsg:      "rejected by the project ACL policy; PATCH /project/100/repository u201/DEVELOPER",
+			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
 			desc:        "Patch subroute from a single project as a non member",
@@ -195,7 +172,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/repository",
 			method:      "PATCH",
 			principalID: 202,
-			errMsg:      "rejected by the project ACL policy; PATCH /project/100/repository u202/non-member",
+			errMsg:      "is not a member of the project",
 		},
 		{
 			desc:        "Delete subroute from a single project as a project owner",
@@ -211,7 +188,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/repository",
 			method:      "DELETE",
 			principalID: 201,
-			errMsg:      "rejected by the project ACL policy; DELETE /project/100/repository u201/DEVELOPER",
+			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
 			desc:        "Delete subroute from a single project as a non member",
@@ -219,7 +196,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/repository",
 			method:      "DELETE",
 			principalID: 202,
-			errMsg:      "rejected by the project ACL policy; DELETE /project/100/repository u202/non-member",
+			errMsg:      "is not a member of the project",
 		},
 		{
 			desc:        "Create member from a single project as a project owner",
@@ -235,7 +212,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/member",
 			method:      "POST",
 			principalID: 201,
-			errMsg:      "rejected by the project ACL policy; POST /project/100/member u201/DEVELOPER",
+			errMsg:      "not have permission to manage the project member",
 		},
 		{
 			desc:        "Create member from a single project as a non-member",
@@ -243,7 +220,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/member",
 			method:      "POST",
 			principalID: 202,
-			errMsg:      "rejected by the project ACL policy; POST /project/100/member u202/non-member",
+			errMsg:      "is not a member of the project",
 		},
 		{
 			desc:        "PATCH member from a single project as a project owner",
@@ -259,7 +236,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/member/567",
 			method:      "PATCH",
 			principalID: 201,
-			errMsg:      "rejected by the project ACL policy; PATCH /project/100/member/567 u201/DEVELOPER",
+			errMsg:      "not have permission to manage the project member",
 		},
 		{
 			desc:        "PATCH member from a single project as a non-member",
@@ -267,7 +244,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/member/567",
 			method:      "PATCH",
 			principalID: 202,
-			errMsg:      "rejected by the project ACL policy; PATCH /project/100/member/567 u202/non-member",
+			errMsg:      "is not a member of the project",
 		},
 		{
 			desc:        "DELETE member from a single project as a project owner",
@@ -283,7 +260,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/member/567",
 			method:      "DELETE",
 			principalID: 201,
-			errMsg:      "rejected by the project ACL policy; DELETE /project/100/member/567 u201/DEVELOPER",
+			errMsg:      "not have permission to manage the project member",
 		},
 		{
 			desc:        "DELETE member from a single project as a non-member",
@@ -291,7 +268,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			path:        "/project/100/member/567",
 			method:      "DELETE",
 			principalID: 202,
-			errMsg:      "rejected by the project ACL policy; DELETE /project/100/member/567 u202/non-member",
+			errMsg:      "is not a member of the project",
 		},
 	}
 
