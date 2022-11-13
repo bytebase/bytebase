@@ -37,12 +37,10 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 		if path == "/project" {
 			userIDStr := quaryParams.Get("user")
 			if userIDStr == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-					errors.Errorf("not allowed to fetch all project list"))
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch all project list")
 			}
 			if strconv.Itoa(principalID) != userIDStr {
-				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-					errors.Errorf("not allowed to fetch projects from other user"))
+				return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to fetch projects from other user")
 			}
 		}
 		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
@@ -65,13 +63,11 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 		}
 
 		if role == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				errors.Errorf("is not a member of the project"))
+			return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project")
 		}
 
 		if !api.ProjectPermission(permission, plan, role) {
-			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				errors.Errorf(permissionErrMsg))
+			return echo.NewHTTPError(http.StatusUnauthorized, permissionErrMsg)
 		}
 	}
 
@@ -88,14 +84,16 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
+		if sheet == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
+		}
 		// Creator can always manage her own sheet.
 		if sheet.CreatorID == principalID {
 			return nil
 		}
 		switch sheet.Visibility {
 		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				errors.Errorf("not allowed to access private sheet created by other user"))
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
 		case api.PublicSheet:
 			return nil
 		case api.ProjectSheet:
@@ -105,13 +103,11 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 			}
 
 			if role == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-					errors.Errorf("is not a member of the project containing the sheet"))
+				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
 			}
 
 			if !api.ProjectPermission(api.ProjectPermissionOrganizeSheet, plan, role) {
-				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-					errors.Errorf("not have permission to organize the project sheet"))
+				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to organize the project sheet")
 			}
 		}
 	} else if matches := sheetRouteRegex.FindStringSubmatch(path); matches != nil {
@@ -120,20 +116,21 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
+		if sheet == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Sheet ID not found: %d", sheetID))
+		}
 		// Creator can always manage her own sheet.
 		if sheet.CreatorID == principalID {
 			return nil
 		}
 		switch sheet.Visibility {
 		case api.PrivateSheet:
-			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				errors.Errorf("not allowed to access private sheet created by other user"))
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to access private sheet created by other user")
 		case api.PublicSheet:
 			if method == "GET" {
 				return nil
 			}
-			return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-				errors.Errorf("not allowed to change public sheet created by other user"))
+			return echo.NewHTTPError(http.StatusUnauthorized, "not allowed to change public sheet created by other user")
 		case api.ProjectSheet:
 			role, err := roleFinder(sheet.ProjectID, principalID)
 			if err != nil {
@@ -141,8 +138,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 			}
 
 			if role == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-					errors.Errorf("is not a member of the project containing the sheet"))
+				return echo.NewHTTPError(http.StatusUnauthorized, "is not a member of the project containing the sheet")
 			}
 
 			if method == "GET" {
@@ -150,8 +146,7 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 			}
 
 			if !api.ProjectPermission(api.ProjectPermissionAdminSheet, plan, role) {
-				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(
-					errors.Errorf("not have permission to change the project sheet"))
+				return echo.NewHTTPError(http.StatusUnauthorized, "not have permission to change the project sheet")
 			}
 		}
 	}

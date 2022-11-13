@@ -277,9 +277,9 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			err := enforceWorkspaceDeveloperProjectRouteACL(tc.plan, tc.path, tc.method, tc.queryParams, tc.principalID, roleFinder)
 			if err != nil {
 				if tc.errMsg == "" {
-					t.Errorf("expect no error, got %s", err.Internal.Error())
-				} else if tc.errMsg != err.Internal.Error() {
-					t.Errorf("expect error %s, got %s", tc.errMsg, err.Internal.Error())
+					t.Errorf("expect no error, got %s", err.Message)
+				} else if tc.errMsg != err.Message {
+					t.Errorf("expect error %s, got %s", tc.errMsg, err.Message)
 				}
 			} else if tc.errMsg != "" {
 				t.Errorf("expect error %s, got no error", tc.errMsg)

@@ -41,6 +41,22 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			principalID: 200,
 			errMsg:      "",
 		},
+		{
+			desc:        "Access unknown sheet",
+			plan:        api.ENTERPRISE,
+			path:        "/sheet/9999",
+			method:      "GET",
+			principalID: 202,
+			errMsg:      "Sheet ID not found: 9999",
+		},
+		{
+			desc:        "Organize unknown sheet",
+			plan:        api.ENTERPRISE,
+			path:        "/sheet/9999/organize",
+			method:      "PATCH",
+			principalID: 202,
+			errMsg:      "Sheet ID not found: 9999",
+		},
 	}
 
 	privateSheetTests := []test{
@@ -301,9 +317,9 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			err := enforceWorkspaceDeveloperSheetRouteACL(tc.plan, tc.path, tc.method, tc.principalID, roleFinder, sheetFinder)
 			if err != nil {
 				if tc.errMsg == "" {
-					t.Errorf("expect no error, got %s", err.Internal.Error())
-				} else if tc.errMsg != err.Internal.Error() {
-					t.Errorf("expect error %s, got %s", tc.errMsg, err.Internal.Error())
+					t.Errorf("expect no error, got %s", err.Message)
+				} else if tc.errMsg != err.Message {
+					t.Errorf("expect error %s, got %s", tc.errMsg, err.Message)
 				}
 			} else if tc.errMsg != "" {
 				t.Errorf("expect error %s, got no error", tc.errMsg)
