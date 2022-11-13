@@ -53,6 +53,9 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				if setting == nil {
 					return
 				}
+				if setting.Value == "" {
+					return
+				}
 				var value api.SettingAppIMValue
 				if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
 					log.Error("failed to unmarshal IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
@@ -295,6 +298,12 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 	setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
 		log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+		return
+	}
+	if setting == nil {
+		return
+	}
+	if setting.Value == "" {
 		return
 	}
 	var settingValue api.SettingAppIMValue

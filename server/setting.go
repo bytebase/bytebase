@@ -66,7 +66,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
 				return err
 			}
-			if value.IMType != (api.IMTypeFeishu) {
+			if value.IMType != api.IMTypeFeishu {
 				return errors.New("unknown IM type")
 			}
 			p := s.ApplicationRunner.p
