@@ -68,6 +68,9 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if value.IMType != api.IMTypeFeishu {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unknown IM Type %s", value.IMType))
 			}
+			if value.ExternalApproval.Enabled && !s.feature(api.FeatureIMApproval) {
+				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureIMApproval.AccessErrorMessage())
+			}
 			p := s.ApplicationRunner.p
 			approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
 				AppID:     value.AppID,
