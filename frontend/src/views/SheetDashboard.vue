@@ -371,7 +371,7 @@ const getSheetDropDownOptions = (sheet: Sheet) => {
     });
   }
 
-  if (currentSubPath.value === "my" || currentSubPath.value === "starred") {
+  if (currentSubPath.value === "my") {
     options.push({
       key: "delete",
       label: t("common.delete"),
