@@ -125,9 +125,14 @@ import { useDialog } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import dayjs from "@/plugins/dayjs";
 import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
-import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
 import {
-  getDefaultSheetPayload,
+  Sheet,
+  SheetCreate,
+  SheetOrganizerUpsert,
+  SheetTabPayload,
+} from "@/types";
+import {
+  getDefaultSheetPayloadWithSource,
   isDev,
   isSheetWritable,
   sheetSlug,
@@ -338,7 +343,9 @@ const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
           name: sheet.name,
           statement: sheet.statement,
           visibility: "PRIVATE",
-          payload: getDefaultSheetPayload(),
+          payload: getDefaultSheetPayloadWithSource(
+            "BYTEBASE"
+          ) as SheetTabPayload,
         };
         if (sheet.databaseId) {
           sheetCreate.databaseId = sheet.databaseId;

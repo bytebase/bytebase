@@ -1,4 +1,4 @@
-import { Principal, Sheet, SheetPayload, TabMode } from "@/types";
+import { Principal, Sheet, SheetPayload, SheetSource, TabMode } from "@/types";
 import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
@@ -80,8 +80,14 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
   return false;
 };
 
-export const getDefaultSheetPayload = (): SheetPayload => {
-  return {
-    tabMode: TabMode.ReadOnly,
-  };
+export const getDefaultSheetPayloadWithSource = (
+  sheetSource: SheetSource
+): SheetPayload | undefined => {
+  if (sheetSource === "BYTEBASE") {
+    return {
+      tabMode: TabMode.ReadOnly,
+    };
+  }
+
+  return undefined;
 };

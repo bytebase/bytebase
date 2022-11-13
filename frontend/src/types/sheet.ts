@@ -16,9 +16,20 @@ export type SheetSource = "BYTEBASE" | "GITLAB_SELF_HOST" | "GITHUB_COM";
 
 export type SheetType = "SQL";
 
-export type SheetPayload = {
+interface SheetVCSPayload {
+  fileName: string;
+  filePath: string;
+  size: number;
+  author: string;
+  lastCommitId: string;
+  lastSyncTs: number;
+}
+
+export interface SheetTabPayload {
   tabMode: TabMode;
-};
+}
+
+export type SheetPayload = SheetVCSPayload | SheetTabPayload;
 
 export interface Sheet {
   id: SheetId;

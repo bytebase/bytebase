@@ -38,8 +38,7 @@ type sheetRaw struct {
 	Visibility api.SheetVisibility
 	Source     api.SheetSource
 	Type       api.SheetType
-	// Payload is in the json string format of SheetVCSPayload.
-	Payload string
+	Payload    string
 }
 
 // toSheet creates an instance of Sheet based on the sheetRaw.

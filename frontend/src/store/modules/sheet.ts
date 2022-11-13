@@ -17,19 +17,20 @@ import {
   ProjectId,
   SheetUpsert,
   SheetPayload,
+  SheetTabPayload,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { getDefaultSheetPayload, isSheetWritable } from "@/utils";
+import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
 
 function convertSheetPayload(
   resourceObj: ResourceObject,
   includedList: ResourceObject[]
-): SheetPayload {
-  const payload = getDefaultSheetPayload();
+) {
+  const payload = {};
   try {
     const payloadJSON = resourceObj.attributes.payload;
     if (typeof payloadJSON === "string") {
@@ -78,7 +79,7 @@ function convertSheet(
     ) as Principal,
     project,
     database,
-    payload,
+    payload: payload as SheetPayload,
   };
 }
 
@@ -160,7 +161,9 @@ export const useSheetStore = defineStore("sheet", {
       }
 
       return this.createSheet({
-        payload: getDefaultSheetPayload(),
+        payload: getDefaultSheetPayloadWithSource(
+          "BYTEBASE"
+        ) as SheetTabPayload,
         ...sheetUpsert,
         visibility: "PRIVATE",
       });

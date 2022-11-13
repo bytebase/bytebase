@@ -37,6 +37,7 @@ const (
 )
 
 // SheetVCSPayload is the additional data payload of the VCS sheet.
+// Sheet's source should be one of SheetFromGitLabSelfHost and SheetFromGitHubCom.
 type SheetVCSPayload struct {
 	FileName     string `json:"fileName"`
 	FilePath     string `json:"filePath"`
@@ -44,6 +45,12 @@ type SheetVCSPayload struct {
 	Author       string `json:"author"`
 	LastCommitID string `json:"lastCommitId"`
 	LastSyncTs   int64  `json:"lastSyncTs"`
+}
+
+// SheetTabPayload is the API message payloads for UI tab context in SQL editor.
+// Sheet's source should be SheetFromBytebase.
+type SheetTabPayload struct {
+	TabMode int `json:"tabMode"`
 }
 
 // Sheet is the API message for a sheet.
