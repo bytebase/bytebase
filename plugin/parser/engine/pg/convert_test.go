@@ -885,6 +885,7 @@ func TestPGDropConstraintStmt(t *testing.T) {
 								Name: "tech_book",
 							},
 							ConstraintName: "uk_tech_a",
+							IfExists:       false,
 						},
 					},
 				},
@@ -892,6 +893,33 @@ func TestPGDropConstraintStmt(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text:     "ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book DROP CONSTRAINT IF EXISTS uk_tech_a",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.DropConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ConstraintName: "uk_tech_a",
+							IfExists:       true,
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book DROP CONSTRAINT IF EXISTS uk_tech_a",
 					LastLine: 1,
 				},
 			},

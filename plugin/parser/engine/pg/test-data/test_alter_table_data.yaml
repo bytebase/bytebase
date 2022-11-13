@@ -56,6 +56,12 @@
         DROP CONSTRAINT "unique_tbl_email_key";
 - stmt: |-
     alter table t
+        drop constraint if exists unique_tbl_email_key;
+  want: |-
+    ALTER TABLE "t"
+        DROP CONSTRAINT IF EXISTS "unique_tbl_email_key";
+- stmt: |-
+    alter table t
         add constraint email_unique_key unique(email);
   want: |-
     ALTER TABLE "t"
