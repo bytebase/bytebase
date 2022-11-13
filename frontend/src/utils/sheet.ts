@@ -82,12 +82,14 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
 
 export const getDefaultSheetPayloadWithSource = (
   sheetSource: SheetSource
-): SheetPayload | undefined => {
+): SheetPayload => {
   if (sheetSource === "BYTEBASE") {
     return {
       tabMode: TabMode.ReadOnly,
     };
   }
 
-  return undefined;
+  // Should never reach this line.
+  // For those sheets from VCS, we shouldn't patch their payload field.
+  return {} as SheetPayload;
 };

@@ -17,7 +17,6 @@ import {
   ProjectId,
   SheetUpsert,
   SheetPayload,
-  SheetTabPayload,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
@@ -161,9 +160,7 @@ export const useSheetStore = defineStore("sheet", {
       }
 
       return this.createSheet({
-        payload: getDefaultSheetPayloadWithSource(
-          "BYTEBASE"
-        ) as SheetTabPayload,
+        payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
         ...sheetUpsert,
         visibility: "PRIVATE",
       });
