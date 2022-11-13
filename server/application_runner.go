@@ -51,6 +51,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 				if setting == nil {
+					log.Error("cannot find IM setting")
 					return
 				}
 				if setting.Value == "" {
@@ -301,6 +302,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 		return
 	}
 	if setting == nil {
+		log.Error("cannot find IM setting")
 		return
 	}
 	if setting.Value == "" {
