@@ -6,4 +6,5 @@ type DropConstraintStmt struct {
 
 	Table          *TableDef
 	ConstraintName string
+	IfExists       bool
 }
