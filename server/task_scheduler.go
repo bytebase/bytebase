@@ -90,7 +90,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							zap.Error(err),
 						)
 					}
-					s.server.ApplicationRunner.ScheduleApproval(s.server, pipelineList[i])
+					s.server.ApplicationRunner.ScheduleApproval(ctx, pipelineList[i])
 				}
 
 				// Inspect all running tasks

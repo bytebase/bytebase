@@ -243,7 +243,7 @@ func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *
 	return true, nil
 }
 
-func (r *ApplicationRunner) createExternalApproval(ctx context.Context, s *Server, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
+func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
 	users, err := r.p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
@@ -279,24 +279,22 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, s *Serve
 	if err != nil {
 		return err
 	}
-	_, err = s.store.CreateExternalApproval(ctx, &api.ExternalApprovalCreate{
+	if _, err := r.store.CreateExternalApproval(ctx, &api.ExternalApprovalCreate{
 		IssueID:     issue.ID,
 		ApproverID:  issue.AssigneeID,
 		RequesterID: issue.CreatorID,
 		Type:        api.ExternalApprovalTypeFeishu,
 		Payload:     string(b),
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	return nil
 }
 
 // ScheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
-func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) {
-	ctx := context.Background()
+func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.Pipeline) {
 	settingName := api.SettingAppIM
-	setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
 		log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
 		return
@@ -327,7 +325,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 		PipelineID: &pipeline.ID,
 		StatusList: []api.IssueStatus{api.IssueOpen},
 	}
-	issues, err := s.store.FindIssueStripped(ctx, find)
+	issues, err := r.store.FindIssueStripped(ctx, find)
 	if err != nil {
 		log.Error("failed to find issues", zap.Any("issueFind", find), zap.Error(err))
 		return
@@ -365,7 +363,7 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 		return
 	}
 
-	if err := r.createExternalApproval(ctx, s, issue, stage, &settingValue); err != nil {
+	if err := r.createExternalApproval(ctx, issue, stage, &settingValue); err != nil {
 		log.Error("failed to create external approval", zap.Error(err))
 		return
 	}
