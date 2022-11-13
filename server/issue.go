@@ -669,7 +669,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", detail.DatabaseID))
 				}
 
-				taskCreate, err := getUpdateTask(database, c.VCSPushEvent, detail, getOrDefaultSchemaVersion(detail))
+				vt, err := getUpdateTask(database, c.VCSPushEvent, detail, getOrDefaultSchemaVersion(detail))
 				if err != nil {
 					return nil, err
 				}
@@ -677,7 +677,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				sameEnvStageFound := false
 				for index, stage := range create.StageList {
 					if stage.EnvironmentID == database.Instance.Environment.ID {
-						stage.TaskList = append(stage.TaskList, *taskCreate)
+						stage.TaskList = append(stage.TaskList, *vt.task)
 						create.StageList[index] = stage
 						sameEnvStageFound = true
 						break
@@ -688,7 +688,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					create.StageList = append(create.StageList, api.StageCreate{
 						Name:          fmt.Sprintf("%s Stage", database.Instance.Environment.Name),
 						EnvironmentID: database.Instance.Environment.ID,
-						TaskList:      []api.TaskCreate{*taskCreate},
+						TaskList:      []api.TaskCreate{*vt.task},
 					})
 				}
 			}
@@ -715,11 +715,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				for _, database := range databaseList {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
-					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
+					vt, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
 					if err != nil {
 						return nil, err
 					}
-					taskCreateList = append(taskCreateList, *taskCreate)
+					taskCreateList = append(taskCreateList, *vt.task)
 				}
 				if len(environmentSet) != 1 {
 					var environments []string
@@ -748,7 +748,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			id    int
 			order int
 		}
-		envToDatabaseMap := make(map[envKey][]api.TaskCreate)
+		envToDatabaseMap := make(map[envKey][]*versionTask)
 		for _, d := range c.DetailList {
 			if d.MigrationType == db.Migrate && d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
@@ -761,13 +761,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
-			taskCreate, err := getUpdateTask(database, c.VCSPushEvent, d, getOrDefaultSchemaVersion(d))
+			vt, err := getUpdateTask(database, c.VCSPushEvent, d, getOrDefaultSchemaVersion(d))
 			if err != nil {
 				return nil, err
 			}
 
 			key := envKey{name: database.Instance.Environment.Name, id: database.Instance.Environment.ID, order: database.Instance.Environment.Order}
-			envToDatabaseMap[key] = append(envToDatabaseMap[key], *taskCreate)
+			envToDatabaseMap[key] = append(envToDatabaseMap[key], vt)
 		}
 		// Sort and group by environments.
 		var envKeys []envKey
@@ -778,14 +778,46 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			return envKeys[i].order < envKeys[j].order
 		})
 		for _, env := range envKeys {
+			taskList, taskIndexDagList := getTaskAndDagListByVersion(envToDatabaseMap[env])
 			create.StageList = append(create.StageList, api.StageCreate{
-				Name:          env.name,
-				EnvironmentID: env.id,
-				TaskList:      envToDatabaseMap[env],
+				Name:             env.name,
+				EnvironmentID:    env.id,
+				TaskList:         taskList,
+				TaskIndexDAGList: taskIndexDagList,
 			})
 		}
 	}
 	return create, nil
+}
+
+// getTaskAndDagListByVersion adds the task dependencies for tasks belonging to the same database.
+// The dependency is by schema version ascending order.
+func getTaskAndDagListByVersion(versionTaskList []*versionTask) ([]api.TaskCreate, []api.TaskIndexDAG) {
+	var taskCreateList []api.TaskCreate
+	var taskIndexDAGList []api.TaskIndexDAG
+	databaseMap := make(map[int][]*versionTask)
+	for _, vt := range versionTaskList {
+		databaseMap[*vt.task.DatabaseID] = append(databaseMap[*vt.task.DatabaseID], vt)
+	}
+	var databaseList []int
+	for k := range databaseMap {
+		databaseList = append(databaseList, k)
+	}
+	sort.Ints(databaseList)
+
+	for _, databaseID := range databaseList {
+		list := databaseMap[databaseID]
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].version < list[j].version
+		})
+		for i := 0; i < len(list)-1; i++ {
+			taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+		}
+		for _, vt := range list {
+			taskCreateList = append(taskCreateList, *vt.task)
+		}
+	}
+	return taskCreateList, taskIndexDAGList
 }
 
 func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
@@ -850,7 +882,12 @@ func getOrDefaultSchemaVersion(detail *api.MigrationDetail) string {
 	return common.DefaultMigrationVersion()
 }
 
-func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (*api.TaskCreate, error) {
+type versionTask struct {
+	task    *api.TaskCreate
+	version string
+}
+
+func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (*versionTask, error) {
 	var taskName string
 	var taskType api.TaskType
 
@@ -912,15 +949,18 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		return nil, errors.Errorf("unsupported migration type %q", d.MigrationType)
 	}
 
-	return &api.TaskCreate{
-		Name:              taskName,
-		InstanceID:        database.Instance.ID,
-		DatabaseID:        &database.ID,
-		Status:            api.TaskPendingApproval,
-		Type:              taskType,
-		Statement:         d.Statement,
-		EarliestAllowedTs: d.EarliestAllowedTs,
-		Payload:           payloadString,
+	return &versionTask{
+		task: &api.TaskCreate{
+			Name:              taskName,
+			InstanceID:        database.Instance.ID,
+			DatabaseID:        &database.ID,
+			Status:            api.TaskPendingApproval,
+			Type:              taskType,
+			Statement:         d.Statement,
+			EarliestAllowedTs: d.EarliestAllowedTs,
+			Payload:           payloadString,
+		},
+		version: schemaVersion,
 	}, nil
 }
 
