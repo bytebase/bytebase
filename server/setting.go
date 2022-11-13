@@ -63,7 +63,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		if settingPatch.Name == api.SettingAppIM {
 			var value api.SettingAppIMValue
 			if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Malformed setting value for IM App").SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed setting value for IM").SetInternal(err)
 			}
 			if value.IMType != api.IMTypeFeishu {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unknown IM Type %s", value.IMType))
