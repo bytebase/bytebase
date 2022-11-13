@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -222,18 +223,25 @@ func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *
 		if task.Status == api.TaskPendingApproval {
 			pendingApprovalCount++
 		}
-		for _, taskCheck := range task.TaskCheckRunList {
-			if taskCheck.Status != api.TaskCheckRunDone {
+		if len(task.TaskCheckRunList) == 0 {
+			return false, nil
+		}
+		// sort to get the most recent task check run result
+		sort.Slice(task.TaskCheckRunList, func(i, j int) bool {
+			return task.TaskCheckRunList[i].UpdatedTs > task.TaskCheckRunList[j].UpdatedTs ||
+				(task.TaskCheckRunList[i].UpdatedTs == task.TaskCheckRunList[j].UpdatedTs && task.TaskCheckRunList[i].ID > task.TaskCheckRunList[j].ID)
+		})
+		taskCheck := task.TaskCheckRunList[0]
+		if taskCheck.Status != api.TaskCheckRunDone {
+			return false, nil
+		}
+		var payload api.TaskCheckRunResultPayload
+		if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
+			return false, err
+		}
+		for _, result := range payload.ResultList {
+			if result.Status == api.TaskCheckStatusError {
 				return false, nil
-			}
-			var payload api.TaskCheckRunResultPayload
-			if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
-				return false, err
-			}
-			for _, result := range payload.ResultList {
-				if result.Status == api.TaskCheckStatusError {
-					return false, nil
-				}
 			}
 		}
 	}
