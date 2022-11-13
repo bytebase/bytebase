@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -282,9 +281,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.GET("/sheet/my", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
+		sheetFind := api.SheetFind{
+			CreatorID: &currentPrincipalID,
 		}
 
 		if rowStatusStr := c.QueryParam("rowStatus"); rowStatusStr != "" {
@@ -292,9 +290,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.RowStatus = &rowStatus
 		}
 
-		sheetFind.CreatorID = &currentPrincipalID
-
-		mySheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		mySheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch sheet list").SetInternal(err)
 		}
@@ -311,17 +307,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.GET("/sheet/shared", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
+		sheetFind := api.SheetFind{
+			PrincipalID: &currentPrincipalID,
 		}
-
-		sheetFind.PrincipalID = &currentPrincipalID
 
 		var sheetList []*api.Sheet
 		projectSheetVisibility := api.ProjectSheet
 		sheetFind.Visibility = &projectSheetVisibility
-		projectSheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		projectSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared project sheet list").SetInternal(err)
 		}
@@ -329,7 +322,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		publicSheetVisibility := api.PublicSheet
 		sheetFind.Visibility = &publicSheetVisibility
-		publicSheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		publicSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared public sheet list").SetInternal(err)
 		}
@@ -347,14 +340,11 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.GET("/sheet/starred", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
+		sheetFind := api.SheetFind{
+			OrganizerPrincipalID: &currentPrincipalID,
 		}
 
-		sheetFind.OrganizerID = &currentPrincipalID
-
-		starredSheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		starredSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch starred sheet list").SetInternal(err)
 		}
@@ -443,28 +433,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-// composeCommonSheetFindByQueryParams is a common function to compose sheetFind by request query params.
-func composeCommonSheetFindByQueryParams(queryParams url.Values) (*api.SheetFind, error) {
-	sheetFind := &api.SheetFind{}
-
-	if projectIDStr := queryParams.Get("projectId"); projectIDStr != "" {
-		projectID, err := strconv.Atoi(projectIDStr)
-		if err != nil {
-			return nil, errors.Errorf("project ID is not a number: %s", queryParams.Get("projectId"))
-		}
-		sheetFind.ProjectID = &projectID
-	}
-	if databaseIDStr := queryParams.Get("databaseId"); databaseIDStr != "" {
-		databaseID, err := strconv.Atoi(databaseIDStr)
-		if err != nil {
-			return nil, errors.Errorf("database ID is not a number: %s", queryParams.Get("databaseId"))
-		}
-		sheetFind.DatabaseID = &databaseID
-	}
-
-	return sheetFind, nil
 }
 
 // SheetInfo represents the sheet related information from sheetPathTemplate.

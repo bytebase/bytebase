@@ -266,9 +266,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	_, err = ctl.listSheets(api.SheetFind{
-		DatabaseID: &database.ID,
-	})
+	_, err = ctl.listMySheets()
 	a.NoError(err)
 }
 
