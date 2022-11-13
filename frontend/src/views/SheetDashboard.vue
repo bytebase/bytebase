@@ -126,12 +126,7 @@ import { t } from "@/plugins/i18n";
 import dayjs from "@/plugins/dayjs";
 import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
 import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
-import {
-  getDefaultSheetPayload,
-  isDev,
-  isSheetWritable,
-  sheetSlug,
-} from "@/utils";
+import { getDefaultSheetPayload, isDev, sheetSlug } from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
@@ -377,14 +372,6 @@ const getSheetDropDownOptions = (sheet: Sheet) => {
       label: t("common.delete"),
     });
   } else if (currentSubPath.value === "shared") {
-    const canDeleteSheet = isSheetWritable(sheet, currentUser.value);
-    if (canDeleteSheet) {
-      options.push({
-        key: "delete",
-        label: t("common.delete"),
-      });
-    }
-
     options.push({
       key: "duplicate",
       label: t("common.duplicate"),
