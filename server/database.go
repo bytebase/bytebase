@@ -968,13 +968,8 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*a
 			environmentValue = &label.Value
 			continue
 		}
-		labelKey, ok := keyValueList[label.Key]
-		if !ok {
+		if _, ok := keyValueList[label.Key]; !ok {
 			return common.Errorf(common.Invalid, "invalid database label key: %v", label.Key)
-		}
-		_, ok = labelKey[label.Value]
-		if !ok {
-			return common.Errorf(common.Invalid, "invalid database label value %v for key %v", label.Value, label.Key)
 		}
 	}
 
