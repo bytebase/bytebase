@@ -172,3 +172,15 @@ func ProjectPermission(permission ProjectPermissionType, plan PlanType, role com
 	}
 	return false
 }
+
+// HasActiveProjectMembership returns whether a principal has active membership in a project.
+func HasActiveProjectMembership(principalID int, project *Project) bool {
+	for _, projectMember := range project.ProjectMemberList {
+		// Must match role provider. e.g. A member with the built-in Bytebase role provider should be ignored
+		// if the project's current role provider is VCS.
+		if projectMember.PrincipalID == principalID && projectMember.RoleProvider == project.RoleProvider {
+			return true
+		}
+	}
+	return false
+}
