@@ -183,6 +183,47 @@ func TestGetTaskAndDagListByVersion(t *testing.T) {
 		{
 			versionTaskList: []*versionTask{
 				{
+					task:    &api.TaskCreate{DatabaseID: &databaseID1, Name: "task1"},
+					version: "v1",
+				},
+			},
+			wantTaskList: []api.TaskCreate{
+				{DatabaseID: &databaseID1, Name: "task1"},
+			},
+			wantDAGList: nil,
+		},
+		{
+			versionTaskList: []*versionTask{
+				{
+					task:    &api.TaskCreate{DatabaseID: &databaseID1, Name: "task2"},
+					version: "v2",
+				},
+				{
+					task:    &api.TaskCreate{DatabaseID: &databaseID1, Name: "task3"},
+					version: "v3",
+				},
+				{
+					task:    &api.TaskCreate{DatabaseID: &databaseID1, Name: "task1"},
+					version: "v1",
+				},
+			},
+			wantTaskList: []api.TaskCreate{
+				{DatabaseID: &databaseID1, Name: "task1"},
+				{DatabaseID: &databaseID1, Name: "task2"},
+				{DatabaseID: &databaseID1, Name: "task3"},
+			},
+			wantDAGList: []api.TaskIndexDAG{
+				{FromIndex: 0, ToIndex: 1},
+				{FromIndex: 1, ToIndex: 2},
+			},
+		},
+		{
+			versionTaskList: []*versionTask{
+				{
+					task:    &api.TaskCreate{DatabaseID: &databaseID2, Name: "task1"},
+					version: "v1",
+				},
+				{
 					task:    &api.TaskCreate{DatabaseID: &databaseID1, Name: "task2"},
 					version: "v2",
 				},
@@ -203,11 +244,13 @@ func TestGetTaskAndDagListByVersion(t *testing.T) {
 				{DatabaseID: &databaseID1, Name: "task1"},
 				{DatabaseID: &databaseID1, Name: "task2"},
 				{DatabaseID: &databaseID1, Name: "task3"},
+				{DatabaseID: &databaseID2, Name: "task1"},
 				{DatabaseID: &databaseID2, Name: "task2"},
 			},
 			wantDAGList: []api.TaskIndexDAG{
 				{FromIndex: 0, ToIndex: 1},
 				{FromIndex: 1, ToIndex: 2},
+				{FromIndex: 3, ToIndex: 4},
 			},
 		},
 	}

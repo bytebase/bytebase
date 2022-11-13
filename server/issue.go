@@ -669,7 +669,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", detail.DatabaseID))
 				}
 
-				taskCreate, err := getUpdateTask(database, c.VCSPushEvent, detail, getOrDefaultSchemaVersion(detail))
+				vt, err := getUpdateTask(database, c.VCSPushEvent, detail, getOrDefaultSchemaVersion(detail))
 				if err != nil {
 					return nil, err
 				}
@@ -677,7 +677,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				sameEnvStageFound := false
 				for index, stage := range create.StageList {
 					if stage.EnvironmentID == database.Instance.Environment.ID {
-						stage.TaskList = append(stage.TaskList, *taskCreate.task)
+						stage.TaskList = append(stage.TaskList, *vt.task)
 						create.StageList[index] = stage
 						sameEnvStageFound = true
 						break
@@ -688,7 +688,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 					create.StageList = append(create.StageList, api.StageCreate{
 						Name:          fmt.Sprintf("%s Stage", database.Instance.Environment.Name),
 						EnvironmentID: database.Instance.Environment.ID,
-						TaskList:      []api.TaskCreate{*taskCreate.task},
+						TaskList:      []api.TaskCreate{*vt.task},
 					})
 				}
 			}
@@ -715,11 +715,11 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				for _, database := range databaseList {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
-					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
+					vt, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
 					if err != nil {
 						return nil, err
 					}
-					taskCreateList = append(taskCreateList, *taskCreate.task)
+					taskCreateList = append(taskCreateList, *vt.task)
 				}
 				if len(environmentSet) != 1 {
 					var environments []string
@@ -791,6 +791,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 }
 
 // getTaskAndDagListByVersion adds the task dependencies for tasks belonging to the same database.
+// The dependency is by schema version ascending order.
 func getTaskAndDagListByVersion(versionTaskList []*versionTask) ([]api.TaskCreate, []api.TaskIndexDAG) {
 	var taskCreateList []api.TaskCreate
 	var taskIndexDAGList []api.TaskIndexDAG
