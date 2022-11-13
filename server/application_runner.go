@@ -47,7 +47,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				settingName := api.SettingAppIM
 				setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 				if err != nil {
-					log.Error("failed to get setting by settingName", zap.String("settingName", string(settingName)), zap.Error(err))
+					log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
 					return
 				}
 				if setting == nil {
@@ -55,7 +55,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				var value api.SettingAppIMValue
 				if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
-					log.Error("failed to unmarshal", zap.Error(err))
+					log.Error("failed to unmarshal IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
 					return
 				}
 				if !value.ExternalApproval.Enabled {
@@ -304,12 +304,12 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 	settingName := api.SettingAppIM
 	setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
-		log.Error("failed to get setting by settingName", zap.String("settingName", string(settingName)), zap.Error(err))
+		log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
 		return
 	}
 	var settingValue api.SettingAppIMValue
 	if err := json.Unmarshal([]byte(setting.Value), &settingValue); err != nil {
-		log.Error("failed to unmarshal to settingValue", zap.Error(err))
+		log.Error("failed to unmarshal IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
 		return
 	}
 
