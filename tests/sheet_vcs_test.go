@@ -106,14 +106,17 @@ func TestSheetVCS(t *testing.T) {
 			err = ctl.vcsProvider.AddFiles(test.externalID, files)
 			a.NoError(err)
 
+			sheetsBefore, err := ctl.listMySheets()
+			a.NoError(err)
+
 			err = ctl.syncSheet(project.ID)
 			a.NoError(err)
 
-			sheets, err := ctl.listSheets(api.SheetFind{ProjectID: &project.ID})
+			sheetsAfter, err := ctl.listMySheets()
 			a.NoError(err)
-			a.Len(sheets, 1)
+			a.Len(sheetsAfter, len(sheetsBefore)+1)
 
-			sheetFromVCS := sheets[0]
+			sheetFromVCS := sheetsAfter[len(sheetsAfter)-1]
 			a.Equal("all_employee", sheetFromVCS.Name)
 			a.Equal(fileContent, sheetFromVCS.Statement)
 		})

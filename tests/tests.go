@@ -14,7 +14,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1475,16 +1474,9 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 	return sheet, nil
 }
 
-// listSheets lists sheets for a database.
-func (ctl *controller) listSheets(sheetFind api.SheetFind) ([]*api.Sheet, error) {
+// listMySheets lists caller's sheets.
+func (ctl *controller) listMySheets() ([]*api.Sheet, error) {
 	params := map[string]string{}
-	if sheetFind.ProjectID != nil {
-		params["projectId"] = strconv.Itoa(*sheetFind.ProjectID)
-	}
-	if sheetFind.DatabaseID != nil {
-		params["databaseId"] = strconv.Itoa(*sheetFind.DatabaseID)
-	}
-
 	body, err := ctl.get("/sheet/my", params)
 	if err != nil {
 		return nil, err

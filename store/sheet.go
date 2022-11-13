@@ -469,7 +469,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 	if v := find.PrincipalID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
-	if v := find.OrganizerID; v != nil {
+	if v := find.OrganizerPrincipalID; v != nil {
 		// For now, we only need the starred sheets.
 		where, args = append(where, fmt.Sprintf("id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
 	}
