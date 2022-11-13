@@ -51,6 +51,10 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 				if setting == nil {
+					log.Error("cannot find IM setting")
+					return
+				}
+				if setting.Value == "" {
 					return
 				}
 				var value api.SettingAppIMValue
@@ -295,6 +299,13 @@ func (r *ApplicationRunner) ScheduleApproval(s *Server, pipeline *api.Pipeline) 
 	setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
 		log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+		return
+	}
+	if setting == nil {
+		log.Error("cannot find IM setting")
+		return
+	}
+	if setting.Value == "" {
 		return
 	}
 	var settingValue api.SettingAppIMValue
