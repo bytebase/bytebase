@@ -104,12 +104,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectFind.PrincipalID != nil {
 			principalID := *projectFind.PrincipalID
 			for _, project := range projectList {
-				roleProvider := project.RoleProvider
-				for _, projectMember := range project.ProjectMemberList {
-					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
-						activeProjectList = append(activeProjectList, project)
-						break
-					}
+				if api.ActiveProjectMembership(principalID, project) {
+					activeProjectList = append(activeProjectList, project)
+					break
 				}
 			}
 		} else {

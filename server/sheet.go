@@ -55,6 +55,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
 		}
 
+		role := c.Get(getRoleContextKey()).(api.Role)
+		if role != api.Owner && role != api.DBA {
+			// Non-workspace Owner or DBA can only create sheet into the project where she has the membership.
+			if !api.ActiveProjectMembership(currentPrincipalID, project) {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Must be a project member to create new sheet")
+			}
+		}
+
 		sheetCreate.Source = api.SheetFromBytebase
 		sheetCreate.Type = api.SheetForSQL
 		sheet, err := s.store.CreateSheet(ctx, sheetCreate)

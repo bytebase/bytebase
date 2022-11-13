@@ -172,3 +172,13 @@ func ProjectPermission(permission ProjectPermissionType, plan PlanType, role com
 	}
 	return false
 }
+
+// ActiveProjectMembership returns whether a principal has active membership in a project.
+func ActiveProjectMembership(principalID int, project *Project) bool {
+	for _, projectMember := range project.ProjectMemberList {
+		if projectMember.PrincipalID == principalID && projectMember.RoleProvider == project.RoleProvider {
+			return true
+		}
+	}
+	return false
+}
