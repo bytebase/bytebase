@@ -294,10 +294,6 @@ var featureMatrix = map[FeatureType]featureConfig{
 	},
 }
 
-// FeatureToggle is the feature toggle map.
-// We can disable the hidden feature here. After the feature is released, we can set the bool to true to enable the feature.
-var FeatureToggle = map[FeatureType]bool{}
-
 // Plan is the API message for a plan.
 type Plan struct {
 	Type PlanType `jsonapi:"attr,type"`
