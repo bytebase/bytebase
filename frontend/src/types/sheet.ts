@@ -76,15 +76,6 @@ export interface SheetPatch {
   payload?: SheetPayload;
 }
 
-export interface SheetFind {
-  creatorId?: PrincipalId;
-  rowStatus?: RowStatus;
-  projectId?: ProjectId;
-  databaseId?: DatabaseId;
-  visibility?: SheetVisibility;
-  organizerId?: PrincipalId;
-}
-
 export type AccessOption = {
   label: string;
   description: string;
