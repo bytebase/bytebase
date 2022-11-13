@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
@@ -59,7 +60,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100",
 			method:      "GET",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -67,7 +68,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100",
 			method:      "GET",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "",
 		},
 		{
@@ -75,7 +76,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100",
 			method:      "GET",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "",
 		},
 		{
@@ -83,7 +84,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100",
 			method:      "PATCH",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -91,7 +92,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100",
 			method:      "PATCH",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
@@ -99,7 +100,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "is not a member of the project",
 		},
 		{
@@ -107,7 +108,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "GET",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -115,7 +116,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "GET",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "",
 		},
 		{
@@ -123,7 +124,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "GET",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "",
 		},
 		{
@@ -131,7 +132,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "POST",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -139,7 +140,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "POST",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
@@ -147,7 +148,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "POST",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "is not a member of the project",
 		},
 		{
@@ -155,7 +156,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "PATCH",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -163,7 +164,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "PATCH",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
@@ -171,7 +172,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "is not a member of the project",
 		},
 		{
@@ -179,7 +180,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "DELETE",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -187,7 +188,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "DELETE",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "not have permission to manage the project general setting",
 		},
 		{
@@ -195,7 +196,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/repository",
 			method:      "DELETE",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "is not a member of the project",
 		},
 		{
@@ -203,7 +204,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member",
 			method:      "POST",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -211,7 +212,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member",
 			method:      "POST",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "not have permission to manage the project member",
 		},
 		{
@@ -219,7 +220,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member",
 			method:      "POST",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "is not a member of the project",
 		},
 		{
@@ -227,7 +228,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member/567",
 			method:      "PATCH",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -235,7 +236,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member/567",
 			method:      "PATCH",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "not have permission to manage the project member",
 		},
 		{
@@ -243,7 +244,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member/567",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "is not a member of the project",
 		},
 		{
@@ -251,7 +252,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member/567",
 			method:      "DELETE",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectOwner),
 			errMsg:      "",
 		},
 		{
@@ -259,7 +260,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member/567",
 			method:      "DELETE",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromProject(100, common.ProjectDeveloper),
 			errMsg:      "not have permission to manage the project member",
 		},
 		{
@@ -267,7 +268,7 @@ func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/project/100/member/567",
 			method:      "DELETE",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromProject(100, ""),
 			errMsg:      "is not a member of the project",
 		},
 	}

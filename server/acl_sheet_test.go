@@ -22,7 +22,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/my",
 			method:      "GET",
-			principalID: 200,
+			principalID: 1234,
 			errMsg:      "",
 		},
 		{
@@ -30,7 +30,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/shared",
 			method:      "GET",
-			principalID: 200,
+			principalID: 1234,
 			errMsg:      "",
 		},
 		{
@@ -38,7 +38,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/starred",
 			method:      "GET",
-			principalID: 200,
+			principalID: 1234,
 			errMsg:      "",
 		},
 		{
@@ -46,7 +46,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/9999",
 			method:      "GET",
-			principalID: 202,
+			principalID: 1234,
 			errMsg:      "Sheet ID not found: 9999",
 		},
 		{
@@ -54,7 +54,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/9999/organize",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: 1234,
 			errMsg:      "Sheet ID not found: 9999",
 		},
 	}
@@ -65,7 +65,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "GET",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1000, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -73,7 +73,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "GET",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromSheet(1000, "OWNER"),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -81,7 +81,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "GET",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromSheet(1000, "DEVELOPER"),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -89,7 +89,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "GET",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1000, ""),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -97,7 +97,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1000, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -105,7 +105,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "PATCH",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromSheet(1000, "OWNER"),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -113,7 +113,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "PATCH",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromSheet(1000, "DEVELOPER"),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -121,7 +121,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "PATCH",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1000, ""),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -129,7 +129,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1000, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -137,7 +137,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000/organize",
 			method:      "PATCH",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromSheet(1000, "OWNER"),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -145,7 +145,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000/organize",
 			method:      "PATCH",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromSheet(1000, "DEVELOPER"),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 		{
@@ -153,7 +153,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1000/organize",
 			method:      "PATCH",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1000, ""),
 			errMsg:      "not allowed to access private sheet created by other user",
 		},
 	}
@@ -164,7 +164,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "GET",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1001, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -172,7 +172,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "GET",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromSheet(1001, "OWNER"),
 			errMsg:      "",
 		},
 		{
@@ -180,7 +180,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "GET",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromSheet(1001, "DEVELOPER"),
 			errMsg:      "",
 		},
 		{
@@ -188,7 +188,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "GET",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1001, ""),
 			errMsg:      "is not a member of the project containing the sheet",
 		},
 		{
@@ -196,7 +196,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1001, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -204,7 +204,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "PATCH",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromSheet(1001, "OWNER"),
 			errMsg:      "",
 		},
 		{
@@ -212,7 +212,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "PATCH",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromSheet(1001, "DEVELOPER"),
 			errMsg:      "not have permission to change the project sheet",
 		},
 		{
@@ -220,7 +220,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001",
 			method:      "PATCH",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1001, ""),
 			errMsg:      "is not a member of the project containing the sheet",
 		},
 		{
@@ -228,7 +228,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001/organize",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1001, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -236,7 +236,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001/organize",
 			method:      "PATCH",
-			principalID: 200,
+			principalID: testFindPrincipalIDFromSheet(1001, "OWNER"),
 			errMsg:      "",
 		},
 		{
@@ -244,7 +244,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001/organize",
 			method:      "PATCH",
-			principalID: 201,
+			principalID: testFindPrincipalIDFromSheet(1001, "DEVELOPER"),
 			errMsg:      "",
 		},
 		{
@@ -252,7 +252,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1001/organize",
 			method:      "PATCH",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1001, ""),
 			errMsg:      "is not a member of the project containing the sheet",
 		},
 	}
@@ -263,7 +263,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1002",
 			method:      "GET",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1002, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -271,7 +271,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1002",
 			method:      "GET",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1002, ""),
 			errMsg:      "",
 		},
 		{
@@ -279,7 +279,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1002",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1002, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -287,7 +287,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1002",
 			method:      "PATCH",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1002, ""),
 			errMsg:      "not allowed to change public sheet created by other user",
 		},
 		{
@@ -295,7 +295,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1002/organize",
 			method:      "PATCH",
-			principalID: 202,
+			principalID: testFindPrincipalIDFromSheet(1002, "CREATOR"),
 			errMsg:      "",
 		},
 		{
@@ -303,7 +303,7 @@ func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {
 			plan:        api.ENTERPRISE,
 			path:        "/sheet/1002/organize",
 			method:      "PATCH",
-			principalID: 204,
+			principalID: testFindPrincipalIDFromSheet(1002, ""),
 			errMsg:      "",
 		},
 	}
