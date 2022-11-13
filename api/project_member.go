@@ -135,6 +135,8 @@ const (
 	ProjectPermissionAdminSheet ProjectPermissionType = "bb.permission.project.admin-sheet"
 	// ProjectPermissionOrganizeSheet allows user to organize sheet (star, pin) in the project.
 	ProjectPermissionOrganizeSheet ProjectPermissionType = "bb.permission.project.organize-sheet"
+	// ProjectPermissionSyncSheet allows user to sync sheet for the project with VCS configured.
+	ProjectPermissionSyncSheet ProjectPermissionType = "bb.permission.project.sync-sheet"
 	// ProjectPermissionChangeDatabase allows user to make DML/DDL database change in the project.
 	ProjectPermissionChangeDatabase ProjectPermissionType = "bb.permission.project.change-database"
 	// ProjectPermissionAdminDatabase allows user to manage database settings in the project.
@@ -156,6 +158,7 @@ func ProjectPermission(permission ProjectPermissionType, plan PlanType, role com
 		ProjectPermissionCreateSheet:    {true, true},
 		ProjectPermissionAdminSheet:     {false, true},
 		ProjectPermissionOrganizeSheet:  {true, true},
+		ProjectPermissionSyncSheet:      {true, true},
 		ProjectPermissionChangeDatabase: {true, true},
 		ProjectPermissionAdminDatabase:  {false, true},
 		// If dba-workflow is disabled, then project developer can also create database.

@@ -28,6 +28,7 @@ func getRoleContextKey() string {
 
 var projectGeneralRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)`)
 var projectMemberRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/member`)
+var projectSyncSheetRouteRegex = regexp.MustCompile(`^/project/(?P<projectID>\d+)/sync-sheet`)
 
 func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, method string, quaryParams url.Values, principalID int, roleFinder func(projectID int, principalID int) (common.ProjectRole, error)) *echo.HTTPError {
 	var projectID int
@@ -45,14 +46,18 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 		}
 		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
 	} else {
-		if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
-			projectID, _ = strconv.Atoi(matches[1])
-			permission = api.ProjectPermissionManageMember
-			permissionErrMsg = "not have permission to manage the project member"
-		} else if matches := projectGeneralRouteRegex.FindStringSubmatch(path); matches != nil {
+		if matches := projectGeneralRouteRegex.FindStringSubmatch(path); matches != nil {
 			projectID, _ = strconv.Atoi(matches[1])
 			permission = api.ProjectPermissionManageGeneral
 			permissionErrMsg = "not have permission to manage the project general setting"
+		} else if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionManageMember
+			permissionErrMsg = "not have permission to manage the project member"
+		} else if matches := projectSyncSheetRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionSyncSheet
+			permissionErrMsg = "not have permission to sync sheet for project"
 		}
 	}
 
