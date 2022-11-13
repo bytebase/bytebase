@@ -137,9 +137,9 @@ type SheetFind struct {
 	Payload    *string
 	// Used to find starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
-	OrganizerID *int
-	// Used to find a constraint sheet list with related projects containing PrincipalID as an active member.
-	// When finding a shared PROJECT/PROJECT sheet, the value should have value.
+	OrganizerPrincipalID *int
+	// Used to find a sheet list from projects containing PrincipalID as an active member.
+	// When finding a shared PROJECT/PUBLIC sheets, this value should be present.
 	PrincipalID *int
 }
 

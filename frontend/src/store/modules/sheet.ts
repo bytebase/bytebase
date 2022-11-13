@@ -12,7 +12,6 @@ import {
   Project,
   unknown,
   UNKNOWN_ID,
-  SheetFind,
   SheetCreate,
   SheetOrganizerUpsert,
   ProjectId,
@@ -196,16 +195,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
-    async fetchMySheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (await axios.get(`/api/sheet/my?${queryList.join("&")}`))
-        .data;
+    async fetchMySheetList() {
+      const resData = (await axios.get(`/api/sheet/my`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -220,17 +211,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheetList;
     },
-    async fetchSharedSheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (
-        await axios.get(`/api/sheet/shared?${queryList.join("&")}`)
-      ).data;
+    async fetchSharedSheetList() {
+      const resData = (await axios.get(`/api/sheet/shared`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -245,17 +227,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheetList;
     },
-    async fetchStarredSheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (
-        await axios.get(`/api/sheet/starred?${queryList.join("&")}`)
-      ).data;
+    async fetchStarredSheetList() {
+      const resData = (await axios.get(`/api/sheet/starred`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
