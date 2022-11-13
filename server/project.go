@@ -319,7 +319,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.POST("/project/:projectID/repository/:repositoryID/sql-review-ci", func(c echo.Context) error {
-		if !s.flight(api.FeatureVCSSQLReviewWorkflow) {
+		if !api.FeatureEnabled(api.FeatureVCSSQLReviewWorkflow, s.profile.Mode) {
 			return echo.NewHTTPError(http.StatusBadRequest, "SQL review CI feature is not enabled")
 		}
 
