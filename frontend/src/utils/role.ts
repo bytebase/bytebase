@@ -5,7 +5,7 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
   | "bb.permission.workspace.manage-environment"
   | "bb.permission.workspace.manage-instance"
-  // Change issue assignee, approve issue, view all issues
+  // Change issue assignee, change issue status, view all issues
   | "bb.permission.workspace.manage-issue"
   | "bb.permission.workspace.manage-label"
   | "bb.permission.workspace.manage-project"
