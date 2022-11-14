@@ -808,6 +808,8 @@ func TestPGDropIndexStmt(t *testing.T) {
 			stmt: "DROP INDEX xschema.idx_id, idx_x",
 			want: []ast.Node{
 				&ast.DropIndexStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
 					IndexList: []*ast.IndexDef{
 						{
 							Table: &ast.TableDef{Schema: "xschema"},
@@ -820,6 +822,50 @@ func TestPGDropIndexStmt(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text:     "DROP INDEX xschema.idx_id, idx_x",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP INDEX xschema.idx_id, idx_x restrict",
+			want: []ast.Node{
+				&ast.DropIndexStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
+					IndexList: []*ast.IndexDef{
+						{
+							Table: &ast.TableDef{Schema: "xschema"},
+							Name:  "idx_id",
+						},
+						{Name: "idx_x"},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP INDEX xschema.idx_id, idx_x restrict",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP INDEX IF EXISTS xschema.idx_id, idx_x cascade",
+			want: []ast.Node{
+				&ast.DropIndexStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
+					IndexList: []*ast.IndexDef{
+						{
+							Table: &ast.TableDef{Schema: "xschema"},
+							Name:  "idx_id",
+						},
+						{Name: "idx_x"},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP INDEX IF EXISTS xschema.idx_id, idx_x cascade",
 					LastLine: 1,
 				},
 			},

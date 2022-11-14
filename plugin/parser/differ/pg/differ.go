@@ -29,18 +29,22 @@ type diffNode struct {
 	newSchemaList   []*ast.CreateSchemaStmt
 	newTableList    []*ast.CreateTableStmt
 	modifyTableList []ast.Node
+	newIndexList    []*ast.CreateIndexStmt
+	modifyIndexList []ast.Node
 	dropNodeList    []ast.Node
 }
 
-type constraintMap map[string]*constraintInfo
-type tableMap map[string]*tableInfo
 type schemaMap map[string]*schemaInfo
+type tableMap map[string]*tableInfo
+type constraintMap map[string]*constraintInfo
+type indexMap map[string]*indexInfo
 
 type schemaInfo struct {
 	id           int
 	existsInNew  bool
 	createSchema *ast.CreateSchemaStmt
 	tableMap     tableMap
+	indexMap     indexMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
@@ -49,6 +53,7 @@ func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 		existsInNew:  false,
 		createSchema: createSchema,
 		tableMap:     make(tableMap),
+		indexMap:     make(indexMap),
 	}
 }
 
@@ -79,6 +84,20 @@ func newConstraintInfo(id int, addConstraint *ast.AddConstraintStmt) *constraint
 		id:            id,
 		existsInNew:   false,
 		addConstraint: addConstraint,
+	}
+}
+
+type indexInfo struct {
+	id          int
+	existsInNew bool
+	createIndex *ast.CreateIndexStmt
+}
+
+func newIndexInfo(id int, createIndex *ast.CreateIndexStmt) *indexInfo {
+	return &indexInfo{
+		id:          id,
+		existsInNew: false,
+		createIndex: createIndex,
 	}
 }
 
@@ -128,6 +147,23 @@ func (m schemaMap) getConstraint(schemaName string, tableName string, constraint
 	return table.constraintMap[constraintName]
 }
 
+func (m schemaMap) addIndex(id int, index *ast.CreateIndexStmt) error {
+	schema, exists := m[index.Index.Table.Schema]
+	if !exists {
+		return errors.Errorf("failed to add table: schema %s not found", index.Index.Table.Schema)
+	}
+	schema.indexMap[index.Index.Name] = newIndexInfo(id, index)
+	return nil
+}
+
+func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.indexMap[indexName]
+}
+
 // SchemaDiff computes the schema differences between old and new schema.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	oldNodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, oldStmt)
@@ -141,6 +177,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 
 	oldSchemaMap := make(schemaMap)
 	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
+	oldSchemaMap["public"].existsInNew = true
 	for i, node := range oldNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateSchemaStmt:
@@ -164,6 +201,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				default:
 					return "", errors.Errorf("unsupported alter table item type %T", item)
 				}
+			}
+		case *ast.CreateIndexStmt:
+			if err := oldSchemaMap.addIndex(i, stmt); err != nil {
+				return "", err
 			}
 		}
 	}
@@ -230,6 +271,18 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if len(alterTableStmt.AlterItemList) > 0 {
 				diff.modifyTableList = append(diff.modifyTableList, alterTableStmt)
 			}
+		case *ast.CreateIndexStmt:
+			oldIndex := oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
+			// Add the new index.
+			if oldIndex == nil {
+				diff.newIndexList = append(diff.newIndexList, stmt)
+				continue
+			}
+			oldIndex.existsInNew = true
+			// Modify the index.
+			if err := diff.modifyIndex(oldIndex.createIndex, stmt); err != nil {
+				return "", err
+			}
 		default:
 			return "", errors.Errorf("unsupported statement %+v", stmt)
 		}
@@ -255,9 +308,14 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 	}
 
 	// Drop the remaining old constraints.
-	dropConstraintStms := dropConstraint(oldSchemaMap)
-	for _, dropConstraintStmt := range dropConstraintStms {
+	dropConstraintStmtList := dropConstraint(oldSchemaMap)
+	for _, dropConstraintStmt := range dropConstraintStmtList {
 		diff.dropNodeList = append(diff.dropNodeList, dropConstraintStmt)
+	}
+
+	// Drop the remaining old index.
+	if dropIndexStmt := dropIndex(oldSchemaMap); dropIndexStmt != nil {
+		diff.dropNodeList = append(diff.dropNodeList, dropIndexStmt)
 	}
 
 	return nil
@@ -448,6 +506,24 @@ func (*diffNode) modifyColumn(alterTableStmt *ast.AlterTableStmt, oldColumn *ast
 	return nil
 }
 
+func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.CreateIndexStmt) error {
+	// TODO(rebelice): not use Text(), it only works for pg_dump.
+	if oldIndex.Text() != newIndex.Text() {
+		diff.modifyIndexList = append(diff.modifyIndexList, &ast.DropIndexStmt{
+			IfExists: true,
+			Behavior: ast.DropBehaviorCascade,
+			IndexList: []*ast.IndexDef{
+				{
+					Table: &ast.TableDef{Schema: oldIndex.Index.Table.Schema},
+					Name:  oldIndex.Index.Name,
+				},
+			},
+		})
+		diff.modifyIndexList = append(diff.modifyIndexList, newIndex)
+	}
+	return nil
+}
+
 func getDefault(column *ast.ColumnDef) (string, bool) {
 	for _, constraint := range column.ConstraintList {
 		if constraint.Type == ast.ConstraintTypeDefault {
@@ -499,6 +575,26 @@ func (diff *diffNode) deparse() (string, error) {
 
 	for _, modifyTable := range diff.modifyTableList {
 		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, modifyTable)
+		if err != nil {
+			return "", err
+		}
+		if err := writeStringWithNewLine(&buf, sql); err != nil {
+			return "", err
+		}
+	}
+
+	for _, newIndex := range diff.newIndexList {
+		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, newIndex)
+		if err != nil {
+			return "", err
+		}
+		if err := writeStringWithNewLine(&buf, sql); err != nil {
+			return "", err
+		}
+	}
+
+	for _, modifyIndex := range diff.modifyIndexList {
+		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, modifyIndex)
 		if err != nil {
 			return "", err
 		}
@@ -608,6 +704,42 @@ func dropSchema(m schemaMap) *ast.DropSchemaStmt {
 		IfExists:   true,
 		SchemaList: schemaNameList,
 		Behavior:   ast.DropBehaviorCascade,
+	}
+}
+
+func dropIndex(m schemaMap) *ast.DropIndexStmt {
+	var indexList []*indexInfo
+	for _, schema := range m {
+		if !schema.existsInNew {
+			// dropped by DROP SCHEMA ... CASCADE statements
+			continue
+		}
+		for _, index := range schema.indexMap {
+			if index.existsInNew {
+				// no need to drop
+				continue
+			}
+			indexList = append(indexList, index)
+		}
+	}
+	if len(indexList) == 0 {
+		return nil
+	}
+	sort.Slice(indexList, func(i, j int) bool {
+		return indexList[i].id < indexList[j].id
+	})
+
+	var indexDefList []*ast.IndexDef
+	for _, index := range indexList {
+		indexDefList = append(indexDefList, &ast.IndexDef{
+			Table: &ast.TableDef{Schema: index.createIndex.Index.Table.Schema},
+			Name:  index.createIndex.Index.Name,
+		})
+	}
+	return &ast.DropIndexStmt{
+		IfExists:  true,
+		IndexList: indexDefList,
+		Behavior:  ast.DropBehaviorCascade,
 	}
 }
 
