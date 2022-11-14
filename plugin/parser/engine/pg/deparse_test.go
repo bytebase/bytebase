@@ -66,6 +66,7 @@ func TestDeparse(t *testing.T) {
 		"test_drop_schema_data.yaml",
 		// Index
 		"test_create_index_data.yaml",
+		"test_drop_index_data.yaml",
 	}
 	for _, test := range testFileList {
 		runDeparseTest(t, test, false /* record */)

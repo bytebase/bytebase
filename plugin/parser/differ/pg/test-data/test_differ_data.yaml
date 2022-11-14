@@ -105,3 +105,14 @@
       constraint check_a check(a > 1)
     )
   diff: ""
+- oldSchema: |
+    CREATE INDEX idx1 ON public.t1 USING btree (a, b, (c+1));
+    CREATE INDEX idx2 ON public.t1 USING hash (a);
+  newSchema: |
+    CREATE INDEX idx2 ON public.t1 USING btree (a);
+    CREATE INDEX idx3 ON public.t1 USING btree (a, b);
+  diff: |
+    CREATE INDEX "idx3" ON "public"."t1" USING btree (a, b);
+    DROP INDEX IF EXISTS "public"."idx2" CASCADE;
+    CREATE INDEX "idx2" ON "public"."t1" USING btree (a);
+    DROP INDEX IF EXISTS "public"."idx1" CASCADE;
