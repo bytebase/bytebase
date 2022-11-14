@@ -185,7 +185,8 @@ import {
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { baseDirectoryWebUrl, Issue, Repository, SQLDialect } from "@/types";
+import type { Issue, Repository, SQLDialect, Task, TaskId } from "@/types";
+import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
@@ -233,6 +234,7 @@ export default defineComponent({
       editStatement: statement.value,
       showVCSGuideModal: false,
     });
+    useTempEditState(state);
 
     const editorRef = ref<InstanceType<typeof MonacoEditor>>();
     const overrideSQLDialog = useDialog();
@@ -469,5 +471,82 @@ const useDatabaseAndTableList = () => {
   });
 
   return { databaseList, tableList };
+};
+
+type LocalEditState = Pick<LocalState, "editing" | "editStatement">;
+
+const useTempEditState = (state: LocalState) => {
+  const { create, selectedTask, selectedStatement } = useIssueLogic();
+
+  let stopWatching: (() => void) | null = null;
+
+  const startWatching = () => {
+    const tempEditStateMap = new Map<TaskId, LocalEditState>();
+
+    // The issue page is polling the issue entity, making the reference obj
+    // of `selectedTask` changes every time.
+    // So we need to watch the id instead of the object ref.
+    const selectedTaskId = computed(() => {
+      if (create.value) return UNKNOWN_ID;
+      return (selectedTask.value as Task).id;
+    });
+
+    const beforeTaskIdChange = (id: TaskId) => {
+      // Save the temp edit state before switching task.
+      tempEditStateMap.set(id, {
+        editing: state.editing,
+        editStatement: state.editStatement,
+      });
+    };
+    const afterTaskIdChange = (id: TaskId) => {
+      // Try to restore the saved temp edit state after switching task.
+      const storedState = tempEditStateMap.get(id);
+      if (storedState) {
+        // If found the stored temp edit state, restore it.
+        Object.assign(state, storedState);
+      } else {
+        // Restore to the task's default state otherwise.
+        state.editing = false;
+        state.editStatement = selectedStatement.value;
+      }
+    };
+
+    const stopWatchBeforeChange = watch(
+      selectedTaskId,
+      (_, id) => {
+        beforeTaskIdChange(id);
+      },
+      { flush: "pre" } // Listen to the event BEFORE selectedTaskId changes
+    );
+    const stopWatchAfterChange = watch(
+      selectedTaskId,
+      (id) => {
+        afterTaskIdChange(id);
+      },
+      { flush: "post" } // Listen to the event AFTER selectedTaskId changed
+    );
+
+    return () => {
+      tempEditStateMap.clear();
+      stopWatchBeforeChange();
+      stopWatchAfterChange();
+    };
+  };
+
+  watch(
+    create,
+    () => {
+      if (!create.value) {
+        // If we are opening an existed issue, we should listen and store the
+        // temp editing states.
+        stopWatching = startWatching();
+      } else {
+        // If we are creating an issue, we don't need the temp editing state
+        // feature since all tasks are still in editing mode.
+        stopWatching && stopWatching();
+      }
+    },
+    { immediate: true }
+  );
 };
 </script>

@@ -7,6 +7,7 @@
           <span class="ml-2 text-lg font-medium">{{
             $t("common.feishu")
           }}</span>
+          <heroicons-solid:sparkles class="ml-2 w-5 h-auto text-accent" />
         </div>
         <button
           v-if="!state.feishuSetting"
@@ -35,9 +36,18 @@
           :value="state.feishuSetting.appSecret"
           @input="(e: any) => state.feishuSetting!.appSecret = e.target.value"
         />
+        <div
+          class="!mt-4 !mb-2 w-128 max-w-full flex flex-row justify-start items-center"
+        >
+          <span class="textlabel mr-4">Enable</span>
+          <BBSwitch
+            :value="state.feishuSetting.externalApproval.enabled"
+            @toggle="onFeishuIntegrationEnableToggle"
+          />
+        </div>
         <button
           type="button"
-          class="btn-primary inline-flex justify-center py-2 px-4 mt-2"
+          class="btn-primary inline-flex justify-center py-2 px-4 mt-4"
           @click.prevent="updateFeishuIntegration"
         >
           {{ $t("common.update") }}
@@ -45,21 +55,32 @@
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.im.approval"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { onMounted, reactive } from "vue";
-import { pushNotification, useSettingStore } from "@/store";
+import { featureToRef, pushNotification, useSettingStore } from "@/store";
 import { SettingAppIMValue } from "@/types/setting";
 import { useI18n } from "vue-i18n";
+import { BBSwitch } from "@/bbkit";
 
 interface LocalState {
   feishuSetting?: SettingAppIMValue;
+  showFeatureModal: boolean;
 }
 
 const { t } = useI18n();
-const state = reactive<LocalState>({});
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+});
 const settingStore = useSettingStore();
+const hasIMApprovalFeature = featureToRef("bb.feature.im.approval");
 
 onMounted(() => {
   const setting = settingStore.getSettingByName("bb.app.im");
@@ -71,7 +92,18 @@ onMounted(() => {
   }
 });
 
+const onFeishuIntegrationEnableToggle = (status: boolean) => {
+  if (state.feishuSetting) {
+    state.feishuSetting.externalApproval.enabled = status;
+  }
+};
+
 const createFeishuIntegration = async () => {
+  if (!hasIMApprovalFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+
   state.feishuSetting = {
     imType: "im.feishu",
     appId: "",
@@ -87,6 +119,11 @@ const createFeishuIntegration = async () => {
 };
 
 const updateFeishuIntegration = async () => {
+  if (!hasIMApprovalFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+
   await settingStore.updateSettingByName({
     name: "bb.app.im",
     value: JSON.stringify(state.feishuSetting),

@@ -9,8 +9,7 @@ import type {
   Connection,
   ActivitySQLEditorQueryPayload,
 } from "@/types";
-import { ConnectionTreeState } from "@/types";
-import { UNKNOWN_ID, unknown } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID, unknown } from "@/types";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
@@ -126,9 +125,9 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
           updatedTs: history.updatedTs,
           statement: payload.statement,
           durationNs: payload.durationNs,
-          instanceId: payload.instanceId,
+          instanceId: payload.instanceId || UNKNOWN_ID,
           instanceName: payload.instanceName,
-          databaseId: payload.databaseId,
+          databaseId: payload.databaseId || UNKNOWN_ID,
           databaseName: payload.databaseName,
           error: payload.error,
           createdAt: dayjs(history.createdTs * 1000).format(
@@ -136,7 +135,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
           ),
         };
       });
-
       this.setQueryHistoryList(
         queryHistoryList.sort((a, b) => b.createdTs - a.createdTs)
       );
@@ -146,12 +144,26 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
 });
 
 export const searchConnectionByName = (
+  instanceId: InstanceId,
+  databaseId: DatabaseId,
   instanceName: string,
   databaseName: string
 ): Connection => {
   const connection = emptyConnection();
   const store = useSQLEditorStore();
 
+  if (instanceId !== UNKNOWN_ID) {
+    // If we found instanceId and/or databaseId, use the IDs first.
+    connection.instanceId = instanceId;
+    if (databaseId !== UNKNOWN_ID) {
+      connection.databaseId = databaseId;
+    }
+
+    return connection;
+  }
+
+  // Search the instance and database by name otherwise.
+  // Remain this part for legacy sheet support.
   const rootNodes = store.connectionTree.data;
   for (let i = 0; i < rootNodes.length; i++) {
     const maybeInstanceNode = rootNodes[i];
