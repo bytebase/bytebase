@@ -84,5 +84,12 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
 export const getDefaultSheetPayloadWithSource = (
   sheetSource: SheetSource
 ): SheetPayload => {
+  if (sheetSource === "BYTEBASE") {
+    // As we don't save any data for sheet from UI, return an empty payload.
+    return {};
+  }
+
+  // Shouldn't reach this line.
+  // For those sheet from VCS, we create and patch them in backend.
   return {};
 };
