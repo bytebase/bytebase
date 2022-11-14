@@ -1434,6 +1434,10 @@
         "title": "LGTM check",
         "desc": "Check if the issue has an \"LGTM\" comment."
       },
+      "bb-feature-im-approval": {
+        "title": "IM Approval",
+        "desc": "Approval issue with IM integration."
+      },
       "bb-feature-sql-review": {
         "title": "SQL review policy",
         "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan."
