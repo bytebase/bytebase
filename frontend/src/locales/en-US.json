@@ -1471,8 +1471,8 @@
         "title": "Point-in-Time-Recovery (PITR)",
         "desc": "Restore the database state to a point in time."
       },
-      "bb-feature-sync-schema": {
-        "title": "Synchronize Schema",
+      "bb-feature-sync-schema-all-versions": {
+        "title": "Synchronize schema all versions",
         "desc": "Select any arbitrary migration version from the base database and synchronize it to the target database."
       },
       "bb-feature-read-replica-connection": {
