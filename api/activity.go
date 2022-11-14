@@ -197,10 +197,10 @@ type ActivitySQLEditorQueryPayload struct {
 	// Used by activity table to display info without paying the join cost
 	Statement  string `json:"statement"`
 	DurationNs int64  `json:"durationNs"`
-	InstanceID int    `json:"instanceID"`
+	InstanceID int    `json:"instanceId"`
 	// DeprecatedInstanceName is deprecated and should be removed from future version.
 	DeprecatedInstanceName string           `json:"instanceName"`
-	DatabaseID             int              `json:"databaseID"`
+	DatabaseID             int              `json:"databaseId"`
 	DatabaseName           string           `json:"databaseName"`
 	Error                  string           `json:"error"`
 	AdviceList             []advisor.Advice `json:"adviceList"`
