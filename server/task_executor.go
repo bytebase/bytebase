@@ -166,10 +166,11 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		_, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, server.store, migrationID)
+		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, server.store, migrationID)
 		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
+		generateRollbackSQLChan <- updatedTask
 	}
 
 	return migrationID, schema, nil
@@ -235,6 +236,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	}
 	payload.BinlogFileEnd = binlogInfo.FileName
 	payload.BinlogPosEnd = binlogInfo.Position
+	payload.RollbackTaskState = api.RollbackTaskRunning
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
