@@ -1434,6 +1434,10 @@
         "title": "LGTM 检查",
         "desc": "检查工单是否有 \"LGTM\" 评论。"
       },
+      "bb-feature-im-approval": {
+        "title": "IM 集成",
+        "desc": "通过集成 IM 来批准工单。"
+      },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",
         "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"

@@ -12,6 +12,7 @@ export type FeatureType =
   | "bb.feature.data-source"
   | "bb.feature.dba-workflow"
   | "bb.feature.lgtm"
+  | "bb.feature.im.approval"
   | "bb.feature.multi-tenancy"
   | "bb.feature.online-migration"
   | "bb.feature.schema-drift"
@@ -83,6 +84,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.data-source", [false, false, false]],
   ["bb.feature.dba-workflow", [false, false, true]],
   ["bb.feature.lgtm", [false, false, true]],
+  ["bb.feature.im.approval", [false, false, true]],
   ["bb.feature.multi-tenancy", [false, false, true]],
   ["bb.feature.online-migration", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
