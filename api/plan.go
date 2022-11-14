@@ -285,7 +285,7 @@ var featureMatrix = map[FeatureType]featureConfig{
 	},
 	FeatureSyncSchema: {
 		enabled:    true,
-		planToggle: [3]bool{true, true, true},
+		planToggle: [3]bool{false, false, true},
 	},
 	// Policy Control
 	FeatureApprovalPolicy: {
