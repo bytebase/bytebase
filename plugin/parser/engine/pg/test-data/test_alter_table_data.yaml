@@ -84,3 +84,15 @@
   want: |-
     ALTER TABLE "t"
         ADD CONSTRAINT "check_a" CHECK ((a + b) > c);
+- stmt: |-
+    alter table t
+        add constraint email_pkey primary key(email, id);
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "email_pkey" PRIMARY KEY ("email", "id");
+- stmt: |-
+    alter table t
+        add constraint email_pkey primary key(email) include (email) using index tablespace demo_tablespace;
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "email_pkey" PRIMARY KEY ("email") INCLUDE ("email") USING INDEX TABLESPACE "demo_tablespace";
