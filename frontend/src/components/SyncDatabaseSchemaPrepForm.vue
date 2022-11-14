@@ -226,7 +226,7 @@
 
   <FeatureModal
     v-if="state.showFeatureModal"
-    feature="bb.feature.sync-schema"
+    feature="bb.feature.sync-schema-all-versions"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -313,7 +313,7 @@ const state = reactive<LocalState>({
 });
 
 const hasSyncSchemaFeature = computed(() => {
-  return hasFeature("bb.feature.sync-schema");
+  return hasFeature("bb.feature.sync-schema-all-versions");
 });
 
 const allowSelectProject = computed(() => {
