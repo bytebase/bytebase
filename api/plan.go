@@ -121,8 +121,8 @@ const (
 	// FeatureReadReplicaConnection allows user to set a read replica connection
 	// including host and port to data source.
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
-	// FeatureSyncSchema allows user to sync the base database schema into target database.
-	FeatureSyncSchema FeatureType = "bb.feature.sync-schema"
+	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
+	FeatureSyncSchemaAllVersions FeatureType = "bb.feature.sync-schema-all-versions"
 
 	// Policy Control.
 
@@ -179,8 +179,8 @@ func (e FeatureType) Name() string {
 		return "Point-in-time Recovery"
 	case FeatureReadReplicaConnection:
 		return "Read replica connection"
-	case FeatureSyncSchema:
-		return "Synchronize Schema"
+	case FeatureSyncSchemaAllVersions:
+		return "Synchronize schema all versions"
 	// Policy Control
 	case FeatureApprovalPolicy:
 		return "Approval policy"
@@ -283,9 +283,9 @@ var featureMatrix = map[FeatureType]featureConfig{
 		enabled:    true,
 		planToggle: [3]bool{false, false, true},
 	},
-	FeatureSyncSchema: {
+	FeatureSyncSchemaAllVersions: {
 		enabled:    true,
-		planToggle: [3]bool{true, true, true},
+		planToggle: [3]bool{false, false, true},
 	},
 	// Policy Control
 	FeatureApprovalPolicy: {
