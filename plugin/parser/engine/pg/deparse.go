@@ -397,29 +397,42 @@ func deparseConstraintDef(_ parser.DeparseContext, in *ast.ConstraintDef, buf *s
 		if _, err := buf.WriteString("UNIQUE ("); err != nil {
 			return err
 		}
-		for idx, col := range in.KeyList {
-			if idx >= 1 {
-				if _, err := buf.WriteString(", "); err != nil {
-					return err
-				}
-			}
-			if err := writeSurrounding(buf, col, `"`); err != nil {
+		if err := deparseKeyList(parser.DeparseContext{}, in.KeyList, buf); err != nil {
+			return err
+		}
+
+		if len(in.Including) > 0 {
+			if _, err := buf.WriteString(") INCLUDE ("); err != nil {
 				return err
 			}
+			if err := deparseKeyList(parser.DeparseContext{}, in.Including, buf); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+		if in.IndexTableSpace != "" {
+			if _, err := buf.WriteString(" USING INDEX TABLESPACE "); err != nil {
+				return err
+			}
+			if err := writeSurrounding(buf, in.IndexTableSpace, `"`); err != nil {
+				return err
+			}
+		}
+	case ast.ConstraintTypePrimary:
+		if _, err := buf.WriteString("PRIMARY KEY ("); err != nil {
+			return err
+		}
+		if err := deparseKeyList(parser.DeparseContext{}, in.KeyList, buf); err != nil {
+			return err
 		}
 		if len(in.Including) > 0 {
 			if _, err := buf.WriteString(") INCLUDE ("); err != nil {
 				return err
 			}
-			for idx, col := range in.Including {
-				if idx >= 1 {
-					if _, err := buf.WriteString(", "); err != nil {
-						return err
-					}
-				}
-				if err := writeSurrounding(buf, col, `"`); err != nil {
-					return err
-				}
+			if err := deparseKeyList(parser.DeparseContext{}, in.Including, buf); err != nil {
+				return err
 			}
 		}
 		if _, err := buf.WriteString(")"); err != nil {
@@ -873,6 +886,23 @@ func deparseDropSchema(_ parser.DeparseContext, in *ast.DropSchemaStmt, buf *str
 func deparseDropBehavior(_ parser.DeparseContext, behavior ast.DropBehavior, buf *strings.Builder) error {
 	if behavior == ast.DropBehaviorCascade {
 		if _, err := buf.WriteString(" CASCADE"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deparseKeyList(_ parser.DeparseContext, in []string, buf *strings.Builder) error {
+	if len(in) == 0 {
+		return nil
+	}
+	for idx, key := range in {
+		if idx >= 1 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if err := writeSurrounding(buf, key, `"`); err != nil {
 			return err
 		}
 	}
