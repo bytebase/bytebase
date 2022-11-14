@@ -168,6 +168,7 @@ type TaskDatabaseDataUpdatePayload struct {
 	RollbackTaskState RollbackTaskState `json:"rollbackTaskState,omitempty"`
 	RollbackError     string            `json:"rollbackError,omitempty"`
 	// RollbackStatement is the generated rollback SQL statement for the DML task.
+	// TODO(dragonly): generate on-the-fly if the already generated SQL is too large.
 	RollbackStatement string `json:"rollbackStatement,omitempty"`
 }
 

@@ -51,7 +51,7 @@ func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskRunning},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    fmt.Sprintf("payload->>'rollbackTaskState' = '%s'", api.RollbackTaskRunning),
+		Payload:    fmt.Sprintf("payload->>'rollbackTaskState'='' OR payload->>'rollbackTaskState'='%s'", api.RollbackTaskRunning),
 	}
 	taskList, err := r.server.store.FindTask(ctx, find, true)
 	if err != nil {
@@ -62,7 +62,7 @@ func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context) {
 		if task.Instance.Engine != db.MySQL {
 			continue
 		}
-		r.getRollbackSQL(ctx, task)
+		generateRollbackSQLChan <- task
 	}
 }
 
