@@ -127,7 +127,7 @@ import dayjs from "@/plugins/dayjs";
 import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
 import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
 import {
-  getDefaultSheetPayload,
+  getDefaultSheetPayloadWithSource,
   isDev,
   isSheetWritable,
   sheetSlug,
@@ -338,7 +338,7 @@ const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
           name: sheet.name,
           statement: sheet.statement,
           visibility: "PRIVATE",
-          payload: getDefaultSheetPayload(),
+          payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
         };
         if (sheet.databaseId) {
           sheetCreate.databaseId = sheet.databaseId;
