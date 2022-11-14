@@ -1499,7 +1499,7 @@ func (ctl *controller) listMySheets() ([]*api.Sheet, error) {
 
 // syncSheet syncs sheets with project.
 func (ctl *controller) syncSheet(projectID int) error {
-	_, err := ctl.post(fmt.Sprintf("/sheet/project/%d/sync", projectID), nil)
+	_, err := ctl.post(fmt.Sprintf("/project/%d/sync-sheet", projectID), nil)
 	return err
 }
 
