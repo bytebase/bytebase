@@ -51,8 +51,57 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.DropIndexStmt:
+		if err := deparseDropIndex(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
+}
+
+func deparseDropIndex(context parser.DeparseContext, in *ast.DropIndexStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString("DROP INDEX "); err != nil {
+		return err
+	}
+
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+
+	for i, index := range in.IndexList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+
+		if index.Table != nil && index.Table.Schema != "" {
+			if err := writeSurrounding(buf, index.Table.Schema, `"`); err != nil {
+				return err
+			}
+			if err := buf.WriteByte('.'); err != nil {
+				return err
+			}
+		}
+
+		if err := writeSurrounding(buf, index.Name, `"`); err != nil {
+			return err
+		}
+	}
+
+	if in.Behavior == ast.DropBehaviorCascade {
+		if _, err := buf.WriteString(" CASCADE"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func deparseCreateIndex(context parser.DeparseContext, in *ast.CreateIndexStmt, buf *strings.Builder) error {
