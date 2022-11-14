@@ -96,7 +96,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.read-replica-connection", [false, false, true]],
   // This feature type is specifically means that all schema versions can be selected.
   // Sync schema is free to all plans. But in non-enterprise plan, we only show the
-  // first schema version and it's not selectable.
+  // latest schema version and it's not selectable.
   ["bb.feature.sync-schema-all-versions", [false, false, true]],
   // Policy Control
   ["bb.feature.approval-policy", [false, true, true]],
