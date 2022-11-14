@@ -1,4 +1,4 @@
-import { Principal, Sheet, SheetPayload, TabMode } from "@/types";
+import { Principal, Sheet, SheetPayload, SheetSource } from "@/types";
 import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
@@ -80,8 +80,16 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
   return false;
 };
 
-export const getDefaultSheetPayload = (): SheetPayload => {
-  return {
-    tabMode: TabMode.ReadOnly,
-  };
+// getDefaultSheetPayloadWithSource gets the default payload with sheet source.
+export const getDefaultSheetPayloadWithSource = (
+  sheetSource: SheetSource
+): SheetPayload => {
+  if (sheetSource === "BYTEBASE") {
+    // As we don't save any data for sheet from UI, return an empty payload.
+    return {};
+  }
+
+  // Shouldn't reach this line.
+  // For those sheet from VCS, we create and patch them in backend.
+  return {};
 };

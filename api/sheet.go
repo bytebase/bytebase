@@ -37,6 +37,7 @@ const (
 )
 
 // SheetVCSPayload is the additional data payload of the VCS sheet.
+// The sheet source should be one of SheetFromGitLabSelfHost and SheetFromGitHubCom.
 type SheetVCSPayload struct {
 	FileName     string `json:"fileName"`
 	FilePath     string `json:"filePath"`
