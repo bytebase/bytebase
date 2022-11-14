@@ -64,7 +64,7 @@
                 {{ plan.buttonText }}
               </button>
               <div
-                v-if="subscriptionStore.canTrial && plan.trialDays"
+                v-if="plan.trialDays"
                 class="font-bold text-sm my-2 text-center"
               >
                 {{ $t("subscription.free-trial") }}
@@ -185,10 +185,7 @@
         >
           {{ plan.buttonText }}
         </button>
-        <div
-          v-if="subscriptionStore.canTrial && plan.trialDays"
-          class="font-bold text-sm my-2 text-center"
-        >
+        <div v-if="plan.trialDays" class="font-bold text-sm my-2 text-center">
           {{ $t("subscription.free-trial") }}
         </div>
 
@@ -321,7 +318,7 @@ const getButtonText = (plan: Plan): string => {
 
 const onButtonClick = (plan: Plan) => {
   if (plan.type === PlanType.TEAM) {
-    if (subscriptionStore.canTrial) {
+    if (subscriptionStore.canTrial && !subscriptionStore.isTrialing) {
       emit("on-trial");
       return;
     }
