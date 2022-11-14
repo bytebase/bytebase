@@ -48,9 +48,10 @@
         <button
           type="button"
           class="btn-primary inline-flex justify-center py-2 px-4 mt-4"
+          :disabled="!allowFeishuActionButton"
           @click.prevent="updateFeishuIntegration"
         >
-          {{ $t("common.update") }}
+          {{ feishuActionButtonText }}
         </button>
       </div>
     </div>
@@ -64,13 +65,15 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive } from "vue";
+import { cloneDeep, isEqual } from "lodash-es";
+import { computed, onMounted, reactive } from "vue";
 import { featureToRef, pushNotification, useSettingStore } from "@/store";
 import { SettingAppIMValue } from "@/types/setting";
 import { useI18n } from "vue-i18n";
 import { BBSwitch } from "@/bbkit";
 
 interface LocalState {
+  originFeishuSetting?: SettingAppIMValue;
   feishuSetting?: SettingAppIMValue;
   showFeatureModal: boolean;
 }
@@ -82,12 +85,25 @@ const state = reactive<LocalState>({
 const settingStore = useSettingStore();
 const hasIMApprovalFeature = featureToRef("bb.feature.im.approval");
 
+const feishuActionButtonText = computed(() => {
+  return state.originFeishuSetting === undefined
+    ? t("common.create")
+    : t("common.update");
+});
+
+const allowFeishuActionButton = computed(() => {
+  return !isEqual(state.originFeishuSetting, state.feishuSetting);
+});
+
 onMounted(() => {
   const setting = settingStore.getSettingByName("bb.app.im");
   if (setting) {
-    const appIMValue = JSON.parse(setting.value || "{}") as SettingAppIMValue;
-    if (appIMValue.imType === "im.feishu") {
-      state.feishuSetting = appIMValue;
+    const appFeishuValue = JSON.parse(
+      setting.value || "{}"
+    ) as SettingAppIMValue;
+    if (appFeishuValue.imType === "im.feishu") {
+      state.originFeishuSetting = cloneDeep(appFeishuValue);
+      state.feishuSetting = appFeishuValue;
     }
   }
 });
@@ -98,7 +114,7 @@ const onFeishuIntegrationEnableToggle = (status: boolean) => {
   }
 };
 
-const createFeishuIntegration = async () => {
+const createFeishuIntegration = () => {
   if (!hasIMApprovalFeature.value) {
     state.showFeatureModal = true;
     return;
@@ -109,13 +125,9 @@ const createFeishuIntegration = async () => {
     appId: "",
     appSecret: "",
     externalApproval: {
-      enabled: true,
+      enabled: false,
     },
   };
-  await settingStore.updateSettingByName({
-    name: "bb.app.im",
-    value: JSON.stringify(state.feishuSetting),
-  });
 };
 
 const updateFeishuIntegration = async () => {
@@ -128,6 +140,8 @@ const updateFeishuIntegration = async () => {
     name: "bb.app.im",
     value: JSON.stringify(state.feishuSetting),
   });
+  state.originFeishuSetting = cloneDeep(state.feishuSetting);
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
