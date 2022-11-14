@@ -92,7 +92,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Database management
   ["bb.feature.pitr", [false, true, true]],
   ["bb.feature.read-replica-connection", [false, false, true]],
-  // This feature is specifically means that all schema versions can be selected.
+  // This feature type is specifically means that all schema versions can be selected.
   // In non-enterprise plan, we only show the first schema version.
   ["bb.feature.sync-schema", [false, false, true]],
   // Policy Control
