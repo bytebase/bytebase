@@ -236,7 +236,6 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	}
 	payload.BinlogFileEnd = binlogInfo.FileName
 	payload.BinlogPosEnd = binlogInfo.Position
-	payload.RollbackTaskState = api.RollbackTaskRunning
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {

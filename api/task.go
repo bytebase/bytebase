@@ -132,14 +132,6 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 // TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
 type TaskDatabaseSchemaUpdateGhostCutoverPayload struct{}
 
-type RollbackTaskState string
-
-const (
-	RollbackTaskRunning RollbackTaskState = "RUNNING"
-	RollbackTaskSuccess RollbackTaskState = "SUCCESS"
-	RollbackTaskFail    RollbackTaskState = "FAIL"
-)
-
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
@@ -160,15 +152,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	BinlogFileEnd   string `json:"binlogFileEnd,omitempty"`
 	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
 	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
-	// RollbackTaskState is a state machine
-	// 0. The initial state is "".
-	// 1. When the rollback generation starts, we set it to "RUNNING".
-	// 2. When the rollback generation succeeds, we set it to "SUCCESS".
-	// 4. When the rollback generation fails, we set it to "FAIL", and set the err to RollbackError.
-	RollbackTaskState RollbackTaskState `json:"rollbackTaskState,omitempty"`
-	RollbackError     string            `json:"rollbackError,omitempty"`
+	RollbackError   string `json:"rollbackError,omitempty"`
 	// RollbackStatement is the generated rollback SQL statement for the DML task.
-	// TODO(dragonly): generate on-the-fly if the already generated SQL is too large.
 	RollbackStatement string `json:"rollbackStatement,omitempty"`
 }
 

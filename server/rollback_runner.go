@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -51,7 +50,7 @@ func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskRunning},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    fmt.Sprintf("payload->>'rollbackTaskState'='' OR payload->>'rollbackTaskState'='%s'", api.RollbackTaskRunning),
+		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError'='' AND payload->>'rollbackStatement'=''",
 	}
 	taskList, err := r.server.store.FindTask(ctx, find, true)
 	if err != nil {
@@ -94,10 +93,8 @@ func (r *RollbackRunner) getRollbackSQL(ctx context.Context, task *api.Task) {
 	rollbackSQL, err := r.generateRollbackSQL(ctx, task, payload)
 	if err != nil {
 		log.Error("Failed to generate rollback SQL statement", zap.Error(err))
-		payload.RollbackTaskState = api.RollbackTaskFail
 		payload.RollbackError = err.Error()
 	}
-	payload.RollbackTaskState = api.RollbackTaskSuccess
 	payload.RollbackStatement = rollbackSQL
 
 	payloadBytes, err := json.Marshal(payload)
