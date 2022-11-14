@@ -14,6 +14,7 @@ p, DBA, /project/{projectID}/repository/{repositoryID}/sql-review-ci, POST
 p, DBA, /project/{projectID}/deployment, GET
 p, DBA, /project/{projectID}/deployment, PATCH
 p, DBA, /project/{projectID}/sync-member, POST
+p, DBA, /project/{projectID}/sync-sheet, POST
 p, DBA, /project/{projectID}/member, POST
 p, DBA, /project/{projectID}/member/{memberID}, PATCH
 p, DBA, /project/{projectID}/member/{memberID}, DELETE
@@ -106,7 +107,6 @@ p, DBA, /sheet/{sheetID}, GET
 p, DBA, /sheet/{sheetID}, PATCH
 p, DBA, /sheet/{sheetID}, DELETE
 p, DBA, /sheet/{sheetID}/organizer, PATCH
-p, DBA, /sheet/project/{projectID}/sync, POST
 p, DBA, /debug, GET
 p, DBA, /debug, PATCH
 p, DBA, /debug/log, GET

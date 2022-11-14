@@ -305,7 +305,7 @@ export const useSheetStore = defineStore("sheet", {
       }
     },
     async syncSheetFromVCS(projectId: ProjectId) {
-      await axios.post(`/api/sheet/project/${projectId}/sync`);
+      await axios.post(`/api/project/${projectId}/sync-sheet`);
     },
   },
 });
