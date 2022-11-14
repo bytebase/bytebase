@@ -46,14 +46,14 @@ func enforceWorkspaceDeveloperProjectRouteACL(plan api.PlanType, path string, me
 		}
 		// For /project/xxx subroutes, since all projects are public, we don't enforce ACL.
 	} else {
-		if matches := projectGeneralRouteRegex.FindStringSubmatch(path); matches != nil {
-			projectID, _ = strconv.Atoi(matches[1])
-			permission = api.ProjectPermissionManageGeneral
-			permissionErrMsg = "not have permission to manage the project general setting"
-		} else if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
+		if matches := projectMemberRouteRegex.FindStringSubmatch(path); matches != nil {
 			projectID, _ = strconv.Atoi(matches[1])
 			permission = api.ProjectPermissionManageMember
 			permissionErrMsg = "not have permission to manage the project member"
+		} else if matches := projectGeneralRouteRegex.FindStringSubmatch(path); matches != nil {
+			projectID, _ = strconv.Atoi(matches[1])
+			permission = api.ProjectPermissionManageGeneral
+			permissionErrMsg = "not have permission to manage the project general setting"
 		} else if matches := projectSyncSheetRouteRegex.FindStringSubmatch(path); matches != nil {
 			projectID, _ = strconv.Atoi(matches[1])
 			permission = api.ProjectPermissionSyncSheet
