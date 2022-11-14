@@ -7,4 +7,6 @@ type DropIndexStmt struct {
 	// Here use IndexDef because the drop index statement needs the schema name for PostgreSQL.
 	// If the drop index statement doesn't contain schema name, the Table of this index is nil.
 	IndexList []*IndexDef
+	IfExists  bool
+	Behavior  DropBehavior
 }
