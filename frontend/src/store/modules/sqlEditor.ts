@@ -126,8 +126,8 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
           statement: payload.statement,
           durationNs: payload.durationNs,
           instanceId: payload.instanceId || UNKNOWN_ID,
-          databaseId: payload.databaseId || UNKNOWN_ID,
           instanceName: payload.instanceName,
+          databaseId: payload.databaseId || UNKNOWN_ID,
           databaseName: payload.databaseName,
           error: payload.error,
           createdAt: dayjs(history.createdTs * 1000).format(
