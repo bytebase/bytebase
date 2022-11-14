@@ -37,34 +37,34 @@ type tableMap map[string]*tableInfo
 type schemaMap map[string]*schemaInfo
 
 type schemaInfo struct {
-	id            int
-	existsInNew   bool
-	createSchema  *ast.CreateSchemaStmt
-	tableMap      tableMap
-	constraintMap constraintMap
+	id           int
+	existsInNew  bool
+	createSchema *ast.CreateSchemaStmt
+	tableMap     tableMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 	return &schemaInfo{
-		id:            id,
-		existsInNew:   false,
-		createSchema:  createSchema,
-		tableMap:      make(tableMap),
-		constraintMap: make(constraintMap),
+		id:           id,
+		existsInNew:  false,
+		createSchema: createSchema,
+		tableMap:     make(tableMap),
 	}
 }
 
 type tableInfo struct {
-	id          int
-	existsInNew bool
-	createTable *ast.CreateTableStmt
+	id            int
+	existsInNew   bool
+	createTable   *ast.CreateTableStmt
+	constraintMap constraintMap
 }
 
 func newTableInfo(id int, createTable *ast.CreateTableStmt) *tableInfo {
 	return &tableInfo{
-		id:          id,
-		existsInNew: false,
-		createTable: createTable,
+		id:            id,
+		existsInNew:   false,
+		createTable:   createTable,
+		constraintMap: make(constraintMap),
 	}
 }
 
@@ -104,25 +104,28 @@ func (m schemaMap) addConstraint(id int, addConstraint *ast.AddConstraintStmt) e
 	if !exists {
 		return errors.Errorf("failed to add constraint: schema %s not found", addConstraint.Table.Schema)
 	}
-	if _, exists = schema.tableMap[addConstraint.Table.Name]; !exists {
-		if !exists {
-			return errors.Errorf("failed to add constraint: table %s not found", addConstraint.Table.Name)
-		}
+	table, exists := schema.tableMap[addConstraint.Table.Name]
+	if !exists {
+		return errors.Errorf("failed to add constraint: table %s not found", addConstraint.Table.Name)
 	}
 	constraintName := addConstraint.Constraint.Name
 	if constraintName == "" {
 		return errors.Errorf("failed to add constraint: constraint name is empty")
 	}
-	schema.constraintMap[constraintName] = newConstraintInfo(id, addConstraint)
+	table.constraintMap[constraintName] = newConstraintInfo(id, addConstraint)
 	return nil
 }
 
-func (m schemaMap) getConstraint(schemaName string, constraintName string) *constraintInfo {
+func (m schemaMap) getConstraint(schemaName string, tableName string, constraintName string) *constraintInfo {
 	schema, exists := m[schemaName]
 	if !exists {
 		return nil
 	}
-	return schema.constraintMap[constraintName]
+	table, exists := schema.tableMap[tableName]
+	if !exists {
+		return nil
+	}
+	return table.constraintMap[constraintName]
 }
 
 // SchemaDiff computes the schema differences between old and new schema.
@@ -196,7 +199,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
 					case ast.ConstraintTypeUnique:
-						oldConstraint := oldSchemaMap.getConstraint(item.Table.Schema, item.Constraint.Name)
+						oldConstraint := oldSchemaMap.getConstraint(item.Table.Schema, item.Table.Name, item.Constraint.Name)
 						if oldConstraint == nil {
 							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, item)
 							continue
@@ -520,31 +523,30 @@ func (diff *diffNode) deparse() (string, error) {
 func dropConstraint(m schemaMap) []*ast.AlterTableStmt {
 	var dropConstraintList []*ast.AlterTableStmt
 	for schemaName, schemaInfo := range m {
-		constraintMap := make(map[string][]*constraintInfo)
-		for _, constraintInfo := range schemaInfo.constraintMap {
-			if !constraintInfo.existsInNew {
-				constraintMap[constraintInfo.addConstraint.Table.Name] = append(constraintMap[constraintInfo.addConstraint.Table.Name], constraintInfo)
+		for tableName, tableInfo := range schemaInfo.tableMap {
+			var constraintInfoList []*constraintInfo
+			for _, constraintInfo := range tableInfo.constraintMap {
+				if !constraintInfo.existsInNew {
+					constraintInfoList = append(constraintInfoList, constraintInfo)
+				}
 			}
-		}
-		for tableName, constraintList := range constraintMap {
-			sort.Slice(constraintList, func(i, j int) bool {
-				return constraintList[i].id < constraintList[j].id
+			sort.Slice(constraintInfoList, func(i, j int) bool {
+				return constraintInfoList[i].id < constraintInfoList[j].id
 			})
 			var alterItemList []ast.Node
-			for _, constraintInfo := range constraintList {
+			for _, constraintInfo := range constraintInfoList {
 				alterItemList = append(alterItemList, &ast.DropConstraintStmt{
 					Table:          &ast.TableDef{Schema: schemaName, Name: tableName},
 					ConstraintName: constraintInfo.addConstraint.Constraint.Name,
 					IfExists:       true,
 				})
 			}
-			dropConstraintList = append(dropConstraintList, &ast.AlterTableStmt{
-				Table: &ast.TableDef{
-					Schema: schemaName,
-					Name:   tableName,
-				},
-				AlterItemList: alterItemList,
-			})
+			if len(alterItemList) > 0 {
+				dropConstraintList = append(dropConstraintList, &ast.AlterTableStmt{
+					Table:         &ast.TableDef{Schema: schemaName, Name: tableName},
+					AlterItemList: alterItemList,
+				})
+			}
 		}
 	}
 	return dropConstraintList
