@@ -7,7 +7,6 @@ import {
   ProjectId,
   RowStatus,
   PrincipalId,
-  TabMode,
 } from ".";
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
@@ -25,11 +24,10 @@ interface SheetVCSPayload {
   lastSyncTs: number;
 }
 
-export interface SheetTabPayload {
-  tabMode: TabMode;
-}
+// eslint-disable-next-line @typescript-eslint/ban-types
+type SheetEmptyPayload = {};
 
-export type SheetPayload = SheetVCSPayload | SheetTabPayload;
+export type SheetPayload = SheetVCSPayload | SheetEmptyPayload;
 
 export interface Sheet {
   id: SheetId;

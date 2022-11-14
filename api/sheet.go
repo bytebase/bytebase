@@ -47,12 +47,6 @@ type SheetVCSPayload struct {
 	LastSyncTs   int64  `json:"lastSyncTs"`
 }
 
-// SheetTabPayload is the API message payloads for UI tab context in SQL editor.
-// The sheet source should be SheetFromBytebase.
-type SheetTabPayload struct {
-	TabMode int `json:"tabMode"`
-}
-
 // Sheet is the API message for a sheet.
 type Sheet struct {
 	ID int `jsonapi:"primary,sheet"`
