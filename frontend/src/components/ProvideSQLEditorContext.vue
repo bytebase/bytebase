@@ -113,7 +113,7 @@ const prepareSheet = async () => {
       // If a sheet is open in a tab but it returns 404 NOT_FOUND
       // that means the sheet has been deleted somewhere else.
       // We need to turn the sheet to an unsaved tab.
-      openingSheetTab.sheetId = UNKNOWN_ID;
+      openingSheetTab.sheetId = undefined;
       openingSheetTab.isSaved = false;
     }
     return false;
@@ -242,7 +242,7 @@ const syncURLWithConnection = () => {
         } else {
           // A sheet is not found, fallback to an unsaved tab.
           tabStore.updateCurrentTab({
-            sheetId: UNKNOWN_ID,
+            sheetId: undefined,
             isSaved: false,
           });
         }
