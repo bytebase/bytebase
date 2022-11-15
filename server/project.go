@@ -269,6 +269,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
+		// Make sure the branch exists in the repo.
+		if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				AccessToken:  repositoryCreate.AccessToken,
+				RefreshToken: repositoryCreate.RefreshToken,
+				Refresher:    nil,
+			},
+			vcs.InstanceURL, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); common.ErrorCode(err) == common.NotFound {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %s not found in repository %d.", repositoryCreate.BranchFilter, repositoryCreate.VCSID)).SetInternal(err)
+		}
+
 		// For a particular VCS repo, all Bytebase projects share the same webhook.
 		repositories, err := s.store.FindRepository(ctx, &api.RepositoryFind{
 			WebURL: &repositoryCreate.WebURL,
@@ -478,6 +491,27 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if strings.Contains(newBranchFilter, "*") && newSchemaPathTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
+		}
+
+		// Make sure the branch exists in the repo.
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repo.VCSID)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
+		}
+
+		if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    nil,
+			},
+			vcs.InstanceURL, repo.ExternalID, newBranchFilter); common.ErrorCode(err) == common.NotFound {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %s not found in repository %d.", newBranchFilter, repo.VCSID)).SetInternal(err)
 		}
 
 		// We need to check the FilePathTemplate in create repository request.
