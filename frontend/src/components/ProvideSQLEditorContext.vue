@@ -100,10 +100,22 @@ const prepareSheet = async () => {
   if (Number.isNaN(sheetId)) {
     return false;
   }
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheetId === sheetId
+  );
+
   sqlEditorStore.isFetchingSheet = true;
   const sheet = await sheetStore.getOrFetchSheetById(sheetId);
   sqlEditorStore.isFetchingSheet = false;
+
   if (sheet.id === UNKNOWN_ID) {
+    if (openingSheetTab) {
+      // If a sheet is open in a tab but it returns 404 NOT_FOUND
+      // that means the sheet has been deleted somewhere else.
+      // We need to turn the sheet to an unsaved tab.
+      openingSheetTab.sheetId = UNKNOWN_ID;
+      openingSheetTab.isSaved = false;
+    }
     return false;
   }
   if (!isSheetReadable(sheet, currentUser.value)) {
@@ -114,10 +126,6 @@ const prepareSheet = async () => {
     });
     return false;
   }
-
-  const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetId === sheet.id
-  );
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
@@ -197,16 +205,19 @@ const setConnectionFromQuery = async () => {
   // 3. disconnected
 
   if (await prepareSheet()) {
+    console.log("1");
     return;
   }
 
   if (await prepareConnectionSlug()) {
+    console.log("2");
     return;
   }
 
   // Keep disconnected otherwise
   // We don't need to `selectOrAddTempTab` here since we already have the
   // default tab.
+  console.log("3");
 };
 
 // Keep the URL synced with connection
