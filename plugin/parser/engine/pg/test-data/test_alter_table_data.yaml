@@ -84,6 +84,22 @@
   want: |-
     ALTER TABLE "t"
         ADD CONSTRAINT "check_a" CHECK ((a + b) > c);
+- stmt: alter table t add constraint fk_a foreign key (a, b) references t1 (b, c)
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "fk_a" FOREIGN KEY ("a", "b") REFERENCES "t1" ("b", "c");
+- stmt: alter table t add constraint fk_a foreign key (a, b) references t1 (b, c) match simple on delete no action on update no action
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "fk_a" FOREIGN KEY ("a", "b") REFERENCES "t1" ("b", "c");
+- stmt: alter table t add constraint fk_a foreign key (a, b) references t1 (b, c) match full on delete set null on update restrict
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "fk_a" FOREIGN KEY ("a", "b") REFERENCES "t1" ("b", "c") MATCH FULL ON DELETE SET NULL ON UPDATE RESTRICT;
+- stmt: alter table t add constraint fk_a foreign key (a, b) references t1 (b, c) match full on delete set default on update cascade
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "fk_a" FOREIGN KEY ("a", "b") REFERENCES "t1" ("b", "c") MATCH FULL ON DELETE SET DEFAULT ON UPDATE CASCADE;
 - stmt: |-
     alter table t
         add constraint email_pkey primary key(email, id);
