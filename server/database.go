@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/edit"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -788,6 +791,44 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
+	g.POST("/database/:databaseID/edit", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{
+			ID: &databaseID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+		}
+		databaseEdit := &api.DatabaseEdit{}
+		if err := json.Unmarshal(body, databaseEdit); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed post database edit request").SetInternal(err)
+		}
+
+		engineType := parser.EngineType(database.Instance.Engine)
+		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
+		}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+		if _, err := c.Response().Write([]byte(statement)); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write DDL statement response for database %v", databaseID)).SetInternal(err)
+		}
 		return nil
 	})
 }
