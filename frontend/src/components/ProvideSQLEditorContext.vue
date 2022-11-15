@@ -205,19 +205,16 @@ const setConnectionFromQuery = async () => {
   // 3. disconnected
 
   if (await prepareSheet()) {
-    console.log("1");
     return;
   }
 
   if (await prepareConnectionSlug()) {
-    console.log("2");
     return;
   }
 
   // Keep disconnected otherwise
   // We don't need to `selectOrAddTempTab` here since we already have the
   // default tab.
-  console.log("3");
 };
 
 // Keep the URL synced with connection
@@ -242,12 +239,28 @@ const syncURLWithConnection = () => {
               sheetSlug: makeSheetSlug(sheet),
             },
           });
-          return;
+        } else {
+          // A sheet is not found, fallback to an unsaved tab.
+          tabStore.updateCurrentTab({
+            sheetId: UNKNOWN_ID,
+            isSaved: false,
+          });
         }
+        return;
       }
       if (instanceId !== UNKNOWN_ID) {
         const instance = instanceStore.getInstanceById(instanceId);
         const database = databaseStore.getDatabaseById(databaseId); // might be <<Unknown database>> here
+        // Sometimes the instance and/or the database might be <<Unknown>> since
+        // they might be deleted somewhere else during the life of the page.
+        // So we need to sync the connection values for cleaning up to prevent
+        // exceptions.
+        tabStore.updateCurrentTab({
+          connection: {
+            instanceId: instance.id,
+            databaseId: database.id,
+          },
+        });
         router.replace({
           name: "sql-editor.detail",
           params: {
