@@ -258,6 +258,7 @@ type TaskFind struct {
 	// Payload contains JSONB expressions
 	// Ref: https://www.postgresql.org/docs/current/functions-json.html
 	Payload string
+	Limit   int
 }
 
 func (find *TaskFind) String() string {

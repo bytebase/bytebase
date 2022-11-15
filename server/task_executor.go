@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -170,7 +171,12 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
-		generateRollbackSQLChan <- updatedTask
+		// If the channel is full, the task is dropped, but the rollback SQL runner will periodically retry.
+		select {
+		case generateRollbackSQLChan <- updatedTask:
+		default:
+			atomic.StoreInt32(&hasMissedRollbackSQLTask, 1)
+		}
 	}
 
 	return migrationID, schema, nil
