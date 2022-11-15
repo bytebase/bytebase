@@ -113,7 +113,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { hasWorkspacePermission } from "../utils";
+import { hasWorkspacePermission, isDev } from "../utils";
 import { useCurrentUser, useRouterStore } from "@/store";
 
 const routerStore = useRouterStore();
@@ -136,9 +136,11 @@ const showProjectItem = computed((): boolean => {
 });
 
 const showIMIntegrationItem = computed((): boolean => {
-  return hasWorkspacePermission(
-    "bb.permission.workspace.manage-im-integration",
-    currentUser.value.role
+  return (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-im-integration",
+      currentUser.value.role
+    ) && isDev()
   );
 });
 
