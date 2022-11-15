@@ -84,7 +84,7 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 
 // GetSetting gets an instance of Setting.
 func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Setting, error) {
-	// TODO(p0ny: re-enable it for release.
+	// TODO(p0ny): re-enable it for release.
 	if *find.Name == api.SettingAppIM && s.db.mode == common.ReleaseModeProd {
 		return nil, nil
 	}
