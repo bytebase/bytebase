@@ -145,8 +145,8 @@ github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dR
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651 h1:NpoTuRY6Ckj37zTlEax/UTfvHCOdanI5/5dVCarOD18=
 github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651/go.mod h1:/HsnX0+34LXVz3MxtZoW15GiwEOXz/PrEhutjb3icfE=
-github.com/bytebase/pg_query_go/v2 v2.0.0-20221102094723-0d12de86f87c h1:ySQRx63mU0OzCJ30nPFQf5BvbHCqvpCW4gizDLgN87I=
-github.com/bytebase/pg_query_go/v2 v2.0.0-20221102094723-0d12de86f87c/go.mod h1:XAxmVqz1tEGqizcQ3YSdN90vCOHBWjJi8URL1er5+cA=
+github.com/bytebase/pg_query_go/v2 v2.0.0-20221115090145-10eaaf3c22b6 h1:cdcvc3OYUFLylc9EKFnexiRixHryry5MG7d4jqsxBIA=
+github.com/bytebase/pg_query_go/v2 v2.0.0-20221115090145-10eaaf3c22b6/go.mod h1:XAxmVqz1tEGqizcQ3YSdN90vCOHBWjJi8URL1er5+cA=
 github.com/bytebase/tidb v0.0.0-20221028035959-5d3b71eadf24 h1:XR25hLtR8TtpW/4mgP7EcOlzi8ewNY5EVan97WzDQxc=
 github.com/bytebase/tidb v0.0.0-20221028035959-5d3b71eadf24/go.mod h1:xrVXE+0V54QRGgrD9o+tuZmBDDx8vJpQgrPtRQvodWo=
 github.com/bytebase/tidb/parser v0.0.0-20221028035959-5d3b71eadf24 h1:DZPxIt2aZJ6L/gh8tH9jspTTIufBt7Wvgae1T7TmXAg=
