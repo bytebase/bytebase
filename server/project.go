@@ -107,7 +107,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			for _, project := range projectList {
 				if api.HasActiveProjectMembership(principalID, project) {
 					activeProjectList = append(activeProjectList, project)
-					break
 				}
 			}
 		} else {
