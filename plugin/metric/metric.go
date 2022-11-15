@@ -8,7 +8,7 @@ type Name string
 type Metric struct {
 	Name   Name
 	Value  int
-	Labels map[string]string
+	Labels map[string]interface{}
 }
 
 // Identifier is the identifier for metric.
