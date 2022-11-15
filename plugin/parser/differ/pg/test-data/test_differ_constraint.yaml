@@ -109,7 +109,7 @@
     ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
   diff: |
     ALTER TABLE "public"."circles"
-        ADD CONSTRAINT IF EXISTS "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+        ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
 - oldSchema: |
     CREATE TABLE public.circles(a circle, b circle, c integer);
     ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&) WHERE (c > 25);
@@ -119,4 +119,4 @@
   diff: |
     ALTER TABLE "public"."circles"
         DROP CONSTRAINT IF EXISTS "circles_a_b_excl",
-        ADD CONSTRAINT IF EXISTS "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+        ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
