@@ -65,6 +65,12 @@ type ConstraintDef struct {
 	//   1. CHECK constraint
 	//   2. DEFAULT constraint
 	Expression ExpressionNode
+	// WhereClause is the where clause for the EXCLUDE constraint.
+	WhereClause string
+	// Exclusions is the list of exclusion elements for the EXCLUDE constraint.
+	Exclusions string
+	// AccessMethod is the access method for the EXCLUDE constraint.
+	AccessMethod IndexMethodType
 	// https://www.postgresql.org/docs/14/sql-altertable.html
 	Deferrable      bool
 	Initdeferred    bool

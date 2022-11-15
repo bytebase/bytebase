@@ -60,7 +60,6 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
 					}
-
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropColumn)
 				case pgquery.AlterTableType_AT_AddConstraint:
 					def, ok := alterCmd.Def.Node.(*pgquery.Node_Constraint)
@@ -950,6 +949,25 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 		expression.SetText(text)
 		cons.Expression = expression
+	case ast.ConstraintTypeExclusion:
+		if len(in.Constraint.Exclusions) >= 1 {
+			exclusion, err := pgquery.DeparseNodes(pgquery.DeparseTypeExclusion, in.Constraint.Exclusions)
+			if err != nil {
+				return nil, err
+			}
+			cons.Exclusions = exclusion
+		}
+		var err error
+		if cons.AccessMethod, err = convertMethodType(in.Constraint.AccessMethod); err != nil {
+			return nil, err
+		}
+		if in.Constraint.WhereClause != nil {
+			whereClause, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, in.Constraint.WhereClause)
+			if err != nil {
+				return nil, err
+			}
+			cons.WhereClause = whereClause
+		}
 	}
 
 	return cons, nil
