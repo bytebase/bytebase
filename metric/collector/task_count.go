@@ -35,7 +35,7 @@ func (c *taskCountCollector) Collect(ctx context.Context) ([]*metric.Metric, err
 		res = append(res, &metric.Metric{
 			Name:  metricAPI.TaskCountMetricName,
 			Value: taskCountMetric.Count,
-			Labels: map[string]string{
+			Labels: map[string]interface{}{
 				"type":   string(taskCountMetric.Type),
 				"status": string(taskCountMetric.Status),
 			},
