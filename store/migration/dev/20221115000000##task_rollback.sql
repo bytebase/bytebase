@@ -1,0 +1,1 @@
+ALTER TABLE task ADD rollback_by INTEGER NOT NULL DEFAULT 0;
