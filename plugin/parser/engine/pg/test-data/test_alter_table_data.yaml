@@ -112,3 +112,15 @@
   want: |-
     ALTER TABLE "t"
         ADD CONSTRAINT "email_pkey" PRIMARY KEY ("email") INCLUDE ("email") USING INDEX TABLESPACE "demo_tablespace";
+- stmt: |-
+    alter table t
+        add constraint circles_c_excl exclude using gist (c WITH &&);
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "circles_c_excl" EXCLUDE USING gist (c WITH &&);
+- stmt: |-
+    alter table t
+        add constraint circles_c_excl exclude using gist (c WITH &&, d WITH &&) WHERE (a > 0 AND b < 10);
+  want: |-
+    ALTER TABLE "t"
+        ADD CONSTRAINT "circles_c_excl" EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0 AND b < 10);

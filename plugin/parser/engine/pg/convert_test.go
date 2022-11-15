@@ -1333,6 +1333,38 @@ func TestPGAddConstraintStmt(t *testing.T) {
 				},
 			},
 		},
+		{
+			stmt: "ALTER TABLE ONLY circles ADD CONSTRAINT circles_c_excl EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0);",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "circles",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "circles",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:         ast.ConstraintTypeExclusion,
+								Name:         "circles_c_excl",
+								Exclusions:   "c WITH &&, d WITH &&",
+								AccessMethod: ast.IndexMethodTypeGiST,
+								WhereClause:  "a > 0",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE ONLY circles ADD CONSTRAINT circles_c_excl EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0);",
+					LastLine: 1,
+				},
+			},
+		},
 	}
 
 	runTests(t, tests)

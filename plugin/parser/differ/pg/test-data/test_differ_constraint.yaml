@@ -94,3 +94,29 @@
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT IF EXISTS "order_details_pk",
         ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("id", "order_id");
+- oldSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+  newSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+  diff: |
+    ALTER TABLE "public"."circles"
+        DROP CONSTRAINT IF EXISTS "circles_a_b_excl";
+- oldSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+  newSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+  diff: |
+    ALTER TABLE "public"."circles"
+        ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+- oldSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&) WHERE (c > 25);
+  newSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+  diff: |
+    ALTER TABLE "public"."circles"
+        DROP CONSTRAINT IF EXISTS "circles_a_b_excl",
+        ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
