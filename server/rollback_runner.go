@@ -27,6 +27,7 @@ func NewRollbackRunner(server *Server) *RollbackRunner {
 
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
+	// TODO(dragonly): refactor getAdminDatabaseDriver() and remove the dependency on server.
 	server *Server
 }
 
