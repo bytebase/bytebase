@@ -167,7 +167,7 @@ export const useTabStore = defineStore("tab", () => {
     // Fetch opening sheets if needed
     const sheetStore = useSheetStore();
     tabList.value.forEach((tab) => {
-      if (tab.sheetId) {
+      if (tab.sheetId && tab.sheetId !== UNKNOWN_ID) {
         sheetStore.getOrFetchSheetById(tab.sheetId);
       }
     });
