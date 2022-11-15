@@ -921,6 +921,17 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			Table: convertRangeVarToTableName(in.Constraint.Pktable, ast.TableTypeBaseTable),
 		}
 
+		var err error
+		if cons.Foreign.MatchType, err = convertForeignMatchType(in.Constraint.FkMatchtype); err != nil {
+			return nil, err
+		}
+		if cons.Foreign.OnUpdate, err = convertReferentialAction(in.Constraint.FkUpdAction); err != nil {
+			return nil, err
+		}
+		if cons.Foreign.OnDelete, err = convertReferentialAction(in.Constraint.FkDelAction); err != nil {
+			return nil, err
+		}
+
 		for _, item := range in.Constraint.PkAttrs {
 			name, ok := item.Node.(*pgquery.Node_String_)
 			if !ok {
@@ -971,6 +982,36 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 	}
 
 	return cons, nil
+}
+
+func convertForeignMatchType(tp string) (ast.ForeignMatchType, error) {
+	switch tp {
+	case "s":
+		return ast.ForeignMatchTypeSimple, nil
+	case "f":
+		return ast.ForeignMatchTypeFull, nil
+	case "p":
+		return ast.ForeignMatchTypePartial, nil
+	default:
+		return ast.ForeignMatchTypeSimple, parser.NewConvertErrorf("unsupported foreign match type: %s", tp)
+	}
+}
+
+func convertReferentialAction(action string) (*ast.ReferentialActionDef, error) {
+	switch action {
+	case "a":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction}, nil
+	case "r":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeRestrict}, nil
+	case "c":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeCascade}, nil
+	case "n":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetNull}, nil
+	case "d":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetDefault}, nil
+	default:
+		return nil, parser.NewConvertErrorf("unsupported referential action: %s", action)
+	}
 }
 
 func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.ConstraintType {

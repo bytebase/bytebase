@@ -80,35 +80,45 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       instanceId: InstanceId,
       databaseId: DatabaseId
     ): Promise<Connection> {
-      await Promise.all([
-        useDatabaseStore().getOrFetchDatabaseById(databaseId),
-        useInstanceStore().getOrFetchInstanceById(instanceId),
-        useTableStore().getOrFetchTableListByDatabaseId(databaseId),
-      ]);
+      try {
+        await Promise.all([
+          useDatabaseStore().getOrFetchDatabaseById(databaseId),
+          useInstanceStore().getOrFetchInstanceById(instanceId),
+          useTableStore().getOrFetchTableListByDatabaseId(databaseId),
+        ]);
 
-      return {
-        instanceId,
-        databaseId,
-      };
+        return {
+          instanceId,
+          databaseId,
+        };
+      } catch {
+        // Fallback to disconnected if error occurs such as 404.
+        return { instanceId: UNKNOWN_ID, databaseId: UNKNOWN_ID };
+      }
     },
     async fetchConnectionByInstanceId(
       instanceId: InstanceId
     ): Promise<Connection> {
-      const [databaseList] = await Promise.all([
-        useDatabaseStore().getDatabaseListByInstanceId(instanceId),
-        useInstanceStore().getOrFetchInstanceById(instanceId),
-      ]);
-      const tableStore = useTableStore();
-      await Promise.all(
-        databaseList.map((db) =>
-          tableStore.getOrFetchTableListByDatabaseId(db.id)
-        )
-      );
+      try {
+        const [databaseList] = await Promise.all([
+          useDatabaseStore().getDatabaseListByInstanceId(instanceId),
+          useInstanceStore().getOrFetchInstanceById(instanceId),
+        ]);
+        const tableStore = useTableStore();
+        await Promise.all(
+          databaseList.map((db) =>
+            tableStore.getOrFetchTableListByDatabaseId(db.id)
+          )
+        );
 
-      return {
-        instanceId,
-        databaseId: UNKNOWN_ID,
-      };
+        return {
+          instanceId,
+          databaseId: UNKNOWN_ID,
+        };
+      } catch {
+        // Fallback to disconnected if error occurs such as 404.
+        return { instanceId: UNKNOWN_ID, databaseId: UNKNOWN_ID };
+      }
     },
     async fetchQueryHistoryList() {
       this.setIsFetchingQueryHistory(true);
