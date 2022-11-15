@@ -7,6 +7,7 @@
 # ./staging.sh
 # ./staging.sh https://example.com
 # ./staging.sh https://example.com:8080
+# ./staging.sh https://staging.bytebase.com postgres://user:secret@postgres.example.com/bytebase
 
 # If no parameter is passed, use https://staging.bytebase.com as host and 443 as port by default
 ONLINE_DEMO_EXTERNAL_URL='https://staging.bytebase.com'
@@ -23,6 +24,11 @@ if [ $1 ]; then
     fi
 fi
 
-echo "Starting Bytebase in demo mode on port ${ONLINE_DEMO_PORT}, visiting from ${ONLINE_DEMO_EXTERNAL_URL}..."
+PG=''
+if [ $2 ]; then
+    PG="--pg $2"
+fi
 
-bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} --demo --data /var/opt/bytebase --debug
+echo "Starting Bytebase in demo mode on port ${ONLINE_DEMO_PORT}, visiting from ${ONLINE_DEMO_EXTERNAL_URL} ..."
+
+bytebase --port ${ONLINE_DEMO_PORT} --external-url ${ONLINE_DEMO_EXTERNAL_URL} ${PG} --data /var/opt/bytebase --demo --debug
