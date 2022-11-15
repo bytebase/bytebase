@@ -42,7 +42,7 @@
             :mode="'USER'"
             :environment-id="state.baseSchemaInfo.environmentId"
             :project-id="state.projectId"
-            :engine-type="state.engineType"
+            :engine-type-list="allowedEngineTypeList"
             :sync-status="'OK'"
             :customize-item="true"
             @select-database-id="handleBaseDatabaseSelect"
@@ -112,7 +112,7 @@
             :mode="'USER'"
             :environment-id="state.targetDatabaseInfo.environmentId"
             :project-id="state.projectId"
-            :engine-type="state.engineType"
+            :engine-type-list="engineTypeList"
             :sync-status="'OK'"
             :customize-item="true"
             @select-database-id="handleTargetDatabaseSelect"
@@ -226,7 +226,7 @@
 
   <FeatureModal
     v-if="state.showFeatureModal"
-    feature="bb.feature.sync-schema"
+    feature="bb.feature.sync-schema-all-versions"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -234,7 +234,7 @@
 <script lang="ts" setup>
 import axios from "axios";
 import dayjs from "dayjs";
-import { head } from "lodash-es";
+import { head, isUndefined } from "lodash-es";
 import { computed, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { useRouter } from "vue-router";
@@ -260,6 +260,7 @@ import EnvironmentSelect from "./EnvironmentSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import MonacoEditor from "./MonacoEditor/MonacoEditor.vue";
 import ProjectSelect from "./ProjectSelect.vue";
+import { isDev } from "@/utils";
 
 type LocalState = {
   projectId?: ProjectId;
@@ -271,7 +272,6 @@ type LocalState = {
   targetDatabaseInfo: {
     environmentId?: EnvironmentId;
     databaseId?: DatabaseId;
-    hasDrift?: boolean;
     currentSchema?: string;
   };
   engineType?: EngineType;
@@ -304,20 +304,11 @@ useEventListener(window, "keydown", (e) => {
 
 const state = reactive<LocalState>({
   projectId: props.projectId,
-  engineType: "MYSQL",
   baseSchemaInfo: {},
   targetDatabaseInfo: {},
   recommandStatement: "",
   editStatement: "",
   showFeatureModal: false,
-});
-
-const hasSyncSchemaFeature = computed(() => {
-  return hasFeature("bb.feature.sync-schema");
-});
-
-const allowSelectProject = computed(() => {
-  return props.projectId === undefined;
 });
 
 const isValidId = (id: any) => {
@@ -327,9 +318,30 @@ const isValidId = (id: any) => {
   return true;
 };
 
+const allowedEngineTypeList: EngineType[] = isDev()
+  ? ["MYSQL", "POSTGRES"]
+  : ["MYSQL"];
+
+const hasSyncSchemaFeature = computed(() => {
+  return hasFeature("bb.feature.sync-schema-all-versions");
+});
+
+const allowSelectProject = computed(() => {
+  return props.projectId === undefined;
+});
+
+const engineTypeList = computed((): EngineType[] => {
+  if (isUndefined(state.engineType)) {
+    return allowedEngineTypeList;
+  } else {
+    return [state.engineType];
+  }
+});
+
 const shouldShowDiff = computed(() => {
   return (
     isValidId(state.projectId) &&
+    !isUndefined(state.engineType) &&
     isValidId(state.baseSchemaInfo.environmentId) &&
     isValidId(state.baseSchemaInfo.databaseId) &&
     !isNullOrUndefined(state.baseSchemaInfo.migrationHistory) &&
@@ -536,18 +548,32 @@ watch(
     const databaseId = state.baseSchemaInfo.databaseId;
     if (!isValidId(databaseId)) {
       state.baseSchemaInfo.migrationHistory = undefined;
+      state.engineType = undefined;
       return;
     }
 
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     state.baseSchemaInfo.migrationHistory = undefined;
     if (database) {
+      state.engineType = database.instance.engine;
       const migrationHistoryList = await instanceStore.fetchMigrationHistory({
         instanceId: database.instance.id,
         databaseName: database.name,
       });
       // Default select the first migration history.
       state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
+
+      if (isValidId(state.targetDatabaseInfo.databaseId)) {
+        const targetDatabase = databaseStore.getDatabaseById(
+          state.targetDatabaseInfo.databaseId as DatabaseId
+        );
+        if (
+          targetDatabase &&
+          targetDatabase.instance.engine !== state.engineType
+        ) {
+          state.targetDatabaseInfo.databaseId = undefined;
+        }
+      }
     }
   }
 );

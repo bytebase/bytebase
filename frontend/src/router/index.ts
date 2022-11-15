@@ -1358,16 +1358,8 @@ router.beforeEach((to, from, next) => {
     const sheetId = idFromSlug(sheetSlug);
     useSheetStore()
       .fetchSheetById(sheetId)
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
+      .then(() => next())
+      .catch(() => next());
     return;
   }
 
@@ -1380,25 +1372,13 @@ router.beforeEach((to, from, next) => {
       useSQLEditorStore()
         .fetchConnectionByInstanceId(instanceId)
         .then(() => next())
-        .catch((error) => {
-          next({
-            name: "error.404",
-            replace: false,
-          });
-          throw error;
-        });
+        .catch(() => next());
     } else {
       // Connected to db
       useSQLEditorStore()
         .fetchConnectionByInstanceIdAndDatabaseId(instanceId, databaseId)
         .then(() => next())
-        .catch((error) => {
-          next({
-            name: "error.404",
-            replace: false,
-          });
-          throw error;
-        });
+        .catch(() => next());
     }
     return;
   }

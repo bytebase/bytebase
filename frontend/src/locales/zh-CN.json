@@ -1471,7 +1471,7 @@
         "title": "恢复到指定时间点 (PITR)",
         "desc": "将数据库的状态恢复到一个时间点。"
       },
-      "bb-feature-sync-schema": {
+      "bb-feature-sync-schema-all-versions": {
         "title": "库表同步",
         "desc": "选择某个数据库的任意一个 Schema 版本，并将其同步到目标数据库。"
       },

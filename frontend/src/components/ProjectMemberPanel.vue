@@ -1,5 +1,11 @@
 <template>
   <div class="">
+    <FeatureAttention
+      v-if="!hasRBACFeature"
+      custom-class="my-5"
+      feature="bb.feature.rbac"
+      :description="$t('subscription.features.bb-feature-rbac.desc')"
+    />
     <span class="text-lg font-medium leading-7 text-main">
       {{ $t("project.settings.manage-member") }}
     </span>
