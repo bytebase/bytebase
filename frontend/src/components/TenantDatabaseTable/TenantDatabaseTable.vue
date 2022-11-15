@@ -6,7 +6,6 @@
       :name="dbGroup.name"
       :database-list="dbGroup.databaseList"
       :environment-list="environmentList"
-      :label-list="labelList"
       :x-axis-label="xAxisLabel"
       :y-axis-label="yAxisLabel"
     />
@@ -15,7 +14,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, watchEffect } from "vue";
-import { Database, Label, Project, LabelKeyType } from "../../types";
+import { Database, Project, LabelKeyType } from "../../types";
 import { groupBy } from "lodash-es";
 import DatabaseMatrix from "./DatabaseMatrix.vue";
 import { parseDatabaseNameByTemplate } from "../../utils";
@@ -39,10 +38,6 @@ export default defineComponent({
     mode: {
       default: "ALL",
       type: String as PropType<Mode>,
-    },
-    labelList: {
-      type: Array as PropType<Label[]>,
-      required: true,
     },
     databaseList: {
       type: Object as PropType<Database[]>,
@@ -73,16 +68,12 @@ export default defineComponent({
       if (props.project.dbNameTemplate === "") {
         return [{ name: "", databaseList: props.databaseList }];
       }
-      if (props.project.dbNameTemplate) {
-        if (props.labelList.length === 0) return [];
-      }
 
       const dict = groupBy(props.databaseList, (db) => {
         if (props.project.dbNameTemplate) {
           return parseDatabaseNameByTemplate(
             db.name,
-            props.project.dbNameTemplate,
-            props.labelList
+            props.project.dbNameTemplate
           );
         } else {
           return db.name;

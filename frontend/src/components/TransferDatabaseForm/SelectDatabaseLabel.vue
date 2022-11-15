@@ -134,10 +134,7 @@ const dbNameMatchesTemplate = computed((): boolean => {
     // no restrictions, because no template
     return true;
   }
-  const regex = buildDatabaseNameRegExpByTemplate(
-    project.dbNameTemplate,
-    availableLabelList.value
-  );
+  const regex = buildDatabaseNameRegExpByTemplate(project.dbNameTemplate);
   return regex.test(props.database.name);
 });
 
@@ -153,23 +150,18 @@ const labelListParsedFromTemplate = computed((): DatabaseLabel[] => {
   if (!dbNameMatchesTemplate.value) return [];
 
   const regex = buildDatabaseNameRegExpByTemplate(
-    targetProject.value.dbNameTemplate,
-    availableLabelList.value
+    targetProject.value.dbNameTemplate
   );
   const match = props.database.name.match(regex);
   if (!match) return [];
 
   const parsedLabelList: DatabaseLabel[] = [];
-  availableLabelList.value.forEach((label) => {
-    const group = `label_${label.id}`;
-    if (match.groups?.[group]) {
-      const value = match.groups[group];
-      parsedLabelList.push({
-        key: label.key,
-        value,
-      });
-    }
-  });
+  if (match.groups?.TENANT) {
+    parsedLabelList.push({ key: "bb.tenant", value: match.groups.TENANT });
+  }
+  if (match.groups?.LOCATION) {
+    parsedLabelList.push({ key: "bb.location", value: match.groups.LOCATION });
+  }
 
   return parsedLabelList;
 });

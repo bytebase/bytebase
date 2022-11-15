@@ -1,12 +1,9 @@
-import {
+import type {
   DeploymentConfig,
   DeploymentSchedule,
   DeploymentSpec,
   Environment,
-  Label,
-} from "../types";
-import escapeStringRegexp from "escape-string-regexp";
-import { hidePrefix } from "./label";
+} from "@/types";
 
 export const generateDefaultSchedule = (environmentList: Environment[]) => {
   const schedule: DeploymentSchedule = {
@@ -78,46 +75,29 @@ export const validateDeploymentSpec = (
   return undefined;
 };
 
-export const parseDatabaseNameByTemplate = (
-  name: string,
-  template: string,
-  labelList: Label[]
-) => {
-  const regex = buildDatabaseNameRegExpByTemplate(template, labelList);
+export const parseDatabaseNameByTemplate = (name: string, template: string) => {
+  const regex = buildDatabaseNameRegExpByTemplate(template);
   const match = name.match(regex);
 
   // fallback to name it self when failed
-  return match?.groups?.name || name;
+  return match?.groups?.DB_NAME || name;
 };
 
-export const buildDatabaseNameRegExpByTemplate = (
-  template: string,
-  labelList: Label[]
-): RegExp => {
-  let regexpString = template.replace("{{DB_NAME}}", "(?<name>.+?)");
+export const buildDatabaseNameRegExpByTemplate = (template: string): RegExp => {
+  const AVAILABLE_PLACEHOLDERS = ["DB_NAME", "LOCATION", "TENANT"];
+  let regexpString = template;
 
-  const fixed = template.split(/{{[^{}]+}}/).filter((template) => template);
-  for (const s of fixed) {
-    regexpString = regexpString.replace(s, s.replace(/\W/g, "\\$&"));
-  }
   /*
     Rewrite the placeholder-based template to a big RegExp
     e.g. template = "{{DB_NAME}}_{{TENANT}}"
-    bb.tenant has values (bytebase, tenant1, tenant2)
-    here regex will be /^(?<name>.+?)_(bytebase|tenant1|tenant2)$/
+    here regex will be /^(?<DB_NAME>.+?)_(?<TENANT>.+?)$/
   */
-  labelList.forEach((label) => {
-    const { key, valueList } = label;
-    const placeholder = `{{${hidePrefix(key).toUpperCase()}}}`;
-    // replace special chars in values
-    const escapedValueList = valueList.map((value) =>
-      escapeStringRegexp(value)
-    );
-    // the groups are named as "label_{id}"
-    // so the caller can get matched label values from the regex's match result
-    const regex = `(?<label_${label.id}>${escapedValueList.join("|")})`;
-    regexpString = regexpString.replace(placeholder, regex);
+  AVAILABLE_PLACEHOLDERS.forEach((placeholder) => {
+    const pattern = `{{${placeholder}}}`;
+    const groupRegExp = `(?<${placeholder}>.+?)`;
+    regexpString = regexpString.replace(pattern, groupRegExp);
   });
-  const regex = new RegExp(`^${regexpString}$`);
-  return regex;
+
+  const regexp = new RegExp(`^${regexpString}$`);
+  return regexp;
 };

@@ -46,7 +46,7 @@
           <SelectorItem
             :editable="allowEdit"
             :selector="selector"
-            :label-list="labelList"
+            :database-list="databaseList"
             @remove="removeSelector(selector)"
           />
         </div>
@@ -67,13 +67,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
-import {
-  AvailableLabel,
-  Database,
-  Deployment,
-  LabelSelectorRequirement,
-} from "../../types";
+import { uniq } from "lodash-es";
+import { computed, defineComponent, PropType } from "vue";
+import { Database, Deployment, LabelSelectorRequirement } from "../../types";
 import SelectorItem from "./SelectorItem.vue";
 
 export default defineComponent({
@@ -100,10 +96,6 @@ export default defineComponent({
       type: Array as PropType<Database[]>,
       default: () => [],
     },
-    labelList: {
-      type: Array as PropType<AvailableLabel[]>,
-      default: () => [],
-    },
     showHeader: {
       type: Boolean,
       default: true,
@@ -115,6 +107,13 @@ export default defineComponent({
   },
   emits: ["remove", "prev", "next"],
   setup(props) {
+    const keys = computed(() => {
+      const allKeys = props.databaseList.flatMap((db) =>
+        db.labels.map((label) => label.key)
+      );
+      return uniq(allKeys);
+    });
+
     const removeSelector = (selector: LabelSelectorRequirement) => {
       const array = props.deployment.spec.selector.matchExpressions;
       const index = array.indexOf(selector);
@@ -125,15 +124,14 @@ export default defineComponent({
 
     const addSelector = () => {
       const array = props.deployment.spec.selector.matchExpressions;
-      const label = props.labelList[0];
       const rule: LabelSelectorRequirement = {
-        key: label?.key || "",
+        key: keys.value[0] ?? "",
         operator: "In",
         values: [],
       };
-      if (label && label.valueList.length > 0) {
-        rule.values.push(label.valueList[0]);
-      }
+      // if (label && label.valueList.length > 0) {
+      //   rule.values.push(label.valueList[0]);
+      // }
       array.push(rule);
     };
 

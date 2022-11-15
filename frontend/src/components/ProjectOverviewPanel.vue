@@ -53,7 +53,7 @@
       <YAxisRadioGroup
         v-if="isTenantProject && state.yAxisLabel"
         v-model:label="state.yAxisLabel"
-        :label-list="selectableLabelList"
+        :excluded-key-list="excludedKeyList"
         class="text-sm font-normal py-1"
       />
 
@@ -65,7 +65,6 @@
             :project="project"
             :x-axis-label="state.xAxisLabel"
             :y-axis-label="state.yAxisLabel"
-            :label-list="labelList"
           />
           <div v-else class="w-full h-40 flex justify-center items-center">
             <NSpin />
@@ -165,7 +164,7 @@ import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import { useActivityStore, useLabelList } from "@/store";
+import { useActivityStore } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
 // Show at most 5 activity
@@ -247,8 +246,6 @@ export default defineComponent({
 
     watch(() => props.project.id, prepare, { immediate: true });
 
-    const labelList = useLabelList();
-
     const filteredDatabaseList = computed(() => {
       const filter = state.databaseNameFilter.toLocaleLowerCase();
       if (!filter) return props.databaseList;
@@ -258,16 +255,12 @@ export default defineComponent({
       );
     });
 
-    // make "bb.environment" non-selectable because it was already specified to the x-axis
-    const selectableLabelList = computed(() => {
-      const excludes = new Set([state.xAxisLabel]);
-      return labelList.value.filter((label) => !excludes.has(label.key));
-    });
+    const excludedKeyList = computed(() => [state.xAxisLabel]);
 
     watchEffect(() => {
       state.yAxisLabel = findDefaultGroupByLabel(
-        selectableLabelList.value,
-        filteredDatabaseList.value
+        filteredDatabaseList.value,
+        excludedKeyList.value
       );
     });
 
@@ -275,8 +268,7 @@ export default defineComponent({
       state,
       isTenantProject,
       filteredDatabaseList,
-      labelList,
-      selectableLabelList,
+      excludedKeyList,
     };
   },
 });

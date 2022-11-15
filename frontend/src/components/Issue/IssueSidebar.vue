@@ -316,7 +316,6 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentStore,
-  useLabelList,
   useProjectStore,
 } from "@/store";
 import {
@@ -418,15 +417,12 @@ const project = computed((): Project => {
   return (issue.value as Issue).project;
 });
 
-const labelList = useLabelList();
-
 const visibleLabelList = computed((): DatabaseLabel[] => {
   // transform non-reserved labels to db properties
   if (!props.database) return [];
-  if (labelList.value.length === 0) return [];
 
   return props.database.labels.filter(
-    (label) => !isReservedDatabaseLabel(label, labelList.value)
+    (label) => !isReservedDatabaseLabel(label)
   );
 });
 

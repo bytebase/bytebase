@@ -89,7 +89,7 @@ export default defineComponent({
         return false;
       }
 
-      return props.editable && !isReservedDatabaseLabel(label, labelList.value);
+      return props.editable && !isReservedDatabaseLabel(label);
     };
 
     return {
