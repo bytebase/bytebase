@@ -23,8 +23,8 @@ var (
 // Register makes a differ available by the provided id.
 // If Register is called twice with the same name or if differ is nil,
 // it panics.
-func Register(engineType parser.EngineType, e SchemaEditor) {
-	if e == nil {
+func Register(engineType parser.EngineType, se SchemaEditor) {
+	if se == nil {
 		panic("parser: Register parser is nil")
 	}
 	editorMu.Lock()
@@ -32,16 +32,16 @@ func Register(engineType parser.EngineType, e SchemaEditor) {
 	if _, dup := editors[engineType]; dup {
 		panic("parser: Register called twice for differ " + engineType)
 	}
-	editors[engineType] = e
+	editors[engineType] = se
 }
 
 // DeparseDatabaseEdit returns the DDL statement from DatabaseEdit structure.
 func DeparseDatabaseEdit(engineType parser.EngineType, databaseEdit *api.DatabaseEdit) (string, error) {
 	editorMu.RLock()
-	p, ok := editors[engineType]
+	se, ok := editors[engineType]
 	editorMu.RUnlock()
 	if !ok {
 		return "", errors.Errorf("engine: unknown engine type %v", engineType)
 	}
-	return p.DeparseDatabaseEdit(databaseEdit)
+	return se.DeparseDatabaseEdit(databaseEdit)
 }
