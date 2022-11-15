@@ -191,7 +191,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
-					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary:
+					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
 						if err := oldSchemaMap.addConstraint(i, item); err != nil {
 							return "", err
 						}
@@ -239,7 +239,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
-					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary:
+					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
 						oldConstraint := oldSchemaMap.getConstraint(item.Table.Schema, item.Table.Name, item.Constraint.Name)
 						if oldConstraint == nil {
 							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, item)
@@ -424,7 +424,7 @@ func (*diffNode) modifyConstraint(alterTableStmt *ast.AlterTableStmt, oldConstra
 			})
 			return nil
 		}
-	case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary:
+	case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
 		// TODO(zp): To make the logic simple now, we just restore the statement, and drop and create the new one if
 		// there is any difference.
 		oldAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, oldConstraint)
@@ -446,8 +446,6 @@ func (*diffNode) modifyConstraint(alterTableStmt *ast.AlterTableStmt, oldConstra
 				Constraint: newConstraint,
 			})
 		}
-	case ast.ConstraintTypeExclusion:
-
 	default:
 		return errors.Errorf("Unsupported table constraint type: %d for modifyConstraint", newConstraint.Type)
 	}
