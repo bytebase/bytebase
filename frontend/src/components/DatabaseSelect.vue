@@ -69,6 +69,10 @@ export default defineComponent({
       type: Number as PropType<ProjectId>,
       default: UNKNOWN_ID,
     },
+    engineTypeList: {
+      type: Array as PropType<EngineType[]>,
+      default: undefined,
+    },
     engineType: {
       type: String as PropType<EngineType>,
       default: undefined,
@@ -134,9 +138,9 @@ export default defineComponent({
         }
       }
 
-      if (!isNullOrUndefined(props.engineType)) {
+      if (!isNullOrUndefined(props.engineTypeList)) {
         list = list.filter((database: Database) => {
-          return database.instance.engine === props.engineType;
+          return props.engineTypeList?.includes(database.instance.engine);
         });
       }
 
