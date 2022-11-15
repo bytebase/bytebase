@@ -978,6 +978,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeCheck
 	case pgquery.ConstrType_CONSTR_DEFAULT:
 		return ast.ConstraintTypeDefault
+	case pgquery.ConstrType_CONSTR_EXCLUSION:
+		return ast.ConstraintTypeExclusion
 	}
 	return ast.ConstraintTypeUndefined
 }

@@ -22,6 +22,8 @@ const (
 	ConstraintTypeNotNull
 	// ConstraintTypeCheck is the check constraint.
 	ConstraintTypeCheck
+	// ConstraintTypeExclusion is the exclude constraint.
+	ConstraintTypeExclusion
 	// ConstraintTypeDefault is the default constraint.
 	ConstraintTypeDefault
 )
