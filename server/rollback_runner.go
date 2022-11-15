@@ -50,7 +50,7 @@ func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskRunning},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
-		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError'='' AND payload->>'rollbackStatement'=''",
+		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError' IS NULL AND payload->>'rollbackStatement' IS NULL",
 	}
 	taskList, err := r.server.store.FindTask(ctx, find, true)
 	if err != nil {
@@ -58,9 +58,6 @@ func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context) {
 		return
 	}
 	for _, task := range taskList {
-		if task.Instance.Engine != db.MySQL {
-			continue
-		}
 		generateRollbackSQLChan <- task
 	}
 }
@@ -79,14 +76,6 @@ func (r *RollbackRunner) getRollbackSQL(ctx context.Context, task *api.Task) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		log.Error("Invalid database data update payload", zap.Error(err))
-		return
-	}
-	if payload.ThreadID == "" ||
-		payload.BinlogFileStart == "" ||
-		payload.BinlogPosStart == 0 ||
-		payload.BinlogFileEnd == "" ||
-		payload.BinlogPosEnd == 0 {
-		log.Error("Cannot generate rollback SQL statement for the data update task with invalid payload", zap.Any("payload", *payload))
 		return
 	}
 
@@ -136,6 +125,9 @@ func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task
 	}
 	if len(list) == 0 {
 		return "", errors.WithMessagef(err, "migration history with ID %d not found", payload.MigrationID)
+	}
+	if len(list) > 1 {
+		return "", errors.WithMessagef(err, "found %d migration history record, expecting one", len(list))
 	}
 	history := list[0]
 	tableMap, err := mysql.GetTableColumns(history.Schema)
