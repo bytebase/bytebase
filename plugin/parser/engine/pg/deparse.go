@@ -456,6 +456,33 @@ func deparseConstraintDef(_ parser.DeparseContext, in *ast.ConstraintDef, buf *s
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
+	case ast.ConstraintTypeExclusion:
+		if _, err := buf.WriteString("EXCLUDE USING "); err != nil {
+			return err
+		}
+		if err := deparseIndexMethod(in.AccessMethod, buf); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(" ("); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.Exclusions); err != nil {
+			return err
+		}
+		if err := buf.WriteByte(')'); err != nil {
+			return err
+		}
+		if in.WhereClause != "" {
+			if _, err := buf.WriteString(" WHERE ("); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString(in.WhereClause); err != nil {
+				return err
+			}
+			if err := buf.WriteByte(')'); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

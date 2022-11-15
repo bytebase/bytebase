@@ -446,6 +446,8 @@ func (*diffNode) modifyConstraint(alterTableStmt *ast.AlterTableStmt, oldConstra
 				Constraint: newConstraint,
 			})
 		}
+	case ast.ConstraintTypeExclusion:
+
 	default:
 		return errors.Errorf("Unsupported table constraint type: %d for modifyConstraint", newConstraint.Type)
 	}
