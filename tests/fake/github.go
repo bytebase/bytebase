@@ -440,6 +440,11 @@ func (gh *GitHub) CreateRepository(id string) {
 	}
 }
 
+// AddCommitsDiff adds a commits diff.
+func (*GitHub) AddCommitsDiff(_, _, _ string, _ []vcs.FileDiff) error {
+	return nil
+}
+
 // SendWebhookPush sends out a webhook for a push event for the GitHub
 // repository using given payload.
 func (gh *GitHub) SendWebhookPush(repositoryID string, payload []byte) error {
