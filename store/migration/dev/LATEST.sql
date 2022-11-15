@@ -660,7 +660,7 @@ CREATE TABLE task (
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0,
-    rollback_by INTEGER NOT NULL DEFAULT 0
+    rollback_from INTEGER NULL REFERENCES task(id)
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
