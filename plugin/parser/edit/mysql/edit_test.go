@@ -96,8 +96,9 @@ func TestDeparseDatabaseEdit(t *testing.T) {
 		},
 	}
 
+	mysqlEditor := &SchemaEditor{}
 	for _, test := range tests {
-		stmt, err := deparseDatabaseEdit(test.databaseEdit)
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
 		assert.NoError(t, err)
 		assert.Equal(t, test.want, stmt)
 	}
