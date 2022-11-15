@@ -1043,7 +1043,8 @@ CREATE TABLE db_label (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
     key TEXT NOT NULL,
-    value TEXT NOT NULL
+    value TEXT NOT NULL,
+    FOREIGN KEY(key, value) REFERENCES label_value(key, value)
 );
 
 -- database_id/key's are unique within the db_label table.
