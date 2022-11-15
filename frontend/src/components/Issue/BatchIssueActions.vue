@@ -191,7 +191,10 @@ const getApplicableIssueStatusTransitionList = (
   const actionList: IssueStatusTransitionType[] = [];
 
   // The current user is the assignee of the issue
-  // or the assignee is SYSTEM_BOT and the current user can manage issue
+  // or the assignee is SYSTEM_BOT and the current user can manage issue.
+  // Users with manage issue permission can change the assignee. If they do
+  // want to change the issue status, we require them to first change the assignee
+  // and then change the issue status to avoid accidental click.
   const isAssignee =
     currentUser.value.id === issue.assignee?.id ||
     (issue.assignee?.id == SYSTEM_BOT_ID &&
