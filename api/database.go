@@ -127,66 +127,65 @@ type DatabasePatch struct {
 
 // DatabaseEdit is the API message for updating a database in UI editor.
 type DatabaseEdit struct {
-	DatabaseID int
+	DatabaseID int `json:"databaseId"`
 
-	CreateTableList []*CreateTableContext
-	AlterTableList  []*AlterTableContext
-	DropTableList   []*DropTableContext
+	CreateTableList []*CreateTableContext `json:"createTableList"`
+	AlterTableList  []*AlterTableContext  `json:"alterTableList"`
+	DropTableList   []*DropTableContext   `json:"dropTableList"`
 }
 
 // CreateTableContext is the edit database context to create a table.
 type CreateTableContext struct {
-	Name         string
-	Type         string
-	Engine       string
-	CharacterSet string
-	Collation    string
-	Comment      string
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	Engine       string `json:"engine"`
+	CharacterSet string `json:"characterSet"`
+	Collation    string `json:"collation"`
+	Comment      string `json:"comment"`
 
-	AddColumnList []*AddColumnContext
+	AddColumnList []*AddColumnContext `json:"addColumnList"`
 }
 
 // AlterTableContext is the edit database context to alter a table.
 type AlterTableContext struct {
-	TableID int
+	TableID int `json:"tableId"`
 
 	// ColumnNameList should be the final order of columns in UI editor and is used to confirm column positions.
-	ColumnNameList []string
+	ColumnNameList []string `json:"columnNameList"`
 
-	AddColumnList   []*AddColumnContext
-	AlterColumnList []*AlterColumnContext
-	DropColumnList  []*DropColumnContext
+	AddColumnList   []*AddColumnContext   `json:"addColumnList"`
+	AlterColumnList []*AlterColumnContext `json:"alterColumnList"`
+	DropColumnList  []*DropColumnContext  `json:"dropColumnList"`
 }
 
 // DropTableContext is the edit database context to drop a table.
 type DropTableContext struct {
-	TableID int
+	TableID int `json:"tableId"`
 }
 
 // AddColumnContext is the create/alter table context to add a column.
 type AddColumnContext struct {
-	Name         string
-	Type         string
-	CharacterSet string
-	Collation    string
-	Comment      string
-	Nullable     bool
-	Default      *string
+	Name         string  `json:"name"`
+	Type         string  `json:"type"`
+	CharacterSet string  `json:"characterSet"`
+	Collation    string  `json:"collation"`
+	Comment      string  `json:"comment"`
+	Nullable     bool    `json:"nullable"`
+	Default      *string `json:"default"`
 }
 
 // AlterColumnContext is the alter table context to alter a column.
 type AlterColumnContext struct {
-	Name         string
-	Type         *string
-	CharacterSet *string
-	Collation    *string
-	Comment      *string
-	Nullable     *bool
-	Default      *string
-	DropDefault  *bool
+	Name         string  `json:"name"`
+	Type         *string `json:"type"`
+	CharacterSet *string `json:"characterSet"`
+	Collation    *string `json:"collation"`
+	Comment      *string `json:"comment"`
+	Nullable     *bool   `json:"nullable"`
+	Default      *string `json:"default"`
 }
 
 // DropColumnContext is the alter table context to drop a column.
 type DropColumnContext struct {
-	Name string
+	Name string `json:"name"`
 }
