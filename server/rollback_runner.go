@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -17,13 +15,11 @@ import (
 )
 
 const (
-	rollbackSQLChanLen          = 100
-	generateRollbackSQLInterval = 10 * time.Second
+	rollbackSQLChanLen = 100
 )
 
 var (
-	generateRollbackSQLChan  = make(chan *api.Task, rollbackSQLChanLen)
-	hasMissedRollbackSQLTask int32
+	generateRollbackSQLChan = make(chan *api.Task, rollbackSQLChanLen)
 )
 
 // NewRollbackRunner creates a new rollback runner.
@@ -41,18 +37,11 @@ type RollbackRunner struct {
 // Run starts the rollback runner.
 func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	ticker := time.NewTicker(generateRollbackSQLInterval)
-	defer ticker.Stop()
-	r.retryGetRollbackSQL(ctx, rollbackSQLChanLen)
+	r.retryGetRollbackSQL(ctx)
 	for {
 		select {
 		case task := <-generateRollbackSQLChan:
 			r.getRollbackSQL(ctx, task)
-		case <-ticker.C:
-			if atomic.LoadInt32(&hasMissedRollbackSQLTask) == 1 && len(generateRollbackSQLChan) == 0 {
-				r.retryGetRollbackSQL(ctx, rollbackSQLChanLen-len(generateRollbackSQLChan))
-				atomic.StoreInt32(&hasMissedRollbackSQLTask, 0)
-			}
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
@@ -61,27 +50,22 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // retryGetRollbackSQL retries generating rollback SQL for tasks.
 // It is currently called when Bytebase server starts and only rerun unfinished generation.
-func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context, limit int) {
+func (r *RollbackRunner) retryGetRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskRunning},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
 		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError' IS NULL AND payload->>'rollbackStatement' IS NULL",
-		// Limit so that the query result will not block on the channel and result in a deadlock.
-		Limit: limit,
 	}
 	taskList, err := r.server.store.FindTask(ctx, find, true)
 	if err != nil {
 		log.Error("Failed to get running DML tasks", zap.Error(err))
 		return
 	}
-	for _, task := range taskList {
-		// Do not block the runner if the task executor is also sending task to the channel.
-		// Otherwise the runner is blocked and rollback SQL generation is in a deadlock.
-		select {
-		case generateRollbackSQLChan <- task:
-		default:
+	go func() {
+		for _, task := range taskList {
+			generateRollbackSQLChan <- task
 		}
-	}
+	}()
 }
 
 func (r *RollbackRunner) getRollbackSQL(ctx context.Context, task *api.Task) {

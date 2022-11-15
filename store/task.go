@@ -547,10 +547,6 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 	if v := find.Payload; v != "" {
 		where = append(where, v)
 	}
-	var limit string
-	if v := find.Limit; v != 0 {
-		limit = " LIMIT %d"
-	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -569,7 +565,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 			payload,
 			earliest_allowed_ts
 		FROM task
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`+limit,
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
 	)
 	if err != nil {
