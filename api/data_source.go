@@ -42,33 +42,33 @@ const (
 
 // DataSource is the API message for a data source.
 type DataSource struct {
-	ID int `jsonapi:"primary,dataSource"`
+	ID int `jsonapi:"primary,dataSource" json:"id"`
 
 	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+	CreatorID int        `json:"-"`
+	Creator   *Principal `jsonapi:"relation,creator" json:"creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs" json:"createdTs"`
+	UpdaterID int        `json:"-"`
+	Updater   *Principal `jsonapi:"relation,updater" json:"updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs" json:"updatedTs"`
 
 	// Related fields
 	// Just returns InstanceID and DatabaseID otherwise would cause circular dependency.
-	InstanceID int `jsonapi:"attr,instanceId"`
-	DatabaseID int `jsonapi:"attr,databaseId"`
+	InstanceID int `jsonapi:"attr,instanceId" json:"instanceId"`
+	DatabaseID int `jsonapi:"attr,databaseId" json:"databaseId"`
 
 	// Domain specific fields
-	Name     string         `jsonapi:"attr,name"`
-	Type     DataSourceType `jsonapi:"attr,type"`
-	Username string         `jsonapi:"attr,username"`
+	Name     string         `jsonapi:"attr,name" json:"name"`
+	Type     DataSourceType `jsonapi:"attr,type" json:"type"`
+	Username string         `jsonapi:"attr,username" json:"username"`
 	// Do not return the password to client
-	Password string
-	SslCa    string
-	SslCert  string
-	SslKey   string
+	Password string `json:"-"`
+	SslCa    string `json:"-"`
+	SslCert  string `json:"-"`
+	SslKey   string `json:"-"`
 	// HostOverride and PortOverride are only used for read-only data sources for user's read-replica instances.
-	HostOverride string `jsonapi:"attr,hostOverride"`
-	PortOverride string `jsonapi:"attr,portOverride"`
+	HostOverride string `jsonapi:"attr,hostOverride" json:"hostOverride"`
+	PortOverride string `jsonapi:"attr,portOverride" json:"portOverride"`
 }
 
 // DataSourceCreate is the API message for creating a data source.

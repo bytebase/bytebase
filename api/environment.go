@@ -9,21 +9,21 @@ import (
 
 // Environment is the API message for an environment.
 type Environment struct {
-	ID int `jsonapi:"primary,environment"`
+	ID int `jsonapi:"primary,environment" json:"id"`
 
 	// Standard fields
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+	RowStatus RowStatus  `jsonapi:"attr,rowStatus" json:"rowStatus"`
+	CreatorID int        `json:"-"`
+	Creator   *Principal `jsonapi:"relation,creator" json:"creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs" json:"createdTs"`
+	UpdaterID int        `json:"-"`
+	Updater   *Principal `jsonapi:"relation,updater" json:"updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs" json:"updatedTs"`
 
 	// Domain specific fields
-	Name  string               `jsonapi:"attr,name"`
-	Order int                  `jsonapi:"attr,order"`
-	Tier  EnvironmentTierValue `jsonapi:"attr,tier"`
+	Name  string               `jsonapi:"attr,name" json:"name"`
+	Order int                  `jsonapi:"attr,order" json:"order"`
+	Tier  EnvironmentTierValue `jsonapi:"attr,tier" json:"tier"`
 }
 
 // EnvironmentCreate is the API message for creating an environment.
