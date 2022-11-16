@@ -564,7 +564,6 @@ func formatForm(content Content) (string, error) {
 			Type:  "textarea",
 			Value: taskListValue.String(),
 		},
-
 		{
 			ID:    "5",
 			Type:  "textarea",
