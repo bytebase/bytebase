@@ -1095,16 +1095,16 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 	repoFullPath := "test/wildcard"
 
 	tests := []struct {
-		name                string
-		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             vcs.Type
-		baseDirectory       string
-		envName             string
-		filePathTemplate    string
-		commitFileNames     []string
-		commitContents      []string
-		expect              []bool
-		newWebhookPushEvent func(gitFile string) interface{}
+		name                  string
+		vcsProviderCreator    fake.VCSProviderCreator
+		vcsType               vcs.Type
+		baseDirectory         string
+		envName               string
+		filePathTemplate      string
+		commitNewFileNames    []string
+		commitNewFileContents []string
+		expect                []bool
+		newWebhookPushEvent   func(added []string, beforeSHA, afterSHA string) interface{}
 	}{
 		{
 			name:               "singleAsterisk",
@@ -1113,7 +1113,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-			commitFileNames: []string{
+			commitNewFileNames: []string{
 				// Normal
 				fmt.Sprintf("%s/%s/foo/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "wildcard", dbName),
 				// One singleAsterisk cannot match two directories.
@@ -1121,7 +1121,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				// One singleAsterisk cannot match zero directory.
 				fmt.Sprintf("%s/%s/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "wildcard", dbName),
 			},
-			commitContents: []string{
+			commitNewFileContents: []string{
 				"CREATE TABLE t1 (id INT);",
 				"INSERT INTO t1 VALUES (1);",
 				"CREATE TABLE t3 (id INT);",
@@ -1131,20 +1131,19 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				false,
 				false,
 			},
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     "1",
-					After:      "2",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
-							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{gitFile},
+							AddedList: added,
 						},
 					},
 				}
@@ -1157,7 +1156,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_NAME}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-			commitFileNames: []string{
+			commitNewFileNames: []string{
 				// Two singleAsterisk can match one directory.
 				fmt.Sprintf("%s/%s/foo/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "wildcard", dbName),
 				// Two singleAsterisk can match two directories.
@@ -1167,7 +1166,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				// Two singleAsterisk cannot match zero directory.
 				fmt.Sprintf("%s/%s/%s##ver4##migrate##create_table_t4.sql", baseDirectory, "wildcard", dbName),
 			},
-			commitContents: []string{
+			commitNewFileContents: []string{
 				"CREATE TABLE t1 (id INT);",
 				"CREATE TABLE t2 (id INT);",
 				"CREATE TABLE t3 (id INT);",
@@ -1179,20 +1178,19 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				true,
 				false,
 			},
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     "1",
-					After:      "2",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
-							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{gitFile},
+							AddedList: added,
 						},
 					},
 				}
@@ -1205,7 +1203,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			baseDirectory:      "",
 			vcsType:            vcs.GitLabSelfHost,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-			commitFileNames: []string{
+			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
 				fmt.Sprintf("%s/foo/foo/bar/%s##ver1##migrate##create_table_t1.sql", "wildcard", dbName),
 				// ** matches foo/bar/foo, foo matches foo, * matches bar
@@ -1213,7 +1211,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				// cannot match
 				fmt.Sprintf("%s/%s##ver3##migrate##create_table_t3.sql", "wildcard", dbName),
 			},
-			commitContents: []string{
+			commitNewFileContents: []string{
 				"CREATE TABLE t1 (id INT);",
 				"CREATE TABLE t2 (id INT);",
 				"CREATE TABLE t3 (id INT);",
@@ -1223,20 +1221,19 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				true,
 				false,
 			},
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     "1",
-					After:      "2",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
-							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{gitFile},
+							AddedList: added,
 						},
 					},
 				}
@@ -1250,7 +1247,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			baseDirectory:      "bbtest",
 			vcsType:            vcs.GitLabSelfHost,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-			commitFileNames: []string{
+			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
 				fmt.Sprintf("%s/%s/foo/foo/bar/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "生产", dbName),
 				// ** matches foo/bar/foo, foo matches foo, * matches bar
@@ -1258,7 +1255,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				// cannot match
 				fmt.Sprintf("%s/%s/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "生产", dbName),
 			},
-			commitContents: []string{
+			commitNewFileContents: []string{
 				"CREATE TABLE t1 (id INT);",
 				"CREATE TABLE t2 (id INT);",
 				"CREATE TABLE t3 (id INT);",
@@ -1268,20 +1265,19 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				true,
 				false,
 			},
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     "1",
-					After:      "2",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
-							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{gitFile},
+							AddedList: added,
 						},
 					},
 				}
@@ -1295,12 +1291,12 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			baseDirectory:      "bbtest",
 			vcsType:            vcs.GitLabSelfHost,
 			filePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}/sql/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-			commitFileNames: []string{
+			commitNewFileNames: []string{
 				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "ZO", dbName, dbName),
 				fmt.Sprintf("%s/%s/%s/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "ZO", dbName, dbName),
 				fmt.Sprintf("%s/%s/%s/sql/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "ZO", dbName, dbName),
 			},
-			commitContents: []string{
+			commitNewFileContents: []string{
 				"CREATE TABLE t1 (id INT);",
 				"CREATE TABLE t2 (id INT);",
 				"CREATE TABLE t3 (id INT);",
@@ -1310,20 +1306,19 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				false,
 				true,
 			},
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     "1",
-					After:      "2",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
 					CommitList: []gitlab.WebhookCommit{
 						{
-							ID:        "68211f18905c46e8bda58a8fee98051f2ffe40bb",
 							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: []string{gitFile},
+							AddedList: added,
 						},
 					},
 				}
@@ -1350,7 +1345,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			vcs, err := ctl.createVCS(
+			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
@@ -1375,7 +1370,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
+					VCSID:              apiVCS.ID,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           repoFullPath,
@@ -1412,14 +1407,21 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			err = ctl.createDatabase(project, instance, dbName, "", nil /* labelMap */)
 			a.NoError(err)
 
-			a.Equal(len(test.expect), len(test.commitFileNames))
-			a.Equal(len(test.expect), len(test.commitContents))
-			for idx, commitFileName := range test.commitFileNames {
-				// Simulate Git commits for schema update.
-				err = ctl.vcsProvider.AddFiles(externalID, map[string]string{commitFileName: test.commitContents[idx]})
-				a.NoError(err)
+			a.Equal(len(test.expect), len(test.commitNewFileNames))
+			a.Equal(len(test.expect), len(test.commitNewFileContents))
 
-				payload, err := json.Marshal(test.newWebhookPushEvent(commitFileName))
+			for idx, commitFileName := range test.commitNewFileNames {
+				// Simulate Git commits for schema update.
+				err = ctl.vcsProvider.AddFiles(externalID, map[string]string{commitFileName: test.commitNewFileContents[idx]})
+				a.NoError(err)
+				// We always commit one file at a time in this test.
+				beforeCommit := strconv.Itoa(idx)
+				afterCommit := strconv.Itoa(idx + 1)
+				err = ctl.vcsProvider.AddCommitsDiff(externalID, beforeCommit, afterCommit, []vcs.FileDiff{
+					{Path: commitFileName, Type: vcs.FileDiffTypeAdded},
+				})
+				a.NoError(err)
+				payload, err := json.Marshal(test.newWebhookPushEvent([]string{commitFileName}, beforeCommit, afterCommit))
 				a.NoError(err)
 				err = ctl.vcsProvider.SendWebhookPush(externalID, payload)
 				a.NoError(err)
