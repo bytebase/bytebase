@@ -493,11 +493,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if newBranchFilter == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
 		}
-		if strings.Contains(newBranchFilter, "*") && newSchemaPathTemplate != "" {
+
+		hasWildcard := strings.Contains(newBranchFilter, "*")
+		if hasWildcard && newSchemaPathTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
 		}
 
-		// Make sure the branch exists in the repo.
 		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repo.VCSID)).SetInternal(err)
@@ -506,16 +507,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 		}
 
-		if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    nil,
-			},
-			vcs.InstanceURL, repo.ExternalID, newBranchFilter); common.ErrorCode(err) == common.NotFound {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
+		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
+		if !hasWildcard {
+			if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    nil,
+				},
+				vcs.InstanceURL, repo.ExternalID, newBranchFilter); common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
+			}
 		}
 
 		// We need to check the FilePathTemplate in create repository request.
