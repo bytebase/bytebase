@@ -19,7 +19,6 @@
             $t("common.feishu")
           }}</span>
           <heroicons-solid:sparkles class="ml-2 w-5 h-auto text-accent" />
-          <BBBetaBadge class="ml-2" />
         </div>
         <button
           v-if="!state.feishuSetting"
@@ -87,7 +86,7 @@ import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingStore } from "@/store";
 import { SettingAppIMValue } from "@/types/setting";
-import { BBBetaBadge, BBSwitch } from "@/bbkit";
+import { BBSwitch } from "@/bbkit";
 
 interface LocalState {
   originFeishuSetting?: SettingAppIMValue;
@@ -156,12 +155,16 @@ const updateFeishuIntegration = async () => {
   }
 
   state.isLoading = true;
-  await settingStore.updateSettingByName({
-    name: "bb.app.im",
-    value: JSON.stringify(state.feishuSetting),
-  });
+  try {
+    await settingStore.updateSettingByName({
+      name: "bb.app.im",
+      value: JSON.stringify(state.feishuSetting),
+    });
+  } catch (error) {
+    state.isLoading = false;
+    return;
+  }
   state.originFeishuSetting = cloneDeep(state.feishuSetting);
-  state.isLoading = false;
 
   pushNotification({
     module: "bytebase",
