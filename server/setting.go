@@ -75,14 +75,14 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				p := s.ApplicationRunner.p
 				// clear token cache so that we won't use the previous token.
 				p.ClearTokenCache()
-				approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
+				approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
 					AppID:     value.AppID,
 					AppSecret: value.AppSecret,
 				}, "")
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create approval definition").SetInternal(err)
 				}
-				value.ExternalApproval.ApprovalCode = approvalCode
+				value.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 				b, err := json.Marshal(value)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal updated setting value").SetInternal(err)
