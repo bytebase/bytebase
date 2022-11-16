@@ -15,9 +15,11 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -1298,6 +1300,11 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			}
 		}
 		pipelineStatus = api.PipelineCanceled
+
+		// Try to cancel external approval, it's ok if we failed.
+		if err := s.ApplicationRunner.CancelExternalApprovalIfNeeded(ctx, issue); err != nil {
+			log.Error("failed to cancel external appoval if needed on issue cancellation", zap.Error(err))
+		}
 	}
 
 	pipelinePatch := &api.PipelinePatch{
