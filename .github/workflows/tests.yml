@@ -24,6 +24,9 @@ jobs:
       - name: Run pnpm lint
         run: pnpm lint
         working-directory: frontend
+      - name: Run pnpm test
+        run: pnpm test
+        working-directory: frontend
 
   golangci-lint:
     runs-on: ubuntu-latest
