@@ -235,7 +235,15 @@ func (r *ApplicationRunner) CancelExternalApprovalIfNeeded(ctx context.Context, 
 	return nil
 }
 
-func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+	policy, err := r.store.GetPipelineApprovalPolicy(ctx, stage.EnvironmentID)
+	if err != nil {
+		return false, err
+	}
+	// don't send approvals for auto-approval stages.
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		return false, nil
+	}
 	if oldApproval != nil {
 		var oldPayload api.ExternalApprovalPayloadFeishu
 		if err := json.Unmarshal([]byte(oldApproval.Payload), &oldPayload); err != nil {
@@ -405,7 +413,7 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 	// check if we need to create a new external approval
 	// 1. has one or more PENDING_APPROVAL tasks.
 	// 2. all task checks are done and the results have no errors.
-	ok, err := r.shouldCreateExternalApproval(issue, stage, oldApproval)
+	ok, err := r.shouldCreateExternalApproval(ctx, issue, stage, oldApproval)
 	if err != nil {
 		log.Error("failed to check shouldCreateExternalApproval", zap.Error(err))
 		return
