@@ -1094,6 +1094,23 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 	externalID := "121"
 	repoFullPath := "test/wildcard"
 
+	defaultNewWebhookPushEvent := func(added []string, beforeSHA, afterSHA string) interface{} {
+		return gitlab.WebhookPushEvent{
+			ObjectKind: gitlab.WebhookPush,
+			Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
+			Before:     beforeSHA,
+			After:      afterSHA,
+			Project: gitlab.WebhookProject{
+				ID: 121,
+			},
+			CommitList: []gitlab.WebhookCommit{
+				{
+					Timestamp: "2021-01-13T13:14:00Z",
+					AddedList: added,
+				},
+			},
+		}
+	}
 	tests := []struct {
 		name                  string
 		vcsProviderCreator    fake.VCSProviderCreator
@@ -1131,23 +1148,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				false,
 				false,
 			},
-			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
-				return gitlab.WebhookPushEvent{
-					ObjectKind: gitlab.WebhookPush,
-					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     beforeSHA,
-					After:      afterSHA,
-					Project: gitlab.WebhookProject{
-						ID: 121,
-					},
-					CommitList: []gitlab.WebhookCommit{
-						{
-							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: added,
-						},
-					},
-				}
-			},
+			newWebhookPushEvent: defaultNewWebhookPushEvent,
 		},
 		{
 			name:               "doubleAsterisks",
@@ -1178,23 +1179,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				true,
 				false,
 			},
-			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
-				return gitlab.WebhookPushEvent{
-					ObjectKind: gitlab.WebhookPush,
-					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     beforeSHA,
-					After:      afterSHA,
-					Project: gitlab.WebhookProject{
-						ID: 121,
-					},
-					CommitList: []gitlab.WebhookCommit{
-						{
-							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: added,
-						},
-					},
-				}
-			},
+			newWebhookPushEvent: defaultNewWebhookPushEvent,
 		},
 		{
 			name:               "emptyBaseAndMixAsterisks",
@@ -1221,23 +1206,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				true,
 				false,
 			},
-			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
-				return gitlab.WebhookPushEvent{
-					ObjectKind: gitlab.WebhookPush,
-					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     beforeSHA,
-					After:      afterSHA,
-					Project: gitlab.WebhookProject{
-						ID: 121,
-					},
-					CommitList: []gitlab.WebhookCommit{
-						{
-							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: added,
-						},
-					},
-				}
-			},
+			newWebhookPushEvent: defaultNewWebhookPushEvent,
 		},
 		// We test the combination of ** and *, and the place holder is not fully represented by the ascii character set.
 		{
@@ -1265,23 +1234,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				true,
 				false,
 			},
-			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
-				return gitlab.WebhookPushEvent{
-					ObjectKind: gitlab.WebhookPush,
-					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     beforeSHA,
-					After:      afterSHA,
-					Project: gitlab.WebhookProject{
-						ID: 121,
-					},
-					CommitList: []gitlab.WebhookCommit{
-						{
-							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: added,
-						},
-					},
-				}
-			},
+			newWebhookPushEvent: defaultNewWebhookPushEvent,
 		},
 		// No asterisk
 		{
@@ -1306,23 +1259,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				false,
 				true,
 			},
-			newWebhookPushEvent: func(added []string, beforeSHA, afterSHA string) interface{} {
-				return gitlab.WebhookPushEvent{
-					ObjectKind: gitlab.WebhookPush,
-					Ref:        fmt.Sprintf("refs/heads/%s", branchFilter),
-					Before:     beforeSHA,
-					After:      afterSHA,
-					Project: gitlab.WebhookProject{
-						ID: 121,
-					},
-					CommitList: []gitlab.WebhookCommit{
-						{
-							Timestamp: "2021-01-13T13:14:00Z",
-							AddedList: added,
-						},
-					},
-				}
-			},
+			newWebhookPushEvent: defaultNewWebhookPushEvent,
 		},
 	}
 	for _, test := range tests {
