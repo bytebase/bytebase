@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
@@ -226,22 +225,30 @@ func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *
 		if len(task.TaskCheckRunList) == 0 {
 			return false, nil
 		}
-		// sort to get the most recent task check run result
-		sort.Slice(task.TaskCheckRunList, func(i, j int) bool {
-			return task.TaskCheckRunList[i].UpdatedTs > task.TaskCheckRunList[j].UpdatedTs ||
-				(task.TaskCheckRunList[i].UpdatedTs == task.TaskCheckRunList[j].UpdatedTs && task.TaskCheckRunList[i].ID > task.TaskCheckRunList[j].ID)
-		})
-		taskCheck := task.TaskCheckRunList[0]
-		if taskCheck.Status != api.TaskCheckRunDone {
-			return false, nil
+
+		// get the most recent task check run result for each type of task check
+		taskCheckRun := make(map[api.TaskCheckType]*api.TaskCheckRun)
+		for _, run := range task.TaskCheckRunList {
+			v, ok := taskCheckRun[run.Type]
+			if !ok {
+				taskCheckRun[run.Type] = run
+			} else if run.ID > v.ID {
+				taskCheckRun[run.Type] = run
+			}
 		}
-		var payload api.TaskCheckRunResultPayload
-		if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
-			return false, err
-		}
-		for _, result := range payload.ResultList {
-			if result.Status == api.TaskCheckStatusError {
+
+		for _, taskCheck := range taskCheckRun {
+			if taskCheck.Status != api.TaskCheckRunDone {
 				return false, nil
+			}
+			var payload api.TaskCheckRunResultPayload
+			if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
+				return false, err
+			}
+			for _, result := range payload.ResultList {
+				if result.Status == api.TaskCheckStatusError {
+					return false, nil
+				}
 			}
 		}
 	}
