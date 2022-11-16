@@ -531,26 +531,6 @@ func formatForm(content Content) (string, error) {
 		Type  string `json:"type"`
 		Value string `json:"value"`
 	}
-	var forms []form
-
-	forms = append(forms, form{
-		ID:    "1",
-		Type:  "input",
-		Value: content.Issue,
-	})
-
-	forms = append(forms, form{
-		ID:    "2",
-		Type:  "input",
-		Value: content.Link,
-	})
-
-	forms = append(forms, form{
-		ID:    "3",
-		Type:  "input",
-		Value: content.Stage,
-	})
-
 	var taskListValue strings.Builder
 	if _, err := taskListValue.WriteString(fmt.Sprintf("Stage %q has %d task(s).\n", content.Stage, len(content.TaskList))); err != nil {
 		return "", err
@@ -560,19 +540,37 @@ func formatForm(content Content) (string, error) {
 			return "", err
 		}
 	}
+	forms := []form{
+		{
+			ID:    "1",
+			Type:  "input",
+			Value: content.Issue,
+		},
 
-	forms = append(forms, form{
-		ID:    "4",
-		Type:  "textarea",
-		Value: taskListValue.String(),
-	})
+		{
+			ID:    "2",
+			Type:  "input",
+			Value: content.Link,
+		},
 
-	forms = append(forms, form{
-		ID:    "5",
-		Type:  "textarea",
-		Value: content.Description,
-	})
+		{
+			ID:    "3",
+			Type:  "input",
+			Value: content.Stage,
+		},
 
+		{
+			ID:    "4",
+			Type:  "textarea",
+			Value: taskListValue.String(),
+		},
+
+		{
+			ID:    "5",
+			Type:  "textarea",
+			Value: content.Description,
+		},
+	}
 	b, err := json.Marshal(forms)
 	if err != nil {
 		return "", err
