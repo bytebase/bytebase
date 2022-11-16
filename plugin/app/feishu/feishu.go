@@ -552,7 +552,6 @@ func formatForm(content Content) (string, error) {
 			Type:  "input",
 			Value: content.Link,
 		},
-
 		{
 			ID:    "3",
 			Type:  "input",
