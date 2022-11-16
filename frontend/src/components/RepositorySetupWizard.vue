@@ -40,6 +40,7 @@
         <RepositoryConfigPanel
           :config="state.config"
           :project="project"
+          :form-error="state.formError"
           @change-schema-change-type="
             (type) => (state.config.schemaChangeType = type)
           "
@@ -131,6 +132,7 @@
 import { reactive, computed, PropType, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
+import type { AxiosError } from "axios";
 import { BBStepTabItem } from "../bbkit/types";
 import RepositoryVCSProviderPanel from "./RepositoryVCSProviderPanel.vue";
 import RepositorySelectionPanel from "./RepositorySelectionPanel.vue";
@@ -176,6 +178,7 @@ interface LocalState {
   showSetupSQLReviewCIFailureModal: boolean;
   showLoadingSQLReviewPRModal: boolean;
   sqlReviewCIPullRequestURL: string;
+  formError: Record<string, boolean>;
 }
 
 export default defineComponent({
@@ -250,6 +253,7 @@ export default defineComponent({
       showSetupSQLReviewCIFailureModal: false,
       showLoadingSQLReviewPRModal: false,
       sqlReviewCIPullRequestURL: "",
+      formError: {},
     });
 
     const allowNext = computed((): boolean => {
@@ -337,10 +341,19 @@ export default defineComponent({
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
         };
-        await repositoryStore.createRepository({
-          projectId: props.project.id,
-          repositoryCreate,
-        });
+
+        try {
+          await repositoryStore.createRepository({
+            projectId: props.project.id,
+            repositoryCreate,
+          });
+        } catch (error) {
+          // Branch not found.
+          if ((error as AxiosError)?.response?.status === 404) {
+            state.formError["branch"] = true;
+          }
+          return;
+        }
 
         if (state.config.repositoryConfig.enableSQLReviewCI) {
           createSQLReviewCI();

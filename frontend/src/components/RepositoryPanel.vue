@@ -56,6 +56,7 @@
     :repository-config="state.repositoryConfig"
     :project="project"
     :schema-change-type="state.schemaChangeType"
+    :form-error="state.formError"
     @change-schema-change-type="(type) => (state.schemaChangeType = type)"
     @change-repository="$emit('change-repository')"
   />
@@ -243,6 +244,7 @@ import {
   SchemaChangeType,
 } from "../types";
 import { useI18n } from "vue-i18n";
+import type { AxiosError } from "axios";
 import {
   hasFeature,
   pushNotification,
@@ -261,6 +263,7 @@ interface LocalState {
   showDisableSQLReviewCIModal: boolean;
   showRestoreSQLReviewCIModal: boolean;
   sqlReviewCIPullRequestURL: string;
+  formError: Record<string, boolean>;
 }
 
 export default defineComponent({
@@ -301,6 +304,7 @@ export default defineComponent({
       showDisableSQLReviewCIModal: false,
       showRestoreSQLReviewCIModal: false,
       sqlReviewCIPullRequestURL: "",
+      formError: {},
     });
 
     watch(
@@ -468,10 +472,18 @@ export default defineComponent({
 
       const disableSQLReview = disableSQLReviewCI.value;
 
-      await repositoryStore.updateRepositoryByProjectId({
-        projectId: props.project.id,
-        repositoryPatch,
-      });
+      try {
+        await repositoryStore.updateRepositoryByProjectId({
+          projectId: props.project.id,
+          repositoryPatch,
+        });
+      } catch (error) {
+        // Branch not found.
+        if ((error as AxiosError)?.response?.status === 404) {
+          state.formError["branch"] = true;
+        }
+        return;
+      }
 
       if (needSetupCI) {
         createSQLReviewCI();

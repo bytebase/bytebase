@@ -44,6 +44,11 @@
     <div>
       <div class="textlabel">
         {{ $t("common.branch") }} <span class="text-red-600">*</span>
+        <span
+          v-if="state.showFormItemError?.branch"
+          class="text-xs text-red-600 ml-2"
+          >Branch not found in the repository.</span
+        >
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.branch-observe-file-change") }}
@@ -53,9 +58,12 @@
         v-model="repositoryConfig.branchFilter"
         name="branch"
         type="text"
-        class="textfield mt-2 w-full"
+        :class="`textfield mt-2 w-full ${
+          state.showFormItemError.branch ? '!border-red-600' : ''
+        }`"
         placeholder="e.g. main"
         :disabled="!allowEdit"
+        @input="() => void (state.showFormItemError.branch = false)"
       />
       <div class="mt-2 textinfolabel">
         {{ $t("repository.branch-specify-tip") }}
@@ -292,6 +300,7 @@ const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {
   showFeatureModal: boolean;
+  showFormItemError: Record<string, boolean>;
 }
 
 export default defineComponent({
@@ -330,6 +339,10 @@ export default defineComponent({
       required: true,
       type: String as PropType<SchemaChangeType>,
     },
+    formError: {
+      required: true,
+      type: Object as PropType<Record<string, boolean>>,
+    },
   },
   emits: ["change-repository", "change-schema-change-type"],
   setup(props) {
@@ -337,6 +350,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showFeatureModal: false,
+      showFormItemError: props.formError,
     });
 
     const isTenantProject = computed(() => {
