@@ -49,11 +49,6 @@ func (raw *settingRaw) toSetting() *api.Setting {
 
 // CreateSettingIfNotExist creates an instance of Setting.
 func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, bool, error) {
-	// TODO(p0ny): re-enable it for prod release.
-	if create.Name == api.SettingAppIM && s.db.mode == common.ReleaseModeProd {
-		return nil, false, nil
-	}
-
 	settingRaw, created, err := s.createSettingRawIfNotExist(ctx, create)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to create Setting with SettingCreate[%+v]", create)
@@ -84,11 +79,6 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 
 // GetSetting gets an instance of Setting.
 func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Setting, error) {
-	// TODO(p0ny): re-enable it for release.
-	if *find.Name == api.SettingAppIM && s.db.mode == common.ReleaseModeProd {
-		return nil, nil
-	}
-
 	settingRaw, err := s.getSettingRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Setting with SettingFind[%+v]", find)
