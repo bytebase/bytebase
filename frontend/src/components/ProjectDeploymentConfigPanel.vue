@@ -122,14 +122,12 @@ import {
   Project,
   AvailableLabel,
   DeploymentConfig,
-  UNKNOWN_ID,
   EMPTY_ID,
-  empty,
   DeploymentConfigPatch,
   LabelSelectorRequirement,
 } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
+import { validateDeploymentConfig } from "../utils";
 import {
   pushNotification,
   useDatabaseStore,
@@ -210,24 +208,10 @@ export default defineComponent({
       const dep = await deploymentStore.fetchDeploymentConfigByProjectId(
         props.project.id
       );
-
-      if (dep.id === UNKNOWN_ID) {
-        // if the project has no related deployment-config
-        // just generate a "staged-by-env" example to users
-        // this is not saved immediately, it's a draft
-        // users need to edit and save it before creating a deployment issue
-        if (environmentList.value.length > 0) {
-          state.deployment = empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
-          state.deployment.schedule = generateDefaultSchedule(
-            environmentList.value
-          );
-        }
-      } else {
-        // otherwise we clone the saved deployment-config
-        // <DeploymentConfigTool /> will mutate `state.deployment` directly
-        // when update button clicked, we save the draft to backend
-        state.deployment = cloneDeep(dep);
-      }
+      // We clone the saved deployment-config
+      // <DeploymentConfigTool /> will mutate `state.deployment` directly
+      // when update button clicked, we save the draft to backend.
+      state.deployment = cloneDeep(dep);
       // clone the object to the backup
       state.originalDeployment = cloneDeep(state.deployment);
       // clean up error and dirty status

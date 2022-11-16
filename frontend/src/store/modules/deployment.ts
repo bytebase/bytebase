@@ -5,7 +5,6 @@ import {
   ProjectId,
   DeploymentState,
   DeploymentConfig,
-  EMPTY_ID,
   empty,
   unknown,
   UNKNOWN_ID,
@@ -17,7 +16,7 @@ function convert(
   deployment: ResourceObject,
   includedList: ResourceObject[]
 ): DeploymentConfig {
-  if (parseInt(deployment.id, 10) === EMPTY_ID) {
+  if (parseInt(deployment.id, 10) === UNKNOWN_ID) {
     return empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
   }
 
@@ -61,10 +60,6 @@ export const useDeploymentStore = defineStore("deployment", {
   }),
   actions: {
     getDeploymentConfigByProjectId(projectId: ProjectId): DeploymentConfig {
-      if (projectId == EMPTY_ID) {
-        return empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
-      }
-
       return (
         this.deploymentConfigByProjectId.get(projectId) ||
         (unknown("DEPLOYMENT_CONFIG") as DeploymentConfig)
@@ -85,7 +80,7 @@ export const useDeploymentStore = defineStore("deployment", {
 
       const deploymentConfig = convert(data.data, data.included);
       const { id } = deploymentConfig;
-      if (id !== EMPTY_ID && id !== UNKNOWN_ID) {
+      if (id !== UNKNOWN_ID) {
         this.setDeploymentConfigByProjectId({
           projectId,
           deploymentConfig,
