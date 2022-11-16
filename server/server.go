@@ -292,7 +292,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
-		// External approval application runner.
 		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager)
 
 		// Anomaly scanner
@@ -502,11 +501,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
-		// TODO(p0ny): re-enable it for release.
-		if s.profile.Mode == common.ReleaseModeDev {
-			s.runnerWG.Add(1)
-			go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		}
+		s.runnerWG.Add(1)
+		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
+
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
 			go s.MetricReporter.Run(ctx, &s.runnerWG)
