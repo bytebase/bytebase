@@ -23,7 +23,7 @@ export const transformTableToCreateTableContext = (
     type: defaultTo(table.type, ""),
     engine: defaultTo(table.engine, ""),
     // As we don't have a CharacterSet field in table model,
-    // set it as empty string at present.
+    // set it as an empty string for now.
     characterSet: "",
     collation: defaultTo(table.collation, ""),
     comment: defaultTo(table.comment, ""),
